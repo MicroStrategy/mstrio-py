@@ -1,20 +1,10 @@
 # mstrio-py: data I/O for Python and MicroStrategy
 
-[mstrio logo here]
-
 ## *mstrio?*
 mstrio provides a high-level Python interface that's designed to give data scientists and developers access to MicroStrategy data using the [MicroStrategy REST API](https://lw.microstrategy.com/msdz/MSDL/GARelease_Current/docs/projects/RESTSDK/Content/topics/REST_API/REST_API.htm). mstrio has a simple workflow to create and manage connections, fetch data from cubes and reports, create new cubes, and modify existing cubes.
 
 With mstrio, it's easy to extract business data from MicroStrategy and use it to train machine learning models or do data science in the tool of your choice. When you're done, enable decision-makers to take action on your insights by pushing new data into the environment.
 
-Prefer R? Check out mstrio for R.[link](www.google.com)
-
-
-#### Installation
-Install with pip
-```
-pip install mstrio-py
-```
 
 Create a connection object using `microstrategy.Connection()` and `connect()`.  Required arguments for the `microstrategy.Connection()` class are the URL for the MicroStrategy REST API server, username, password, and project name. By default, the `connect()` function expects your MicroStrategy username and password. LDAP authentication is supported, too. Use the optional argument `login_mode=16` to the `connect()` function.
 
@@ -61,4 +51,3 @@ conn.update_dataset(data_frame=df, dataset_id=newDatasetId, table_name='Ages', u
 - [Check out mstrio for R](www.google.com)
 - [Learn more about the MicroStrategy REST API](https://lw.microstrategy.com/msdz/MSDL/GARelease_Current/docs/projects/RESTSDK/Content/topics/REST_API/REST_API.htm)
 - [MicroStrategy REST API Demo environment](https://demo.microstrategy.com/MicroStrategyLibrary/api-docs/index.html)
-#### License
