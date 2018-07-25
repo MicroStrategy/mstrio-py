@@ -9,7 +9,7 @@ With mstrio, it's easy to extract business data from MicroStrategy and use it to
 ```
 pip3 install mstrio-py
 ```
-
+### Getting started
 Create a connection object using `microstrategy.Connection()` and `connect()`.  Required arguments for the `microstrategy.Connection()` class are the URL for the MicroStrategy REST API server, username, password, and project name. By default, the `connect()` function expects your MicroStrategy username and password. LDAP authentication is supported, too. Use the optional argument `login_mode=16` to the `connect()` function.
 
 ```python
