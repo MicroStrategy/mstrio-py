@@ -14,7 +14,7 @@ Create a connection object using `microstrategy.Connection()` and `connect()`.  
 
 ```python
 from mstrio import microstrategy
-conn = microstrategy.Connection(base_url="https://acmeinc.mstr.com/MicroStrategyLibrary/api, username="myUsername", password="myPassword", project_name="Acme, Inc. Analytics")
+conn = microstrategy.Connection(base_url="https://acmeinc.mstr.com/MicroStrategyLibrary/api", username="myUsername", password="myPassword", project_name="Acme, Inc. Analytics")
 conn.connect()
 ```
 The URL for the REST API server typically follows this format: _https://mstrEnvironment.com/MicroStrategyLibrary/api_. Validate that the REST API server is running by accessing _https://mstrEnvironment.com/MicroStrategyLibrary/api-docs_ in your web browser.
