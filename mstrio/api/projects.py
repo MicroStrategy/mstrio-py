@@ -8,7 +8,6 @@ def projects(connection, verbose=False):
     :param verbose: Verbosity of request response; defaults to False
     :return: Complete HTTP response object
     """
-
     # check connection object
     if not hasattr(connection, 'auth_token'):
         print("Error: connection object does not contain 'auth_token'")
@@ -17,9 +16,7 @@ def projects(connection, verbose=False):
     if not hasattr(connection, 'cookies'):
         print("Error: connection object does not contain 'cookies'")
 
-    response = requests.get(url=connection.base_url + '/projects',
-                            headers={'X-MSTR-AuthToken': connection.auth_token},
-                            cookies=connection.cookies, verify=connection.ssl_verify)
+    response = requests.get(url=connection.base_url + '/projects', **connection.conn_params)
     if verbose:
         print(response.url)
 

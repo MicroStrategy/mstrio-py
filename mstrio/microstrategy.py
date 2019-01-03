@@ -16,6 +16,7 @@ class Connection:
     auth_token = None
     cookies = None
     project_id = None
+    conn_params = {} # Common parameters to be injected into every requests.get/post call
 
     def __init__(self, base_url=None, username=None, password=None, project_name=None, login_mode=1, ssl_verify=True):
         """
@@ -51,7 +52,12 @@ class Connection:
             print("I-Server Error %s, %s" % (errmsg['code'], errmsg['message']))
         else:
             self.auth_token, self.cookies = response.headers['X-MSTR-AuthToken'], dict(response.cookies)
-
+            self.conn_params = {
+                'headers': {'X-MSTR-AuthToken': self.auth_token},
+                'cookies': self.cookies,
+                'verify': self.ssl_verify
+            }
+            
         # Fetch the list of projects the user has access to
         response = projects.projects(connection=self)
 
@@ -68,6 +74,7 @@ class Connection:
             for _project in _projects:
                 if _project['name'] == self.project_name:  # Enter the desired project name here
                     self.project_id = _project['id']
+                    self.conn_params['headers']['X-MSTR-ProjectID'] = self.project_id
 
     def close(self):
         """Closes a connection with MicroStrategy REST API"""
