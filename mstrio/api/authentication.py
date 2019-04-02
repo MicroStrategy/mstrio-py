@@ -35,6 +35,7 @@ def logout(connection, verbose=False):
     """
     response = requests.post(url=connection.base_url + '/auth/logout',
                              headers={'X-MSTR-AuthToken': connection.auth_token},
+                             cookies=connection.cookies,
                              verify=connection.ssl_verify)
     if verbose:
         print(response.url)
