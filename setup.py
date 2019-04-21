@@ -20,7 +20,7 @@ setup(name='mstrio-py',
           'afernandes@microstrategy.com'
       ],
       install_requires=[
-          'requests',
-          'pandas'
+          'requests>=-2.21.0',
+          'pandas>=0.24.2'
       ]
       )
