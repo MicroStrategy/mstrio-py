@@ -7,6 +7,7 @@ setup(name='mstrio-py',
       description='Python interface for the MicroStrategy REST API',
       license='Apache License 2.0',
       url='https://github.com/MicroStrategy/mstrio-py',
+      python_requires=">=3.6",
       author=[
           'Scott Rigney',
           'Peter Ott',
