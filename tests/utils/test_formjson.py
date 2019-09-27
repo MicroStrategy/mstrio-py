@@ -125,5 +125,6 @@ class TestFormjson(unittest.TestCase):
         created_json = formjson(df=make_df(), table_name='TEST', as_metrics=['id_str'])
         self.assertEquals(created_json, expected_json)
 
+
 if __name__ == '__main__':
     unittest.main()

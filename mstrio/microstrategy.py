@@ -193,7 +193,7 @@ class Connection:
         _df.columns = _df.columns.str.strip()
 
         # Base 64 encoding
-        data_encoded = b64encode(_df.to_json(orient='records').encode('utf-8')).decode('utf-8')
+        data_encoded = b64encode(_df.to_json(orient='records', date_format='iso').encode('utf-8')).decode('utf-8')
 
         # Create the json body string
         column_headers, attribute_list, metric_list = formjson(df=_df,
@@ -244,7 +244,7 @@ class Connection:
         _df.columns = _df.columns.str.strip()
 
         # Base 64 encoding
-        data_encoded = b64encode(_df.to_json(orient='records').encode('utf-8')).decode('utf-8')
+        data_encoded = b64encode(_df.to_json(orient='records', date_format='iso').encode('utf-8')).decode('utf-8')
 
         # Create the json body string
         column_headers, attribute_list, metric_list = formjson(df=_df, table_name=table_name)
