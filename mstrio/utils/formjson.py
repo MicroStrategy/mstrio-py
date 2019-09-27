@@ -3,9 +3,9 @@ def formjson(df, table_name, as_metrics=None, as_attributes=None):
     def _map_data_type(datatype):
         if datatype == 'object':
             return "STRING"
-        elif datatype == 'int64':
+        elif datatype in ['int64', 'int32']:
             return "INTEGER"
-        elif datatype == 'float64':
+        elif datatype in ['float64', 'float32']:
             return "DOUBLE"
         elif datatype == 'bool':
             return "BOOL"
