@@ -45,7 +45,7 @@ Once a dataset has been created, you can update it, too. This is helpful if the 
 The `update_policy` parameter controls the update behavior. Currently supported update operations are `add` (inserts entirely new data), `update` (updates existing data), `upsert` (simultaneously updates existing data and inserts new data), and `replace` (truncates and replaces the data).
 
 ```python
-raw_data = {'name': ['Brian', 'Bob, 'Blake'],
+raw_data = {'name': ['Brian', 'Bob', 'Blake'],
             'age': [41, 27, 34]}
 df = pd.DataFrame(raw_data, columns=['name', 'age'])
 conn.update_dataset(data_frame=df, dataset_id=newDatasetId, table_name='Ages', update_policy='add')
