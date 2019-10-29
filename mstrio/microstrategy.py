@@ -1,77 +1,139 @@
-# Class object for MicroStrategy API connection
-
-# TODO: (1) Create method / param to check if connect is active, uses authentication.sessions()
-# TODO: (2) Create method to select project, call it 'select_project'
-
-import json
-from base64 import b64encode
+# TODO (srigney): Create method to select project, call it 'select_project'
+import warnings
 import pandas as pd
-from mstrio.api import projects, cubes, reports, authentication, datasets
+
+from mstrio.dataset import Dataset
+from mstrio.api import projects, cubes, reports, authentication, misc
 from mstrio.utils.parsejson import parsejson
-from mstrio.utils.formjson import formjson
+from packaging import version
 
 
-class Connection:
+class Connection(object):
+    """Connect to and interact with the MicroStrategy environment.
+
+    Creates a connection object which is used in subsequent requests and manages the user's connection
+    with the MicroStrategy REST and Intelligence Servers.
+
+    # import
+    from mstrio import microstrategy
+
+    # connect to the environment and chosen project
+    conn = microstrategy.Connection(base_url="https://demo.microstrategy.com/MicroStrategyLibrary/api",
+                                    username="username",
+                                    password="password",
+                                    project_name="MicroStrategy Tutorial")
+    conn.connect()
+
+    # disconnect
+    conn.close()
+
+    Attributes:
+        base_url: URL of the MicroStrategy REST API server.
+        username: Username.
+        password: Password.
+        project_name: Name of the connected MicroStrategy Project.
+        project_id: Id of the connected MicroStrategy Project.
+        login_mode: Authentication mode. Standard = 1 (default) or LDAP = 16.
+        ssl_verify: If True (default), verifies the server's SSL certificates with each request.
+    """
 
     auth_token = None
     cookies = None
     project_id = None
+    application_code = 64
+    __VRCH ="11.1.0400"
 
-    def __init__(self, base_url=None, username=None, password=None, project_name=None, login_mode=1, ssl_verify=True):
+    def __init__(self, base_url=None, username=None, password=None, project_name=None, project_id=None,
+                 login_mode=1, ssl_verify=True):
         """
         Establishes a connection with MicroStrategy REST API
 
-        :param base_url: URL of the MicroStrategy REST API server. Typically of the form
-        https://<mstr_env>.com/MicroStrategyLibrary/api
-        :param username: Username
-        :param password: Password
-        :param project_name: Name of the project you intend to connect to. Case-sensitive
-        :param login_mode: Specifies the authentication mode to use. Supported authentication modes are: Standard (1)
-                           (default) or LDAP (16)
-        :param ssl_verify: If True (default), verifies the server's SSL certificates with each request
+        Args:
+            base_url (str, optional): URL of the MicroStrategy REST API server. Typically of the form
+            https://<mstr_env>.com/MicroStrategyLibrary/api
+            username (str, optional): Username
+            password (str, optional): Password
+            project_name (str, optional): Name of the project you intend to connect to.Case-sensitive.
+                            You should provide either Project ID or Project Name.
+            project_id (str, optional): Id of the project you intend to connect to. Case-sensitive.
+                            You should provide either Project ID or Project Name.
+            login_mode (int, optional): Specifies the authentication mode to use. Supported authentication modes are: 
+                            Standard (1) (default) or LDAP (16)
+            ssl_verify (bool, optional): If True (default), verifies the server's SSL certificates with each request
         """
 
         self.base_url = base_url
         self.username = username
         self.password = password
-        self.project_name = project_name
+        if project_id is not None and project_name is not None:
+            raise ValueError("Provide either Project ID or Project Name.")
+        else:
+            self.project_id = project_id
+            self.project_name = project_name
         self.login_mode = login_mode
         self.ssl_verify = ssl_verify
+        self.__web_version = None
+        self.__iserver_version = None
 
     def connect(self):
         """Creates a connection"""
+        if self.__check_version():
+            response = authentication.login(connection=self)
 
-        response = authentication.login(connection=self)
+            if not response.ok:
+                msg = 'Authentication error. Check user credentials or REST API URL and try again.'
+                self.__response_handler(response=response, msg=msg)
+            else:
+                self.auth_token, self.cookies = response.headers['X-MSTR-AuthToken'], dict(response.cookies)
 
-        if not response.ok:
-            # print error message
-            errmsg = json.loads(response.content)
-            print('Authentication error. Check user credentials or REST API URL and try again.')
-            print("HTTP %i %s" % (response.status_code, response.reason))
-            print("I-Server Error %s, %s" % (errmsg['code'], errmsg['message']))
+                # Fetch the list of projects the user has access to
+                response = projects.projects(connection=self)
+
+                if not response.ok:
+                    msg = "Error connecting to project '{}'. Check project name and try again.".format(self.project_name)
+                    self.__response_handler(response=response, msg=msg)
+                else:
+                    # Find which project ID matches the project name provided
+                    _projects = response.json()
+
+                    if self.project_name is not None:
+                        # Find which project ID matches the project name provided
+                        for _project in _projects:
+                            if _project['name'] == self.project_name:  # Enter the desired project name here
+                                self.project_id = _project['id']
+
+                    else:
+                        # Find which project name matches the project ID provided
+                        for _project in _projects:
+                            if _project['id'] == self.project_id:  # Enter the desired project id here
+                                self.project_name = _project['name']
         else:
-            self.auth_token, self.cookies = response.headers['X-MSTR-AuthToken'], dict(response.cookies)
-
-        # Fetch the list of projects the user has access to
-        response = projects.projects(connection=self)
-
-        if not response.ok:
-            # print error message
-            errmsg = json.loads(response.content)
-            print('Error connecting to project %s. Check project name and try again.' % self.project_name)
-            print("HTTP %i %s" % (response.status_code, response.reason))
-            print("I-Server Error %s, %s" % (errmsg['code'], errmsg['message']))
-        else:
-            _projects = response.json()
-
-            # Find which project ID matches the project name provided
-            for _project in _projects:
-                if _project['name'] == self.project_name:  # Enter the desired project name here
-                    self.project_id = _project['id']
+            print("""
+            This version of mstrio is only supported on MicroStrategy 11.1.0400 or higher.
+            Current Intelligence Server version: {}
+            Current MicroStrategy Web version: {}
+            """.format(self.__iserver_version,self.__web_version))
+            raise VersionException('MicroStrategy Version not supported.')
 
     def close(self):
         """Closes a connection with MicroStrategy REST API"""
         authentication.logout(connection=self)
+
+    def __check_version(self):
+        """Checks version of I-Server and MicroStrategy Web"""
+        response = misc.server_status(self)
+        if not response.ok:
+            msg = 'Failed to check server status'
+            self.__response_handler(response=response, msg=msg)
+        else:
+            json_response = response.json()
+            self.__iserver_version = json_response["iServerVersion"][:9]
+            self.__web_version = json_response["webVersion"][:9]
+            
+            iserver_version_ok = version.parse(self.__iserver_version) >= version.parse(self.__VRCH)
+            web_version_ok = version.parse(self.__web_version) >= version.parse(self.__VRCH)
+            
+            return iserver_version_ok and web_version_ok
 
     def get_report(self, report_id, offset=0, limit=1000):
         """
@@ -87,16 +149,20 @@ class Connection:
         :return: Pandas Data Frame containing the report contents
         """
 
+        # warning for future deprecation / replacement by Report class
+        warnings.warn(
+            "This method will be deprecated. The Report constructor is preferred.",
+            DeprecationWarning
+        )
+
         response = reports.report_instance(connection=self,
                                            report_id=report_id,
                                            offset=offset,
                                            limit=limit)
+
         if not response.ok:
-            # print error message
-            errmsg = json.loads(response.content)
-            print('Error getting report contents.')
-            print("HTTP %i %s" % (response.status_code, response.reason))
-            print("I-Server Error %s, %s" % (errmsg['code'], errmsg['message']))
+            msg = "Error getting report contents."
+            self.__response_handler(response=response, msg=msg)
         else:
             json_response = response.json()
             instance_id = json_response['instanceId']
@@ -136,14 +202,17 @@ class Connection:
         :return: Pandas Data Frame containing the cube contents
         """
 
+        # warning for future deprecation / replacement by Cube class
+        warnings.warn(
+            "This method will be deprecated. The Cube constructor is preferred and supports multi-table data.",
+            DeprecationWarning
+        )
+
         response = cubes.cube_instance(connection=self, cube_id=cube_id, offset=offset, limit=limit)
 
         if not response.ok:
-            # print error message
-            errmsg = json.loads(response.content)
-            print('Error getting cube contents.')
-            print("HTTP %i %s" % (response.status_code, response.reason))
-            print("I-Server Error %s, %s" % (errmsg['code'], errmsg['message']))
+            msg = "Error getting cube contents."
+            self.__response_handler(response=response, msg=msg)
         else:
             json_response = response.json()
             instance_id = json_response['instanceId']
@@ -169,7 +238,7 @@ class Connection:
             else:
                 return parsejson(response=json_response)
 
-    def create_dataset(self, data_frame, dataset_name, table_name, to_metric=None, to_attribute=None):
+    def create_dataset(self, data_frame, dataset_name, table_name, to_metric=None, to_attribute=None, folder_id=None):
         """
         Create an in-memory MicroStrategy dataset from a Pandas Data Frame
 
@@ -183,48 +252,40 @@ class Connection:
         the corresponding column name as \code{to_metric=c('myStringIntegers')}
         :param to_attribute: (optional) Logical opposite of to_metric. Helpful for formatting an integer-based row
         identifier as a primary key in the dataset
+        :param folder_id: (optional) ID of the shared folder that the dataset should be created within. If `None`,
+            defaults to the user's My Reports folder.
         :return: Unique identifiers of the dataset and table within the newly created dataset. Required for
         update_dataset()
         """
+
+        # warning for future deprecation / replacement by Datasets class
+        warnings.warn(
+            "This method will be deprecated. The Dataset constructor is preferred and supports multi-table data.",
+            DeprecationWarning
+        )
 
         # Replace any leading/trailing whitespace in df names, replace '.' with '_'
         _df = data_frame.copy()
         _df.columns = _df.columns.str.replace(".", "_")
         _df.columns = _df.columns.str.strip()
 
-        # Base 64 encoding
-        data_encoded = b64encode(_df.to_json(orient='records', date_format='iso').encode('utf-8')).decode('utf-8')
-
-        # Create the json body string
-        column_headers, attribute_list, metric_list = formjson(df=_df,
-                                                               table_name=table_name,
-                                                               as_metrics=to_metric,
-                                                               as_attributes=to_attribute)
-
-        json_body = json.loads(json.dumps({'name': dataset_name,
-                                           'tables': [{'name': table_name,
-                                                       'columnHeaders': column_headers,
-                                                       'data': data_encoded}],
-                                           'attributes': attribute_list,
-                                           'metrics': metric_list}))
-
-        # Create dataset
-        response = datasets.create_dataset(connection=self, json_body=json_body)
-        if not response.ok:
-            # print error message
-            errmsg = json.loads(response.content)
-            print('Error creating the dataset.')
-            print("HTTP %i %s" % (response.status_code, response.reason))
-            print("I-Server Error %s, %s" % (errmsg['code'], errmsg['message']))
-
+        if folder_id is None:
+            folder_id = ""
         else:
-            json_response = response.json()
-            _dataset_id, _table_id = json_response['datasetId'], json_response['tables'][0]['id']
-            return _dataset_id, _table_id
+            folder_id = folder_id
 
-    def update_dataset(self, data_frame, dataset_id, table_name, update_policy, table_id=None):
+        # create dataset instance
+        ds = Dataset(connection=self, name=dataset_name)
 
-        # TODO: Support for table_id and/or table_name (10.11 defect)
+        # add table to the dataset
+        ds.add_table(name=table_name, data_frame=_df, update_policy='add', to_metric=to_metric, to_attribute=to_attribute)
+
+        # publish the dataset
+        ds.create(folder_id=folder_id)
+
+        return ds.dataset_id
+
+    def update_dataset(self, data_frame, dataset_id, table_name, update_policy):
 
         """
         Update a previously created dataset with an Pandas Data Frame
@@ -232,34 +293,55 @@ class Connection:
         :param data_frame: Pandas Data Frame to use to update an in-memory dataset
         :param dataset_id: Identifier of the dataset to update, provided by create_dataset()
         :param table_name: Name of the table to update within the dataset
-        :param table_id: Not used
         :param update_policy: Update operation to perform. One of 'add' (inserts new, unique rows), 'update'
         (updates data in existing rows and columns), 'upsert' (updates existing
         data and inserts new rows), 'replace' (similar to truncate and load, replaces the existing data with new data)
         """
+
+        # warning for future deprecation / replacement by Datasets class
+        warnings.warn(
+            "This method will be deprecated. The Dataset constructor is preferred and supports multi-table data.",
+            DeprecationWarning
+        )
 
         # Replace any leading/trailing whitespace in df names, replace '.' with '_'
         _df = data_frame.copy()
         _df.columns = _df.columns.str.replace(".", "_")
         _df.columns = _df.columns.str.strip()
 
-        # Base 64 encoding
-        data_encoded = b64encode(_df.to_json(orient='records', date_format='iso').encode('utf-8')).decode('utf-8')
+        # create dataset instance, add table, then publish the updates to the dataset
+        ds = Dataset(connection=self, dataset_id=dataset_id)
+        ds.add_table(name=table_name, data_frame=_df, update_policy=update_policy)
+        ds.update()
+        ds.publish()
 
-        # Create the json body string
-        column_headers, attribute_list, metric_list = formjson(df=_df, table_name=table_name)
+    def renew(self):
+        """Checks if the session is still alive. If so, renews the session and extends session expiration."""
+        response = authentication.sessions(connection=self)
 
-        # Pass json body to request handler
-        json_body = json.loads(json.dumps({'name': table_name,
-                                           'columnHeaders': column_headers,
-                                           'data': data_encoded}))
-
-        response = datasets.update_dataset(connection=self, dataset_id=dataset_id,
-                                           table_name=table_name, update_policy=update_policy,
-                                           json_body=json_body)
         if not response.ok:
-            # print error message
-            errmsg = json.loads(response.content)
-            print('Error updating the data set. Check for data type inconsistencies.')
-            print("HTTP %i %s" % (response.status_code, response.reason))
-            print("I-Server Error %s, %s" % (errmsg['code'], errmsg['message']))
+            msg = "Session expired. Please reconnect to MicroStrategy."
+            self.__response_handler(response=response, msg=msg)
+        else:
+            print("MicroStrategy connection was renewed.")
+
+    @staticmethod
+    def __response_handler(response, msg):
+        """Generic error message handler for transactions against datasets.
+
+        Args:
+            response: Response object returned by HTTP request.
+            msg (str): Message to print in addition to any server-generated error message(s).
+
+        """
+
+        if response.status_code == 204:
+            warnings.warn(
+                '204 No Content: The server successfully processed the request and is not returning any content.')
+        else:
+            res = response.json()
+            print("I-Server Error %s, %s" % (res['code'], res['message']))
+            response.raise_for_status()
+
+class VersionException(Exception):
+    pass

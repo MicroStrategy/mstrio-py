@@ -24,7 +24,7 @@ class TestDatasets(unittest.TestCase):
 
         mock_post.return_value.status_code = 200
 
-        response = datasets.create_dataset(conn, json_body=JSON_BODY)
+        response = datasets.create_dataset(conn, body=JSON_BODY)
 
         self.assertEqual(response.status_code, 200)
 
@@ -37,7 +37,18 @@ class TestDatasets(unittest.TestCase):
         mock_patch.return_value.status_code = 200
 
         response = datasets.update_dataset(conn, dataset_id=DATASET_ID, table_name=TABLE_NAME,
-                                           update_policy=UPDATE_POLICY, json_body=JSON_BODY)
+                                           update_policy=UPDATE_POLICY, body=JSON_BODY)
+
+        self.assertEqual(response.status_code, 200)
+
+    @patch('mstrio.api.datasets.requests.delete')
+    def test_delete_dataset(self, mock_delete):
+        conn = microstrategy.Connection(base_url=BASE_URL, username=USERNAME,
+                                        password=PASSWORD, project_name=PROJECT_NAME)
+
+        mock_delete.return_value.status_code = 200
+
+        response = datasets.delete_dataset(conn, dataset_id=DATASET_ID)
 
         self.assertEqual(response.status_code, 200)
 

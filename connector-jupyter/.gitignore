@@ -1,0 +1,5 @@
+production/mstr_jupyter/__pycache__
+production/mstr_jupyter.egg-info
+.ipynb
+/.ipynb_checkpoints/
+.vscode

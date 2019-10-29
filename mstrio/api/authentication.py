@@ -3,7 +3,7 @@ import requests
 
 def login(connection, verbose=False):
     """
-    Authenticate a user and create an HTTP session on the web server where the user's MicroStrategy sessions are stored.
+    Authenticate a user and create an HTTP session on the web server where the user’s MicroStrategy sessions are stored.
     This request returns an authorization token (X-MSTR-AuthToken) which will be submitted with subsequent requests.
     The body of the request contains the information needed to create the session. The loginMode parameter in the body
     specifies the authentication mode to use. You can authenticate with one of the following authentication modes:
@@ -18,7 +18,8 @@ def login(connection, verbose=False):
     response = requests.post(url=connection.base_url + '/auth/login',
                              data={'username': connection.username,
                                    'password': connection.password,
-                                   'loginMode': connection.login_mode},
+                                   'loginMode': connection.login_mode,
+                                   'applicationType': connection.application_code},
                              verify=connection.ssl_verify)
     if verbose:
         print(response.url)
