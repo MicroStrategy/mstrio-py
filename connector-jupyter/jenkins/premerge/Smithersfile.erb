@@ -1,0 +1,33 @@
+job 'stage-0-premerge' do
+
+  description 'the first stage in the pipeline
+designed to complete quickly, < 10 mins
+produces and publishes a versioned deployment package'
+
+  configure_common_items{}
+
+  assigned_node_string '<%= @slave_label %>'
+
+  concurrent_build true
+
+  triggers do
+    pull_request_builder do
+      trigger_phrase 'ecosystem test'
+      commit_status_context 'ecosystem-premerge-test'
+    end
+  end
+
+  builders do
+    bash do
+      script '#!/usr/bin/env bash
+set +xe
+export PATH=/usr/local/sbin:/usr/local/bin:$PATH
+export WORKSPACE_SETTING=aws_dev
+
+source .ecosystem
+
+rake build
+'
+    end
+  end
+end

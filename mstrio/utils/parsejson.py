@@ -29,7 +29,10 @@ def parsejson(response):
         return [j[n]['name'] for n in range(len(j))]
 
     def _get_metrics(node):
-        _metrics = [node['metrics'][_key]['rv'] for _key in node['metrics']]
+        if 'metrics' in node.keys():
+            _metrics = [node['metrics'][_key]['rv'] for _key in node['metrics']]
+        else:
+            _metrics = []  # in the case of a report with no metrics in it, return an empty list
         return _metrics
 
     def _parse_node(node):
@@ -42,6 +45,10 @@ def parsejson(response):
         else:
             _data.append(_get_metrics(node=node))
         return _data
+
+    # if the response['result']['data']['root'] is None return None
+    if response['result']['data']['root'] is None:
+        return None
 
     attribute_names = _get_attribute_names(response)
     metric_names = _get_metric_names(response)
@@ -63,6 +70,11 @@ def parsejson(response):
     df_data = []
     for att, met in zip(attrs, metrs):
         df_data.append(att + met)
+
+    # add metrics to df_data when attrs is empty and metrs is a single row of values
+    if not attrs and metrs:
+        [metric_values] = metrs
+        df_data.append(metric_values)
 
     df = pd.DataFrame(df_data, columns=attribute_names + metric_names)
 

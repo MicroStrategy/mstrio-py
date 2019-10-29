@@ -1,6 +1,5 @@
 import json
 import unittest
-
 from mstrio.utils.parsejson import parsejson
 
 
@@ -10,7 +9,7 @@ def get_response():
     return response
 
 
-class TestFormjson(unittest.TestCase):
+class TestParsejson(unittest.TestCase):
 
     def test_parsejson_columns(self):
         test_df = parsejson(response=get_response())

@@ -1,0 +1,55 @@
+job 'stage-1-dev' do
+  description 'The first stage in the pipeline:
+designed to complete quickly -- < 10 mins --
+and publish a versioned deployment package'
+
+  configure_common_items{}
+
+  assigned_node_string '<%= @slave_label %>'
+
+  triggers do
+    github_push do
+    end
+  end
+
+  builders do
+    bash do
+      script '#!/usr/bin/env bash
+set +xe
+
+export PATH=/usr/local/sbin:/usr/local/bin:$PATH
+
+export WORKSPACE_SETTING=aws_dev
+source .ecosystem
+
+rake build
+rake update_dep_db_from_file
+'
+    end
+  end
+
+  publishers do
+    junit do
+    end
+
+    cobertura do
+    end
+
+    cucumber do
+      file_include_pattern 'prepush_test.json'
+    end
+
+    html do
+      report_name 'Vagrant Logs'
+      report_directory_path "deploy/vagrant/aws/dev/logs"
+      index_file_name 'index.html'
+    end
+
+    parameterized_trigger do
+      job_short_names %w{
+        stage-2-regression-test
+      }
+    end
+  end
+
+end
