@@ -1,0 +1,12 @@
+Vagrant::Project.configure(:virtualbox) do |env|
+  connector_jupyter_centos :connector_jupyter_centos do
+
+    provider{
+      network{
+        ip_address "10.62.78.100"
+      }
+      memory '480'
+    }
+  
+  end
+end

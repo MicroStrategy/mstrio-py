@@ -1,0 +1,14 @@
+gradle_version = '<%= version %>'
+
+case gradle_version
+when '2.13'
+  gradle_checksum = '01078159f79fbe09fc006b040886423d8736dae8'
+else
+  Chef::Application.fatal!("this Gradle version is not supported, please contact DevOps to add it.")
+end
+
+node.override[:gradle].deep_merge!(
+  source: "https://nexus.internal.microstrategy.com:8443/repositories/filerepo/org/gradle/gradle/#{gradle_version}/gradle-#{gradle_version}-bin.zip",
+  checksum: gradle_checksum,
+  version: gradle_version
+)
