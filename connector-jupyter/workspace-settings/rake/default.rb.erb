@@ -1,6 +1,0 @@
-require 'compiler/maven'
-
-Compiler::Maven.artifact_info(
-  artifact_file_extension: "<%= artifact_extension %>",
-  output_dir: "#{$WORKSPACE_SETTINGS[:paths][:project][:production][:home]}/.build",
-)

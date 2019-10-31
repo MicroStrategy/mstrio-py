@@ -1,5 +1,0 @@
-Vagrant::Project.configure(:aws) do |env|
-  connector_jupyter_centos :"connector_jupyter_centos_#{Git.branch_name}_demo" do
-
-  end
-end

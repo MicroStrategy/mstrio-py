@@ -1,4 +1,0 @@
-file_path = ENV['ECOSYSTEM_ROOT_BUNDLE_GEMFILE']
-self.instance_eval(File.read(file_path), file_path, 1)
-
-# add more gems here:

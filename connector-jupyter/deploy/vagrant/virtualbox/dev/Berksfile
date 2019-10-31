@@ -1,1 +1,0 @@
-cookbook_from_git 'chef_commons', '1.1.11'
