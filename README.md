@@ -31,8 +31,8 @@ pip3 install mstrio-py
 ```
 ### Enabling the Jupyter Notebook extension
 ```
-jupyter-nbextension install mstr_jupyter --py --sys-prefix
-jupyter-nbextension enable mstr_jupyter --py --sys-prefix
+jupyter-nbextension install connector-jupyter --py --sys-prefix
+jupyter-nbextension enable connector-jupyter --py --sys-prefix
 ```
 
 ## Versioning
