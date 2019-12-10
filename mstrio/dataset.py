@@ -50,17 +50,17 @@ class Dataset:
                                    msg="Dataset description should be <= {} characters.".format(self.__MAX_DESC_LEN),
                                    length=self.__MAX_DESC_LEN)
         self._desc = description
-
-        if dataset_id is not None:
-            self.__check_param_str(dataset_id, "Dataset ID should be a string.")
-        self._dataset_id = dataset_id
-
         self._connection = connection
         self._tables = []
         self._definition = None
         self._session_id = None
         self._folder_id = None
         self.__upload_body = None
+        self._dataset_id = None
+
+        if dataset_id is not None:
+            self.__check_param_str(dataset_id, "Dataset ID should be a string.")
+            self.__load_definition()
 
     def add_table(self, name, data_frame, update_policy, to_metric=None, to_attribute=None):
         """Add a Pandas DataFrame to a collection of tables which are later used to update the MicroStrategy dataset.

@@ -19,6 +19,11 @@ function python_code_for_credentials(user, password) {
 }
 
 function python_code_for_import(env, name, ds_type, ds_id, project_id, body, login_mode) {
+    var py_body = ``+
+      `attributes = ${(body.attributes.length > 0 ? JSON.stringify(body.attributes) : 'None')}, `+
+      `metrics = ${(body.metrics.length > 0 ? JSON.stringify(body.metrics) : 'None')}, `+
+      `attr_elements = ${(body.filters.length > 0 ? JSON.stringify(body.filters) : 'None')}`;
+
     var code =
     `# code importing ${name} from MicroStrategy\n\n` +
     `from mstrio.microstrategy import Connection \n` +
@@ -30,7 +35,7 @@ function python_code_for_import(env, name, ds_type, ds_id, project_id, body, log
     `conn = Connection(base_url, mstr_username, mstr_password, project_id=project_id, login_mode=login_mode)\n` + 
     `conn.connect()\n\n` +
     `${name} = ${ds_type.charAt(0).toUpperCase() + ds_type.slice(1)}(conn, '${ds_id}')\n` +
-    `${name}.apply_filters(${body})\n` + 
+    `${name}.apply_filters(${py_body})\n` + 
     `${name}.to_dataframe()\n` + 
     `${name}_df = ${name}.dataframe\n` +
     `${name}_df`;
@@ -39,6 +44,11 @@ function python_code_for_import(env, name, ds_type, ds_id, project_id, body, log
 }
 
 function python_code_for_import_with_credentials_input(env, name, ds_type, ds_id, project_id, body, login_mode) {
+  var py_body = ``+
+    `attributes = ${(body.attributes.length > 0 ? JSON.stringify(body.attributes) : 'None')}, `+
+    `metrics = ${(body.metrics.length > 0 ? JSON.stringify(body.metrics) : 'None')}, `+
+    `attr_elements = ${(body.filters.length > 0 ? JSON.stringify(body.filters) : 'None')}`;
+
   var code =
   `# code importing ${name} from MicroStrategy\n\n` +
   `from mstrio.microstrategy import Connection \n` +
@@ -53,7 +63,7 @@ function python_code_for_import_with_credentials_input(env, name, ds_type, ds_id
   `conn = Connection(base_url, mstr_username, mstr_password, project_id=project_id, login_mode=login_mode)\n` + 
   `conn.connect()\n\n` +
   `${name} = ${ds_type.charAt(0).toUpperCase() + ds_type.slice(1)}(conn, '${ds_id}')\n` +
-  `${name}.apply_filters(${body})\n` + 
+  `${name}.apply_filters(${py_body})\n` + 
   `${name}.to_dataframe()\n` +
   `${name}_df = ${name}.dataframe\n\n` +
   `${name}_df`;

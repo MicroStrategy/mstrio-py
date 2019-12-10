@@ -35,6 +35,32 @@ class TestCube(unittest.TestCase):
                                     'dataType': 'Char',
                                     'baseFormCategory': 'ID',
                                     'baseFormType': 'Text'}]}]}}}}
+        self.__ds_definition = {
+            'result': {
+                'definition': {
+                    'availableObjects': {
+                        'tables': [
+                            {
+                            'name': 'table1',
+                            'columns': ['Age']
+                            },
+                            {
+                                'name': 'table2',
+                                'columns': ['Name']
+                            }],
+                        'columns': [
+                            {
+                            'columnName': 'Age',
+                            'tableName': 'table1'
+                            },
+                            {
+                                'columnName': 'Name',
+                                'tableName': 'table2'
+                            }]
+                    }
+                }
+            }
+        }
         self.__instance = {'id': '08A0D88011E9CA4D00000080EFE555B9',
                             'name': 'df2',
                             'status': 1,
@@ -143,7 +169,6 @@ class TestCube(unittest.TestCase):
 
         self.assertTrue(mock_info.called)
         self.assertTrue(mock_definition.called)
-        self.assertTrue(mock_attr_element.called)
 
         self.assertEqual(cube._connection, self.connection)
         self.assertEqual(cube._cube_id, self.cube_id)
@@ -157,12 +182,7 @@ class TestCube(unittest.TestCase):
         self.assertEqual(cube.attributes, [{'name': 'Name', 'id': '089FC10C11E9CA4D39700080EF15B5B9'}])
         self.assertEqual(cube.metrics, [{'name': 'Age', 'id': '089FB58611E9CA4D39700080EF15B5B9'},
                                         {'name': 'Row Count - table1', 'id': '089DE7BA11E9CA4D085B0080EFC515B9'}])
-        self.assertEqual(cube.attr_elements, [{'attribute_name': 'Name',
-                                        'attribute_id': '089FC10C11E9CA4D39700080EF15B5B9','elements': [
-                                        {'id': '089FC10C11E9CA4D39700080EF15B5B9:jack','formValues': ['jack']},
-                                        {'id': '089FC10C11E9CA4D39700080EF15B5B9:krish', 'formValues': ['krish']},
-                                        {'id': '089FC10C11E9CA4D39700080EF15B5B9:nick', 'formValues': ['nick']},
-                                        {'id': '089FC10C11E9CA4D39700080EF15B5B9:Tom', 'formValues': ['Tom']}]}])
+        self.assertEqual(cube.attr_elements, [])
 
         self.assertIsNone(cube.selected_attributes)
         self.assertIsNone(cube.selected_metrics)
@@ -187,14 +207,21 @@ class TestCube(unittest.TestCase):
         cube = Cube(connection=self.connection, cube_id=self.cube_id)
         cube.apply_filters(self.__selected_attr, self.__selected_metrs, self.__selected_elem)
 
+        self.assertTrue(mock_attr_element.called)
         self.assertEqual(cube.selected_attributes, self.__selected_attr)
         self.assertEqual(cube.selected_metrics, self.__selected_metrs)
         self.assertEqual(cube.selected_attr_elements, self.__selected_elem)
 
         cube.clear_filters()
         cube.apply_filters(attributes=[], metrics=[])
-        self.assertEqual(cube.selected_attributes, [])
-        self.assertEqual(cube.selected_metrics, [])
+        self.assertEqual(cube.attr_elements, [{'attribute_name': 'Name',
+                                        'attribute_id': '089FC10C11E9CA4D39700080EF15B5B9','elements': [
+                                        {'id': '089FC10C11E9CA4D39700080EF15B5B9:jack','formValues': ['jack']},
+                                        {'id': '089FC10C11E9CA4D39700080EF15B5B9:krish', 'formValues': ['krish']},
+                                        {'id': '089FC10C11E9CA4D39700080EF15B5B9:nick', 'formValues': ['nick']},
+                                        {'id': '089FC10C11E9CA4D39700080EF15B5B9:Tom', 'formValues': ['Tom']}]}])
+        self.assertEqual(cube.selected_attributes, None)
+        self.assertEqual(cube.selected_metrics, None)
 
     @patch('mstrio.api.cubes.cube_single_attribute_elements')
     @patch('mstrio.api.cubes.cube')
@@ -252,6 +279,40 @@ class TestCube(unittest.TestCase):
         self.assertIsInstance(cube.dataframe, pandas.core.frame.DataFrame)
         self.assertTrue(df.equals(self.__dataframe))
 
+    @patch('mstrio.api.cubes.cube_instance_id')
+    @patch('mstrio.api.cubes.cube_instance')
+    @patch('mstrio.api.cubes.cube_single_attribute_elements')
+    @patch('mstrio.api.cubes.cube')
+    @patch('mstrio.api.cubes.cube_info')
+    @patch('mstrio.api.datasets.dataset_definition')
+    def test_to_dataframe_multi_data_frame_true(self, mock_ds_definition, mock_info, mock_definition, mock_attr_element,
+                                                mock_instance, mock_instance_id):
+        mock_ds_definition.return_value = Mock(ok=True)
+        mock_ds_definition.return_value.json.return_value = self.__ds_definition
+        mock_info.return_value = Mock(ok=True)
+        mock_info.return_value.json.return_value = self.__info
+        mock_definition.return_value = Mock(ok=True)
+        mock_definition.return_value.json.return_value = self.__definition
+        mock_attr_element.return_value = Mock(ok=True, headers=self.__headers)
+        mock_attr_element.return_value.json.return_value = self.__attr_elements
+        mock_instance.return_value = Mock(ok=True)
+        mock_instance.return_value.json.return_value = self.__instance
+        mock_instance_id.return_value = Mock(ok=True)
+        mock_instance_id.return_value.json.return_value = self.__instance_id
+
+        cube = Cube(connection=self.connection, cube_id=self.cube_id)
+        dfs = cube.to_dataframe(limit=2, multi_df=True)
+
+        self.assertTrue(mock_instance.called)
+        self.assertTrue(mock_instance_id.called)
+        self.assertIsInstance(dfs, list)
+        self.assertIsInstance(cube.dataframe, pandas.core.frame.DataFrame)
+        self.assertTrue(cube.dataframe.equals(self.__dataframe))
+        for i, df in enumerate(dfs):
+            colnames = self.__ds_definition['result']['definition']['availableObjects']['tables'][i]['columns']
+            self.assertIsInstance(df, pandas.core.frame.DataFrame)
+            self.assertTrue(df.equals(self.__dataframe[colnames]))
+
     @patch('mstrio.api.cubes.cube_single_attribute_elements')
     @patch('mstrio.api.cubes.cube')
     @patch('mstrio.api.cubes.cube_info')
@@ -293,7 +354,7 @@ class TestCube(unittest.TestCase):
 
         self.assertEqual(cube.selected_attributes, self.__selected_attr)
         self.assertEqual(cube.selected_metrics, self.__selected_metrs)
-        self.assertEqual(cube.selected_attr_elements, self.__selected_elem)
+        self.assertEqual(cube.selected_attr_elements, self.__selected_elem[:1])
 
     @patch('mstrio.api.cubes.cube_single_attribute_elements')
     @patch('mstrio.api.cubes.cube')
@@ -310,6 +371,55 @@ class TestCube(unittest.TestCase):
 
         cube = Cube(connection=self.connection, cube_id=self.cube_id)
         self.assertRaises(ValueError, cube.apply_filters, attributes='INV123456')
+
+    @patch('mstrio.api.datasets.dataset_definition')
+    @patch('mstrio.api.cubes.cube')
+    @patch('mstrio.api.cubes.cube_info')
+    def test_multitable_definition(self, mock_info, mock_definition, mock_ds_definition):
+        """Test that multitable definition function returns proper dictionary."""
+        
+        __definition = {'id': '3D6D912611E9F40400000080EF3580D0',
+                        'name': 'IRIS',
+                        'result': {'definition': {'availableObjects': {'tables': [{'id': 'F256FBE616DFD979E7548694E3363106',
+                        'name': 'IRIS',
+                        'type': 15},
+                        {'id': 'F256FBE616DFD979E7548694E3363109',
+                        'name': 'IRIS2',
+                        'type': 15}],
+                        'columns': [{'tableId': 'F256FBE616DFD979E7548694E3363106',
+                        'tableName': 'IRIS',
+                        'columnId': '0621CC6C11E9F65400000080EF35AAE7',
+                        'columnName': 'Id',
+                        'dataType': 33,
+                        'precision': 0,
+                        'scale': 0},
+                        {'tableId': 'F256FBE616DFD979E7548694E3363106',
+                        'tableName': 'IRIS',
+                        'columnId': '0621CF3C11E9F65400000080EF35AAE7',
+                        'columnName': 'PetalWidthCm',
+                        'dataType': 33,
+                        'precision': 0,
+                        'scale': 0},
+                        {'tableId': 'F256FBE616DFD979E7548694E3363109',
+                        'tableName': 'IRIS2',
+                        'columnId': '0621D0EA11E9F65400000080EF35AAE7',
+                        'columnName': 'SepalWidthCm',
+                        'dataType': 33,
+                        'precision': 0,
+                        'scale': 0}]}}}}
+
+        __returned_dictionary = {
+                                'IRIS': ['Id','PetalWidthCm'],
+                                'IRIS2': ['SepalWidthCm']}
+
+        mock_ds_definition.return_value = Mock(ok=True)
+        mock_ds_definition.return_value.json.return_value = __definition
+
+        cube = Cube(connection=self.connection, cube_id=self.cube_id)
+        cube._Cube__multitable_definition()
+        self.assertEqual(cube.table_definition,__returned_dictionary)
+        
+
 
 if __name__ == '__main__':
     unittest.main()

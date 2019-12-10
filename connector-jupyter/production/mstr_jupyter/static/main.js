@@ -68,7 +68,6 @@ define(["jquery", "base/js/namespace", "base/js/dialog"], function(
         case "conn_load":
           var iframe_document = document.getElementById("mstr_iframe").contentWindow.document;
           appendHead("iframe_style.css", iframe_document);
-         
           mstr_envs_LocalStorage = localStorage.getItem("mstr_envs");
           mstr_projs_LocalStorage = localStorage.getItem("mstr_projs");
           mstr_props_LocalStorage = localStorage.getItem("mstr_props");
@@ -138,6 +137,12 @@ define(["jquery", "base/js/namespace", "base/js/dialog"], function(
           changeSize(e.value, modal_dialog[0]);
 
           current_mode = e.value;
+
+          if (current_mode === 'authentication') {
+            var iframe_document = document.getElementById("mstr_iframe").contentWindow.document;
+            var h1 = iframe_document.querySelector('h1');
+            h1.focus()
+          }
           break;
 
         case "export_mode":

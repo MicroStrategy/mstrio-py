@@ -38,12 +38,14 @@ class TestEncoder(unittest.TestCase):
     def test_single_table_encoding(self):
         # Test validity of encoding for single-table
         enc = Encoder(data_frame=make_df(), dataset_type='single')
+        enc.encode
         df = pd.DataFrame(json.loads(b64decode(enc._Encoder__b64_data)))
         self.assertEqual(df.salary.sum(), 560000)
 
     def test_multi_table_encoding(self):
         # Test validity of encoding of multi-table
         enc = Encoder(data_frame=make_df(), dataset_type='multi')
+        enc.encode
         df = pd.DataFrame(json.loads(b64decode(enc._Encoder__b64_data)),
                           columns=["id_int", "id_str", "first_name",
                                    "last_name", "age", "weight", "state", "salary"])

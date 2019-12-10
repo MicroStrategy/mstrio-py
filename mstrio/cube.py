@@ -41,12 +41,13 @@ class Cube:
 
         # load attribute elements
         self.__OFFSET = 0
-        self.__attr_elements()
+        self._attr_elements = []
 
         self._filter = Filter(attributes=self._attributes, metrics=self._metrics, attr_elements=self._attr_elements)
 
         self._dataframe = None
         self._dataframes = []
+        self._table_definition = {}
         init_pbar.close()
 
     def to_dataframe(self, limit=25000, progress_bar=True, multi_df=False):
@@ -116,32 +117,17 @@ class Cube:
             else:
                 # otherwise parse the first result and return it as a dataframe
                 self._dataframe = parsejson(response=_instance)
-
-            # split dataframe to dataframes matching tables in Cube  
-            _tables = self.multitable_definition()
+            
             if multi_df:
-                self._dataframes = [self._dataframe[columns].copy() for _, columns in _tables.items()]
+                # save the multitable_definition response to the instance
+                self.__multitable_definition()
+
+                # split dataframe to dataframes matching tables in Cube
+                self._dataframes = [self._dataframe[columns].copy() for _, columns in self._table_definition.items()]
+
                 return self._dataframes
             else:
                 return self._dataframe
-
-    def multitable_definition(self):
-        """
-        Return all tables names and collumns as a dictionary
-        """
-        res_tables = datasets.dataset_definition(connection=self._connection,
-                                                    dataset_id=self._cube_id,
-                                                    fields=['tables', 'columns'])
-        _ds_definition = res_tables.json()
-      
-        _columns_tables={}
-        for table in _ds_definition['result']['definition']['availableObjects']['tables']:
-            _column_list = []
-            for column in _ds_definition['result']['definition']['availableObjects']['columns']:
-                if(table['name']==column['tableName']):
-                    _column_list.append(column['columnName'])
-            _columns_tables[table['name']]=_column_list
-        return _columns_tables
 
     def apply_filters(self, attributes=None, metrics=None, attr_elements=None):
         """
@@ -153,26 +139,49 @@ class Cube:
             metrics (list, optional): ids of metrics to be included in the filter.
             attr_elements (list, optional): attributes' elements to be included in the filter.
         """
+        if any([attributes, metrics, attr_elements]):
+            if not self._attr_elements and attr_elements:
+                self.__attr_elements()
 
-        if attributes:
-            self._filter.select(object_id=attributes)
+            if self._attr_elements and not self._filter.attr_elems:
+                self._filter = Filter(attributes=self._attributes, metrics=self._metrics,
+                                      attr_elements=self._attr_elements)
 
-        if attributes == []:
-            self._filter.attr_selected = []
+            if attributes:
+                self._filter.select(object_id=attributes)
 
-        if metrics:
-            self._filter.select(object_id=metrics)
+            if attributes == []:
+                self._filter.attr_selected = []
 
-        if metrics == []:
-            self._filter.metr_selected = []
+            if metrics:
+                self._filter.select(object_id=metrics)
 
-        if attr_elements is not None:
-            self._filter.select(object_id=attr_elements)
+            if metrics == []:
+                self._filter.metr_selected = []
+
+            if attr_elements is not None:
+                self._filter.select(object_id=attr_elements)
 
     def clear_filters(self):
         """Clear previously set filters, allowing all attributes, metrics, and attribute elements to be retrieved."""
 
         self._filter.clear()
+
+    def __multitable_definition(self):
+        """
+        Return all tables names and collumns as a dictionary
+        """
+        res_tables = datasets.dataset_definition(connection=self._connection,
+                                                 dataset_id=self._cube_id,
+                                                 fields=['tables', 'columns'])
+        _ds_definition = res_tables.json()
+
+        for table in _ds_definition['result']['definition']['availableObjects']['tables']:
+            _column_list = []
+            for column in _ds_definition['result']['definition']['availableObjects']['columns']:
+                if(table['name'] == column['tableName']):
+                    _column_list.append(column['columnName'])
+            self._table_definition[table['name']] = _column_list
 
     def __info(self):
         """Get metadata for specific cubes. Implements GET /cubes to retrieve basic metadata."""
@@ -207,41 +216,50 @@ class Cube:
             self._attributes = [{'name': attr['name'], 'id': attr['id']} for attr in full_attributes]
             self._metrics = [{'name': metr['name'], 'id': metr['id']} for metr in full_metrics]
 
-    def __attr_elements(self, limit=25000):
+    def __attr_elements(self, limit=25000, progress_bar=True):
         """Get attribute elements. Implements GET /cubes/<cube_id>/attributes/<attribute_id>/elements"""
 
         attr_elements = []
         if self._attributes is not None:
+            with tqdm(total=len(self._attributes), disable=(not progress_bar)) as fetch_pbar:
+                if progress_bar:
+                    fetch_pbar.update()
+                    fetch_pbar.set_description("Loading attribute elements")
+                    fetch_pbar.set_postfix(rows=0)
 
-            for attr in self._attributes:
-                # Fetch first chunk of attribute elements.
-                res = cubes.cube_single_attribute_elements(connection=self._connection,
-                                                           cube_id=self._cube_id,
-                                                           attribute_id=attr['id'],
-                                                           offset=self.__OFFSET,
-                                                           limit=limit)
-                if not res.ok:
-                    msg = "Error retrieving attribute '" + attr['name'] + "' elements."
-                    self.__response_handler(response=res, msg=msg)
-                else:
-                    # Get total number of rows from headers.
-                    total = int(res.headers['x-mstr-total-count'])
-                    # Get attribute elements from the response.
-                    elements = res.json()
+                for i_attr, attr in enumerate(self._attributes):
+                    if progress_bar:
+                        fetch_pbar.update()
+                        fetch_pbar.set_description("Loading attribute elements")
+                        fetch_pbar.set_postfix(rows=i_attr)
+                    # Fetch first chunk of attribute elements.
+                    res = cubes.cube_single_attribute_elements(connection=self._connection,
+                                                               cube_id=self._cube_id,
+                                                               attribute_id=attr['id'],
+                                                               offset=self.__OFFSET,
+                                                               limit=limit)
+                    if not res.ok:
+                        msg = "Error retrieving attribute '" + attr['name'] + "' elements."
+                        self.__response_handler(response=res, msg=msg)
+                    else:
+                        # Get total number of rows from headers.
+                        total = int(res.headers['x-mstr-total-count'])
+                        # Get attribute elements from the response.
+                        elements = res.json()
 
-                    # If total number of elements is bigger than the chunk size (limit), fetch them incrementally.
-                    for _offset in range(limit, total, limit):
-                        res = cubes.cube_single_attribute_elements(connection=self._connection,
-                                                                   cube_id=self._cube_id,
-                                                                   attribute_id=attr['id'],
-                                                                   offset=_offset,
-                                                                   limit=limit)
-                        elements.extend(res.json())
+                        # If total number of elements is bigger than the chunk size (limit), fetch them incrementally.
+                        for _offset in range(limit, total, limit):
+                            res = cubes.cube_single_attribute_elements(connection=self._connection,
+                                                                       cube_id=self._cube_id,
+                                                                       attribute_id=attr['id'],
+                                                                       offset=_offset,
+                                                                       limit=limit)
+                            elements.extend(res.json())
 
-                    # Append attribute data to the list of attributes.
-                    attr_elements.append({"attribute_name": attr['name'],
-                                          "attribute_id": attr['id'],
-                                          "elements": elements})
+                        # Append attribute data to the list of attributes.
+                        attr_elements.append({"attribute_name": attr['name'],
+                                              "attribute_id": attr['id'],
+                                              "elements": elements})
 
             self._attr_elements = attr_elements
 
@@ -318,3 +336,7 @@ class Cube:
         if len(self._dataframes) == 0:
             warnings.warn("Dataframes look empty. Make sure the data is valid (default join on i-Server is inner) and then retrieve with Cube.to_dataframe().", Warning, stacklevel=2)
         return self._dataframes
+
+    @property
+    def table_definition(self):
+        return self._table_definition

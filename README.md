@@ -23,24 +23,30 @@ With **mstrio**, it's easy to integrate cross-departmental, trustworthy business
 <!--te-->
 
 ## Installation
-Installation is easy when using [pip][pypi]: (mstrio-py needs to be updated on pypi)
+Installation is easy when using [pip][pypi]. Read more about installation on MicroStrategy's [product documentation][mstr_help_docs].
 
-Install from source:
+#### Install the `mstrio` package
 ```
 pip3 install mstrio-py
 ```
-### Enabling the Jupyter Notebook extension
+#### Enable the Jupyter Notebook extension
 ```
-jupyter-nbextension install mstr_jupyter --py --sys-prefix
-jupyter-nbextension enable mstr_jupyter --py --sys-prefix
+jupyter-nbextension install connector-jupyter --py --sys-prefix
+jupyter nbextension enable connector-jupyter --py --sys-prefix
 ```
 
 ## Versioning
-Functionality may be added to **mstrio** in conjunction with annual MicroStrategy platform releases or through updates to platform releases. To ensure compatibility with APIs supported by your MicroStrategy environment, it is recommended to install a version of **mstrio** that corresponds to the version number of your MicroStrategy environment.
+Functionalities may be added to mstrio either in combination with annual MicroStrategy platform releases or through updates to platform releases. To ensure compatibility with APIs supported by your MicroStrategy environment, it is recommended to install a version of mstrio that corresponds to the version number of your MicroStrategy environment.
 
-The current version of mstrio is 11.1.4 and is supported on MicroStrategy 2019 Update 4 (11.1.4) and later. To leverage the MicroStrategy for Jupyter application, mstrio 11.1.4 and MicroStrategy 2019 Update 4 (11.1.4) are required.
+The current version of mstrio is 11.2.0 and is supported on MicroStrategy 2019 Update 4 (11.1.4) and later. To leverage the MicroStrategy for Jupyter Notebook application, mstrio 11.2.0 and MicroStrategy 2019 Update 4 (11.1.4) are required.
 
-The preceding version was 10.11. It is supported on MicroStrategy 2019 (11.1), MicroStrategy 2019 Update 1 (11.1.1), MicroStrategy 2019 Update 2 (11.1.2), and MicroStrategy 2019 Update 3 (11.1.3). Refer to the [PyPi package archive][pypi_archive] for a list of available versions. 
+If you intend to use mstrio with MicroStrategy version older than 11.1.4, refer to the Pypi package archive to download mstrio 10.11.1, which is supported on:
+ * MicroStrategy 2019 (11.1)
+ * MicroStrategy 2019 Update 1 (11.1.1)
+ * MicroStrategy 2019 Update 2 (11.1.2)
+ * MicroStrategy 2019 Update 3 (11.1.3)
+ 
+Refer to the [PyPi package archive][pypi_archive] for a list of available versions. 
 
 To install a specific, archived version of mstrio, [package archive on PyPi][pypi_archive], do so by specifying the desired version number when installing the package with `pip`, as follows:
 
@@ -89,25 +95,31 @@ conn.connect()
 ```
 
 ### Import data from Cubes and Reports
-To import the contents of a published cube into a Pandas DataFrame for analysis in Python, use the `mstrio.Cube` class. In **mstrio**, Reports and Cubes have the same API, so you can use these examples for importing Report data to a Pandas DataFrame, too.
+In **mstrio-py**, Reports and Cubes have the same API, so you can use these examples for importing Report data to a DataFrame, too. To import the contents of a published cube into a DataFrame for analysis in Python, use the `Cube` class:
 ```python
-from mstrio.cube import Cube  # or from mstrio.report import Report
 my_cube = Cube(connection=conn, cube_id="...")
 df = my_cube.to_dataframe()
 ```
-After import, data is saved to `Cube.dataframe`. By default, all rows are imported when `Cube.to_dataframe()` is called. Filter the contents of a cube by passing the object IDs for the metrics, attributes, and attribute elements you need. First, get the object IDs of the metrics, attributes, and attribute elements that are available within the cube:
+To import Reports into a DataFrame for analysis in Python use the optimized `Report` class:
+```python
+my_report = Report(connection=conn, report_id="...")
+df = my_report.to_dataframe()
+```
+By default, all rows are imported when `my_cube.to_dataframe()` or `my_report.to_dataframe()` are called. Filter the contents of a cube/report by passing the object IDs for the metrics, attributes, and attribute elements you need. First, get the object IDs of the metrics, attributes that are available within the Cube/Report object instance:
 ```python
 my_cube.metrics
 my_cube.attributes
+```
+If you need to filter by attribute elements, call `my_cube.get_attr_elements()` or `my_report.get_attr_elements()` which will fetch all unique attribute elements per attribute. The attribute elements are available within the Cube/Report object instance:
+```python
 my_cube.attr_elements
 ```
-Then, choose those elements by passing their IDs to the `Cube.apply_filters()` method. To see the chosen elements, call `Cube.selected_attributes`, `Cube.selected_metrics` and `Cube.selected_attr_elements`. To clear any active filters, call `Cube.clear_filters()`.
+Then, choose those elements by passing their IDs to the `my_cube.apply_filters()` method. To see the chosen elements, call `my_cube.filters` and to clear any active filters, call `my_cube.clear_filters()`.
 ```python
-my_cube.apply_filters(attributes=["A598372E11E9910D1CBF0080EFD54D63",
-                                  "A59855D811E9910D1CC50080EFD54D63"],
-                      metrics=["B4054F5411E9910D672E0080EFC5AE5B"],
-                      attr_elements=["A598372E11E9910D1CBF0080EFD54D63:Los Angeles",
-                                    "A598372E11E9910D1CBF0080EFD54D63:Seattle"])
+my_cube.apply_filters(
+   attributes=["A598372E11E9910D1CBF0080EFD54D63", "A59855D811E9910D1CC50080EFD54D63"],
+   metrics=["B4054F5411E9910D672E0080EFC5AE5B"],
+   attr_elements=["A598372E11E9910D1CBF0080EFD54D63:Los Angeles", "A598372E11E9910D1CBF0080EFD54D63:Seattle"])
 df = my_cube.to_dataframe()
 ```
 
@@ -181,3 +193,4 @@ Finally, note that updating datasets that were _not_ created using the REST API 
 [mstr_datasci_comm]: <https://community.microstrategy.com/s/topic/0TO44000000AJ2dGAG/python-r-u108>
 [mstr_rest_demo]: <https://demo.microstrategy.com/MicroStrategyLibrary/api-docs/index.html>
 [mstr_rest_docs]: <https://lw.microstrategy.com/msdz/MSDL/GARelease_Current/docs/projects/RESTSDK/Content/topics/REST_API/REST_API.htm>
+[mstr_help_docs]: <https://www2.microstrategy.com/producthelp/current/MSTRWeb/WebHelp/Lang_1033/Content/mstr_for_jupyter.htm>
