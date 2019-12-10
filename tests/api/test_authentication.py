@@ -42,8 +42,9 @@ class TestAuthentication(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(mock_post.call_args[1]['data']["applicationType"], self.APPCODE)
 
+    @patch('mstrio.api.authentication.requests.post')
     def test_login_app_code_static(self, mock_post):
-        """Checks that application code is 64."""
+        """Checks that application code is 35."""
         conn = microstrategy.Connection(base_url=self.BASE_URL, username=self.USERNAME,
                                         password=self.PASSWORD, project_name=self.PROJECT_NAME)
 

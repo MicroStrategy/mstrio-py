@@ -1,17 +1,20 @@
 /*jshint esversion: 6*/
-.modal-footer{
+#mstr_modal .modal-footer{
     padding: 0px;
     display: none;
 }
-.modal.fade .modal-dialog {
-    max-height: 661px;  
+
+#mstr_modal.modal.fade .modal-dialog {
+    max-height: 661px;
     max-width: 538px;
 }
-.modal-dialog {
+
+#mstr_modal .modal-dialog {
     margin: 30px auto;
     height: 90%;
 }
-.modal-header{
+
+#mstr_modal .modal-header{
     padding: 0px;
     border-bottom: none;
     position: absolute;
@@ -20,38 +23,44 @@
     float: right;
     z-index: 1;
 }
-.modal-header > button {
+
+#mstr_modal .modal-header > button {
     padding: 10px 10px 0px 0px;
 }
-.modal-body{
+
+#mstr_modal .modal-body{
     padding: 0px 0px 0px 0px;
     height: 100%;
 }
-.top-nav{
+
+#mstr_modal .top-nav{
     padding-bottom: 10px;
 }
-.header{
+
+#mstr_modal .header{
     height: 50px;
 }
-.modal-content {
+
+#mstr_modal .modal-content {
     height: 100%; 
 }
-.modal-body > div {
+
+#mstr_modal .modal-body > div {
     height: inherit;
 }
-* {
+
+#mstr_modal * {
     box-sizing: border-box;
 }
 
 @media (max-height: 560px) {
-    .modal.fade .modal-dialog {
+    #mstr_modal .modal.fade .modal-dialog {
         top: -15px;
     }
 }
 
-
 /* IFRAME STYLE */
-iframe {
+#mstr_modal iframe {
     display: block;
     width: 100%;
     height: 100%;

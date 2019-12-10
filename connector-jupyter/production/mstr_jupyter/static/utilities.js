@@ -21,47 +21,6 @@ function changeSize(mode, element) {
   }
 }
 
-function parseBody(obj) { 
-  var filters = "";
-
-  if (obj.requestedObjects.attributes != undefined) {
-    filters = filters + `attributes = ${JSON.stringify(obj.requestedObjects.attributes.map(e => e.id))}`;
-  }
-
-  if (obj.requestedObjects.metrics != undefined) {
-    if (filters != "") {
-      filters = filters + `, `;
-    }
-    filters = filters + `metrics = ${JSON.stringify(obj.requestedObjects.metrics.map(e => e.id))}`;
-  }
-
-  if (obj.viewFilter != undefined) {
-    if (filters != "") {
-      filters = filters + `, `;
-    }
-    var filterElements = [];
-
-    if (obj.viewFilter.operator === "In") {
-      //CASE ONE VIEW FILTER
-      obj.viewFilter.operands[1].elements.forEach(e => {
-        filterElements.push(e.id); 
-      });
-    }
-    else if (obj.viewFilter.operator === "And") {
-      //CASE TWO OR MORE VIEW FILTERS
-      obj.viewFilter.operands.forEach(e => {
-        e.operands[1].elements.forEach(f => {
-          filterElements.push(f.id); 
-        });
-      });
-    }
-
-    filters = filters + `attr_elements = ${JSON.stringify(filterElements)}`;
-  }
-
-  return filters;
-}
-
 function checkImportExport(snippet, flag) {
   if (!isImportingExporting(snippet, flag)) {
     console.log(`${snippet} Process Finished`); 

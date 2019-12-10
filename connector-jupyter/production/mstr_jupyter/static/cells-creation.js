@@ -7,8 +7,6 @@ function create_import_cell(env, ds_name, ds_id, dataset_type, project_id, body,
     name = "var_" + name;
   }
 
-  body = body != "null" ? parseBody(JSON.parse(body)) : "";
-
   execute_credentials_kernel_background(user, password);
 
   Jupyter.notebook
@@ -27,8 +25,3 @@ function create_export_cell(dataframes, wrangled, save_as_name, folder_id, env, 
     Jupyter.notebook.get_cell(-1).execute();
     Jupyter.notebook.get_cell(-1).set_text(python_code_for_export_with_credentials_input(dataframes, wrangled, save_as_name, folder_id, env, project_id, login_mode));
 }
-
-// function removeCells() {
-//   Jupyter.notebook.delete_cell(0);
-//   Jupyter.notebook.delete_cell(0);
-// }

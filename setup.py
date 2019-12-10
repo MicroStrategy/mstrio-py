@@ -1,11 +1,13 @@
-from setuptools import setup, find_packages, dist
 import os
-import pkg_resources
+from setuptools import setup, find_packages, dist
 from setuptools.extern.packaging import version as packaging_version
 
-dist_version = '11.1.4.002' #define the default version
-if 'CI_VERSION' in os.environ.keys():
-    dist_version = os.environ['CI_VERSION'] # read the CI_VERSION from environment variable
+if 'version.txt' in os.listdir():
+    with open('version.txt') as f:
+        dist_version = f.read().strip()
+else:
+    dist_version = '11.2.0.002'  # define the default version
+
 
 # Patch Version class to preserve original version string
 dist.pkg_resources.safe_version = lambda v:v

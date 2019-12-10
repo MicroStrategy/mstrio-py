@@ -31,23 +31,25 @@ class TestReport(unittest.TestCase):
                             'name': self.report_name,
                             'status': 1,
                             'instanceId': '49C2D26C11E9CB21237E0080EF1546B6',
-                            'result': {'definition': {'metrics': [{'name': 'Age',
-                                'id': '089FB58611E9CA4D39700080EF15B5B9',
-                                'type': 'Metric',
-                                'min': 18,
-                                'max': 21,
-                                'dataType': 'Integer',
-                                'numberFormatting': {'category': 9, 'formatString': 'General'}}],
-                            'attributes': [{'name': 'Name',
-                                'id': '089FC10C11E9CA4D39700080EF15B5B9',
-                                'type': 'Attribute',
-                                'forms': [{'id': '45C11FA478E745FEA08D781CEA190FE5',
-                                'name': 'ID',
-                                'dataType': 'Char',
-                                'baseFormCategory': 'ID',
-                                'baseFormType': 'Text'}]}],
-                            'thresholds': [],
-                            'sorting': []},
+                            'result': {
+                                'definition': {
+                                    'metrics': [{'name': 'Age',
+                                        'id': '089FB58611E9CA4D39700080EF15B5B9',
+                                        'type': 'Metric',
+                                        'min': 18,
+                                        'max': 21,
+                                        'dataType': 'Integer',
+                                        'numberFormatting': {'category': 9, 'formatString': 'General'}}],
+                                    'attributes': [{'name': 'Name',
+                                        'id': '089FC10C11E9CA4D39700080EF15B5B9',
+                                        'type': 'Attribute',
+                                        'forms': [{'id': '45C11FA478E745FEA08D781CEA190FE5',
+                                        'name': 'ID',
+                                        'dataType': 'Char',
+                                        'baseFormCategory': 'ID',
+                                        'baseFormType': 'Text'}]}],
+                                    'thresholds': [],
+                                    'sorting': []},
                             'data': {'paging': {'total': 4,
                                 'current': 2,
                                 'offset': 0,
@@ -71,23 +73,25 @@ class TestReport(unittest.TestCase):
                             'name': self.report_name,
                             'status': 1,
                             'instanceId': '49C2D26C11E9CB21237E0080EF1546B6',
-                            'result': {'definition': {'metrics': [{'name': 'Age',
-                                'id': '089FB58611E9CA4D39700080EF15B5B9',
-                                'type': 'Metric',
-                                'min': 18,
-                                'max': 21,
-                                'dataType': 'Integer',
-                                'numberFormatting': {'category': 9, 'formatString': 'General'}}],
-                            'attributes': [{'name': 'Name',
-                                'id': '089FC10C11E9CA4D39700080EF15B5B9',
-                                'type': 'Attribute',
-                                'forms': [{'id': '45C11FA478E745FEA08D781CEA190FE5',
-                                'name': 'ID',
-                                'dataType': 'Char',
-                                'baseFormCategory': 'ID',
-                                'baseFormType': 'Text'}]}],
-                            'thresholds': [],
-                            'sorting': []},
+                            'result': {
+                                'definition': {
+                                    'metrics': [{'name': 'Age',
+                                        'id': '089FB58611E9CA4D39700080EF15B5B9',
+                                        'type': 'Metric',
+                                        'min': 18,
+                                        'max': 21,
+                                        'dataType': 'Integer',
+                                        'numberFormatting': {'category': 9, 'formatString': 'General'}}],
+                                    'attributes': [{'name': 'Name',
+                                        'id': '089FC10C11E9CA4D39700080EF15B5B9',
+                                        'type': 'Attribute',
+                                        'forms': [{'id': '45C11FA478E745FEA08D781CEA190FE5',
+                                        'name': 'ID',
+                                        'dataType': 'Char',
+                                        'baseFormCategory': 'ID',
+                                        'baseFormType': 'Text'}]}],
+                                'thresholds': [],
+                                'sorting': []},
                             'data': {'paging': {'total': 4,
                                 'current': 2,
                                 'offset': 2,
@@ -118,34 +122,33 @@ class TestReport(unittest.TestCase):
         self.__selected_elem = ['089FC10C11E9CA4D39700080EF15B5B9:Tom', '089FC10C11E9CA4D39700080EF15B5B9:jack']
         self.__dataframe = pandas.DataFrame({'Name':['jack', 'krish','nick','Tom'], 'Age':[18,19,21,20]})
 
+    @patch('mstrio.api.reports.report_instance')
     @patch('mstrio.api.reports.report_single_attribute_elements')
     @patch('mstrio.api.reports.report')
-    def test_init_report(self, mock_definition, mock_attr_element):
+    def test_init_report(self, mock_definition, mock_attr_element, mock_instance):
         """Test that definition of the report is assigned properly when report is initialized."""
 
+        from mstrio.api.reports import report_instance
         mock_definition.return_value = Mock(ok=True)
         mock_definition.return_value.json.return_value = self.__definition
         mock_attr_element.return_value = Mock(headers=self.__headers)
         mock_attr_element.return_value.json.return_value = self.__attr_elements
+        mock_instance.return_value = Mock(ok=True)
+        mock_instance.return_value.json.return_value = self.__instance
 
         report = Report(connection=self.connection, report_id=self.report_id)
 
-        self.assertTrue(mock_definition.called)
-        self.assertTrue(mock_attr_element.called)
+        self.assertTrue(mock_instance.called)
+        self.assertFalse(mock_attr_element.called)
         
         self.assertEqual(report._connection, self.connection)
         self.assertEqual(report._report_id, self.report_id)
         self.assertEqual(report.name, self.report_name)
 
         self.assertEqual(report.attributes, [{'name': 'Name', 'id': '089FC10C11E9CA4D39700080EF15B5B9'}])
-        self.assertEqual(report.metrics, [{'name': 'Age', 'id': '089FB58611E9CA4D39700080EF15B5B9'},
-                                        {'name': 'Row Count - table1', 'id': '089DE7BA11E9CA4D085B0080EFC515B9'}])
-        self.assertEqual(report.attr_elements, [{'attribute_name': 'Name',
-                                        'attribute_id': '089FC10C11E9CA4D39700080EF15B5B9','elements': [
-                                        {'id': '089FC10C11E9CA4D39700080EF15B5B9:jack','formValues': ['jack']},
-                                        {'id': '089FC10C11E9CA4D39700080EF15B5B9:krish', 'formValues': ['krish']},
-                                        {'id': '089FC10C11E9CA4D39700080EF15B5B9:nick', 'formValues': ['nick']},
-                                        {'id': '089FC10C11E9CA4D39700080EF15B5B9:Tom', 'formValues': ['Tom']}]}])
+        self.assertEqual(report.metrics, [{'name': metric['name'],
+                                           'id': metric['id']} \
+                                          for metric in self._TestReport__instance['result']['definition']['metrics']])
 
         self.assertIsNone(report.selected_attributes)
         self.assertIsNone(report.selected_metrics)
@@ -154,15 +157,18 @@ class TestReport(unittest.TestCase):
         with self.assertWarns(Warning):
             report.dataframe
 
+    @patch('mstrio.api.reports.report_instance')
     @patch('mstrio.api.reports.report_single_attribute_elements')
     @patch('mstrio.api.reports.report')
-    def test_apply_filters(self, mock_definition, mock_attr_element):
+    def test_apply_filters(self, mock_definition, mock_attr_element, mock_instance):
         """Test that selected objects are assigned properly when filter is applied."""
 
         mock_definition.return_value = Mock(ok=True)
         mock_definition.return_value.json.return_value = self.__definition
         mock_attr_element.return_value = Mock(ok=True, headers=self.__headers)
         mock_attr_element.return_value.json.return_value = self.__attr_elements
+        mock_instance.return_value = Mock(ok=True)
+        mock_instance.return_value.json.return_value = self.__instance
 
         report = Report(connection=self.connection, report_id=self.report_id)
         report.apply_filters(self.__selected_attr, self.__selected_metrs, self.__selected_elem)
@@ -173,18 +179,21 @@ class TestReport(unittest.TestCase):
 
         report.clear_filters()
         report.apply_filters(attributes=[], metrics=[])
-        self.assertEqual(report.selected_attributes, [])
-        self.assertEqual(report.selected_metrics, [])
+        self.assertIsNone(report.selected_attributes)
+        self.assertIsNone(report.selected_metrics)
 
+    @patch('mstrio.api.reports.report_instance')
     @patch('mstrio.api.reports.report_single_attribute_elements')
     @patch('mstrio.api.reports.report')
-    def test_clear_filters(self, mock_definition, mock_attr_element):
+    def test_clear_filters(self, mock_definition, mock_attr_element, mock_instance):
         """Test that selected objects are assigned with empty lists when filter is cleared."""
 
         mock_definition.return_value = Mock(ok=True)
         mock_definition.return_value.json.return_value = self.__definition
         mock_attr_element.return_value = Mock(ok=True, headers=self.__headers)
         mock_attr_element.return_value.json.return_value = self.__attr_elements
+        mock_instance.return_value = Mock(ok=True)
+        mock_instance.return_value.json.return_value = self.__instance
 
         report = Report(connection=self.connection, report_id=self.report_id)
         report.apply_filters(self.__selected_attr, self.__selected_metrs, self.__selected_elem)
@@ -226,15 +235,18 @@ class TestReport(unittest.TestCase):
         self.assertIsInstance(report.dataframe, pandas.core.frame.DataFrame)
         self.assertTrue(df.equals(self.__dataframe))
 
+    @patch('mstrio.api.reports.report_instance')
     @patch('mstrio.api.reports.report_single_attribute_elements')
     @patch('mstrio.api.reports.report')
-    def test_apply_filters_for_incorrect_assignments(self, mock_definition, mock_attr_element):
+    def test_apply_filters_for_incorrect_assignments(self, mock_definition, mock_attr_element, mock_instance):
         """Test that incorrectly assigned selected objects are assigned properly when filter is applied."""
 
         mock_definition.return_value = Mock(ok=True)
         mock_definition.return_value.json.return_value = self.__definition
         mock_attr_element.return_value = Mock(ok=True, headers=self.__headers)
         mock_attr_element.return_value.json.return_value = self.__attr_elements
+        mock_instance.return_value = Mock(ok=True)
+        mock_instance.return_value.json.return_value = self.__instance
 
         report = Report(connection=self.connection, report_id=self.report_id)
         # attributes assigned selected_metrs, metrics assigned selected_elem and attr_elements assigned selected_attr
@@ -245,15 +257,18 @@ class TestReport(unittest.TestCase):
         self.assertEqual(report.selected_metrics, self.__selected_metrs)
         self.assertEqual(report.selected_attr_elements, self.__selected_elem)
 
+    @patch('mstrio.api.reports.report_instance')
     @patch('mstrio.api.reports.report_single_attribute_elements')
     @patch('mstrio.api.reports.report')
-    def test_apply_filters_no_list(self, mock_definition, mock_attr_element):
+    def test_apply_filters_no_list(self, mock_definition, mock_attr_element, mock_instance):
         """Test that selected objects passed as strings are assigned properly when filter is applied."""
 
         mock_definition.return_value = Mock(ok=True)
         mock_definition.return_value.json.return_value = self.__definition
         mock_attr_element.return_value = Mock(ok=True, headers=self.__headers)
         mock_attr_element.return_value.json.return_value = self.__attr_elements
+        mock_instance.return_value = Mock(ok=True)
+        mock_instance.return_value.json.return_value = self.__instance
 
         report = Report(connection=self.connection, report_id=self.report_id)
         report.apply_filters(attributes=self.__selected_attr[0], metrics=self.__selected_metrs[0],
@@ -261,17 +276,20 @@ class TestReport(unittest.TestCase):
 
         self.assertEqual(report.selected_attributes, self.__selected_attr)
         self.assertEqual(report.selected_metrics, self.__selected_metrs)
-        self.assertEqual(report.selected_attr_elements, self.__selected_elem)
+        self.assertEqual(report.selected_attr_elements, self.__selected_elem[:1])
 
+    @patch('mstrio.api.reports.report_instance')
     @patch('mstrio.api.reports.report_single_attribute_elements')
     @patch('mstrio.api.reports.report')
-    def test_apply_filters_invalid_elements(self, mock_definition, mock_attr_element):
+    def test_apply_filters_invalid_elements(self, mock_definition, mock_attr_element, mock_instance):
         """Test that invalid id passed to a filter raises ValueError."""
 
         mock_definition.return_value = Mock(ok=True)
         mock_definition.return_value.json.return_value = self.__definition
         mock_attr_element.return_value = Mock(ok=True, headers=self.__headers)
         mock_attr_element.return_value.json.return_value = self.__attr_elements
+        mock_instance.return_value = Mock(ok=True)
+        mock_instance.return_value.json.return_value = self.__instance
 
         report = Report(connection=self.connection, report_id=self.report_id)
         self.assertRaises(ValueError, report.apply_filters, attributes='INV123456')

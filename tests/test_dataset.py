@@ -33,7 +33,7 @@ class TestDatasets(unittest.TestCase):
         self.assertIsNone(ds._folder_id)
         self.assertIsNone(ds.upload_body)
         self.assertEqual(len(ds._tables), 0)
-
+    
     @patch('mstrio.api.datasets.dataset_definition')
     def test_init_non_null(self, mock_definition):
         # Test that non-null param values are assigned properly when initiated
@@ -42,6 +42,7 @@ class TestDatasets(unittest.TestCase):
         __test_desc = "TEST DESCRIPTION"
         __test_ds_id = "id1234567890"
         __definition = {'name': 'test_name', 'id': __test_ds_id}
+        
         mock_definition.return_value = Mock(ok=True)
         mock_definition.return_value.json.return_value = __definition
 
@@ -53,7 +54,9 @@ class TestDatasets(unittest.TestCase):
 
         ds = Dataset(connection={}, dataset_id=__test_ds_id)
         self.assertTrue(mock_definition.called)
+        self.assertEqual(ds._definition, __definition)
         self.assertEqual(ds._dataset_id, __test_ds_id)
+        self.assertEqual(ds._name, __definition['name'])
 
     def test_add_table(self):
         # Test that adding a table to the dataset increases length of tables property by one

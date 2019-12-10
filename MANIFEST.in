@@ -1,1 +1,3 @@
 graft connector-jupyter
+prune tests
+include version.txt
