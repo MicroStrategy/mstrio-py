@@ -60,7 +60,7 @@ class Dataset:
 
         if dataset_id is not None:
             self.__check_param_str(dataset_id, "Dataset ID should be a string.")
-            self.__load_definition()
+            self.__load_definition(dataset_id)
 
     def add_table(self, name, data_frame, update_policy, to_metric=None, to_attribute=None):
         """Add a Pandas DataFrame to a collection of tables which are later used to update the MicroStrategy dataset.
@@ -291,14 +291,14 @@ class Dataset:
                             "columnHeaders": list(tbl["data_frame"].columns)} for tbl in self._tables]}
         self.__upload_body = body
 
-    def __load_definition(self):
+    def __load_definition(self, dataset_id):
         """Load definition of an existing dataset."""
 
-        response = datasets.dataset_definition(connection=self._connection, dataset_id=self._dataset_id)
+        response = datasets.dataset_definition(connection=self._connection, dataset_id=dataset_id)
 
         if not response.ok:
             self.__response_handler(response=response,
-                                    msg="Error loading dataset '{}'. Check dataset ID.".format(self._dataset_id))
+                                    msg="Error loading dataset '{}'. Check dataset ID.".format(dataset_id))
         else:
             self._definition = response.json()
             self._name = self._definition['name']
