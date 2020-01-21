@@ -10,7 +10,7 @@ def cube(connection, cube_id, verbose=False):
 
     Args:
         connection: MicroStrategy REST API connection object.
-        cube_id (str): Unique ID of the cube you wish to extract information from.
+        cube_id list(str): Unique IDs of the cubes you wish to extract information from.
         verbose (bool): Verbosity of request response; defaults to False.
 
     Returns:
@@ -20,6 +20,7 @@ def cube(connection, cube_id, verbose=False):
                             headers={'X-MSTR-AuthToken': connection.auth_token,
                                      'X-MSTR-ProjectID': connection.project_id},
                             cookies=connection.cookies,
+                            params={'id': cube_id},
                             verify=connection.ssl_verify)
     if verbose:
         print(response.url)
