@@ -182,7 +182,7 @@ Finally, note that updating datasets that were _not_ created using the REST API 
 
 ## More resources
 - [Tutorials for mstrio][mstr_datasci_comm]
-- [Mstrio-py online documentation][mstrio_py_doc]
+- [mstrio-py online documentation][mstrio_py_doc]
 - [Check out mstrio for R][r_github]
 - [Learn more about the MicroStrategy REST API][mstr_rest_docs]
 - [MicroStrategy REST API Demo environment][mstr_rest_demo]
