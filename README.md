@@ -1,6 +1,6 @@
-[![image](https://img.shields.io/pypi/v/mstrio-py.svg)][pypi]
-[![image](https://img.shields.io/pypi/l/mstrio-py.svg)][pypi]
-[![image](https://img.shields.io/pypi/dm/mstrio-py.svg)][pypi]
+[![image](https://img.shields.io/pypi/v/mstrio-py.svg)](https://pypi.org/project/mstrio-py)
+[![image](https://img.shields.io/pypi/l/mstrio-py.svg)](https://pypi.org/project/mstrio-py)
+[![image](https://img.shields.io/pypi/dm/mstrio-py.svg)](https://pypi.org/project/mstrio-py)
 
 
 # mstrio: simple and secure access to MicroStrategy data
@@ -23,22 +23,22 @@ With **mstrio**, it's easy to integrate cross-departmental, trustworthy business
 <!--te-->
 
 ## Installation
-Installation is easy when using [pip][pypi]. Read more about installation on MicroStrategy's [product documentation][mstr_help_docs].
+Installation is easy when using [pip](https://pypi.org/project/mstrio-py). Read more about installation on MicroStrategy's [product documentation][mstr_help_docs].
 
-#### Install the `mstrio` package
+### Install the `mstrio-py` package
 ```
 pip3 install mstrio-py
 ```
-#### Enable the Jupyter Notebook extension
+### Enable the Jupyter Notebook extension
 ```
-jupyter-nbextension install connector-jupyter --py --sys-prefix
+jupyter nbextension install connector-jupyter --py --sys-prefix
 jupyter nbextension enable connector-jupyter --py --sys-prefix
 ```
 
 ## Versioning
 Functionalities may be added to mstrio either in combination with annual MicroStrategy platform releases or through updates to platform releases. To ensure compatibility with APIs supported by your MicroStrategy environment, it is recommended to install a version of mstrio that corresponds to the version number of your MicroStrategy environment.
 
-The current version of mstrio is 11.2.0 and is supported on MicroStrategy 2019 Update 4 (11.1.4) and later. To leverage the MicroStrategy for Jupyter Notebook application, mstrio 11.2.0 and MicroStrategy 2019 Update 4 (11.1.4) are required.
+The current version of mstrio-py is 11.2.0 and is supported on MicroStrategy 2019 Update 4 (11.1.4) and later. To leverage the MicroStrategy for Jupyter application, mstrio-py (11.2.0), Jupyter Notebook (6.0.2 or higher), ipywidgets (7.5.1 or higher) and MicroStrategy 2019 Update 4 (11.1.4) or higher are required.
 
 If you intend to use mstrio with MicroStrategy version older than 11.1.4, refer to the Pypi package archive to download mstrio 10.11.1, which is supported on:
  * MicroStrategy 2019 (11.1)
@@ -97,11 +97,13 @@ conn.connect()
 ### Import data from Cubes and Reports
 In **mstrio-py**, Reports and Cubes have the same API, so you can use these examples for importing Report data to a DataFrame, too. To import the contents of a published cube into a DataFrame for analysis in Python, use the `Cube` class:
 ```python
+from mstrio.cube import Cube
 my_cube = Cube(connection=conn, cube_id="...")
 df = my_cube.to_dataframe()
 ```
 To import Reports into a DataFrame for analysis in Python use the optimized `Report` class:
 ```python
+from mstrio.report import Report
 my_report = Report(connection=conn, report_id="...")
 df = my_report.to_dataframe()
 ```
@@ -162,6 +164,7 @@ After creating the dataset, you can obtain its ID using `Datasets.dataset_id`. T
 ##### Update a dataset
 When the source data changes and users need the latest data for analysis and reporting in MicroStrategy, **mstrio** allows you to update the previously created dataset.
 ```python
+from mstrio.dataset import Dataset
 ds = Dataset(connection=conn, dataset_id="...")
 ds.add_table(name="Stores", data_frame=stores_df, update_policy='update')
 ds.add_table(name="Sales", data_frame=sales_df, update_policy='upsert')
@@ -179,6 +182,7 @@ Finally, note that updating datasets that were _not_ created using the REST API 
 
 ## More resources
 - [Tutorials for mstrio][mstr_datasci_comm]
+- [mstrio-py online documentation][mstrio_py_doc]
 - [Check out mstrio for R][r_github]
 - [Learn more about the MicroStrategy REST API][mstr_rest_docs]
 - [MicroStrategy REST API Demo environment][mstr_rest_demo]
@@ -186,11 +190,11 @@ Finally, note that updating datasets that were _not_ created using the REST API 
 ## Other
 "Jupyter" and the Jupyter logos are trademarks or registered trademarks of NumFOCUS.
 
-[pypi]: <https://pypi.org/project/mstrio-py>
 [pypi_archive]: <https://pypi.org/project/mstrio-py/#history>
 [py_github]: <https://github.com/MicroStrategy/mstrio-py>
 [r_github]: <https://github.com/MicroStrategy/mstrio>
 [mstr_datasci_comm]: <https://community.microstrategy.com/s/topic/0TO44000000AJ2dGAG/python-r-u108>
+[mstrio_py_doc]: <http://www2.microstrategy.com/producthelp/Current/mstrio-py/>
 [mstr_rest_demo]: <https://demo.microstrategy.com/MicroStrategyLibrary/api-docs/index.html>
 [mstr_rest_docs]: <https://lw.microstrategy.com/msdz/MSDL/GARelease_Current/docs/projects/RESTSDK/Content/topics/REST_API/REST_API.htm>
-[mstr_help_docs]: <https://www2.microstrategy.com/producthelp/current/MSTRWeb/WebHelp/Lang_1033/Content/mstr_for_jupyter.htm>
+[mstr_help_docs]: <https://www2.microstrategy.com/producthelp/current/MSTR-for-Jupyter/Content/mstr_for_jupyter.htm>
