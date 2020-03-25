@@ -56,7 +56,7 @@ class Dataset:
         self._session_id = None
         self._folder_id = None
         self.__upload_body = None
-        self._dataset_id = None
+        self._dataset_id = dataset_id
 
         if dataset_id is not None:
             self.__check_param_str(dataset_id, "Dataset ID should be a string.")
