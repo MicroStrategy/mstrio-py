@@ -1,0 +1,171 @@
+{
+    "name": "Combo Breaker @#$%^&*()",
+    "source": {
+        "id": "EAF614D011EA1DC100000080EF255548",
+        "name": "combo_breaker"
+    },
+    "id": "AFEA414411EA1DC200000080EF153548",
+    "definition": {
+        "grid": {
+            "crossTab": false,
+            "metricsPosition": {
+                "axis": "columns",
+                "index": 0
+            },
+            "rows": [
+                {
+                    "name": "city",
+                    "id": "DF29C0E811EA1DC167490080EF851345",
+                    "type": "attribute",
+                    "forms": [
+                        {
+                            "id": "45C11FA478E745FEA08D781CEA190FE5",
+                            "name": "ID",
+                            "dataType": "UTF8Char",
+                            "baseFormCategory": "ID",
+                            "baseFormType": "text",
+                            "formGeoRole": 1
+                        }
+                    ]
+                },
+                {
+                    "name": "name",
+                    "id": "E5A2574611EA1DC167490080EF459548",
+                    "type": "attribute",
+                    "forms": [
+                        {
+                            "id": "45C11FA478E745FEA08D781CEA190FE5",
+                            "name": "ID",
+                            "dataType": "UTF8Char",
+                            "baseFormCategory": "ID",
+                            "baseFormType": "text"
+                        },
+                        {
+                            "id": "CCFBE2A5EADB4F50941FB879CCF1721C",
+                            "name": "DESC",
+                            "dataType": "UTF8Char",
+                            "baseFormCategory": "DESC",
+                            "baseFormType": "text"
+                        }
+                    ]
+                }
+            ],
+            "columns": [
+                {
+                    "name": "Metrics",
+                    "id": "00000000000000000000000000000000",
+                    "type": "templateMetrics",
+                    "elements": [
+                        {
+                            "name": "IQ",
+                            "id": "DF29BA7611EA1DC167490080EF851345",
+                            "type": "metric",
+                            "dataType": "double"
+                        },
+                        {
+                            "name": "salary",
+                            "id": "DF29B0F811EA1DC167490080EF851345",
+                            "type": "metric",
+                            "dataType": "double"
+                        }
+                    ]
+                }
+            ],
+            "pageBy": [],
+            "sorting": {
+                "rows": [],
+                "columns": []
+            },
+            "subtotals": {
+                "defined": true,
+                "visible": true
+            },
+            "thresholds": []
+        },
+        "availableObjects": {
+            "attributes": [
+                {
+                    "name": "name",
+                    "id": "E5A2574611EA1DC167490080EF459548",
+                    "type": "attribute",
+                    "forms": [
+                        {
+                            "id": "CCFBE2A5EADB4F50941FB879CCF1721C",
+                            "name": "DESC",
+                            "dataType": "UTF8Char",
+                            "baseFormCategory": "DESC",
+                            "baseFormType": "text"
+                        },
+                        {
+                            "id": "45C11FA478E745FEA08D781CEA190FE5",
+                            "name": "ID",
+                            "dataType": "UTF8Char",
+                            "baseFormCategory": "ID",
+                            "baseFormType": "text"
+                        }
+                    ]
+                },
+                {
+                    "name": "city",
+                    "id": "DF29C0E811EA1DC167490080EF851345",
+                    "type": "attribute",
+                    "forms": [
+                        {
+                            "id": "B191051C48221A6AE44CA2B65B1B65E3",
+                            "name": "Latitude",
+                            "dataType": "double",
+                            "baseFormCategory": "Latitude",
+                            "baseFormType": "number",
+                            "formGeoRole": 5
+                        },
+                        {
+                            "id": "2345134F4F5E261C3BB902A874467080",
+                            "name": "Longitude",
+                            "dataType": "double",
+                            "baseFormCategory": "Longitude",
+                            "baseFormType": "number",
+                            "formGeoRole": 6
+                        },
+                        {
+                            "id": "45C11FA478E745FEA08D781CEA190FE5",
+                            "name": "ID",
+                            "dataType": "UTF8Char",
+                            "baseFormCategory": "ID",
+                            "baseFormType": "text",
+                            "formGeoRole": 1
+                        }
+                    ]
+                }
+            ],
+            "metrics": [
+                {
+                    "name": "Column 1",
+                    "id": "DF299A9611EA1DC16E300080EF851345",
+                    "type": "metric",
+                    "dataType": "integer"
+                },
+                {
+                    "name": "salary",
+                    "id": "DF29B0F811EA1DC167490080EF851345",
+                    "type": "metric",
+                    "dataType": "double"
+                },
+                {
+                    "name": "IQ",
+                    "id": "DF29BA7611EA1DC167490080EF851345",
+                    "type": "metric",
+                    "dataType": "double"
+                },
+                {
+                    "name": "Row Count - combo_breaker.csv",
+                    "id": "DED2D53A11EA1DC108ED0080EF55B446",
+                    "type": "metric",
+                    "dataType": "reserved"
+                }
+            ],
+            "customGroups": [],
+            "consolidations": [],
+            "hierarchies": []
+        }
+    }
+}

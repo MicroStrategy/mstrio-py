@@ -4,6 +4,8 @@
 
 
 # mstrio: simple and secure access to MicroStrategy data
+Current version: **11.2.1** (27 Mar 2020). Check out [Release Notes](https://github.com/MicroStrategy/mstrio-py/blob/master/NEWS.md) to see what's new.
+
 **mstrio** provides a high-level interface for [Python][py_github] and [R][r_github] and is designed to give data scientists and developers simple and secure access to MicroStrategy data. It wraps [MicroStrategy REST APIs][mstr_rest_docs] into simple workflows, allowing users to connect to their MicroStrategy environment, fetch data from cubes and reports, create new datasets, and add new data to existing datasets. And, because it enforces MicroStrategy's user and object security model, you don't need to worry about setting up separate security rules.
 
 With **mstrio**, it's easy to integrate cross-departmental, trustworthy business data in machine learning workflows and enable decision-makers to take action on predictive insights in MicroStrategy Reports, Dossiers, HyperIntelligence Cards, and customized, embedded analytical applications.
@@ -19,6 +21,7 @@ With **mstrio**, it's easy to integrate cross-departmental, trustworthy business
       * [Export data into MicroStrategy with Datasets](#export-data-into-microStrategy-with-datasets)
         * [Create a new dataset](#create-a-new-dataset)
         * [Update a dataset](#update-a-dataset)
+        * [Certify a dataset](#certify-a-dataset)
    * [More resources](#more-resources)
 <!--te-->
 
@@ -38,7 +41,7 @@ jupyter nbextension enable connector-jupyter --py --sys-prefix
 ## Versioning
 Functionalities may be added to mstrio either in combination with annual MicroStrategy platform releases or through updates to platform releases. To ensure compatibility with APIs supported by your MicroStrategy environment, it is recommended to install a version of mstrio that corresponds to the version number of your MicroStrategy environment.
 
-The current version of mstrio-py is 11.2.0 and is supported on MicroStrategy 2019 Update 4 (11.1.4) and later. To leverage the MicroStrategy for Jupyter application, mstrio-py (11.2.0), Jupyter Notebook (6.0.2 or higher), ipywidgets (7.5.1 or higher) and MicroStrategy 2019 Update 4 (11.1.4) or higher are required.
+The current version of mstrio-py is 11.2.1 and is supported on MicroStrategy 2019 Update 4 (11.1.4) and later. To leverage MicroStrategy for Jupyter, mstrio-py (11.2.1), Jupyter Notebook (6.0.2 or higher), ipywidgets (7.5.1 or higher) and MicroStrategy 2019 Update 4 (11.1.4) or higher are required.
 
 If you intend to use mstrio with MicroStrategy version older than 11.1.4, refer to the Pypi package archive to download mstrio 10.11.1, which is supported on:
  * MicroStrategy 2019 (11.1)
@@ -179,6 +182,9 @@ ds.update(chunksize=500000)
 ```
 
 Finally, note that updating datasets that were _not_ created using the REST API is not supported.
+
+##### Certify a dataset
+Use `Dataset.certify()` to certify / decertify an existing dataset. Note that this will only work for datasets created using mstrio or any other client leveraging MicroStrategy REST API.
 
 ## More resources
 - [Tutorials for mstrio][mstr_datasci_comm]

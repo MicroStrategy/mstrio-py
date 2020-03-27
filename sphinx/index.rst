@@ -3,17 +3,7 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to MstrioPy's documentation!
-====================================
-
-MstrioPy gives access to the Microstrategy data with Python. It is the best way to include Microstrategy platform into
-almost every Data Scientific or Analytical workflow.
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
-
-
+.. mdinclude:: ../README.md
 
 Indices and tables
 ==================

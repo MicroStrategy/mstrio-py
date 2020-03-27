@@ -19,7 +19,7 @@ class TestProjects(unittest.TestCase):
 
         mock_get.return_value.status_code = 200
 
-        response = projects.projects(conn)
+        response = projects.projects(conn, "test error msg")
 
         self.assertEqual(response.status_code, 200)
 
