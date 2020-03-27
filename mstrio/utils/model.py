@@ -21,7 +21,7 @@ class Model(object):
 
     __MAX_DESC_LEN = 250
 
-    _INVALID_COL_CHARS = [' ', '.']  # check for invalid characters in column names
+    _INVALID_COL_CHARS = ['\\', '"', '[', ']']  # check for invalid characters in column names
 
     def __init__(self, tables, name, description=None, folder_id=None, ignore_special_chars=False):
         """Initializes Model with tables, a name, and an optional description.
@@ -143,7 +143,7 @@ class Model(object):
             raise TypeError("Elements of tables must be a list of dicts.")
 
         # tables cannot be length 0
-        if len(tables) is 0:
+        if len(tables) == 0:
             raise ValueError("No tables have been added to the dataset.")
 
         # check integrity of each table passed to tables
@@ -169,7 +169,7 @@ class Model(object):
         # check for presence of invalid characters in data frame column names
         if not self.__ignore_special_chars:
             if any([col for col in table[self._KEY_DATA_FRAME].columns for inv in self._INVALID_COL_CHARS if inv in col]):
-                msg = "Column names cannot contain '{}' or '{}'".format(*self._INVALID_COL_CHARS)
+                msg = "Column names cannot contain '{}'".format(*self._INVALID_COL_CHARS)
                 raise ValueError(msg)
 
     @staticmethod

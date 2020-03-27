@@ -40,7 +40,8 @@ release = '11.1.4'
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
-    'sphinx.ext.napoleon'
+    'sphinx.ext.napoleon',
+    'm2r',
 ]
 
 autodoc_default_options = {

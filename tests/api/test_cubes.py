@@ -21,7 +21,7 @@ class TestCubes(unittest.TestCase):
 
         mock_get.return_value.status_code = 200
 
-        response = cubes.cube(conn, cube_id=CUBE_ID)
+        response = cubes.cube_definition(conn, cube_id=CUBE_ID)
 
         self.assertEqual(response.status_code, 200)
 

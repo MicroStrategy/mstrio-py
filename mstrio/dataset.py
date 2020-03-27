@@ -1,22 +1,24 @@
-import json
 import pandas as pd
 from tqdm.auto import tqdm
 
 from mstrio.api import datasets
 from mstrio.utils.model import Model
 from mstrio.utils.encoder import Encoder
+from mstrio.utils.helper import response_handler
 
 
 class Dataset:
     """Create and update data in MicroStrategy datasets.
-    Iteratively build a dataset with `Dataset.add_table()`. Then, create the dataset using `Dataset.create()`. When
-    updating data in the dataset, add individual tables to the dataset and define how the dataset should be updated
-    on the MicroStrategy server, then call `Dataset.update().`
+    Iteratively build a dataset with `Dataset.add_table()`. Then, create the dataset using
+    `Dataset.create()`. When updating data in the dataset, add individual tables to the dataset and
+    define how the dataset should be updated on the MicroStrategy server, then call`Dataset.update().`
+
     Attributes:
         name: Name of the dataset.
         description: Description given to the dataset.
-        dataset_id: Unique identifier for the dataset. Used to update a pre-existing dataset or generated after creating
-            a new dataset.
+        dataset_id: Unique identifier for the dataset. Used to update a pre-existing dataset or
+            generated after creating a new dataset.
+        progress_bar(bool, optional): If True (default), show the upload progress bar.
         __upload_body: Body of the request used to describe the dataset update operation.
         _session_id: Identifies the data upload session.
     """
@@ -24,16 +26,21 @@ class Dataset:
     __VALID_POLICY = ['add', 'update', 'replace', 'upsert']
     __MAX_DESC_LEN = 250
 
-    def __init__(self, connection, name=None, description=None, dataset_id=None):
+    def __init__(self, connection, name=None, description=None, dataset_id=None, progress_bar=True):
         """Interface for creating, updating, and deleting MicroStrategy in-memory datasets.
-        When creating a new dataset, provide a dataset name and an optional description. When updating a pre-existing
-        dataset, provide the dataset identifier. Tables are added to the dataset in an
-        iterative manner using `add_table()`.
+        When creating a new dataset, provide a dataset name and an optional description. When
+        updating a pre-existing dataset, provide the dataset identifier. Tables are added to the
+        dataset in an iterative manner using `add_table()`.
+
         Args:
             connection: MicroStrategy connection object returned by `microstrategy.Connection()`.
             name (str): Name of the dataset.
-            description (str, optional): Description of the dataset. Must be less than or equal to 250 characters.
-            dataset_id (str, optional): Identifier of a pre-existing dataset. Used when updating a pre-existing dataset.
+            description (str, optional): Description of the dataset. Must be less than or equal to
+                250 characters.
+            dataset_id (str, optional): Identifier of a pre-existing dataset. Used when updating a
+                pre-existing dataset.
+            progress_bar(bool, optional): If True (default), show the upload progress bar.
+
         """
 
         if name is not None:
@@ -49,14 +56,16 @@ class Dataset:
             self.__check_param_len(description,
                                    msg="Dataset description should be <= {} characters.".format(self.__MAX_DESC_LEN),
                                    length=self.__MAX_DESC_LEN)
-        self._desc = description
+
         self._connection = connection
+        self._desc = description
+        self._dataset_id = dataset_id
+        self.progress_bar = progress_bar
         self._tables = []
         self._definition = None
         self._session_id = None
         self._folder_id = None
         self.__upload_body = None
-        self._dataset_id = None
 
         if dataset_id is not None:
             self.__check_param_str(dataset_id, "Dataset ID should be a string.")
@@ -107,7 +116,7 @@ class Dataset:
 
         self._tables.append(table)
 
-    def create(self, folder_id=None, auto_upload=True, chunksize=100000, progress_bar=True, verbose=False):
+    def create(self, folder_id=None, auto_upload=True, chunksize=100000, verbose=False):
         """Creates a new dataset.
         Args:
             folder_id (str, optional): ID of the shared folder that the dataset should be created within. If `None`,
@@ -115,7 +124,6 @@ class Dataset:
             auto_upload: If True, automatically uploads the data used to create the dataset definition to the dataset.
                 If False, simply creates the dataset but does not upload data to it.
             chunksize (int, optional): Number of rows to transmit to the server with each request when uploading.
-            progress_bar(bool, optional): If True (default), show the upload progress bar.
             verbose: If True, prints status information about the dataset upload.
         """
 
@@ -130,39 +138,21 @@ class Dataset:
         # makes request to create the dataset
         response = datasets.create_multitable_dataset(connection=self._connection, body=self.__model)
 
-        if not response.ok:
-            self.__response_handler(response=response, msg="Error creating new dataset model.")
-        else:
-            response_json = response.json()
-            self._dataset_id = response_json['id']
+        response_json = response.json()
+        self._dataset_id = response_json['id']
 
-            if verbose:
-                print("Created dataset '{}' with ID: '{}'.".format(*[self._name, self._dataset_id]))
+        if verbose:
+            print("Created dataset '{}' with ID: '{}'.".format(*[self._name, self._dataset_id]))
 
         # if desired, automatically upload and publish the data to the new dataset
         if auto_upload:
-            self.update(chunksize=chunksize, progress_bar=progress_bar)
+            self.update(chunksize=chunksize)
             self.publish()
 
-            status = 6  # default initial status
-            while status != 1:
-                pub = datasets.publish_status(connection=self._connection, dataset_id=self._dataset_id,
-                                              session_id=self._session_id)
-                if not pub.ok:
-                    self.__response_handler(response=pub,
-                                            msg="Error publishing the dataset.")
-                    break
-                else:
-                    pub = pub.json()
-                    status = pub['status']
-                    if status == 1:
-                        break
-
-    def update(self, chunksize=100000, progress_bar=True):
+    def update(self, chunksize=100000):
         """Updates a dataset with new data.
         Args:
             chunksize (int, optional): Number of rows to transmit to the server with each request.
-            progress_bar(bool, optional): If True (default), show the upload progress bar.
         """
 
         # form request body and create a session for data uploads
@@ -170,56 +160,50 @@ class Dataset:
         response = datasets.upload_session(connection=self._connection,
                                            dataset_id=self._dataset_id, body=self.__upload_body)
 
-        if not response.ok:
-            self.__response_handler(response=response, msg="Error creating new data upload session.")
-        else:
-            response_json = response.json()
-            self._session_id = response_json['uploadSessionId']
+        response_json = response.json()
+        self._session_id = response_json['uploadSessionId']
 
-            # upload each table
-            for ix, _table in enumerate(self._tables):
+        # upload each table
+        for ix, _table in enumerate(self._tables):
 
-                _df, _name = _table["data_frame"], _table["table_name"]
+            _df, _name = _table["data_frame"], _table["table_name"]
 
-                # break the data up into chunks using a generator
-                chunks = (_df[i:i + chunksize] for i in range(0, _df.shape[0], chunksize))
+            # break the data up into chunks using a generator
+            chunks = (_df[i:i + chunksize] for i in range(0, _df.shape[0], chunksize))
 
-                total = _df.shape[0]
+            total = _df.shape[0]
 
-                # Count the number of iterations
-                it_total = int(total/chunksize) + (total % chunksize != 0)
+            # Count the number of iterations
+            it_total = int(total/chunksize) + (total % chunksize != 0)
 
-                pbar = tqdm(chunks, total=it_total, disable=(not progress_bar))
-                for index, chunk in enumerate(pbar):
-                    if progress_bar:
-                        pbar.set_description("Uploading {}/{}".format(ix+1, len(self._tables)))
+            pbar = tqdm(chunks, total=it_total, disable=(not self.progress_bar))
+            for index, chunk in enumerate(pbar):
+                pbar.set_description("Uploading {}/{}".format(ix+1, len(self._tables)))
 
-                    # base64 encode the data
-                    encoder = Encoder(data_frame=chunk, dataset_type='multi')
-                    b64_enc = encoder.encode
+                # base64 encode the data
+                encoder = Encoder(data_frame=chunk, dataset_type='multi')
+                b64_enc = encoder.encode
 
-                    # form body of the request
-                    body = {"tableName": _name,
-                            "index": index + 1,
-                            "data": b64_enc}
+                # form body of the request
+                body = {"tableName": _name,
+                        "index": index + 1,
+                        "data": b64_enc}
 
-                    # make request to upload the data
-                    response = datasets.upload(connection=self._connection,
+                # make request to upload the data
+                response = datasets.upload(connection=self._connection,
+                                           dataset_id=self._dataset_id,
+                                           session_id=self._session_id,
+                                           body=body)
+
+                if not response.ok:
+                    # on error, cancel the previously uploaded data
+                    datasets.publish_cancel(connection=self._connection,
                                             dataset_id=self._dataset_id,
-                                            session_id=self._session_id,
-                                            body=body)
+                                            session_id=self._session_id)
 
-                    if not response.ok:
-                        # on error, cancel the previously uploaded data
-                        self.__response_handler(response=response, msg="Error uploading data.")
-                        datasets.publish_cancel(connection=self._connection,
-                                                dataset_id=self._dataset_id,
-                                                session_id=self._session_id)
-
-                    if progress_bar:
-                        pbar.set_postfix(rows=min((index+1)*chunksize, total))
-                pbar.close()
-            self._tables = []
+                pbar.set_postfix(rows=min((index+1)*chunksize, total))
+            pbar.close()
+        self._tables = []
 
     def publish(self):
         """Publish the uploaded data to the selected dataset.
@@ -232,10 +216,25 @@ class Dataset:
 
         if not response.ok:
             # on error, cancel the previously uploaded data
-            self.__response_handler(response=response, msg="Error publishing uploaded data. Cancelling publication.")
             datasets.publish_cancel(connection=self._connection,
                                     dataset_id=self._dataset_id, session_id=self._session_id)
 
+        status = 6  # default initial status
+        while status != 1:
+            pub = datasets.publish_status(connection=self._connection, dataset_id=self._dataset_id,
+                                          session_id=self._session_id)
+            pub = pub.json()
+            status = pub['status']
+            if status == 1:
+                print("Dataset '%s' published successfully." % self._name)
+
+    def certify(self):
+        """Certify the uploaded dataset.
+        Returns:
+            response: Response from the Intelligence Server acknowledging the certification process.
+        """
+        response = datasets.toggle_certification(connection=self._connection,
+                                                 dataset_id=self._dataset_id)
         return response
 
     def publish_status(self):
@@ -254,14 +253,10 @@ class Dataset:
          Args:
             verbose: If True, prints status information about the dataset upload.
         """
-        response = datasets.delete_dataset(connection=self._connection, dataset_id=self._dataset_id)
+        datasets.delete_dataset(connection=self._connection, dataset_id=self._dataset_id)
 
-        if not response.ok:
-            self.__response_handler(response=response,
-                                    msg="Error deleting dataset with ID: '{}'".format(self._dataset_id))
-        else:
-            if verbose:
-                print("Successfully deleted dataset ID: '{}'.".format(self._dataset_id))
+        if verbose:
+            print("Successfully deleted dataset ID: '{}'.".format(self._dataset_id))
 
     def upload_status(self, connection, dataset_id, session_id):
         """Check the status of data that was uploaded to a dataset.
@@ -270,10 +265,11 @@ class Dataset:
             dataset_id (str): Identifier of a pre-existing dataset.
             session_id (str): Identifer of the server session used for collecting uploaded data.
         """
-        response = datasets.publish_status(connection=connection, dataset_id=dataset_id, session_id=session_id)
+        response = datasets.publish_status(
+            connection=connection, dataset_id=dataset_id, session_id=session_id)
 
-        self.__response_handler(response=response,
-                                msg="Publication status for dataset with ID: '{}':".format(dataset_id))
+        response_handler(response=response,
+                         msg="Publication status for dataset with ID: '{}':".format(dataset_id), throw_error=False)
 
     def __build_model(self):
         """Create json representation of the dataset."""
@@ -296,25 +292,8 @@ class Dataset:
 
         response = datasets.dataset_definition(connection=self._connection, dataset_id=self._dataset_id)
 
-        if not response.ok:
-            self.__response_handler(response=response,
-                                    msg="Error loading dataset '{}'. Check dataset ID.".format(self._dataset_id))
-        else:
-            self._definition = response.json()
-            self._name = self._definition['name']
-            self._dataset_id = self._definition['id']
-
-    @staticmethod
-    def __response_handler(response, msg):
-        """Generic error message handler for transactions against datasets.
-        Args:
-            response: Response object returned by HTTP request.
-            msg (str): Message to print in addition to any server-generated error message(s).
-        """
-        res = json.loads(response.content)
-        print(msg)
-        print("HTTP %i %s" % (response.status_code, response.reason))
-        print("I-Server Error %s, %s" % (res['code'], res['message']))
+        self._definition = response.json()
+        self._name = self._definition['name']
 
     @staticmethod
     def __check_param_len(param, msg, length):

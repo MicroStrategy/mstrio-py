@@ -1,6 +1,6 @@
 # TODO: Q-pass in cube or report object?
 # TODO: Q-how would you do this if you knew the attr elem ids ahead of time but did not load into F()?
-import warnings
+import mstrio.utils.helper as helper
 
 
 class Filter:
@@ -38,7 +38,9 @@ class Filter:
                 raise ValueError(self.err_msg_invalid.format(object_id))
 
             if self.__duplicated(object_id):
-                warnings.warn(self.err_msg_duplicated.format(object_id), UserWarning, stacklevel=2)
+                helper.exception_handler(msg=self.err_msg_duplicated.format(object_id),
+                                         exception_type=UserWarning,
+                                         throw_error=False)
             else:
                 typ = self.__type(object_id)
 

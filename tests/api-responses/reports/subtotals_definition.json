@@ -1,0 +1,198 @@
+{
+    "name": "21 Subtotals",
+    "id": "43F320584EA2E6D8555F88A8FBE14E90",
+    "definition": {
+        "grid": {
+            "crossTab": false,
+            "metricsPosition": {
+                "axis": "columns",
+                "index": 0
+            },
+            "rows": [
+                {
+                    "name": "Quarter",
+                    "id": "8D679D4A11D3E4981000E787EC6DE8A4",
+                    "type": "attribute",
+                    "forms": [
+                        {
+                            "id": "CCFBE2A5EADB4F50941FB879CCF1721C",
+                            "name": "DESC",
+                            "dataType": "varChar",
+                            "baseFormCategory": "DESC",
+                            "baseFormType": "text"
+                        }
+                    ]
+                },
+                {
+                    "name": "Region",
+                    "id": "8D679D4B11D3E4981000E787EC6DE8A4",
+                    "type": "attribute",
+                    "forms": [
+                        {
+                            "id": "CCFBE2A5EADB4F50941FB879CCF1721C",
+                            "name": "DESC",
+                            "dataType": "varChar",
+                            "baseFormCategory": "DESC",
+                            "baseFormType": "text"
+                        }
+                    ]
+                },
+                {
+                    "name": "Employee",
+                    "id": "8D679D3F11D3E4981000E787EC6DE8A4",
+                    "type": "attribute",
+                    "forms": [
+                        {
+                            "id": "8D67A52E11D3E4981000E787EC6DE8A4",
+                            "name": "Last Name",
+                            "dataType": "nVarChar",
+                            "baseFormCategory": "Employee DESC 1",
+                            "baseFormType": "text"
+                        },
+                        {
+                            "id": "8D67A53211D3E4981000E787EC6DE8A4",
+                            "name": "First Name",
+                            "dataType": "nVarChar",
+                            "baseFormCategory": "Employee DESC 2",
+                            "baseFormType": "text"
+                        }
+                    ]
+                }
+            ],
+            "columns": [
+                {
+                    "name": "Metrics",
+                    "id": "00000000000000000000000000000000",
+                    "type": "templateMetrics",
+                    "elements": [
+                        {
+                            "name": "Revenue",
+                            "id": "4C05177011D3E877C000B3B2D86C964F",
+                            "type": "metric",
+                            "dataType": "unknown"
+                        },
+                        {
+                            "name": "Cost",
+                            "id": "7FD5B69611D5AC76C000D98A4CC5F24F",
+                            "type": "metric",
+                            "dataType": "unknown"
+                        },
+                        {
+                            "name": "Profit",
+                            "id": "4C051DB611D3E877C000B3B2D86C964F",
+                            "type": "metric",
+                            "dataType": "unknown"
+                        }
+                    ]
+                }
+            ],
+            "pageBy": [],
+            "subtotals": {
+                "defined": true,
+                "visible": true
+            },
+            "sorting": {
+                "rows": [],
+                "columns": []
+            },
+            "thresholds": []
+        },
+        "availableObjects": {
+            "attributes": [
+                {
+                    "name": "Region",
+                    "id": "8D679D4B11D3E4981000E787EC6DE8A4",
+                    "type": "attribute",
+                    "forms": [
+                        {
+                            "id": "CCFBE2A5EADB4F50941FB879CCF1721C",
+                            "name": "DESC",
+                            "dataType": "varChar",
+                            "baseFormCategory": "DESC",
+                            "baseFormType": "text"
+                        },
+                        {
+                            "id": "45C11FA478E745FEA08D781CEA190FE5",
+                            "name": "ID",
+                            "dataType": "integer",
+                            "baseFormCategory": "ID",
+                            "baseFormType": "number"
+                        }
+                    ]
+                },
+                {
+                    "name": "Employee",
+                    "id": "8D679D3F11D3E4981000E787EC6DE8A4",
+                    "type": "attribute",
+                    "forms": [
+                        {
+                            "id": "8D67A52E11D3E4981000E787EC6DE8A4",
+                            "name": "Last Name",
+                            "dataType": "nVarChar",
+                            "baseFormCategory": "Employee DESC 1",
+                            "baseFormType": "text"
+                        },
+                        {
+                            "id": "8D67A53211D3E4981000E787EC6DE8A4",
+                            "name": "First Name",
+                            "dataType": "nVarChar",
+                            "baseFormCategory": "Employee DESC 2",
+                            "baseFormType": "text"
+                        },
+                        {
+                            "id": "45C11FA478E745FEA08D781CEA190FE5",
+                            "name": "ID",
+                            "dataType": "integer",
+                            "baseFormCategory": "ID",
+                            "baseFormType": "number"
+                        }
+                    ]
+                },
+                {
+                    "name": "Quarter",
+                    "id": "8D679D4A11D3E4981000E787EC6DE8A4",
+                    "type": "attribute",
+                    "forms": [
+                        {
+                            "id": "CCFBE2A5EADB4F50941FB879CCF1721C",
+                            "name": "DESC",
+                            "dataType": "varChar",
+                            "baseFormCategory": "DESC",
+                            "baseFormType": "text"
+                        },
+                        {
+                            "id": "45C11FA478E745FEA08D781CEA190FE5",
+                            "name": "ID",
+                            "dataType": "integer",
+                            "baseFormCategory": "ID",
+                            "baseFormType": "number"
+                        }
+                    ]
+                }
+            ],
+            "metrics": [
+                {
+                    "name": "Revenue",
+                    "id": "4C05177011D3E877C000B3B2D86C964F",
+                    "type": "metric",
+                    "dataType": "unknown"
+                },
+                {
+                    "name": "Cost",
+                    "id": "7FD5B69611D5AC76C000D98A4CC5F24F",
+                    "type": "metric",
+                    "dataType": "unknown"
+                },
+                {
+                    "name": "Profit",
+                    "id": "4C051DB611D3E877C000B3B2D86C964F",
+                    "type": "metric",
+                    "dataType": "unknown"
+                }
+            ],
+            "customGroups": [],
+            "consolidations": [],
+            "hierarchies": []
+        }
+    }
+}

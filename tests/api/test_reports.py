@@ -23,7 +23,7 @@ class TestReports(unittest.TestCase):
 
         mock_get.return_value.status_code = 200
 
-        response = reports.report(conn, report_id=REPORT_ID)
+        response = reports.report_definition(conn, report_id=REPORT_ID)
 
         self.assertEqual(response.status_code, 200)
 
@@ -51,6 +51,7 @@ class TestReports(unittest.TestCase):
                                               offset=OFFSET, limit=LIMIT)
 
         self.assertEqual(response.status_code, 200)
+
 
 if __name__ == '__main__':
     unittest.main()

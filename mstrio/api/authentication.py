@@ -1,4 +1,5 @@
 import requests
+from mstrio.utils.helper import response_handler
 
 
 def login(connection, verbose=False):
@@ -15,7 +16,7 @@ def login(connection, verbose=False):
     :return: Complete HTTP response object
     """
 
-    response = requests.post(url=connection.base_url + '/auth/login',
+    response = requests.post(url=connection.base_url + '/api/auth/login',
                              data={'username': connection.username,
                                    'password': connection.password,
                                    'loginMode': connection.login_mode,
@@ -23,6 +24,8 @@ def login(connection, verbose=False):
                              verify=connection.ssl_verify)
     if verbose:
         print(response.url)
+    if not response.ok:
+        response_handler(response, "Authentication error. Check user credentials or REST API URL and try again.")
     return response
 
 
@@ -34,12 +37,14 @@ def logout(connection, verbose=False):
     :param verbose: Verbosity of request response; defaults to False
     :return: Complete HTTP response object
     """
-    response = requests.post(url=connection.base_url + '/auth/logout',
+    response = requests.post(url=connection.base_url + '/api/auth/logout',
                              headers={'X-MSTR-AuthToken': connection.auth_token},
                              cookies=connection.cookies,
                              verify=connection.ssl_verify)
     if verbose:
         print(response.url)
+    if not response.ok:
+        response_handler(response, "Failed to logout.")
     return response
 
 
@@ -51,10 +56,12 @@ def sessions(connection, verbose=False):
     :param verbose: Verbosity of request response; defaults to False
     :return: Complete HTTP response object
     """
-    response = requests.put(url=connection.base_url + '/sessions',
+    response = requests.put(url=connection.base_url + '/api/sessions',
                             headers={'X-MSTR-AuthToken': connection.auth_token},
                             cookies=connection.cookies,
                             verify=connection.ssl_verify)
     if verbose:
         print(response.url)
+    if not response.ok:
+        response_handler(response, "Session expired. Please reconnect to MicroStrategy.")
     return response

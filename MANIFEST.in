@@ -1,3 +1,4 @@
 graft connector-jupyter
 prune tests
 include version.txt
+exclude check_python_version.sh

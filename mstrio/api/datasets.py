@@ -1,5 +1,7 @@
 import requests
 
+from mstrio.utils.helper import response_handler
+
 
 def dataset_definition(connection, dataset_id, fields=None, verbose=False):
     """Get the definition of a dataset.
@@ -15,7 +17,7 @@ def dataset_definition(connection, dataset_id, fields=None, verbose=False):
         HTTP response object returned by the MicroStrategy REST server
 
     """
-    response = requests.get(url=connection.base_url + '/datasets/' + dataset_id,
+    response = requests.get(url=connection.base_url + '/api/datasets/' + dataset_id,
                             headers={'X-MSTR-AuthToken': connection.auth_token,
                                      'X-MSTR-ProjectID': connection.project_id},
                             params={'fields': fields},
@@ -23,6 +25,9 @@ def dataset_definition(connection, dataset_id, fields=None, verbose=False):
                             verify=connection.ssl_verify)
     if verbose:
         print(response.url)
+    if not response.ok:
+        msg = "Error loading dataset '{}'. Check dataset ID.".format(dataset_id)
+        response_handler(response, msg)
     return response
 
 
@@ -38,7 +43,7 @@ def create_dataset(connection, body, verbose=False):
         HTTP response object returned by the MicroStrategy REST server
 
     """
-    response = requests.post(url=connection.base_url + '/datasets',
+    response = requests.post(url=connection.base_url + '/api/datasets',
                              headers={'X-MSTR-AuthToken': connection.auth_token,
                                       'X-MSTR-ProjectID': connection.project_id},
                              cookies=connection.cookies,
@@ -47,6 +52,8 @@ def create_dataset(connection, body, verbose=False):
 
     if verbose:
         print(response.url)
+    if not response.ok:
+        response_handler(response, "Error creating new dataset model.")
     return response
 
 
@@ -67,7 +74,7 @@ def update_dataset(connection, dataset_id, table_name, update_policy, body, verb
         HTTP response object returned by the MicroStrategy REST server
 
     """
-    response = requests.patch(url=connection.base_url + '/datasets/' + dataset_id + '/tables/' + table_name,
+    response = requests.patch(url=connection.base_url + '/api/datasets/' + dataset_id + '/tables/' + table_name,
                               headers={'X-MSTR-AuthToken': connection.auth_token,
                                        'X-MSTR-ProjectID': connection.project_id,
                                        'updatePolicy': update_policy},
@@ -76,6 +83,8 @@ def update_dataset(connection, dataset_id, table_name, update_policy, body, verb
                               verify=connection.ssl_verify)
     if verbose:
         print(response.url)
+    if not response.ok:
+        response_handler(response, "Error updating dataset.")
     return response
 
 
@@ -91,13 +100,15 @@ def delete_dataset(connection, dataset_id, verbose=False):
         HTTP response object returned by the MicroStrategy REST server
 
     """
-    response = requests.delete(url=connection.base_url + '/objects/' + dataset_id + '?type=3',
+    response = requests.delete(url=connection.base_url + '/api/objects/' + dataset_id + '?type=3',
                                headers={'X-MSTR-AuthToken': connection.auth_token,
                                         'X-MSTR-ProjectID': connection.project_id},
                                cookies=connection.cookies, verify=connection.ssl_verify)
 
     if verbose:
         print(response.url)
+    if not response.ok:
+        response_handler(response, msg="Error deleting dataset with ID: '{}'".format(dataset_id))
     return response
 
 
@@ -113,7 +124,7 @@ def create_multitable_dataset(connection, body, verbose=False):
         HTTP response object returned by the MicroStrategy REST server
 
     """
-    response = requests.post(url=connection.base_url + '/datasets/models',
+    response = requests.post(url=connection.base_url + '/api/datasets/models',
                              headers={'X-MSTR-AuthToken': connection.auth_token,
                                       'X-MSTR-ProjectID': connection.project_id},
                              cookies=connection.cookies,
@@ -122,6 +133,8 @@ def create_multitable_dataset(connection, body, verbose=False):
 
     if verbose:
         print(response.url)
+    if not response.ok:
+        response_handler(response, "Error creating new dataset model.")
     return response
 
 
@@ -139,7 +152,7 @@ def upload_session(connection, dataset_id, body, verbose=False):
 
     """
 
-    response = requests.post(url=connection.base_url + '/datasets/' + dataset_id + '/uploadSessions',
+    response = requests.post(url=connection.base_url + '/api/datasets/' + dataset_id + '/uploadSessions',
                              headers={'X-MSTR-AuthToken': connection.auth_token,
                                       'X-MSTR-ProjectID': connection.project_id},
                              cookies=connection.cookies,
@@ -147,6 +160,8 @@ def upload_session(connection, dataset_id, body, verbose=False):
                              verify=connection.ssl_verify)
     if verbose:
         print(response.url)
+    if not response.ok:
+        response_handler(response, "Error creating new data upload session.")
     return response
 
 
@@ -165,7 +180,7 @@ def upload(connection, dataset_id, session_id, body, verbose=False):
 
     """
 
-    response = requests.put(url=connection.base_url + '/datasets/' + dataset_id + '/uploadSessions/' + session_id,
+    response = requests.put(url=connection.base_url + '/api/datasets/' + dataset_id + '/uploadSessions/' + session_id,
                             headers={'X-MSTR-AuthToken': connection.auth_token,
                                      'X-MSTR-ProjectID': connection.project_id},
                             cookies=connection.cookies,
@@ -173,6 +188,8 @@ def upload(connection, dataset_id, session_id, body, verbose=False):
                             verify=connection.ssl_verify)
     if verbose:
         print(response.url)
+    if not response.ok:
+        response_handler(response, "Error uploading data.", throw_error=False)
     return response
 
 
@@ -190,13 +207,45 @@ def publish(connection, dataset_id, session_id, verbose=False):
 
     """
 
-    response = requests.post(url=connection.base_url + '/datasets/' + dataset_id + '/uploadSessions/' + session_id + '/publish',
+    response = requests.post(url=connection.base_url + '/api/datasets/' + dataset_id + '/uploadSessions/' + session_id + '/publish',
                              headers={'X-MSTR-AuthToken': connection.auth_token,
                                       'X-MSTR-ProjectID': connection.project_id},
                              cookies=connection.cookies,
                              verify=connection.ssl_verify)
     if verbose:
         print(response.url)
+    if not response.ok:
+        response_handler(response, "Error publishing uploaded data. Cancelling publication.", throw_error=False)
+    return response
+
+
+def toggle_certification(connection, dataset_id, dataset_type=3, certify=True, verbose=False):
+    """Certify/Uncertify a multi-table dataset.
+
+    Args:
+        connection (object): MicroStrategy connection object returned by `microstrategy.Connection()`.
+        dataset_id (str): Identifier of a pre-existing dataset. Used when certifying a pre-existing dataset.
+        dataset_type (int, optional): Type of dataset to certify as integer; defaults to 3.
+        certify (bool, optional): boolean representing if the instruction is to certify (True) or decertify (False); defaults to True.
+        verbose (bool, optional): Verbosity of server responses; defaults to False.
+
+    Returns:
+        HTTP response object returned by the MicroStrategy REST server
+
+    """
+
+    response = requests.put(url=connection.base_url + '/api/objects/' + dataset_id + '/certify/?type=' + str(dataset_type) + '&certify=' + str(certify),
+                            headers={'X-MSTR-AuthToken': connection.auth_token,
+                                     'X-MSTR-ProjectID': connection.project_id,
+                                     'Content-Type': 'application/json',
+                                     'Accept': 'application/json'},
+                            cookies=connection.cookies,
+                            verify=connection.ssl_verify)
+    if verbose:
+        print(response.url)
+    if not response.ok:
+        error_msg = "Error certifying dataset with ID: '{}'".format(dataset_id)
+        response_handler(response, error_msg)
     return response
 
 
@@ -214,13 +263,15 @@ def publish_status(connection, dataset_id, session_id, verbose=False):
 
     """
 
-    response = requests.get(url=connection.base_url + '/datasets/' + dataset_id + '/uploadSessions/' + session_id + '/publishStatus',
+    response = requests.get(url=connection.base_url + '/api/datasets/' + dataset_id + '/uploadSessions/' + session_id + '/publishStatus',
                             headers={'X-MSTR-AuthToken': connection.auth_token,
                                      'X-MSTR-ProjectID': connection.project_id},
                             cookies=connection.cookies,
                             verify=connection.ssl_verify)
     if verbose:
         print(response.url)
+    if not response.ok:
+        response_handler(response, "Failed to check the publish status.")
     return response
 
 
@@ -238,11 +289,13 @@ def publish_cancel(connection, dataset_id, session_id, verbose=False):
 
     """
 
-    response = requests.delete(url=connection.base_url + '/datasets/' + dataset_id + '/uploadSessions/' + session_id,
+    response = requests.delete(url=connection.base_url + '/api/datasets/' + dataset_id + '/uploadSessions/' + session_id,
                                headers={'X-MSTR-AuthToken': connection.auth_token,
                                         'X-MSTR-ProjectID': connection.project_id},
                                cookies=connection.cookies,
                                verify=connection.ssl_verify)
     if verbose:
         print(response.url)
+    if not response.ok:
+        response_handler(response, "Failed to cancel the publication.")
     return response

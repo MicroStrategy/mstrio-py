@@ -9,6 +9,35 @@ define(["jquery", "base/js/namespace", "base/js/dialog"], function(
   const snippet_for_loading = "?loading=true";
   const origin = window.location.origin;
   const connector_address = `${origin}/nbextensions/mstr_jupyter/mstr-connector/build/index.html`;
+  const MSTR_ENV_VARIABLE_NAME = 'mstrio_env';
+
+  const pythonCodeForInitialEngine = (envName) => {
+    var code =
+`import pandas as pd
+
+def create_custom_env():
+    output={}
+    for el in globals().keys():
+        if el[0]!='_' and isinstance(globals()[el], pd.core.frame.DataFrame):
+            output[el] = globals()[el]
+    return output
+
+def update_custom_env():
+    global ${envName}
+    new_${envName} = ${envName}
+    for el in globals().keys():
+        if el[0]!='_' and isinstance(globals()[el], pd.core.frame.DataFrame) and not el in new_${envName}.keys():
+            new_${envName}[el] = globals()[el]
+    return new_${envName}
+
+
+if '${envName}' in locals():
+    ${envName} = update_custom_env()
+else:
+    ${envName} = create_custom_env()`;
+
+    return code;
+  }
 
   var modal;
   var mstr_editor;
@@ -32,29 +61,42 @@ define(["jquery", "base/js/namespace", "base/js/dialog"], function(
 
       $("[title='Connect to MicroStrategy']").append(
           `<img style="padding-bottom: 2px" src="${origin}/nbextensions/mstr_jupyter/mstr.ico">`
-      );
+      ).bind('keydown', function(event) {
+        if (event.key === ' ') {
+          event.preventDefault();
+          $(this).click();
+        }
+      });
   };
 
+  // appending custom MSTRIO files
   appendHead("python-code.js");
   appendHead("cells-creation.js");
   appendHead("utilities.js");
   appendHead("override_style.css");
-  
+
+  Jupyter.notebook.kernel.execute(
+    pythonCodeForInitialEngine(MSTR_ENV_VARIABLE_NAME),
+  );
+
   function build_mstr_editor() {
     mstr_editor = $("<div id='mstr_editor'/>");
 
-    window.onmessage = function(event) {
+    window.onmessage = async function(event) {
       var mstr_envs_LocalStorage;
       var mstr_projs_LocalStorage;
-      var mstr_props_LocalStorage;
       var e = event.data;
-      var c = event.data.connectionData;
-      var a = event.data.authenticationInfo;
+      var c = e.connectionData;
+      var a = e.authenticationInfo;
       var x = e.exportInfo;
-      
-      var backendManager = document.getElementById("mstr_iframe").contentWindow.backendManager;
-      
-      console.log(`MESSAGE TYPE: ${e.message_type}`);
+
+      Jupyter.notebook.kernel.execute(
+        pythonCodeForInitialEngine(MSTR_ENV_VARIABLE_NAME),
+      );
+
+      window.backendManager = document.getElementById("mstr_iframe").contentWindow.backendManager;
+      var backendManager = window.backendManager;
+
       switch(e.message_type) {
         case "import":
           modal.modal("hide");
@@ -70,15 +112,13 @@ define(["jquery", "base/js/namespace", "base/js/dialog"], function(
           appendHead("iframe_style.css", iframe_document);
           mstr_envs_LocalStorage = localStorage.getItem("mstr_envs");
           mstr_projs_LocalStorage = localStorage.getItem("mstr_projs");
-          mstr_props_LocalStorage = localStorage.getItem("mstr_props");
 
           if(mstr_envs_LocalStorage) backendManager.addEnvToSuggestions(mstr_envs_LocalStorage);
           if(mstr_projs_LocalStorage) backendManager.addRecentProjects(mstr_projs_LocalStorage);
-          if(mstr_props_LocalStorage) backendManager.addDatasetProperties(mstr_props_LocalStorage);
-        
+
           if(importing_exporting_flag === true && (isImportingExporting("importing", importing_exporting_flag) || isImportingExporting("exporting", importing_exporting_flag))) {backendManager.toggleImportOrExportInProgress(true);}
           else {backendManager.toggleImportOrExportInProgress(false);}
-                 
+
           let envName;
           let selectedProjectsList;
 
@@ -89,23 +129,23 @@ define(["jquery", "base/js/namespace", "base/js/dialog"], function(
           if(selectedProjects) {
             selectedProjectsList = JSON.parse(selectedProjects).filter(e => e.envName === envName)[0].projectList;
           }
-         
-          if(current_mode !== 'authentication' && selectedProjects && credentials_login && token_login) { 
+
+          if(current_mode !== 'authentication' && selectedProjects && credentials_login && token_login) {
             backendManager.automaticLogin(credentials_login, token_login, current_mode, selectedProjectsList);
           }
           else {
-            backendManager.showAuthenticationPage(); 
+            backendManager.showAuthenticationPage();
           }
 
-          executePythonInBackground(Jupyter.notebook, python_code_for_listing_dataframe_names(), (out) => { 
-            if (out.msg_type === "execute_result") {
-              var dataframe_names = out.content.data["text/plain"];
-              backendManager.updateDataFramesList(dataframe_names.slice(1, dataframe_names.length - 1));
-            } else {
-              // something else has been done in background or ERROR!
-            }
-          })
-                    
+          executePythonInBackground(Jupyter.notebook, python_code_for_listing_dataframe_names())
+            .then((out) => {
+              if (out.msg_type === "execute_result") {
+                var dataframe_names = out.content.data["text/plain"];
+                backendManager.updateDataFramesList(dataframe_names.slice(1, dataframe_names.length - 1));
+              } else {
+                // something else has been done in background or ERROR!
+              }
+            })
           break;
 
         case "update_envs":
@@ -120,12 +160,6 @@ define(["jquery", "base/js/namespace", "base/js/dialog"], function(
 
           backendManager.addRecentProjects(newRecentProjects_stringified);
           localStorage.setItem("mstr_projs", newRecentProjects_stringified);
-          break;
-
-        case "update_properties":
-          var properties_stringified = e.value;
-          backendManager.addDatasetProperties(properties_stringified);
-          localStorage.setItem("mstr_props", properties_stringified);
           break;
 
         case "clear_all_env":
@@ -149,82 +183,99 @@ define(["jquery", "base/js/namespace", "base/js/dialog"], function(
           var notebook_name = document.getElementById("notebook_name").innerText;
           backendManager.setBackendEnvName(notebook_name);
 
-          executePythonInBackground(Jupyter.notebook, python_code_for_listing_dataframe_names(), (out) => { 
-            if (out.msg_type === "execute_result") {
-              var dataframe_names = out.content.data["text/plain"];
-              backendManager.updateDataFramesList(dataframe_names.slice(1, dataframe_names.length - 1));
-            } else {
-              // something else has been done in background or ERROR!
-            }
-          })
+          executePythonInBackground(Jupyter.notebook, python_code_for_listing_dataframe_names())
+            .then((out) => {
+              if (out.msg_type === "execute_result") {
+                var dataframe_names = out.content.data["text/plain"];
+                backendManager.updateDataFramesList(dataframe_names.slice(1, dataframe_names.length - 1));
+              } else {
+                // something else has been done in background or ERROR!
+              }
+            })
           break;
 
         case "gather_df_details":
-          var df_name = e.dataframe_name
-          var py_code = `l = len(${df_name}.columns)\n`+
-                        `temp_${df_name} = ${df_name}.replace('', pd.np.nan).dropna(thresh=l-pd.np.ceil(l*0.05)).replace(pd.np.nan, '')[:10]\n`+
-                        `temp_${df_name}.to_json(orient='records')\n`
-          executePythonInBackground(Jupyter.notebook, py_code, (out) => {
-            if (out.msg_type === "execute_result") {
-              var output = (
-                out.content.data["text/plain"]
-                  .replace(/\\{2,}/gi, "\\")
-                  .replace(/'/gi, '"')
-              );
-              var finalReturnObject = {
-                actual: JSON.parse(output.slice(1, output.length-1))
-              }
-              py_code = `arg_for_model = [{'table_name': 'selected_df', 'data_frame': temp_${df_name}}]\n`+
-                        `from mstrio.utils.model import Model\n`+
-                        `model = Model(tables=arg_for_model, name='preview_table_types', ignore_special_chars=True)\n`+
-                        `model.get_model()\n`
-              executePythonInBackground(Jupyter.notebook, py_code, (out) => {
-                if (out.msg_type === "execute_result") {
-                  output = (
-                    out.content.data["text/plain"]
-                      .replace(/\\{2,}/gi, "\\")
-                      .replace(/'/gi, '"')
-                  );
-                  finalReturnObject["types"] = JSON.parse(output)
-                  executePythonInBackground(Jupyter.notebook, `temp_${df_name} = ''\n`)
-                  console.log(finalReturnObject)
-                  backendManager.updateDataFrameContent(finalReturnObject, df_name);
-                } else {
-                  // something else has been done in background or ERROR!
+          var df_name = {
+            original: e.dataframe_org_name,
+            changed: e.dataframe_new_name ? e.dataframe_new_name : e.dataframe_org_name
+          };
+          var py_code = python_code_for_gathering_dataframe_data(df_name.original);
+          executePythonInBackground(Jupyter.notebook, py_code)
+            .then((out) => {
+              if (out.msg_type === "execute_result") {
+                var output = (
+                  out.content.data["text/plain"]
+                    .replace(/\\{2,}/gi, "\\")
+                    .replace(/'/gi, '"')
+                );
+                var finalReturnObject = {
+                  content: JSON.parse(output.slice(1, output.length-1)),
+                  originalName: df_name.changed
                 }
-              })
-            } else {
-              // something else has been done in background or ERROR!
-            }
-          })
+                py_code = python_code_for_modeling_gathered_data(df_name.original);
+                executePythonInBackground(Jupyter.notebook, py_code)
+                  .then((out) => {
+                    if (out.msg_type === "execute_result") {
+                      output = (
+                        out.content.data["text/plain"]
+                          .replace(/\\{2,}/gi, "\\")
+                          .replace(/'/gi, '"')
+                      );
+                      var clearedStructure = JSON.parse(output)
+                      clearedStructure.attributes = clearedStructure.attributes.map((item) => ({
+                        ...item,
+                        name: [item.name]
+                      }))
+                      clearedStructure.metrics = clearedStructure.metrics.map((item) => ({
+                        ...item,
+                        name: [item.name]
+                      }))
+                      clearedStructure.tables[0].columnHeaders = clearedStructure.tables[0].columnHeaders.map((item) => ({
+                        ...item,
+                        name: [item.name]
+                      }))
+                      finalReturnObject["types"] = clearedStructure
+                      backendManager.updateDataFrameContent(finalReturnObject, df_name.changed);
+                    } else {
+                      // something else has been done in background or ERROR!
+                    }
+                  })
+              } else {
+                // something else has been done in background or ERROR!
+              }
+            })
           break;
 
         case "gather_cube_details":
-          executePythonInBackground(Jupyter.notebook, python_code_for_cube_details(c.url, c.cubeId, c.projectId, a), (out) => {
-            if (out.msg_type === "execute_result") {
-              var result = JSON.parse(out.content.data["text/plain"].replace(/'/gi, '"'));
-              backendManager.updateCubeDetails(c.name, result);
-            } else {
-              // something else has been done in background or ERROR!
-            }
-          })
+          executePythonInBackground(Jupyter.notebook, python_code_for_cube_details(c.url, c.cubeId, c.projectId, a))
+            .then((out) => {
+              if (out.msg_type === "execute_result") {
+                var result = JSON.parse(out.content.data["text/plain"].replace(/'/gi, '"'));
+                backendManager.updateCubeDetails(c.name, result);
+              } else {
+                // something else has been done in background or ERROR!
+              }
+            })
           break;
 
         case "export_dataframe":
           modal.modal("hide");
-          create_export_cell(x.dataframe, x.wrangle, x.save_as_name, x.folder_id, x.url, x.projectId, a.loginMode, a.username, a.password);
+          create_export_cell(MSTR_ENV_VARIABLE_NAME, x.selectedDataframes, x.saveAsName, x.folderId, x.certify, x.description, a.envUrl, x.projectId, a.loginMode, a.username, a.password);
 
           importing_exporting_flag = true;
           var interval_var = setInterval(checkImportExport, 2000, "exporting", importing_exporting_flag);
           localStorage.setItem("interval_var", interval_var);
           break;
-        
-        case "wrangle_col_name":
-          var instructions = JSON.parse(e.instructionDetails)
-          var py_code = `${instructions.df_name} = ${instructions.df_name}.rename(columns = {'${instructions.prev}': '${instructions.next}'})\n`
-          executePythonInBackground(Jupyter.notebook, py_code)
+
+        case "update_cube":
+          modal.modal("hide");
+          create_update_cell(MSTR_ENV_VARIABLE_NAME, a.envUrl, a.loginMode, x.projectId, x.cubeId, x.updatePolicies, a.username, a.password);
+
+          importing_exporting_flag = true;
+          var interval_var = setInterval(checkImportExport, 2000, "updating", importing_exporting_flag);
+          localStorage.setItem("interval_var", interval_var);
           break;
-              
+
         case "wrangle_col_reorder":
             var instructions = JSON.parse(e.instructionDetails)
             var formattedCols = ''
@@ -235,27 +286,42 @@ define(["jquery", "base/js/namespace", "base/js/dialog"], function(
             var py_code = python_code_for_column_reorder(instructions.df, formattedCols, instructions.start)
             executePythonInBackground(Jupyter.notebook, py_code)
             break;
-        
+
         case "backend_info":
           var info_backend = e.info_backend;
           backendManager.updateBackendParameters(info_backend["text/plain"].slice(1, info_backend["text/plain"].length - 1));
           break;
-        
+
         case "tooltip":
-          executePythonInBackground(Jupyter.notebook, python_code_for_info(), (out) => {
-            if (out.msg_type === "execute_result") {
-              var info = out.content.data["text/plain"];
-              backendManager.updateBackendParameters(info.slice(1, info.length - 1));
-            } else {
-              // something else has been done in background or ERROR!
-            }
-          })
+          executePythonInBackground(Jupyter.notebook, python_code_for_info())
+            .then((out) => {
+              if (out.msg_type === "execute_result") {
+                var info = out.content.data["text/plain"];
+                backendManager.updateBackendParameters(info.slice(1, info.length - 1));
+              } else {
+                // something else has been done in background or ERROR!
+              }
+            })
           break;
 
         case "on_login":
           credentials_login = e.credentials;
           token_login = e.token;
-          break; 
+          break;
+
+        case "steps_application":
+          executePythonInBackground(Jupyter.notebook, `${MSTR_ENV_VARIABLE_NAME} = create_custom_env()`, true).then(() => {
+            applySteps(MSTR_ENV_VARIABLE_NAME, Jupyter.notebook, e.steps).then(() => {
+              var df_converters = e.selectedDataframes.map(({ dfName, selectedObjects }) => {
+                var py_code = python_code_for_dataframe_columns_selection(MSTR_ENV_VARIABLE_NAME, selectedObjects, dfName);
+                return executePythonInBackground(Jupyter.notebook, py_code, true);
+              });
+              Promise.all(df_converters).then(() => {
+                backendManager.finishDataModeling(true);
+              });
+            });
+          });
+          break;
 
         default:
           break;
@@ -263,9 +329,9 @@ define(["jquery", "base/js/namespace", "base/js/dialog"], function(
     };
 
     $("<iframe/>")
-        .attr({src: connector_address + snippet_for_loading, id: "mstr_iframe"})
+      .attr({src: connector_address + snippet_for_loading, id: "mstr_iframe"})
       .appendTo(mstr_editor);
-    
+
     return mstr_editor;
   }
 
@@ -278,12 +344,14 @@ define(["jquery", "base/js/namespace", "base/js/dialog"], function(
         body: build_mstr_editor()
       })
       .attr("id", "mstr_modal");
-    
+
     modal.modal("show");
   }
 
   function load_jupyter_extension() {
-    return Jupyter.notebook.config.loaded.then(initialize);
+    return Jupyter.notebook.config.loaded.then(() => {
+      initialize();
+    });
   }
 
   return {
@@ -292,30 +360,41 @@ define(["jquery", "base/js/namespace", "base/js/dialog"], function(
   };
 });
 
+// global (for MSTRIO) functionalities required from top level
+function lastElement(iterableObject, indexOff = 0) {
+  try {
+    if (indexOff < 0) indexOff = -indexOff;
+    if (indexOff > iterableObject.length - 1) indexOff = 0;
+    return iterableObject[iterableObject.length-1-indexOff];
+  }
+  catch (e) {
+    console.log(e);
+    return undefined;
+  }
+}
+
 function appendHead(file, which_document = null) {
-  var src = `${origin}/nbextensions/mstr_jupyter/${file}`; 
+  var src = `${origin}/nbextensions/mstr_jupyter/${file}`;
 
-  switch(file.charAt(file.length - 2)) {
-      case 'j':
-          var code = window.document.createElement("script");
-          code.setAttribute("src", src);
-          code.setAttribute("rel", "prefetch");
-          code.setAttribute("type", "text/javascript");
-          window.document.head.appendChild(code);
-      break;
-      
-      case 's':
-          var code = window.document.createElement("link");
-          code.setAttribute("href", src);
-          code.setAttribute("rel", "stylesheet");
-          code.setAttribute("type", "text/css");
+  switch (lastElement(file.split('.'))) {
+    case 'js':
+      var code = window.document.createElement("script");
+      code.setAttribute("src", src);
+      code.setAttribute("rel", "prefetch");
+      code.setAttribute("type", "text/javascript");
+      window.document.head.appendChild(code);
+    break;
+    case 'css':
+      var code = window.document.createElement("link");
+      code.setAttribute("href", src);
+      code.setAttribute("rel", "stylesheet");
+      code.setAttribute("type", "text/css");
 
-          if(which_document == null) window.document.head.appendChild(code);
-          else which_document.head.appendChild(code);
-      break;
-
-      default:
-          console.log("Wrong file name as input. Impossible to append.");
-      break;
+      if (which_document == null) window.document.head.appendChild(code);
+      else which_document.head.appendChild(code);
+    break;
+    default:
+      console.log("Wrong file name as input. Impossible to append.");
+    break;
   }
 }
