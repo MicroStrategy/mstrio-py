@@ -1,4 +1,3 @@
-import requests
 from mstrio.utils.helper import response_handler
 
 
@@ -15,11 +14,7 @@ def report_definition(connection, report_id, verbose=False):
         Complete HTTP response object.
     """
 
-    response = requests.get(url=connection.base_url + '/api/v2/reports/' + report_id,
-                            headers={'X-MSTR-AuthToken': connection.auth_token,
-                                     'X-MSTR-ProjectID': connection.project_id},
-                            cookies=connection.cookies,
-                            verify=connection.ssl_verify)
+    response = connection.session.get(url=connection.base_url + '/api/v2/reports/' + report_id)
     if verbose:
         print(response.url)
     if not response.ok:
@@ -44,19 +39,11 @@ def report_instance(connection, report_id, body={}, offset=0, limit=5000, verbos
     Returns:
         Complete HTTP response object.
     """
-    res_ok = False
-    tries = 0
-    while not res_ok and tries < 2:
-        response = requests.post(url=connection.base_url + '/api/v2/reports/' + report_id + '/instances/',
-                                 headers={'X-MSTR-AuthToken': connection.auth_token,
-                                          'X-MSTR-ProjectID': connection.project_id},
-                                 json=body,
-                                 cookies=connection.cookies,
-                                 params={'offset': offset,
-                                         'limit': limit},
-                                 verify=connection.ssl_verify)
-        res_ok = response.ok
-        tries += 1
+
+    response = connection.session.post(url=connection.base_url + '/api/v2/reports/' + report_id + '/instances/',
+                                       json=body,
+                                       params={'offset': offset,
+                                               'limit': limit})
     if verbose:
         print(response.url)
     if not response.ok:
@@ -82,26 +69,19 @@ def report_instance_id(connection, report_id, instance_id, offset=0, limit=5000,
     Returns:
         Complete HTTP response object.
     """
-    res_ok = False
-    tries = 0
-    while not res_ok and tries < 3:
-        response = requests.get(url=connection.base_url + '/api/v2/reports/' + report_id + '/instances/' + instance_id,
-                                headers={'X-MSTR-AuthToken': connection.auth_token,
-                                         'X-MSTR-ProjectID': connection.project_id},
-                                cookies=connection.cookies,
-                                params={'offset': offset,
-                                        'limit': limit},
-                                verify=connection.ssl_verify)
-        res_ok = response.ok
-        tries += 1
+
+    response = connection.session.get(url=connection.base_url + '/api/v2/reports/' + report_id + '/instances/' +
+                                      instance_id,
+                                      params={'offset': offset,
+                                              'limit': limit})
     if verbose:
         print(response.url)
     if not response.ok:
-        response_handler(response, "Error getting cube contents.")
+        response_handler(response, "Error getting cube contents.", verbose=False)
     return response
 
 
-def report_instance_id_coroutine(session, connection, report_id, instance_id, offset=0, limit=5000, verbose=False):
+def report_instance_id_coroutine(future_session, connection, report_id, instance_id, offset=0, limit=5000, verbose=False):
     """
     Get the future of a previously created instance for a specific report asynchroneously, using the in-memory instance created by report_instance().
 
@@ -110,12 +90,9 @@ def report_instance_id_coroutine(session, connection, report_id, instance_id, of
 
     """
     url = connection.base_url + '/api/v2/reports/' + report_id + '/instances/' + instance_id
-    future = session.get(url,
-                         headers={'X-MSTR-AuthToken': connection.auth_token,
-                                  'X-MSTR-ProjectID': connection.project_id},
-                         cookies=connection.cookies,
-                         params={'offset': offset, 'limit': limit},
-                         verify=connection.ssl_verify)
+    future = future_session.get(url, params={'offset': offset, 'limit': limit})
+    if verbose:
+        print(url)
     return future
 
 
@@ -131,18 +108,11 @@ def report_single_attribute_elements(connection, report_id, attribute_id, offset
     Returns:
         Complete HTTP response object
     """
-    res_ok = False
-    tries = 0
-    while not res_ok and tries < 2:
-        response = requests.get(url=connection.base_url + '/api/reports/' + report_id + '/attributes/' + attribute_id + '/elements',
-                                headers={'X-MSTR-AuthToken': connection.auth_token,
-                                         'X-MSTR-ProjectID': connection.project_id},
-                                cookies=connection.cookies,
-                                params={'offset': offset,
-                                        'limit': limit},
-                                verify=connection.ssl_verify)
-        res_ok = response.ok
-        tries += 1
+
+    response = connection.session.get(url=connection.base_url + '/api/reports/' + report_id + '/attributes/' +
+                                      attribute_id + '/elements',
+                                      params={'offset': offset,
+                                              'limit': limit})
     if verbose:
         print(response.url)
     if not response.ok:
@@ -151,7 +121,8 @@ def report_single_attribute_elements(connection, report_id, attribute_id, offset
     return response
 
 
-def report_single_attribute_elements_coroutine(session, connection, report_id, attribute_id, offset=0, limit=200000):
+def report_single_attribute_elements_coroutine(future_session, connection, report_id, attribute_id, offset=0, limit=200000,
+verbose=False):
     """
     Get elements of a specific attribute of a specific report.
 
@@ -163,11 +134,8 @@ def report_single_attribute_elements_coroutine(session, connection, report_id, a
         Complete Future object
     """
     url = connection.base_url + '/api/reports/' + report_id + '/attributes/' + attribute_id + '/elements'
-    future = session.get(url,
-                         headers={'X-MSTR-AuthToken': connection.auth_token,
-                                  'X-MSTR-ProjectID': connection.project_id},
-                         cookies=connection.cookies,
-                         params={'offset': offset,
-                                 'limit': limit},
-                         verify=connection.ssl_verify)
+    future = future_session.get(url, params={'offset': offset,
+                                      'limit': limit})
+    if verbose:
+        print(url)
     return future

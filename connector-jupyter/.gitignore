@@ -1,6 +1,2 @@
-production/mstr_jupyter/__pycache__
-production/mstr_jupyter.egg-info
-/node_modules/
-.ipynb
-/.ipynb_checkpoints/
+node_modules
 .vscode

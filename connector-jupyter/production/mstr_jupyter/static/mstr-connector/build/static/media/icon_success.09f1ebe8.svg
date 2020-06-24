@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="18px" height="18px" viewBox="0 0 18 18" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 59.1 (86144) - https://sketch.com -->
+    <title>Rectangle</title>
+    <desc>Created with Sketch.</desc>
+    <g id="Symbols" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Common/Warning/Success_fill-Copy">
+            <rect id="Rectangle" x="0" y="0" width="18" height="18"></rect>
+            <path d="M9,2 C12.866,2 16,5.134 16,9 C16,12.867 12.866,16 9,16 C5.134,16 2,12.867 2,9 C2,5.134 5.134,2 9,2 Z M11.7646805,6.95663186 L8.17958487,10.5158409 L6.51865279,8.86389321 C6.30829137,8.65505073 5.96813248,8.65505073 5.75777106,8.86389321 C5.54740965,9.07273569 5.54740965,9.41043842 5.75777106,9.6192809 L7.80361978,11.644479 C7.9065626,11.7466785 8.04531163,11.8 8.18406065,11.8 C8.32280967,11.8 8.45708291,11.7466785 8.56450151,11.644479 L12.5255623,7.71201955 C12.7359237,7.50317707 12.7359237,7.16547434 12.5255623,6.95663186 C12.3152009,6.74778938 11.975042,6.74778938 11.7646805,6.95663186 Z" id="successful_fill" fill="#67C630"></path>
+        </g>
+    </g>
+</svg>

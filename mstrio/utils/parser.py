@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from itertools import chain
 
+from mstrio.utils.helper import exception_handler
 
 class Parser:
     """
@@ -9,6 +10,8 @@ class Parser:
     """
 
     AF_COL_SEP = "@"  # attribute form column label separator; commonly "@"
+    chunk_size = None
+    total_rows = None
 
     def __init__(self, response, parse_cube=True):
 
@@ -29,6 +32,8 @@ class Parser:
         # parse attribute column names including attribute form names into final column names
         self._attribute_col_names = self.__get_attribute_col_names()
 
+        self.__extract_paging_info(response)
+
         # attribute data
         self._mapped_attributes = np.zeros((0, len(self._attribute_col_names)), dtype=object)
 
@@ -36,14 +41,14 @@ class Parser:
         """
         :param response: JSON-formatted content of API response.
         """
+        if self.total_rows > 0:
+            # extract attribute values into numpy 2D array if attributes exist in the response
+            if self._attribute_names:
+                self._mapped_attributes = np.vstack((self._mapped_attributes, self.__map_attributes(response=response)))
 
-        # extract attribute values into numpy 2D array if attributes exist in the response
-        if self._attribute_names:
-            self._mapped_attributes = np.vstack((self._mapped_attributes, self.__map_attributes(response=response)))
-
-        # extract metric values if metrics exist in the response
-        if self._metric_col_names:
-            self._metric_values_raw.extend(self.__extract_metric_values(response=response))
+            # extract metric values if metrics exist in the response
+            if self._metric_col_names:
+                self._metric_values_raw.extend(self.__extract_metric_values(response=response))
 
     def __to_dataframe(self):
 
@@ -93,14 +98,18 @@ class Parser:
                             r.extend(r * (required_len - 1))
 
         def separate(form_values):
-            # format into correct list structure. This function seperates the nested lists into a list of list
+            # format into correct list structure. This function separates the nested lists into a list of list
             # where one element corresponds to a attribute column
             final_list = []
-            for attr in form_values:
-                row = len(attr[0])
-                col = len(attr)
-                final_list.extend(np.array(attr).reshape(col, row).transpose().tolist())
-            return final_list
+            try:
+                for attr in form_values:
+                    row = len(attr[0])
+                    col = len(attr)
+                    final_list.extend(np.array(attr).reshape(col, row).transpose().tolist())
+                return final_list
+            except IndexError as e:
+                exception_handler("Missing attribute elements, please check if attribute elements IDs are valid and if they exist in report.",
+                                  type(e))
 
         replicate_form_values(form_values_rows)
         ae_index_map = separate(form_values_rows)
@@ -111,6 +120,11 @@ class Parser:
         # extracts the attribute element row index from the headers
         return [list(chain.from_iterable([[r for _ in f] for r, f in zip(row, self._attribute_elem_form_names)]))
                 for row in response["data"]["headers"]["rows"]]
+
+    def __extract_paging_info(self, response):
+        # extract paging info
+        self.chunk_size = response["data"]["paging"]["limit"]
+        self.total_rows = response["data"]["paging"]["total"]
 
     @staticmethod
     def __extract_metric_values(response):

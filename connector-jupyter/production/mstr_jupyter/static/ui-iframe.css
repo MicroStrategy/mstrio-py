@@ -1,0 +1,24 @@
+/*LOGIN MODE MODAL RESIZING*/
+.main-content.authentication {
+    padding-top: 50px !important;
+}
+
+@media (max-height: 560px) {
+    .main-content.authentication {
+        padding-top: 11px !important;
+        min-height: 540px;
+    }
+}
+
+/*ICONS SPACING*/
+.mstr-icon .selector { /*Attributes and Metrics icons*/
+    padding-left: 17px;
+}
+.filter-title-container .mstr-icon { /*filters icons*/
+    padding-left: 1px;
+    padding-right: 2px;
+}
+
+.ant-table-body  { /*All table body*/
+    padding-left: 2px;
+}

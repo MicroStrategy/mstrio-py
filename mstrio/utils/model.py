@@ -21,7 +21,7 @@ class Model(object):
 
     __MAX_DESC_LEN = 250
 
-    _INVALID_COL_CHARS = ['\\', '"', '[', ']']  # check for invalid characters in column names
+    _INVALID_CHARS = ['\\', '"', '[', ']']  # check for invalid characters in column names
 
     def __init__(self, tables, name, description=None, folder_id=None, ignore_special_chars=False):
         """Initializes Model with tables, a name, and an optional description.
@@ -48,7 +48,11 @@ class Model(object):
         self.__check_param_str(self.__name, msg="Dataset name should be a string.")
         self.__check_param_len(self.__name,
                                msg="Dataset name should be <= {} characters.".format(self.__MAX_DESC_LEN),
-                               length=self.__MAX_DESC_LEN)
+                               max_length=self.__MAX_DESC_LEN)
+        self.__check_param_inv_chars(self.__name,
+                                     msg="Dataset name cannot contain '{}', '{}', '{}', '{}'."
+                                     .format(*self._INVALID_CHARS),
+                                     invalid_chars=self._INVALID_CHARS)
 
         # check dataset description params
         if description is None:
@@ -58,7 +62,7 @@ class Model(object):
             self.__check_param_str(self.__description, msg="Dataset description should be a string.")
             self.__check_param_len(self.__description,
                                    msg="Dataset description should be <= {} characters.".format(self.__MAX_DESC_LEN),
-                                   length=self.__MAX_DESC_LEN)
+                                   max_length=self.__MAX_DESC_LEN)
 
         # check folder_id param
         if folder_id is None:
@@ -168,8 +172,8 @@ class Model(object):
 
         # check for presence of invalid characters in data frame column names
         if not self.__ignore_special_chars:
-            if any([col for col in table[self._KEY_DATA_FRAME].columns for inv in self._INVALID_COL_CHARS if inv in col]):
-                msg = "Column names cannot contain '{}'".format(*self._INVALID_COL_CHARS)
+            if any([col for col in table[self._KEY_DATA_FRAME].columns for inv in self._INVALID_CHARS if inv in col]):
+                msg = "Column names cannot contain '{}', '{}', '{}', '{}'".format(*self._INVALID_CHARS)
                 raise ValueError(msg)
 
     @staticmethod
@@ -192,8 +196,8 @@ class Model(object):
             return 'DATETIME'
 
     @staticmethod
-    def __check_param_len(param, msg, length):
-        if len(param) >= length:
+    def __check_param_len(param, msg, max_length):
+        if len(param) > max_length:
             raise ValueError(msg)
         else:
             return True
@@ -204,6 +208,11 @@ class Model(object):
             raise TypeError(msg)
         else:
             return True
+
+    @staticmethod
+    def __check_param_inv_chars(param, msg, invalid_chars):
+        if any([inv for inv in invalid_chars if inv in param]):
+            raise ValueError(msg)
 
     @staticmethod
     def __is_metric(datatype):

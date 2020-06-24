@@ -1,4 +1,3 @@
-import requests
 from mstrio.utils.helper import response_handler
 
 
@@ -11,9 +10,8 @@ def projects(connection, error_msg=None, verbose=False):
         Complete HTTP response object
     """
 
-    response = requests.get(url=connection.base_url + '/api/projects',
-                            headers={'X-MSTR-AuthToken': connection.auth_token},
-                            cookies=connection.cookies, verify=connection.ssl_verify)
+    response = connection.session.get(url=connection.base_url + '/api/projects',
+                                      headers={'X-MSTR-ProjectID': None})
     if verbose:
         print(response.url)
     if not response.ok:

@@ -1,0 +1,18 @@
+{
+    "app.display_name": {
+        "value": "MicroStrategy",
+        "editable": false
+    },
+    "app.icon_file": {
+        "value": "/images/logo.png",
+        "editable": false
+    },
+    "app.description": {
+        "value": "Import reports or cubes from a different MicroStrategy project",
+        "editable": false
+    },
+    "app.GUID": {
+        "value": "F72DF5DBDBB44F85B8FC4218523CA398",
+        "editable": false
+    }
+}

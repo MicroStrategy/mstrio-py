@@ -12,12 +12,15 @@
 #
 import os
 import sys
-sys.path.insert(0, os.path.abspath('/Users/oduda/PycharmProjects/mstrio-py/production'))
+from mstrio import __author__, __name__, __version__
+
+
+sys.path.insert(0, os.path.abspath('./production/mstrio'))
 
 
 def autodoc_skip_member_handler(app, what, name, obj, skip, options):
-    # Basic approach; you might want a regex instead
     return isinstance(obj, property) or name.startswith('_')
+
 
 def setup(app):
     app.connect('autodoc-skip-member', autodoc_skip_member_handler)
@@ -25,12 +28,11 @@ def setup(app):
 
 # -- Project information -----------------------------------------------------
 
-project = 'MstrioPy'
-copyright = '2019, Oskar Duda'
-author = 'Oskar Duda'
+project = __name__
+author = __author__
 
 # The full version, including alpha/beta/rc tags
-release = '11.1.4'
+release = __version__
 
 
 # -- General configuration ---------------------------------------------------
@@ -63,8 +65,7 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', 'connector-jupyter', 'se
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-# html_theme = 'alabaster'
-html_theme = 'default'
+html_theme = 'alabaster'
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,

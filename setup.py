@@ -1,3 +1,4 @@
+from mstrio import __author__,  __version__
 import os
 from setuptools import setup, find_packages, dist
 from setuptools.extern.packaging import version as packaging_version
@@ -6,8 +7,7 @@ if 'version.txt' in os.listdir():
     with open('version.txt') as f:
         dist_version = f.read().strip()
 else:
-    dist_version = '11.2.1'  # define the default version
-
+    dist_version = __version__  # define the default version
 
 # Patch Version class to preserve original version string
 dist.pkg_resources.safe_version = lambda v: v
@@ -26,12 +26,13 @@ packaging_version.Version = NoNormalizeVersion
 with open('README.md') as f:
     long_description = f.read()
 
+
 setup(name='mstrio-py',
       version=dist_version,
       description='Python interface for the MicroStrategy REST API',
       license='Apache License 2.0',
       url='https://github.com/MicroStrategy/mstrio-py',
-      author='Scott Rigney, Peter Ott, Sergio Sainz Palacios, Michal Ciesielski, Zofia Rogala, Ignacy Hologa, Piotr Czyz, Oskar Duda, Wojciech Antonczyk, Michal Drzazga, Adam Piotrowski',
+      author=__author__,
       author_email='srigney@microstrategy.com, ssainz@microstrategy.com, mciesielski@microstrategy.com,zrogala@microstrategy.com, ihologa@microstrategy.com, pczyz@microstrategy.com, oduda@microstrategy.com, wantonczyk@microstrategy.com, mdrzazga@microstrategy.com, apiotrowski@microstrategy.com',
       project_urls={
         'Bug Tracker': 'https://github.com/MicroStrategy/mstrio-py/issues',
