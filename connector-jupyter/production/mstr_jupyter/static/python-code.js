@@ -1,312 +1,318 @@
-/*jshint esversion: 6*/
-var html_import =
-`from IPython.display import HTML\n`;
-
-var hiding_code =
-`HTML('''<script>
-$('div.input').hide();
-$('div.output').hide();
-</script>
-''')`;
-
-function python_code_for_credentials(user, password) {
-  var code =
-`mstr_username = '${user || ''}'
-mstr_password = '${password || ''}'`;
-
-  return code;
-}
-
-function python_code_for_import(env, name, ds_type, ds_id, project_id, body, login_mode) {
-  var py_body;
-  if (body.attributes.length + body.metrics.length + body.filters.length === 0) {
-    py_body = 'attributes = None, metrics = None, attr_elements = None'
-  } else {
-    py_body = `` +
-      `attributes = ${JSON.stringify(body.attributes)}, ` +
-      `metrics = ${JSON.stringify(body.metrics)}, ` +
-      `attr_elements = ${body.filters.length > 0 ? JSON.stringify(body.filters) : 'None'}`;
+/* eslint-disable indent */
+define([], () => class PythonCode {
+  constructor(...args) {
+    if (args.length) {
+      if ('username' in args[0]) {
+        [
+          this.authenticationDetails,
+          this.dataframeDetails,
+          this.otherDetails,
+        ] = args;
+      } else if ('customEnvironment' in args[0]) {
+        [this.otherDetails] = args;
+      } else {
+        [
+          this.dataframeDetails,
+          this.otherDetails,
+        ] = args;
+      }
+    }
   }
 
-  var code =
-`# code importing ${name} from MicroStrategy
 
-from mstrio.microstrategy import Connection
-from mstrio.cube import Cube
-from mstrio.report import Report
-
-base_url = '${env}'
-login_mode = ${login_mode}
-project_id = '${project_id}'
-
-conn = Connection(base_url, mstr_username, mstr_password, project_id=project_id, login_mode=login_mode)
-conn.connect()
-
-${name} = ${ds_type.charAt(0).toUpperCase() + ds_type.slice(1)}(conn, '${ds_id}')
-${name}.apply_filters(${py_body})
-${name}.to_dataframe()
-${name}_df = ${name}.dataframe
-
-${name}_df`;
-
-  return code;
-}
-
-function python_code_for_import_with_credentials_input(env, name, ds_type, ds_id, project_id, body, login_mode) {
-  var py_body;
-  if (body.attributes.length + body.metrics.length + body.filters.length === 0) {
-    py_body = 'attributes = None, metrics = None, attr_elements = None'
-  } else {
-    py_body = `` +
-      `attributes = ${JSON.stringify(body.attributes)}, ` +
-      `metrics = ${JSON.stringify(body.metrics)}, ` +
-      `attr_elements = ${body.filters.length > 0 ? JSON.stringify(body.filters) : 'None'}`;
+  // code preparation functions
+  static code = { // static reference to available functions returning python code - for JupyterCell reference use
+    forInitialEngine: {
+      name: 'forInitialEngine',
+      required: 'otherDetails[customEnvironment]',
+    },
+    forApplyingStep: {
+      name: 'forApplyingStep',
+      required: 'otherDetails[customEnvironment]\nargs: step [Object]',
+    },
+    forCredentials: {
+      name: 'forCredentials',
+      required: 'authenticationDetails[user, password]',
+    },
+    forImport: {
+      name: 'forImport',
+      arguments: 'includeCredentials = false',
+      required: 'authenticationDetails[user, password, envUrl, loginMode]\ndataframeDetails[name, projectId, datasetType, datasetId, body]',
+    },
+    forExport: {
+      name: 'forExport',
+      arguments: 'includeCredentials = false',
+      required: 'authenticationDetails[user, password, envUrl, loginMode]\ndataframeDetails[projectId, selectedDataframes]\notherDetails[saveAsName, description, certify, folderId, customEnvironment]',
+    },
+    forUpdate: {
+      name: 'forUpdate',
+      arguments: 'includeCredentials = false',
+      required: 'authenticationDetails[user, password, envUrl, loginMode]\ndataframeDetails[projectId, datasetId]\notherDetails[updatePolicies, customEnvironment]',
+    },
+    forGettingDataframesNames: {
+      name: 'forGettingDataframesNames',
+      required: 'none',
+    },
+    forGettingKernelInfo: {
+      name: 'forGettingKernelInfo',
+      required: 'none',
+    },
+    forGettingPackageVersionNumber: {
+      name: 'forGettingPackageVersionNumber',
+      required: 'none',
+    },
+    forGettingDataframeData: {
+      name: 'forGettingDataframeData',
+      required: 'dataframeDetails[name]\n(optional)otherDetails[rows]',
+    },
+    forModelingGatheredData: {
+      name: 'forModelingGatheredData',
+      required: 'dataframeDetails[name]\n(optional)otherDetails[rows]',
+    },
+    forDataframeColumnsSelection: {
+      name: 'forDataframeColumnsSelection',
+      required: 'dataframeDetails[selectedObjects, name]\notherDetails[customEnvironment]',
+    },
   }
 
-  var code =
-`# code importing ${name} from MicroStrategy
+  static capitalize = (string) => (
+    !string
+      ? ''
+      : string.charAt(0).toUpperCase() + string.slice(1)
+  )
 
-from mstrio.microstrategy import Connection
-from mstrio.cube import Cube
-from mstrio.report import Report
-import getpass
+  static oneLine = (multilinePythonCode) => (
+    !multilinePythonCode
+      ? ''
+      : multilinePythonCode.trim()
+        .replace(/\n/gi, ' ')
+        .replace(/\s{2,}/gi, ' ')
+  )
+  // ---
 
-mstr_username = input('username: ')
-mstr_password = getpass.getpass('password: ')
-base_url = '${env}'
-login_mode = ${login_mode}
-project_id = '${project_id}'
+  generateConnectionCode = (forEndUser = false, datasetType) => {
+    const { url, loginMode, identityToken } = this.authenticationDetails;
+    const { projectId } = this.dataframeDetails;
+    const importCode = `
+from mstrio.connection import Connection
+from mstrio.${datasetType.toLowerCase()} import ${datasetType}
+from getpass import getpass
+`.trim();
 
-conn = Connection(base_url, mstr_username, mstr_password, project_id=project_id, login_mode=login_mode)
-conn.connect()
+    const credentialsCode = forEndUser
+? `
+mstr_username = input("Username: ")
+mstr_password = getpass("Password: ")
+mstr_login_mode = ${loginMode}
+`.trim()
+: `
+mstr_identity_token = "${identityToken}"
+`.trim();
 
-${name} = ${ds_type.charAt(0).toUpperCase() + ds_type.slice(1)}(conn, '${ds_id}')
-${name}.apply_filters(${py_body})
-${name}.to_dataframe()
-${name}_df = ${name}.dataframe
+    const authCode = `
+mstr_base_url = "${url}"
+mstr_project_id = "${projectId}"
+${credentialsCode}
+`.trim();
 
-${name}_df`;
+    const connectionCode = forEndUser
+      ? 'mstr_connection = Connection(mstr_base_url, mstr_username, mstr_password, project_id=mstr_project_id, login_mode=mstr_login_mode, verbose=False)'
+      : 'mstr_connection = Connection(mstr_base_url, project_id=mstr_project_id, identity_token=mstr_identity_token, verbose=False)';
 
-  return code;
-}
+    return `${importCode}\n\n${authCode}\n\n${connectionCode}`;
+  }
 
-function python_code_for_export(custom_env, dataframes, save_as_name, folder_id, certify, description, env, project_id, login_mode) {
-  var tablesCode = dataframes.map(({ name, attributes, metrics }) => (
-    `dataset.add_table(name="${name}", data_frame=${custom_env}['${name}'], update_policy="add", `+
-    `to_metric=${metrics.length ? JSON.stringify(metrics) : 'None'}, `+
-    `to_attribute=${attributes.length ? JSON.stringify(attributes) : 'None'})`
-  ));
 
-  var code =
-`# code exporting ${save_as_name} to MicroStrategy
+  forInitialEngine = () => {
+    const { customEnvironment } = this.otherDetails;
 
-from mstrio.microstrategy import Connection
-from mstrio.dataset import Dataset
+    return (`
+import pandas as pd
 
-base_url = '${env}'
-login_mode = ${login_mode}
-project_id = '${project_id}'
+def create_custom_env():
+    output={}
+    for el in globals().keys():
+        if el[0]!='_' and isinstance(globals()[el], pd.core.frame.DataFrame):
+            output[el] = globals()[el]
+    return output
 
-conn = Connection(base_url, mstr_username, mstr_password, project_id=project_id, login_mode=login_mode)
-conn.connect()
 
-dataset = Dataset(conn, name="${save_as_name}"${description ? `, description="${description}"` : ''})
-${tablesCode.join('\n')}
-dataset.create(folder_id="${folder_id}")
-${certify ? 'dataset.certify()' : ''}`;
+def update_custom_env():
+    global ${customEnvironment}
+    new_${customEnvironment} = ${customEnvironment}
+    for el in globals().keys():
+        if el[0]!='_' and isinstance(globals()[el], pd.core.frame.DataFrame) and not el in new_${customEnvironment}.keys():
+            new_${customEnvironment}[el] = globals()[el]
+    return new_${customEnvironment}
+    `).trim();
+  }
 
-  return code.trim();
-}
+  forImport = (forEndUser = false) => {
+    const { name, datasetType, datasetId, body: { attributes, metrics, filters }, instanceId } = this.dataframeDetails;
 
-function python_code_for_export_with_credentials_input(custom_env, dataframes, save_as_name, folder_id, certify, description, env, project_id, login_mode) {
-  var tablesCode = dataframes.map(({ name, attributes, metrics }) => (
-    `dataset.add_table(name="${name}", data_frame=${custom_env}['${name}'], update_policy="add", `+
-    `to_metric=${metrics.length ? JSON.stringify(metrics) : 'None'}, `+
-    `to_attribute=${attributes.length ? JSON.stringify(attributes) : 'None'})`
-  ));
+    const variableName = `${/\d/gi.test(name[0]) ? 'var_' : ''}${
+      name
+        .replace(/ /gi, '_')
+        .replace(/[^A-Za-z0-9_]/gi, '')
+    }`;
 
-  var code =
-`# code exporting ${save_as_name} to MicroStrategy
+    const datasetTypeFirstUp = PythonCode.capitalize(datasetType);
+    const connectionCode = this.generateConnectionCode(forEndUser, datasetTypeFirstUp);
+    const instanceIdCode = forEndUser ? '' : `, ${instanceId ? `"${instanceId}"` : 'None'}`;
 
-### This code does not apply any Data Modeling Steps ###
-### If it should, please use the connector addon to prepare data ###
+    const applyFiltersContent = attributes.length + metrics.length + filters.length === 0
+      ? 'attributes = None, metrics = None, attr_elements = None'
+      : PythonCode.oneLine(`
+attributes = ${JSON.stringify(attributes)},
+metrics = ${JSON.stringify(metrics)},
+attr_elements = ${filters.length > 0 ? JSON.stringify(filters) : 'None'}
+`);
 
-from mstrio.microstrategy import Connection
-from mstrio.dataset import Dataset
-import getpass
+    return (`
+# Import ${name} ${datasetTypeFirstUp} from MicroStrategy
+${connectionCode}
 
-mstr_username = input('username: ')
-mstr_password = getpass.getpass('password: ')
-base_url = '${env}'
-login_mode = ${login_mode}
-project_id = '${project_id}'
+${variableName} = ${datasetTypeFirstUp}(mstr_connection, "${datasetId}"${instanceIdCode})
+${variableName}.apply_filters(${applyFiltersContent})
+${variableName}.to_dataframe()
+${variableName}_df = ${variableName}.dataframe
 
-conn = Connection(base_url, mstr_username, mstr_password, project_id=project_id, login_mode=login_mode)
-conn.connect()
+${variableName}_df
+    `).trim();
+  }
 
-dataset = Dataset(conn, name="${save_as_name}"${description ? `, description="${description}"` : ''})
-${tablesCode.join('\n')}
-dataset.create(folder_id="${folder_id}")
-${certify ? 'dataset.certify()' : ''}`;
 
-  return code.trim();
-}
+  forExport = (forEndUser = false) => {
+    const { selectedDataframes } = this.dataframeDetails;
+    const { saveAsName, description, certify, folderId, customEnvironment } = this.otherDetails;
 
-function python_code_for_update(custom_env, env, login_mode, project_id, dataset_id, policies) {
-  var string_add_tables = "";
-  var tables = [];
-  policies.forEach(({ tableName, updatePolicy }) => {
-    tables.push(tableName);
-    string_add_tables += `dataset.add_table(name="${tableName}", data_frame=${custom_env}['${tableName}'], update_policy="${updatePolicy}")\n`;
-  });
+    const tablesCode = selectedDataframes.map(({ name, attributes, metrics }) => PythonCode.oneLine(`
+mstr_dataset.add_table(name="${name}",
+  data_frame=${customEnvironment}['${name}'],
+  update_policy="add",
+  to_metric=${metrics.length ? JSON.stringify(metrics) : 'None'},
+  to_attribute=${attributes.length ? JSON.stringify(attributes) : 'None'})
+`))
+    .join('\n');
 
-  var code =
-`# code updating ${tables.join(', ')} table(s) to MicroStrategy
+    const connectionCode = this.generateConnectionCode(forEndUser, 'Dataset');
 
-from mstrio.microstrategy import Connection
-from mstrio.dataset import Dataset
+    return (`
+# Export ${saveAsName} Dataset to MicroStrategy
+${connectionCode}
 
-base_url = '${env}'
-login_mode = ${login_mode}
-project_id = '${project_id}'
+mstr_dataset = Dataset(mstr_connection, name="${saveAsName}"${description ? `, description="${description}"` : ''})
+${tablesCode}
+mstr_dataset.create(folder_id="${folderId}")
+${certify ? 'mstr_dataset.certify()' : ''}
+    `).trim();
+  }
 
-conn = Connection(base_url, mstr_username, mstr_password, project_id=project_id, login_mode=login_mode)
-conn.connect()
 
-dataset = Dataset(conn, dataset_id="${dataset_id}")
-${string_add_tables}
-dataset.update()
-dataset.publish()`;
+  forUpdate = (forEndUser = false) => {
+    const { datasetId, datasetName } = this.dataframeDetails;
+    const { updatePolicies, customEnvironment } = this.otherDetails;
 
-  return code;
-}
+    const connectionCode = this.generateConnectionCode(forEndUser, 'Dataset');
+    const tables = updatePolicies.map(({ tableName, updatePolicy }) => (
+      PythonCode.oneLine(`mstr_dataset.add_table(name="${tableName}",
+        data_frame=${customEnvironment}['${tableName}'],
+        update_policy="${updatePolicy}")`)));
 
-function python_code_for_update_with_credentials_input(custom_env, env, login_mode, project_id, dataset_id, policies) {
-  var string_add_tables = "";
-  var tables = [];
-  policies.forEach(({ tableName, updatePolicy }) => {
-    tables.push(tableName);
-    string_add_tables += `dataset.add_table(name="${tableName}", data_frame=${custom_env}['${tableName}'], update_policy="${updatePolicy}")\n`;
-  });
+    return (`
+# Update ${datasetName} Dataset at MicroStrategy
+${connectionCode}
 
-  var code =
-`# code updating ${tables.join(', ')} table(s) to MicroStrategy
+mstr_dataset = Dataset(mstr_connection, dataset_id="${datasetId}")
+${tables.join('\n')}
 
-### This code assumes dataframes' structure is consistent with cube structure ###
-### If it's not, please use the connector addon to prepare data ###
+mstr_dataset.update()
+    `).trim();
+  }
 
-from mstrio.microstrategy import Connection
-from mstrio.dataset import Dataset
-import getpass
 
-mstr_username = input('username: ')
-mstr_password = getpass.getpass('password: ')
-base_url = '${env}'
-login_mode = ${login_mode}
-project_id = '${project_id}'
-
-conn = Connection(base_url, mstr_username, mstr_password, project_id=project_id, login_mode=login_mode)
-conn.connect()
-
-dataset = Dataset(conn, dataset_id="${dataset_id}")
-${string_add_tables}
-dataset.update()
-dataset.publish()`;
-
-  return code;
-}
-
-function python_code_for_listing_dataframe_names() {
-  var code =
-`import pandas as pd
+  forGettingDataframesNames = () => (`
+import pandas as pd
 
 dataframe_names=[]
 for el in dir():
-    if isinstance(locals()[el], pd.core.frame.DataFrame) and el[0]!='_':
-        dataframe_names.append(el)
+  if isinstance(locals()[el], pd.core.frame.DataFrame) and el[0]!='_':
+      dataframe_names.append(el)
 
 import_string = ""
-for df___el in dataframe_names:
-    import_string += '{"name":"' + df___el + '","rows":' + str(eval(df___el + '.shape[0]')) + ',"columns":' + str(eval(df___el + '.shape[1]')) + '},'
+for df_name in dataframe_names:
+  import_string += '{"name":"' + df_name + '","rows":' + str(eval(df_name + '.shape[0]')) + ',"columns":' + str(eval(df_name + '.shape[1]')) + '},'
 
-import_string = "[" + import_string[0:len(import_string) - 1] + "]"
-import_string`;
+"[" + import_string[0:len(import_string) - 1] + "]"
+  `).trim()
 
-  return code;
-}
-
-function python_code_for_info() {
-  var code =
-`i1 = !jupyter --version
+  // TODO: recreate information about path to Python
+  // Windows: !where python
+  // UNIX: !which python
+  forGettingKernelInfo = () => (`
+i1 = !jupyter --version
 i2 = !python --version
-i3 = !where python
-info = '{"Jupyter Version":"' + str(i1).replace(" ", "").replace(",", " - ").replace("\\\\", "").replace("'", "") + '","Python Version":"' + str(i2).replace("\\\\", "").replace("'", "") + '","Python path":"' + str(i3).replace("\\\\", "/").replace("'", "") + '"}'
-info`;
+${PythonCode.oneLine(`
+'{"Jupyter Version":"' + str(i1[0]).replace(" ", "").replace(",", " - ").replace("\\\\", "").replace("'", "") +
+'","Python Version":"' + str(i2[0]).replace("\\\\", "").replace("'", "") + '"}'
+`)}
+  `).trim();
 
-  return code;
-}
+  forGettingPackageVersionNumber = () => (`
+pip show mstrio-py
+  `).trim();
 
-function python_code_for_column_reorder(df_name, cols_names, index) {
-  var code =
-`var = ${df_name}.columns.tolist()
-index = ${index}
-cols = ${cols_names}
-new = [el for el in var if not el in cols]
-new = new[:index] + cols + new[index:]
-${df_name} = ${df_name}[new]`;
 
-  return code
-}
+  forGettingDataframeData = () => {
+    const { name } = this.dataframeDetails;
+    const { rows = 10 } = (this.otherDetails || {});
 
-function python_code_for_gathering_dataframe_data(dataframe_name) {
-  var code =
-`${dataframe_name}[:10].to_json(orient='records')`;
+    return `${name}[:${rows}].to_json(orient='records')`;
+  }
 
-  return code;
-}
 
-function python_code_for_modeling_gathered_data(dataframe_name) {
-  var code =
-`from mstrio.utils.model import Model
+  forModelingGatheredData = () => {
+    const { name } = this.dataframeDetails;
+    const { rows = 10 } = (this.otherDetails || {});
 
-arg_for_model = [{'table_name': 'selected_df', 'data_frame': ${dataframe_name}[:10]}]
+    return (`
+from mstrio.utils.model import Model
+
+arg_for_model = [{'table_name': 'selected_df', 'data_frame': ${name}[:${rows}]}]
 model = Model(tables=arg_for_model, name='preview_table_types', ignore_special_chars=True)
 
-model.get_model()`;
+model.get_model()
+    `).trim();
+  }
 
-  return code;
-}
 
-function python_code_for_dataframe_columns_selection(custom_env, selected_objects, dataframe_name) {
-  var code =
-`cols_to_leave = ${JSON.stringify(selected_objects)}
-final_cols = [name for name in ${custom_env}['${dataframe_name}'].columns if name not in cols_to_leave]
-${custom_env}['${dataframe_name}'] = ${custom_env}['${dataframe_name}'].drop(columns=final_cols)`;
+  forDataframeColumnsSelection = () => {
+    const { selectedObjects, name } = this.dataframeDetails;
+    const { customEnvironment } = this.otherDetails;
 
-  return code;
-}
+    return (`
+cols_to_leave = ${JSON.stringify(selectedObjects)}
+final_cols = [name for name in ${customEnvironment}['${name}'].columns if name not in cols_to_leave]
+${customEnvironment}['${name}'] = ${customEnvironment}['${name}'].drop(columns=final_cols)
+    `).trim();
+  }
 
-function python_code_for_cube_details(env, cube_id, project_id, login) {
-  var code =
-`from mstrio.microstrategy import Connection
-from mstrio.cube import Cube
-from mstrio.report import Report
 
-mstr_username = '${login.username}'
-mstr_password = '${login.password}'
-base_url = '${env}'
-login_mode = ${login.loginMode}
-project_id = '${project_id}'
+  forApplyingStep = (step) => {
+    const { customEnvironment } = this.otherDetails;
+    const { type, oldName, newName, dfName = '' } = step;
 
-conn = Connection(base_url, mstr_username, mstr_password, project_id=project_id, login_mode=login_mode)
-conn.connect()
-
-temp_cube = Cube(conn, '${cube_id}')
-temp_md = temp_cube.multitable_definition()
-temp_attr = temp_cube.attributes
-temp_metr = temp_cube.metrics
-
-{"definition": temp_md, "attributes": temp_attr, "metrics": temp_metr}`;
-
-  return code;
-}
+    switch (type) {
+      case 'RENAME_DF':
+        return (`
+${customEnvironment}['${newName}'] = ${customEnvironment}['${oldName}']
+del ${customEnvironment}['${oldName}']
+        `).trim();
+      case 'RENAME_OBJ':
+        return (`
+${customEnvironment}['${dfName}'] = ${customEnvironment}['${dfName}'].rename(columns = {'${oldName}': '${newName}'})
+        `).trim();
+      default: return '';
+    }
+  }
+});

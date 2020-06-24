@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="18px" height="18px" viewBox="0 0 18 18" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 59.1 (86144) - https://sketch.com -->
+    <title>18x18icon_uparrow</title>
+    <desc>Created with Sketch.</desc>
+    <g id="Symbols" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="18x18icon_uparrow">
+            <g id="Group-2">
+                <rect id="Rectangle-8" x="0" y="0" width="18" height="18"></rect>
+                <line x1="6" y1="8.15291972" x2="9.04166726" y2="10.9054746" id="Line" stroke="#444649" stroke-linecap="square" transform="translate(7.520834, 9.529197) scale(1, -1) translate(-7.520834, -9.529197) "></line>
+                <line x1="9.0758861" y1="10.908793" x2="12.1175534" y2="8.15623807" id="Line" stroke="#444649" stroke-linecap="square" transform="translate(10.596720, 9.532516) scale(1, -1) translate(-10.596720, -9.532516) "></line>
+            </g>
+        </g>
+    </g>
+</svg>

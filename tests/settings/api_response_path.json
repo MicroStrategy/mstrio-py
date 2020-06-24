@@ -1,0 +1,26 @@
+{
+  "cube": {
+    "definition": "production/tests/api-responses/cubes/cube_definition.json" ,
+    "instance": "production/tests/api-responses/cubes/cube_instance.json" ,
+    "instance_attr_el_fltr": "production/tests/api-responses/cubes/cube_instance_attr_el_fltr.json" ,
+    "instance_id1": "production/tests/api-responses/cubes/cube_instance_id.json" ,
+    "instance_id2": "production/tests/api-responses/cubes/cube_instance_id2.json" ,
+    "info": "production/tests/api-responses/cubes/cube_info.json" ,
+    "single_attr_el": "production/tests/api-responses/cubes/cube_single_attr_el.json" ,
+    "single_attr_el_headers": "production/tests/api-responses/cubes/cube_single_attr_el_headers.json"
+  } ,
+  "report": {
+    "definition": "production/tests/api-responses/reports/report_definition.json" ,
+    "instance": "production/tests/api-responses/reports/report_instance.json" ,
+    "instance_attr_el_fltr": "production/tests/api-responses/reports/report_instance_attr_el_fltr.json" ,
+    "instance_id1": "production/tests/api-responses/reports/report_instance_id.json" ,
+    "instance_id2": "production/tests/api-responses/reports/report_instance_id2.json" ,
+    "single_attr_el": "production/tests/api-responses/reports/report_single_attr_el.json" ,
+    "single_attr_el_headers": "production/tests/api-responses/reports/report_single_attr_el_headers.json"
+  } ,
+  "other": {
+    "datasets": "production/tests/api-responses/datasets/dataset_definition.json",
+    "misc": "production/tests/api-responses/misc/server_status.json",
+    "projects": "production/tests/api-responses/microstrategy/projects.json"
+  }
+}

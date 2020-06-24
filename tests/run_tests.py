@@ -28,16 +28,16 @@ def parse_coverage_metrics(report_path):
             tag = all_tags[0]
             remaining_tags = all_tags[1:]
             for inner_element in element.getElementsByTagName(tag):
-                metrics['TOTAL_' + tag.upper()] = metrics.get('TOTAL_' + tag.upper(), 0) + 1
+                metrics['TOTAL_' + tag.upper()] = int(metrics.get('TOTAL_' + tag.upper(), 0) + 1)
                 if 'line-rate' in inner_element.attributes and float(inner_element.attributes['line-rate'].value) > 0:
-                    metrics['TOTAL_' + tag.upper() + '_COVERED'] = metrics.get('TOTAL_' + tag.upper() + '_COVERED',
-                                                                               0) + 1
+                    metrics['TOTAL_' + tag.upper() + '_COVERED'] = int(metrics.get('TOTAL_' + tag.upper() +
+                                                                                   '_COVERED', 0) + 1)
                 else:
                     metrics['TOTAL_' + tag.upper() + '_COVERED'] = 0
                 metrics = parse_recurrently(inner_element, metrics, remaining_tags)
             if tag not in element.attributes:
-                metrics['TOTAL_' + tag.upper()] = metrics.get('TOTAL_' + tag.upper(), 0)
-                metrics['TOTAL_' + tag.upper() + '_COVERED'] = metrics.get('TOTAL_' + tag.upper() + '_COVERED', 0)
+                metrics['TOTAL_' + tag.upper()] = int(metrics.get('TOTAL_' + tag.upper(), 0))
+                metrics['TOTAL_' + tag.upper() + '_COVERED'] = int(metrics.get('TOTAL_' + tag.upper() + '_COVERED', 0))
             return metrics
         else:
             return metrics
@@ -47,10 +47,10 @@ def parse_coverage_metrics(report_path):
     tags_hierarchy = ['package', 'class', 'method']
 
     metrics = parse_recurrently(coverage, {}, tags_hierarchy)
-    metrics['TOTAL_LINE'] = coverage.attributes['lines-valid'].value
-    metrics['TOTAL_LINE_COVERED'] = coverage.attributes['lines-covered'].value
-    metrics['TOTAL_BRANCH'] = coverage.attributes['branches-valid'].value
-    metrics['TOTAL_BRANCH_COVERED'] = coverage.attributes['branches-covered'].value
+    metrics['TOTAL_LINE'] = int(coverage.attributes['lines-valid'].value)
+    metrics['TOTAL_LINE_COVERED'] = int(coverage.attributes['lines-covered'].value)
+    metrics['TOTAL_BRANCH'] = int(coverage.attributes['branches-valid'].value)
+    metrics['TOTAL_BRANCH_COVERED'] = int(coverage.attributes['branches-covered'].value)
     return metrics
 
 

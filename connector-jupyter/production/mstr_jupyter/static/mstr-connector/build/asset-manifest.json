@@ -1,0 +1,26 @@
+{
+  "files": {
+    "main.css": "./static/css/main.ed200197.chunk.css",
+    "main.js": "./static/js/main.7936807c.chunk.js",
+    "runtime-main.js": "./static/js/runtime-main.2000082d.js",
+    "static/css/2.a09f247b.chunk.css": "./static/css/2.a09f247b.chunk.css",
+    "static/js/2.141b9a13.chunk.js": "./static/js/2.141b9a13.chunk.js",
+    "index.html": "./index.html",
+    "precache-manifest.55019ce85468f3fbd8790972288f9d2c.js": "./precache-manifest.55019ce85468f3fbd8790972288f9d2c.js",
+    "service-worker.js": "./service-worker.js",
+    "static/js/2.141b9a13.chunk.js.LICENSE.txt": "./static/js/2.141b9a13.chunk.js.LICENSE.txt",
+    "static/media/toolbar.scss": "./static/media/architect-icons.a92baf72.svg",
+    "static/media/DragAndDrop.scss": "./static/media/draggable_icon.8ad8988c.svg",
+    "static/media/object-table.scss": "./static/media/sort-indicator-none-icon.6e7e2adc.svg",
+    "static/media/_icons.scss": "./static/media/iconset-60.3b713305.svg",
+    "static/media/loading_icon.gif": "./static/media/loading_icon.1c2571e3.gif",
+    "static/media/style.scss": "./static/media/ws-icons-18_18.7762e57a.svg"
+  },
+  "entrypoints": [
+    "static/js/runtime-main.2000082d.js",
+    "static/css/2.a09f247b.chunk.css",
+    "static/js/2.141b9a13.chunk.js",
+    "static/css/main.ed200197.chunk.css",
+    "static/js/main.7936807c.chunk.js"
+  ]
+}

@@ -55,9 +55,9 @@ class TestFilter(unittest.TestCase):
         self.assertIsInstance(f.attr_elems, dict)
 
         # these should be empty
-        self.assertIsNone(f.attr_selected)
-        self.assertIsNone(f.metr_selected)
-        self.assertIsNone(f.attr_elem_selected)
+        self.assertEqual(len(f.attr_selected), len(f.attributes))
+        self.assertEqual(len(f.metr_selected), len(f.metrics))
+        self.assertEqual(f.attr_elem_selected, [])
 
     def test_init_object_ids(self):
         """Test that each object id is loaded in filter object properties."""
@@ -77,135 +77,120 @@ class TestFilter(unittest.TestCase):
         """Test that when not loading attribute elements, filter's attribute elements are None."""
         f = Filter(attributes=self.attributes, metrics=self.metrics)
         self.assertIsNotNone(f.attr_elems)
-        self.assertIsNone(f.attr_elem_selected)
+        self.assertEqual(f.attr_elem_selected, [])
 
         f = Filter(attributes=self.attributes, metrics=self.metrics, attr_elements=self.elements)
         self.assertIsNotNone(f.attr_elems)
-        self.assertIsNone(f.attr_elem_selected)
+        self.assertEqual(f.attr_elem_selected, [])
 
     def test_select_attribute_id(self):
         """Test adding an object adds the id to filter property."""
 
         f = Filter(attributes=self.attributes, metrics=self.metrics, attr_elements=self.elements)
-        f.select(object_id=self.attribute_sel)
+        f._select(object_id=self.attribute_sel)
 
-        self.assertEqual(f.attributes[self.attribute_sel]["selected"], True)
-        self.assertIn(self.attribute_sel, f.attr_selected)
-        self.assertIsNone(f.metr_selected)
-        self.assertIsNone(f.attr_elem_selected)
+        self.assertIn([self.attribute_sel], f.attr_selected)
+        self.assertEqual(f.attr_elem_selected, [])
 
     def test_select_attribute_id_list(self):
         """Test adding an object via list of ids adds the ids to filter property."""
 
         f = Filter(attributes=self.attributes, metrics=self.metrics, attr_elements=self.elements)
-        f.select(object_id=self.attribute_sel_list)
+        f._select(object_id=self.attribute_sel_list)
 
         for obj_id in self.attribute_sel_list:
-            self.assertEqual(f.attributes[obj_id]["selected"], True)
-            self.assertIn(obj_id, f.attr_selected)
-            self.assertIsNone(f.metr_selected)
-            self.assertIsNone(f.attr_elem_selected)
+            self.assertIn([obj_id], f.attr_selected)
+
+        self.assertEqual(f.attr_elem_selected, [])
 
     def test_select_duplicate_attribute_id(self):
         """Tests adding a duplicate id does not add the second id to the selected filter."""
 
         f = Filter(attributes=self.attributes, metrics=self.metrics, attr_elements=self.elements)
-        f.select(object_id=self.attribute_sel)
+        f._select(object_id=self.attribute_sel)
 
         # add a duplicate
         with self.assertWarns(Warning):
-            f.select(object_id=self.attribute_sel)
+            f._select(object_id=self.attribute_sel)
 
         # object id be here
-        self.assertIn(self.attribute_sel, f.attr_selected)
-        self.assertEqual(len(f.attr_selected), 1)
+        self.assertIn([self.attribute_sel], f.attr_selected)
+        self.assertEqual(len(f.attr_selected), len(self.attributes))
 
         # object id shouldnt be here
-        self.assertIsNone(f.metr_selected)
-        self.assertIsNone(f.attr_elem_selected)
+
+        self.assertEqual(f.attr_elem_selected, [])
 
     def test_select_metric_id(self):
         """Test adding an object via list of ids adds the ids to filter property."""
 
         f = Filter(attributes=self.attributes, metrics=self.metrics, attr_elements=self.elements)
-        f.select(object_id=self.metric_sel)
+        f._select(object_id=self.metric_sel)
 
-        self.assertEqual(f.metrics[self.metric_sel]["selected"], True)
         self.assertIn(self.metric_sel, f.metr_selected)
-        self.assertIsNone(f.attr_selected)
-        self.assertIsNone(f.attr_elem_selected)
+
+        self.assertEqual(f.attr_elem_selected, [])
 
     def test_select_metric_id_list(self):
         """Test adding an object via list of ids adds the ids to filter property."""
 
         f = Filter(attributes=self.attributes, metrics=self.metrics, attr_elements=self.elements)
-        f.select(object_id=self.metric_sel_list)
+        f._select(object_id=self.metric_sel_list)
 
         for obj_id in self.metric_sel_list:
-            self.assertEqual(f.metrics[obj_id]["selected"], True)
             self.assertIn(obj_id, f.metr_selected)
-            self.assertIsNone(f.attr_selected)
-            self.assertIsNone(f.attr_elem_selected)
+
+        self.assertEqual(f.attr_elem_selected, [])
 
     def test_select_duplicate_metric_id(self):
         """Tests adding a duplicate id does not add the second id to the selected filter."""
 
         obj_id = self.metrics[0]["id"]
         f = Filter(attributes=self.attributes, metrics=self.metrics, attr_elements=self.elements)
-        f.select(object_id=self.metric_sel)
+        f._select(object_id=self.metric_sel)
 
         # add a duplicate; should throw a warning
         with self.assertWarns(Warning):
-            f.select(object_id=obj_id)
+            f._select(object_id=obj_id)
 
         # object id be here
         self.assertIn(self.metric_sel, f.metr_selected)
-        self.assertEqual(len(f.metr_selected), 1)
+        self.assertEqual(len(f.metr_selected), len(self.metrics))
 
         # object id shouldnt be here
-        self.assertIsNone(f.attr_selected)
-        self.assertIsNone(f.attr_elem_selected)
+
+        self.assertEqual(f.attr_elem_selected, [])
 
     def test_select_attr_elem_id(self):
         """Test adding an object via id or list of ids adds the ids to filter property."""
 
         f = Filter(attributes=self.attributes, metrics=self.metrics, attr_elements=self.elements)
-        f.select(object_id=self.element_sel)
+        f._select_attr_el(element_id=self.element_sel)
 
-        self.assertEqual(f.attr_elems[self.element_sel]["selected"], True)
         self.assertIn(self.element_sel, f.attr_elem_selected)
-        self.assertIsNone(f.metr_selected)
-        self.assertIsNone(f.attr_selected)
 
     def test_select_attr_elem_id_list(self):
         """Test adding an object via list of ids adds the ids to filter property."""
 
         f = Filter(attributes=self.attributes, metrics=self.metrics, attr_elements=self.elements)
-        f.select(object_id=self.element_sel_list)
+        f._select_attr_el(element_id=self.element_sel_list)
 
         for obj_id in self.element_sel_list:
-            self.assertEqual(f.attr_elems[obj_id]["selected"], True)
             self.assertIn(obj_id, f.attr_elem_selected)
-            self.assertIsNone(f.metr_selected)
-            self.assertIsNone(f.attr_selected)
 
     def test_select_duplicate_attr_elem_id(self):
         """Tests adding a duplicate id does not add the second id to the selected filter."""
 
         f = Filter(attributes=self.attributes, metrics=self.metrics, attr_elements=self.elements)
-        f.select(object_id=self.element_sel)
+        f._select_attr_el(element_id=self.element_sel)
 
         # add a duplicate
         with self.assertWarns(Warning):
-            f.select(object_id=self.element_sel)
+            f._select_attr_el(element_id=self.element_sel)
 
         # object id be here
         self.assertIn(self.element_sel, f.attr_elem_selected)
         self.assertEqual(len(f.attr_elem_selected), 1)
-
-        # object id shouldn't be here
-        self.assertIsNone(f.attr_selected)
-        self.assertIsNone(f.metr_selected)
 
     def test_select_invalid_object_id(self):
         """Tests adding an invalid object id does not add the object id to selected filters."""
@@ -213,39 +198,34 @@ class TestFilter(unittest.TestCase):
         f = Filter(attributes=self.attributes, metrics=self.metrics, attr_elements=self.elements)
 
         with self.assertRaises(ValueError):
-            f.select(object_id=self.invalid_id)
-
-        self.assertIsNone(f.attr_selected)
-        self.assertIsNone(f.metr_selected)
-        self.assertIsNone(f.attr_elem_selected)
+            f._select(object_id=self.invalid_id)
+        self.assertEqual(f.attr_elem_selected, [])
 
     def test_clear(self):
         """Test that clearing filters works."""
 
-        obj_id = [self.attribute_sel_list,
-                  self.metric_sel_list,
-                  self.element_sel_list]
+        obj_id = self.attribute_sel_list + self.metric_sel_list
+        el_id = self.element_sel_list
 
         f = Filter(attributes=self.attributes, metrics=self.metrics, attr_elements=self.elements)
-        f.select(obj_id)
+        f._select(obj_id)
+        f._select_attr_el(el_id)
 
         self.assertIsNotNone(f.attr_selected)
         self.assertIsNotNone(f.metr_selected)
         self.assertIsNotNone(f.attr_elem_selected)
 
         # reset
-        f.clear()
+        f._clear()
 
-        self.assertIsNone(f.attr_selected)
-        self.assertIsNone(f.metr_selected)
-        self.assertIsNone(f.attr_elem_selected)
+        self.assertEqual(f.attr_elem_selected, [])
 
     def test_requested_objects_empty_lists(self):
         """Test that empty lists are properly parsed into requestedObjects."""
         f = Filter(attributes=self.attributes, metrics=self.metrics, attr_elements=self.elements)
         f.attr_selected = []
         f.metr_selected = []
-        ro = f.requested_objects()
+        ro = f._requested_objects()
 
         self.assertIn("attributes", ro)
         self.assertIn("metrics", ro)
@@ -256,69 +236,65 @@ class TestFilter(unittest.TestCase):
         """Test that choosing 1 att should return matching requested object in body."""
 
         f = Filter(attributes=self.attributes, metrics=self.metrics, attr_elements=self.elements)
-        f.select(self.attribute_sel)
+        f._select(self.attribute_sel)
 
-        ro = f.requested_objects()
+        ro = f._requested_objects()
 
         self.assertIn("attributes", ro)
-        self.assertNotIn("metrics", ro)
-        for i in ro["attributes"]:
-            self.assertEqual(i["id"], self.attribute_sel)
+        self.assertCountEqual([a['id'] for a in ro['attributes']],
+                              [a['id'] for a in self.attributes])
 
     def test_requested_objects_two_attribute(self):
         """Test that choosing 2 att should return matching requested object in body."""
 
         f = Filter(attributes=self.attributes, metrics=self.metrics, attr_elements=self.elements)
-        f.select(self.attribute_sel_list)
+        f._select(self.attribute_sel_list)
 
-        ro = f.requested_objects()
+        ro = f._requested_objects()
 
         self.assertIn("attributes", ro)
-        self.assertNotIn("metrics", ro)
-        for i, obj_id in zip(ro["attributes"], self.attribute_sel_list):
-            self.assertEqual(i["id"], obj_id)
+        self.assertCountEqual([a['id'] for a in ro['attributes']],
+                              [a['id'] for a in self.attributes])
 
     def test_requested_objects_one_metric(self):
         """Test that choosing 1 met should return matching requested object in body."""
 
         f = Filter(attributes=self.attributes, metrics=self.metrics, attr_elements=self.elements)
-        f.select(self.metric_sel)
+        f._select(self.metric_sel)
 
-        ro = f.requested_objects()
+        ro = f._requested_objects()
 
-        self.assertNotIn("attributes", ro)
         self.assertIn("metrics", ro)
-        for i in ro["metrics"]:
-            self.assertEqual(i["id"], self.metric_sel)
+        self.assertCountEqual([m['id'] for m in ro['metrics']],
+                              [m['id'] for m in self.metrics])
 
     def test_requested_objects_two_metric(self):
         """Test that choosing 2 met should return matching requested object in body."""
 
         f = Filter(attributes=self.attributes, metrics=self.metrics, attr_elements=self.elements)
-        f.select(self.metric_sel_list)
+        f._select(self.metric_sel_list)
 
-        ro = f.requested_objects()
+        ro = f._requested_objects()
 
-        self.assertNotIn("attributes", ro)
         self.assertIn("metrics", ro)
-        for i, obj_id in zip(ro["metrics"], self.metric_sel_list):
-            self.assertEqual(i["id"], obj_id)
+        self.assertCountEqual([m['id'] for m in ro['metrics']],
+                              [m['id'] for m in self.metrics])
 
     def test_requested_objects_both_list(self):
-        """Test that adding lists of attributes and metrics yields requested objects with correcty elements. """
+        """Test that adding lists of attributes and metrics yields requested objects with correct elements. """
 
         f = Filter(attributes=self.attributes, metrics=self.metrics, attr_elements=self.elements)
-        f.select(self.attribute_sel_list)
-        f.select(self.metric_sel_list)
-        ro = f.requested_objects()
+        f._select(self.attribute_sel_list)
+        f._select(self.metric_sel_list)
+        ro = f._requested_objects()
 
         self.assertIn("attributes", ro)
-        for i, obj_id in zip(ro["attributes"], self.attribute_sel_list):
-            self.assertEqual(i["id"], obj_id)
-
         self.assertIn("metrics", ro)
-        for i, obj_id in zip(ro["metrics"], self.metric_sel_list):
-            self.assertEqual(i["id"], obj_id)
+
+        self.assertCountEqual([a['id'] for a in ro['attributes']],
+                              [a['id'] for a in self.attributes])
+        self.assertCountEqual([m['id'] for m in ro['metrics']],
+                              [m['id'] for m in self.metrics])
 
     def test_view_filter_none(self):
         """Test that adding no attributes elements yields None view filter."""
@@ -326,7 +302,7 @@ class TestFilter(unittest.TestCase):
         f = Filter(attributes=self.attributes, metrics=self.metrics, attr_elements=self.elements)
 
         # should be none if none are obj_id
-        vf = f.view_filter()
+        vf = f._view_filter()
         self.assertIsNone(vf)
 
     def test_view_filter_not_none(self):
@@ -335,17 +311,17 @@ class TestFilter(unittest.TestCase):
         f = Filter(attributes=self.attributes, metrics=self.metrics, attr_elements=self.elements)
 
         # should not be none if some are obj_id
-        f.select(self.element_sel)
+        f._select_attr_el(self.element_sel)
 
-        vf = f.view_filter()
+        vf = f._view_filter()
         self.assertIsNotNone(vf)
 
     def test_view_filter_same_attrib_one_element(self):
         """Test that choosing 1 att elem should return matching view filter in body."""
 
         f = Filter(attributes=self.attributes, metrics=self.metrics, attr_elements=self.elements)
-        f.select(self.element_sel)
-        vf = f.view_filter()
+        f._select_attr_el(self.element_sel)
+        vf = f._view_filter()
 
         self.assertIn("operator", vf)
         self.assertEqual(vf["operator"], "In")
@@ -364,8 +340,8 @@ class TestFilter(unittest.TestCase):
         """Test that choosing 2 att elems from same attribute should return matching view filter in body."""
 
         f = Filter(attributes=self.attributes, metrics=self.metrics, attr_elements=self.elements)
-        f.select(self.element_sel_same_list)
-        vf = f.view_filter()
+        f._select_attr_el(self.element_sel_same_list)
+        vf = f._view_filter()
 
         self.assertIn("operator", vf)
         self.assertEqual(vf["operator"], "In")  # should be In because elems are for same parent attr
@@ -387,8 +363,8 @@ class TestFilter(unittest.TestCase):
 
         f = Filter(attributes=self.attributes, metrics=self.metrics, attr_elements=self.elements)
 
-        f.select(self.element_sel_list)
-        vf = f.view_filter()
+        f._select_attr_el(self.element_sel_list)
+        vf = f._view_filter()
 
         self.assertEqual(vf["operator"], "And")  # should be And because elements span parent attributes
         self.assertIn("operator", vf)
@@ -418,39 +394,38 @@ class TestFilter(unittest.TestCase):
         f = Filter(attributes=self.attributes, metrics=self.metrics, attr_elements=self.elements)
 
         # it should be none
-        self.assertIsNotNone(f.filter_body())
+        self.assertIsNotNone(f._filter_body())
 
         # it should have requested objects
-        f.select(self.attribute_sel)
-        self.assertIn("requestedObjects", f.filter_body())
-        self.assertNotIn("viewFilter", f.filter_body())
-        f.clear()
+        f._select(self.attribute_sel)
+        self.assertIn("requestedObjects", f._filter_body())
+        self.assertNotIn("viewFilter", f._filter_body())
+        f._clear()
 
-        f.select(self.metric_sel)
-        self.assertIn("requestedObjects", f.filter_body())
-        self.assertNotIn("viewFilter", f.filter_body())
-        f.clear()
+        f._select(self.metric_sel)
+        self.assertIn("requestedObjects", f._filter_body())
+        self.assertNotIn("viewFilter", f._filter_body())
+        f._clear()
 
         # it should have view filter
-        f.select(self.element_sel)
-        self.assertIn("viewFilter", f.filter_body())
-        self.assertNotIn("requestedObjects", f.filter_body())
-        f.clear()
+        f._select_attr_el(self.element_sel)
+        self.assertIn("viewFilter", f._filter_body())
+        f._clear()
 
         # it should have requested objects and view filter
-        f.select(self.attribute_sel)
-        f.select(self.metric_sel)
-        f.select(self.element_sel)
-        self.assertIn("requestedObjects", f.filter_body())
-        self.assertIn("viewFilter", f.filter_body())
+        f._select(self.attribute_sel)
+        f._select(self.metric_sel)
+        f._select_attr_el(self.element_sel)
+        self.assertIn("requestedObjects", f._filter_body())
+        self.assertIn("viewFilter", f._filter_body())
 
     def test_filter_body_attribute_list(self):
         """Test for presence of attribute ids in the filter body."""
 
         f = Filter(attributes=self.attributes, metrics=self.metrics, attr_elements=self.elements)
-        f.select(self.attribute_sel_list)
-        ro = f.requested_objects()
-        fb = f.filter_body()
+        f._select(self.attribute_sel_list)
+        ro = f._requested_objects()
+        fb = f._filter_body()
 
         self.assertListEqual(fb["requestedObjects"]["attributes"], ro["attributes"])
 
@@ -458,9 +433,9 @@ class TestFilter(unittest.TestCase):
         """Test for presence of metric ids in the filter body."""
 
         f = Filter(attributes=self.attributes, metrics=self.metrics, attr_elements=self.elements)
-        f.select(self.metric_sel_list)
-        ro = f.requested_objects()
-        fb = f.filter_body()
+        f._select(self.metric_sel_list)
+        ro = f._requested_objects()
+        fb = f._filter_body()
 
         self.assertListEqual(fb["requestedObjects"]["metrics"], ro["metrics"])
 
@@ -468,9 +443,9 @@ class TestFilter(unittest.TestCase):
         """Test for presence of attribute element ids in the filter body."""
 
         f = Filter(attributes=self.attributes, metrics=self.metrics, attr_elements=self.elements)
-        f.select(self.element_sel_list)
-        vf = f.view_filter()
-        fb = f.filter_body()
+        f._select_attr_el(self.element_sel_list)
+        vf = f._view_filter()
+        fb = f._filter_body()
 
         self.assertDictEqual(fb["viewFilter"], vf)
 

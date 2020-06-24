@@ -1,4 +1,3 @@
-import requests
 from mstrio.utils.helper import response_handler
 
 
@@ -17,11 +16,7 @@ def cube_definition(connection, cube_id, verbose=False):
     Returns:
         Complete HTTP response object
     """
-    response = requests.get(url=connection.base_url + '/api/v2/cubes/' + cube_id,
-                            headers={'X-MSTR-AuthToken': connection.auth_token,
-                                     'X-MSTR-ProjectID': connection.project_id},
-                            cookies=connection.cookies,
-                            verify=connection.ssl_verify)
+    response = connection.session.get(url=connection.base_url + '/api/v2/cubes/' + cube_id)
     if verbose:
         print(response.url)
     if not response.ok:
@@ -43,11 +38,8 @@ def cube_info(connection, cube_id, verbose=False):
     Returns:
         Complete HTTP response object.
     """
-    response = requests.get(url=connection.base_url + '/api/cubes/?id=' + cube_id,
-                            headers={'X-MSTR-AuthToken': connection.auth_token,
-                                     'X-MSTR-ProjectID': connection.project_id},
-                            cookies=connection.cookies,
-                            verify=connection.ssl_verify)
+    response = connection.session.get(url=connection.base_url + '/api/cubes/?id=' + cube_id)
+
     if verbose:
         print(response.url)
     if not response.ok:
@@ -72,19 +64,11 @@ def cube_instance(connection, cube_id, body={}, offset=0, limit=5000, verbose=Fa
     Returns:
         Complete HTTP response object.
     """
-    res_ok = False
-    tries = 0
-    while not res_ok and tries < 2:
-        response = requests.post(url=connection.base_url + '/api/v2/cubes/' + cube_id + '/instances',
-                                 headers={'X-MSTR-AuthToken': connection.auth_token,
-                                          'X-MSTR-ProjectID': connection.project_id},
-                                 json=body,
-                                 cookies=connection.cookies,
-                                 params={'offset': offset,
-                                         'limit': limit},
-                                 verify=connection.ssl_verify)
-        res_ok = response.ok
-        tries += 1
+
+    response = connection.session.post(url=connection.base_url + '/api/v2/cubes/' + cube_id + '/instances',
+                                       json=body,
+                                       params={'offset': offset,
+                                               'limit': limit})
     if verbose:
         print(response.url)
     if not response.ok:
@@ -111,26 +95,19 @@ def cube_instance_id(connection, cube_id, instance_id, offset=0, limit=5000, ver
         Complete HTTP response object.
 
     """
-    res_ok = False
-    tries = 0
-    while not res_ok and tries < 3:
-        response = requests.get(url=connection.base_url + '/api/v2/cubes/' + cube_id + '/instances/' + instance_id,
-                                headers={'X-MSTR-AuthToken': connection.auth_token,
-                                         'X-MSTR-ProjectID': connection.project_id},
-                                cookies=connection.cookies,
-                                params={'offset': offset,
-                                        'limit': limit},
-                                verify=connection.ssl_verify)
-        res_ok = response.ok
-        tries += 1
+
+    response = connection.session.get(url=connection.base_url + '/api/v2/cubes/' + cube_id + '/instances/' +
+                                      instance_id,
+                                      params={'offset': offset,
+                                              'limit': limit})
     if verbose:
         print(response.url)
     if not response.ok:
-        response_handler(response, "Error getting cube contents.")
+        response_handler(response, "Error getting cube contents.", verbose=False)
     return response
 
 
-def cube_instance_id_coroutine(session, connection, cube_id, instance_id, offset=0, limit=5000, verbose=False):
+def cube_instance_id_coroutine(future_session, connection, cube_id, instance_id, offset=0, limit=5000, verbose=False):
     """
     Get the future of a previously created instance for a specific cube asynchroneously, using the in-memory instance created by cube_instance().
 
@@ -139,12 +116,9 @@ def cube_instance_id_coroutine(session, connection, cube_id, instance_id, offset
 
     """
     url = connection.base_url + '/api/v2/cubes/' + cube_id + '/instances/' + instance_id
-    future = session.get(url,
-                         headers={'X-MSTR-AuthToken': connection.auth_token,
-                                  'X-MSTR-ProjectID': connection.project_id},
-                         cookies=connection.cookies,
-                         params={'offset': offset, 'limit': limit},
-                         verify=connection.ssl_verify)
+    future = future_session.get(url, params={'offset': offset, 'limit': limit})
+    if verbose:
+        print(url)
     return future
 
 
@@ -161,18 +135,11 @@ def cube_single_attribute_elements(connection, cube_id, attribute_id, offset=0, 
     Returns:
         Complete HTTP response object.
     """
-    res_ok = False
-    tries = 0
-    while not res_ok and tries < 2:
-        response = requests.get(url=connection.base_url + '/api/cubes/' + cube_id + '/attributes/' + attribute_id + '/elements',
-                                headers={'X-MSTR-AuthToken': connection.auth_token,
-                                         'X-MSTR-ProjectID': connection.project_id},
-                                cookies=connection.cookies,
-                                params={'offset': offset,
-                                        'limit': limit},
-                                verify=connection.ssl_verify)
-        res_ok = response.ok
-        tries += 1
+
+    response = connection.session.get(url=connection.base_url + '/api/cubes/' + cube_id + '/attributes/' +
+                                      attribute_id + '/elements',
+                                      params={'offset': offset,
+                                              'limit': limit})
     if verbose:
         print(response.url)
     if not response.ok:
@@ -180,7 +147,7 @@ def cube_single_attribute_elements(connection, cube_id, attribute_id, offset=0, 
     return response
 
 
-def cube_single_attribute_elements_coroutine(session, connection, cube_id, attribute_id, offset=0, limit=200000):
+def cube_single_attribute_elements_coroutine(future_session, connection, cube_id, attribute_id, offset=0, limit=200000, verbose=False):
     """
     Get elements of a specific attribute of a specific cube.
 
@@ -188,12 +155,9 @@ def cube_single_attribute_elements_coroutine(session, connection, cube_id, attri
         Complete Future object.
     """
     url = connection.base_url + '/api/cubes/' + cube_id + '/attributes/' + attribute_id + '/elements'
-    future = session.get(url,
-                         headers={'X-MSTR-AuthToken': connection.auth_token,
-                                  'X-MSTR-ProjectID': connection.project_id},
-                         cookies=connection.cookies,
-                         params={'offset': offset, 'limit': limit},
-                         verify=connection.ssl_verify)
+    future = future_session.get(url, params={'offset': offset, 'limit': limit})
+    if verbose:
+        print(url)
     return future
 
 
@@ -210,11 +174,7 @@ def publish(connection, cube_id, verbose=False):
         Complete HTTP response object.
     """
 
-    response = requests.post(url=connection.base_url + '/api/cubes/' + cube_id,
-                             headers={'X-MSTR-AuthToken': connection.auth_token,
-                                      'X-MSTR-ProjectID': connection.project_id},
-                             cookies=connection.cookies,
-                             verify=connection.ssl_verify)
+    response = connection.session.post(url=connection.base_url + '/api/cubes/' + cube_id)
     if verbose:
         print(response.url)
     return response
@@ -234,11 +194,7 @@ def status(connection, cube_id, verbose=False):
         Complete HTTP response object.
     """
 
-    response = requests.head(url=connection.base_url + '/api/cubes/' + cube_id,
-                             headers={'X-MSTR-AuthToken': connection.auth_token,
-                                      'X-MSTR-ProjectID': connection.project_id},
-                             cookies=connection.cookies,
-                             verify=connection.ssl_verify)
+    response = connection.session.head(url=connection.base_url + '/api/cubes/' + cube_id)
     if verbose:
         print(response.url)
     return response

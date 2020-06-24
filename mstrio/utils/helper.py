@@ -2,6 +2,14 @@ import re
 import warnings
 import os
 
+__DEBUG = False
+
+def debug():
+    return __DEBUG
+
+def set_debug(debug):
+    global __DEBUG
+    __DEBUG = debug
 
 def url_check(url):
     """Checks the validity of the url for microstrategy object initialization and returns a validated url."""
@@ -34,7 +42,7 @@ def exception_handler(msg, exception_type=Exception, throw_error=True, stack_lvl
         warnings.warn(msg, exception_type, stacklevel=stack_lvl)
 
 
-def response_handler(response, msg, throw_error=True):
+def response_handler(response, msg, throw_error=True, verbose=True):
     """Generic error message handler for transactions against datasets.
 
     Args:
@@ -47,12 +55,12 @@ def response_handler(response, msg, throw_error=True):
         error_msg = "204 No Content: I-Server successfully processed the request but did not return any content."
         exception_handler(msg=error_msg, exception_type=Warning, throw_error=False)
     else:
-        print("\n" + msg)
+        if verbose: print("\n" + msg)
         try:
             res = response.json()
-            print("\nI-Server Error %s, %s" % (res['code'], res['message']))
+            if verbose: print("\nI-Server Error %s, %s" % (res['code'], res['message']))
         except Exception:
-            print("\nCould not decode the response from the I-Server. Please check if I-Server is running correctly.")
+            if verbose: print("\nCould not decode the response from the I-Server. Please check if I-Server is running correctly.")
         finally:
             if throw_error:
                 response.raise_for_status()
@@ -61,6 +69,8 @@ def response_handler(response, msg, throw_error=True):
 def get_parallel_number(total_chunks):
     """Returns the optimal number of threads to be used for downloading cubes/reports in parallel"""
 
-    default_python_threads = min(8, os.cpu_count() + 4)
-    threads = min(total_chunks, default_python_threads)
+    threads = min(8, os.cpu_count() + 4)
+    if (total_chunks > 0):
+        threads = min(total_chunks, threads)
+
     return threads
