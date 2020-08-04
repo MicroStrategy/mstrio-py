@@ -87,7 +87,7 @@ define(['./jupyter-cells', './jupyter-kernel', './python-code', './utilities', /
         } else backendManager.showAuthenticationPage();
 
         // TODO: replace with package number computed from PythonCode.code.forGettingPackageVersionNumber
-        const PACKAGE_VERSION_NUMBER = '11.2.2';
+        const PACKAGE_VERSION_NUMBER = '11.2.2.1';
         backendManager.updatePackageVersionNumber(PACKAGE_VERSION_NUMBER);
 
         new JupyterKernel(Jupyter.notebook.kernel)

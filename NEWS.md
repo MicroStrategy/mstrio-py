@@ -1,3 +1,7 @@
+## mstrio-py 11.2.2.1
+### Bug fixes
+* fixed inability to import a cube using GUI on 11.1.x environments
+
 ## mstrio-py 11.2.2
 ### Major changes
 * improved performance for downloading Reports / Cubes with view filter
