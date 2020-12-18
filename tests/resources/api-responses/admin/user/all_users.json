@@ -1,0 +1,38 @@
+[
+  {
+    "id": "000000AAAAA",
+    "name": "a",
+    "abbreviation": "a",
+    "description": "",
+    "type": 34,
+    "subtype": 8704,
+    "dateCreated": "2020-02-17T12:06:25.000+0000",
+    "dateModified": "2020-07-15T13:10:40.000+0000",
+    "version": "H4C01EF92JEAC69C91210080EF959J29",
+    "acg": 255,
+    "iconPath": "",
+    "owner": {
+      "name": "MSTR User",
+      "id": "789987"
+    },
+    "initials": "A"
+  },
+  {
+    "id": "000000BBBBB",
+    "name": "b",
+    "abbreviation": "b",
+    "description": "MicroStrategy Extra Admin",
+    "type": 34,
+    "subtype": 8704,
+    "dateCreated": "2025-06-30T21:54:50.000+0000",
+    "dateModified": "2030-02-17T10:39:46.000+0000",
+    "version": "H4C01EF92JEAC69C91210080EF959J29",
+    "acg": 255,
+    "iconPath": "",
+    "owner": {
+      "name": "b",
+      "id": "123456"
+    },
+    "initials": "B"
+  }
+]

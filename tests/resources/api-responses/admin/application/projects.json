@@ -1,0 +1,323 @@
+{
+    "projects": [
+        {
+            "name": "BestApp",
+            "id": "62B6829211EAC6B0A1260080EFC54260",
+            "description": "Another App",
+            "dateCreated": "2020-07-15T15:32:26.000+0000",
+            "dateModified": "2020-07-15T15:32:36.000+0000",
+            "owner": {
+                "name": "MSTR User",
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233"
+            }
+        },
+        {
+            "name": "BestApp11",
+            "id": "FF37746411EAC74105140080EF35CC51",
+            "description": "Another App3",
+            "dateCreated": "2020-07-16T08:54:46.000+0000",
+            "dateModified": "2020-07-16T08:54:54.000+0000",
+            "owner": {
+                "name": "MSTR User",
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233"
+            }
+        },
+        {
+            "name": "BestApp12",
+            "id": "710F5A4811EAC74205140080EF856C51",
+            "description": "Another App3",
+            "dateCreated": "2020-07-16T08:57:57.000+0000",
+            "dateModified": "2020-07-16T08:58:06.000+0000",
+            "owner": {
+                "name": "MSTR User",
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233"
+            }
+        },
+        {
+            "name": "BestApp13",
+            "id": "9C0E188811EAC76005140080EF35CC51",
+            "description": "Another App3",
+            "dateCreated": "2020-07-16T12:33:54.000+0000",
+            "dateModified": "2020-07-16T12:34:03.000+0000",
+            "owner": {
+                "name": "MSTR User",
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233"
+            }
+        },
+        {
+            "name": "BestApp2",
+            "id": "D0BEB52A11EAC6B0A1260080EFF5A15F",
+            "description": "Another App2",
+            "dateCreated": "2020-07-15T15:35:31.000+0000",
+            "dateModified": "2020-07-15T15:35:40.000+0000",
+            "owner": {
+                "name": "MSTR User",
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233"
+            }
+        },
+        {
+            "name": "BestApp3",
+            "id": "30517E0B11EAC6B1A1260080EF75A160",
+            "description": "Another App3",
+            "dateCreated": "2020-07-15T15:38:11.000+0000",
+            "dateModified": "2020-07-15T15:38:20.000+0000",
+            "owner": {
+                "name": "MSTR User",
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233"
+            }
+        },
+        {
+            "name": "BestApp4",
+            "id": "B6DFF22011EAC73905140080EF754A4D",
+            "description": "Another App3",
+            "dateCreated": "2020-07-16T07:55:28.000+0000",
+            "dateModified": "2020-07-16T07:55:39.000+0000",
+            "owner": {
+                "name": "MSTR User",
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233"
+            }
+        },
+        {
+            "name": "BestApp5",
+            "id": "506F5E5811EAC73A05140080EF45EB4F",
+            "description": "Another App3",
+            "dateCreated": "2020-07-16T07:59:46.000+0000",
+            "dateModified": "2020-07-16T07:59:55.000+0000",
+            "owner": {
+                "name": "MSTR User",
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233"
+            }
+        },
+        {
+            "name": "BestApp6",
+            "id": "42EBBFDC11EAC73B05140080EF856B4F",
+            "description": "Another App3",
+            "dateCreated": "2020-07-16T08:06:33.000+0000",
+            "dateModified": "2020-07-16T08:06:41.000+0000",
+            "owner": {
+                "name": "MSTR User",
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233"
+            }
+        },
+        {
+            "name": "BestApp7",
+            "id": "3E8F41C811EAC73D05140080EF45EB4F",
+            "description": "Another App3",
+            "dateCreated": "2020-07-16T08:20:44.000+0000",
+            "dateModified": "2020-07-16T08:20:53.000+0000",
+            "owner": {
+                "name": "MSTR User",
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233"
+            }
+        },
+        {
+            "name": "BestApp8",
+            "id": "737D067C11EAC73D05140080EFB5CC52",
+            "description": "Another App3",
+            "dateCreated": "2020-07-16T08:22:13.000+0000",
+            "dateModified": "2020-07-16T08:22:22.000+0000",
+            "owner": {
+                "name": "MSTR User",
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233"
+            }
+        },
+        {
+            "name": "BestApp9",
+            "id": "E8A435BA11EAC73D05140080EF652A4D",
+            "description": "Another App3",
+            "dateCreated": "2020-07-16T08:25:30.000+0000",
+            "dateModified": "2020-07-16T08:25:39.000+0000",
+            "owner": {
+                "name": "MSTR User",
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233"
+            }
+        },
+        {
+            "name": "Consolidated Education Project",
+            "id": "CE52831411E696C8BD2F0080EFD5AF44",
+            "description": "",
+            "dateCreated": "2016-11-20T16:39:48.000+0000",
+            "dateModified": "2020-03-23T08:00:56.000+0000",
+            "owner": {
+                "name": "Administrator",
+                "id": "54F3D26011D2896560009A8E67019608"
+            }
+        },
+        {
+            "name": "CreateApp new logic2",
+            "id": "5D7F090D11EAA6581CCE0080EF45B8B0",
+            "description": "Another Project",
+            "dateCreated": "2020-06-04T11:41:44.000+0000",
+            "dateModified": "2020-06-04T11:41:54.000+0000",
+            "owner": {
+                "name": "MSTR User",
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233"
+            }
+        },
+        {
+            "name": "CreateAppNew2",
+            "id": "77AF48D411EAAFCA797E0080EF9508F2",
+            "description": "Another Project",
+            "dateCreated": "2020-06-16T12:11:11.000+0000",
+            "dateModified": "2020-06-16T12:11:22.000+0000",
+            "owner": {
+                "name": "MSTR User",
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233"
+            }
+        },
+        {
+            "name": "Data Scientists Application",
+            "id": "1A0926E211EAC73E05140080EFC5EB4E",
+            "description": "",
+            "dateCreated": "2020-07-16T08:26:53.000+0000",
+            "dateModified": "2020-07-16T08:48:29.000+0000",
+            "owner": {
+                "name": "MSTR User",
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233"
+            }
+        },
+        {
+            "name": "Hierarchies App",
+            "id": "4C09350211E69712BAEE0080EFB56D41",
+            "description": "This is the Hierarchies Application",
+            "dateCreated": "2016-11-20T16:49:27.000+0000",
+            "dateModified": "2020-07-24T09:54:28.000+0000",
+            "owner": {
+                "name": "Administrator",
+                "id": "54F3D26011D2896560009A8E67019608"
+            }
+        },
+        {
+            "name": "Human Resources Analysis Module",
+            "id": "4BAE16A340B995CAD24193AA3AC15D29",
+            "description": "The Human Resources Analysis Module analyses workforce headcount, trends and profiles, employee attrition and recruitment, compensation and benefit costs and employee qualifications, performance and satisfaction.",
+            "dateCreated": "2016-11-20T16:46:11.000+0000",
+            "dateModified": "2020-03-23T08:01:51.000+0000",
+            "owner": {
+                "name": "Administrator",
+                "id": "54F3D26011D2896560009A8E67019608"
+            }
+        },
+        {
+            "name": "MicroStrategy Tutorial",
+            "id": "B7CA92F04B9FAE8D941C3E9B7E0CD754",
+            "description": "MicroStrategy Tutorial project and application set designed to illustrate the platform's rich functionality. The theme is an Electronics, Books, Movies and Music store. Employees, Inventory, Finance, Product Sales and Suppliers are analyzed.",
+            "dateCreated": "2015-06-30T21:55:35.000+0000",
+            "dateModified": "2020-07-28T09:07:14.000+0000",
+            "owner": {
+                "name": "Administrator",
+                "id": "54F3D26011D2896560009A8E67019608"
+            }
+        },
+        {
+            "name": "New Data Scientists Application",
+            "id": "F26BB01D11EACD93A9F80080EF25A435",
+            "description": "",
+            "dateCreated": "2020-07-24T09:56:30.000+0000",
+            "dateModified": "2020-07-24T09:58:22.000+0000",
+            "owner": {
+                "name": "MSTR User",
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233"
+            }
+        },
+        {
+            "name": "New Name",
+            "id": "57CC6F0811EA9E930A5B0080EFD56E25",
+            "description": "This description was changed second time",
+            "dateCreated": "2020-05-25T14:23:46.000+0000",
+            "dateModified": "2020-07-14T12:20:37.000+0000",
+            "owner": {
+                "name": "MSTR User",
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233"
+            }
+        },
+        {
+            "name": "NewApplication1",
+            "id": "958B354B11EAB16292CD0080EFB59539",
+            "description": "This is another Application",
+            "dateCreated": "2020-06-18T12:52:36.000+0000",
+            "dateModified": "2020-06-18T12:52:47.000+0000",
+            "owner": {
+                "name": "MSTR User",
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233"
+            }
+        },
+        {
+            "name": "Platform Analytics",
+            "id": "D500E18611EA030ABDD60080EF55C4CC",
+            "description": "Platform Analytics (MicroStrategy 2020)",
+            "dateCreated": "2019-11-09T16:06:05.000+0000",
+            "dateModified": "2020-03-23T08:07:08.000+0000",
+            "owner": {
+                "name": "Administrator",
+                "id": "54F3D26011D2896560009A8E67019608"
+            }
+        },
+        {
+            "name": "Project3",
+            "id": "1537259811EA9E7A0A5B0080EF15ED24",
+            "description": "Another Project",
+            "dateCreated": "2020-05-25T11:22:57.000+0000",
+            "dateModified": "2020-05-25T11:23:06.000+0000",
+            "owner": {
+                "name": "MSTR User",
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233"
+            }
+        },
+        {
+            "name": "Project997",
+            "id": "CA9B2FEA11EA9E770A5B0080EFB52E27",
+            "description": "Another Projectxd",
+            "dateCreated": "2020-05-25T11:06:33.000+0000",
+            "dateModified": "2020-06-05T12:20:45.000+0000",
+            "owner": {
+                "name": "MSTR User",
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233"
+            }
+        },
+        {
+            "name": "Relationships Project",
+            "id": "B3FEE61A11E696C8BD0F0080EFC58F44",
+            "description": "",
+            "dateCreated": "2016-11-20T16:43:45.000+0000",
+            "dateModified": "2020-07-15T16:09:59.000+0000",
+            "owner": {
+                "name": "Administrator",
+                "id": "54F3D26011D2896560009A8E67019608"
+            }
+        },
+        {
+            "name": "To_be_deleted",
+            "id": "9AF7032311EA9F4EF48D0080EFD59569",
+            "description": "For testing purposes.",
+            "dateCreated": "2020-05-26T12:44:14.000+0000",
+            "dateModified": "2020-05-26T12:44:24.000+0000",
+            "owner": {
+                "name": "MSTR User",
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233"
+            }
+        },
+        {
+            "name": "To_be_deleted2",
+            "id": "F793DEAC11EA9F4EF48D0080EF151569",
+            "description": "For testing purposes.",
+            "dateCreated": "2020-05-26T12:46:50.000+0000",
+            "dateModified": "2020-05-26T12:46:59.000+0000",
+            "owner": {
+                "name": "MSTR User",
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233"
+            }
+        },
+        {
+            "name": "UnitTestApp",
+            "id": "8528894911EAC82164250080EF855BA5",
+            "description": "This application is used for unit tests.",
+            "dateCreated": "2020-07-17T11:34:48.000+0000",
+            "dateModified": "2020-07-17T11:34:59.000+0000",
+            "owner": {
+                "name": "MSTR User",
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233"
+            }
+        }
+    ]
+}

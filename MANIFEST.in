@@ -1,4 +1,7 @@
 graft connector-jupyter
+graft examples
 prune tests
+prune sphinx
+prune demos
 include version.txt
 exclude check_python_version.sh

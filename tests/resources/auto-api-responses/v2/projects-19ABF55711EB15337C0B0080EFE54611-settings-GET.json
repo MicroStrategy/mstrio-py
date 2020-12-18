@@ -1,0 +1,582 @@
+{
+    "enableDeleteObjectDependencies": {
+        "value": false
+    },
+    "appendInfoForEmailDelivery": {
+        "value": [
+            "recipient_name",
+            "owner_name",
+            "report_document_name",
+            "project_name",
+            "delivery_method",
+            "schedule",
+            "subscription_name",
+            "delivery_status",
+            "date",
+            "time",
+            "email_address",
+            "error_message"
+        ]
+    },
+    "cacheEncryptionLevel": {
+        "value": 0
+    },
+    "maxEmailSubscriptionCount": {
+        "value": -1
+    },
+    "dynamicSourcingOuterJoin": {
+        "value": false
+    },
+    "maxDataUploadSize": {
+        "value": 31457280
+    },
+    "fileCompressionLevel": {
+        "value": 6
+    },
+    "maxReportExecutionTime": {
+        "value": 600
+    },
+    "maxJobPerUserAccount": {
+        "value": 100
+    },
+    "appendInfoForHistoryListDelivery": {
+        "value": [
+            "recipient_name",
+            "owner_name",
+            "report_document_name",
+            "project_name",
+            "delivery_method",
+            "schedule",
+            "subscription_name",
+            "delivery_status",
+            "date",
+            "time",
+            "link_to_history_list",
+            "error_message"
+        ]
+    },
+    "enableFileDeliveryNotification": {
+        "value": true
+    },
+    "emailAddressForFTPDelivery": {
+        "value": ""
+    },
+    "appendTextForCacheCreation": {
+        "value": ""
+    },
+    "nullDisplayForWarehouse": {
+        "value": ""
+    },
+    "enableEmailCompression": {
+        "value": true
+    },
+    "appendTextForEmailDelivery": {
+        "value": ""
+    },
+    "emailCompressionExtension": {
+        "value": "zip"
+    },
+    "maxPersonalViewSubscriptionPerUser": {
+        "value": -1
+    },
+    "createUpdateCaches": {
+        "value": true
+    },
+    "recordReportJobSteps": {
+        "value": false
+    },
+    "enableEmailDeliveryNotification": {
+        "value": true
+    },
+    "enableNotificationForFailedPrintDelivery": {
+        "value": true
+    },
+    "maxInteractiveProjectSessionPerUser": {
+        "value": 20
+    },
+    "maxMstrFileSize": {
+        "value": 104857600
+    },
+    "maxDatamartResultRowCount": {
+        "value": 32000
+    },
+    "maxFTPSubscriptionCount": {
+        "value": -1
+    },
+    "enableURLFileUploadViaHttpHttps": {
+        "value": false
+    },
+    "maxHistoryListInboxMessage": {
+        "value": -1
+    },
+    "elementCachePerPassThroughLogin": {
+        "value": true
+    },
+    "enableCreateCachesPerDatabaseConnection": {
+        "value": false
+    },
+    "statisticsPurgeTimeout": {
+        "value": 10
+    },
+    "enableURLFileUploadViaFtpFtps": {
+        "value": false
+    },
+    "nullValueForSortedReportData": {
+        "value": false
+    },
+    "dynamicSourcingDefault": {
+        "value": false
+    },
+    "maxReportResultRowCount": {
+        "value": 32000
+    },
+    "resultAllElementRowCount": {
+        "value": -1
+    },
+    "appendTextForPrintDelivery": {
+        "value": ""
+    },
+    "allowDrillOut": {
+        "value": false
+    },
+    "maxCubeCount": {
+        "value": 1000
+    },
+    "recordMobileClients": {
+        "value": false
+    },
+    "reRunEmailFilePrintSubscription": {
+        "value": false
+    },
+    "enableDocumentOutputCachingInPdf": {
+        "value": true
+    },
+    "maxMemoryPerDataFetch": {
+        "value": 2147483648
+    },
+    "appendTextForFTPDelivery": {
+        "value": ""
+    },
+    "maxElementCacheMemoryConsumption": {
+        "value": 536870912
+    },
+    "maxObjectCacheMemoryConsumption": {
+        "value": 1073741824
+    },
+    "maxRAMForReportRWDCacheIndex": {
+        "value": 100
+    },
+    "metadataLocale": {
+        "value": "default"
+    },
+    "enableLibraryBookmarkCaching": {
+        "value": true
+    },
+    "cubeStorageLocation": {
+        "value": ""
+    },
+    "deliveryErrorHandlingNoDataReturned": {
+        "value": false
+    },
+    "enablePrintDeliveryNotification": {
+        "value": true
+    },
+    "warehouseDataLocale": {
+        "value": "default"
+    },
+    "enableDynamicSourcing": {
+        "value": true
+    },
+    "maxPromptWaitingTime": {
+        "value": 600
+    },
+    "cubeIndexGrowthUpperBound": {
+        "value": 500
+    },
+    "enableReportServerCaching": {
+        "value": true
+    },
+    "appendInfoForCacheCreation": {
+        "value": [
+            "recipient_name",
+            "owner_name",
+            "report_document_name",
+            "project_name",
+            "delivery_method",
+            "schedule",
+            "subscription_name",
+            "delivery_status",
+            "date",
+            "time",
+            "error_message"
+        ]
+    },
+    "historyListSaveReportServicesDocumentDatasetMsg": {
+        "value": true
+    },
+    "maxHistoryListMsgCountPerProject": {
+        "value": -1
+    },
+    "emailAddressForHistoryListDelivery": {
+        "value": ""
+    },
+    "sortDrillPath": {
+        "value": false
+    },
+    "enableFTPCompression": {
+        "value": true
+    },
+    "maxAttributeElementFetch": {
+        "value": 1000
+    },
+    "applyAutoExpirationForReportsContainDynamicDate": {
+        "value": true
+    },
+    "enableCreateCachesPerUser": {
+        "value": false
+    },
+    "maxRWDCacheMemoryConsumption": {
+        "value": 4294967296
+    },
+    "emptyReportMessage": {
+        "value": ""
+    },
+    "finalDocumentDossierResultRowNumber": {
+        "value": 50000000
+    },
+    "cubeIndexGrowthCheckFrequency": {
+        "value": 30
+    },
+    "mergeSecurityFilters": {
+        "value": 0
+    },
+    "appendInfoForFTPDelivery": {
+        "value": [
+            "recipient_name",
+            "owner_name",
+            "report_document_name",
+            "project_name",
+            "delivery_method",
+            "schedule",
+            "subscription_name",
+            "delivery_status",
+            "date",
+            "time",
+            "file_location",
+            "link_to_file",
+            "error_message"
+        ]
+    },
+    "enableNotificationForFailedFileDelivery": {
+        "value": true
+    },
+    "maxFileSubscriptionCount": {
+        "value": -1
+    },
+    "deliveryErrorHandlingNotifyNoDataReturned": {
+        "value": false
+    },
+    "emailAddressForMobileDelivery": {
+        "value": ""
+    },
+    "projectReportFileCachePath": {
+        "value": ".\\Caches\\cloud_10s"
+    },
+    "enableURLFileUpload": {
+        "value": false
+    },
+    "enableCachingForPromptedReportDocument": {
+        "value": true
+    },
+    "reportCacheLoadOnStart": {
+        "value": true
+    },
+    "emailAddressForFileDelivery": {
+        "value": ""
+    },
+    "maxJobPerProject": {
+        "value": 1000
+    },
+    "elementCachePerConnectionMap": {
+        "value": true
+    },
+    "enableDocumentOutputCachingInXml": {
+        "value": true
+    },
+    "applyElementCacheUsesSecurityFilters": {
+        "value": true
+    },
+    "ftpCompressionExtension": {
+        "value": "zip"
+    },
+    "recordDocumentJobSteps": {
+        "value": false
+    },
+    "recordReportJobSQL": {
+        "value": false
+    },
+    "maxRWDCacheCount": {
+        "value": 100000
+    },
+    "webServerHistoryListLocation": {
+        "value": ""
+    },
+    "maxReportCacheMemoryConsumption": {
+        "value": 268435456
+    },
+    "loadCubeIntoServerMemoryUponPublication": {
+        "value": true
+    },
+    "maxNodesForVisualizations": {
+        "value": 1000000
+    },
+    "enableNotificationForFailedFTPDelivery": {
+        "value": true
+    },
+    "maxHistoryListSubscriptionCount": {
+        "value": -1
+    },
+    "maxCubeQuota": {
+        "value": 104857600
+    },
+    "appendTextForHistoryListDelivery": {
+        "value": ""
+    },
+    "maxExecutingJobsPerUser": {
+        "value": -1
+    },
+    "appendInfoForFileDelivery": {
+        "value": [
+            "recipient_name",
+            "owner_name",
+            "report_document_name",
+            "project_name",
+            "delivery_method",
+            "schedule",
+            "subscription_name",
+            "delivery_status",
+            "date",
+            "time",
+            "file_location",
+            "link_to_file",
+            "error_message"
+        ]
+    },
+    "enableFindReplaceObjectDependencies": {
+        "value": false
+    },
+    "maxJobPerUserConnection": {
+        "value": 100
+    },
+    "maxCacheUpdateSubscriptionCount": {
+        "value": -1
+    },
+    "maxPrintSubscriptionCount": {
+        "value": -1
+    },
+    "reportCacheLifeTime": {
+        "value": 24
+    },
+    "emailAddressForCacheCreation": {
+        "value": ""
+    },
+    "enableDistributionServicePrintRange": {
+        "value": true
+    },
+    "enableCacheCreationNotification": {
+        "value": true
+    },
+    "enableDistributionServiceEmailFooter": {
+        "value": false
+    },
+    "maxInternalResultRowCount": {
+        "value": 32000
+    },
+    "distributionServiceEmailFooter": {
+        "value": ""
+    },
+    "enableDocumentOutputCachingInHtml": {
+        "value": true
+    },
+    "intermediateDocumentDossierResultRowNumber": {
+        "value": 50000000
+    },
+    "historyListSaveExportResultForInteractiveExecution": {
+        "value": false
+    },
+    "enableNotificationForFailedHistoryListDelivery": {
+        "value": true
+    },
+    "collectStatistics": {
+        "value": false
+    },
+    "enableStatisticsMobileClientLocation": {
+        "value": false
+    },
+    "enableHistoryListDeliveryNotification": {
+        "value": true
+    },
+    "maxUserConnectionPerProject": {
+        "value": 500
+    },
+    "orderMultiSourceDBI": {
+        "value": 0
+    },
+    "appendInfoForPrintDelivery": {
+        "value": [
+            "recipient_name",
+            "owner_name",
+            "report_document_name",
+            "project_name",
+            "delivery_method",
+            "schedule",
+            "subscription_name",
+            "delivery_status",
+            "date",
+            "time",
+            "printer_name",
+            "error_message"
+        ]
+    },
+    "maxInteractiveJobPerProject": {
+        "value": 600
+    },
+    "keepDocumentAvailableForManipulationForHistoryListSubscriptionOnly": {
+        "value": true
+    },
+    "notCalculatedDisplay": {
+        "value": "--"
+    },
+    "reportCacheSwapFactor": {
+        "value": 2
+    },
+    "maxCubeSizeForDownload": {
+        "value": 104857600
+    },
+    "drillImmediateChildrenParent": {
+        "value": false
+    },
+    "loadCubesOnStartup": {
+        "value": true
+    },
+    "nullDisplayForCrossTabulation": {
+        "value": ""
+    },
+    "recordMobileClientsManipulations": {
+        "value": false
+    },
+    "reRunHistoryListSubscription": {
+        "value": false
+    },
+    "enableCreateCachesPerDatabaseLogin": {
+        "value": false
+    },
+    "createCubePerDBConnection": {
+        "value": false
+    },
+    "emailCompressionLevel": {
+        "value": 6
+    },
+    "appendTextForFileDelivery": {
+        "value": ""
+    },
+    "missingObjectDisplay": {
+        "value": ""
+    },
+    "maxCubeMemUsage": {
+        "value": 268435456
+    },
+    "enableMobilePushUpdate": {
+        "value": true
+    },
+    "enableFTPDeliveryNotification": {
+        "value": true
+    },
+    "maxReportCacheCount": {
+        "value": 10000
+    },
+    "maxCubeResultRowCount": {
+        "value": 32000
+    },
+    "enableMobileDeliveryNotification": {
+        "value": true
+    },
+    "displayEmptyReportMessageInRWD": {
+        "value": -1
+    },
+    "maxSqlGenerationMemoryConsumption": {
+        "value": 2097152000
+    },
+    "maxMobileSubscriptionCount": {
+        "value": -1
+    },
+    "recordPromptAnswersForCacheMonitoring": {
+        "value": true
+    },
+    "deliveryErrorHandlingNotifyPartialResults": {
+        "value": false
+    },
+    "appendInfoForMobileDelivery": {
+        "value": [
+            "recipient_name",
+            "owner_name",
+            "report_document_name",
+            "project_name",
+            "delivery_method",
+            "schedule",
+            "subscription_name",
+            "delivery_status",
+            "date",
+            "time",
+            "error_message"
+        ]
+    },
+    "recordReportAccessedTableColumn": {
+        "value": false
+    },
+    "enableFileCompression": {
+        "value": true
+    },
+    "deliveryErrorHandlingPartialResults": {
+        "value": false
+    },
+    "emailAddressForEmailDelivery": {
+        "value": ""
+    },
+    "enableXmlCachingForReport": {
+        "value": true
+    },
+    "maxWarehouseJobExecTime": {
+        "value": 3600
+    },
+    "enablePersonalizedDrillPath": {
+        "value": false
+    },
+    "ftpCompressionLevel": {
+        "value": 6
+    },
+    "enableBookmarkSubscriptionCaching": {
+        "value": true
+    },
+    "emailAddressForPrintDelivery": {
+        "value": ""
+    },
+    "appendTextForMobileDelivery": {
+        "value": ""
+    },
+    "maxScheduledReportExecutionTime": {
+        "value": 600
+    },
+    "enableDocumentOutputCachingInExcel": {
+        "value": true
+    },
+    "enableCachingForNonPromptedReportDocument": {
+        "value": true
+    },
+    "enableURLFileUploadViaFile": {
+        "value": false
+    },
+    "fileCompressionExtension": {
+        "value": "zip"
+    }
+}

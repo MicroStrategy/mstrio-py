@@ -1,0 +1,54 @@
+{
+    "id": "9D077C9911EB0FA992170080EFD5E037",
+    "name": "REPORT SUBS TEST",
+    "editable": true,
+    "allowDeliveryChanges": true,
+    "allowPersonalizationChanges": true,
+    "allowUnsubscribe": true,
+    "dateCreated": "2020-10-17T00:17:52+0000",
+    "dateModified": "2020-10-16T13:57:58+0000",
+    "owner": {
+        "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+        "name": "MSTR User"
+    },
+    "schedules": [
+        {
+            "id": "FD7C7E7E4CA242FF314492A6CC696FB1",
+            "name": "Remote Diagnostics Daily",
+            "type": "time_based",
+            "nextDelivery": "2020-10-16T22:22:27+0000"
+        }
+    ],
+    "contents": [
+        {
+            "id": "41D5E34311EB0EEFA7000080EF158FDF",
+            "name": "Report_subs",
+            "type": "report",
+            "personalization": {
+                "compressed": false,
+                "formatMode": "CURRENT_PAGE",
+                "viewMode": "BOTH",
+                "formatType": "PDF"
+            }
+        }
+    ],
+    "recipients": [
+        {
+            "id": "66BCA30411EB0C82B71F0080EF95DBAC",
+            "name": "Piotr Czyz",
+            "isGroup": false,
+            "type": "user",
+            "includeType": "TO",
+            "childSubscriptionId": "9D09D76811EB0FA992170080EFD5E037"
+        }
+    ],
+    "delivery": {
+        "mode": "EMAIL",
+        "contactSecurity": false,
+        "email": {
+            "subject": "REPORT SUBS TEST",
+            "sendContentAs": "data",
+            "overwriteOlderVersion": false
+        }
+    }
+}

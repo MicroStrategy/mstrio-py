@@ -1,4 +1,4 @@
-from mstrio import __author__,  __version__
+from mstrio import __author__, __version__
 import os
 from setuptools import setup, find_packages, dist
 from setuptools.extern.packaging import version as packaging_version
@@ -28,6 +28,7 @@ with open('README.md') as f:
 
 
 setup(name='mstrio-py',
+      python_requires='>=3.6',
       version=dist_version,
       description='Python interface for the MicroStrategy REST API',
       license='Apache License 2.0',
@@ -35,10 +36,10 @@ setup(name='mstrio-py',
       author=__author__,
       author_email='srigney@microstrategy.com, ssainz@microstrategy.com, mciesielski@microstrategy.com,zrogala@microstrategy.com, ihologa@microstrategy.com, pczyz@microstrategy.com, oduda@microstrategy.com, wantonczyk@microstrategy.com, mdrzazga@microstrategy.com, apiotrowski@microstrategy.com',
       project_urls={
-        'Bug Tracker': 'https://github.com/MicroStrategy/mstrio-py/issues',
-        'Documentation': 'http://www2.microstrategy.com/producthelp/Current/mstrio-py/',
-        'Source Code': 'https://github.com/MicroStrategy/mstrio-py',
-        'Quick Manual': 'https://www2.microstrategy.com/producthelp/current/MSTR-for-Jupyter/Content/mstr_for_jupyter.htm',
+          'Bug Tracker': 'https://github.com/MicroStrategy/mstrio-py/issues',
+          'Documentation': 'http://www2.microstrategy.com/producthelp/Current/mstrio-py/',
+          'Source Code': 'https://github.com/MicroStrategy/mstrio-py',
+          'Quick Manual': 'https://www2.microstrategy.com/producthelp/current/MSTR-for-Jupyter/Content/mstr_for_jupyter.htm',
       },
       install_requires=[
           'requests',
@@ -48,9 +49,15 @@ setup(name='mstrio-py',
           'tqdm>=4.41.1',
           'jupyter_contrib_nbextensions>=0.5.1',
           'ipywidgets>=7.5.1',
-          'packaging'
+          'packaging',
+          'dictdiffer',
+          'stringcase'
       ],
+      extras_require={
+          'dev': ['flake8', 'mypy', 'yapf', 'unittest', 'coverage'],
+      },
       long_description=long_description,
       long_description_content_type='text/markdown',
       packages=find_packages(),
-      include_package_data=True)
+      include_package_data=True,
+      )

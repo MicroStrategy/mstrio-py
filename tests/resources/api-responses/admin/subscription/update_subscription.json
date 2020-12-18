@@ -1,0 +1,63 @@
+{
+    "id": "9A81FE3F11EB1A9098050080EF05A3D3",
+    "name": "subscription test",
+    "editable": true,
+    "allowDeliveryChanges": true,
+    "allowPersonalizationChanges": true,
+    "allowUnsubscribe": true,
+    "dateCreated": "2020-10-30T14:24:21+0000",
+    "dateModified": "2020-10-30T14:27:53+0000",
+    "owner": {
+        "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+        "name": "MSTR User"
+    },
+    "schedules": [
+        {
+            "id": "7EB853F34A6ED3C3A629A8BBDE3DDD68",
+            "name": "First of Month",
+            "type": "time_based",
+            "nextDelivery": "2020-11-01T00:00:00+0000"
+        }
+    ],
+    "contents": [
+        {
+            "id": "643209B54CC84199C48A238ACB6CB621",
+            "name": "Cockpit",
+            "type": "document",
+            "personalization": {
+                "compressed": false,
+                "formatMode": "DEFAULT",
+                "viewMode": "BOTH",
+                "formatType": "HTML"
+            }
+        }
+    ],
+    "recipients": [
+        {
+            "id": "1EFE801C11EB183CD8DC0080EFA5107E",
+            "name": "Piotr Czyz",
+            "isGroup": false,
+            "type": "user",
+            "includeType": "TO",
+            "childSubscriptionId": "9A2FD00D11EB1ABB98050080EF15C4D5"
+        },
+        {
+            "id": "B259574D11EB190ED8DC0080EF95F180",
+            "name": "Oskar Duda",
+            "isGroup": false,
+            "type": "user",
+            "includeType": "TO",
+            "childSubscriptionId": "9A2FD05C11EB1ABB98050080EF15C4D5"
+        }
+    ],
+    "delivery": {
+        "mode": "EMAIL",
+        "contactSecurity": false,
+        "email": {
+            "subject": "Demo Subscription Email",
+            "message": "This is demo of subscription email",
+            "sendContentAs": "data",
+            "overwriteOlderVersion": false
+        }
+    }
+}

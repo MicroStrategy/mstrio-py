@@ -1,0 +1,127 @@
+{
+    "name": "tmp_unit_test_user_1",
+    "id": "6DA105CF11EAD31783510080EF65A0DF",
+    "type": 34,
+    "abbreviation": "tmp_unit_test_user_1",
+    "subtype": 8704,
+    "dateCreated": "2020-07-31T10:20:17.000+0000",
+    "dateModified": "2020-07-31T11:52:42.000+0000",
+    "version": "56BECAF111EAD324405D0080EF65203D",
+    "acg": 255,
+    "owner": {
+        "name": "MSTR User",
+        "id": "7FC05A65473CE2FD845CE6A1D3F13233"
+    },
+    "acl": [
+        {
+            "deny": false,
+            "type": 1,
+            "rights": 255,
+            "trusteeId": "7FC05A65473CE2FD845CE6A1D3F13233",
+            "trusteeName": "MSTR User",
+            "trusteeType": 34,
+            "trusteeSubtype": 8704,
+            "inheritable": false
+        },
+        {
+            "deny": false,
+            "type": 1,
+            "rights": 5,
+            "trusteeId": "294DEDC011D2F1D56000D98E67019608",
+            "trusteeName": "Public / Guest",
+            "trusteeType": 34,
+            "trusteeSubtype": 8705,
+            "inheritable": false
+        },
+        {
+            "deny": false,
+            "type": 1,
+            "rights": 5,
+            "trusteeId": "5F3FAFE011D2D8CC6000CC8E67019608",
+            "trusteeName": "System Monitors",
+            "trusteeType": 34,
+            "trusteeSubtype": 8705,
+            "inheritable": false
+        },
+        {
+            "deny": false,
+            "type": 1,
+            "rights": 5,
+            "trusteeId": "C82C6B1011D2894CC0009D9F29718E4F",
+            "trusteeName": "Everyone",
+            "trusteeType": 34,
+            "trusteeSubtype": 8705,
+            "inheritable": false
+        },
+        {
+            "deny": false,
+            "type": 1,
+            "rights": 13,
+            "trusteeId": "17CD5CDB43085A8A52533B86A05DCB3A",
+            "trusteeName": "User Administrators",
+            "trusteeType": 34,
+            "trusteeSubtype": 8705,
+            "inheritable": false
+        },
+        {
+            "deny": false,
+            "type": 1,
+            "rights": 255,
+            "trusteeId": "5F3FAFE111D2D8CC6000CC8E67019608",
+            "trusteeName": "System Administrators",
+            "trusteeType": 34,
+            "trusteeSubtype": 8705,
+            "inheritable": false
+        }
+    ],
+    "extType": 0,
+    "ancestors": [
+        {
+            "name": "CASTOR_SERVER_CONFIGURATION",
+            "id": "5F90C74FB2944D70930B9BDDA6D2FBF1",
+            "level": 2
+        },
+        {
+            "name": "Users",
+            "id": "73F7482611D3596C60001B8F67019608",
+            "level": 1
+        }
+    ],
+    "username": "tmp_unit_test_user_1",
+    "fullName": "tmp_unit_test_user_1",
+    "enabled": true,
+    "passwordModifiable": true,
+    "requireNewPassword": false,
+    "standardAuth": true,
+    "memberships": [
+        {
+            "id": "13CB0E1411EAB477376A0080EFC5DACF",
+            "name": "BestGroup",
+            "source": {
+                "type": [
+                    "MSTR"
+                ]
+            }
+        },
+        {
+            "id": "C82C6B1011D2894CC0009D9F29718E4F",
+            "name": "Everyone",
+            "source": {
+                "type": [
+                    "MSTR"
+                ]
+            }
+        },
+        {
+            "id": "6B5E4DA24A107AADDEAA02B3AEE76165",
+            "name": "Mobile",
+            "source": {
+                "type": [
+                    "MSTR"
+                ]
+            }
+        }
+    ],
+    "initials": "T",
+    "defaultEmailAddress": "kolska@warszawa.com"
+}

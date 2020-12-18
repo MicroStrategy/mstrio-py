@@ -10,6 +10,7 @@ Table of Contents
 
 .. toctree::
    :glob:
+   :maxdepth: 2
 
    sections/toc*
 

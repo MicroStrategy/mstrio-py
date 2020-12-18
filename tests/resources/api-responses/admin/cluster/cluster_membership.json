@@ -1,0 +1,94 @@
+[
+    {
+        "alias": "env-225486laio2use1.customer.cloud.microstrategy.com",
+        "name": "env-225486laio2use1",
+        "port": 34952,
+        "maxPoolSize": 100,
+        "initialPoolSize": 2,
+        "loadBalanceFactor": 1,
+        "projects": [
+            {
+                "id": "4BAE16A340B995CAD24193AA3AC15D29",
+                "name": "Human Resources Analysis Module",
+                "status": 0
+            },
+            {
+                "id": "CE52831411E696C8BD2F0080EFD5AF44",
+                "name": "Consolidated Education Project",
+                "status": 0
+            },
+            {
+                "id": "B3FEE61A11E696C8BD0F0080EFC58F44",
+                "name": "Hierarchies Project",
+                "status": 0
+            },
+            {
+                "id": "B7CA92F04B9FAE8D941C3E9B7E0CD754",
+                "name": "MicroStrategy Tutorial",
+                "status": 0
+            },
+            {
+                "id": "4C09350211E69712BAEE0080EFB56D41",
+                "name": "Relationships Project",
+                "status": 0
+            },
+            {
+                "id": "D9C827FA11EAEC03EC940080EF25F91F",
+                "name": "Platform Analytics",
+                "status": 0
+            },
+            {
+                "id": "22176F6A11EAEEE43E980080EF556A4C",
+                "name": "New Application",
+                "status": -1
+            }
+        ],
+        "load": 10
+    },
+    {
+        "alias": "env-225486laio1use1.customer.cloud.microstrategy.com",
+        "name": "env-225486laio1use1",
+        "port": 34952,
+        "maxPoolSize": 100,
+        "initialPoolSize": 10,
+        "loadBalanceFactor": 1,
+        "projects": [
+            {
+                "id": "4BAE16A340B995CAD24193AA3AC15D29",
+                "name": "Human Resources Analysis Module",
+                "status": 0
+            },
+            {
+                "id": "CE52831411E696C8BD2F0080EFD5AF44",
+                "name": "Consolidated Education Project",
+                "status": 0
+            },
+            {
+                "id": "B3FEE61A11E696C8BD0F0080EFC58F44",
+                "name": "Hierarchies Project",
+                "status": 0
+            },
+            {
+                "id": "B7CA92F04B9FAE8D941C3E9B7E0CD754",
+                "name": "MicroStrategy Tutorial",
+                "status": 0
+            },
+            {
+                "id": "4C09350211E69712BAEE0080EFB56D41",
+                "name": "Relationships Project",
+                "status": 0
+            },
+            {
+                "id": "D9C827FA11EAEC03EC940080EF25F91F",
+                "name": "Platform Analytics",
+                "status": 0
+            },
+            {
+                "id": "22176F6A11EAEEE43E980080EF556A4C",
+                "name": "New Application",
+                "status": -1
+            }
+        ],
+        "load": 10
+    }
+]

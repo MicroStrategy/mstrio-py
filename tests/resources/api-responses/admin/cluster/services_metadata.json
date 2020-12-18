@@ -1,0 +1,404 @@
+{
+    "serviceGroups": [
+        {
+            "groupId": 1,
+            "name": "Collaboration",
+            "children": [
+                {
+                    "type": "service",
+                    "typeId": 1
+                },
+                {
+                    "type": "service",
+                    "typeId": 22
+                }
+            ]
+        },
+        {
+            "groupId": 2,
+            "name": "Data",
+            "children": [
+                {
+                    "type": "service",
+                    "typeId": 3
+                }
+            ]
+        },
+        {
+            "groupId": 3,
+            "name": "Intelligence",
+            "children": [
+                {
+                    "type": "service",
+                    "typeId": 4
+                },
+                {
+                    "type": "service",
+                    "typeId": 5
+                },
+                {
+                    "type": "service",
+                    "typeId": 23
+                }
+            ]
+        },
+        {
+            "groupId": 4,
+            "name": "Library",
+            "children": [
+                {
+                    "type": "service",
+                    "typeId": 6
+                }
+            ]
+        },
+        {
+            "groupId": 5,
+            "name": "Mobile",
+            "children": [
+                {
+                    "type": "service",
+                    "typeId": 7
+                }
+            ]
+        },
+        {
+            "groupId": 6,
+            "name": "Telemetry",
+            "children": [
+                {
+                    "type": "service",
+                    "typeId": 8
+                },
+                {
+                    "type": "service",
+                    "typeId": 9
+                },
+                {
+                    "type": "service",
+                    "typeId": 11
+                },
+                {
+                    "type": "service",
+                    "typeId": 12
+                },
+                {
+                    "type": "service",
+                    "typeId": 22
+                }
+            ]
+        },
+        {
+            "groupId": 7,
+            "name": "Identity",
+            "children": [
+                {
+                    "type": "service",
+                    "typeId": 14
+                },
+                {
+                    "type": "service",
+                    "typeId": 15
+                },
+                {
+                    "type": "service",
+                    "typeId": 16
+                },
+                {
+                    "type": "service",
+                    "typeId": 17
+                },
+                {
+                    "type": "service",
+                    "typeId": 13
+                },
+                {
+                    "type": "service",
+                    "typeId": 10
+                }
+            ]
+        },
+        {
+            "groupId": 8,
+            "name": "Web",
+            "children": [
+                {
+                    "type": "service",
+                    "typeId": 18
+                }
+            ]
+        },
+        {
+            "groupId": 9,
+            "name": "Certificate Store",
+            "children": [
+                {
+                    "type": "service",
+                    "typeId": 19
+                }
+            ]
+        },
+        {
+            "groupId": 10,
+            "name": "Search",
+            "children": [
+                {
+                    "type": "service",
+                    "typeId": 20
+                },
+                {
+                    "type": "service",
+                    "typeId": 21
+                }
+            ]
+        }
+    ],
+    "serviceTypes": [
+        {
+            "typeId": 4,
+            "displayName": "Intelligence",
+            "shortName": "Server",
+            "dependsOn": [],
+            "startWith": [],
+            "stopWith": [],
+            "name": "MicroStrategy-Intelligence-Server"
+        },
+        {
+            "typeId": 5,
+            "displayName": "Export",
+            "shortName": "Export",
+            "dependsOn": [
+                4
+            ],
+            "startWith": [],
+            "stopWith": [],
+            "name": "MicroStrategy-PDFExport-Service"
+        },
+        {
+            "typeId": 8,
+            "displayName": "Telemetry",
+            "shortName": "Server",
+            "dependsOn": [
+                9
+            ],
+            "startWith": [
+                9
+            ],
+            "stopWith": [],
+            "name": "Apache-Kafka"
+        },
+        {
+            "typeId": 9,
+            "displayName": "Telemetry Manager",
+            "shortName": "Manager",
+            "dependsOn": [],
+            "startWith": [],
+            "stopWith": [
+                8
+            ],
+            "name": "Apache-ZooKeeper"
+        },
+        {
+            "typeId": 1,
+            "displayName": "Collaboration",
+            "shortName": "Server",
+            "dependsOn": [
+                6,
+                22
+            ],
+            "startWith": [],
+            "stopWith": [],
+            "name": "MicroStrategy-Collaboration-Server"
+        },
+        {
+            "typeId": 6,
+            "displayName": "Library",
+            "shortName": "Library",
+            "dependsOn": [
+                4
+            ],
+            "startWith": [],
+            "stopWith": [],
+            "name": "MicroStrategy-Library-REST-Server"
+        },
+        {
+            "typeId": 18,
+            "displayName": "Web",
+            "shortName": "Web",
+            "dependsOn": [
+                4
+            ],
+            "startWith": [],
+            "stopWith": [],
+            "name": "MicroStrategy-Web-Server-ASP"
+        },
+        {
+            "typeId": 7,
+            "displayName": "Mobile",
+            "shortName": "Mobile",
+            "dependsOn": [
+                4
+            ],
+            "startWith": [],
+            "stopWith": [],
+            "name": "MicroStrategy-Mobile-Server-ASP"
+        },
+        {
+            "typeId": 14,
+            "displayName": "Identity",
+            "shortName": "Server",
+            "dependsOn": [
+                13
+            ],
+            "startWith": [],
+            "stopWith": [],
+            "name": "MicroStrategy-Usher-Security-Server"
+        },
+        {
+            "typeId": 16,
+            "displayName": "Identity Gateway",
+            "shortName": "Gateway",
+            "dependsOn": [],
+            "startWith": [],
+            "stopWith": [],
+            "name": "MicroStrategy-Usher-Gateway-Server"
+        },
+        {
+            "typeId": 15,
+            "displayName": "Memcached",
+            "shortName": "Memcached",
+            "dependsOn": [],
+            "startWith": [],
+            "stopWith": [],
+            "name": "Memcached"
+        },
+        {
+            "typeId": 17,
+            "displayName": "Identity Manager",
+            "shortName": "Manager",
+            "dependsOn": [
+                13
+            ],
+            "startWith": [],
+            "stopWith": [],
+            "name": "MicroStrategy-Usher-Network-Manager"
+        },
+        {
+            "typeId": 2,
+            "displayName": "Collaboration Store",
+            "shortName": "Store",
+            "dependsOn": [],
+            "startWith": [],
+            "stopWith": [],
+            "name": "MongoDB"
+        },
+        {
+            "typeId": 12,
+            "displayName": "Telemetry Cache",
+            "shortName": "Cache",
+            "dependsOn": [],
+            "startWith": [],
+            "stopWith": [],
+            "name": "MicroStrategy-Platform-Analytics-In-Memory-Cache"
+        },
+        {
+            "typeId": 13,
+            "displayName": "Repository",
+            "shortName": "Repository",
+            "dependsOn": [],
+            "startWith": [],
+            "stopWith": [],
+            "name": "MySQL"
+        },
+        {
+            "typeId": 3,
+            "displayName": "Data Server",
+            "shortName": "Server",
+            "dependsOn": [
+                4,
+                18
+            ],
+            "startWith": [],
+            "stopWith": [],
+            "name": "MicroStrategy-Data-Server"
+        },
+        {
+            "typeId": 10,
+            "displayName": "Identity Telemetry",
+            "shortName": "Telemetry",
+            "dependsOn": [
+                13,
+                8,
+                14
+            ],
+            "startWith": [],
+            "stopWith": [],
+            "name": "MicroStrategy-Usher-Metadata-Producer"
+        },
+        {
+            "typeId": 11,
+            "displayName": "Telemetry Consumer",
+            "shortName": "Consumer",
+            "dependsOn": [
+                8,
+                22,
+                12,
+                4,
+                14
+            ],
+            "startWith": [],
+            "stopWith": [],
+            "name": "MicroStrategy-Platform-Analytics-Consumer"
+        },
+        {
+            "typeId": 19,
+            "displayName": "Certificate Store",
+            "shortName": "Certificate Store",
+            "dependsOn": [],
+            "startWith": [],
+            "stopWith": [],
+            "name": "MicroStrategy-Certificate-Manager"
+        },
+        {
+            "typeId": 20,
+            "displayName": "Search Engine",
+            "shortName": "Engine",
+            "dependsOn": [],
+            "startWith": [],
+            "stopWith": [],
+            "name": "MicroStrategy-Search-Engine"
+        },
+        {
+            "typeId": 21,
+            "displayName": "Search Service",
+            "shortName": "Service",
+            "dependsOn": [
+                20
+            ],
+            "startWith": [],
+            "stopWith": [],
+            "name": "MicroStrategy-Search-Service"
+        },
+        {
+            "typeId": 22,
+            "displayName": "Store",
+            "shortName": "Store",
+            "dependsOn": [],
+            "startWith": [],
+            "stopWith": [],
+            "name": "PostgreSQL"
+        },
+        {
+            "typeId": 23,
+            "displayName": "Modeling",
+            "shortName": "Modeling",
+            "dependsOn": [
+                4,
+                18
+            ],
+            "startWith": [],
+            "stopWith": [],
+            "name": "MicroStrategy-Modeling-Service"
+        }
+    ]
+}

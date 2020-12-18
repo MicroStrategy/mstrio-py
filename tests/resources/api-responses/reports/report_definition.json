@@ -1,0 +1,211 @@
+{
+    "name": "iris_multi_report",
+    "source": {
+        "id": "C70D1AEA11EA4C2000000080EF850925",
+        "name": "Iris_multitable"
+    },
+    "id": "251F443C11EA4E5600000080EF1575DE",
+    "definition": {
+        "grid": {
+            "crossTab": false,
+            "metricsPosition": {
+                "axis": "columns",
+                "index": 0
+            },
+            "rows": [
+                {
+                    "name": "Id",
+                    "id": "7BC69FAC11EA4C2060710080EFD5AA25",
+                    "type": "attribute",
+                    "forms": [
+                        {
+                            "id": "45C11FA478E745FEA08D781CEA190FE5",
+                            "name": "ID",
+                            "dataType": "integer",
+                            "baseFormCategory": "ID",
+                            "baseFormType": "number"
+                        }
+                    ]
+                },
+                {
+                    "name": "Species",
+                    "id": "7BC6BEBA11EA4C2060710080EFD5AA25",
+                    "type": "attribute",
+                    "forms": [
+                        {
+                            "id": "45C11FA478E745FEA08D781CEA190FE5",
+                            "name": "ID",
+                            "dataType": "UTF8Char",
+                            "baseFormCategory": "ID",
+                            "baseFormType": "text"
+                        }
+                    ]
+                }
+            ],
+            "columns": [
+                {
+                    "name": "Metrics",
+                    "id": "00000000000000000000000000000000",
+                    "type": "templateMetrics",
+                    "elements": [
+                        {
+                            "name": "PetalLengthCm",
+                            "id": "7BC6B3E911EA4C2060710080EFD5AA25",
+                            "type": "metric",
+                            "dataType": "float"
+                        },
+                        {
+                            "name": "PetalWidthCm",
+                            "id": "7BC6B96A11EA4C2060710080EFD5AA25",
+                            "type": "metric",
+                            "dataType": "float"
+                        },
+                        {
+                            "name": "PietalLengthCm",
+                            "id": "7C048B1E11EA4C205F200080EFF5EA25",
+                            "type": "metric",
+                            "dataType": "float"
+                        },
+                        {
+                            "name": "PietalWidthCm",
+                            "id": "7C04908C11EA4C205F200080EFF5EA25",
+                            "type": "metric",
+                            "dataType": "float"
+                        },
+                        {
+                            "name": "SepalLengthCm",
+                            "id": "7BC6A72211EA4C2060710080EFD5AA25",
+                            "type": "metric",
+                            "dataType": "float"
+                        },
+                        {
+                            "name": "SepalWidthCm",
+                            "id": "7BC6AE6611EA4C2060710080EFD5AA25",
+                            "type": "metric",
+                            "dataType": "float"
+                        },
+                        {
+                            "name": "SrepalLengthCm",
+                            "id": "7C047DCC11EA4C205F200080EFF5EA25",
+                            "type": "metric",
+                            "dataType": "float"
+                        },
+                        {
+                            "name": "SrepalWidthCm",
+                            "id": "7C04859211EA4C205F200080EFF5EA25",
+                            "type": "metric",
+                            "dataType": "float"
+                        }
+                    ]
+                }
+            ],
+            "pageBy": [],
+            "subtotals": {
+                "defined": false,
+                "visible": false
+            },
+            "sorting": {
+                "rows": [],
+                "columns": []
+            },
+            "thresholds": []
+        },
+        "availableObjects": {
+            "attributes": [
+                {
+                    "name": "Id",
+                    "id": "7BC69FAC11EA4C2060710080EFD5AA25",
+                    "type": "attribute",
+                    "forms": [
+                        {
+                            "id": "45C11FA478E745FEA08D781CEA190FE5",
+                            "name": "ID",
+                            "dataType": "integer",
+                            "baseFormCategory": "ID",
+                            "baseFormType": "number"
+                        }
+                    ]
+                },
+                {
+                    "name": "Species",
+                    "id": "7BC6BEBA11EA4C2060710080EFD5AA25",
+                    "type": "attribute",
+                    "forms": [
+                        {
+                            "id": "45C11FA478E745FEA08D781CEA190FE5",
+                            "name": "ID",
+                            "dataType": "UTF8Char",
+                            "baseFormCategory": "ID",
+                            "baseFormType": "text"
+                        }
+                    ]
+                }
+            ],
+            "metrics": [
+                {
+                    "name": "SepalLengthCm",
+                    "id": "7BC6A72211EA4C2060710080EFD5AA25",
+                    "type": "metric",
+                    "dataType": "float"
+                },
+                {
+                    "name": "SepalWidthCm",
+                    "id": "7BC6AE6611EA4C2060710080EFD5AA25",
+                    "type": "metric",
+                    "dataType": "float"
+                },
+                {
+                    "name": "PetalLengthCm",
+                    "id": "7BC6B3E911EA4C2060710080EFD5AA25",
+                    "type": "metric",
+                    "dataType": "float"
+                },
+                {
+                    "name": "PetalWidthCm",
+                    "id": "7BC6B96A11EA4C2060710080EFD5AA25",
+                    "type": "metric",
+                    "dataType": "float"
+                },
+                {
+                    "name": "Row Count - Iris.csv",
+                    "id": "7B41402811EA4C2009AC0080EFE5C821",
+                    "type": "metric",
+                    "dataType": "reserved"
+                },
+                {
+                    "name": "SrepalLengthCm",
+                    "id": "7C047DCC11EA4C205F200080EFF5EA25",
+                    "type": "metric",
+                    "dataType": "float"
+                },
+                {
+                    "name": "SrepalWidthCm",
+                    "id": "7C04859211EA4C205F200080EFF5EA25",
+                    "type": "metric",
+                    "dataType": "float"
+                },
+                {
+                    "name": "PietalLengthCm",
+                    "id": "7C048B1E11EA4C205F200080EFF5EA25",
+                    "type": "metric",
+                    "dataType": "float"
+                },
+                {
+                    "name": "PietalWidthCm",
+                    "id": "7C04908C11EA4C205F200080EFF5EA25",
+                    "type": "metric",
+                    "dataType": "float"
+                },
+                {
+                    "name": "Row Count - Iris2.csv",
+                    "id": "7B708EF011EA4C20098D0080EFF5EA25",
+                    "type": "metric",
+                    "dataType": "reserved"
+                }
+            ],
+            "customGroups": [],
+            "consolidations": [],
+            "hierarchies": []
+        }
+    }
+}

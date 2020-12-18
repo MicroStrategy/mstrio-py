@@ -49,8 +49,7 @@ class Filter:
 
             if self.__duplicated(object_id):
                 helper.exception_handler(msg=self.err_msg_duplicated.format(object_id),
-                                         exception_type=UserWarning,
-                                         throw_error=False)
+                                         exception_type=Warning)
             else:
                 typ = self.__type(object_id)
 
@@ -74,8 +73,7 @@ class Filter:
 
             if self.__duplicated(element_id):
                 helper.exception_handler(msg=self.err_msg_duplicated.format(element_id),
-                                         exception_type=UserWarning,
-                                         throw_error=False)
+                                         exception_type=Warning)
             else:
                 self.attr_elems[element_id] = {}
                 self.attr_elems[element_id]["name"] = element_id

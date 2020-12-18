@@ -1,0 +1,14 @@
+{
+    "Date": "Tue, 28 Jul 2020 14:06:50 GMT",
+    "Content-Type": "application/json",
+    "Content-Length": "1735",
+    "Connection": "keep-alive",
+    "Cache-Control": "no-store",
+    "X-Content-Type-Options": "nosniff",
+    "Access-Control-Allow-Methods": "GET, POST, DELETE, PUT, PATCH, HEAD, OPTIONS",
+    "X-XSS-Protection": "1; mode=block",
+    "Access-Control-Allow-Headers": "Content-Type",
+    "x-mstr-total-count": "13",
+    "Content-Encoding": "gzip",
+    "Server": "MicroStrategy"
+}

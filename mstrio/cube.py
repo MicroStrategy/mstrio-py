@@ -1,56 +1,79 @@
+from concurrent.futures import ThreadPoolExecutor
 from operator import itemgetter
 
-from tqdm.auto import tqdm
-from requests_futures.sessions import FuturesSession
-from concurrent.futures import ThreadPoolExecutor
 import requests
+from requests_futures.sessions import FuturesSession
+from tqdm.auto import tqdm
 
-from mstrio.api import cubes
-from mstrio.api import datasets
-from mstrio.utils.parser import Parser
-from mstrio.utils.filter import Filter
+import mstrio.config as config
 import mstrio.utils.helper as helper
+from mstrio.api import cubes, datasets
 from mstrio.dataset import Dataset
+from mstrio.utils.filter import Filter
+from mstrio.utils.helper import fallback_on_timeout
+from mstrio.utils.parser import Parser
+
+CUBE_STATES = {
+    0: "DssCubeReserved",
+    1: "DssCubeProcessing",
+    2: "DssCubeActive",
+    4: "DssCubeDirty",
+    8: "DssCubeInfoDirty",
+    4: "DssCubePersisted",
+    32: "DssCubeLoaded",
+    64: "DssCubeReady",
+    128: "DssCubeLoadPending",
+    256: "DssCubeUnloadPending",
+    512: "DssCubePendingForEngine",
+    1024: "DssCubeImported",
+    2048: "DssCubeForeign"}
 
 
 class Cube:
-    """
-    Access, filter, publish, and extract data from MicroStrategy in-memory cubes.
+    """Access, filter, publish, and extract data from MicroStrategy in-memory
+    cubes.
 
-    Create a Cube object to load basic information on a cube dataset. Specify subset of cube
-    to be fetched through Cube.apply_filters() and Cube.clear_filters(). Fetch dataset through
-    Cube.to_dataframe() method.
+    Create a Cube object to load basic information on a cube dataset. Specify
+    subset of cube to be fetched through `Cube.apply_filters()` and
+    `Cube.clear_filters()`. Fetch dataset through `Cube.to_dataframe()` method.
 
     Attributes:
-        connection: MicroStrategy connection object returned by `connection.Connection()`.
+        connection: MicroStrategy connection object returned by
+            `connection.Connection()`.
         cube_id: Identifier of a pre-existing cube containing the required data.
-        instance_id (str): Identifier of an instance if cube instance has been already initialized,
-                NULL by default.
-        parallel (bool, optional): If True (default), utilize optimal number of threads to
-            increase the download speed. If False, this feature will be disabled.
-        progress_bar(bool, optional): If True (default), show the download progress bar.
-
+        instance_id (str): Identifier of an instance if cube instance has been
+            already initialized, NULL by default.
+        parallel (bool, optional): If True (default), utilize optimal number
+            of threads to increase the download speed. If False, this feature
+            will be disabled.
+        progress_bar(bool, optional): If True (default), show the download
+            progress bar.
     """
 
     def __init__(self, connection, cube_id, instance_id=None, parallel=True, progress_bar=True):
         """Initialize an instance of a cube.
 
         Args:
-            connection: MicroStrategy connection object returned by `connection.Connection()`.
-            cube_id (str): Identifier of a pre-existing cube containing the required data.
-            instance_id (str): Identifier of an instance if cube instance has been already initialized,
-                NULL by default.
-            parallel (bool, optional): If True (default), utilize optimal number of threads to
-                increase the download speed. If False, this feature will be disabled.
-            progress_bar(bool, optional): If True (default), show the download progress bar.
-
+            connection: MicroStrategy connection object returned by
+                `connection.Connection()`.
+            cube_id (str): Identifier of a pre-existing cube containing
+                the required data.
+            instance_id (str): Identifier of an instance if cube instance has
+                been already initialized, NULL by default.
+            parallel (bool, optional): If True (default), utilize optimal number
+                of threads to increase the download speed. If False, this
+                feature will be disabled.
+            progress_bar(bool, optional): If True (default), show the download
+                progress bar.
         """
-
+        if not connection.project_id:
+            helper.exception_handler(
+                "Please provide a project id or project name when creating the Connection object.", ConnectionError)
         self._connection = connection
         self._cube_id = cube_id
         self.instance_id = instance_id
         self.parallel = parallel
-        self.progress_bar = progress_bar
+        self.progress_bar = True if progress_bar and config.progress_bar else False
 
         self._size_limit = 10000000      # this sets desired chunk size in bytes
         self._initial_limit = 1000    # initial limit for the cube_instance request
@@ -68,18 +91,19 @@ class Cube:
                                metrics=self.metrics,
                                row_count_metrics=self._row_counts)
 
-
     def to_dataframe(self, limit=None, multi_df=False):
-        """Extract contents of a cube into a Pandas Data Frame.
+        """Extract contents of a cube into a Pandas `DataFrame`.
 
         Args:
-            limit (None or int, optional): Used to control data extract behavior. By default (None)
-                the limit is calculated automatically, based on an optimized physical size of one
-                chunk. Setting limit manually will force the number of rows per chunk. Depending on
-                system resources, a higher limit (e.g. 50,000) may reduce the total time required
-                to extract the entire dataset.
-            multi_df (bool, optional): If True, return a list of data frames resembling the table
-                structure of the cube. If False (default), returns one data frame.
+            limit (None or int, optional): Used to control data extract
+                behavior. By default (None) the limit is calculated
+                automatically, based on an optimized physical size of one chunk.
+                Setting limit manually will force the number of rows per chunk.
+                Depending on system resources, a higher limit (e.g. 50,000) may
+                reduce the total time required to extract the entire dataset.
+            multi_df (bool, optional): If True, return a list of data frames
+                resembling the table structure of the cube. If False (default),
+                returns one data frame.
 
         Returns:
             Pandas Data Frame containing the cube contents
@@ -111,14 +135,14 @@ class Cube:
             if not limit:
                 limit = max(1000, int((self._initial_limit * self._size_limit) / len(res.content)))
             # Count the number of additional iterations
-            it_total = int((_pagination['total']-self._initial_limit)/limit) + \
-                ((_pagination['total']-self._initial_limit) % limit != 0)
+            it_total = int((_pagination['total'] - self._initial_limit) / limit) + \
+                ((_pagination['total'] - self._initial_limit) % limit != 0)
 
             if self.parallel and it_total > 1:
                 threads = helper.get_parallel_number(it_total)
                 with FuturesSession(executor=ThreadPoolExecutor(max_workers=threads),
                                     session=self._connection.session) as session:
-                    fetch_pbar = tqdm(desc="Downloading", total=it_total+1, disable=(not self.progress_bar))
+                    fetch_pbar = tqdm(desc="Downloading", total=it_total + 1, disable=(not self.progress_bar))
                     future = self.__fetch_chunks_future(session, _pagination, _instance_id, limit)
                     fetch_pbar.update()
                     for i, f in enumerate(future, start=1):
@@ -126,7 +150,7 @@ class Cube:
                         if not response.ok:
                             helper.response_handler(response, "Error getting cube contents.")
                         fetch_pbar.update()
-                        fetch_pbar.set_postfix(rows=str(min(self._initial_limit+i*limit, _pagination['total'])))
+                        fetch_pbar.set_postfix(rows=str(min(self._initial_limit + i * limit, _pagination['total'])))
                         p.parse(response.json())
                     fetch_pbar.close()
             else:
@@ -137,7 +161,7 @@ class Cube:
         # split dataframe to dataframes matching tables in Cube
         if multi_df:
             # split dataframe to dataframes matching tables in Cube
-            self._dataframes = [self._dataframe[columns].copy() for _, columns \
+            self._dataframes = [self._dataframe[columns].copy() for _, columns
                                 in self.__multitable_definition().items()]
             return self._dataframes
         else:
@@ -149,19 +173,18 @@ class Cube:
                                                  cube_id=self._cube_id,
                                                  instance_id=instance_id,
                                                  offset=_offset,
-                                                 limit=limit,
-                                                 verbose=helper.debug())
+                                                 limit=limit)
                 for _offset in range(self._initial_limit, pagination['total'], limit)]
 
     def __fetch_chunks(self, parser, pagination, it_total, instance_id, limit):
 
         # Fetch add'l rows from this object instance from the intelligence server
-        with tqdm(desc="Downloading", total=it_total+1, disable=(not self.progress_bar)) as fetch_pbar:
+        with tqdm(desc="Downloading", total=it_total + 1, disable=(not self.progress_bar)) as fetch_pbar:
             fetch_pbar.update()
             for _offset in range(self._initial_limit, pagination['total'], limit):
                 response = self.__get_chunk(instance_id=instance_id, offset=_offset, limit=limit)
                 fetch_pbar.update()
-                fetch_pbar.set_postfix(rows=str(min(_offset+limit, pagination['total'])))
+                fetch_pbar.set_postfix(rows=str(min(_offset + limit, pagination['total'])))
                 parser.parse(response=response.json())
 
     def __initialize_cube(self, limit):
@@ -172,8 +195,7 @@ class Cube:
                                        cube_id=self._cube_id,
                                        body=self.__filter._filter_body(),
                                        offset=0,
-                                       limit=self._initial_limit,
-                                       verbose=helper.debug())
+                                       limit=self._initial_limit)
         inst_pbar.close()
         return response
 
@@ -182,21 +204,24 @@ class Cube:
                                       cube_id=self._cube_id,
                                       instance_id=instance_id,
                                       offset=offset,
-                                      limit=limit,
-                                      verbose=helper.debug())
+                                      limit=limit)
 
     def apply_filters(self, attributes=None, metrics=None, attr_elements=None, operator='In'):
-        """Apply filters on the cube's objects, so only selected attributes, metrics and attributes' elements will be
-        retrieved from Intelligence Server.
+        """Apply filters on the cube's objects.
+
+        Filter by attributes, metrics and attribute elements.
 
         Args:
-            attributes (list or None, optional): ids of attributes to be included in the filter.
-                If list is empty, no attributes will be selected and metric data will be aggregated.
-            metrics (list or None, optional): ids of metrics to be included in the filter.
-                If list is empty, no metrics will be selected.
-            attr_elements (list or None, optional): attributes' elements to be included in the filter.
-            operator (str, optional): a str flag used to specify if the attribute elements selected inside the
-                filter should be included or excluded. Allowed values are: 'In', 'NotIn'
+            attributes (list or None, optional): ids of attributes to be
+                included in the filter. If list is empty, no attributes will be
+                selected and metric data will be aggregated.
+            metrics (list or None, optional): ids of metrics to be included in
+                the filter. If list is empty, no metrics will be selected.
+            attr_elements (list or None, optional): attribute elements to be
+                included in the filter.
+            operator (str, optional): a str flag used to specify if the
+                attribute elements selected inside the filter should be included
+                or excluded. Allowed values are: 'In', 'NotIn'.
         """
         params = [attributes, metrics, attr_elements]
         filtering_is_requested = bool(not all(el is None for el in params))
@@ -227,7 +252,8 @@ class Cube:
             self.__filter._select_attr_el(element_id=attr_el_filtered)
 
     def clear_filters(self):
-        """Clear previously set filters, allowing all attributes, metrics, and attribute elements to be retrieved."""
+        """Clear previously set filters, allowing all attributes, metrics, and
+        attribute elements to be retrieved."""
 
         self.__filter._clear()
 
@@ -236,12 +262,16 @@ class Cube:
         self.__filter._select(metrics_ids)
 
     def update(self, update_policy='upsert'):
-        """Update single-table cube easily with the data frame stored in the Cube instance (cube.dataframe).
+        """Update single-table cube easily with the data frame stored in the
+        Cube instance (cube.dataframe).
+
         Before the update, make sure that the data frame has been modified
         Args:
-            update_policy(str): Update operation to perform. One of 'add' (inserts new, unique rows), 'update' (updates
-                data in existing rows and columns), 'upsert' (updates existing data and inserts new rows), or 'replace'
-                (replaces the existing data with new data).
+            update_policy(str): Update operation to perform. One of 'add'
+                (inserts new, unique rows), 'update' (updates data in existing
+                rows and columns), 'upsert' (updates existing data and inserts
+                new rows), or 'replace' (replaces the existing data with new
+                data).
         """
         if len(self._tables) > 1:
             helper.exception_handler(msg="""This feature works only for the single-table cubes.
@@ -252,16 +282,19 @@ class Cube:
             dataset.add_table(name=table_name, data_frame=self.dataframe, update_policy=update_policy)
             dataset.update()
 
-    def save_as(self, name, description=None, folder_id=None, table_name=None, verbose=True):
-        """Creates a new single-table cube with the data frame stored in the Cube instance (cube.dataframe).
+    def save_as(self, name, description=None, folder_id=None, table_name=None):
+        """Creates a new single-table cube with the data frame stored in the
+        Cube instance (cube.dataframe).
+
         Before the update, make sure that the data exists.
         Args:
             name(str): Name of cube.
             description(str): Description of the cube.
-            folder_id (str, optional): ID of the shared folder that the dataset should be created within. If `None`,
-                defaults to the user's My Reports folder.
-            table_name (str, optional): Name of the table. If None (default), the first table name of the original
-                cube will be used.
+            folder_id (str, optional): ID of the shared folder that the dataset
+                should be created within. If `None`, defaults to the user's
+                My Reports folder.
+            table_name (str, optional): Name of the table. If None (default),
+                the first table name of the original cube will be used.
         """
         if len(self._tables) > 1:
             helper.exception_handler(msg="""This feature works only for the single-table cubes.
@@ -275,32 +308,33 @@ class Cube:
             dataset.create(folder_id=folder_id)
 
     def __multitable_definition(self):
-        """Return all tables names and columns as a dictionary"""
+        """Return all tables names and columns as a dictionary."""
         if not self._table_definition:
-            try:
-                res_tables = datasets.dataset_definition(connection=self._connection,
-                                                        dataset_id=self._cube_id,
-                                                        fields=['tables', 'columns'])
-                _ds_definition = res_tables.json()
-
-                for table in _ds_definition['result']['definition']['availableObjects']['tables']:
+            res_tables = datasets.dataset_definition(connection=self._connection,
+                                                     dataset_id=self._cube_id,
+                                                     fields=['tables', 'columns'],
+                                                     whitelist=[('ERR001', 500)])
+            if res_tables.ok:
+                ds_definition = res_tables.json()
+                for table in ds_definition['result']['definition']['availableObjects']['tables']:
                     column_list = [column['columnName']
-                        for column in _ds_definition['result']['definition']['availableObjects']['columns']
-                        if table['name'] == column['tableName']]
+                                   for column in ds_definition['result']['definition']['availableObjects']['columns']
+                                   if table['name'] == column['tableName']]
                     self._table_definition[table['name']] = column_list
-            except:
-                helper.exception_handler("Some functionality is not available with this type of cube at the moment.", throw_error=False, exception_type=Warning, stack_lvl=3)
         return self._table_definition
 
     def __remove_row_count(self):
-        """Remove all Row Count metrics from cube"""
+        """Remove all Row Count metrics from cube."""
         row_counts = list(map(itemgetter('name'), self._row_counts))
         self._metrics = list(filter(lambda x: x['name'] not in row_counts, self.metrics))
 
     def __info(self):
-        """Get metadata for specific cubes. Implements GET /cubes to retrieve basic metadata."""
+        """Get metadata for specific cubes.
 
-        res = cubes.cube_info(connection=self._connection, cube_id=self._cube_id, verbose=helper.debug())
+        Implements GET /cubes to retrieve basic metadata.
+        """
+
+        res = cubes.cube_info(connection=self._connection, cube_id=self._cube_id)
 
         _info = res.json()["cubesInfos"][0]
         self._name = _info["cubeName"]
@@ -312,9 +346,12 @@ class Cube:
         self._status = _info["status"]
 
     def __definition(self):
-        """Get the definition of a cube, including attributes and metrics. Implements GET /v2/cubes/<cube_id>."""
+        """Get the definition of a cube, including attributes and metrics.
 
-        res = cubes.cube_definition(connection=self._connection, cube_id=self._cube_id, verbose=helper.debug())
+        Implements GET /v2/cubes/<cube_id>.
+        """
+
+        res = cubes.cube_definition(connection=self._connection, cube_id=self._cube_id)
 
         _definition = res.json()
         full_attributes = _definition["definition"]["availableObjects"]["attributes"]
@@ -326,24 +363,19 @@ class Cube:
         row_counts = ['Row Count - {}'.format(table_name) for table_name in self._tables]
         self._row_counts = list(filter(lambda x: x['name'] in row_counts, self.metrics))
 
-    def __get_attr_elements(self, limit=200000):
+    def __get_attr_elements(self, limit=50000):
         """Get elements of report attributes synchronously.
-        Implements GET /reports/<report_id>/attributes/<attribute_id>/elements
-        """
 
-        attr_elements = []
-        if self.attributes:
-            pbar = tqdm(self.attributes, desc="Loading attribute elements",
-                        leave=False, disable=(not self.progress_bar))
-            # Fetch first chunk of attribute elements.
-            for i, attr in enumerate(pbar):
-                # Fetch first chunk of attribute elements.
+        Implements GET /reports/<report_id>/attributes/<attribute_id>/elements.
+        """
+        def fetch_for_attribute(attribute):
+            @fallback_on_timeout()
+            def fetch_for_attribute_given_limit(limit):
                 response = cubes.cube_single_attribute_elements(connection=self._connection,
                                                                 cube_id=self._cube_id,
-                                                                attribute_id=attr['id'],
+                                                                attribute_id=attribute['id'],
                                                                 offset=0,
-                                                                limit=limit,
-                                                                verbose=helper.debug())
+                                                                limit=limit)
                 # Get total number of rows from headers.
                 total = int(response.headers['x-mstr-total-count'])
                 # Get attribute elements from the response.
@@ -353,22 +385,31 @@ class Cube:
                 for _offset in range(limit, total, limit):
                     response = cubes.cube_single_attribute_elements(connection=self._connection,
                                                                     cube_id=self._cube_id,
-                                                                    attribute_id=attr['id'],
+                                                                    attribute_id=attribute['id'],
                                                                     offset=_offset,
-                                                                    limit=limit,
-                                                                    verbose=helper.debug())
+                                                                    limit=limit)
                     elements.extend(response.json())
 
-                # Append attribute data to the list of attributes.
-                attr_elements.append({"attribute_name": attr['name'],
-                                      "attribute_id": attr['id'],
-                                      "elements": elements})
+                # Return attribute data.
+                return {"attribute_name": attribute['name'],
+                        "attribute_id": attribute['id'],
+                        "elements": elements}
+            return fetch_for_attribute_given_limit(limit)[0]
+
+        attr_elements = []
+        if self.attributes:
+            pbar = tqdm(self.attributes, desc="Loading attribute elements",
+                        leave=False, disable=(not self.progress_bar))
+            attr_elements = [fetch_for_attribute(attribute) for attribute in pbar]
             pbar.close()
 
         return attr_elements
 
-    def __get_attr_elements_async(self, limit=200000):
-        """Get attribute elements. Implements GET /cubes/<cube_id>/attributes/<attribute_id>/elements"""
+    def __get_attr_elements_async(self, limit=50000):
+        """Get attribute elements.
+
+        Implements GET /cubes/<cube_id>/attributes/<attribute_id>/elements.
+        """
 
         attr_elements = []
         if self.attributes:
@@ -391,8 +432,7 @@ class Cube:
                                                                         cube_id=self._cube_id,
                                                                         attribute_id=attr["id"],
                                                                         offset=_offset,
-                                                                        limit=limit,
-                                                                        verbose=helper.debug())
+                                                                        limit=limit)
                         elements.extend(response.json())
                     # Append attribute data to the list of attributes.
                     attr_elements.append({"attribute_name": attr['name'],
@@ -409,8 +449,7 @@ class Cube:
                                                                cube_id=self._cube_id,
                                                                attribute_id=attribute['id'],
                                                                offset=0,
-                                                               limit=limit,
-                                                               verbose=helper.debug())
+                                                               limit=limit)
                 for attribute in self.attributes]
 
     @property
@@ -449,7 +488,8 @@ class Cube:
     def attr_elements(self):
         if not self._attr_elements:
             if self.parallel is True:
-                self._attr_elements = self.__get_attr_elements_async()
+                # TODO: move the fallback inside the function to apply per-attribute, like with non-async version.
+                self._attr_elements = fallback_on_timeout()(self.__get_attr_elements_async)(50000)[0]
             else:
                 self._attr_elements = self.__get_attr_elements()
             self.__filter.attr_elem_selected = self._attr_elements
