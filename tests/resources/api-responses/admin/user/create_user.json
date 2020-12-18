@@ -1,0 +1,58 @@
+{
+  "name": "Test Amadeus User",
+  "id": "2419D50C11EAC2AA8F0E0080EFC54F76",
+  "type": 34,
+  "abbreviation": "test_user",
+  "subtype": 8704,
+  "dateCreated": "2020-07-10T12:37:39.000+0000",
+  "dateModified": "2020-07-10T12:37:40.000+0000",
+  "version": "2429B9D711EAC2AAB49B0080EF85CD74",
+  "acg": 255,
+  "owner": {
+    "name": "a",
+    "id": "EB1EEC8A11EA517DEC730080EF25EA90"
+  },
+  "acl": [
+    {
+      "deny": false,
+      "type": 1,
+      "rights": 255,
+      "trusteeId": "5F3FAFE111D2D8CC6000CC8E67019608",
+      "trusteeName": "System Administrators",
+      "trusteeType": 34,
+      "trusteeSubtype": 8705,
+      "inheritable": false
+    }
+  ],
+  "extType": 0,
+  "ancestors": [
+    {
+      "name": "CASTOR_SERVER_CONFIGURATION",
+      "id": "5F90C74FB2944D70930B9BDDA6D2FBF1",
+      "level": 2
+    },
+    {
+      "name": "Users",
+      "id": "73F7482611D3596C60001B8F67019608",
+      "level": 1
+    }
+  ],
+  "username": "test_user",
+  "fullName": "Test Amadeus User",
+  "enabled": true,
+  "passwordModifiable": true,
+  "requireNewPassword": true,
+  "standardAuth": true,
+  "memberships": [
+    {
+      "id": "C82C6B1011D2894CC0009D9F29718E4F",
+      "name": "Everyone",
+      "source": {
+        "type": [
+          "MSTR"
+        ]
+      }
+    }
+  ],
+  "initials": "TU"
+}

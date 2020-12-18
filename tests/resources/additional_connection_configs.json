@@ -1,0 +1,13 @@
+{
+    "username_no_prvlg" : "test_user",
+    "password_no_prvlg" : "user123",
+    "base_url_no_prvlg" : "https://env-185868.customer.cloud.microstrategy.com/MicroStrategyLibrary/api",
+    "project_id_no_prvlg" : "B7CA92F04B9FAE8D941C3E9B7E0CD754",
+    "login_mode_no_prvlg" : 1,
+
+    "username_no_supp" : "mstr",
+    "password_no_supp" : "BNym1oQmz7yI",
+    "base_url_no_supp" : "https://env-218814.customer.cloud.microstrategy.com/MicroStrategyLibrary/api",
+    "project_id_no_supp" : "B7CA92F04B9FAE8D941C3E9B7E0CD754",
+    "login_mode_no_supp" : 1
+}

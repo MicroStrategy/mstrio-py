@@ -1,0 +1,70 @@
+{
+    "recipients": [
+        {
+            "id": "54F3D26011D2896560009A8E67019608",
+            "name": "Administrator",
+            "isGroup": false,
+            "type": "user"
+        },
+        {
+            "id": "CCCE414211EB183BD8DC0080EFA51282",
+            "name": "Andrzej Korwin-Mikke",
+            "isGroup": false,
+            "type": "user"
+        },
+        {
+            "id": "F43C64DF11EB183BD8DC0080EFB53282",
+            "name": "Ignacy Hologa",
+            "isGroup": false,
+            "type": "user"
+        },
+        {
+            "id": "C1E141E611D603A2100086B3A5E8F8A4",
+            "name": "MicroStrategy Web User",
+            "isGroup": false,
+            "type": "user"
+        },
+        {
+            "id": "B259574D11EB190ED8DC0080EF95F180",
+            "name": "Oskar Duda",
+            "isGroup": false,
+            "type": "user"
+        },
+        {
+            "id": "1EFE801C11EB183CD8DC0080EFA5107E",
+            "name": "Piotr Czyz",
+            "isGroup": false,
+            "type": "user"
+        },
+        {
+            "id": "6BF7F8E94B825A4D5E5F158B6B41B75F",
+            "name": "San Francisco Books Manager",
+            "isGroup": false,
+            "type": "contact"
+        },
+        {
+            "id": "D0153F224A740B2CB716CF9AF1FF7B00",
+            "name": "San Francisco - Category Managers",
+            "isGroup": true,
+            "type": "contact_group"
+        },
+        {
+            "id": "A5DCA82143B8BC0F8A3C859214A6592A",
+            "name": "San Francisco Electronics Manager",
+            "isGroup": false,
+            "type": "contact"
+        },
+        {
+            "id": "BF93875B404C3FFDE2CDDC8819777674",
+            "name": "San Francisco Movies Manager",
+            "isGroup": false,
+            "type": "contact"
+        },
+        {
+            "id": "59CCFDF44EAA434CF3B2059143278064",
+            "name": "San Francisco Music Manager",
+            "isGroup": false,
+            "type": "contact"
+        }
+    ]
+}

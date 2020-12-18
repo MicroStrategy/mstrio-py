@@ -23,6 +23,9 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+*node_modules*
+*DS_Store*
+Untitled*
 MANIFEST
 
 # PyInstaller

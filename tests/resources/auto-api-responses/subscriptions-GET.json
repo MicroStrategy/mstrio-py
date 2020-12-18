@@ -1,0 +1,3584 @@
+{
+    "subscriptions": [
+        {
+            "id": "64E9995E4908CC6BFC6F1998D244FE55",
+            "name": "Tutorial Home 3/1/2016 3:33:52 PM",
+            "editable": true,
+            "allowDeliveryChanges": false,
+            "allowPersonalizationChanges": false,
+            "allowUnsubscribe": false,
+            "dateCreated": "2016-03-01T20:33:54+0000",
+            "dateModified": "2016-03-01T20:33:54+0000",
+            "owner": {
+                "id": "54F3D26011D2896560009A8E67019608",
+                "name": "Administrator"
+            },
+            "schedules": [
+                {
+                    "id": "E24F501E802911E1BBCB892C4924019B",
+                    "name": "Personal View",
+                    "type": "unknown"
+                }
+            ],
+            "contents": [
+                {
+                    "id": "D73B9F3411E5C9E00EE20080EFE55B9E",
+                    "name": "Tutorial Home",
+                    "type": "document",
+                    "personalization": {
+                        "compressed": false,
+                        "formatMode": "DEFAULT",
+                        "viewMode": "DEFAULT",
+                        "formatType": "PLAIN_TEXT"
+                    }
+                }
+            ],
+            "recipients": [
+                {
+                    "id": "54F3D26011D2896560009A8E67019608",
+                    "name": "Administrator",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "EA9596824F0D65EACF595A9059ED136B"
+                }
+            ],
+            "delivery": {
+                "mode": "SHARED_LINK",
+                "contactSecurity": false
+            }
+        },
+        {
+            "id": "727FDDC011E5CA9000000080EFB5FA9D",
+            "name": "Tutorial Home 2/3/2016 11:09:06 AM",
+            "editable": true,
+            "allowDeliveryChanges": false,
+            "allowPersonalizationChanges": false,
+            "allowUnsubscribe": false,
+            "dateCreated": "2016-02-03T16:09:05+0000",
+            "dateModified": "2016-02-03T16:09:05+0000",
+            "owner": {
+                "id": "54F3D26011D2896560009A8E67019608",
+                "name": "Administrator"
+            },
+            "schedules": [
+                {
+                    "id": "E24F501E802911E1BBCB892C4924019B",
+                    "name": "Personal View",
+                    "type": "unknown"
+                }
+            ],
+            "contents": [
+                {
+                    "id": "D73B9F3411E5C9E00EE20080EFE55B9E",
+                    "name": "Tutorial Home",
+                    "type": "document",
+                    "personalization": {
+                        "compressed": false,
+                        "formatMode": "DEFAULT",
+                        "viewMode": "DEFAULT",
+                        "formatType": "PLAIN_TEXT"
+                    }
+                }
+            ],
+            "recipients": [
+                {
+                    "id": "54F3D26011D2896560009A8E67019608",
+                    "name": "Administrator",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "7283682811E5CA909DFA0080EFB579EC"
+                }
+            ],
+            "delivery": {
+                "mode": "SHARED_LINK",
+                "contactSecurity": false
+            }
+        },
+        {
+            "id": "FC6D384811E79D705F630080EF8584A4",
+            "name": "Store Manager Dossier 9/19/2017 3:30:25 PM",
+            "editable": true,
+            "allowDeliveryChanges": false,
+            "allowPersonalizationChanges": false,
+            "allowUnsubscribe": false,
+            "dateCreated": "2017-09-19T19:30:26+0000",
+            "dateModified": "2017-09-19T19:30:26+0000",
+            "owner": {
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                "name": "MSTR User"
+            },
+            "schedules": [
+                {
+                    "id": "E24F501E802911E1BBCB892C4924019B",
+                    "name": "Personal View",
+                    "type": "unknown"
+                }
+            ],
+            "contents": [
+                {
+                    "id": "4B5DC56611E79D5928350080EF753106",
+                    "name": "Store Manager Dossier",
+                    "type": "dossier",
+                    "personalization": {
+                        "compressed": false,
+                        "formatMode": "DEFAULT",
+                        "viewMode": "DEFAULT",
+                        "formatType": "PLAIN_TEXT"
+                    }
+                }
+            ],
+            "recipients": [
+                {
+                    "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                    "name": "MSTR User",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "FC6F2E8211E79D705F630080EF8584A4"
+                }
+            ],
+            "delivery": {
+                "mode": "SHARED_LINK",
+                "contactSecurity": false
+            }
+        },
+        {
+            "id": "0E867D3C11EA1254EA5C0080EF25E453",
+            "name": "Slot Machines Dossier 11/29/2019 10:58:01 AM",
+            "editable": true,
+            "allowDeliveryChanges": false,
+            "allowPersonalizationChanges": false,
+            "allowUnsubscribe": false,
+            "dateCreated": "2019-11-29T02:58:01+0000",
+            "dateModified": "2019-11-29T02:58:01+0000",
+            "owner": {
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                "name": "MSTR User"
+            },
+            "schedules": [
+                {
+                    "id": "E24F501E802911E1BBCB892C4924019B",
+                    "name": "Personal View",
+                    "type": "unknown"
+                }
+            ],
+            "contents": [
+                {
+                    "id": "43883BAB11E978D61F220080AFB38619",
+                    "name": "Slot Machines Dossier",
+                    "type": "dossier",
+                    "personalization": {
+                        "compressed": false,
+                        "formatMode": "DEFAULT",
+                        "viewMode": "DEFAULT",
+                        "formatType": "PLAIN_TEXT"
+                    }
+                }
+            ],
+            "recipients": [
+                {
+                    "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                    "name": "MSTR User",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "0EB0148A11EA1254EA5C0080EF25E453"
+                }
+            ],
+            "delivery": {
+                "mode": "SHARED_LINK",
+                "contactSecurity": false
+            }
+        },
+        {
+            "id": "E6021E2C11EA124CEA5C0080EFE56452",
+            "name": "Slot Machines Dossier 11/29/2019 10:06:47 AM",
+            "editable": true,
+            "allowDeliveryChanges": false,
+            "allowPersonalizationChanges": false,
+            "allowUnsubscribe": false,
+            "dateCreated": "2019-11-29T02:06:47+0000",
+            "dateModified": "2019-11-29T02:06:47+0000",
+            "owner": {
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                "name": "MSTR User"
+            },
+            "schedules": [
+                {
+                    "id": "E24F501E802911E1BBCB892C4924019B",
+                    "name": "Personal View",
+                    "type": "unknown"
+                }
+            ],
+            "contents": [
+                {
+                    "id": "43883BAB11E978D61F220080AFB38619",
+                    "name": "Slot Machines Dossier",
+                    "type": "dossier",
+                    "personalization": {
+                        "compressed": false,
+                        "formatMode": "DEFAULT",
+                        "viewMode": "DEFAULT",
+                        "formatType": "PLAIN_TEXT"
+                    }
+                }
+            ],
+            "recipients": [
+                {
+                    "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                    "name": "MSTR User",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "E6067E7C11EA124CEA5C0080EFE56452"
+                }
+            ],
+            "delivery": {
+                "mode": "SHARED_LINK",
+                "contactSecurity": false
+            }
+        },
+        {
+            "id": "EE8A87B211E79D705F630080EFE544A2",
+            "name": "Slot Machine Perfomance 9/19/2017 3:30:02 PM",
+            "editable": true,
+            "allowDeliveryChanges": false,
+            "allowPersonalizationChanges": false,
+            "allowUnsubscribe": false,
+            "dateCreated": "2017-09-19T19:30:02+0000",
+            "dateModified": "2017-09-19T19:30:02+0000",
+            "owner": {
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                "name": "MSTR User"
+            },
+            "schedules": [
+                {
+                    "id": "E24F501E802911E1BBCB892C4924019B",
+                    "name": "Personal View",
+                    "type": "unknown"
+                }
+            ],
+            "contents": [
+                {
+                    "id": "3BDFDB0611E79D59276F0080EF753106",
+                    "name": "Slot Machine Perfomance",
+                    "type": "dossier",
+                    "personalization": {
+                        "compressed": false,
+                        "formatMode": "DEFAULT",
+                        "viewMode": "DEFAULT",
+                        "formatType": "PLAIN_TEXT"
+                    }
+                }
+            ],
+            "recipients": [
+                {
+                    "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                    "name": "MSTR User",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "EE8CB23011E79D705F630080EFE544A2"
+                }
+            ],
+            "delivery": {
+                "mode": "SHARED_LINK",
+                "contactSecurity": false
+            }
+        },
+        {
+            "id": "7138EE3011EA0FD26B470080EF752E56",
+            "name": "Sales by Income Bracket (caching enabled) 11/25/19 10:25:06 PM",
+            "editable": true,
+            "allowDeliveryChanges": false,
+            "allowPersonalizationChanges": false,
+            "allowUnsubscribe": false,
+            "dateCreated": "2019-11-25T22:25:10+0000",
+            "dateModified": "2019-11-25T22:25:10+0000",
+            "owner": {
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                "name": "MSTR User"
+            },
+            "schedules": [
+                {
+                    "id": "FF7BB3C811D501F0C00051916B98494F",
+                    "name": "All the Time",
+                    "type": "time_based",
+                    "nextDelivery": "2020-10-16T14:00:00+0000"
+                }
+            ],
+            "contents": [
+                {
+                    "id": "64819E27493166BAE554E5B571083683",
+                    "name": "Sales by Income Bracket (caching enabled)",
+                    "type": "report",
+                    "personalization": {
+                        "compressed": false,
+                        "formatMode": "DEFAULT",
+                        "viewMode": "DEFAULT",
+                        "formatType": "PLAIN_TEXT"
+                    }
+                }
+            ],
+            "recipients": [
+                {
+                    "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                    "name": "MSTR User",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "713CC37A11EA0FD26B470080EF752E56"
+                }
+            ],
+            "delivery": {
+                "mode": "HISTORY_LIST",
+                "contactSecurity": false,
+                "historyList": {
+                    "doNotCreateUpdateCaches": false,
+                    "overwriteOlderVersion": true,
+                    "reRunHl": false
+                }
+            }
+        },
+        {
+            "id": "20B237BA11EA11C5B6350080EF25BC04",
+            "name": "Retail Sales Report 11/28/2019 5:54:54 PM",
+            "editable": true,
+            "allowDeliveryChanges": false,
+            "allowPersonalizationChanges": false,
+            "allowUnsubscribe": false,
+            "dateCreated": "2019-11-28T09:54:54+0000",
+            "dateModified": "2019-11-28T09:54:54+0000",
+            "owner": {
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                "name": "MSTR User"
+            },
+            "schedules": [
+                {
+                    "id": "E24F501E802911E1BBCB892C4924019B",
+                    "name": "Personal View",
+                    "type": "unknown"
+                }
+            ],
+            "contents": [
+                {
+                    "id": "CF13BCDA409911243371CA980BAAE749",
+                    "name": "Retail Sales Report",
+                    "type": "dossier",
+                    "personalization": {
+                        "compressed": false,
+                        "formatMode": "DEFAULT",
+                        "viewMode": "DEFAULT",
+                        "formatType": "PLAIN_TEXT"
+                    }
+                }
+            ],
+            "recipients": [
+                {
+                    "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                    "name": "MSTR User",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "21FB546211EA11C5B6350080EF25BC04"
+                }
+            ],
+            "delivery": {
+                "mode": "SHARED_LINK",
+                "contactSecurity": false
+            }
+        },
+        {
+            "id": "FD6F5CBA11EA1192B6350080EF45FC04",
+            "name": "Retail Sales Report 11/28/2019 11:55:59 AM",
+            "editable": true,
+            "allowDeliveryChanges": false,
+            "allowPersonalizationChanges": false,
+            "allowUnsubscribe": false,
+            "dateCreated": "2019-11-28T03:56:00+0000",
+            "dateModified": "2019-11-28T03:56:00+0000",
+            "owner": {
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                "name": "MSTR User"
+            },
+            "schedules": [
+                {
+                    "id": "E24F501E802911E1BBCB892C4924019B",
+                    "name": "Personal View",
+                    "type": "unknown"
+                }
+            ],
+            "contents": [
+                {
+                    "id": "CF13BCDA409911243371CA980BAAE749",
+                    "name": "Retail Sales Report",
+                    "type": "dossier",
+                    "personalization": {
+                        "compressed": false,
+                        "formatMode": "DEFAULT",
+                        "viewMode": "DEFAULT",
+                        "formatType": "PLAIN_TEXT"
+                    }
+                }
+            ],
+            "recipients": [
+                {
+                    "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                    "name": "MSTR User",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "FDB73D5A11EA1192B6350080EF45FC04"
+                }
+            ],
+            "delivery": {
+                "mode": "SHARED_LINK",
+                "contactSecurity": false
+            }
+        },
+        {
+            "id": "555288D011EB0F8F92170080EF853F36",
+            "name": "REPORT SUBS TEST",
+            "editable": true,
+            "allowDeliveryChanges": true,
+            "allowPersonalizationChanges": true,
+            "allowUnsubscribe": true,
+            "dateCreated": "2020-10-16T09:09:45+0000",
+            "dateModified": "2020-10-16T13:57:59+0000",
+            "owner": {
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                "name": "MSTR User"
+            },
+            "schedules": [
+                {
+                    "id": "FD7C7E7E4CA242FF314492A6CC696FB1",
+                    "name": "Remote Diagnostics Daily",
+                    "type": "time_based",
+                    "nextDelivery": "2020-10-16T22:22:27+0000"
+                }
+            ],
+            "contents": [
+                {
+                    "id": "41D5E34311EB0EEFA7000080EF158FDF",
+                    "name": "Report_subs",
+                    "type": "report",
+                    "personalization": {
+                        "compressed": false,
+                        "formatMode": "CURRENT_PAGE",
+                        "viewMode": "BOTH",
+                        "formatType": "PDF"
+                    }
+                }
+            ],
+            "recipients": [
+                {
+                    "id": "54F3D26011D2896560009A8E67019608",
+                    "name": "Administrator",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "7799F6CC11EB0FA292170080EF053E33"
+                }
+            ],
+            "delivery": {
+                "mode": "EMAIL",
+                "contactSecurity": false,
+                "email": {
+                    "subject": "REPORT SUBS TEST",
+                    "sendContentAs": "data",
+                    "overwriteOlderVersion": false
+                }
+            }
+        },
+        {
+            "id": "C68AC85111EB0FB292170080EF45BF36",
+            "name": "REPORT SUBS TEST",
+            "editable": true,
+            "allowDeliveryChanges": true,
+            "allowPersonalizationChanges": true,
+            "allowUnsubscribe": true,
+            "dateCreated": "2020-10-16T13:23:27+0000",
+            "dateModified": "2020-10-16T13:58:00+0000",
+            "owner": {
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                "name": "MSTR User"
+            },
+            "schedules": [
+                {
+                    "id": "FD7C7E7E4CA242FF314492A6CC696FB1",
+                    "name": "Remote Diagnostics Daily",
+                    "type": "time_based",
+                    "nextDelivery": "2020-10-16T22:22:27+0000"
+                }
+            ],
+            "contents": [
+                {
+                    "id": "41D5E34311EB0EEFA7000080EF158FDF",
+                    "name": "Report_subs",
+                    "type": "report",
+                    "personalization": {
+                        "compressed": false,
+                        "formatMode": "CURRENT_PAGE",
+                        "viewMode": "BOTH",
+                        "formatType": "PDF"
+                    }
+                }
+            ],
+            "recipients": [
+                {
+                    "id": "66BCA30411EB0C82B71F0080EF95DBAC",
+                    "name": "Piotr Czyz",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "C68D15F711EB0FB292170080EF45BF36"
+                }
+            ],
+            "delivery": {
+                "mode": "EMAIL",
+                "contactSecurity": false,
+                "email": {
+                    "subject": "REPORT SUBS TEST",
+                    "sendContentAs": "data",
+                    "overwriteOlderVersion": false
+                }
+            }
+        },
+        {
+            "id": "9D077C9911EB0FA992170080EFD5E037",
+            "name": "REPORT SUBS TEST",
+            "editable": true,
+            "allowDeliveryChanges": true,
+            "allowPersonalizationChanges": true,
+            "allowUnsubscribe": true,
+            "dateCreated": "2020-10-17T00:17:52+0000",
+            "dateModified": "2020-10-16T13:57:58+0000",
+            "owner": {
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                "name": "MSTR User"
+            },
+            "schedules": [
+                {
+                    "id": "FD7C7E7E4CA242FF314492A6CC696FB1",
+                    "name": "Remote Diagnostics Daily",
+                    "type": "time_based",
+                    "nextDelivery": "2020-10-16T22:22:27+0000"
+                }
+            ],
+            "contents": [
+                {
+                    "id": "41D5E34311EB0EEFA7000080EF158FDF",
+                    "name": "Report_subs",
+                    "type": "report",
+                    "personalization": {
+                        "compressed": false,
+                        "formatMode": "CURRENT_PAGE",
+                        "viewMode": "BOTH",
+                        "formatType": "PDF"
+                    }
+                }
+            ],
+            "recipients": [
+                {
+                    "id": "66BCA30411EB0C82B71F0080EF95DBAC",
+                    "name": "Piotr Czyz",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "9D09D76811EB0FA992170080EFD5E037"
+                }
+            ],
+            "delivery": {
+                "mode": "EMAIL",
+                "contactSecurity": false,
+                "email": {
+                    "subject": "REPORT SUBS TEST",
+                    "sendContentAs": "data",
+                    "overwriteOlderVersion": false
+                }
+            }
+        },
+        {
+            "id": "7470185411EB0EEFD6050080EF55CC3E",
+            "name": "REPORT SUBS TEST",
+            "editable": true,
+            "allowDeliveryChanges": true,
+            "allowPersonalizationChanges": true,
+            "allowUnsubscribe": true,
+            "dateCreated": "2020-10-15T14:05:17+0000",
+            "dateModified": "2020-10-16T13:57:59+0000",
+            "owner": {
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                "name": "MSTR User"
+            },
+            "schedules": [
+                {
+                    "id": "FD7C7E7E4CA242FF314492A6CC696FB1",
+                    "name": "Remote Diagnostics Daily",
+                    "type": "time_based",
+                    "nextDelivery": "2020-10-16T22:22:27+0000"
+                }
+            ],
+            "contents": [
+                {
+                    "id": "41D5E34311EB0EEFA7000080EF158FDF",
+                    "name": "Report_subs",
+                    "type": "report",
+                    "personalization": {
+                        "compressed": false,
+                        "formatMode": "CURRENT_PAGE",
+                        "viewMode": "BOTH",
+                        "formatType": "PDF"
+                    }
+                }
+            ],
+            "recipients": [
+                {
+                    "id": "54F3D26011D2896560009A8E67019608",
+                    "name": "Administrator",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "76D8DE2411EB0FA292170080EFE5FE33"
+                }
+            ],
+            "delivery": {
+                "mode": "EMAIL",
+                "contactSecurity": false,
+                "email": {
+                    "subject": "REPORT SUBS TEST",
+                    "sendContentAs": "data",
+                    "overwriteOlderVersion": false
+                }
+            }
+        },
+        {
+            "id": "DED9727611EB0EEFD6050080EF954B3C",
+            "name": "REPORT SUBS TEST",
+            "editable": true,
+            "allowDeliveryChanges": true,
+            "allowPersonalizationChanges": true,
+            "allowUnsubscribe": true,
+            "dateCreated": "2020-10-15T14:08:16+0000",
+            "dateModified": "2020-10-16T13:58:00+0000",
+            "owner": {
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                "name": "MSTR User"
+            },
+            "schedules": [
+                {
+                    "id": "FD7C7E7E4CA242FF314492A6CC696FB1",
+                    "name": "Remote Diagnostics Daily",
+                    "type": "time_based",
+                    "nextDelivery": "2020-10-16T22:22:27+0000"
+                }
+            ],
+            "contents": [
+                {
+                    "id": "41D5E34311EB0EEFA7000080EF158FDF",
+                    "name": "Report_subs",
+                    "type": "report",
+                    "personalization": {
+                        "compressed": false,
+                        "formatMode": "CURRENT_PAGE",
+                        "viewMode": "BOTH",
+                        "formatType": "PDF"
+                    }
+                }
+            ],
+            "recipients": [
+                {
+                    "id": "54F3D26011D2896560009A8E67019608",
+                    "name": "Administrator",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "785CB63A11EB0FA292170080EFB59F37"
+                }
+            ],
+            "delivery": {
+                "mode": "EMAIL",
+                "contactSecurity": false,
+                "email": {
+                    "subject": "REPORT SUBS TEST",
+                    "sendContentAs": "data",
+                    "overwriteOlderVersion": false
+                }
+            }
+        },
+        {
+            "id": "969F89E811EB0A389F560080EF350C7F",
+            "name": "Recipient_test_sub23",
+            "editable": true,
+            "allowDeliveryChanges": true,
+            "allowPersonalizationChanges": true,
+            "allowUnsubscribe": true,
+            "dateCreated": "2020-10-09T14:06:12+0000",
+            "dateModified": "2020-10-09T14:06:12+0000",
+            "owner": {
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                "name": "MSTR User"
+            },
+            "schedules": [
+                {
+                    "id": "FD7C7E7E4CA242FF314492A6CC696FB1",
+                    "name": "Remote Diagnostics Daily",
+                    "type": "time_based",
+                    "nextDelivery": "2020-10-16T22:22:27+0000"
+                }
+            ],
+            "contents": [
+                {
+                    "id": "66366F0E11EA112A1A9C0080EF8568D5",
+                    "name": "Landing Page",
+                    "type": "dossier",
+                    "personalization": {
+                        "compressed": true,
+                        "formatMode": "DEFAULT",
+                        "viewMode": "BOTH",
+                        "formatType": "PDF",
+                        "exportToPdfSettings": {
+                            "pageOption": "PAGE",
+                            "pageSize": "letter",
+                            "orientation": "automatic",
+                            "includeOverview": true,
+                            "includeDetailedPages": false,
+                            "includeHeader": true,
+                            "includeFooter": true,
+                            "filterSummary": "BAR",
+                            "fitToPage": false,
+                            "repeatColumnHeader": false
+                        }
+                    }
+                }
+            ],
+            "recipients": [
+                {
+                    "id": "DDD9B37F11EB07CCF3D90080EFB5A7D5",
+                    "name": "Piotr C",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "96A2386411EB0A389F560080EF350C7F"
+                }
+            ],
+            "delivery": {
+                "mode": "EMAIL",
+                "expiration": "2020-10-21",
+                "contactSecurity": false,
+                "email": {
+                    "subject": "Recipient_test_sub23",
+                    "sendContentAs": "data",
+                    "overwriteOlderVersion": false,
+                    "zip": {
+                        "filename": "string",
+                        "passwordProtect": false
+                    }
+                }
+            }
+        },
+        {
+            "id": "C281BC2B11EB0A389F560080EF85AB7E",
+            "name": "Recipient_test_sub23",
+            "editable": true,
+            "allowDeliveryChanges": true,
+            "allowPersonalizationChanges": true,
+            "allowUnsubscribe": true,
+            "dateCreated": "2020-10-09T14:07:26+0000",
+            "dateModified": "2020-10-09T14:07:26+0000",
+            "owner": {
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                "name": "MSTR User"
+            },
+            "schedules": [
+                {
+                    "id": "FD7C7E7E4CA242FF314492A6CC696FB1",
+                    "name": "Remote Diagnostics Daily",
+                    "type": "time_based",
+                    "nextDelivery": "2020-10-16T22:22:27+0000"
+                }
+            ],
+            "contents": [
+                {
+                    "id": "66366F0E11EA112A1A9C0080EF8568D5",
+                    "name": "Landing Page",
+                    "type": "dossier",
+                    "personalization": {
+                        "compressed": true,
+                        "formatMode": "DEFAULT",
+                        "viewMode": "BOTH",
+                        "formatType": "PDF",
+                        "exportToPdfSettings": {
+                            "pageOption": "PAGE",
+                            "pageSize": "letter",
+                            "orientation": "automatic",
+                            "includeOverview": true,
+                            "includeDetailedPages": false,
+                            "includeHeader": true,
+                            "includeFooter": true,
+                            "filterSummary": "BAR",
+                            "fitToPage": false,
+                            "repeatColumnHeader": false
+                        }
+                    }
+                }
+            ],
+            "recipients": [
+                {
+                    "id": "DDD9B37F11EB07CCF3D90080EFB5A7D5",
+                    "name": "Piotr C",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "C28431C711EB0A389F560080EF85AB7E"
+                }
+            ],
+            "delivery": {
+                "mode": "EMAIL",
+                "expiration": "2020-10-21",
+                "contactSecurity": false,
+                "email": {
+                    "subject": "Recipient_test_sub23",
+                    "sendContentAs": "data",
+                    "overwriteOlderVersion": false,
+                    "zip": {
+                        "filename": "Recipient_test_sub23",
+                        "passwordProtect": false
+                    }
+                }
+            }
+        },
+        {
+            "id": "CA08D42F11EB0A3D9F560080EF95CC80",
+            "name": "Recipient_test_sub23",
+            "editable": true,
+            "allowDeliveryChanges": true,
+            "allowPersonalizationChanges": true,
+            "allowUnsubscribe": true,
+            "dateCreated": "2020-10-09T14:43:26+0000",
+            "dateModified": "2020-10-09T14:43:26+0000",
+            "owner": {
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                "name": "MSTR User"
+            },
+            "schedules": [
+                {
+                    "id": "FD7C7E7E4CA242FF314492A6CC696FB1",
+                    "name": "Remote Diagnostics Daily",
+                    "type": "time_based",
+                    "nextDelivery": "2020-10-16T22:22:27+0000"
+                }
+            ],
+            "contents": [
+                {
+                    "id": "66366F0E11EA112A1A9C0080EF8568D5",
+                    "name": "Landing Page",
+                    "type": "dossier",
+                    "personalization": {
+                        "compressed": true,
+                        "formatMode": "DEFAULT",
+                        "viewMode": "BOTH",
+                        "formatType": "PDF",
+                        "exportToPdfSettings": {
+                            "pageOption": "PAGE",
+                            "pageSize": "letter",
+                            "orientation": "automatic",
+                            "includeOverview": true,
+                            "includeDetailedPages": false,
+                            "includeHeader": true,
+                            "includeFooter": true,
+                            "filterSummary": "BAR",
+                            "fitToPage": false,
+                            "repeatColumnHeader": false
+                        }
+                    }
+                }
+            ],
+            "recipients": [
+                {
+                    "id": "DDD9B37F11EB07CCF3D90080EFB5A7D5",
+                    "name": "Piotr C",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "CA0B4B9611EB0A3D9F560080EF95CC80"
+                }
+            ],
+            "delivery": {
+                "mode": "EMAIL",
+                "expiration": "2020-10-16",
+                "contactSecurity": false,
+                "email": {
+                    "subject": "Recipient_test_sub23",
+                    "sendContentAs": "data",
+                    "overwriteOlderVersion": false,
+                    "zip": {
+                        "filename": "Recipient_test_sub23",
+                        "passwordProtect": false
+                    }
+                }
+            }
+        },
+        {
+            "id": "6057A40A11EB0A3E9F560080EF05AD81",
+            "name": "Recipient_test_sub23",
+            "editable": true,
+            "allowDeliveryChanges": true,
+            "allowPersonalizationChanges": true,
+            "allowUnsubscribe": true,
+            "dateCreated": "2020-10-09T14:47:38+0000",
+            "dateModified": "2020-10-09T14:47:38+0000",
+            "owner": {
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                "name": "MSTR User"
+            },
+            "schedules": [
+                {
+                    "id": "FD7C7E7E4CA242FF314492A6CC696FB1",
+                    "name": "Remote Diagnostics Daily",
+                    "type": "time_based",
+                    "nextDelivery": "2020-10-16T22:22:27+0000"
+                }
+            ],
+            "contents": [
+                {
+                    "id": "66366F0E11EA112A1A9C0080EF8568D5",
+                    "name": "Landing Page",
+                    "type": "dossier",
+                    "personalization": {
+                        "compressed": true,
+                        "formatMode": "DEFAULT",
+                        "viewMode": "BOTH",
+                        "formatType": "PDF",
+                        "exportToPdfSettings": {
+                            "pageOption": "PAGE",
+                            "pageSize": "letter",
+                            "orientation": "automatic",
+                            "includeOverview": true,
+                            "includeDetailedPages": false,
+                            "includeHeader": true,
+                            "includeFooter": true,
+                            "filterSummary": "BAR",
+                            "fitToPage": false,
+                            "repeatColumnHeader": false
+                        }
+                    }
+                }
+            ],
+            "recipients": [
+                {
+                    "id": "DDD9B37F11EB07CCF3D90080EFB5A7D5",
+                    "name": "Piotr C",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "605A1F1F11EB0A3E9F560080EF05AD81"
+                }
+            ],
+            "delivery": {
+                "mode": "EMAIL",
+                "expiration": "2020-10-16",
+                "contactSecurity": false,
+                "email": {
+                    "subject": "Recipient_test_sub23",
+                    "sendContentAs": "data",
+                    "overwriteOlderVersion": false,
+                    "zip": {
+                        "filename": "Recipient_test_sub23",
+                        "passwordProtect": false
+                    }
+                }
+            }
+        },
+        {
+            "id": "8B6CC4A411EB0A3E9F560080EF656C7F",
+            "name": "Recipient_test_sub23",
+            "editable": true,
+            "allowDeliveryChanges": true,
+            "allowPersonalizationChanges": true,
+            "allowUnsubscribe": true,
+            "dateCreated": "2020-10-09T14:48:50+0000",
+            "dateModified": "2020-10-09T14:48:50+0000",
+            "owner": {
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                "name": "MSTR User"
+            },
+            "schedules": [
+                {
+                    "id": "FD7C7E7E4CA242FF314492A6CC696FB1",
+                    "name": "Remote Diagnostics Daily",
+                    "type": "time_based",
+                    "nextDelivery": "2020-10-16T22:22:27+0000"
+                }
+            ],
+            "contents": [
+                {
+                    "id": "66366F0E11EA112A1A9C0080EF8568D5",
+                    "name": "Landing Page",
+                    "type": "dossier",
+                    "personalization": {
+                        "compressed": true,
+                        "formatMode": "DEFAULT",
+                        "viewMode": "BOTH",
+                        "formatType": "PDF",
+                        "exportToPdfSettings": {
+                            "pageOption": "PAGE",
+                            "pageSize": "letter",
+                            "orientation": "automatic",
+                            "includeOverview": true,
+                            "includeDetailedPages": false,
+                            "includeHeader": true,
+                            "includeFooter": true,
+                            "filterSummary": "BAR",
+                            "fitToPage": false,
+                            "repeatColumnHeader": false
+                        }
+                    }
+                }
+            ],
+            "recipients": [
+                {
+                    "id": "DDD9B37F11EB07CCF3D90080EFB5A7D5",
+                    "name": "Piotr C",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "8B6F1D6311EB0A3E9F560080EF656C7F"
+                }
+            ],
+            "delivery": {
+                "mode": "EMAIL",
+                "contactSecurity": false,
+                "email": {
+                    "subject": "Recipient_test_sub23",
+                    "sendContentAs": "data",
+                    "overwriteOlderVersion": false,
+                    "zip": {
+                        "filename": "Recipient_test_sub23",
+                        "passwordProtect": false
+                    }
+                }
+            }
+        },
+        {
+            "id": "9FAAF1BC11EB0C68C6660080EF25FDAF",
+            "name": "Recipient_test_sub23",
+            "editable": true,
+            "allowDeliveryChanges": true,
+            "allowPersonalizationChanges": true,
+            "allowUnsubscribe": true,
+            "dateCreated": "2020-10-12T08:55:05+0000",
+            "dateModified": "2020-10-12T08:55:05+0000",
+            "owner": {
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                "name": "MSTR User"
+            },
+            "schedules": [
+                {
+                    "id": "FD7C7E7E4CA242FF314492A6CC696FB1",
+                    "name": "Remote Diagnostics Daily",
+                    "type": "time_based",
+                    "nextDelivery": "2020-10-16T22:22:27+0000"
+                }
+            ],
+            "contents": [
+                {
+                    "id": "66366F0E11EA112A1A9C0080EF8568D5",
+                    "name": "Landing Page",
+                    "type": "dossier",
+                    "personalization": {
+                        "compressed": true,
+                        "formatMode": "DEFAULT",
+                        "viewMode": "BOTH",
+                        "formatType": "PDF",
+                        "exportToPdfSettings": {
+                            "pageOption": "PAGE",
+                            "pageSize": "letter",
+                            "orientation": "automatic",
+                            "includeOverview": true,
+                            "includeDetailedPages": false,
+                            "includeHeader": true,
+                            "includeFooter": true,
+                            "filterSummary": "BAR",
+                            "fitToPage": false,
+                            "repeatColumnHeader": false
+                        }
+                    }
+                }
+            ],
+            "recipients": [
+                {
+                    "id": "DDD9B37F11EB07CCF3D90080EFB5A7D5",
+                    "name": "Piotr C",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "9FAFAAF411EB0C68C6660080EF25FDAF"
+                }
+            ],
+            "delivery": {
+                "mode": "EMAIL",
+                "contactSecurity": false,
+                "email": {
+                    "subject": "Recipient_test_sub23",
+                    "sendContentAs": "data",
+                    "overwriteOlderVersion": false,
+                    "zip": {
+                        "filename": "Recipient_test_sub23",
+                        "passwordProtect": false
+                    }
+                }
+            }
+        },
+        {
+            "id": "2AFA89D011EB0C69C6660080EFE57DAE",
+            "name": "Recipient_test_sub23",
+            "editable": true,
+            "allowDeliveryChanges": true,
+            "allowPersonalizationChanges": true,
+            "allowUnsubscribe": true,
+            "dateCreated": "2020-10-12T08:58:59+0000",
+            "dateModified": "2020-10-12T08:58:59+0000",
+            "owner": {
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                "name": "MSTR User"
+            },
+            "schedules": [
+                {
+                    "id": "FD7C7E7E4CA242FF314492A6CC696FB1",
+                    "name": "Remote Diagnostics Daily",
+                    "type": "time_based",
+                    "nextDelivery": "2020-10-16T22:22:27+0000"
+                }
+            ],
+            "contents": [
+                {
+                    "id": "66366F0E11EA112A1A9C0080EF8568D5",
+                    "name": "Landing Page",
+                    "type": "dossier",
+                    "personalization": {
+                        "compressed": true,
+                        "formatMode": "DEFAULT",
+                        "viewMode": "BOTH",
+                        "formatType": "PDF",
+                        "exportToPdfSettings": {
+                            "pageOption": "PAGE",
+                            "pageSize": "letter",
+                            "orientation": "automatic",
+                            "includeOverview": true,
+                            "includeDetailedPages": false,
+                            "includeHeader": true,
+                            "includeFooter": true,
+                            "filterSummary": "BAR",
+                            "fitToPage": false,
+                            "repeatColumnHeader": false
+                        }
+                    }
+                }
+            ],
+            "recipients": [
+                {
+                    "id": "DDD9B37F11EB07CCF3D90080EFB5A7D5",
+                    "name": "Piotr C",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "2AFCF07711EB0C69C6660080EFE57DAE"
+                }
+            ],
+            "delivery": {
+                "mode": "EMAIL",
+                "contactSecurity": false,
+                "email": {
+                    "subject": "Recipient_test_sub23",
+                    "sendContentAs": "data",
+                    "overwriteOlderVersion": false,
+                    "zip": {
+                        "filename": "Recipient_test_sub23",
+                        "passwordProtect": false
+                    }
+                }
+            }
+        },
+        {
+            "id": "4C2DC95A11EB0C69C6660080EFA5FBAC",
+            "name": "Recipient_test_sub23",
+            "editable": true,
+            "allowDeliveryChanges": true,
+            "allowPersonalizationChanges": true,
+            "allowUnsubscribe": true,
+            "dateCreated": "2020-10-12T08:59:55+0000",
+            "dateModified": "2020-10-12T08:59:55+0000",
+            "owner": {
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                "name": "MSTR User"
+            },
+            "schedules": [
+                {
+                    "id": "FD7C7E7E4CA242FF314492A6CC696FB1",
+                    "name": "Remote Diagnostics Daily",
+                    "type": "time_based",
+                    "nextDelivery": "2020-10-16T22:22:27+0000"
+                }
+            ],
+            "contents": [
+                {
+                    "id": "66366F0E11EA112A1A9C0080EF8568D5",
+                    "name": "Landing Page",
+                    "type": "dossier",
+                    "personalization": {
+                        "compressed": true,
+                        "formatMode": "DEFAULT",
+                        "viewMode": "BOTH",
+                        "formatType": "PDF",
+                        "exportToPdfSettings": {
+                            "pageOption": "PAGE",
+                            "pageSize": "letter",
+                            "orientation": "automatic",
+                            "includeOverview": true,
+                            "includeDetailedPages": false,
+                            "includeHeader": true,
+                            "includeFooter": true,
+                            "filterSummary": "BAR",
+                            "fitToPage": false,
+                            "repeatColumnHeader": false
+                        }
+                    }
+                }
+            ],
+            "recipients": [
+                {
+                    "id": "DDD9B37F11EB07CCF3D90080EFB5A7D5",
+                    "name": "Piotr C",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "4C302E9911EB0C69C6660080EFA5FBAC"
+                }
+            ],
+            "delivery": {
+                "mode": "EMAIL",
+                "contactSecurity": false,
+                "email": {
+                    "subject": "Recipient_test_sub23",
+                    "sendContentAs": "data",
+                    "overwriteOlderVersion": false,
+                    "zip": {
+                        "filename": "Recipient_test_sub23",
+                        "passwordProtect": false
+                    }
+                }
+            }
+        },
+        {
+            "id": "7DEC8C4211EB0C69C6660080EFF59CAD",
+            "name": "Recipient_test_sub23",
+            "editable": true,
+            "allowDeliveryChanges": true,
+            "allowPersonalizationChanges": true,
+            "allowUnsubscribe": true,
+            "dateCreated": "2020-10-12T09:01:18+0000",
+            "dateModified": "2020-10-12T09:01:18+0000",
+            "owner": {
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                "name": "MSTR User"
+            },
+            "schedules": [
+                {
+                    "id": "FD7C7E7E4CA242FF314492A6CC696FB1",
+                    "name": "Remote Diagnostics Daily",
+                    "type": "time_based",
+                    "nextDelivery": "2020-10-16T22:22:27+0000"
+                }
+            ],
+            "contents": [
+                {
+                    "id": "66366F0E11EA112A1A9C0080EF8568D5",
+                    "name": "Landing Page",
+                    "type": "dossier",
+                    "personalization": {
+                        "compressed": true,
+                        "formatMode": "DEFAULT",
+                        "viewMode": "BOTH",
+                        "formatType": "PDF",
+                        "exportToPdfSettings": {
+                            "pageOption": "PAGE",
+                            "pageSize": "letter",
+                            "orientation": "automatic",
+                            "includeOverview": true,
+                            "includeDetailedPages": false,
+                            "includeHeader": true,
+                            "includeFooter": true,
+                            "filterSummary": "BAR",
+                            "fitToPage": false,
+                            "repeatColumnHeader": false
+                        }
+                    }
+                }
+            ],
+            "recipients": [
+                {
+                    "id": "DDD9B37F11EB07CCF3D90080EFB5A7D5",
+                    "name": "Piotr C",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "7DEEC55311EB0C69C6660080EFF59CAD"
+                }
+            ],
+            "delivery": {
+                "mode": "EMAIL",
+                "contactSecurity": false,
+                "email": {
+                    "subject": "Recipient_test_sub23",
+                    "sendContentAs": "data",
+                    "overwriteOlderVersion": false,
+                    "zip": {
+                        "passwordProtect": false
+                    }
+                }
+            }
+        },
+        {
+            "id": "9DB1E63A11EB0C69C6660080EF85BDB0",
+            "name": "Recipient_test_sub23",
+            "editable": true,
+            "allowDeliveryChanges": true,
+            "allowPersonalizationChanges": true,
+            "allowUnsubscribe": true,
+            "dateCreated": "2020-10-12T09:02:12+0000",
+            "dateModified": "2020-10-12T09:02:12+0000",
+            "owner": {
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                "name": "MSTR User"
+            },
+            "schedules": [
+                {
+                    "id": "FD7C7E7E4CA242FF314492A6CC696FB1",
+                    "name": "Remote Diagnostics Daily",
+                    "type": "time_based",
+                    "nextDelivery": "2020-10-16T22:22:27+0000"
+                }
+            ],
+            "contents": [
+                {
+                    "id": "66366F0E11EA112A1A9C0080EF8568D5",
+                    "name": "Landing Page",
+                    "type": "dossier",
+                    "personalization": {
+                        "compressed": true,
+                        "formatMode": "DEFAULT",
+                        "viewMode": "BOTH",
+                        "formatType": "PDF",
+                        "exportToPdfSettings": {
+                            "pageOption": "PAGE",
+                            "pageSize": "letter",
+                            "orientation": "automatic",
+                            "includeOverview": true,
+                            "includeDetailedPages": false,
+                            "includeHeader": true,
+                            "includeFooter": true,
+                            "filterSummary": "BAR",
+                            "fitToPage": false,
+                            "repeatColumnHeader": false
+                        }
+                    }
+                }
+            ],
+            "recipients": [
+                {
+                    "id": "DDD9B37F11EB07CCF3D90080EFB5A7D5",
+                    "name": "Piotr C",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "9DB4264911EB0C69C6660080EF85BDB0"
+                }
+            ],
+            "delivery": {
+                "mode": "EMAIL",
+                "contactSecurity": false,
+                "email": {
+                    "subject": "Recipient_test_sub23",
+                    "sendContentAs": "data",
+                    "overwriteOlderVersion": false,
+                    "zip": {
+                        "passwordProtect": false
+                    }
+                }
+            }
+        },
+        {
+            "id": "CE0088DE11EB0EC9D6050080EF750B3C",
+            "name": "Recipient_test_sub",
+            "editable": true,
+            "allowDeliveryChanges": true,
+            "allowPersonalizationChanges": true,
+            "allowUnsubscribe": true,
+            "dateCreated": "2020-10-15T09:35:47+0000",
+            "dateModified": "2020-10-16T11:26:46+0000",
+            "owner": {
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                "name": "MSTR User"
+            },
+            "schedules": [
+                {
+                    "id": "FD7C7E7E4CA242FF314492A6CC696FB1",
+                    "name": "Remote Diagnostics Daily",
+                    "type": "time_based",
+                    "nextDelivery": "2020-10-16T22:22:27+0000"
+                }
+            ],
+            "contents": [
+                {
+                    "id": "66366F0E11EA112A1A9C0080EF8568D5",
+                    "name": "Landing Page",
+                    "type": "dossier",
+                    "personalization": {
+                        "compressed": true,
+                        "formatMode": "DEFAULT",
+                        "viewMode": "BOTH",
+                        "formatType": "PDF",
+                        "exportToPdfSettings": {
+                            "pageOption": "PAGE",
+                            "pageSize": "letter",
+                            "orientation": "automatic",
+                            "includeOverview": true,
+                            "includeDetailedPages": false,
+                            "includeHeader": true,
+                            "includeFooter": true,
+                            "filterSummary": "BAR",
+                            "fitToPage": false,
+                            "repeatColumnHeader": false
+                        }
+                    }
+                }
+            ],
+            "recipients": [
+                {
+                    "id": "DDD9B37F11EB07CCF3D90080EFB5A7D5",
+                    "name": "Piotr C",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "CE0309F611EB0EC9D6050080EF750B3C"
+                },
+                {
+                    "id": "54F3D26011D2896560009A8E67019608",
+                    "name": "Administrator",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "798AEDBA11EB0FA292170080EF751F36"
+                }
+            ],
+            "delivery": {
+                "mode": "EMAIL",
+                "contactSecurity": false,
+                "email": {
+                    "subject": "Recipient_test_sub",
+                    "sendContentAs": "data",
+                    "overwriteOlderVersion": false,
+                    "zip": {
+                        "passwordProtect": false
+                    }
+                }
+            }
+        },
+        {
+            "id": "098D50AA11EB0ED2D6050080EFB58B3D",
+            "name": "Recipient_test_sub",
+            "editable": true,
+            "allowDeliveryChanges": true,
+            "allowPersonalizationChanges": true,
+            "allowUnsubscribe": true,
+            "dateCreated": "2020-10-15T10:34:43+0000",
+            "dateModified": "2020-10-16T11:26:48+0000",
+            "owner": {
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                "name": "MSTR User"
+            },
+            "schedules": [
+                {
+                    "id": "FD7C7E7E4CA242FF314492A6CC696FB1",
+                    "name": "Remote Diagnostics Daily",
+                    "type": "time_based",
+                    "nextDelivery": "2020-10-16T22:22:27+0000"
+                }
+            ],
+            "contents": [
+                {
+                    "id": "66366F0E11EA112A1A9C0080EF8568D5",
+                    "name": "Landing Page",
+                    "type": "dossier",
+                    "personalization": {
+                        "compressed": true,
+                        "formatMode": "DEFAULT",
+                        "viewMode": "BOTH",
+                        "formatType": "PDF",
+                        "exportToPdfSettings": {
+                            "pageOption": "PAGE",
+                            "pageSize": "letter",
+                            "orientation": "automatic",
+                            "includeOverview": true,
+                            "includeDetailedPages": false,
+                            "includeHeader": true,
+                            "includeFooter": true,
+                            "filterSummary": "BAR",
+                            "fitToPage": false,
+                            "repeatColumnHeader": false
+                        }
+                    }
+                }
+            ],
+            "recipients": [
+                {
+                    "id": "DDD9B37F11EB07CCF3D90080EFB5A7D5",
+                    "name": "Piotr C",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "098FA7B011EB0ED2D6050080EFB58B3D"
+                },
+                {
+                    "id": "54F3D26011D2896560009A8E67019608",
+                    "name": "Administrator",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "7A5E5DE411EB0FA292170080EF853F36"
+                }
+            ],
+            "delivery": {
+                "mode": "EMAIL",
+                "contactSecurity": false,
+                "email": {
+                    "subject": "Recipient_test_sub",
+                    "sendContentAs": "data",
+                    "overwriteOlderVersion": false,
+                    "zip": {
+                        "passwordProtect": false
+                    }
+                }
+            }
+        },
+        {
+            "id": "923CB02411EB0EEDD6050080EF750B3C",
+            "name": "Recipient_test_sub",
+            "editable": true,
+            "allowDeliveryChanges": true,
+            "allowPersonalizationChanges": true,
+            "allowUnsubscribe": true,
+            "dateCreated": "2020-10-15T13:51:48+0000",
+            "dateModified": "2020-10-16T11:26:49+0000",
+            "owner": {
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                "name": "MSTR User"
+            },
+            "schedules": [
+                {
+                    "id": "FD7C7E7E4CA242FF314492A6CC696FB1",
+                    "name": "Remote Diagnostics Daily",
+                    "type": "time_based",
+                    "nextDelivery": "2020-10-16T22:22:27+0000"
+                }
+            ],
+            "contents": [
+                {
+                    "id": "66366F0E11EA112A1A9C0080EF8568D5",
+                    "name": "Landing Page",
+                    "type": "dossier",
+                    "personalization": {
+                        "compressed": false,
+                        "formatMode": "DEFAULT",
+                        "viewMode": "BOTH",
+                        "formatType": "PDF",
+                        "exportToPdfSettings": {
+                            "pageOption": "PAGE",
+                            "pageSize": "letter",
+                            "orientation": "automatic",
+                            "includeOverview": true,
+                            "includeDetailedPages": false,
+                            "includeHeader": true,
+                            "includeFooter": true,
+                            "filterSummary": "BAR",
+                            "fitToPage": false,
+                            "repeatColumnHeader": false
+                        }
+                    }
+                }
+            ],
+            "recipients": [
+                {
+                    "id": "54F3D26011D2896560009A8E67019608",
+                    "name": "Administrator",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "7B20A76E11EB0FA292170080EFC5C037"
+                },
+                {
+                    "id": "DDD9B37F11EB07CCF3D90080EFB5A7D5",
+                    "name": "Piotr C",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "923EFD3F11EB0EEDD6050080EF750B3C"
+                }
+            ],
+            "delivery": {
+                "mode": "EMAIL",
+                "contactSecurity": false,
+                "email": {
+                    "subject": "Recipient_test_sub",
+                    "sendContentAs": "data",
+                    "overwriteOlderVersion": false
+                }
+            }
+        },
+        {
+            "id": "C646186411EB0C82C6660080EFE57EB0",
+            "name": "Recipient_test_sub",
+            "editable": true,
+            "allowDeliveryChanges": true,
+            "allowPersonalizationChanges": true,
+            "allowUnsubscribe": true,
+            "dateCreated": "2020-10-13T00:02:17+0000",
+            "dateModified": "2020-10-16T11:26:50+0000",
+            "owner": {
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                "name": "MSTR User"
+            },
+            "schedules": [
+                {
+                    "id": "FD7C7E7E4CA242FF314492A6CC696FB1",
+                    "name": "Remote Diagnostics Daily",
+                    "type": "time_based",
+                    "nextDelivery": "2020-10-16T22:22:27+0000"
+                }
+            ],
+            "contents": [
+                {
+                    "id": "66366F0E11EA112A1A9C0080EF8568D5",
+                    "name": "Landing Page",
+                    "type": "dossier",
+                    "personalization": {
+                        "compressed": true,
+                        "formatMode": "DEFAULT",
+                        "viewMode": "BOTH",
+                        "formatType": "PDF",
+                        "exportToPdfSettings": {
+                            "pageOption": "PAGE",
+                            "pageSize": "letter",
+                            "orientation": "automatic",
+                            "includeOverview": true,
+                            "includeDetailedPages": false,
+                            "includeHeader": true,
+                            "includeFooter": true,
+                            "filterSummary": "BAR",
+                            "fitToPage": false,
+                            "repeatColumnHeader": false
+                        }
+                    }
+                }
+            ],
+            "recipients": [
+                {
+                    "id": "54F3D26011D2896560009A8E67019608",
+                    "name": "Administrator",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "7BFF285411EB0FA292170080EF955E34"
+                },
+                {
+                    "id": "DDD9B37F11EB07CCF3D90080EFB5A7D5",
+                    "name": "Piotr C",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "C648C2EE11EB0C82C6660080EFE57EB0"
+                }
+            ],
+            "delivery": {
+                "mode": "EMAIL",
+                "contactSecurity": false,
+                "email": {
+                    "subject": "Recipient_test_sub",
+                    "sendContentAs": "data",
+                    "overwriteOlderVersion": false,
+                    "zip": {
+                        "passwordProtect": false
+                    }
+                }
+            }
+        },
+        {
+            "id": "F6EFE99E11EB0D3C09370080EFA59EBA",
+            "name": "Recipient_test_sub",
+            "editable": true,
+            "allowDeliveryChanges": true,
+            "allowPersonalizationChanges": true,
+            "allowUnsubscribe": true,
+            "dateCreated": "2020-10-13T10:15:05+0000",
+            "dateModified": "2020-10-16T11:26:52+0000",
+            "owner": {
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                "name": "MSTR User"
+            },
+            "schedules": [
+                {
+                    "id": "FD7C7E7E4CA242FF314492A6CC696FB1",
+                    "name": "Remote Diagnostics Daily",
+                    "type": "time_based",
+                    "nextDelivery": "2020-10-16T22:22:27+0000"
+                }
+            ],
+            "contents": [
+                {
+                    "id": "66366F0E11EA112A1A9C0080EF8568D5",
+                    "name": "Landing Page",
+                    "type": "dossier",
+                    "personalization": {
+                        "compressed": true,
+                        "formatMode": "DEFAULT",
+                        "viewMode": "BOTH",
+                        "formatType": "PDF",
+                        "exportToPdfSettings": {
+                            "pageOption": "PAGE",
+                            "pageSize": "letter",
+                            "orientation": "automatic",
+                            "includeOverview": true,
+                            "includeDetailedPages": false,
+                            "includeHeader": true,
+                            "includeFooter": true,
+                            "filterSummary": "BAR",
+                            "fitToPage": false,
+                            "repeatColumnHeader": false
+                        }
+                    }
+                }
+            ],
+            "recipients": [
+                {
+                    "id": "54F3D26011D2896560009A8E67019608",
+                    "name": "Administrator",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "7CCA611811EB0FA292170080EF053E33"
+                },
+                {
+                    "id": "DDD9B37F11EB07CCF3D90080EFB5A7D5",
+                    "name": "Piotr C",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "F6F4CB9E11EB0D3C09370080EFA59EBA"
+                }
+            ],
+            "delivery": {
+                "mode": "EMAIL",
+                "contactSecurity": false,
+                "email": {
+                    "subject": "Recipient_test_sub",
+                    "sendContentAs": "data",
+                    "overwriteOlderVersion": false,
+                    "zip": {
+                        "passwordProtect": false
+                    }
+                }
+            }
+        },
+        {
+            "id": "C956CC6C11EB0D3E09370080EFA59EBA",
+            "name": "Recipient_test_sub",
+            "editable": true,
+            "allowDeliveryChanges": true,
+            "allowPersonalizationChanges": true,
+            "allowUnsubscribe": true,
+            "dateCreated": "2020-10-13T10:28:08+0000",
+            "dateModified": "2020-10-16T11:26:53+0000",
+            "owner": {
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                "name": "MSTR User"
+            },
+            "schedules": [
+                {
+                    "id": "FD7C7E7E4CA242FF314492A6CC696FB1",
+                    "name": "Remote Diagnostics Daily",
+                    "type": "time_based",
+                    "nextDelivery": "2020-10-16T22:22:27+0000"
+                }
+            ],
+            "contents": [
+                {
+                    "id": "66366F0E11EA112A1A9C0080EF8568D5",
+                    "name": "Landing Page",
+                    "type": "dossier",
+                    "personalization": {
+                        "compressed": true,
+                        "formatMode": "DEFAULT",
+                        "viewMode": "BOTH",
+                        "formatType": "PDF",
+                        "exportToPdfSettings": {
+                            "pageOption": "PAGE",
+                            "pageSize": "letter",
+                            "orientation": "automatic",
+                            "includeOverview": true,
+                            "includeDetailedPages": false,
+                            "includeHeader": true,
+                            "includeFooter": true,
+                            "filterSummary": "BAR",
+                            "fitToPage": false,
+                            "repeatColumnHeader": false
+                        }
+                    }
+                }
+            ],
+            "recipients": [
+                {
+                    "id": "54F3D26011D2896560009A8E67019608",
+                    "name": "Administrator",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "7D9E3E2A11EB0FA292170080EF853D32"
+                },
+                {
+                    "id": "DDD9B37F11EB07CCF3D90080EFB5A7D5",
+                    "name": "Piotr C",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "C95A057611EB0D3E09370080EFA59EBA"
+                }
+            ],
+            "delivery": {
+                "mode": "EMAIL",
+                "contactSecurity": false,
+                "email": {
+                    "subject": "Recipient_test_sub",
+                    "sendContentAs": "data",
+                    "overwriteOlderVersion": false,
+                    "zip": {
+                        "passwordProtect": false
+                    }
+                }
+            }
+        },
+        {
+            "id": "DB434B3011EB0D3E09370080EFD5FFBA",
+            "name": "Recipient_test_sub",
+            "editable": true,
+            "allowDeliveryChanges": true,
+            "allowPersonalizationChanges": true,
+            "allowUnsubscribe": true,
+            "dateCreated": "2020-10-13T10:28:38+0000",
+            "dateModified": "2020-10-16T11:26:54+0000",
+            "owner": {
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                "name": "MSTR User"
+            },
+            "schedules": [
+                {
+                    "id": "FD7C7E7E4CA242FF314492A6CC696FB1",
+                    "name": "Remote Diagnostics Daily",
+                    "type": "time_based",
+                    "nextDelivery": "2020-10-16T22:22:27+0000"
+                }
+            ],
+            "contents": [
+                {
+                    "id": "66366F0E11EA112A1A9C0080EF8568D5",
+                    "name": "Landing Page",
+                    "type": "dossier",
+                    "personalization": {
+                        "compressed": true,
+                        "formatMode": "DEFAULT",
+                        "viewMode": "BOTH",
+                        "formatType": "PDF",
+                        "exportToPdfSettings": {
+                            "pageOption": "PAGE",
+                            "pageSize": "letter",
+                            "orientation": "automatic",
+                            "includeOverview": true,
+                            "includeDetailedPages": false,
+                            "includeHeader": true,
+                            "includeFooter": true,
+                            "filterSummary": "BAR",
+                            "fitToPage": false,
+                            "repeatColumnHeader": false
+                        }
+                    }
+                }
+            ],
+            "recipients": [
+                {
+                    "id": "54F3D26011D2896560009A8E67019608",
+                    "name": "Administrator",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "7E7403B611EB0FA292170080EFE50037"
+                },
+                {
+                    "id": "DDD9B37F11EB07CCF3D90080EFB5A7D5",
+                    "name": "Piotr C",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "DB45F82611EB0D3E09370080EFD5FFBA"
+                }
+            ],
+            "delivery": {
+                "mode": "EMAIL",
+                "contactSecurity": false,
+                "email": {
+                    "subject": "Recipient_test_sub",
+                    "sendContentAs": "data",
+                    "overwriteOlderVersion": false,
+                    "zip": {
+                        "passwordProtect": false
+                    }
+                }
+            }
+        },
+        {
+            "id": "B4A6128411EB0DF564620080EF25CAC5",
+            "name": "Recipient_test_sub",
+            "editable": true,
+            "allowDeliveryChanges": true,
+            "allowPersonalizationChanges": true,
+            "allowUnsubscribe": true,
+            "dateCreated": "2020-10-14T08:17:31+0000",
+            "dateModified": "2020-10-16T11:26:56+0000",
+            "owner": {
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                "name": "MSTR User"
+            },
+            "schedules": [
+                {
+                    "id": "FD7C7E7E4CA242FF314492A6CC696FB1",
+                    "name": "Remote Diagnostics Daily",
+                    "type": "time_based",
+                    "nextDelivery": "2020-10-16T22:22:27+0000"
+                }
+            ],
+            "contents": [
+                {
+                    "id": "66366F0E11EA112A1A9C0080EF8568D5",
+                    "name": "Landing Page",
+                    "type": "dossier",
+                    "personalization": {
+                        "compressed": true,
+                        "formatMode": "DEFAULT",
+                        "viewMode": "BOTH",
+                        "formatType": "PDF",
+                        "exportToPdfSettings": {
+                            "pageOption": "PAGE",
+                            "pageSize": "letter",
+                            "orientation": "automatic",
+                            "includeOverview": true,
+                            "includeDetailedPages": false,
+                            "includeHeader": true,
+                            "includeFooter": true,
+                            "filterSummary": "BAR",
+                            "fitToPage": false,
+                            "repeatColumnHeader": false
+                        }
+                    }
+                }
+            ],
+            "recipients": [
+                {
+                    "id": "DDD9B37F11EB07CCF3D90080EFB5A7D5",
+                    "name": "Piotr C",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "B4A9415C11EB0DF564620080EF25CAC5"
+                },
+                {
+                    "id": "54F3D26011D2896560009A8E67019608",
+                    "name": "Administrator",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "7F19A1F411EB0FA292170080EF55DE34"
+                }
+            ],
+            "delivery": {
+                "mode": "EMAIL",
+                "contactSecurity": false,
+                "email": {
+                    "subject": "Recipient_test_sub",
+                    "sendContentAs": "data",
+                    "overwriteOlderVersion": false,
+                    "zip": {
+                        "passwordProtect": false
+                    }
+                }
+            }
+        },
+        {
+            "id": "06B0B87311EB0DF664620080EFF56CC8",
+            "name": "Recipient_test_sub",
+            "editable": true,
+            "allowDeliveryChanges": true,
+            "allowPersonalizationChanges": true,
+            "allowUnsubscribe": true,
+            "dateCreated": "2020-10-14T08:19:49+0000",
+            "dateModified": "2020-10-16T11:26:57+0000",
+            "owner": {
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                "name": "MSTR User"
+            },
+            "schedules": [
+                {
+                    "id": "FD7C7E7E4CA242FF314492A6CC696FB1",
+                    "name": "Remote Diagnostics Daily",
+                    "type": "time_based",
+                    "nextDelivery": "2020-10-16T22:22:27+0000"
+                }
+            ],
+            "contents": [
+                {
+                    "id": "66366F0E11EA112A1A9C0080EF8568D5",
+                    "name": "Landing Page",
+                    "type": "dossier",
+                    "personalization": {
+                        "compressed": true,
+                        "formatMode": "DEFAULT",
+                        "viewMode": "BOTH",
+                        "formatType": "PDF",
+                        "exportToPdfSettings": {
+                            "pageOption": "PAGE",
+                            "pageSize": "letter",
+                            "orientation": "automatic",
+                            "includeOverview": true,
+                            "includeDetailedPages": false,
+                            "includeHeader": true,
+                            "includeFooter": true,
+                            "filterSummary": "BAR",
+                            "fitToPage": false,
+                            "repeatColumnHeader": false
+                        }
+                    }
+                }
+            ],
+            "recipients": [
+                {
+                    "id": "DDD9B37F11EB07CCF3D90080EFB5A7D5",
+                    "name": "Piotr C",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "06B31F4111EB0DF664620080EFF56CC8"
+                },
+                {
+                    "id": "54F3D26011D2896560009A8E67019608",
+                    "name": "Administrator",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "7FE4ACA011EB0FA292170080EFC5BF35"
+                }
+            ],
+            "delivery": {
+                "mode": "EMAIL",
+                "contactSecurity": false,
+                "email": {
+                    "subject": "Recipient_test_sub",
+                    "sendContentAs": "data",
+                    "overwriteOlderVersion": false,
+                    "zip": {
+                        "passwordProtect": false
+                    }
+                }
+            }
+        },
+        {
+            "id": "2A60E4FF11EB0DF664620080EF95AAC6",
+            "name": "Recipient_test_sub",
+            "editable": true,
+            "allowDeliveryChanges": true,
+            "allowPersonalizationChanges": true,
+            "allowUnsubscribe": true,
+            "dateCreated": "2020-10-14T08:20:48+0000",
+            "dateModified": "2020-10-16T11:26:58+0000",
+            "owner": {
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                "name": "MSTR User"
+            },
+            "schedules": [
+                {
+                    "id": "FD7C7E7E4CA242FF314492A6CC696FB1",
+                    "name": "Remote Diagnostics Daily",
+                    "type": "time_based",
+                    "nextDelivery": "2020-10-16T22:22:27+0000"
+                }
+            ],
+            "contents": [
+                {
+                    "id": "66366F0E11EA112A1A9C0080EF8568D5",
+                    "name": "Landing Page",
+                    "type": "dossier",
+                    "personalization": {
+                        "compressed": true,
+                        "formatMode": "DEFAULT",
+                        "viewMode": "BOTH",
+                        "formatType": "PDF",
+                        "exportToPdfSettings": {
+                            "pageOption": "PAGE",
+                            "pageSize": "letter",
+                            "orientation": "automatic",
+                            "includeOverview": true,
+                            "includeDetailedPages": false,
+                            "includeHeader": true,
+                            "includeFooter": true,
+                            "filterSummary": "BAR",
+                            "fitToPage": false,
+                            "repeatColumnHeader": false
+                        }
+                    }
+                }
+            ],
+            "recipients": [
+                {
+                    "id": "DDD9B37F11EB07CCF3D90080EFB5A7D5",
+                    "name": "Piotr C",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "2A63571711EB0DF664620080EF95AAC6"
+                },
+                {
+                    "id": "54F3D26011D2896560009A8E67019608",
+                    "name": "Administrator",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "80BC548411EB0FA292170080EF853E34"
+                }
+            ],
+            "delivery": {
+                "mode": "EMAIL",
+                "contactSecurity": false,
+                "email": {
+                    "subject": "Recipient_test_sub",
+                    "sendContentAs": "data",
+                    "overwriteOlderVersion": false,
+                    "zip": {
+                        "passwordProtect": false
+                    }
+                }
+            }
+        },
+        {
+            "id": "2F5F8C0811EB0ED2D6050080EFA56A3A",
+            "name": "Recipient_test_sub",
+            "editable": true,
+            "allowDeliveryChanges": true,
+            "allowPersonalizationChanges": true,
+            "allowUnsubscribe": true,
+            "dateCreated": "2020-10-15T10:35:46+0000",
+            "dateModified": "2020-10-16T11:27:00+0000",
+            "owner": {
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                "name": "MSTR User"
+            },
+            "schedules": [
+                {
+                    "id": "FD7C7E7E4CA242FF314492A6CC696FB1",
+                    "name": "Remote Diagnostics Daily",
+                    "type": "time_based",
+                    "nextDelivery": "2020-10-16T22:22:27+0000"
+                }
+            ],
+            "contents": [
+                {
+                    "id": "66366F0E11EA112A1A9C0080EF8568D5",
+                    "name": "Landing Page",
+                    "type": "dossier",
+                    "personalization": {
+                        "compressed": true,
+                        "formatMode": "DEFAULT",
+                        "viewMode": "BOTH",
+                        "formatType": "PDF",
+                        "exportToPdfSettings": {
+                            "pageOption": "PAGE",
+                            "pageSize": "letter",
+                            "orientation": "automatic",
+                            "includeOverview": true,
+                            "includeDetailedPages": false,
+                            "includeHeader": true,
+                            "includeFooter": true,
+                            "filterSummary": "BAR",
+                            "fitToPage": false,
+                            "repeatColumnHeader": false
+                        }
+                    }
+                }
+            ],
+            "recipients": [
+                {
+                    "id": "DDD9B37F11EB07CCF3D90080EFB5A7D5",
+                    "name": "Piotr C",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "2F61D74311EB0ED2D6050080EFA56A3A"
+                },
+                {
+                    "id": "54F3D26011D2896560009A8E67019608",
+                    "name": "Administrator",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "8184558811EB0FA292170080EFB59E35"
+                }
+            ],
+            "delivery": {
+                "mode": "EMAIL",
+                "contactSecurity": false,
+                "email": {
+                    "subject": "Recipient_test_sub",
+                    "sendContentAs": "data",
+                    "overwriteOlderVersion": false,
+                    "zip": {
+                        "passwordProtect": false
+                    }
+                }
+            }
+        },
+        {
+            "id": "6565DADC11EB0ED2D6050080EF55CC3E",
+            "name": "Recipient_test_sub",
+            "editable": true,
+            "allowDeliveryChanges": true,
+            "allowPersonalizationChanges": true,
+            "allowUnsubscribe": true,
+            "dateCreated": "2020-10-15T10:37:17+0000",
+            "dateModified": "2020-10-16T11:27:01+0000",
+            "owner": {
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                "name": "MSTR User"
+            },
+            "schedules": [
+                {
+                    "id": "FD7C7E7E4CA242FF314492A6CC696FB1",
+                    "name": "Remote Diagnostics Daily",
+                    "type": "time_based",
+                    "nextDelivery": "2020-10-16T22:22:27+0000"
+                }
+            ],
+            "contents": [
+                {
+                    "id": "66366F0E11EA112A1A9C0080EF8568D5",
+                    "name": "Landing Page",
+                    "type": "dossier",
+                    "personalization": {
+                        "compressed": true,
+                        "formatMode": "DEFAULT",
+                        "viewMode": "BOTH",
+                        "formatType": "PDF",
+                        "exportToPdfSettings": {
+                            "pageOption": "PAGE",
+                            "pageSize": "letter",
+                            "orientation": "automatic",
+                            "includeOverview": true,
+                            "includeDetailedPages": false,
+                            "includeHeader": true,
+                            "includeFooter": true,
+                            "filterSummary": "BAR",
+                            "fitToPage": false,
+                            "repeatColumnHeader": false
+                        }
+                    }
+                }
+            ],
+            "recipients": [
+                {
+                    "id": "DDD9B37F11EB07CCF3D90080EFB5A7D5",
+                    "name": "Piotr C",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "6568145011EB0ED2D6050080EF55CC3E"
+                },
+                {
+                    "id": "54F3D26011D2896560009A8E67019608",
+                    "name": "Administrator",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "825B298211EB0FA292170080EF257F36"
+                }
+            ],
+            "delivery": {
+                "mode": "EMAIL",
+                "contactSecurity": false,
+                "email": {
+                    "subject": "Recipient_test_sub",
+                    "sendContentAs": "data",
+                    "overwriteOlderVersion": false,
+                    "zip": {
+                        "passwordProtect": false
+                    }
+                }
+            }
+        },
+        {
+            "id": "71A57F4611EB0ED2D6050080EFB58A3B",
+            "name": "Recipient_test_sub",
+            "editable": true,
+            "allowDeliveryChanges": true,
+            "allowPersonalizationChanges": true,
+            "allowUnsubscribe": true,
+            "dateCreated": "2020-10-15T10:37:37+0000",
+            "dateModified": "2020-10-16T11:27:03+0000",
+            "owner": {
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                "name": "MSTR User"
+            },
+            "schedules": [
+                {
+                    "id": "FD7C7E7E4CA242FF314492A6CC696FB1",
+                    "name": "Remote Diagnostics Daily",
+                    "type": "time_based",
+                    "nextDelivery": "2020-10-16T22:22:27+0000"
+                }
+            ],
+            "contents": [
+                {
+                    "id": "66366F0E11EA112A1A9C0080EF8568D5",
+                    "name": "Landing Page",
+                    "type": "dossier",
+                    "personalization": {
+                        "compressed": false,
+                        "formatMode": "DEFAULT",
+                        "viewMode": "BOTH",
+                        "formatType": "PDF",
+                        "exportToPdfSettings": {
+                            "pageOption": "PAGE",
+                            "pageSize": "letter",
+                            "orientation": "automatic",
+                            "includeOverview": true,
+                            "includeDetailedPages": false,
+                            "includeHeader": true,
+                            "includeFooter": true,
+                            "filterSummary": "BAR",
+                            "fitToPage": false,
+                            "repeatColumnHeader": false
+                        }
+                    }
+                }
+            ],
+            "recipients": [
+                {
+                    "id": "DDD9B37F11EB07CCF3D90080EFB5A7D5",
+                    "name": "Piotr C",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "71A7BB3A11EB0ED2D6050080EFB58A3B"
+                },
+                {
+                    "id": "54F3D26011D2896560009A8E67019608",
+                    "name": "Administrator",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "8338729C11EB0FA292170080EFE5FF35"
+                }
+            ],
+            "delivery": {
+                "mode": "EMAIL",
+                "contactSecurity": false,
+                "email": {
+                    "subject": "Recipient_test_sub",
+                    "sendContentAs": "data",
+                    "overwriteOlderVersion": false
+                }
+            }
+        },
+        {
+            "id": "6378B5A611EB0EEFD6050080EF55CC3E",
+            "name": "Recipient_test_sub",
+            "editable": true,
+            "allowDeliveryChanges": true,
+            "allowPersonalizationChanges": true,
+            "allowUnsubscribe": true,
+            "dateCreated": "2020-10-15T14:04:49+0000",
+            "dateModified": "2020-10-16T11:27:04+0000",
+            "owner": {
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                "name": "MSTR User"
+            },
+            "schedules": [
+                {
+                    "id": "FD7C7E7E4CA242FF314492A6CC696FB1",
+                    "name": "Remote Diagnostics Daily",
+                    "type": "time_based",
+                    "nextDelivery": "2020-10-16T22:22:27+0000"
+                }
+            ],
+            "contents": [
+                {
+                    "id": "41D5E34311EB0EEFA7000080EF158FDF",
+                    "name": "Report_subs",
+                    "type": "report",
+                    "personalization": {
+                        "compressed": false,
+                        "formatMode": "CURRENT_PAGE",
+                        "viewMode": "BOTH",
+                        "formatType": "PDF"
+                    }
+                }
+            ],
+            "recipients": [
+                {
+                    "id": "54F3D26011D2896560009A8E67019608",
+                    "name": "Administrator",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "841807C211EB0FA292170080EF155E33"
+                }
+            ],
+            "delivery": {
+                "mode": "EMAIL",
+                "contactSecurity": false,
+                "email": {
+                    "subject": "Recipient_test_sub",
+                    "sendContentAs": "data",
+                    "overwriteOlderVersion": false
+                }
+            }
+        },
+        {
+            "id": "94DFA7AC11EB0FA992170080EF853F36",
+            "name": "Nowa S",
+            "editable": true,
+            "allowDeliveryChanges": true,
+            "allowPersonalizationChanges": true,
+            "allowUnsubscribe": true,
+            "dateCreated": "2020-10-17T00:17:38+0000",
+            "dateModified": "2020-10-17T00:17:38+0000",
+            "owner": {
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                "name": "MSTR User"
+            },
+            "schedules": [
+                {
+                    "id": "FD7C7E7E4CA242FF314492A6CC696FB1",
+                    "name": "Remote Diagnostics Daily",
+                    "type": "time_based",
+                    "nextDelivery": "2020-10-16T22:22:27+0000"
+                }
+            ],
+            "contents": [
+                {
+                    "id": "41D5E34311EB0EEFA7000080EF158FDF",
+                    "name": "Report_subs",
+                    "type": "report",
+                    "personalization": {
+                        "compressed": true,
+                        "formatMode": "CURRENT_PAGE",
+                        "viewMode": "BOTH",
+                        "formatType": "PDF"
+                    }
+                }
+            ],
+            "recipients": [
+                {
+                    "id": "66BCA30411EB0C82B71F0080EF95DBAC",
+                    "name": "Piotr Czyz",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "94E21B4B11EB0FA992170080EF853F36"
+                }
+            ],
+            "delivery": {
+                "mode": "EMAIL",
+                "contactSecurity": false,
+                "email": {
+                    "subject": "Nowa S",
+                    "sendContentAs": "data",
+                    "overwriteOlderVersion": false,
+                    "zip": {
+                        "passwordProtect": false
+                    }
+                }
+            }
+        },
+        {
+            "id": "5629224A11EB0FA992170080EFD5E037",
+            "name": "Nowa S",
+            "editable": true,
+            "allowDeliveryChanges": true,
+            "allowPersonalizationChanges": true,
+            "allowUnsubscribe": true,
+            "dateCreated": "2020-10-17T00:15:53+0000",
+            "dateModified": "2020-10-17T00:15:53+0000",
+            "owner": {
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                "name": "MSTR User"
+            },
+            "schedules": [
+                {
+                    "id": "FD7C7E7E4CA242FF314492A6CC696FB1",
+                    "name": "Remote Diagnostics Daily",
+                    "type": "time_based",
+                    "nextDelivery": "2020-10-16T22:22:27+0000"
+                }
+            ],
+            "contents": [
+                {
+                    "id": "41D5E34311EB0EEFA7000080EF158FDF",
+                    "name": "Report_subs",
+                    "type": "report",
+                    "personalization": {
+                        "compressed": true,
+                        "formatMode": "CURRENT_PAGE",
+                        "viewMode": "BOTH",
+                        "formatType": "PDF"
+                    }
+                }
+            ],
+            "recipients": [
+                {
+                    "id": "66BCA30411EB0C82B71F0080EF95DBAC",
+                    "name": "Piotr Czyz",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "562BA5E311EB0FA992170080EFD5E037"
+                }
+            ],
+            "delivery": {
+                "mode": "EMAIL",
+                "contactSecurity": false,
+                "email": {
+                    "subject": "Nowa S",
+                    "sendContentAs": "data",
+                    "overwriteOlderVersion": false,
+                    "zip": {
+                        "passwordProtect": false
+                    }
+                }
+            }
+        },
+        {
+            "id": "08DC636011E79D715F630080EFA5C4A4",
+            "name": "Multinational Bank Dossier 9/19/2017 3:30:46 PM",
+            "editable": true,
+            "allowDeliveryChanges": false,
+            "allowPersonalizationChanges": false,
+            "allowUnsubscribe": false,
+            "dateCreated": "2017-09-19T19:30:46+0000",
+            "dateModified": "2017-09-19T19:30:46+0000",
+            "owner": {
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                "name": "MSTR User"
+            },
+            "schedules": [
+                {
+                    "id": "E24F501E802911E1BBCB892C4924019B",
+                    "name": "Personal View",
+                    "type": "unknown"
+                }
+            ],
+            "contents": [
+                {
+                    "id": "32765C5C11E79D5927C10080EF753106",
+                    "name": "Multinational Bank Dossier",
+                    "type": "dossier",
+                    "personalization": {
+                        "compressed": false,
+                        "formatMode": "DEFAULT",
+                        "viewMode": "DEFAULT",
+                        "formatType": "PLAIN_TEXT"
+                    }
+                }
+            ],
+            "recipients": [
+                {
+                    "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                    "name": "MSTR User",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "08DE680411E79D715F630080EFA5C4A4"
+                }
+            ],
+            "delivery": {
+                "mode": "SHARED_LINK",
+                "contactSecurity": false
+            }
+        },
+        {
+            "id": "275EF0C011EA112B25A00080EF75C5EE",
+            "name": "Landing Page_MKT 11/27/2019 10:32:42 AM",
+            "editable": true,
+            "allowDeliveryChanges": false,
+            "allowPersonalizationChanges": false,
+            "allowUnsubscribe": false,
+            "dateCreated": "2019-11-27T15:32:43+0000",
+            "dateModified": "2019-11-27T15:32:43+0000",
+            "owner": {
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                "name": "MSTR User"
+            },
+            "schedules": [
+                {
+                    "id": "E24F501E802911E1BBCB892C4924019B",
+                    "name": "Personal View",
+                    "type": "unknown"
+                }
+            ],
+            "contents": [
+                {
+                    "id": "66366F0E11EA112A1A9C0080EF8568D5",
+                    "name": "Landing Page",
+                    "type": "dossier",
+                    "personalization": {
+                        "compressed": false,
+                        "formatMode": "DEFAULT",
+                        "viewMode": "DEFAULT",
+                        "formatType": "PLAIN_TEXT"
+                    }
+                }
+            ],
+            "recipients": [
+                {
+                    "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                    "name": "MSTR User",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "2764589E11EA112B25A00080EF75C5EE"
+                }
+            ],
+            "delivery": {
+                "mode": "SHARED_LINK",
+                "contactSecurity": false
+            }
+        },
+        {
+            "id": "BCB79C7211EA1279EA5C0080EF758454",
+            "name": "Landing Page 11/29/2019 3:27:45 PM",
+            "editable": true,
+            "allowDeliveryChanges": false,
+            "allowPersonalizationChanges": false,
+            "allowUnsubscribe": false,
+            "dateCreated": "2019-11-29T07:27:45+0000",
+            "dateModified": "2019-11-29T07:27:45+0000",
+            "owner": {
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                "name": "MSTR User"
+            },
+            "schedules": [
+                {
+                    "id": "E24F501E802911E1BBCB892C4924019B",
+                    "name": "Personal View",
+                    "type": "unknown"
+                }
+            ],
+            "contents": [
+                {
+                    "id": "66366F0E11EA112A1A9C0080EF8568D5",
+                    "name": "Landing Page",
+                    "type": "dossier",
+                    "personalization": {
+                        "compressed": false,
+                        "formatMode": "DEFAULT",
+                        "viewMode": "DEFAULT",
+                        "formatType": "PLAIN_TEXT"
+                    }
+                }
+            ],
+            "recipients": [
+                {
+                    "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                    "name": "MSTR User",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "BCBA642011EA1279EA5C0080EF758454"
+                }
+            ],
+            "delivery": {
+                "mode": "SHARED_LINK",
+                "contactSecurity": false
+            }
+        },
+        {
+            "id": "B0328F3E11EA1279EA5C0080EF05A351",
+            "name": "Landing Page 11/29/2019 3:27:24 PM",
+            "editable": true,
+            "allowDeliveryChanges": false,
+            "allowPersonalizationChanges": false,
+            "allowUnsubscribe": false,
+            "dateCreated": "2019-11-29T07:27:24+0000",
+            "dateModified": "2019-11-29T07:27:24+0000",
+            "owner": {
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                "name": "MSTR User"
+            },
+            "schedules": [
+                {
+                    "id": "E24F501E802911E1BBCB892C4924019B",
+                    "name": "Personal View",
+                    "type": "unknown"
+                }
+            ],
+            "contents": [
+                {
+                    "id": "66366F0E11EA112A1A9C0080EF8568D5",
+                    "name": "Landing Page",
+                    "type": "dossier",
+                    "personalization": {
+                        "compressed": false,
+                        "formatMode": "DEFAULT",
+                        "viewMode": "DEFAULT",
+                        "formatType": "PLAIN_TEXT"
+                    }
+                }
+            ],
+            "recipients": [
+                {
+                    "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                    "name": "MSTR User",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "B035C87A11EA1279EA5C0080EF05A351"
+                }
+            ],
+            "delivery": {
+                "mode": "SHARED_LINK",
+                "contactSecurity": false
+            }
+        },
+        {
+            "id": "30C6106811EB0C83C6660080EFF59CAD",
+            "name": "Landing Page 10/12/20 12:04:26 PM",
+            "editable": true,
+            "allowDeliveryChanges": false,
+            "allowPersonalizationChanges": false,
+            "allowUnsubscribe": false,
+            "dateCreated": "2020-10-13T00:05:16+0000",
+            "dateModified": "2020-10-16T11:27:05+0000",
+            "owner": {
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                "name": "MSTR User"
+            },
+            "schedules": [
+                {
+                    "id": "FF7BB3C811D501F0C00051916B98494F",
+                    "name": "All the Time",
+                    "type": "time_based",
+                    "nextDelivery": "2020-10-16T14:00:00+0000"
+                }
+            ],
+            "contents": [
+                {
+                    "id": "66366F0E11EA112A1A9C0080EF8568D5",
+                    "name": "Landing Page",
+                    "type": "dossier",
+                    "personalization": {
+                        "compressed": false,
+                        "formatMode": "DEFAULT",
+                        "viewMode": "BOTH",
+                        "formatType": "PDF",
+                        "exportToPdfSettings": {
+                            "pageOption": "PAGE",
+                            "pageSize": "letter",
+                            "orientation": "landscape",
+                            "includeOverview": true,
+                            "includeDetailedPages": false,
+                            "includeHeader": true,
+                            "includeFooter": true,
+                            "filterSummary": "PAGE",
+                            "fitToPage": false,
+                            "repeatColumnHeader": false
+                        }
+                    }
+                }
+            ],
+            "recipients": [
+                {
+                    "id": "54F3D26011D2896560009A8E67019608",
+                    "name": "Administrator",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "84D18F1D11EB0FA292170080EF853E34"
+                }
+            ],
+            "delivery": {
+                "mode": "EMAIL",
+                "contactSecurity": false,
+                "email": {
+                    "subject": "Landing Page",
+                    "filename": "Landing Page",
+                    "sendContentAs": "data",
+                    "overwriteOlderVersion": false
+                }
+            }
+        },
+        {
+            "id": "86F265804B01BD9776CBAEB38A323A18",
+            "name": "Home 2/26/2016 3:20:29 PM",
+            "editable": true,
+            "allowDeliveryChanges": false,
+            "allowPersonalizationChanges": false,
+            "allowUnsubscribe": false,
+            "dateCreated": "2016-02-26T20:20:30+0000",
+            "dateModified": "2016-02-26T20:20:30+0000",
+            "owner": {
+                "id": "54F3D26011D2896560009A8E67019608",
+                "name": "Administrator"
+            },
+            "schedules": [
+                {
+                    "id": "E24F501E802911E1BBCB892C4924019B",
+                    "name": "Personal View",
+                    "type": "unknown"
+                }
+            ],
+            "contents": [
+                {
+                    "id": "A234D36811E5C9E600000080EF152FC5",
+                    "name": "Home",
+                    "type": "document",
+                    "personalization": {
+                        "compressed": false,
+                        "formatMode": "DEFAULT",
+                        "viewMode": "DEFAULT",
+                        "formatType": "PLAIN_TEXT"
+                    }
+                }
+            ],
+            "recipients": [
+                {
+                    "id": "54F3D26011D2896560009A8E67019608",
+                    "name": "Administrator",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "3559CD2A460152EE1202CFB4FDE294DF"
+                }
+            ],
+            "delivery": {
+                "mode": "SHARED_LINK",
+                "contactSecurity": false
+            }
+        },
+        {
+            "id": "B627E5504C51B450256FC8968C86F58A",
+            "name": "Enhanced ESRI Maps for Android 2/27/2016 5:27:34 PM",
+            "editable": true,
+            "allowDeliveryChanges": false,
+            "allowPersonalizationChanges": false,
+            "allowUnsubscribe": false,
+            "dateCreated": "2016-02-27T22:27:36+0000",
+            "dateModified": "2016-02-27T22:27:36+0000",
+            "owner": {
+                "id": "54F3D26011D2896560009A8E67019608",
+                "name": "Administrator"
+            },
+            "schedules": [
+                {
+                    "id": "E24F501E802911E1BBCB892C4924019B",
+                    "name": "Personal View",
+                    "type": "unknown"
+                }
+            ],
+            "contents": [
+                {
+                    "id": "42D858A811E5D1030AA50080EF25B98C",
+                    "name": "Enhanced ESRI Maps for Android",
+                    "type": "document",
+                    "personalization": {
+                        "compressed": false,
+                        "formatMode": "DEFAULT",
+                        "viewMode": "DEFAULT",
+                        "formatType": "PLAIN_TEXT"
+                    }
+                }
+            ],
+            "recipients": [
+                {
+                    "id": "54F3D26011D2896560009A8E67019608",
+                    "name": "Administrator",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "F6F65B084297B56B995A02924513CA68"
+                }
+            ],
+            "delivery": {
+                "mode": "SHARED_LINK",
+                "contactSecurity": false
+            }
+        },
+        {
+            "id": "923B41FE11EB0C85C6660080EF555CAD",
+            "name": "dashboard_test_subs 10/12/20 12:21:55 PM",
+            "editable": true,
+            "allowDeliveryChanges": false,
+            "allowPersonalizationChanges": false,
+            "allowUnsubscribe": false,
+            "dateCreated": "2020-10-13T00:22:18+0000",
+            "dateModified": "2020-10-13T00:22:18+0000",
+            "owner": {
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                "name": "MSTR User"
+            },
+            "schedules": [
+                {
+                    "id": "FF7BB3C811D501F0C00051916B98494F",
+                    "name": "All the Time",
+                    "type": "time_based",
+                    "nextDelivery": "2020-10-16T14:00:00+0000"
+                }
+            ],
+            "contents": [
+                {
+                    "id": "6673DAEB11EB0C85B71F0080EF351DAF",
+                    "name": "dashboard_test_subs",
+                    "type": "document",
+                    "personalization": {
+                        "compressed": false,
+                        "formatMode": "CURRENT_PAGE",
+                        "viewMode": "BOTH",
+                        "formatType": "HTML",
+                        "prompt": {
+                            "enabled": true
+                        }
+                    }
+                }
+            ],
+            "recipients": [
+                {
+                    "id": "66BCA30411EB0C82B71F0080EF95DBAC",
+                    "name": "Piotr Czyz",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "923DEB5D11EB0C85C6660080EF555CAD"
+                }
+            ],
+            "delivery": {
+                "mode": "EMAIL",
+                "contactSecurity": false,
+                "email": {
+                    "subject": "dashboard_test_subs",
+                    "filename": "dashboard_test_subs",
+                    "sendContentAs": "data",
+                    "overwriteOlderVersion": false
+                }
+            }
+        },
+        {
+            "id": "67332C6511EB0C86C6660080EFE57DAE",
+            "name": "customer report 10/12/20 12:27:15 PM",
+            "editable": true,
+            "allowDeliveryChanges": false,
+            "allowPersonalizationChanges": false,
+            "allowUnsubscribe": false,
+            "dateCreated": "2020-10-13T00:28:16+0000",
+            "dateModified": "2020-10-15T13:54:37+0000",
+            "owner": {
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                "name": "MSTR User"
+            },
+            "schedules": [
+                {
+                    "id": "FF7BB3C811D501F0C00051916B98494F",
+                    "name": "All the Time",
+                    "type": "time_based",
+                    "nextDelivery": "2020-10-16T14:00:00+0000"
+                }
+            ],
+            "contents": [
+                {
+                    "id": "309533E711EB0C86B71F0080EFB51CAE",
+                    "name": "customer report",
+                    "type": "report",
+                    "personalization": {
+                        "compressed": false,
+                        "formatMode": "CURRENT_PAGE",
+                        "viewMode": "BOTH",
+                        "formatType": "HTML",
+                        "prompt": {
+                            "enabled": true
+                        }
+                    }
+                }
+            ],
+            "recipients": [
+                {
+                    "id": "66BCA30411EB0C82B71F0080EF95DBAC",
+                    "name": "Piotr Czyz",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "6735DFD711EB0C86C6660080EFE57DAE"
+                },
+                {
+                    "id": "578DEDD111EB0C8610B10080EFB59E6F",
+                    "name": "test",
+                    "isGroup": false,
+                    "type": "personal_address",
+                    "includeType": "TO",
+                    "childSubscriptionId": "6735DFAE11EB0C86C6660080EFE57DAE"
+                }
+            ],
+            "delivery": {
+                "mode": "EMAIL",
+                "contactSecurity": false,
+                "email": {
+                    "subject": "customer report",
+                    "filename": "customer report",
+                    "sendContentAs": "data",
+                    "overwriteOlderVersion": false
+                }
+            }
+        },
+        {
+            "id": "AD333B1E11EA11A0B6350080EF959C05",
+            "name": "Campaign Finance 11/28/2019 1:33:58 PM",
+            "editable": true,
+            "allowDeliveryChanges": false,
+            "allowPersonalizationChanges": false,
+            "allowUnsubscribe": false,
+            "dateCreated": "2019-11-28T05:33:58+0000",
+            "dateModified": "2019-11-28T05:33:58+0000",
+            "owner": {
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                "name": "MSTR User"
+            },
+            "schedules": [
+                {
+                    "id": "E24F501E802911E1BBCB892C4924019B",
+                    "name": "Personal View",
+                    "type": "unknown"
+                }
+            ],
+            "contents": [
+                {
+                    "id": "0D0CDC8F11E97E8F00000080AFB3A407",
+                    "name": "Campaign Finance",
+                    "type": "dossier",
+                    "personalization": {
+                        "compressed": false,
+                        "formatMode": "DEFAULT",
+                        "viewMode": "DEFAULT",
+                        "formatType": "PLAIN_TEXT"
+                    }
+                }
+            ],
+            "recipients": [
+                {
+                    "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                    "name": "MSTR User",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "ADD3A78E11EA11A0B6350080EF959C05"
+                }
+            ],
+            "delivery": {
+                "mode": "SHARED_LINK",
+                "contactSecurity": false
+            }
+        },
+        {
+            "id": "795A6DDB427783A70C49D29434F22366",
+            "name": "Balanced Scorecard 5/26/2016 3:39:48 PM",
+            "editable": true,
+            "allowDeliveryChanges": false,
+            "allowPersonalizationChanges": false,
+            "allowUnsubscribe": false,
+            "dateCreated": "2016-05-26T19:39:49+0000",
+            "dateModified": "2016-05-26T19:39:49+0000",
+            "owner": {
+                "id": "54F3D26011D2896560009A8E67019608",
+                "name": "Administrator"
+            },
+            "schedules": [
+                {
+                    "id": "E24F501E802911E1BBCB892C4924019B",
+                    "name": "Personal View",
+                    "type": "unknown"
+                }
+            ],
+            "contents": [
+                {
+                    "id": "D937B36011E568EA1F490080EFA5318F",
+                    "name": "Balanced Scorecard",
+                    "type": "document",
+                    "personalization": {
+                        "compressed": false,
+                        "formatMode": "DEFAULT",
+                        "viewMode": "DEFAULT",
+                        "formatType": "PLAIN_TEXT"
+                    }
+                }
+            ],
+            "recipients": [
+                {
+                    "id": "54F3D26011D2896560009A8E67019608",
+                    "name": "Administrator",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "0A6697A84BF7D54E07AE819322443EC3"
+                }
+            ],
+            "delivery": {
+                "mode": "SHARED_LINK",
+                "contactSecurity": false
+            }
+        },
+        {
+            "id": "D698BD0211EA1269EA5C0080EF554453",
+            "name": "Avg Delay (min) by Airline 11/29/2019 1:33:56 PM",
+            "editable": true,
+            "allowDeliveryChanges": false,
+            "allowPersonalizationChanges": false,
+            "allowUnsubscribe": false,
+            "dateCreated": "2019-11-29T05:33:57+0000",
+            "dateModified": "2019-11-29T05:33:57+0000",
+            "owner": {
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                "name": "MSTR User"
+            },
+            "schedules": [
+                {
+                    "id": "E24F501E802911E1BBCB892C4924019B",
+                    "name": "Personal View",
+                    "type": "unknown"
+                }
+            ],
+            "contents": [
+                {
+                    "id": "69F662EE11E9817800000080AFE34811",
+                    "name": "Avg Delay (min) by Airline",
+                    "type": "dossier",
+                    "personalization": {
+                        "compressed": false,
+                        "formatMode": "DEFAULT",
+                        "viewMode": "DEFAULT",
+                        "formatType": "PLAIN_TEXT"
+                    }
+                }
+            ],
+            "recipients": [
+                {
+                    "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                    "name": "MSTR User",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "D6DD40EE11EA1269EA5C0080EF554453"
+                }
+            ],
+            "delivery": {
+                "mode": "SHARED_LINK",
+                "contactSecurity": false
+            }
+        },
+        {
+            "id": "1FCAE10011EA1268EA5C0080EFF58453",
+            "name": "Avg Delay (min) by Airline 11/29/2019 1:21:40 PM",
+            "editable": true,
+            "allowDeliveryChanges": false,
+            "allowPersonalizationChanges": false,
+            "allowUnsubscribe": false,
+            "dateCreated": "2019-11-29T05:21:40+0000",
+            "dateModified": "2019-11-29T05:21:40+0000",
+            "owner": {
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                "name": "MSTR User"
+            },
+            "schedules": [
+                {
+                    "id": "E24F501E802911E1BBCB892C4924019B",
+                    "name": "Personal View",
+                    "type": "unknown"
+                }
+            ],
+            "contents": [
+                {
+                    "id": "69F662EE11E9817800000080AFE34811",
+                    "name": "Avg Delay (min) by Airline",
+                    "type": "dossier",
+                    "personalization": {
+                        "compressed": false,
+                        "formatMode": "DEFAULT",
+                        "viewMode": "DEFAULT",
+                        "formatType": "PLAIN_TEXT"
+                    }
+                }
+            ],
+            "recipients": [
+                {
+                    "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                    "name": "MSTR User",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "20005AF611EA1268EA5C0080EFF58453"
+                }
+            ],
+            "delivery": {
+                "mode": "SHARED_LINK",
+                "contactSecurity": false
+            }
+        },
+        {
+            "id": "D131263011EA1267EA5C0080EF452351",
+            "name": "Avg Delay (min) by Airline 11/29/2019 1:19:28 PM",
+            "editable": true,
+            "allowDeliveryChanges": false,
+            "allowPersonalizationChanges": false,
+            "allowUnsubscribe": false,
+            "dateCreated": "2019-11-29T05:19:28+0000",
+            "dateModified": "2019-11-29T05:19:28+0000",
+            "owner": {
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                "name": "MSTR User"
+            },
+            "schedules": [
+                {
+                    "id": "E24F501E802911E1BBCB892C4924019B",
+                    "name": "Personal View",
+                    "type": "unknown"
+                }
+            ],
+            "contents": [
+                {
+                    "id": "69F662EE11E9817800000080AFE34811",
+                    "name": "Avg Delay (min) by Airline",
+                    "type": "dossier",
+                    "personalization": {
+                        "compressed": false,
+                        "formatMode": "DEFAULT",
+                        "viewMode": "DEFAULT",
+                        "formatType": "PLAIN_TEXT"
+                    }
+                }
+            ],
+            "recipients": [
+                {
+                    "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                    "name": "MSTR User",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "D16149C811EA1267EA5C0080EF452351"
+                }
+            ],
+            "delivery": {
+                "mode": "SHARED_LINK",
+                "contactSecurity": false
+            }
+        },
+        {
+            "id": "C691A8B211EA1267EA5C0080EF554351",
+            "name": "Avg Delay (min) by Airline 11/29/2019 1:19:10 PM",
+            "editable": true,
+            "allowDeliveryChanges": false,
+            "allowPersonalizationChanges": false,
+            "allowUnsubscribe": false,
+            "dateCreated": "2019-11-29T05:19:11+0000",
+            "dateModified": "2019-11-29T05:19:11+0000",
+            "owner": {
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                "name": "MSTR User"
+            },
+            "schedules": [
+                {
+                    "id": "E24F501E802911E1BBCB892C4924019B",
+                    "name": "Personal View",
+                    "type": "unknown"
+                }
+            ],
+            "contents": [
+                {
+                    "id": "69F662EE11E9817800000080AFE34811",
+                    "name": "Avg Delay (min) by Airline",
+                    "type": "dossier",
+                    "personalization": {
+                        "compressed": false,
+                        "formatMode": "DEFAULT",
+                        "viewMode": "DEFAULT",
+                        "formatType": "PLAIN_TEXT"
+                    }
+                }
+            ],
+            "recipients": [
+                {
+                    "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                    "name": "MSTR User",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "C6C0710611EA1267EA5C0080EF554351"
+                }
+            ],
+            "delivery": {
+                "mode": "SHARED_LINK",
+                "contactSecurity": false
+            }
+        },
+        {
+            "id": "86CE877211EA1267EA5C0080EF25E351",
+            "name": "Avg Delay (min) by Airline 11/29/2019 1:17:23 PM",
+            "editable": true,
+            "allowDeliveryChanges": false,
+            "allowPersonalizationChanges": false,
+            "allowUnsubscribe": false,
+            "dateCreated": "2019-11-29T05:17:24+0000",
+            "dateModified": "2019-11-29T05:17:24+0000",
+            "owner": {
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                "name": "MSTR User"
+            },
+            "schedules": [
+                {
+                    "id": "E24F501E802911E1BBCB892C4924019B",
+                    "name": "Personal View",
+                    "type": "unknown"
+                }
+            ],
+            "contents": [
+                {
+                    "id": "69F662EE11E9817800000080AFE34811",
+                    "name": "Avg Delay (min) by Airline",
+                    "type": "dossier",
+                    "personalization": {
+                        "compressed": false,
+                        "formatMode": "DEFAULT",
+                        "viewMode": "DEFAULT",
+                        "formatType": "PLAIN_TEXT"
+                    }
+                }
+            ],
+            "recipients": [
+                {
+                    "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                    "name": "MSTR User",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "86FA63C411EA1267EA5C0080EF25E351"
+                }
+            ],
+            "delivery": {
+                "mode": "SHARED_LINK",
+                "contactSecurity": false
+            }
+        },
+        {
+            "id": "62C58CBE11EA1266EA5C0080EF65624F",
+            "name": "Avg Delay (min) by Airline 11/29/2019 1:09:13 PM",
+            "editable": true,
+            "allowDeliveryChanges": false,
+            "allowPersonalizationChanges": false,
+            "allowUnsubscribe": false,
+            "dateCreated": "2019-11-29T05:09:14+0000",
+            "dateModified": "2019-11-29T05:09:14+0000",
+            "owner": {
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                "name": "MSTR User"
+            },
+            "schedules": [
+                {
+                    "id": "E24F501E802911E1BBCB892C4924019B",
+                    "name": "Personal View",
+                    "type": "unknown"
+                }
+            ],
+            "contents": [
+                {
+                    "id": "69F662EE11E9817800000080AFE34811",
+                    "name": "Avg Delay (min) by Airline",
+                    "type": "dossier",
+                    "personalization": {
+                        "compressed": false,
+                        "formatMode": "DEFAULT",
+                        "viewMode": "DEFAULT",
+                        "formatType": "PLAIN_TEXT"
+                    }
+                }
+            ],
+            "recipients": [
+                {
+                    "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                    "name": "MSTR User",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "62F0163211EA1266EA5C0080EF65624F"
+                }
+            ],
+            "delivery": {
+                "mode": "SHARED_LINK",
+                "contactSecurity": false
+            }
+        },
+        {
+            "id": "5CC55EAE11EA125AEA5C0080EF95C250",
+            "name": "Avg Delay (min) by Airline 11/29/2019 11:43:09 AM",
+            "editable": true,
+            "allowDeliveryChanges": false,
+            "allowPersonalizationChanges": false,
+            "allowUnsubscribe": false,
+            "dateCreated": "2019-11-29T03:43:10+0000",
+            "dateModified": "2019-11-29T03:43:10+0000",
+            "owner": {
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                "name": "MSTR User"
+            },
+            "schedules": [
+                {
+                    "id": "E24F501E802911E1BBCB892C4924019B",
+                    "name": "Personal View",
+                    "type": "unknown"
+                }
+            ],
+            "contents": [
+                {
+                    "id": "69F662EE11E9817800000080AFE34811",
+                    "name": "Avg Delay (min) by Airline",
+                    "type": "dossier",
+                    "personalization": {
+                        "compressed": false,
+                        "formatMode": "DEFAULT",
+                        "viewMode": "DEFAULT",
+                        "formatType": "PLAIN_TEXT"
+                    }
+                }
+            ],
+            "recipients": [
+                {
+                    "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                    "name": "MSTR User",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "5E062F4611EA125AEA5C0080EF95C250"
+                }
+            ],
+            "delivery": {
+                "mode": "SHARED_LINK",
+                "contactSecurity": false
+            }
+        },
+        {
+            "id": "34481A1E11EA1257EA5C0080EFB50454",
+            "name": "Avg Delay (min) by Airline 11/29/2019 11:20:33 AM",
+            "editable": true,
+            "allowDeliveryChanges": false,
+            "allowPersonalizationChanges": false,
+            "allowUnsubscribe": false,
+            "dateCreated": "2019-11-29T03:20:33+0000",
+            "dateModified": "2019-11-29T03:20:33+0000",
+            "owner": {
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                "name": "MSTR User"
+            },
+            "schedules": [
+                {
+                    "id": "E24F501E802911E1BBCB892C4924019B",
+                    "name": "Personal View",
+                    "type": "unknown"
+                }
+            ],
+            "contents": [
+                {
+                    "id": "69F662EE11E9817800000080AFE34811",
+                    "name": "Avg Delay (min) by Airline",
+                    "type": "dossier",
+                    "personalization": {
+                        "compressed": false,
+                        "formatMode": "DEFAULT",
+                        "viewMode": "DEFAULT",
+                        "formatType": "PLAIN_TEXT"
+                    }
+                }
+            ],
+            "recipients": [
+                {
+                    "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                    "name": "MSTR User",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "35490D1A11EA1257EA5C0080EFB50454"
+                }
+            ],
+            "delivery": {
+                "mode": "SHARED_LINK",
+                "contactSecurity": false
+            }
+        },
+        {
+            "id": "2143AA0611EA11A2B6350080EF25BD06",
+            "name": "Avg Delay (min) by Airline 11/28/2019 1:44:22 PM",
+            "editable": true,
+            "allowDeliveryChanges": false,
+            "allowPersonalizationChanges": false,
+            "allowUnsubscribe": false,
+            "dateCreated": "2019-11-28T05:44:22+0000",
+            "dateModified": "2019-11-28T05:44:22+0000",
+            "owner": {
+                "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                "name": "MSTR User"
+            },
+            "schedules": [
+                {
+                    "id": "E24F501E802911E1BBCB892C4924019B",
+                    "name": "Personal View",
+                    "type": "unknown"
+                }
+            ],
+            "contents": [
+                {
+                    "id": "69F662EE11E9817800000080AFE34811",
+                    "name": "Avg Delay (min) by Airline",
+                    "type": "dossier",
+                    "personalization": {
+                        "compressed": false,
+                        "formatMode": "DEFAULT",
+                        "viewMode": "DEFAULT",
+                        "formatType": "PLAIN_TEXT"
+                    }
+                }
+            ],
+            "recipients": [
+                {
+                    "id": "7FC05A65473CE2FD845CE6A1D3F13233",
+                    "name": "MSTR User",
+                    "isGroup": false,
+                    "type": "user",
+                    "includeType": "TO",
+                    "childSubscriptionId": "21590BF811EA11A2B6350080EF25BD06"
+                }
+            ],
+            "delivery": {
+                "mode": "SHARED_LINK",
+                "contactSecurity": false
+            }
+        }
+    ]
+}

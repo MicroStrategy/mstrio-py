@@ -1,8 +1,8 @@
-/* eslint-disable indent */
+/* eslint-disable max-len */
 define([], () => class PythonCode {
   constructor(...args) {
     if (args.length) {
-      if ('username' in args[0]) {
+      if ('url' in args[0] || 'loginMode' in args[0]) {
         [
           this.authenticationDetails,
           this.dataframeDetails,
@@ -17,113 +17,155 @@ define([], () => class PythonCode {
         ] = args;
       }
     }
+
+    // workaround for Safari:
+    // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/Arrow_functions#Browser_compatibility
+    this.generateConnectionCode = this.generateConnectionCode.bind(this);
+    this.generateApplyStepsCodeInsideExport = this.generateApplyStepsCodeInsideExport.bind(this);
+    this.forInitialEngine = this.forInitialEngine.bind(this);
+    this.forImport = this.forImport.bind(this);
+    this.forExport = this.forExport.bind(this);
+    this.forUpdate = this.forUpdate.bind(this);
+    this.forGettingDataframesNames = this.forGettingDataframesNames.bind(this);
+    this.forGettingKernelInfo = this.forGettingKernelInfo.bind(this);
+    this.forGettingPackageVersionNumber = this.forGettingPackageVersionNumber.bind(this);
+    this.forGettingDataframeData = this.forGettingDataframeData.bind(this);
+    this.forModelingGatheredData = this.forModelingGatheredData.bind(this);
+    this.forDataframeColumnsSelection = this.forDataframeColumnsSelection.bind(this);
+    this.forApplyingStep = this.forApplyingStep.bind(this);
   }
 
 
   // code preparation functions
-  static code = { // static reference to available functions returning python code - for JupyterCell reference use
-    forInitialEngine: {
-      name: 'forInitialEngine',
-      required: 'otherDetails[customEnvironment]',
-    },
-    forApplyingStep: {
-      name: 'forApplyingStep',
-      required: 'otherDetails[customEnvironment]\nargs: step [Object]',
-    },
-    forCredentials: {
-      name: 'forCredentials',
-      required: 'authenticationDetails[user, password]',
-    },
-    forImport: {
-      name: 'forImport',
-      arguments: 'includeCredentials = false',
-      required: 'authenticationDetails[user, password, envUrl, loginMode]\ndataframeDetails[name, projectId, datasetType, datasetId, body]',
-    },
-    forExport: {
-      name: 'forExport',
-      arguments: 'includeCredentials = false',
-      required: 'authenticationDetails[user, password, envUrl, loginMode]\ndataframeDetails[projectId, selectedDataframes]\notherDetails[saveAsName, description, certify, folderId, customEnvironment]',
-    },
-    forUpdate: {
-      name: 'forUpdate',
-      arguments: 'includeCredentials = false',
-      required: 'authenticationDetails[user, password, envUrl, loginMode]\ndataframeDetails[projectId, datasetId]\notherDetails[updatePolicies, customEnvironment]',
-    },
-    forGettingDataframesNames: {
-      name: 'forGettingDataframesNames',
-      required: 'none',
-    },
-    forGettingKernelInfo: {
-      name: 'forGettingKernelInfo',
-      required: 'none',
-    },
-    forGettingPackageVersionNumber: {
-      name: 'forGettingPackageVersionNumber',
-      required: 'none',
-    },
-    forGettingDataframeData: {
-      name: 'forGettingDataframeData',
-      required: 'dataframeDetails[name]\n(optional)otherDetails[rows]',
-    },
-    forModelingGatheredData: {
-      name: 'forModelingGatheredData',
-      required: 'dataframeDetails[name]\n(optional)otherDetails[rows]',
-    },
-    forDataframeColumnsSelection: {
-      name: 'forDataframeColumnsSelection',
-      required: 'dataframeDetails[selectedObjects, name]\notherDetails[customEnvironment]',
-    },
+  static code() {
+    return { // static reference to available functions returning python code - for JupyterCell reference use
+      forInitialEngine: {
+        name: 'forInitialEngine',
+        required: 'otherDetails[customEnvironment]',
+      },
+      forApplyingStep: {
+        name: 'forApplyingStep',
+        required: 'otherDetails[customEnvironment]\nargs: step [Object]',
+      },
+      forCredentials: {
+        name: 'forCredentials',
+        required: 'authenticationDetails[user, password]',
+      },
+      forImport: {
+        name: 'forImport',
+        arguments: 'includeCredentials = false',
+        required: 'authenticationDetails[user, password, envUrl, loginMode]\ndataframeDetails[name, projectId, datasetType, datasetId, body]',
+      },
+      forExport: {
+        name: 'forExport',
+        arguments: 'includeCredentials = false',
+        required: 'authenticationDetails[user, password, envUrl, loginMode]\ndataframeDetails[projectId, selectedDataframes]\notherDetails[saveAsName, description, certify, folderId, customEnvironment]',
+      },
+      forUpdate: {
+        name: 'forUpdate',
+        arguments: 'includeCredentials = false',
+        required: 'authenticationDetails[user, password, envUrl, loginMode]\ndataframeDetails[projectId, datasetId]\notherDetails[updatePolicies, customEnvironment]',
+      },
+      forGettingDataframesNames: {
+        name: 'forGettingDataframesNames',
+        required: 'none',
+      },
+      forGettingKernelInfo: {
+        name: 'forGettingKernelInfo',
+        required: 'none',
+      },
+      forGettingPackageVersionNumber: {
+        name: 'forGettingPackageVersionNumber',
+        required: 'none',
+      },
+      forGettingDataframeData: {
+        name: 'forGettingDataframeData',
+        required: 'dataframeDetails[name]\n(optional)otherDetails[rows]',
+      },
+      forModelingGatheredData: {
+        name: 'forModelingGatheredData',
+        required: 'dataframeDetails[name]\n(optional)otherDetails[rows]',
+      },
+      forDataframeColumnsSelection: {
+        name: 'forDataframeColumnsSelection',
+        required: 'dataframeDetails[selectedObjects, name]\notherDetails[customEnvironment]',
+      },
+    };
   }
 
-  static capitalize = (string) => (
-    !string
-      ? ''
-      : string.charAt(0).toUpperCase() + string.slice(1)
-  )
+  static capitalize(string) {
+    return (
+      !string
+        ? ''
+        : string.charAt(0).toUpperCase() + string.slice(1)
+    );
+  }
 
-  static oneLine = (multilinePythonCode) => (
-    !multilinePythonCode
-      ? ''
-      : multilinePythonCode.trim()
-        .replace(/\n/gi, ' ')
-        .replace(/\s{2,}/gi, ' ')
-  )
+  static oneLine(multilinePythonCode) {
+    return (
+      !multilinePythonCode
+        ? ''
+        : multilinePythonCode.trim()
+          .replace(/\n/gi, ' ')
+          .replace(/\s{2,}/gi, ' ')
+    );
+  }
   // ---
 
-  generateConnectionCode = (forEndUser = false, datasetType) => {
-    const { url, loginMode, identityToken } = this.authenticationDetails;
+  generateConnectionCode(forEndUser = false, datasetType) {
+    const { url, username = '', loginMode, identityToken } = this.authenticationDetails;
     const { projectId } = this.dataframeDetails;
     const importCode = `
 from mstrio.connection import Connection
 from mstrio.${datasetType.toLowerCase()} import ${datasetType}
 from getpass import getpass
-`.trim();
+    `.trim();
 
     const credentialsCode = forEndUser
-? `
+      ? `
 mstr_username = input("Username: ")
 mstr_password = getpass("Password: ")
-mstr_login_mode = ${loginMode}
-`.trim()
-: `
+mstr_login_mode = input("Login mode (1 - Standard, 16 - LDAP) [1]: ") or 1
+      `.trim()
+      : `
 mstr_identity_token = "${identityToken}"
-`.trim();
+mstr_login_mode = ${loginMode || 'None'}
+      `.trim();
 
     const authCode = `
 mstr_base_url = "${url}"
 mstr_project_id = "${projectId}"
 ${credentialsCode}
-`.trim();
+    `.trim();
 
     const connectionCode = forEndUser
       ? 'mstr_connection = Connection(mstr_base_url, mstr_username, mstr_password, project_id=mstr_project_id, login_mode=mstr_login_mode, verbose=False)'
-      : 'mstr_connection = Connection(mstr_base_url, project_id=mstr_project_id, identity_token=mstr_identity_token, verbose=False)';
+      : `mstr_connection = Connection(mstr_base_url, ${username ? `"${username}"` : 'None'}, project_id=mstr_project_id, identity_token=mstr_identity_token, login_mode=mstr_login_mode, verbose=False)`;
 
-    return `${importCode}\n\n${authCode}\n\n${connectionCode}`;
+    return `
+${importCode}
+
+# Authentication & Connection
+${authCode}
+
+${connectionCode}
+    `.trim();
   }
 
 
-  forInitialEngine = () => {
+  generateApplyStepsCodeInsideExport(steps) {
+    return (
+      !steps || !steps.length
+        ? ''
+        : `
+# Data Modeling
+${steps.map((step) => this.forApplyingStep(step)).join('\n')}
+`
+    );
+  }
+
+
+  forInitialEngine() {
     const { customEnvironment } = this.otherDetails;
 
     return (`
@@ -147,7 +189,7 @@ def update_custom_env():
     `).trim();
   }
 
-  forImport = (forEndUser = false) => {
+  forImport(forEndUser = false) {
     const { name, datasetType, datasetId, body: { attributes, metrics, filters }, instanceId } = this.dataframeDetails;
 
     const variableName = `${/\d/gi.test(name[0]) ? 'var_' : ''}${
@@ -162,45 +204,50 @@ def update_custom_env():
 
     const applyFiltersContent = attributes.length + metrics.length + filters.length === 0
       ? 'attributes = None, metrics = None, attr_elements = None'
-      : PythonCode.oneLine(`
-attributes = ${JSON.stringify(attributes)},
-metrics = ${JSON.stringify(metrics)},
-attr_elements = ${filters.length > 0 ? JSON.stringify(filters) : 'None'}
-`);
+      : `
+  attributes = ${JSON.stringify(attributes)},
+  metrics = ${JSON.stringify(metrics)},
+  attr_elements = ${filters.length > 0 ? JSON.stringify(filters) : 'None'}
+`;
 
     return (`
-# Import ${name} ${datasetTypeFirstUp} from MicroStrategy
 ${connectionCode}
 
+# Data Import
 ${variableName} = ${datasetTypeFirstUp}(mstr_connection, "${datasetId}"${instanceIdCode})
 ${variableName}.apply_filters(${applyFiltersContent})
 ${variableName}.to_dataframe()
 ${variableName}_df = ${variableName}.dataframe
 
+# Data Display
 ${variableName}_df
     `).trim();
   }
 
 
-  forExport = (forEndUser = false) => {
+  forExport(forEndUser = false) {
     const { selectedDataframes } = this.dataframeDetails;
-    const { saveAsName, description, certify, folderId, customEnvironment } = this.otherDetails;
+    const { saveAsName, description, certify, folderId, customEnvironment, dataModelingSteps = [] } = this.otherDetails;
 
-    const tablesCode = selectedDataframes.map(({ name, attributes, metrics }) => PythonCode.oneLine(`
-mstr_dataset.add_table(name="${name}",
+    const tablesCode = selectedDataframes.map(({ name, attributes, metrics }) => `
+mstr_dataset.add_table(
+  name="${name}",
   data_frame=${customEnvironment}['${name}'],
-  update_policy="add",
+  update_policy="replace",
   to_metric=${metrics.length ? JSON.stringify(metrics) : 'None'},
-  to_attribute=${attributes.length ? JSON.stringify(attributes) : 'None'})
-`))
-    .join('\n');
+  to_attribute=${attributes.length ? JSON.stringify(attributes) : 'None'}
+)
+    `.trim())
+      .join('\n');
 
     const connectionCode = this.generateConnectionCode(forEndUser, 'Dataset');
+    const modelingStepsCode = forEndUser ? this.generateApplyStepsCodeInsideExport(dataModelingSteps) : '';
 
     return (`
-# Export ${saveAsName} Dataset to MicroStrategy
 ${connectionCode}
-
+update_custom_env()
+${modelingStepsCode}
+# Data Export
 mstr_dataset = Dataset(mstr_connection, name="${saveAsName}"${description ? `, description="${description}"` : ''})
 ${tablesCode}
 mstr_dataset.create(folder_id="${folderId}")
@@ -209,34 +256,40 @@ ${certify ? 'mstr_dataset.certify()' : ''}
   }
 
 
-  forUpdate = (forEndUser = false) => {
-    const { datasetId, datasetName } = this.dataframeDetails;
-    const { updatePolicies, customEnvironment } = this.otherDetails;
+  forUpdate(forEndUser = false) {
+    const { datasetId } = this.dataframeDetails;
+    const { updatePolicies, customEnvironment, dataModelingSteps = [] } = this.otherDetails;
+
+    const tablesCode = updatePolicies.map(({ tableName, updatePolicy }) => PythonCode.oneLine(`
+mstr_dataset.add_table(name="${tableName}",
+  data_frame=${customEnvironment}['${tableName}'],
+  update_policy="${updatePolicy}")
+`))
+      .join('\n');
 
     const connectionCode = this.generateConnectionCode(forEndUser, 'Dataset');
-    const tables = updatePolicies.map(({ tableName, updatePolicy }) => (
-      PythonCode.oneLine(`mstr_dataset.add_table(name="${tableName}",
-        data_frame=${customEnvironment}['${tableName}'],
-        update_policy="${updatePolicy}")`)));
+    const modelingStepsCode = forEndUser ? this.generateApplyStepsCodeInsideExport(dataModelingSteps) : '';
 
     return (`
-# Update ${datasetName} Dataset at MicroStrategy
 ${connectionCode}
-
+update_custom_env()
+${modelingStepsCode}
+# Data Update
 mstr_dataset = Dataset(mstr_connection, dataset_id="${datasetId}")
-${tables.join('\n')}
+${tablesCode}
 
 mstr_dataset.update()
     `).trim();
   }
 
 
-  forGettingDataframesNames = () => (`
+  forGettingDataframesNames() {
+    return (`
 import pandas as pd
 
 dataframe_names=[]
 for el in dir():
-  if isinstance(locals()[el], pd.core.frame.DataFrame) and el[0]!='_':
+  if isinstance(locals()[el], pd.core.frame.DataFrame) and el[0]!='_' and locals()[el].empty == False:
       dataframe_names.append(el)
 
 import_string = ""
@@ -244,12 +297,14 @@ for df_name in dataframe_names:
   import_string += '{"name":"' + df_name + '","rows":' + str(eval(df_name + '.shape[0]')) + ',"columns":' + str(eval(df_name + '.shape[1]')) + '},'
 
 "[" + import_string[0:len(import_string) - 1] + "]"
-  `).trim()
+  `).trim();
+  }
 
   // TODO: recreate information about path to Python
   // Windows: !where python
   // UNIX: !which python
-  forGettingKernelInfo = () => (`
+  forGettingKernelInfo() {
+    return (`
 i1 = !jupyter --version
 i2 = !python --version
 ${PythonCode.oneLine(`
@@ -257,13 +312,17 @@ ${PythonCode.oneLine(`
 '","Python Version":"' + str(i2[0]).replace("\\\\", "").replace("'", "") + '"}'
 `)}
   `).trim();
+  }
 
-  forGettingPackageVersionNumber = () => (`
+
+  forGettingPackageVersionNumber() {
+    return (`
 pip show mstrio-py
   `).trim();
+  }
 
 
-  forGettingDataframeData = () => {
+  forGettingDataframeData() {
     const { name } = this.dataframeDetails;
     const { rows = 10 } = (this.otherDetails || {});
 
@@ -271,7 +330,7 @@ pip show mstrio-py
   }
 
 
-  forModelingGatheredData = () => {
+  forModelingGatheredData() {
     const { name } = this.dataframeDetails;
     const { rows = 10 } = (this.otherDetails || {});
 
@@ -286,7 +345,7 @@ model.get_model()
   }
 
 
-  forDataframeColumnsSelection = () => {
+  forDataframeColumnsSelection() {
     const { selectedObjects, name } = this.dataframeDetails;
     const { customEnvironment } = this.otherDetails;
 
@@ -298,7 +357,7 @@ ${customEnvironment}['${name}'] = ${customEnvironment}['${name}'].drop(columns=f
   }
 
 
-  forApplyingStep = (step) => {
+  forApplyingStep(step) {
     const { customEnvironment } = this.otherDetails;
     const { type, oldName, newName, dfName = '' } = step;
 

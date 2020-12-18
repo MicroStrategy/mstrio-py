@@ -1,0 +1,30 @@
+{
+    "privileges": [
+        {
+            "privilege": {
+                "id": "146",
+                "name": "Create and edit transmitters and devices ",
+                "description": "Allow user to create & edit transmitters and devices.",
+                "level": "server"
+            },
+            "sources": [
+                {
+                    "direct": true
+                }
+            ]
+        },
+        {
+            "privilege": {
+                "id": "150",
+                "name": "Configure contacts data security profile",
+                "description": "Allow user to link and unlink contacts for the purpose of defining data security",
+                "level": "server"
+            },
+            "sources": [
+                {
+                    "direct": true
+                }
+            ]
+        }
+    ]
+}

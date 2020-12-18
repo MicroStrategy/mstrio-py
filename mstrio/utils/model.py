@@ -2,13 +2,14 @@ import pandas as pd
 
 
 class Model(object):
-    """Internal utility for generating the definition of multi-table and single-table datasets.
+    """Internal utility for generating the definition of multi-table and
+    single-table datasets.
 
-    Create the definition of a dataset containing one or more tables. The definition includes the name and description
-    of the dataset and the name and description of each table, attribute, and metric within the dataset.
+    Create the definition of a dataset containing one or more tables. The
+    definition includes the name and description of the dataset and the name and
+    description of each table, attribute, and metric within the dataset.
 
     Attributes:
-
     """
 
     # dictionary key names
@@ -27,15 +28,17 @@ class Model(object):
         """Initializes Model with tables, a name, and an optional description.
 
         Args:
-            tables (:obj:`list` of :obj:`dict`): List of one or more dictionaries with keys `table_name`, `data_frame`,
-                and optionally `as_attribute` and `as_metric`. Note that `as_attribute` and `as_metric` should be used
-                when the default Python data type (e.g. `int`) should be converted to an attribute instead of a metric
-                in MicroStrategy.
+            tables (list of dicts): List of one or more dictionaries with keys
+                `table_name`, `data_frame`, and optionally `as_attribute` and
+                `as_metric`. Note that `as_attribute` and `as_metric` should be
+                used when the default Python data type (e.g. `int`) should be
+                converted to an attribute instead of a metric in MicroStrategy.
             name (str): Name of the data set.
-            description (str, optional): Description of the data set. Must be less than or equal to 250 characters.
-            folder_id (str, optional): ID of the shared folder that the dataset should be created within. If `None`,
-                defaults to the user's My Reports folder.
-
+            description (str, optional): Description of the data set. Must be
+                less than or equal to 250 characters.
+            folder_id (str, optional): ID of the shared folder that the dataset
+                should be created within. If `None`, defaults to the user's
+                My Reports folder.
         """
 
         self.__ignore_special_chars = ignore_special_chars
@@ -84,7 +87,8 @@ class Model(object):
         return self.__model
 
     def __build(self, tables):
-        """Generates the data model by mapping attributes and metrics from list of tables."""
+        """Generates the data model by mapping attributes and metrics from list
+        of tables."""
 
         for table in tables:
 
@@ -216,7 +220,8 @@ class Model(object):
 
     @staticmethod
     def __is_metric(datatype):
-        """Helper function for determining if the requested datatype is (by default) a metric or attribute."""
+        """Helper function for determining if the requested datatype is (by
+        default) a metric or attribute."""
         if datatype in ["DOUBLE", "INTEGER"]:
             return True
         else:

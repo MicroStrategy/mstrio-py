@@ -1,0 +1,64 @@
+[
+  {
+    "id": "123",
+    "name": "Monochrome",
+    "description": "",
+    "active": true,
+    "projectId": "B7CA92F04B9FAE8D941C3E9B7E0CD754",
+    "sharedTime": "2020-10-07T12:32:43.000+0000",
+    "target": {
+      "id": "123",
+      "name": "Monochrome",
+      "description": "",
+      "owner": {
+        "name": "Administrator",
+        "id": "54F3D26011D2896560009A8E67019608"
+      },
+      "certifiedInfo": {
+        "certified": false,
+        "certifier": {}
+      },
+      "chapters": [
+        {
+          "n": "Layout 1",
+          "k": "K6",
+          "pages": []
+        }
+      ],
+      "viewMedia": 268435263,
+      "coverPageURL": "",
+      "lastModifiedTime": "2009-06-25T15:51:01.000+0000"
+    }
+  },
+  {
+    "id": "124",
+    "name": "Monochrome2",
+    "description": "",
+    "active": true,
+    "projectId": "B7CA92F04B9FAE8D941C3E9B7E0CD754",
+    "sharedTime": "2020-10-07T12:32:43.000+0000",
+    "target": {
+      "id": "124",
+      "name": "Monochrome",
+      "description": "",
+      "owner": {
+        "name": "Administrator",
+        "id": "54F3D26011D2896560009A8E67019608"
+      },
+      "certifiedInfo": {
+        "certified": false,
+        "certifier": {}
+      },
+      "chapters": [
+        {
+          "n": "Layout 1",
+          "k": "K6",
+          "pages": []
+        }
+      ],
+      "viewMedia": 268435263,
+      "coverPageURL": "",
+      "lastModifiedTime": "2009-06-25T15:51:01.000+0000"
+    }
+  }
+]

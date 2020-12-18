@@ -1,0 +1,10 @@
+{
+  "recipients": [
+    {
+      "description": "",
+      "name": "MSTR User",
+      "subtype": 8704,
+      "id": "123"
+    }
+  ]
+}

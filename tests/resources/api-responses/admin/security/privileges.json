@@ -1,0 +1,200 @@
+[
+    {
+        "id": "54",
+        "name": "Monitor subscriptions",
+        "description": "Allow the user to monitor subscriptions and view subscription details.",
+        "categories": [
+            "Server - Intelligence"
+        ],
+        "isProjectLevelPrivilege": true
+    },
+    {
+        "id": "55",
+        "name": "Monitor caches ",
+        "description": "Allow the user to view the count, browse and detail information of all Report & Document caches.",
+        "categories": [
+            "Server - Intelligence"
+        ],
+        "isProjectLevelPrivilege": true
+    },
+    {
+        "id": "56",
+        "name": "Monitor cluster",
+        "description": "Allow the user to do cluster monitoring operations such as viewing the current cluster configuration.",
+        "categories": [
+            "Server - Intelligence"
+        ],
+        "isProjectLevelPrivilege": false
+    },
+    {
+        "id": "57",
+        "name": "Create and edit database instances and connections",
+        "description": "Allow the user to create and edit database instances and database connections.",
+        "categories": [
+            "Server - Intelligence"
+        ],
+        "isProjectLevelPrivilege": false
+    },
+    {
+        "id": "58",
+        "name": "Create and edit schedules and events",
+        "description": "Allow the user to create and edit schedules and events.",
+        "categories": [
+            "Server - Intelligence"
+        ],
+        "isProjectLevelPrivilege": false
+    },
+    {
+        "id": "59",
+        "name": "Monitor project",
+        "description": "Allow the user to view the run-time state of a project.",
+        "categories": [
+            "Server - Intelligence"
+        ],
+        "isProjectLevelPrivilege": true
+    },
+    {
+        "id": "61",
+        "name": "Bypass schema objects security access checks",
+        "description": "This is the privilege required to bypass access checks on any schema object.",
+        "categories": [
+            "Client - Architect"
+        ],
+        "isProjectLevelPrivilege": true
+    },
+    {
+        "id": "62",
+        "name": "View ETL information",
+        "description": "Allow the user to view ETL information.",
+        "categories": [
+            "Client - Architect"
+        ],
+        "isProjectLevelPrivilege": true
+    },
+    {
+        "id": "63",
+        "name": "Use Report Objects Window",
+        "description": "Allow the user to use the Report Objects Window.",
+        "categories": [
+            "Client - Architect"
+        ],
+        "isProjectLevelPrivilege": true
+    },
+    {
+        "id": "64",
+        "name": "Use Thresholds Editor",
+        "description": "Allow the user to use the Thresholds Editor.",
+        "categories": [
+            "Client - Architect"
+        ],
+        "isProjectLevelPrivilege": true
+    },
+    {
+        "id": "65",
+        "name": "Use Formatting Editor",
+        "description": "Allow the user to use the Formatting Editor.",
+        "categories": [
+            "Client - Architect"
+        ],
+        "isProjectLevelPrivilege": true
+    },
+    {
+        "id": "66",
+        "name": "Save custom autostyle",
+        "description": "Allow the user to save custom AutoStyle.",
+        "categories": [
+            "Client - Architect"
+        ],
+        "isProjectLevelPrivilege": true
+    },
+    {
+        "id": "67",
+        "name": "Use View Filter Editor",
+        "description": "Allow the user to use the Report Filter Editor.",
+        "categories": [
+            "Client - Architect"
+        ],
+        "isProjectLevelPrivilege": true
+    },
+    {
+        "id": "68",
+        "name": "Create Derived Metrics",
+        "description": "Allow the user to create and edit the definition of Derived Metrics.",
+        "categories": [
+            "Client - Architect"
+        ],
+        "isProjectLevelPrivilege": true
+    },
+    {
+        "id": "69",
+        "name": "Modify Report subtotals",
+        "description": "Allow the user to modify Report subtotals.",
+        "categories": [
+            "Client - Architect"
+        ],
+        "isProjectLevelPrivilege": true
+    },
+    {
+        "id": "70",
+        "name": "Modify the list of Report objects (use object browser)",
+        "description": "Allow the user to modify the list of Report object.",
+        "categories": [
+            "Client - Architect"
+        ],
+        "isProjectLevelPrivilege": true
+    },
+    {
+        "id": "71",
+        "name": "Web create Derived Metrics and Derived Attributes",
+        "description": "Allow the web user to create Derived Metrics and Derived Attributes.",
+        "categories": [
+            "Client - Reporter"
+        ],
+        "isProjectLevelPrivilege": true
+    },
+    {
+        "id": "72",
+        "name": "Web modify subtotals",
+        "description": "Allow the user to modify subtotals.",
+        "categories": [
+            "Client - Reporter"
+        ],
+        "isProjectLevelPrivilege": true
+    },
+    {
+        "id": "73",
+        "name": "Web modify the list of Report Objects (use object browser -- all objects)",
+        "description": "Allow the user to modify the list of Report objects.",
+        "categories": [
+            "Client - Web"
+        ],
+        "isProjectLevelPrivilege": true
+    },
+    {
+        "id": "74",
+        "name": "Web use Report Objects Window",
+        "description": "Allow the user to access Report objects window.",
+        "categories": [
+            "Client - Reporter"
+        ],
+        "isProjectLevelPrivilege": true
+    },
+    {
+        "id": "146",
+        "name": "Create and edit transmitters and devices ",
+        "description": "Allow user to create & edit transmitters and devices.",
+        "categories": [
+            "Server - Distribution"
+        ],
+        "isProjectLevelPrivilege": false
+    },
+    {
+        "id": "150",
+        "name": "Configure contacts data security profile",
+        "description": "Allow user to link and unlink contacts for the purpose of defining data security",
+        "categories": [
+            "Server - Distribution"
+        ],
+        "isProjectLevelPrivilege": false
+    }
+]

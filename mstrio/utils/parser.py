@@ -4,10 +4,10 @@ from itertools import chain
 
 from mstrio.utils.helper import exception_handler
 
+
 class Parser:
-    """
-    Converts JSON-formatted cube and report data into a tabular structure
-    """
+    """Converts JSON-formatted cube and report data into a tabular
+    structure."""
 
     AF_COL_SEP = "@"  # attribute form column label separator; commonly "@"
     chunk_size = None
@@ -39,7 +39,8 @@ class Parser:
 
     def parse(self, response):
         """
-        :param response: JSON-formatted content of API response.
+        Args:
+            response: JSON-formatted content of API response.
         """
         if self.total_rows > 0:
             # extract attribute values into numpy 2D array if attributes exist in the response

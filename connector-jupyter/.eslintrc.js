@@ -14,12 +14,15 @@ module.exports = {
   parser: "babel-eslint",
   rules: {
     "import/no-amd": "off",
-    "max-len": ["warn", 250],
+    "max-len": ["warn", 120],
     "object-curly-newline": ["warn", { ObjectPattern: { multiline: true } }],
     "no-param-reassign": ["error", { props: false }],
     "no-unused-expressions": ["error", { allowShortCircuit: true }],
-    "spaced-comment": "warn",
     "func-names": "off",
     "no-console": "off",
+    "no-nested-ternary": "off",
+    "lines-between-class-members": ["error", "always", { exceptAfterSingleLine: true }],
+    "no-underscore-dangle": ["error", { allowAfterThis: true, allow: ['_id', '_insert_element_at_index'] }],
+    "class-methods-use-this": "off",
   },
 };
