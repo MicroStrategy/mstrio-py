@@ -1,5 +1,0 @@
-{
-    "loadBalanceFactor": 1,
-    "initialPoolSize": 10,
-    "maxPoolSize": 100
-}
