@@ -30,16 +30,18 @@ With **mstrio**, it's easy to integrate cross-departmental, trustworthy business
 # Main Features
 
 Main features of **mstrio-py** allows to access MicroStrategy data:
-- Connect to your MicroStrategy environment using **Connection** class (see [examples](examples/connect.py))
-- Import and filter data from a **Cube** or **Report** into a Pandas DataFrame (see [examples](examples/cube_report.py))
-- Export data into MicroStrategy by creating or updating **Dataset** (see [examples](examples/create_dataset.py))
+
+- Connect to your MicroStrategy environment using **Connection** class (see [examples][example_conn])
+- Import and filter data from a **Cube** or **Report** into a Pandas DataFrame (see [examples][example_import])
+- Export data into MicroStrategy by creating or updating **Dataset** (see [examples][example_export])
 
 Since version **11.3.0.1**, **mstrio-py** includes also administration modules:
-- **Application** management module (see [examples](examples/application_mgmt.py))
-- **Server** management module (see [examples](examples/server_mgmt.py))
-- **User** and **Usergroup** management modules (see [examples](examples/user_mgmt.py))
-- **Subscription** and **Schedules** management modules (see [examples](examples/subscription_mgmt.py))
-- **Document** and **Dossiers** in **User Library** modules (see [examples](examples/user_library.py))
+
+- **Application** management module (see [examples][example_app])
+- **Server** management module (see [examples][example_server])
+- **User** and **Usergroup** management modules (see [examples][example_user])
+- **Subscription** and **Schedules** management modules (see [examples][example_subs])
+- **Document** and **Dossiers** in **User Library** modules (see [examples][example_library])
 - **User Connections** management module
 - **Privilege** and **Security Role** management modules
 
@@ -83,7 +85,7 @@ jupyter nbextension enable connector-jupyter --py --sys-prefix
 
 # Versioning & Changelog
 
-Current version: **11.3.0.1** (18 December 2020). Check out [Changelog][release_notes] to see what's new.
+Current version: **11.3.0.2** (11 January 2021). Check out [Changelog][release_notes] to see what's new.
 
 Functionalities may be added to mstrio either in combination with annual MicroStrategy platform releases or through updates to platform releases. To ensure compatibility with APIs supported by your MicroStrategy environment, it is recommended to install a version of mstrio that corresponds to the version number of your MicroStrategy environment.
 
@@ -103,7 +105,6 @@ To install a specific, archived version of mstrio, choose the desired version av
 ```python
 pip install mstrio-py==10.11.1
 ```
-
 
 # More Resources
 
@@ -129,3 +130,11 @@ pip install mstrio-py==10.11.1
 [python_venv]: <https://docs.python.org/3/tutorial/venv.html>
 [release_notes]: <https://github.com/MicroStrategy/mstrio-py/blob/master/NEWS.md>
 [logo]: <https://github.com/MicroStrategy/mstrio-py/blob/master/mstr-logo.png?raw=true>
+[example_conn]: <https://github.com/MicroStrategy/mstrio-py/blob/master/examples/connect.py>
+[example_import]: <https://github.com/MicroStrategy/mstrio-py/blob/master/examples/cube_report.py>
+[example_export]: <https://github.com/MicroStrategy/mstrio-py/blob/master/examples/create_dataset.py>
+[example_app]: <https://github.com/MicroStrategy/mstrio-py/blob/master/examples/application_mgmt.py>
+[example_server]: <https://github.com/MicroStrategy/mstrio-py/blob/master/examples/server_mgmt.py>
+[example_user]: <https://github.com/MicroStrategy/mstrio-py/blob/master/examples/user_mgmt.py>
+[example_subs]: <https://github.com/MicroStrategy/mstrio-py/blob/master/examples/subscription_mgmt.py>
+[example_library]: <https://github.com/MicroStrategy/mstrio-py/blob/master/examples/user_library.py>

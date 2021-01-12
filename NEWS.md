@@ -1,5 +1,9 @@
 # Changelog
 
+## 11.3.0.2 - 2021/01/11
+
+* updated example links in readme.md file
+
 ## 11.3.0.1 - 2020/12/18
 
 ### Major changes
