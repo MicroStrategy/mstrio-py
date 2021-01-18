@@ -83,7 +83,7 @@ class Cube:
         self._attr_elements = None
 
         # load dataset information
-        self.__info()
+        # self.__info() to be removed since it does not correspond anymore to the REST API guideline
         self.__definition()
         self.__remove_row_count()
 
