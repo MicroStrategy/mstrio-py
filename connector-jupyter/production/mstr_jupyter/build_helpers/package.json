@@ -33,7 +33,7 @@
     "enzyme": "^3.10.0",
     "enzyme-adapter-react-16": "^1.14.0",
     "eslint-config-google": "^0.9.1",
-    "serve": "^9.4.2"
+    "serve": "^11.3.2"
   },
   "browserslist": [
     ">0.2%",
