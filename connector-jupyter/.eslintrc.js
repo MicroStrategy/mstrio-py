@@ -21,6 +21,7 @@ module.exports = {
     "func-names": "off",
     "no-console": "off",
     "no-nested-ternary": "off",
+    "no-multiple-empty-lines": ["error", { max: 2 }],
     "lines-between-class-members": ["error", "always", { exceptAfterSingleLine: true }],
     "no-underscore-dangle": ["error", { allowAfterThis: true, allow: ['_id', '_insert_element_at_index'] }],
     "class-methods-use-this": "off",

@@ -43,8 +43,7 @@ def unpublish_document(connection, id, error_msg=None):
     return response
 
 
-def unpublish_document_for_user(connection, document_id, user_id,
-                                error_msg=None):
+def unpublish_document_for_user(connection, document_id, user_id, error_msg=None):
     """Unpublish a previously published document. This makes the document no
     longer available in the library of each user specified in `user_id`
 
@@ -57,7 +56,7 @@ def unpublish_document_for_user(connection, document_id, user_id,
     Returns:
         Complete HTTP response object.
     """
-    connection._validate_project_selected()
+    connection._validate_application_selected()
     url = connection.base_url + f'/api/library/{document_id}/recipients/{user_id}'
     response = connection.session.delete(url=url)
     if not response.ok:
@@ -78,8 +77,7 @@ def get_library(connection, error_msg=None):
         Complete HTTP response object.
     """
     url = connection.base_url + '/api/library'
-    response = connection.session.get(url=url,
-                                      headers={'X-MSTR-ProjectID': None})
+    response = connection.session.get(url=url, headers={'X-MSTR-ProjectID': None})
     if not response.ok:
         if error_msg is None:
             error_msg = "Error getting library"
@@ -99,7 +97,7 @@ def publish_document(connection, body, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    connection._validate_project_selected()
+    connection._validate_application_selected()
     url = connection.base_url + '/api/library'
     response = connection.session.post(url=url, json=body)
     if not response.ok:

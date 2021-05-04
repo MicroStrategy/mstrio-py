@@ -23,8 +23,7 @@ def get_bookmarks_from_shortcut(connection, shortcut_id, error_msg=None):
     return response
 
 
-def update_information_for_shortcut(connection, shortcut_id, body,
-                                    error_msg=None):
+def update_information_for_shortcut(connection, shortcut_id, body, error_msg=None):
     """Update info for a shortcut.
 
     Args:
@@ -44,7 +43,7 @@ def update_information_for_shortcut(connection, shortcut_id, body,
     return response
 
 
-def refresh_document_instance(connection, error_msg= None):
+def refresh_document_instance(connection, error_msg=None):
     """Add a new bookmark into current shortcut object.
 
     Args:
@@ -54,11 +53,11 @@ def refresh_document_instance(connection, error_msg= None):
     Returns:
         Complete HTTP response object.
     """
-    url = connection.base_url + f"​/api​/bookmarks"
+    url = connection.base_url + "​/api​/bookmarks"
     response = connection.session.put(url=url)
     if not response.ok:
         if error_msg is None:
-            error_msg = f"Error adding a new bookmark"
+            error_msg = "Error adding a new bookmark"
         response_handler(response, error_msg)
     return response
 
@@ -75,21 +74,17 @@ def delete_bookmarks(connection, shortcut_id: str, bookmark_ids: List, error_msg
     Returns:
         Complete HTTP response object.
     """
-    body = {
-        "shortcutId": shortcut_id,
-        "bookmarkIds": bookmark_ids
-    }
+    body = {"shortcutId": shortcut_id, "bookmarkIds": bookmark_ids}
     url = connection.base_url + "/api/bookmarks"
     response = connection.session.delete(url=url, json=body)
     if not response.ok:
         if error_msg is None:
-            error_msg = f"Error deleting bookmarks"
+            error_msg = "Error deleting bookmarks"
         response_handler(response, error_msg)
     return response
 
 
-def delete_single_bookmark(connection, shortcut_id: str, bookmark_id: str,
-                           error_msg= None):
+def delete_single_bookmark(connection, shortcut_id: str, bookmark_id: str, error_msg=None):
     """Delete a bookmark.
 
     Args:
@@ -101,9 +96,7 @@ def delete_single_bookmark(connection, shortcut_id: str, bookmark_id: str,
     Returns:
         Complete HTTP response object.
     """
-    body = {
-        "shortcutId": shortcut_id
-    }
+    body = {"shortcutId": shortcut_id}
     url = connection.base_url + f"/api/bookmarks/{bookmark_id}"
     response = connection.session.delete(url=url, json=body)
     if not response.ok:
@@ -126,8 +119,7 @@ def update_bookmark(connection, bookmark_id, body, error_msg=None):
         Complete HTTP response object.
     """
     url = connection.base_url + f"/api/bookmarks/{bookmark_id}"
-    response = connection.session.put(url=url,
-                                       json=body)
+    response = connection.session.put(url=url, json=body)
     if not response.ok:
         if error_msg is None:
             error_msg = f"Error updating bookmark {bookmark_id}"
@@ -146,22 +138,17 @@ def add_bookmark(connection, bookmark_name, instance_id, shortcut_id,
     Returns:
         Complete HTTP response object.
     """
-    body = {
-        "name": bookmark_name,
-        "instanceId": instance_id
-    }
-    url = connection.base_url + f"/api/bookmarks"
-    response = connection.session.post(url=url,
-                                       json=body)
+    body = {"name": bookmark_name, "instanceId": instance_id}
+    url = connection.base_url + "/api/bookmarks"
+    response = connection.session.post(url=url, json=body)
     if not response.ok:
         if error_msg is None:
-            error_msg = f"Error adding bookmark"
+            error_msg = "Error adding bookmark"
         response_handler(response, error_msg)
     return response
 
 
-def get_document_shortcut(connection, document_id, instance_id,
-                          error_msg=None):
+def get_document_shortcut(connection, document_id, instance_id, error_msg=None):
     """Retrieve a published shortcut from the document definition.
 
     Args:

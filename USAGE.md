@@ -87,7 +87,7 @@ controlled by the `parallel` flag and is enabled by default. Disabling this sett
 To import the contents of a published Cube into a DataFrame for analysis in Python, use the `Cube` class:
 
 ```python
-from mstrio.cube import Cube
+from mstrio.application_objects.datasets.cube import Cube
 my_cube = Cube(connection=conn, cube_id=cube_id)
 df = my_cube.to_dataframe()
 ```
@@ -95,7 +95,7 @@ df = my_cube.to_dataframe()
 To import Reports into a DataFrame for analysis in Python use the appropriate `Report` class:
 
 ```python
-from mstrio.report import Report
+from mstrio.application_objects.report import Report
 my_report = Report(connection=conn, report_id=report_id, parallel=False)
 df = my_report.to_dataframe()
 ```
@@ -153,7 +153,7 @@ sales = {"store_id": [1, 2, 3],
          "sales_fmt": ["$400", "$200", "$100"]}
 sales_df = pd.DataFrame(sales, columns=["store_id", "category", "sales", "sales_fmt"])
 
-from mstrio.dataset import Dataset
+from mstrio.application_objects.datasets.dataset import Dataset
 ds = Dataset(connection=conn, name="Store Analysis")
 ds.add_table(name="Stores", data_frame=stores_df, update_policy="add")
 ds.add_table(name="Sales", data_frame=sales_df, update_policy="add")
@@ -182,7 +182,7 @@ After creating the Dataset, you can obtain its ID using `Dataset.dataset_id`. Th
 When the source data changes and users need the latest data for analysis and reporting in MicroStrategy, **mstrio-py** allows you to update the previously created Dataset.
 
 ```python
-from mstrio.dataset import Dataset
+from mstrio.application_objects.datasets.dataset import Dataset
 ds = Dataset(connection=conn, dataset_id=dataset_id)
 ds.add_table(name="Stores", data_frame=stores_df, update_policy="update")
 ds.add_table(name="Sales", data_frame=sales_df, update_policy="upsert")

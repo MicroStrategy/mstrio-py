@@ -1,7 +1,8 @@
 from mstrio.utils.helper import response_handler
 
 
-def get_recipients(connection, search_term, search_pattern="CONTAINS_ANY_WORD", offset=0, limit=-1, enabled_status='ALL'):
+def get_recipients(connection, search_term, search_pattern="CONTAINS_ANY_WORD", offset=0, limit=-1,
+                   enabled_status='ALL'):
     """Get information for a set of recipients.
 
     Args:
@@ -20,25 +21,30 @@ def get_recipients(connection, search_term, search_pattern="CONTAINS_ANY_WORD", 
             request. Used to control paging behavior. Use -1 (default ) for no
             limit (subject to governing settings).
         enabled_status(string): Specifies whether to return only enabled users
-            or all users and usergroups that match the search criteria.
+            or all users and user groups that match the search criteria.
             Available values : ALL, ENABLED_ONLY. Default value : ALL.
 
     Returns:
         HTTP response object returned by the MicroStrategy REST server.
     """
-    response = connection.session.get(url=connection.base_url + '/api/collaboration/resipients',
-                                      params={'searchTerm': search_term,
-                                              'searchPattern': search_pattern,
-                                              'offset': offset,
-                                              'limit': limit,
-                                              'enabledStatus': enabled_status})
+    response = connection.session.get(
+        url=connection.base_url + '/api/collaboration/resipients',
+        params={
+            'searchTerm': search_term,
+            'searchPattern': search_pattern,
+            'offset': offset,
+            'limit': limit,
+            'enabledStatus': enabled_status
+        },
+    )
 
     if not response.ok:
         response_handler(response, "Error getting information for a set of recipients.")
     return response
 
 
-def get_users_info(connection, name_begins, abbreviation_begins, offset=0, limit=-1, fields=None, error_msg=None):
+def get_users_info(connection, name_begins, abbreviation_begins, offset=0, limit=-1, fields=None,
+                   error_msg=None):
     """Get information for a set of users.
 
     Args:
@@ -59,13 +65,17 @@ def get_users_info(connection, name_begins, abbreviation_begins, offset=0, limit
     Returns:
         HTTP response object returned by the MicroStrategy REST server.
     """
-    response = connection.session.get(url=connection.base_url + '/api/users/',
-                                      params={'nameBegins': name_begins,
-                                              'abbreviationBegins': abbreviation_begins,
-                                              'offset': offset,
-                                              'limit': limit,
-                                              'fields': fields},
-                                      headers={'X-MSTR-ProjectID': None})
+    response = connection.session.get(
+        url=connection.base_url + '/api/users/',
+        params={
+            'nameBegins': name_begins,
+            'abbreviationBegins': abbreviation_begins,
+            'offset': offset,
+            'limit': limit,
+            'fields': fields
+        },
+        headers={'X-MSTR-ProjectID': None},
+    )
 
     if not response.ok:
         if error_msg is None:
@@ -74,7 +84,8 @@ def get_users_info(connection, name_begins, abbreviation_begins, offset=0, limit
     return response
 
 
-def get_users_info_async(future_session, connection, name_begins, abbreviation_begins, offset=0, limit=-1, fields=None):
+def get_users_info_async(future_session, connection, name_begins, abbreviation_begins, offset=0,
+                         limit=-1, fields=None):
     """Get information for a set of users asynchronously.
 
     Args:
@@ -93,11 +104,13 @@ def get_users_info_async(future_session, connection, name_begins, abbreviation_b
     Returns:
         HTTP response object returned by the MicroStrategy REST server.
     """
-    params = {'nameBegins': name_begins,
-              'abbreviationBegins': abbreviation_begins,
-              'offset': offset,
-              'limit': limit,
-              'fields': fields}
+    params = {
+        'nameBegins': name_begins,
+        'abbreviationBegins': abbreviation_begins,
+        'offset': offset,
+        'limit': limit,
+        'fields': fields
+    }
     url = connection.base_url + '/api/users/'
     headers = {'X-MSTR-ProjectID': None}
     future = future_session.get(url=url, headers=headers, params=params)
@@ -136,13 +149,16 @@ def create_user(connection, body, fields=None):
         HTTP response object returned by the MicroStrategy REST server.
     """
 
-    response = connection.session.post(url=connection.base_url + '/api/users',
-                                       params={'fields': fields},
-                                       json=body)
+    response = connection.session.post(
+        url=connection.base_url + '/api/users',
+        params={'fields': fields},
+        json=body,
+    )
 
     if not response.ok:
-        response_handler(response, "Error creating a new user with username: '{}'.".format(
-            body.get('username')))
+        response_handler(
+            response,
+            "Error creating a new user with username: '{}'.".format(body.get('username')))
     return response
 
 
@@ -191,9 +207,11 @@ def create_address(connection, id, body, fields=None):
         HTTP response object returned by the MicroStrategy REST server.
     """
 
-    response = connection.session.post(url=connection.base_url + '/api/users/' + id + '/addresses',
-                                       params={'fields': fields},
-                                       json=body)
+    response = connection.session.post(
+        url=connection.base_url + '/api/users/' + id + '/addresses',
+        params={'fields': fields},
+        json=body,
+    )
 
     if not response.ok:
         response_handler(response, "Error creating a new address for a specific user. ")
@@ -215,8 +233,10 @@ def update_address(connection, id, address_id, fields=None):
         HTTP response object returned by the MicroStrategy REST server.
     """
 
-    response = connection.session.put(url=connection.base_url + '/api/users/' + id + '/addresses' + address_id,
-                                      params={'fields': fields})
+    response = connection.session.put(
+        url=connection.base_url + '/api/users/' + id + '/addresses' + address_id,
+        params={'fields': fields},
+    )
 
     if not response.ok:
         response_handler(response, "Error updating a specific address for a specific user. ")
@@ -238,9 +258,11 @@ def delete_address(connection, id, address_id, fields=None):
         HTTP response object returned by the MicroStrategy REST server.
     """
 
-    response = connection.session.delete(url=connection.base_url + '/api/users/' + id + '/addresses/' + address_id,
-                                         headers={'X-MSTR-ProjectID': None},
-                                         params={'fields': fields})
+    response = connection.session.delete(
+        url=connection.base_url + '/api/users/' + id + '/addresses/' + address_id,
+        headers={'X-MSTR-ProjectID': None},
+        params={'fields': fields},
+    )
 
     if not response.ok:
         response_handler(response, "Error deleting a specific address for a specific user. ")
@@ -258,11 +280,15 @@ def get_user_security_roles(connection, id, project_id=None):
     Returns:
         HTTP response object returned by the MicroStrategy REST server.
     """
-    response = connection.session.get(url=connection.base_url + '/api/users/' + id + '/securityRoles',
-                                      params={'projectId': project_id})
+    response = connection.session.get(
+        url=connection.base_url + '/api/users/' + id + '/securityRoles',
+        params={'projectId': project_id},
+    )
 
     if not response.ok:
-        response_handler(response, "Error getting all of the security roles for a specific user in a specific project")
+        response_handler(
+            response,
+            "Error getting all of the security roles for a specific user in a specific project")
     return response
 
 
@@ -280,9 +306,13 @@ def get_user_privileges(connection, id, project_id=None, privilege_level=None):
     Returns:
         HTTP response object returned by the MicroStrategy REST server.
     """
-    response = connection.session.get(connection.base_url + '/api/users/' + id + '/privileges/',
-                                      params={'privilege.level': privilege_level,
-                                              'projectId': project_id})
+    response = connection.session.get(
+        connection.base_url + '/api/users/' + id + '/privileges/',
+        params={
+            'privilege.level': privilege_level,
+            'projectId': project_id
+        },
+    )
 
     if not response.ok:
         response_handler(response, "Error getting user's privileges for a project.")
@@ -305,7 +335,8 @@ def get_user_data_usage_limit(connection, id, project_id):
     Returns:
         HTTP response object returned by the MicroStrategy REST server.
     """
-    response = connection.session.get(connection.base_url + '/api/users/' + id + '/projects/' + project_id + '/quotas')
+    response = connection.session.get(connection.base_url + '/api/users/' + id + '/projects/'
+                                      + project_id + '/quotas')
 
     if not response.ok:
         response_handler(response, "Error getting user data usage limit for the specific project.")
@@ -377,9 +408,11 @@ def update_user_info(connection, id, body, fields=None):
         HTTP response object returned by the MicroStrategy REST server.
     """
 
-    response = connection.session.patch(url=connection.base_url + '/api/users/' + id,
-                                        params={'fields': fields},
-                                        json=body)
+    response = connection.session.patch(
+        url=connection.base_url + '/api/users/' + id,
+        params={'fields': fields},
+        json=body,
+    )
 
     if not response.ok:
         response_handler(response, "Error updating specific information for a specific user.")
@@ -401,11 +434,16 @@ def get_memberships(connection, id, fields=None):
         HTTP response object returned by the MicroStrategy REST server
     """
 
-    response = connection.session.get(url=connection.base_url + '/api/users/' + id + '/memberships',
-                                      params={'fields': fields})
+    response = connection.session.get(
+        url=connection.base_url + '/api/users/' + id + '/memberships',
+        params={'fields': fields},
+    )
 
     if not response.ok:
-        response_handler(response, "Error getting information for the direct user groups that a specific user belongs to.")
+        response_handler(
+            response,
+            "Error getting information for the direct user groups that a specific user belongs to."
+        )
     return response
 
 
@@ -424,9 +462,11 @@ def change_password(connection, body, fields=None):
         HTTP response object returned by the MicroStrategy REST server.
     """
 
-    response = connection.session.post(url=connection.base_url + '/api/users/changePassword',
-                                       params={'fields': fields},
-                                       json=body)
+    response = connection.session.post(
+        url=connection.base_url + '/api/users/changePassword',
+        params={'fields': fields},
+        json=body,
+    )
 
     if not response.ok:
         response_handler(response, "Error changing password.")

@@ -7,7 +7,7 @@ def get_privileges(connection, id, privilege_level=None, project_id=None, error_
 
     Args:
         connection: MicroStrategy REST API connection object
-        id (string): ID of usergroup containing your required privileges
+        id (string): ID of user group containing your required privileges
         privilege_level (string, optional) [server, project]: String
             representing level of privileges required
         project_id (string, optional): Project id string
@@ -17,13 +17,18 @@ def get_privileges(connection, id, privilege_level=None, project_id=None, error_
         Complete HTTP response object.
     """
 
-    response = connection.session.get(url=connection.base_url + '/api/usergroups/' + id + '/privileges',
-                                      headers={'X-MSTR-ProjectID': None},
-                                      params={'privilege.level': privilege_level,
-                                              'projectId': project_id})
+    response = connection.session.get(
+        url=connection.base_url + '/api/usergroups/' + id + '/privileges',
+        headers={'X-MSTR-ProjectID': None},
+        params={
+            'privilege.level': privilege_level,
+            'projectId': project_id
+        },
+    )
     if not response.ok:
         if error_msg is None:
-            error_msg = "Error getting user groups privileges. Check usergroup id, privilege level or project id and try again."
+            error_msg = ("Error getting user groups privileges. Check user group id, "
+                         "privilege level or project id and try again.")
         response_handler(response, error_msg)
     return response
 
@@ -34,18 +39,20 @@ def get_memberships(connection, id, error_msg=None):
 
     Args:
         connection: MicroStrategy REST API connection object
-        id (string): ID of usergroup containing your required memberships
+        id (string): ID of user group containing your required memberships
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
         Complete HTTP response object.
     """
 
-    response = connection.session.get(url=connection.base_url + '/api/usergroups/' + id + '/memberships',
-                                      headers={'X-MSTR-ProjectID': None})
+    response = connection.session.get(
+        url=connection.base_url + '/api/usergroups/' + id + '/memberships',
+        headers={'X-MSTR-ProjectID': None},
+    )
     if not response.ok:
         if error_msg is None:
-            error_msg = "Error getting user groups memberships. Check usergroup id and try again."
+            error_msg = "Error getting user groups memberships. Check user group id and try again."
         response_handler(response, error_msg)
     return response
 
@@ -55,7 +62,7 @@ def get_members(connection, id, include_access=False, offset=0, limit=-1, error_
 
     Args:
         connection: MicroStrategy REST API connection object
-        id (string): ID of usergroup containing your required privileges
+        id (string): ID of user group containing your required privileges
         include_access (bool, optional): Specifies whether to return access for
             members
         offset (integer, optional): Starting point within the collection of
@@ -69,14 +76,18 @@ def get_members(connection, id, include_access=False, offset=0, limit=-1, error_
         Complete HTTP response object.
     """
 
-    response = connection.session.get(url=connection.base_url + '/api/usergroups/' + id + '/members',
-                                      headers={'X-MSTR-ProjectID': None},
-                                      params={'includeAccess': include_access,
-                                              'offset': offset,
-                                              'limit': limit})
+    response = connection.session.get(
+        url=connection.base_url + '/api/usergroups/' + id + '/members',
+        headers={'X-MSTR-ProjectID': None},
+        params={
+            'includeAccess': include_access,
+            'offset': offset,
+            'limit': limit
+        },
+    )
     if not response.ok:
         if error_msg is None:
-            error_msg = "Error getting user groups members. Check usergroup id and try again."
+            error_msg = "Error getting user groups members. Check user group id and try again."
         response_handler(response, error_msg)
     return response
 
@@ -86,7 +97,7 @@ def get_settings(connection, id, include_access=False, offset=0, limit=-1, error
 
     Args:
         connection: MicroStrategy REST API connection object
-        id (string): ID of usergroup containing your required privileges
+        id (string): ID of user group containing your required privileges
         include_access (bool, optional): Specifies whether to return access for
             members
         offset (integer, optional): Starting point within the collection of
@@ -99,11 +110,13 @@ def get_settings(connection, id, include_access=False, offset=0, limit=-1, error
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.get(url=connection.base_url + '/api/usergroups/' + id + '/settings',
-                                      headers={'X-MSTR-ProjectID': None})
+    response = connection.session.get(
+        url=connection.base_url + '/api/usergroups/' + id + '/settings',
+        headers={'X-MSTR-ProjectID': None},
+    )
     if not response.ok:
         if error_msg is None:
-            error_msg = "Error getting user group settings. Check usergroup id and try again."
+            error_msg = "Error getting user group settings. Check user group id and try again."
         response_handler(response, error_msg)
     return response
 
@@ -124,7 +137,7 @@ def get_top_level(connection, error_msg=None):
                                       headers={'X-MSTR-ProjectID': None})
     if not response.ok:
         if error_msg is None:
-            error_msg = "Error getting user groups top level. Check your privilages and try again."
+            error_msg = "Error getting user groups top level. Check your privileges and try again."
         response_handler(response, error_msg)
     return response
 
@@ -134,7 +147,7 @@ def update_user_group_info(connection, id, body, error_msg=None):
 
     Args:
         connection: MicroStrategy REST API connection object
-        id (string): ID of usergroup containing your required privileges
+        id (string): ID of user group containing your required privileges
         body (JSON): Body.
         error_msg (string, optional): Custom Error Message for Error Handling
 
@@ -142,12 +155,14 @@ def update_user_group_info(connection, id, body, error_msg=None):
         Complete HTTP response object
     """
 
-    response = connection.session.patch(url=connection.base_url + '/api/usergroups/' + id,
-                                        headers={'X-MSTR-ProjectID': None},
-                                        json=body)
+    response = connection.session.patch(
+        url=connection.base_url + '/api/usergroups/' + id,
+        headers={'X-MSTR-ProjectID': None},
+        json=body,
+    )
     if not response.ok:
         if error_msg is None:
-            error_msg = "Error updating user group info. Check usergroup id and try again."
+            error_msg = "Error updating user group info. Check user group id and try again."
         response_handler(response, error_msg)
     return response
 
@@ -157,7 +172,7 @@ def delete_user_group(connection, id, error_msg=None):
 
     Args:
         connection: MicroStrategy REST API connection object
-        id (string): ID of usergroup containing your required privileges
+        id (string): ID of user group containing your required privileges
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
@@ -168,7 +183,7 @@ def delete_user_group(connection, id, error_msg=None):
                                          headers={'X-MSTR-ProjectID': None})
     if not response.ok:
         if error_msg is None:
-            error_msg = "Error deleting user group. Check usergroup id and try again."
+            error_msg = "Error deleting user group. Check user group id and try again."
         response_handler(response, error_msg)
     return response
 
@@ -178,7 +193,7 @@ def replace_user_group_info(connection, id, error_msg=None):
 
     Args:
         connection: MicroStrategy REST API connection object
-        id (string): ID of usergroup containing your required privileges
+        id (string): ID of user group containing your required privileges
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
@@ -189,12 +204,13 @@ def replace_user_group_info(connection, id, error_msg=None):
                                       headers={'X-MSTR-ProjectID': None})
     if not response.ok:
         if error_msg is None:
-            error_msg = "Error overwriting user group info. Check usergroup id and try again."
+            error_msg = "Error overwriting user group info. Check user group id and try again."
         response_handler(response, error_msg)
     return response
 
 
-def get_info_all_user_groups(connection, name_begins, offset=0, limit=1000, fields=None, error_msg=None):
+def get_info_all_user_groups(connection, name_begins, offset=0, limit=1000, fields=None,
+                             error_msg=None):
     """Get information for a specific set of user groups or all user groups.
     You can refine the set of user groups that are returned with a query
     parameter that specifies the characters that the user group name must begin
@@ -212,7 +228,7 @@ def get_info_all_user_groups(connection, name_begins, offset=0, limit=1000, fiel
     Args:
         connection (object): MicroStrategy connection object returned by
             `connection.Connection()`.
-        name_begins (string): only usergroups with given beginning of name will
+        name_begins (string): only user groups with given beginning of name will
             be retrieved
         offset (integer, optional): Starting point within the collection of
             returned search results. Used to control paging behavior.
@@ -227,20 +243,25 @@ def get_info_all_user_groups(connection, name_begins, offset=0, limit=1000, fiel
         HTTP response object returned by the MicroStrategy REST server
     """
 
-    response = connection.session.get(connection.base_url + '/api/usergroups/',
-                                      headers={'X-MSTR-ProjectID': None},
-                                      params={'nameBegins': name_begins,
-                                              'offset': offset,
-                                              'limit': limit,
-                                              'fields': fields})
+    response = connection.session.get(
+        connection.base_url + '/api/usergroups/',
+        headers={'X-MSTR-ProjectID': None},
+        params={
+            'nameBegins': name_begins,
+            'offset': offset,
+            'limit': limit,
+            'fields': fields
+        },
+    )
     if not response.ok:
         if error_msg is None:
-            error_msg = "Error getting information for a set of usergroups."
+            error_msg = "Error getting information for a set of user groups."
         response_handler(response, error_msg)
     return response
 
 
-def get_info_all_user_groups_async(future_session, connection, name_begins, offset=0, limit=-1, fields=None):
+def get_info_all_user_groups_async(future_session, connection, name_begins, offset=0, limit=-1,
+                                   fields=None):
     """Get information for a set of users asynchronously.
 
     Args:
@@ -259,10 +280,12 @@ def get_info_all_user_groups_async(future_session, connection, name_begins, offs
         HTTP response object returned by the MicroStrategy REST server.
     """
 
-    params = {'nameBegins': name_begins,
-              'offset': offset,
-              'limit': limit,
-              'fields': fields}
+    params = {
+        'nameBegins': name_begins,
+        'offset': offset,
+        'limit': limit,
+        'fields': fields,
+    }
     url = connection.base_url + '/api/usergroups/'
     headers = {'X-MSTR-ProjectID': None}
     future = future_session.get(url=url, headers=headers, params=params)
@@ -270,7 +293,7 @@ def get_info_all_user_groups_async(future_session, connection, name_begins, offs
 
 
 def create_user_group(connection, body):
-    """Create a new user group. The response includes the usergroup ID, which
+    """Create a new user group. The response includes the user group ID, which
     other endpoints use as a request parameter to specify the user group to
     perform an action on. You obtain the authorization token needed to execute
     the request using POST /auth/login; you pass the authorization token in the
@@ -289,11 +312,10 @@ def create_user_group(connection, body):
     Returns:
         Complete HTTP response object
     """
-    response = connection.session.post(connection.base_url + '/api/usergroups/',
-                                       json=body)
+    response = connection.session.post(connection.base_url + '/api/usergroups/', json=body)
 
     if not response.ok:
-        response_handler(response, "Error creating new usergroup.")
+        response_handler(response, "Error creating new user group.")
     return response
 
 
@@ -302,7 +324,7 @@ def get_user_group_info(connection, id, error_msg=None):
 
     Args:
         connection: MicroStrategy REST API connection object
-        id (string): ID of usergroup containing your required privileges
+        id (string): ID of user group containing your required privileges
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
@@ -313,7 +335,7 @@ def get_user_group_info(connection, id, error_msg=None):
                                       headers={'X-MSTR-ProjectID': None})
     if not response.ok:
         if error_msg is None:
-            error_msg = "Error getting user group information. Check usergroup id and try again."
+            error_msg = "Error getting user group information. Check user group id and try again."
         response_handler(response, error_msg)
     return response
 
@@ -323,7 +345,7 @@ def get_security_roles(connection, id, project_id=None, error_msg=None):
 
     Args:
         connection: MicroStrategy REST API connection object
-        id (string): ID of usergroup containing your required privileges
+        id (string): ID of user group containing your required privileges
         project_id (string, optional): Project id string
         error_msg (string, optional): Custom Error Message for Error Handling
 
@@ -331,11 +353,13 @@ def get_security_roles(connection, id, project_id=None, error_msg=None):
         Complete HTTP response object.
     """
 
-    response = connection.session.get(url=connection.base_url + '/api/usergroups/' + id + '/securityRoles',
-                                      headers={'X-MSTR-ProjectID': None},
-                                      params={'projectId': project_id})
+    response = connection.session.get(
+        url=connection.base_url + '/api/usergroups/' + id + '/securityRoles',
+        headers={'X-MSTR-ProjectID': None},
+        params={'projectId': project_id},
+    )
     if not response.ok:
         if error_msg is None:
-            error_msg = "Error getting user group security roles. Check usergroup id and try again."
+            error_msg = "Error getting user group security roles."
         response_handler(response, error_msg)
     return response

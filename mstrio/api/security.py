@@ -30,8 +30,10 @@ def get_privilege_categories(connection, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.get(url=connection.base_url + '/api/iserver/privileges/categories',
-                                      headers={'X-MSTR-ProjectID': None})
+    response = connection.session.get(
+        url=connection.base_url + '/api/iserver/privileges/categories',
+        headers={'X-MSTR-ProjectID': None},
+    )
     if not response.ok:
         if error_msg is None:
             error_msg = "Error getting privilege categories"
@@ -76,9 +78,11 @@ def create_security_role(connection, body, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.post(url=connection.base_url + '/api/securityRoles',
-                                       headers={'X-MSTR-ProjectID': None},
-                                       json=body)
+    response = connection.session.post(
+        url=connection.base_url + '/api/securityRoles',
+        headers={'X-MSTR-ProjectID': None},
+        json=body,
+    )
     if not response.ok:
         if error_msg is None:
             error_msg = "Error creating new role"
@@ -139,9 +143,11 @@ def update_security_role(connection, id, body, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.patch(url=connection.base_url + '/api/securityRoles/' + id,
-                                        headers={'X-MSTR-ProjectID': None},
-                                        json=body)
+    response = connection.session.patch(
+        url=connection.base_url + '/api/securityRoles/' + id,
+        headers={'X-MSTR-ProjectID': None},
+        json=body,
+    )
     if not response.ok:
         if error_msg is None:
             error_msg = "Error updating Security Role information"
@@ -162,9 +168,11 @@ def get_security_role_for_project(connection, id, project_id, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.get(url=connection.base_url + '/api/securityRoles/' + id + '/projects/' +
-                                      project_id + '/members',
-                                      headers={'X-MSTR-ProjectID': None})
+    response = connection.session.get(
+        url=connection.base_url + '/api/securityRoles/' + id + '/projects/' + project_id
+        + '/members',
+        headers={'X-MSTR-ProjectID': None},
+    )
     if not response.ok:
         if error_msg is None:
             error_msg = "Error getting role information"

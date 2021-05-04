@@ -15,7 +15,8 @@ class MstrException(Exception):
         self.message = err_data.get("message")
         self.ticket_id = err_data.get("ticketId")
         self.iserver_code = err_data.get("iServerCode")
-        self.full_message = f"{self.code}: {self.message} (Ticket ID: {self.ticket_id}, iServerCode: {self.iserver_code})"
+        self.full_message = (f"{self.code}: {self.message} (Ticket ID: {self.ticket_id}, "
+                             f"iServerCode: {self.iserver_code})")
         super().__init__(self.full_message)
 
 
@@ -28,4 +29,8 @@ class VersionException(Exception):
 
 
 class IServerException(Exception):
+    pass
+
+
+class PromptedContentError(Exception):
     pass

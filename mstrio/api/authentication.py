@@ -1,5 +1,4 @@
 from mstrio.utils.helper import response_handler
-from mstrio import config
 
 
 def login(connection):
@@ -21,13 +20,19 @@ def login(connection):
         Complete HTTP response object.
     """
 
-    response = connection.session.post(url=connection.base_url + '/api/auth/login',
-                                       data={'username': connection.username,
-                                             'password': connection.password,
-                                             'loginMode': connection.login_mode,
-                                             'applicationType': 35})
+    response = connection.session.post(
+        url=connection.base_url + '/api/auth/login',
+        data={
+            'username': connection.username,
+            'password': connection._Connection__password,
+            'loginMode': connection.login_mode,
+            'applicationType': 35,
+        },
+    )
     if not response.ok:
-        response_handler(response, "Authentication error. Check user credentials or REST API URL and try again.")
+        response_handler(
+            response,
+            "Authentication error. Check user credentials or REST API URL and try again.")
     return response
 
 
@@ -73,8 +78,7 @@ def session_status(connection):
     """
     response = connection.session.get(url=connection.base_url + '/api/sessions',
                                       headers={'X-MSTR-ProjectID': None})
-    # if not response.ok:
-    #     response_handler(response, "Session expired. Please reconnect to MicroStrategy.")
+
     return response
 
 
@@ -91,8 +95,10 @@ def identity_token(connection):
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.post(url=connection.base_url + '/api/auth/identityToken',
-                                       headers={"X-MSTR-AuthToken": connection.session.headers['X-MSTR-AuthToken']})
+    response = connection.session.post(
+        url=connection.base_url + '/api/auth/identityToken',
+        headers={"X-MSTR-AuthToken": connection.session.headers['X-MSTR-AuthToken']},
+    )
     if not response.ok:
         response_handler(response, "Could not get identity token.")
     return response
@@ -125,12 +131,19 @@ def delegate(connection, identity_token, whitelist=[]):
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.post(url=connection.base_url + '/api/auth/delegate',
-                                       json={'loginMode': "-1",
-                                             'identityToken': identity_token})
+    response = connection.session.post(
+        url=connection.base_url + '/api/auth/delegate',
+        json={
+            'loginMode': "-1",
+            'identityToken': identity_token
+        },
+    )
 
     if not response.ok:
-        response_handler(response, "Error creating a new Web server session that shares an existing IServer session.", whitelist=whitelist)
+        response_handler(
+            response,
+            "Error creating a new Web server session that shares an existing IServer session.",
+            whitelist=whitelist)
     return response
 
 
@@ -148,8 +161,6 @@ def user_privileges(connection):
     """
     response = connection.session.get(url=connection.base_url + '/api/sessions/privileges')
 
-    if config.debug:
-        print(response.url)
     if not response.ok:
         response_handler(response, "Error getting priviliges list")
     return response
@@ -168,10 +179,9 @@ def get_info_for_authenticated_user(connection, error_msg=None):
     url = connection.base_url + "/api/sessions/userInfo"
     token = connection.session.headers['X-MSTR-AuthToken']
     headers = {"X-MSTR-AuthToken": token}
-    response = connection.session.get(url=url,
-                                      headers=headers)
+    response = connection.session.get(url=url, headers=headers)
     if not response.ok:
         if error_msg is None:
-            error_msg = f"Error getting info for authenticated user"
+            error_msg = "Error getting info for authenticated user"
         response_handler(response, error_msg)
     return response
