@@ -6,8 +6,10 @@ def list_schedules(connection, fields=None, error_msg=None):
     """Get list of a schedules.
 
     Args:
-        connection(object): MicroStrategy connection object returned by `connection.Connection()`.
-        fields(list, optional): Comma separated top-level field whitelist. This allows client to selectively retrieve part of the response model.
+        connection(object): MicroStrategy connection object returned by
+            `connection.Connection()`.
+        fields(list, optional): Comma separated top-level field whitelist. This
+            allows client to selectively retrieve part of the response model.
     Returns:
         HTTP response object returned by the MicroStrategy REST server
     """
@@ -26,9 +28,11 @@ def get_schedule(connection, schedule_id, fields=None, error_msg=None):
     """Get information of a specific schedule by its ID.
 
     Args:
-        connection(object): MicroStrategy connection object returned by `connection.Connection()`.
+        connection(object): MicroStrategy connection object returned by
+            `connection.Connection()`.
         schedule_id(str): ID of the schedule
-        fields(list, optional): Comma separated top-level field whitelist. This allows client to selectively retrieve part of the response model.
+        fields(list, optional): Comma separated top-level field whitelist. This
+            allows client to selectively retrieve part of the response model.
         error_msg(str, optional): Customized error message.
     Returns:
         HTTP response object returned by the MicroStrategy REST server

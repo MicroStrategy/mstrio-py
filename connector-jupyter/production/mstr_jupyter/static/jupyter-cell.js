@@ -48,7 +48,6 @@ define([
     this.forUpdate = this.forUpdate.bind(this);
   }
 
-
   notebookChangedFlag() {
     this.notebook.set_dirty(true);
     return this;
@@ -206,7 +205,6 @@ define([
   forImport(forcedIndex = null) { return this.forType(JupyterCell.cellTypes().import, forcedIndex); }
   forExport(forcedIndex = null) { return this.forType(JupyterCell.cellTypes().export, forcedIndex); }
   forUpdate(forcedIndex = null) { return this.forType(JupyterCell.cellTypes().update, forcedIndex); }
-
 
   // static values
   static cellTypes() {

@@ -71,7 +71,8 @@ class BaseSettings(metaclass=ABCMeta):
         Returns:
             Dataframe with values of current settings and settings from files.
         """
-        current = DataFrame.from_dict(self.list_properties(show_names=True), orient='index', columns=['value']).reset_index()
+        current = DataFrame.from_dict(self.list_properties(show_names=True), orient='index',
+                                      columns=['value']).reset_index()
         base = 'current value'
         current.columns = ['setting', base]
         for app in files:
@@ -123,7 +124,8 @@ class BaseSettings(metaclass=ABCMeta):
             if extension in file[-7:].lower():
                 file_type = extension[1:]
         if file_type is None:
-            raise TypeError("This file type is not supported. Supported file types are .json and .csv")
+            raise TypeError(
+                "This file type is not supported. Supported file types are .json and .csv")
         elif file_type == 'json':
             with open(file, 'r') as f:
                 settings_dict = json.load(f)
@@ -153,9 +155,17 @@ class BaseSettings(metaclass=ABCMeta):
                 exact setting values
         """
         if show_names:
-            return {key: self.__dict__[key]._get_value() for key in sorted(self.__dict__) if not key.startswith('_')}
+            return {
+                key: self.__dict__[key]._get_value()
+                for key in sorted(self.__dict__)
+                if not key.startswith('_')
+            }
         else:
-            return {key: self.__dict__[key].value for key in sorted(self.__dict__) if not key.startswith('_')}
+            return {
+                key: self.__dict__[key].value
+                for key in sorted(self.__dict__)
+                if not key.startswith('_')
+            }
 
     def to_dataframe(self) -> DataFrame:
         """Return a `DataFrame` object containing settings and their values."""
@@ -165,17 +175,18 @@ class BaseSettings(metaclass=ABCMeta):
         df.rename({'index': 'setting'}, axis=1, inplace=True)
         return df
 
-    @ property
+    @property
     def info(self) -> None:
         if version_info.major >= 3 and version_info.minor >= 7:
             pprint(self.list_properties(), sort_dicts=False)
         else:
             pprint(self.list_properties())
 
-    @ property
+    @property
     def setting_types(self) -> DataFrame:
         df = DataFrame.from_dict(self._CONFIG, orient='index')
-        df.drop(['name', 'read_only', 'reboot_rule', 'deprecated'], axis='columns', inplace=True, errors='ignore')
+        df.drop(['name', 'read_only', 'reboot_rule', 'deprecated'], axis='columns', inplace=True,
+                errors='ignore')
         return df
 
     def _process_settings(self, settings: dict) -> dict:
@@ -208,34 +219,43 @@ class BaseSettings(metaclass=ABCMeta):
         file = name
         if file_type == 'json':
             if not name.endswith('.json'):
-                msg = 'The file extension is different than ".json", please note that using a different extension might disrupt opening the file correctly.'
+                msg = ("The file extension is different than '.json', please note that using a "
+                       "different extension might disrupt opening the file correctly.")
                 helper.exception_handler(msg, exception_type=Warning)
             with open(file, 'w') as f:
                 json.dump(self._prepare_settings_push(to_file=True), f, indent=4)
         elif file_type == 'csv':
             if not name.endswith('.csv'):
-                msg = 'The file extension is different than ".csv", please note that using a different extension might disrupt opening the file correctly.'
+                msg = ("The file extension is different than '.csv', please note that using a "
+                       "different extension might disrupt opening the file correctly")
                 helper.exception_handler(msg, exception_type=Warning)
             with open(file, 'w') as f:
                 # Add lines for workstation compatibility
                 f.write(f"""#__page__,{self._TYPE}\n#__version__,1\nName, Value\n""")
                 w = csv.DictWriter(f, fieldnames=['Name', 'Value'], quoting=csv.QUOTE_ALL)
-                rows = [{'Name': setting,
-                         'Value': value} for setting, value in self._prepare_settings_push(to_file=True).items()]
+                rows = [{
+                    'Name': setting,
+                    'Value': value
+                } for setting, value in self._prepare_settings_push(to_file=True).items()]
                 w.writerows(rows)
         elif file_type in ['pkl', 'pickle', 'p']:
             if name.split('.')[-1] not in ['pkl', 'pickle', 'p']:
-                msg = 'The file extension is different than available pickle extensions, please note that using a different extension might disrupt opening the file correctly.'
+                msg = ("The file extension is different than available pickle extensions, "
+                       "please note that using a different extension might disrupt opening "
+                       "the file correctly.")
                 helper.exception_handler(msg, exception_type=Warning)
             with open(file, 'wb') as f:
-                pickle.dump(self._prepare_settings_push(to_file=True), f, protocol=pickle.HIGHEST_PROTOCOL)
+                pickle.dump(self._prepare_settings_push(to_file=True), f,
+                            protocol=pickle.HIGHEST_PROTOCOL)
         else:
-            helper.exception_handler("This file type is not supported. Supported file types are .json and .csv",
-                                     exception_type=TypeError)
+            helper.exception_handler(
+                "This file type is not supported. Supported file types are .json and .csv",
+                exception_type=TypeError)
         if config.verbose:
             print("Settings exported to '{}'".format(file))
 
-    def _validate_settings(self, settings: dict = None, bad_setting=Warning, bad_type=Warning, bulk_error=True) -> None:
+    def _validate_settings(self, settings: dict = None, bad_setting=Warning, bad_type=Warning,
+                           bulk_error=True) -> None:
         """Validate setting-value pairs and raise AttributeError or TypeError
         if invalid. If `bad_setting` or `bad_type` is of type Exception, then
         Exception is raised as soon as the first invalid pair is found. If they
@@ -261,8 +281,10 @@ class BaseSettings(metaclass=ABCMeta):
                     if not valid:
                         bad_settings_keys.append((setting, value))
         if bulk_error and bad_settings_keys:
-            helper.exception_handler("Invalid settings: {}".format([item[0] + ': ' + str(item[1]) for item in bad_settings_keys]),
-                                     exception_type=ValueError)
+            helper.exception_handler(
+                "Invalid settings: {}".format(
+                    [item[0] + ': ' + str(item[1]) for item in bad_settings_keys]),
+                exception_type=ValueError)
 
     def _prepare_settings_push(self, to_file=False) -> dict:
         settings_dict = self.list_properties(show_names=False)
@@ -270,13 +292,17 @@ class BaseSettings(metaclass=ABCMeta):
             unit = self._CONVERTION_DICT.get(setting)
             if unit is not None:
                 if unit == 'B':
-                    settings_dict[setting] = value * (1024 ** 2)
+                    settings_dict[setting] = value * (1024**2)
                 elif unit == 'KB':
                     settings_dict[setting] = value * 1024
         if to_file:
             return {k: v for k, v in settings_dict.items() if k not in self._READ_ONLY_SETTINGS}
         else:
-            return {k: {'value': v} for k, v in settings_dict.items() if k not in self._READ_ONLY_SETTINGS}
+            return {
+                k: {
+                    'value': v
+                } for k, v in settings_dict.items() if k not in self._READ_ONLY_SETTINGS
+            }
 
     def _prepare_settings_fetch(self, settings_dict: dict, from_file=False) -> dict:
         for setting, value in settings_dict.items():
@@ -285,7 +311,7 @@ class BaseSettings(metaclass=ABCMeta):
                 if not from_file:
                     value = value['value']
                 if unit == 'B':
-                    value = value / (1024 ** 2)
+                    value = value / (1024**2)
                 elif unit == 'KB':
                     value = value / 1024
                 if from_file:
@@ -298,20 +324,23 @@ class BaseSettings(metaclass=ABCMeta):
         """Sets up the settings object to allow for verification of
         settings."""
         self._get_config()
-        setting_value_types = {'number': NumberSetting,
-                               'string': StringSetting,
-                               'enum': EnumSetting,
-                               'boolean': BoolSetting,
-                               'time': TimeSetting,
-                               'email': EmailSetting,
-                               None: DeprecatedSetting}
+        setting_value_types = {
+            'number': NumberSetting,
+            'string': StringSetting,
+            'enum': EnumSetting,
+            'boolean': BoolSetting,
+            'time': TimeSetting,
+            'email': EmailSetting,
+            None: DeprecatedSetting
+        }
         for setting, cfg in self._CONFIG.items():
             setting_type = cfg.get('type')
             if setting_type is None:
                 self._READ_ONLY_SETTINGS.append(setting)
             cfg.update({'name': setting})
             value = setting_value_types[setting_type](cfg)
-            if value.name in ['hLAutoDeleteMsgCount', 'cacheCleanUpFrequency']:  # config not accurate, needs override
+            if value.name in ['hLAutoDeleteMsgCount',
+                              'cacheCleanUpFrequency']:  # config not accurate, needs override
                 value.options.append({'name': 'No Limit', 'value': -1})
             if value.name == 'catalogMaxMemoryConsumption':
                 value.min_value = 0
@@ -365,12 +394,13 @@ class SettingValue(object):
 
     def _validate_value(self, value, exception=True):
         options = helper.extract_all_dict_values(self.options)
-        return helper.validate_param_value(self.name, value, self.type, special_values=options, exception=exception)
+        return helper.validate_param_value(self.name, value, self.type, special_values=options,
+                                           exception=exception)
 
     def _get_value(self):
         return self.value
 
-    @ property
+    @property
     def info(self):
         return self.__dict__
 
@@ -386,11 +416,14 @@ class EnumSetting(SettingValue):
         options = helper.extract_all_dict_values(self.options)
         if self.type == list:
             options.append('')
-        return helper.validate_param_value(self.name, value, self.type, special_values=options, exception=exception)
+        return helper.validate_param_value(self.name, value, self.type, special_values=options,
+                                           exception=exception)
 
     def _get_value(self):
-        # option_name = helper.filter_list_of_dicts(self.options, value=self.value)[0].get('name', self.value)
-        option_name = [option['name'] for option in helper.filter_list_of_dicts(self.options, value=self.value)]
+        option_name = [
+            option['name']
+            for option in helper.filter_list_of_dicts(self.options, value=self.value)
+        ]
         if len(option_name) == 1:
             return option_name[0]
         else:
@@ -417,7 +450,8 @@ class NumberSetting(SettingValue):
 
     def _validate_value(self, value, exception=True):
         options = helper.extract_all_dict_values(self.options)
-        return helper.validate_param_value(self.name, value, self.type, self.max_value, self.min_value, options, exception=exception)
+        return helper.validate_param_value(self.name, value, self.type, self.max_value,
+                                           self.min_value, options, exception=exception)
 
 
 class StringSetting(SettingValue):
@@ -440,7 +474,8 @@ class TimeSetting(SettingValue):
 
     def _validate_value(self, value, exception=True):
         regex = r"^[1-2][0-9](:[0-5][0-9]){1,2}$"
-        return helper.validate_param_value(self.name, value, str, regex=regex, exception=exception, valid_example='23:45')
+        return helper.validate_param_value(self.name, value, str, regex=regex, exception=exception,
+                                           valid_example='23:45')
 
 
 class EmailSetting(SettingValue):
@@ -452,7 +487,9 @@ class EmailSetting(SettingValue):
 
     def _validate_value(self, value, exception=True):
         regex = r"[^@]+@[^@]+\.[^@]+"
-        return helper.validate_param_value(self.name, value, self.type, special_values=[''], regex=regex, exception=exception, valid_example='name@mail.com')
+        return helper.validate_param_value(self.name, value, self.type, special_values=[''],
+                                           regex=regex, exception=exception,
+                                           valid_example='name@mail.com')
 
 
 class DeprecatedSetting(object):

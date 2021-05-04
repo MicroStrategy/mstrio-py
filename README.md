@@ -6,11 +6,13 @@
 
 # mstrio: Simple and Secure Access to MicroStrategy Data <!-- omit in toc -->
 
-**mstrio** provides a high-level interface for [Python][py_github] and [R][r_github] and is designed to give data scientists and developers simple and secure access to MicroStrategy data. It wraps [MicroStrategy REST APIs][mstr_rest_docs] into simple workflows, allowing users to connect to their MicroStrategy environment, fetch data from cubes and reports, create new datasets, and add new data to existing datasets. And, because it enforces MicroStrategy's user and object security model, you don't need to worry about setting up separate security rules.
+**mstrio** provides a high-level interface for [Python][py_github] and [R][r_github] and is designed to give **data scientists**, **developers**, and **administrators** simple and secure access to their MicroStrategy environment. It wraps [MicroStrategy REST APIs][mstr_rest_docs] into simple workflows, allowing users to fetch data from cubes and reports, create new datasets, add new data to existing datasets, and manage Users/User Groups, Servers, Applications, and more. Since it enforces MicroStrategy’s user and object security model, you don’t need to worry about setting up separate security rules.
 
-With **mstrio**, it's easy to integrate cross-departmental, trustworthy business data in machine learning workflows and enable decision-makers to take action on predictive insights in MicroStrategy reports, Dossiers, HyperIntelligence Cards, and customized, embedded analytical applications.
+With mstrio-py for **data science**, it’s easy to integrate cross-departmental, trustworthy business data in machine learning workflows and enable decision-makers to take action on predictive insights in MicroStrategy Reports, Dossiers, HyperIntelligence Cards, and customized, embedded analytical applications.
 
-**MicroStrategy for Jupyter** is an extension for Jupyter Notebook which provides a graphical user interface for **mstrio-py** methods with the help of which user can perform all of the import and export actions without writing a single line of code manually. MicroStrategy for Jupyter is contained within **mstrio-py** package and is available after installation and enabling as Jupyter extension.
+With mstrio-py for **system administration**, it’s easy to minimize costs by automating critical, time-consuming administrative tasks, even enabling administrators to leverage the power of Python to address complex administrative workflows for maintaining a MicroStrategy environment.
+
+**MicroStrategy for Jupyter** is an extension for Jupyter Notebook which provides a graphical user interface for mstrio-py methods with the help of which user can perform all of the import and export actions without writing a single line of code manually. MicroStrategy for Jupyter is contained within mstrio-py package and is available after installation and enabling as Jupyter extension
 
 # Table of Contents <!-- omit in toc -->
 <!--ts-->
@@ -23,6 +25,7 @@ With **mstrio**, it's easy to integrate cross-departmental, trustworthy business
   - [Install the `mstrio-py` Package](#install-the-mstrio-py-package)
   - [Enable the Jupyter Notebook extension](#enable-the-jupyter-notebook-extension)
 - [Versioning & Changelog](#versioning--changelog)
+- [Deprecating Features](#deprecating-features)
 - [More Resources](#more-resources)
 - [Other](#other)
 <!--te-->
@@ -47,7 +50,7 @@ Since version **11.3.0.1**, **mstrio-py** includes also administration modules:
 
 # Documentation
 
-Detailed information about **mstrio-py** package can be found in [official documentation][mstrio_py_doc].
+Detailed information about **mstrio-py** package can be found in [**official documentation**][mstrio_py_doc].
 
 # Installation
 
@@ -85,11 +88,13 @@ jupyter nbextension enable connector-jupyter --py --sys-prefix
 
 # Versioning & Changelog
 
-Current version: **11.3.0.2** (11 January 2021). Check out [Changelog][release_notes] to see what's new.
+Current version: **11.3.1.101** (30 April 2021). Check out [**Changelog**][release_notes] to see what's new.
 
-Functionalities may be added to mstrio either in combination with annual MicroStrategy platform releases or through updates to platform releases. To ensure compatibility with APIs supported by your MicroStrategy environment, it is recommended to install a version of mstrio that corresponds to the version number of your MicroStrategy environment.
+mstrio-py is constantly developed to support newest MicroStrategy REST APIs. Functionalities may be added to mstrio on monthly basis. It is **recommended** to always install the newest version of mstrio-py, as it will be most stable and still maintain backwards compatibility with various MicroStrategy installations, dating back to 11.1.4.
 
-**mstrio-py** is divided into two separate modules, first of which is meant for data-science related activities, while the second one is for administrative tasks. Former requires at least MicroStrategy 2019 Update 4 (11.1.4), latter works with 11.2.1 and higher but all features are available with MicroStrategy 11.3.0.
+Features that will be added to the package but require APIs not supported by your environment (I-Server), will raise `VersionException`.
+
+mstrio-py can be used for both, **data-science** related activities and for **administrative tasks**. Former requires at least MicroStrategy 2019 Update 4 (11.1.4), latter works with 11.2.1 and higher.
 
 If you intend to use mstrio with MicroStrategy version older than 11.1.4, refer to the PyPI package archive to download mstrio 10.11.1, which is supported on:
 
@@ -105,6 +110,13 @@ To install a specific, archived version of mstrio, choose the desired version av
 ```python
 pip install mstrio-py==10.11.1
 ```
+
+# Deprecating Features
+
+When features (modules, parameters, attributes, methods etc.) are marked for deprecation but still accessed, the following `DeprecationWarning` will be shown (example below). The functionality will continue to work until the version specified in the warning is released.
+
+![Deprecation warning ][deprecation]
+
 
 # More Resources
 
@@ -130,6 +142,7 @@ pip install mstrio-py==10.11.1
 [python_venv]: <https://docs.python.org/3/tutorial/venv.html>
 [release_notes]: <https://github.com/MicroStrategy/mstrio-py/blob/master/NEWS.md>
 [logo]: <https://github.com/MicroStrategy/mstrio-py/blob/master/mstr-logo.png?raw=true>
+[deprecation]: <https://github.com/MicroStrategy/mstrio-py/blob/master/deprecation.png?raw=true>
 [example_conn]: <https://github.com/MicroStrategy/mstrio-py/blob/master/examples/connect.py>
 [example_import]: <https://github.com/MicroStrategy/mstrio-py/blob/master/examples/cube_report.py>
 [example_export]: <https://github.com/MicroStrategy/mstrio-py/blob/master/examples/create_dataset.py>

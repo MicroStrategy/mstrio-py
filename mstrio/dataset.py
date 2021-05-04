@@ -1,12 +1,17 @@
-import pandas as pd
 from packaging import version
+import pandas as pd
+import time
 from tqdm.auto import tqdm
 
-import mstrio.config as config
-import mstrio.utils.helper as helper
 from mstrio.api import datasets
+import mstrio.config as config
 from mstrio.utils.encoder import Encoder
+from mstrio.utils.helper import deprecation_warning
+import mstrio.utils.helper as helper
 from mstrio.utils.model import Model
+
+deprecation_warning("mstrio.dataset", "mstrio.application_objects.datasets.super_cube",
+                    "11.3.2.101")
 
 
 class Dataset:
@@ -27,15 +32,16 @@ class Dataset:
             pre-existing dataset or generated after creating a new dataset.
         progress_bar(bool, optional): If True (default), show the upload
             progress bar.
-        __upload_body: Body of the request used to describe the dataset update
+        upload_body: Body of the request used to describe the dataset update
             operation.
-        _session_id: Identifies the data upload session.
+        session_id: Identifies the data upload session.
     """
 
     __VALID_POLICY = ['add', 'update', 'replace', 'upsert']
     __MAX_DESC_LEN = 250
 
-    def __init__(self, connection, name=None, description=None, dataset_id=None, progress_bar=True, verbose=True):
+    def __init__(self, connection, name=None, description=None, dataset_id=None, progress_bar=True,
+                 verbose=True):
         """Interface for creating, updating, and deleting MicroStrategy in-
         memory datasets. When creating a new dataset, provide a dataset name
         and an optional description. When updating a pre-existing dataset,
@@ -55,27 +61,28 @@ class Dataset:
             verbose: Setting to control the amount of feedback from
                 the I-Server.
         """
-
         if name is not None:
             self.__check_param_str(name, msg="Dataset name should be a string.")
-            self.__check_param_len(name,
-                                   msg="Dataset name should be <= {} characters.".format(self.__MAX_DESC_LEN),
-                                   max_length=self.__MAX_DESC_LEN)
+            self.__check_param_len(
+                name, msg="Dataset name should be <= {} characters.".format(self.__MAX_DESC_LEN),
+                max_length=self.__MAX_DESC_LEN)
         self._name = name
 
         if description is not None:
             self.__check_param_str(description, msg="Dataset description should be a string.")
-            self.__check_param_str(description, msg="Dataset description should be a string.")
-            self.__check_param_len(description,
-                                   msg="Dataset description should be <= {} characters.".format(self.__MAX_DESC_LEN),
-                                   max_length=self.__MAX_DESC_LEN)
+            self.__check_param_len(
+                description,
+                msg="Dataset description should be <= {} characters.".format(self.__MAX_DESC_LEN),
+                max_length=self.__MAX_DESC_LEN)
 
-        if not connection.project_id:
+        if not connection.application_id:
             helper.exception_handler(
-                "Please provide a project id or project name when creating the Connection object.", ConnectionError)
+                ("Please provide an application id or application name when creating the"
+                 "Connection object."), ConnectionError)
         self._connection = connection
-        self._desc = description
+        self._description = description
         self._dataset_id = dataset_id
+        self._id = dataset_id
         self.progress_bar = True if progress_bar and config.progress_bar else False
         self._tables = []
         self._definition = None
@@ -149,7 +156,8 @@ class Dataset:
 
         self._tables.append(table)
 
-    def create(self, folder_id=None, auto_upload=True, auto_publish=True, chunksize=100000):
+    def create(self, folder_id: str = None, auto_upload: bool = True, auto_publish: bool = True,
+               chunksize: int = 100000):
         """Creates a new dataset.
 
         Args:
@@ -168,7 +176,8 @@ class Dataset:
         """
         if auto_publish and not auto_upload:
             helper.exception_handler(
-                "Data needs to be uploaded to the I-Server before the dataset can be published.", ValueError)
+                "Data needs to be uploaded to the I-Server before the dataset can be published.",
+                ValueError)
 
         if folder_id is not None:
             self._folder_id = folder_id
@@ -179,18 +188,19 @@ class Dataset:
         self.__build_model()
 
         # makes request to create the dataset
-        response = datasets.create_multitable_dataset(connection=self._connection, body=self.__model)
+        response = datasets.create_multitable_dataset(connection=self._connection,
+                                                      body=self.__model)
 
         response_json = response.json()
         self._dataset_id = response_json['id']
 
         if self.verbose:
-            print("Created dataset '{}' with ID: '{}'.".format(*[self._name, self._dataset_id]))
+            print("Created dataset '{}' with ID: '{}'.".format(*[self.name, self._dataset_id]))
 
         if auto_upload:
             self.update(chunksize=chunksize, auto_publish=auto_publish)
 
-    def update(self, chunksize=100000, auto_publish=True):
+    def update(self, chunksize: int = 100000, auto_publish: bool = True):
         """Updates a dataset with new data.
 
         Args:
@@ -203,8 +213,7 @@ class Dataset:
 
         # form request body and create a session for data uploads
         self.__form_upload_body()
-        response = datasets.upload_session(connection=self._connection,
-                                           dataset_id=self._dataset_id,
+        response = datasets.upload_session(connection=self._connection, id=self._dataset_id,
                                            body=self.__upload_body)
 
         response_json = response.json()
@@ -232,20 +241,23 @@ class Dataset:
                 b64_enc = encoder.encode
 
                 # form body of the request
-                body = {"tableName": _name,
-                        "index": index + 1,
-                        "data": b64_enc}
+                body = {
+                    "tableName": _name,
+                    "index": index + 1,
+                    "data": b64_enc,
+                }
 
                 # make request to upload the data
-                response = datasets.upload(connection=self._connection,
-                                           dataset_id=self._dataset_id,
-                                           session_id=self._session_id,
-                                           body=body)
+                response = datasets.upload(
+                    connection=self._connection,
+                    id=self._dataset_id,
+                    session_id=self._session_id,
+                    body=body,
+                )
 
                 if not response.ok:
                     # on error, cancel the previously uploaded data
-                    datasets.publish_cancel(connection=self._connection,
-                                            dataset_id=self._dataset_id,
+                    datasets.publish_cancel(connection=self._connection, id=self._dataset_id,
                                             session_id=self._session_id)
 
                 pbar.set_postfix(rows=min((index + 1) * chunksize, total))
@@ -265,24 +277,20 @@ class Dataset:
                 publication process.
         """
 
-        response = datasets.publish(connection=self._connection,
-                                    dataset_id=self._dataset_id,
+        response = datasets.publish(connection=self._connection, id=self._dataset_id,
                                     session_id=self._session_id)
 
         if not response.ok:
             # on error, cancel the previously uploaded data
-            datasets.publish_cancel(connection=self._connection,
-                                    dataset_id=self._dataset_id,
+            datasets.publish_cancel(connection=self._connection, id=self._dataset_id,
                                     session_id=self._session_id)
 
         status = 6  # default initial status
         while status != 1:
-            pub = datasets.publish_status(connection=self._connection, dataset_id=self._dataset_id,
-                                          session_id=self._session_id)
-            pub = pub.json()
-            status = pub['status']
+            status = self.publish_status()['status']
+            time.sleep(1)
             if status == 1:
-                print("Dataset '%s' published successfully." % self._name)
+                print("Dataset '%s' published successfully." % self.name)
 
     def certify(self):
         """Certify the uploaded dataset.
@@ -291,8 +299,7 @@ class Dataset:
             response: Response from the Intelligence Server acknowledging the
                 certification process.
         """
-        response = datasets.toggle_certification(connection=self._connection,
-                                                 dataset_id=self._dataset_id)
+        response = datasets.toggle_certification(connection=self._connection, id=self._dataset_id)
         if self.verbose:
             print("The dataset with ID: '{}' has been certified.".format(self._dataset_id))
         else:
@@ -305,8 +312,7 @@ class Dataset:
             status: The status of the publication process as a dictionary. In
                 the 'status' key, "1" denotes completion.
         """
-        response = datasets.publish_status(connection=self._connection,
-                                           dataset_id=self._dataset_id,
+        response = datasets.publish_status(connection=self._connection, id=self._dataset_id,
                                            session_id=self._session_id)
         status = response.json()
 
@@ -314,8 +320,7 @@ class Dataset:
 
     def delete(self):
         """Delete a dataset that was previously created using the REST API."""
-        datasets.delete_dataset(connection=self._connection,
-                                dataset_id=self._dataset_id)
+        datasets.delete_dataset(connection=self._connection, id=self._dataset_id)
 
         if self.verbose:
             print("Successfully deleted dataset ID: '{}'.".format(self._dataset_id))
@@ -330,19 +335,20 @@ class Dataset:
             session_id (str): Identifier of the server session used for
                 collecting uploaded data.
         """
-        response = datasets.publish_status(connection=connection,
-                                           dataset_id=dataset_id,
+        response = datasets.publish_status(connection=connection, id=dataset_id,
                                            session_id=session_id)
 
-        helper.response_handler(response=response,
-                                msg="Publication status for dataset with ID: '{}':".format(dataset_id),
-                                throw_error=False)
+        helper.response_handler(
+            response=response,
+            msg="Publication status for dataset with ID: '{}':".format(dataset_id),
+            throw_error=False)
 
     def __build_model(self):
         """Create json representation of the dataset."""
 
         # generate model
-        model = Model(tables=self._tables, name=self._name, description=self._desc, folder_id=self._folder_id)
+        model = Model(tables=self._tables, name=self.name, description=self.description,
+                      folder_id=self._folder_id)
         self.__model = model.get_model()
 
     def __form_upload_body(self):
@@ -350,16 +356,19 @@ class Dataset:
         uploads."""
 
         # generate body string
-        body = {"tables": [{"name": tbl["table_name"],
-                            "updatePolicy": tbl["update_policy"],
-                            "columnHeaders": list(tbl["data_frame"].columns)} for tbl in self._tables]}
+        body = {
+            "tables": [{
+                "name": tbl["table_name"],
+                "updatePolicy": tbl["update_policy"],
+                "columnHeaders": list(tbl["data_frame"].columns)
+            } for tbl in self._tables]
+        }
         self.__upload_body = body
 
     def __load_definition(self):
         """Load definition of an existing dataset."""
 
-        response = datasets.dataset_definition(connection=self._connection,
-                                               dataset_id=self._dataset_id)
+        response = datasets.dataset_definition(connection=self._connection, id=self._dataset_id)
 
         self._definition = response.json()
         self._name = self._definition['name']
@@ -384,10 +393,11 @@ class Dataset:
 
     @property
     def description(self):
-        return self._desc
+        return self._description
 
     @property
     def dataset_id(self):
+        helper.deprecation_warning("`dataset_id`", "`id`", "11.3.2.101", module=False)
         return self._dataset_id
 
     @property

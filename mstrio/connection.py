@@ -1,14 +1,15 @@
-import os
-from getpass import getpass
-from packaging import version
-from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry
 from base64 import b64encode
+from getpass import getpass
+import os
 
-from mstrio.api import authentication, misc, projects, exceptions
-import mstrio.utils.helper as helper
+from packaging import version
 from requests import Session
+from requests.adapters import HTTPAdapter, Retry
+
+from mstrio.api import authentication, exceptions, misc, projects
 import mstrio.config as config
+from mstrio.utils.helper import deprecation_warning
+import mstrio.utils.helper as helper
 
 
 class Connection(object):
@@ -19,49 +20,65 @@ class Connection(object):
     Servers.
 
     Example:
-        # import
-        from mstrio import connection
-
-        # connect to the environment and chosen project
-        conn = connection.Connection(
-            base_url="https://demo.microstrategy.com/MicroStrategyLibrary/api",
-            username="username",
-            password="password",
-            project_name="MicroStrategy Tutorial"
-        )
-        # disconnect
-        conn.close()
+        >>> from mstrio import connection
+        >>>
+        >>> # connect to the environment and chosen application
+        >>> conn = connection.Connection(
+        >>>     base_url="https://demo.microstrategy.com/MicroStrategyLibrary",
+        >>>     username="username",
+        >>>     password="password",
+        >>>     application_name="MicroStrategy Tutorial"
+        >>> )
+        >>> # disconnect
+        >>> conn.close()
 
     Attributes:
         base_url: URL of the MicroStrategy REST API server.
         username: Username.
-        password: Password.
-        project_name: Name of the connected MicroStrategy Project.
-        project_id: Id of the connected MicroStrategy Project.
+        application_name: Name of the connected MicroStrategy Applicaiton.
+        application_id: Id of the connected MicroStrategy Applicaiton.
+        project_name: (deprecated) Name of the connected MicroStrategy Project.
+        project_id: (deprecated) Id of the connected MicroStrategy Project.
         login_mode: Authentication mode. Standard = 1 (default) or LDAP = 16.
         ssl_verify: If True (default), verifies the server's SSL certificates
             with each request.
+        user_id: Id of the authenticated user
+        user_full_name: Full name of the authenticated user
+        user_initials: Initials of the authenticated user
+        iserver_version: Version of the I-Server
+        web_version: Version of the Web Server
     """
     __VRCH = "11.1.0400"
-    __DEFAULT_METHOD_WHITELIST = frozenset(["HEAD", "GET", "PUT", "DELETE", "OPTIONS", "TRACE"])
-    __RETRY_AFTER_STATUS_CODES = frozenset([413, 429, 500, 503])
 
-    def __init__(self, base_url=None, username=None, password=None, project_name=None, project_id=None, login_mode=1,
-                 ssl_verify=True, certificate_path=None, proxies=None, identity_token=None, verbose=True):
+    def __init__(self, base_url, username=None, password=None, application_name=None,
+                 application_id=None, project_name=None, project_id=None, login_mode=1,
+                 ssl_verify=True, certificate_path=None, proxies=None, identity_token=None,
+                 verbose=True):
         """Establish a connection with MicroStrategy REST API.
 
+        You can establish connection by either providing set of values
+        (`username`, `password`, `login_mode`) or just `identity_token`.
+
+        When both `application_id` and `application_name` are `None`,
+        application selection is cleared. When both `application_id`
+        and `application_name` are provided, `application_name` is ignored.
+
         Args:
-            base_url (str, optional): URL of the MicroStrategy REST API server.
+            base_url (str): URL of the MicroStrategy REST API server.
                 Typically of the form:
-                    "https://<mstr_env>.com/MicroStrategyLibrary/api"
+                "https://<mstr_env>.com/MicroStrategyLibrary/api"
             username (str, optional): Username
             password (str, optional): Password
-            project_name (str, optional): Name of the project you intend to
-                connect to.Case-sensitive. You should provide either Project ID
-                or Project Name.
-            project_id (str, optional): Id of the project you intend to connect
-                to. Case-sensitive. You should provide either Project ID
-                or Project Name.
+            project_name (str, optional): this argument will be deprecated, use
+                application_name instead
+            project_id (str, optional): this argument will be deprecated, use
+                application_id instead
+            application_name (str, optional): Name of the application you intend
+                to connect to (case-sensitive). Provide either Application ID
+                or Application Name.
+            application_id (str, optional): Id of the application you intend to
+                connect to (case-sensitive). Provide either Application ID
+                or Application Name.
             login_mode (int, optional): Specifies the authentication mode to
                 use. Supported authentication modes are: Standard (1)
                 (default) or LDAP (16)
@@ -78,24 +95,34 @@ class Connection(object):
             verbose (bool, optional): True by default. Controls the amount of
                 feedback from the I-Server.
         """
-
-        config.verbose = True if verbose and config.verbose else False    # set the verbosity globally
+        # set the verbosity globally
+        config.verbose = True if verbose and config.verbose else False
         self.base_url = helper.url_check(base_url)
         self.username = username
-        self.password = password
         self.login_mode = login_mode
-        self.web_version = None
-        self.iserver_version = None
         self.certificate_path = certificate_path
         self.identity_token = identity_token
         self.session = self.__configure_session(ssl_verify, certificate_path, proxies)
+        self._web_version = None
+        self._iserver_version = None
+        self._user_id = None
+        self._user_full_name = None
+        self._user_initials = None
+        self.__password = password
+        application_id = project_id if project_id else application_id
+        application_name = project_name if project_name else application_name
+
+        if project_id or project_name:
+            deprecation_warning("`project_id` and `project_name`",
+                                "`application_id` or `application_name`", "11.3.2.101")
 
         if self.__check_version():
             # save the version of IServer in config file
             config.iserver_version = self.iserver_version
             # delegate identity token or connect and create new sesssion
             self.delegate() if self.identity_token else self.connect()
-            self.select_project(project_id=project_id, project_name=project_name)
+            self.select_application(application_id=application_id,
+                                    application_name=application_name)
         else:
             print("""This version of mstrio is only supported on MicroStrategy 11.1.0400 or higher.
                      \rCurrent Intelligence Server version: {}
@@ -103,7 +130,6 @@ class Connection(object):
                      """.format(self.iserver_version, self.web_version))
             helper.exception_handler(msg="MicroStrategy Version not supported.",
                                      exception_type=exceptions.VersionException)
-        self.user_id = self.__get_user_info()['id']
 
     def connect(self):
         """Authenticates the user and creates a new connection with the
@@ -169,14 +195,20 @@ class Connection(object):
                 print("""Connection with MicroStrategy Intelligence Server was not active.
                          \rNew connection has been established.""")
 
-    def status(self):
-        """Checks if the session is still alive."""
+    def status(self) -> bool:
+        """Checks if the session is still alive.
+
+        Raises:
+            HTTPError if I-Server behaves unexpectedly
+        """
         status = authentication.session_status(connection=self)
 
         if status.status_code == 200:
             print("Connection to MicroStrategy Intelligence Server is active.")
+            return True
         else:
             print("Connection to MicroStrategy Intelligence Server is not active.")
+            return False
 
     def select_project(self, project_id: str = None, project_name: str = None) -> None:
         """Select project for the given connection based on project_id or
@@ -193,68 +225,96 @@ class Connection(object):
         Raises:
             ValueError: if project with given id or name does not exist
         """
-        if project_id is None and project_name is None:
-            self.project_id = None
-            self.project_name = None
+        deprecation_warning("`select_project` method", "`select_application` method", "11.3.2.101")
+        self.select_application(project_id, project_name)
+
+    def select_application(self, application_id: str = None, application_name: str = None) -> None:
+        """Select application for the given connection based on application_id
+        or application_name.
+
+        When both `application_id` and `application_name` are `None`,
+        application selection is cleared. When both `application_id`
+        and `application_name` are provided, `application_name` is ignored.
+
+        Args:
+            application_id: id of application to select
+            application_name: name of application to select
+
+        Raises:
+            ValueError: if application with given id or name does not exist
+        """
+        if application_id is None and application_name is None:
+            self.application_id = None
+            self.application_name = None
+            self.project_id = self.application_id
+            self.project_name = self.application_name
             if config.verbose:
-                print("No project selected.")
-            return
+                print("No application selected.")
+            return None
 
-        if project_id is not None and project_name is not None:
-            tmp_msg = "Both project_id and project_name arguments provided. Selecting project based on project_id."
-            helper.exception_handler(msg=tmp_msg, exception_type=Warning, throw_error=False)
+        if application_id is not None and application_name is not None:
+            tmp_msg = ("Both `application_id` and `application_name` arguments provided. "
+                       "Selecting application based on `application_id`.")
+            helper.exception_handler(msg=tmp_msg, exception_type=Warning)
 
-        _projects = projects.get_projects(connection=self).json()
-        if project_id is not None:
-            # Find which project name matches the project ID provided
-            tmp_projects = helper.filter_list_of_dicts(_projects, id=project_id)
-            if not tmp_projects:
-                self.project_id, self.project_name = None, None
-                tmp_msg = "Error connecting to project with id: {}. Project with given id does not exist or user has no access.".format(project_id)
+        _applications = projects.get_projects(connection=self).json()
+        if application_id is not None:
+            # Find which application name matches the application ID provided
+            tmp_applications = helper.filter_list_of_dicts(_applications, id=application_id)
+            if not tmp_applications:
+                self.application_id, self.application_name = None, None
+                tmp_msg = (f"Error connecting to application with id: {application_id}. "
+                           "Application with given id does not exist or user has no access.")
                 raise ValueError(tmp_msg)
-        elif project_name is not None:
-            # Find which project ID matches the project name provided
-            tmp_projects = helper.filter_list_of_dicts(_projects, name=project_name)
-            if not tmp_projects:
-                self.project_id, self.project_name = None, None
-                tmp_msg = "Error connecting to project with name: {}. Project with given name does not exist or user has no access.".format(project_name)
+        elif application_name is not None:
+            # Find which application ID matches the application name provided
+            tmp_applications = helper.filter_list_of_dicts(_applications, name=application_name)
+            if not tmp_applications:
+                self.application_id, self.application_name = None, None
+                tmp_msg = (f"Error connecting to application with name: {application_name}. "
+                           "Application with given name does not exist or user has no access.")
                 raise ValueError(tmp_msg)
 
-        self.project_id = tmp_projects[0]['id']
-        self.project_name = tmp_projects[0]['name']
-        self.session.headers['X-MSTR-ProjectID'] = self.project_id
+        self.application_id = tmp_applications[0]['id']
+        self.application_name = tmp_applications[0]['name']
+        self.project_id = self.application_id
+        self.project_name = self.application_name
+        self.session.headers['X-MSTR-ProjectID'] = self.application_id
 
     def _get_authorization(self):
         self.__prompt_credentials()
-        credentials = "{}:{}".format(self.username, self.password).encode('utf-8')
+        credentials = "{}:{}".format(self.username, self.__password).encode('utf-8')
         encoded_credential = b64encode(credentials)
         auth = "Basic " + str(encoded_credential, 'utf-8')
         return auth
 
-    def _validate_project_selected(self):
-        if self.project_id is None:
-            raise AttributeError("Project not selected. Select project using `connection.select_project()`.")
+    def _validate_application_selected(self) -> None:
+        if self.application_id is None:
+            raise AttributeError(
+                "Application not selected. Select application using `select_application` method.")
 
     def __prompt_credentials(self):
         self.username = self.username if self.username is not None else input("Username: ")
-        self.password = self.password if self.password is not None else getpass("Password: ")
-        self.login_mode = self.login_mode if self.login_mode else input("Login mode (1 - Standard, 16 - LDAP): ")
+        self.__password = self.__password if self.__password is not None else getpass("Password: ")
+        self.login_mode = self.login_mode if self.login_mode else input(
+            "Login mode (1 - Standard, 16 - LDAP): ")
 
     def __check_version(self):
         """Checks version of I-Server and MicroStrategy Web."""
         json_response = misc.server_status(self).json()
         try:
-            self.iserver_version = json_response["iServerVersion"][:9]
+            self._iserver_version = json_response["iServerVersion"][:9]
         except KeyError:
-            raise exceptions.IServerException("I-Server is currently unavailable. Please contact your administrator.")
-        self.web_version = json_response.get("webVersion")
-        self.web_version = self.web_version[:9] if self.web_version else None
+            raise exceptions.IServerException(
+                "I-Server is currently unavailable. Please contact your administrator.")
+        web_version = json_response.get("webVersion")
+        self._web_version = web_version[:9] if web_version else None
         iserver_version_ok = version.parse(self.iserver_version) >= version.parse(self.__VRCH)
 
         return iserver_version_ok
 
-    def __configure_session(self, verify, certificate_path, proxies, existing_session=None, retries=2,
-                            backoff_factor=0.3, status_forcelist=None, method_whitelist=None):
+    def __configure_session(self, verify, certificate_path, proxies, existing_session=None,
+                            retries=2, backoff_factor=0.3):
         """Creates a shared requests.Session() object with configuration from
         the initialization. Additional parameters change how the HTTPAdapter is
         configured.
@@ -272,7 +332,6 @@ class Connection(object):
                 for [0.0s, 0.2s, 0.4s, ...] between retries. It will never be
                 longer than Retry. BACKOFF_MAX. By default, backoff is disabled
                 (set to 0).
-            status_forcelist: list of http statuses that will be retried
         """
         session = existing_session or Session()
         session.proxies = proxies if proxies is not None else {}
@@ -286,10 +345,7 @@ class Connection(object):
         if hooks:
             session.hooks['response'] = hooks
 
-        if status_forcelist is None:
-            status_forcelist = self.__RETRY_AFTER_STATUS_CODES
-        if method_whitelist is None:
-            method_whitelist = self.__DEFAULT_METHOD_WHITELIST
+        status_forcelist = frozenset([413, 429, 500, 503])  # retry after status
 
         retry = Retry(
             total=retries,
@@ -297,8 +353,8 @@ class Connection(object):
             connect=retries,
             backoff_factor=backoff_factor,
             status_forcelist=status_forcelist,
-            method_whitelist=method_whitelist,
-            raise_on_status=False
+            allowed_methods=Retry.DEFAULT_ALLOWED_METHODS,
+            raise_on_status=False,
         )
         adapter = HTTPAdapter(max_retries=retry)
         session.mount('http://', adapter)
@@ -308,6 +364,7 @@ class Connection(object):
 
     @staticmethod
     def _configure_ssl(ssl_verify, certificate_path):
+
         def get_certs_from_cwd():
             cert_extensions = ['crt', 'pem', 'p12']
             return [file for file in os.listdir('.') if file.split('.')[-1] in cert_extensions]
@@ -324,5 +381,33 @@ class Connection(object):
         return find_cert_in_cwd(ssl_verify)
 
     def __get_user_info(self):
-        response = authentication.get_info_for_authenticated_user(connection=self)
-        return response.json()
+        response = authentication.get_info_for_authenticated_user(connection=self).json()
+        self._user_id = response.get("id")
+        self._user_full_name = response.get("fullName")
+        self._user_initials = response.get("initials")
+
+    @property
+    def user_id(self):
+        if not self._user_id:
+            self.__get_user_info()
+        return self._user_id
+
+    @property
+    def user_full_name(self):
+        if not self._user_full_name:
+            self.__get_user_info()
+        return self._user_full_name
+
+    @property
+    def user_initials(self):
+        if not self._user_initials:
+            self.__get_user_info()
+        return self._user_initials
+
+    @property
+    def web_version(self):
+        return self._web_version
+
+    @property
+    def iserver_version(self):
+        return self._iserver_version

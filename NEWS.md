@@ -1,5 +1,31 @@
 # Changelog
 
+## 11.3.1.101 - 2021/04/30
+
+### Major changes
+
+* added `SuperCube` and `OlapCube` classes in `mstrio.application_objects.datasets` subpackage
+* added `list_all_cubes`, `load_cube`, `list_super_cubes`, `list_olap_cubes` functions that allow searching available cubes by name and construct precise objects
+* added possibility to alter `name`, `description`, `abbreviation` properties of cubes
+* added more `Cube` object attributes similar to other MSTR objects
+* added `user_id`, `user_full_name`, `user_initials` attributes to `Connection` class
+* added missing parameters `trust_id` and `database_auth_login` in `user.alter()` method
+
+### Bug fixes
+
+* fixed `KeyError` when trying to connect on certain environments #49
+* fixed initializing `Cube` object when cube Server available #46
+* fixed `instance_id` attribute not being filled in `Cube` class #39
+
+### Deprecated
+
+* `mstrio.admin` subpackage is deprecated and its modules are moved according to new structure
+* `mstrio.cube` and `mstrio.dataset` are deprecated and are superceded by `OlapCube` and `SuperCube` from `application_objects.datasets` subpackage
+* `mstrio.report` and `mstrio.library` modules are deprecated and are moved to `application_objects` subpackage
+* `date_modified` and `id` replace parameters/attributes `cube_id` and `last_modified` in new `SuperCube` and `OlapCube` classes
+* `project_id` and `project_name` parameters/attributes are deprecated accross the package in favor of `application_id` and `application_name`
+
+
 ## 11.3.0.2 - 2021/01/11
 
 * updated example links in readme.md file
@@ -64,7 +90,7 @@
 
 ### Bug fixes
 
-* fixed crucial compatibility issue with 11.1.x environments
+* fixed critical compatibility issue with 11.1.x environments
 * various UI fixes
 
 ## 11.2.2 - 2020/06/24 [YANKED]

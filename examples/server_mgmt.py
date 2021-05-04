@@ -7,8 +7,9 @@ ease its usage.
 """
 
 from mstrio.connection import Connection
-from mstrio.admin.server import Cluster
-from mstrio.admin.application import Environment, Application
+from mstrio.server.cluster import Cluster
+from mstrio.server.environment import Environment
+from mstrio.server.application import Application
 
 base_url = "https://<>/MicroStrategyLibrary/api"
 username = "some_username"
@@ -37,25 +38,29 @@ clstr.default_node
 clstr.set_primary_node(name='env-xxxxxxlaio3use1')
 
 # update node settings or reset them to default values
-clstr.update_node_settings(node='env-xxxxxxlaio3use1',
-                           load_balance_factor=99, initial_pool_size=511, max_pool_size=1023)
+clstr.update_node_settings(node='env-xxxxxxlaio3use1', load_balance_factor=99,
+                           initial_pool_size=511, max_pool_size=1023)
 clstr.reset_node_settings(node='env-xxxxxxlaio3use1')
 
-# stop/start service on selected nodes (error will be thrown in case of wrong names of service or nodes)
+# stop/start service on selected nodes (error will be thrown in case of wrong
+# names of service or nodes)
 clstr.stop(service='Apache-Kafka', nodes=['env-xxxxxxlaio1use1', 'env-xxxxxxlaio2use1'])
 clstr.start(service='Apache-Kafka', nodes=['env-xxxxxxlaio1use1', 'env-xxxxxxlaio2use1'])
 
 env = Environment(connection=conn)
-# list all applications available for the given connection (it is possible via class Cluster or Environment)
+# list all applications available for the given connection (it is possible via
+# class Cluster or Environment)
 apps = env.list_applications()
 apps = clstr.list_applications()
 
-# load or unload chosen application (it is possible via class Cluster or Application)
+# load or unload chosen application (it is possible via class Cluster or
+# Application)
 app = Application(connection=conn, name='MicroStrategy Tutorial')
 app.load()
 app.unload()
 
-# via Cluster can we also specify on which node(s) application will be loaded or unloaded
+# via Cluster can we also specify on which node(s) application will be loaded
+# or unloaded
 clstr.load_application(application_name='MicroStrategy Tutorial',
                        on_nodes=['env-xxxxxxlaio1use1', 'env-xxxxxxlaio2use1'])
 clstr.unload_application(application_name='MicroStrategy Tutorial',
@@ -64,7 +69,8 @@ clstr.unload_application(application_name='MicroStrategy Tutorial',
 # get settings of a server as a dataframe
 server_settings_df = env.server_settings.to_dataframe
 
-# save/load settings of a server to/from a file (format can be 'csv', 'json' or 'pickle')
+# save/load settings of a server to/from a file (format can be 'csv', 'json' or
+# 'pickle')
 env.server_settings.to_csv(name="server_settings.csv")
 env.server_settings.import_from(file="server_settings.csv")
 

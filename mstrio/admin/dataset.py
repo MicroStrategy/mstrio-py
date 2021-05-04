@@ -3,12 +3,22 @@ from typing import Union, List
 from mstrio.api import objects
 from mstrio.connection import Connection
 from mstrio.utils import helper
-from mstrio.utils.entity import Entity, Vldb, ObjectTypes
+from mstrio.utils.entity import Entity, VldbMixin, ObjectTypes
 from pandas import DataFrame
+# NOTE Keep until end of deprecation and move to
+
+from mstrio.utils.helper import deprecation_warning
+
+deprecation_warning(
+    "mstrio.admin.dataset",
+    ("mstrio.application_objects.datasets.super_cube "
+     "and mstrio.application_objects.datasets.olap_cube"),
+    "11.3.2.101",
+)
 
 
-def list_datasets(connection, name: str = None, to_dictionary: bool = False, to_dataframe: bool = False, limit: int = None,
-                  **filters):
+def list_datasets(connection, name: str = None, to_dictionary: bool = False,
+                  to_dataframe: bool = False, limit: int = None, **filters):
     """Get all Datasets stored on the server.
 
     Args:
@@ -19,8 +29,8 @@ def list_datasets(connection, name: str = None, to_dictionary: bool = False, to_
             list of dicts
         to_dataframe(bool, optional): if True, return datasets as
             pandas DataFrame
-        limit: limit the number of elements returned to a sample of datasets.
-            If `None`, all objects are returned.
+        limit: limit the number of elements returned. If `None`, all objects are
+            returned.
         **filters: Available filter parameters: ['name', 'id', 'type',
             'description', 'subtype', 'date_created', 'date_modified',
             'version', 'acg', 'owner', 'ext_type']
@@ -32,8 +42,8 @@ def list_datasets(connection, name: str = None, to_dictionary: bool = False, to_
                              to_dataframe=to_dataframe, limit=limit, **filters)
 
 
-class Dataset(Entity, Vldb):
-    _OBJECT_TYPE = ObjectTypes.REPORT_DEFINITION.value
+class Dataset(Entity, VldbMixin):
+    _OBJECT_TYPE = ObjectTypes.REPORT_DEFINITION
 
     def __init__(self, connection: Connection, id: str = None, name: str = None):
         """Initialize Dataset object by passing name or id.
@@ -51,8 +61,10 @@ class Dataset(Entity, Vldb):
             if datasets:
                 id = datasets[0]['id']
             else:
-                raise ValueError(f"There is no {self.__class__.__name__} associated with the given name: '{name}'")
-        super().__init__(connection=connection, object_id=id)
+                msg = (f"There is no {self.__class__.__name__} associated with "
+                       f"the given name: '{name}'")
+                raise ValueError(msg)
+        super().__init__(connection=connection, object_id=id, name=name)
 
     def alter(self, name: str = None, description: str = None):
         """Alter Dataset name or/and description.
@@ -63,7 +75,7 @@ class Dataset(Entity, Vldb):
         """
         func = self.alter
         args = func.__code__.co_varnames[:func.__code__.co_argcount]
-        defaults = func.__defaults__    # type: ignore
+        defaults = func.__defaults__  # type: ignore
         default_dict = dict(zip(args[-len(defaults):], defaults)) if defaults else {}
         local = locals()
         properties = {}
@@ -73,29 +85,30 @@ class Dataset(Entity, Vldb):
         self._alter_properties(**properties)
 
     @classmethod
-    def _list_all(cls, connection: Connection,
-                  name: str = None,
-                  to_dictionary: bool = False,
-                  to_dataframe: bool = False,
-                  limit: int = None,
-                  **filters) -> Union[List["Dataset"], List[dict]]:
+    def _list_all(cls, connection: Connection, name: str = None, to_dictionary: bool = False,
+                  to_dataframe: bool = False, limit: int = None,
+                  **filters) -> Union[List["Dataset"], List[dict], DataFrame]:
         DATASET_SUBTYPES = [776, 779]
         DSS_XML_SEARCH_TYPE_EXACTLY = 2
 
         msg = "Error creating an instance for searching objects"
-        res_e = objects.create_search_objects_instance(connection=connection, name=name, pattern=DSS_XML_SEARCH_TYPE_EXACTLY,
-                                                       object_type=cls._OBJECT_TYPE, error_msg=msg)
+        res_e = objects.create_search_objects_instance(connection=connection, name=name,
+                                                       pattern=DSS_XML_SEARCH_TYPE_EXACTLY,
+                                                       object_type=cls._OBJECT_TYPE.value,
+                                                       error_msg=msg)
         search_id = res_e.json()['id']
         msg = "Error retrieving datasets from the environment."
-        res_o = helper.fetch_objects_async(connection,
-                                           api=objects.get_objects,
-                                           async_api=objects.get_objects_async,
-                                           dict_unpack_value=None,
-                                           limit=limit,
-                                           chunk_size=1000,
-                                           error_msg=msg,
-                                           filters=filters,
-                                           search_id=search_id)
+        res_o = helper.fetch_objects_async(
+            connection,
+            api=objects.get_objects,
+            async_api=objects.get_objects_async,
+            dict_unpack_value=None,
+            limit=limit,
+            chunk_size=1000,
+            error_msg=msg,
+            filters=filters,
+            search_id=search_id,
+        )
         datasets = [r for r in res_o if r['subtype'] in DATASET_SUBTYPES]
 
         if to_dictionary:
@@ -103,4 +116,4 @@ class Dataset(Entity, Vldb):
         elif to_dataframe:
             return DataFrame(datasets)
         else:
-            return cls._from_bulk_response(connection, datasets)
+            return [cls.from_dict(source=obj, connection=connection) for obj in datasets]

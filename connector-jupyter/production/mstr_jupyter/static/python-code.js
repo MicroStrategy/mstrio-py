@@ -112,12 +112,19 @@ define([], () => class PythonCode {
   }
   // ---
 
-  generateConnectionCode(forEndUser = false, datasetType) {
+  generateConnectionCode(forEndUser = false, forExport = false) {
     const { url, username = '', loginMode, identityToken } = this.authenticationDetails;
-    const { projectId } = this.dataframeDetails;
+    const { projectId, datasetType } = this.dataframeDetails;
+    const datasetTypeImportString = forExport
+      ? 'from mstrio.application_objects.datasets.super_cube import SuperCube'
+      : (
+        datasetType.toLowerCase() === 'report'
+          ? 'from mstrio.application_objects.report import Report'
+          : 'from mstrio.application_objects.datasets.cube import load_cube'
+      );
     const importCode = `
 from mstrio.connection import Connection
-from mstrio.${datasetType.toLowerCase()} import ${datasetType}
+${datasetTypeImportString}
 from getpass import getpass
     `.trim();
 
@@ -134,13 +141,13 @@ mstr_login_mode = ${loginMode || 'None'}
 
     const authCode = `
 mstr_base_url = "${url}"
-mstr_project_id = "${projectId}"
+mstr_application_id = "${projectId}"
 ${credentialsCode}
     `.trim();
 
     const connectionCode = forEndUser
-      ? 'mstr_connection = Connection(mstr_base_url, mstr_username, mstr_password, project_id=mstr_project_id, login_mode=mstr_login_mode, verbose=False)'
-      : `mstr_connection = Connection(mstr_base_url, ${username ? `"${username}"` : 'None'}, project_id=mstr_project_id, identity_token=mstr_identity_token, login_mode=mstr_login_mode, verbose=False)`;
+      ? 'mstr_connection = Connection(mstr_base_url, mstr_username, mstr_password, application_id=mstr_application_id, login_mode=mstr_login_mode, verbose=False)'
+      : `mstr_connection = Connection(mstr_base_url, ${username ? `"${username}"` : 'None'}, application_id=mstr_application_id, identity_token=mstr_identity_token, login_mode=mstr_login_mode, verbose=False)`;
 
     return `
 ${importCode}
@@ -198,9 +205,9 @@ def update_custom_env():
         .replace(/[^A-Za-z0-9_]/gi, '')
     }`;
 
-    const datasetTypeFirstUp = PythonCode.capitalize(datasetType);
-    const connectionCode = this.generateConnectionCode(forEndUser, datasetTypeFirstUp);
-    const instanceIdCode = forEndUser ? '' : `, ${instanceId ? `"${instanceId}"` : 'None'}`;
+    const method = datasetType.toLowerCase() === 'report' ? 'Report' : 'load_cube';
+    const connectionCode = this.generateConnectionCode(forEndUser);
+    const instanceIdCode = forEndUser ? '' : `, instance_id=${instanceId ? `"${instanceId}"` : 'None'}`;
 
     const applyFiltersContent = attributes.length + metrics.length + filters.length === 0
       ? 'attributes = None, metrics = None, attr_elements = None'
@@ -214,7 +221,7 @@ def update_custom_env():
 ${connectionCode}
 
 # Data Import
-${variableName} = ${datasetTypeFirstUp}(mstr_connection, "${datasetId}"${instanceIdCode})
+${variableName} = ${method}(mstr_connection, "${datasetId}"${instanceIdCode})
 ${variableName}.apply_filters(${applyFiltersContent})
 ${variableName}.to_dataframe()
 ${variableName}_df = ${variableName}.dataframe
@@ -240,7 +247,7 @@ mstr_dataset.add_table(
     `.trim())
       .join('\n');
 
-    const connectionCode = this.generateConnectionCode(forEndUser, 'Dataset');
+    const connectionCode = this.generateConnectionCode(forEndUser, true);
     const modelingStepsCode = forEndUser ? this.generateApplyStepsCodeInsideExport(dataModelingSteps) : '';
 
     return (`
@@ -248,7 +255,7 @@ ${connectionCode}
 update_custom_env()
 ${modelingStepsCode}
 # Data Export
-mstr_dataset = Dataset(mstr_connection, name="${saveAsName}"${description ? `, description="${description}"` : ''})
+mstr_dataset = SuperCube(mstr_connection, name="${saveAsName}"${description ? `, description="${description}"` : ''})
 ${tablesCode}
 mstr_dataset.create(folder_id="${folderId}")
 ${certify ? 'mstr_dataset.certify()' : ''}
@@ -267,7 +274,7 @@ mstr_dataset.add_table(name="${tableName}",
 `))
       .join('\n');
 
-    const connectionCode = this.generateConnectionCode(forEndUser, 'Dataset');
+    const connectionCode = this.generateConnectionCode(forEndUser, true);
     const modelingStepsCode = forEndUser ? this.generateApplyStepsCodeInsideExport(dataModelingSteps) : '';
 
     return (`
@@ -275,7 +282,7 @@ ${connectionCode}
 update_custom_env()
 ${modelingStepsCode}
 # Data Update
-mstr_dataset = Dataset(mstr_connection, dataset_id="${datasetId}")
+mstr_dataset = SuperCube(mstr_connection, id="${datasetId}")
 ${tablesCode}
 
 mstr_dataset.update()

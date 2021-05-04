@@ -5,7 +5,8 @@ class Filter:
     err_msg_invalid = "Invalid object ID: '{}'"
     err_msg_duplicated = "Duplicate object ID: '{}'"
 
-    def __init__(self, attributes, metrics, attr_elements=None, row_count_metrics=None, operator='In'):
+    def __init__(self, attributes: list, metrics: list, attr_elements: list = None,
+                 row_count_metrics: list = None, operator: str = 'In'):
 
         self.attributes = {}
         for a in attributes:
@@ -19,11 +20,13 @@ class Filter:
         if attr_elements is not None:
             for att in attr_elements:
                 for el in att["elements"]:
-                    self.attr_elems[el["id"]] = {"name": att["attribute_name"],
-                                                 "attribute_id": att["attribute_id"]}
-
-        # self.row_count_metrics = row_count_metrics if row_count_metrics is not None else []
-        self.row_count_metrics = [] if row_count_metrics is None else [i['id'] for i in row_count_metrics]
+                    self.attr_elems[el["id"]] = {
+                        "name": att["attribute_name"],
+                        "attribute_id": att["attribute_id"]
+                    }
+        self.row_count_metrics = [] if row_count_metrics is None else [
+            i['id'] for i in row_count_metrics
+        ]
         self.attr_selected = []
         self.metr_selected = []
         self.attr_elem_selected = []
@@ -44,9 +47,9 @@ class Filter:
             if len(object_id) > 32 and object_id[32] == ';':
                 attr_form_object_id = [object_id[:32], object_id[33:]]
                 object_id = attr_form_object_id[0]
+
             if self.__invalid(object_id):
                 raise ValueError(self.err_msg_invalid.format(object_id))
-
             if self.__duplicated(object_id):
                 helper.exception_handler(msg=self.err_msg_duplicated.format(object_id),
                                          exception_type=Warning)
@@ -134,10 +137,8 @@ class Filter:
             opers = []
             for k, v in lkp.items():
                 att = {"type": "attribute", "id": k}
-                elem = {"type": "elements",
-                        "elements": [{"id": _} for _ in v]}
-                opers.append({"operator": self.operator,
-                              "operands": [att, elem]})
+                elem = {"type": "elements", "elements": [{"id": _} for _ in v]}
+                opers.append({"operator": self.operator, "operands": [att, elem]})
 
             if len(opers) > 1:
                 vf = {"operator": "And", "operands": [op for op in opers]}
@@ -159,13 +160,10 @@ class Filter:
 
         if object_id in self.attributes.keys():
             return "attribute"
-
         elif object_id in list(self.metrics.keys()) + self.row_count_metrics:
             return "metric"
-
         elif object_id in self.attr_elems.keys():
             return "element"
-
         else:
             return None
 
@@ -175,13 +173,14 @@ class Filter:
         if object_is_attr_el:
             return object_id.split(':')[0] not in self.attributes.keys()
         else:
-            valid_object_ids = list(self.metrics.keys()) + list(self.attributes.keys()) + self.row_count_metrics
+            valid_object_ids = list(self.metrics.keys()) + list(
+                self.attributes.keys()) + self.row_count_metrics
             return object_id not in valid_object_ids
 
     def __duplicated(self, object_id):
         """Check if requested object_id is already selected."""
-
-        all_selected_objects = [elem[0] for elem in self.attr_selected] + self.metr_selected + self.attr_elem_selected
+        attr_selected = [elem[0] for elem in self.attr_selected]
+        all_selected_objects = attr_selected + self.metr_selected + self.attr_elem_selected
 
         if object_id in all_selected_objects:
             return True

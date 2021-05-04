@@ -12,12 +12,12 @@ def report_definition(connection, report_id):
 
     Args:
         connection: MicroStrategy REST API connection object
-        report_id (str): Unique ID of the report you wish to extract information from.
+        report_id (str): Unique ID of the report
 
     Returns:
         Complete HTTP response object.
     """
-    connection._validate_project_selected()
+    connection._validate_application_selected()
     response = connection.session.get(url=connection.base_url + '/api/v2/reports/' + report_id)
     if not response.ok:
         response_handler(response, "Error getting report definition. Check report ID.")
@@ -48,9 +48,11 @@ def report_instance(connection, report_id, body={}, offset=0, limit=5000):
     if version.parse(connection.iserver_version) >= version.parse("11.2.0200"):
         params['fields'] = '-data.metricValues.extras,-data.metricValues.formatted'
 
-    response = connection.session.post(url=connection.base_url + '/api/v2/reports/' + report_id + '/instances/',
-                                       json=body,
-                                       params=params)
+    response = connection.session.post(
+        url=connection.base_url + '/api/v2/reports/' + report_id + '/instances/',
+        json=body,
+        params=params,
+    )
     if not response.ok:
         response_handler(response, "Error getting report contents.")
     return response
@@ -83,15 +85,17 @@ def report_instance_id(connection, report_id, instance_id, offset=0, limit=5000)
     if version.parse(connection.iserver_version) >= version.parse("11.2.0200"):
         params['fields'] = '-data.metricValues.extras,-data.metricValues.formatted'
 
-    response = connection.session.get(url=connection.base_url + '/api/v2/reports/' + report_id + '/instances/' +
-                                      instance_id,
-                                      params=params)
+    response = connection.session.get(
+        url=connection.base_url + '/api/v2/reports/' + report_id + '/instances/' + instance_id,
+        params=params,
+    )
     if not response.ok:
         response_handler(response, "Error getting cube contents.")
     return response
 
 
-def report_instance_id_coroutine(future_session, connection, report_id, instance_id, offset=0, limit=5000):
+def report_instance_id_coroutine(future_session, connection, report_id, instance_id, offset=0,
+                                 limit=5000):
     """Get the future of a previously created instance for a specific report
     asynchroneously, using the in-memory instance created by report_instance().
 
@@ -127,17 +131,21 @@ def report_single_attribute_elements(connection, report_id, attribute_id, offset
         Complete HTTP response object
     """
 
-    response = connection.session.get(url=connection.base_url + '/api/reports/' + report_id + '/attributes/' +
-                                      attribute_id + '/elements',
-                                      params={'offset': offset,
-                                              'limit': limit})
+    response = connection.session.get(
+        url=connection.base_url + '/api/reports/' + report_id + '/attributes/' + attribute_id
+        + '/elements',
+        params={
+            'offset': offset,
+            'limit': limit
+        },
+    )
     if not response.ok:
-        response_handler(response, "Error retrieving attribute " +
-                         attribute_id + " elements")
+        response_handler(response, "Error retrieving attribute " + attribute_id + " elements")
     return response
 
 
-def report_single_attribute_elements_coroutine(future_session, connection, report_id, attribute_id, offset=0, limit=200000):
+def report_single_attribute_elements_coroutine(future_session, connection, report_id, attribute_id,
+                                               offset=0, limit=200000):
     """Get elements of a specific attribute of a specific report.
 
     Args:
@@ -156,7 +164,7 @@ def report_single_attribute_elements_coroutine(future_session, connection, repor
     Returns:
         Complete Future object
     """
-    url = connection.base_url + '/api/reports/' + report_id + '/attributes/' + attribute_id + '/elements'
-    future = future_session.get(url, params={'offset': offset,
-                                             'limit': limit})
+    url = (connection.base_url + '/api/reports/' + report_id + '/attributes/' + attribute_id
+           + '/elements')
+    future = future_session.get(url, params={'offset': offset, 'limit': limit})
     return future

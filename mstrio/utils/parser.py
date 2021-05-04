@@ -29,7 +29,7 @@ class Parser:
         # exract attribute form names
         self._attribute_elem_form_names = self.__extract_attribute_form_names(response=response)
 
-        # parse attribute column names including attribute form names into final column names
+        # parse attribute column names including attribute form names into final column names  # noqa
         self._attribute_col_names = self.__get_attribute_col_names()
 
         self.__extract_paging_info(response)
@@ -43,9 +43,10 @@ class Parser:
             response: JSON-formatted content of API response.
         """
         if self.total_rows > 0:
-            # extract attribute values into numpy 2D array if attributes exist in the response
+            # extract attribute values into numpy 2D array if attributes exist in the response  # noqa
             if self._attribute_names:
-                self._mapped_attributes = np.vstack((self._mapped_attributes, self.__map_attributes(response=response)))
+                self._mapped_attributes = np.vstack(
+                    (self._mapped_attributes, self.__map_attributes(response=response)))
 
             # extract metric values if metrics exist in the response
             if self._metric_col_names:
@@ -53,13 +54,12 @@ class Parser:
 
     def __to_dataframe(self):
 
-        # create attribute data frame, then re-map integer array with corresponding attribute element values
-        attribute_df = pd.DataFrame(
-            data=self._mapped_attributes, columns=self._attribute_col_names)
+        # create attribute data frame, then re-map integer array with corresponding attribute element values  # noqa
+        attribute_df = pd.DataFrame(data=self._mapped_attributes,
+                                    columns=self._attribute_col_names)
 
         # create metric values data frame
-        metric_df = pd.DataFrame(
-            data=self._metric_values_raw, columns=self._metric_col_names)
+        metric_df = pd.DataFrame(data=self._metric_values_raw, columns=self._metric_col_names)
 
         return pd.concat([attribute_df, metric_df], axis=1)
 
@@ -73,22 +73,26 @@ class Parser:
         _, columns = row_index_array.shape
 
         # create attribute form name to attribute form index mapping
-        vfunc = np.vectorize(lambda attribute_indexes, columns: label_map[columns][attribute_indexes])
+        vfunc = np.vectorize(
+            lambda attribute_indexes, columns: label_map[columns][attribute_indexes])
 
         return vfunc(row_index_array, range(columns))
 
     def __create_attribute_element_map(self, response):
-        # creates a map of type nested list for attribute element labels. The index of the list corresponds to
-        # attribute element row index from the grid headers. The map is used later to map the integer-based grid
-        # header values to the real attribute element labels
+        """Creat a map of type nested list for attribute element labels.
+
+        The index of the list corresponds to attribute element row index from
+        the grid headers. The map is used to map the integer-based grid
+        header values to the real attribute element labels."""
 
         # extract attribute form and attribute elements labels
         rows = response["definition"]["grid"]["rows"]
         form_values_rows = [[el['formValues'] for el in row['elements']] for row in rows]
 
         def replicate_form_values(form_values):
-            # replicate attribute element values for total, count, etc. to fill the lists to correct size
-            # I-Server only sends them once for attribute
+            """Replicate attribute element values for total, count, etc. to fill
+            the lists to correct size. I-Server only sends them once per
+            attribute"""
             if not self.parse_cube:
                 for i, attr in enumerate(self._attribute_elem_form_names):
 
@@ -99,8 +103,9 @@ class Parser:
                             r.extend(r * (required_len - 1))
 
         def separate(form_values):
-            # format into correct list structure. This function separates the nested lists into a list of list
-            # where one element corresponds to a attribute column
+            """Format into correct list structure. This function separates the
+            nested lists into a list of list where one element corresponds to an
+            attribute column"""
             final_list = []
             try:
                 for attr in form_values:
@@ -108,9 +113,10 @@ class Parser:
                     col = len(attr)
                     final_list.extend(np.array(attr).reshape(col, row).transpose().tolist())
                 return final_list
-            except IndexError as e:
-                exception_handler("Missing attribute elements, please check if attribute elements IDs are valid and if they exist in report.",
-                                  type(e))
+            except IndexError:
+                msg = ("Missing attribute elements, please check if attribute elements IDs are "
+                       "valid and if they exist in report.")
+                exception_handler(msg, IndexError)
 
         replicate_form_values(form_values_rows)
         ae_index_map = separate(form_values_rows)
@@ -119,8 +125,13 @@ class Parser:
 
     def __extract_attribute_element_row_index(self, response):
         # extracts the attribute element row index from the headers
-        return [list(chain.from_iterable([[r for _ in f] for r, f in zip(row, self._attribute_elem_form_names)]))
-                for row in response["data"]["headers"]["rows"]]
+        return [
+            list(
+                chain.from_iterable([[r
+                                      for _ in f]
+                                     for r, f in zip(row, self._attribute_elem_form_names)]))
+            for row in response["data"]["headers"]["rows"]
+        ]
 
     def __extract_paging_info(self, response):
         # extract paging info
@@ -152,10 +163,10 @@ class Parser:
         col_names = []
         for attr, forms in zip(self._attribute_names, self._attribute_elem_form_names):
             if len(forms) == 1:
-                # if there is only one form, do not display the attribute form type in the column headers
+                # if only one form, do not display the attribute form type in the column headers  # noqa
                 col_names.append(attr)
             else:
-                # otherwise concatenate the attribute name, separator, and form type
+                # otherwise concatenate the attribute name, separator, and form type  # noqa
                 for form in forms:
                     col_names.append(attr + self.AF_COL_SEP + form)
 

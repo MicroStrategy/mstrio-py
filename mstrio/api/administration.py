@@ -30,8 +30,10 @@ def get_privilege_categories(connection, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.get(url=connection.base_url + '/api/iserver/privileges/categories',
-                                      headers={'X-MSTR-ProjectID': None})
+    response = connection.session.get(
+        url=connection.base_url + '/api/iserver/privileges/categories',
+        headers={'X-MSTR-ProjectID': None},
+    )
     if not response.ok:
         if error_msg is None:
             error_msg = "Error getting privilege categories"
@@ -73,9 +75,11 @@ def create_ldap_config(connection, body, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.post(url=connection.base_url + '/api/iserver/ldap/configuration',
-                                       headers={'X-MSTR-ProjectID': None},
-                                       json=body)
+    response = connection.session.post(
+        url=connection.base_url + '/api/iserver/ldap/configuration',
+        headers={'X-MSTR-ProjectID': None},
+        json=body,
+    )
     if not response.ok:
         if error_msg is None:
             error_msg = "Error creating LDAP configuration"
@@ -94,8 +98,10 @@ def delete_ldap_config(connection, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.delete(url=connection.base_url + '/api/iserver/ldap/configuration',
-                                         headers={'X-MSTR-ProjectID': None})
+    response = connection.session.delete(
+        url=connection.base_url + '/api/iserver/ldap/configuration',
+        headers={'X-MSTR-ProjectID': None},
+    )
     if not response.ok:
         if error_msg is None:
             error_msg = "Error deleting LDAP configuration"
@@ -118,9 +124,11 @@ def update_ldap_config(connection, body, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.patch(url=connection.base_url + '/api/iserver/ldap/configuration',
-                                        headers={'X-MSTR-ProjectID': None},
-                                        json=body)
+    response = connection.session.patch(
+        url=connection.base_url + '/api/iserver/ldap/configuration',
+        headers={'X-MSTR-ProjectID': None},
+        json=body,
+    )
     if not response.ok:
         if error_msg is None:
             error_msg = "Error updating LDAP configuration"
@@ -186,9 +194,11 @@ def upload_ldap_certificate(connection, body, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.post(url=connection.base_url + '/api/iserver/ldap/certificate',
-                                       headers={'X-MSTR-ProjectID': None},
-                                       json=body)
+    response = connection.session.post(
+        url=connection.base_url + '/api/iserver/ldap/certificate',
+        headers={'X-MSTR-ProjectID': None},
+        json=body,
+    )
     if not response.ok:
         if error_msg is None:
             error_msg = "Error updating LDAP certificate"
@@ -296,10 +306,14 @@ def update_authentication_configs(connection, body, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.put(url=connection.base_url + '/api/admin/restServerSettings/auth',
-                                      headers={'X-MSTR-ProjectID': None,
-                                               'Authorization': connection._get_authorization()},
-                                      json=body)
+    response = connection.session.put(
+        url=connection.base_url + '/api/admin/restServerSettings/auth',
+        headers={
+            'X-MSTR-ProjectID': None,
+            'Authorization': connection._get_authorization()
+        },
+        json=body,
+    )
     if not response.ok:
         if error_msg is None:
             error_msg = "Error updating authentication configurations"
@@ -323,10 +337,14 @@ def update_collaboration_server_configs(connection, body, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.put(url=connection.base_url + '/api/admin/restServerSettings/collaboration',
-                                      headers={'X-MSTR-ProjectID': None,
-                                               'Authorization': connection._get_authorization()},
-                                      json=body)
+    response = connection.session.put(
+        url=connection.base_url + '/api/admin/restServerSettings/collaboration',
+        headers={
+            'X-MSTR-ProjectID': None,
+            'Authorization': connection._get_authorization()
+        },
+        json=body,
+    )
     if not response.ok:
         if error_msg is None:
             error_msg = "Error updating collaboration server configurations"
@@ -348,10 +366,14 @@ def update_web_configs(connection, body, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.put(url=connection.base_url + '/api/admin/restServerSettings/microStrategyWeb',
-                                      headers={'X-MSTR-ProjectID': None,
-                                               'Authorization': connection._get_authorization()},
-                                      json=body)
+    response = connection.session.put(
+        url=connection.base_url + '/api/admin/restServerSettings/microStrategyWeb',
+        headers={
+            'X-MSTR-ProjectID': None,
+            'Authorization': connection._get_authorization()
+        },
+        json=body,
+    )
     if not response.ok:
         if error_msg is None:
             error_msg = "Error updating web configurations"
@@ -375,11 +397,14 @@ def test_collaboration_connection(connection, body, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.post(url=connection.base_url +
-                                       '/api/admin/restServerSettings/collaboration/connectionTest',
-                                       headers={'X-MSTR-ProjectID': None,
-                                                'Authorization': connection._get_authorization()},
-                                       json=body)
+    response = connection.session.post(
+        url=connection.base_url + '/api/admin/restServerSettings/collaboration/connectionTest',
+        headers={
+            'X-MSTR-ProjectID': None,
+            'Authorization': connection._get_authorization()
+        },
+        json=body,
+    )
     if not response.ok:
         if error_msg is None:
             error_msg = "Error testing collaboration server connection"
@@ -403,10 +428,14 @@ def update_iserver_configs(connection, body, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.put(url=connection.base_url + '/api/admin/restServerSettings/iServer',
-                                      headers={'X-MSTR-ProjectID': None,
-                                               'Authorization': connection._get_authorization()},
-                                      json=body)
+    response = connection.session.put(
+        url=connection.base_url + '/api/admin/restServerSettings/iServer',
+        headers={
+            'X-MSTR-ProjectID': None,
+            'Authorization': connection._get_authorization()
+        },
+        json=body,
+    )
     if not response.ok:
         if error_msg is None:
             error_msg = "Error updating intelligence server configurations"
@@ -426,9 +455,13 @@ def get_rest_configs(connection, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.get(url=connection.base_url + '/api/admin/restServerSettings',
-                                      headers={'X-MSTR-ProjectID': None,
-                                               'Authorization': connection._get_authorization()})
+    response = connection.session.get(
+        url=connection.base_url + '/api/admin/restServerSettings',
+        headers={
+            'X-MSTR-ProjectID': None,
+            'Authorization': connection._get_authorization()
+        },
+    )
     if not response.ok:
         if error_msg is None:
             error_msg = "Error getting rest configurations"
@@ -447,10 +480,13 @@ def check_iserver_web_trust(connection, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.get(url=connection.base_url +
-                                      '/api/admin/restServerSettings/iServer/trustRelationship',
-                                      headers={'X-MSTR-ProjectID': None,
-                                               'Authorization': connection._get_authorization()})
+    response = connection.session.get(
+        url=connection.base_url + '/api/admin/restServerSettings/iServer/trustRelationship',
+        headers={
+            'X-MSTR-ProjectID': None,
+            'Authorization': connection._get_authorization()
+        },
+    )
     if not response.ok:
         if error_msg is None:
             error_msg = "Error checking intelligence server - web server trust relationship"
@@ -474,11 +510,14 @@ def set_iserver_web_trust(connection, body, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.post(url=connection.base_url +
-                                       '/api/admin/restServerSettings/iServer/trustRelationship',
-                                       headers={'X-MSTR-ProjectID': None,
-                                                'Authorization': connection._get_authorization()},
-                                       json=body)
+    response = connection.session.post(
+        url=connection.base_url + '/api/admin/restServerSettings/iServer/trustRelationship',
+        headers={
+            'X-MSTR-ProjectID': None,
+            'Authorization': connection._get_authorization()
+        },
+        json=body,
+    )
     if not response.ok:
         if error_msg is None:
             error_msg = "Error setting intelligence server - web server trust relationship"
@@ -499,10 +538,13 @@ def delete_iserver_web_trust(connection, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.delete(url=connection.base_url +
-                                         '/api/admin/restServerSettings/iServer/trustRelationship',
-                                         headers={'X-MSTR-ProjectID': None,
-                                                  'Authorization': connection._get_authorization()})
+    response = connection.session.delete(
+        url=connection.base_url + '/api/admin/restServerSettings/iServer/trustRelationship',
+        headers={
+            'X-MSTR-ProjectID': None,
+            'Authorization': connection._get_authorization()
+        },
+    )
     if not response.ok:
         if error_msg is None:
             error_msg = "Error deleting intelligence server - web server trust relationship"
@@ -522,10 +564,13 @@ def test_iserver_connection(connection, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.post(url=connection.base_url +
-                                       '/api/admin/restServerSettings/iServer/connectionTest',
-                                       headers={'X-MSTR-ProjectID': None,
-                                                'Authorization': connection._get_authorization()})
+    response = connection.session.post(
+        url=connection.base_url + '/api/admin/restServerSettings/iServer/connectionTest',
+        headers={
+            'X-MSTR-ProjectID': None,
+            'Authorization': connection._get_authorization()
+        },
+    )
     if not response.ok:
         if error_msg is None:
             error_msg = "Error testing intelligence server connection"
@@ -545,10 +590,13 @@ def get_security_settings(connection, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.get(url=connection.base_url +
-                                      '/api/admin/restServerSettings/security',
-                                      headers={'X-MSTR-ProjectID': None,
-                                               'Authorization': connection._get_authorization()})
+    response = connection.session.get(
+        url=connection.base_url + '/api/admin/restServerSettings/security',
+        headers={
+            'X-MSTR-ProjectID': None,
+            'Authorization': connection._get_authorization()
+        },
+    )
     if not response.ok:
         if error_msg is None:
             error_msg = "Error getting security settings"
@@ -571,11 +619,14 @@ def update_security_settings(connection, body, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.put(url=connection.base_url +
-                                      '/api/admin/restServerSettings/security',
-                                      headers={'X-MSTR-ProjectID': None,
-                                               'Authorization': connection._get_authorization()},
-                                      json=body)
+    response = connection.session.put(
+        url=connection.base_url + '/api/admin/restServerSettings/security',
+        headers={
+            'X-MSTR-ProjectID': None,
+            'Authorization': connection._get_authorization()
+        },
+        json=body,
+    )
     if not response.ok:
         if error_msg is None:
             error_msg = "Error updating security settings"
@@ -639,9 +690,11 @@ def create_iserver_settings(connection, body, error_msg=None):
             }
         }
     """
-    response = connection.session.put(url=connection.base_url + '/api/v2/iserver/settings',
-                                      headers={'X-MSTR-ProjectID': None},
-                                      json=body)
+    response = connection.session.put(
+        url=connection.base_url + '/api/v2/iserver/settings',
+        headers={'X-MSTR-ProjectID': None},
+        json=body,
+    )
     if not response.ok:
         if error_msg is None:
             error_msg = "Error updating I-Server settings"
@@ -665,9 +718,11 @@ def update_iserver_settings(connection, body, error_msg=None):
             }
         }
     """
-    response = connection.session.patch(url=connection.base_url + '/api/v2/iserver/settings',
-                                        headers={'X-MSTR-ProjectID': None},
-                                        json=body)
+    response = connection.session.patch(
+        url=connection.base_url + '/api/v2/iserver/settings',
+        headers={'X-MSTR-ProjectID': None},
+        json=body,
+    )
     if not response.ok:
         if error_msg is None:
             error_msg = "Error updating I-Server settings"
@@ -706,9 +761,11 @@ def update_iserver_settings_OLD(connection, body, error_msg=None):
             }
         ]}
     """
-    response = connection.session.put(url=connection.base_url + '/api/iserver/settings',
-                                      headers={'X-MSTR-ProjectID': None},
-                                      json=body)
+    response = connection.session.put(
+        url=connection.base_url + '/api/iserver/settings',
+        headers={'X-MSTR-ProjectID': None},
+        json=body,
+    )
     if not response.ok:
         if error_msg is None:
             error_msg = "Error updating I-Server settings"
@@ -726,9 +783,13 @@ def get_cluster_membership(connection, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.get(url=connection.base_url + '/api/admin/iServer/clusterMembership',
-                                      headers={'X-MSTR-ProjectID': None,
-                                               'Authorization': connection._get_authorization()})
+    response = connection.session.get(
+        url=connection.base_url + '/api/admin/iServer/clusterMembership',
+        headers={
+            'X-MSTR-ProjectID': None,
+            'Authorization': connection._get_authorization()
+        },
+    )
     if not response.ok:
         if error_msg is None:
             error_msg = "Error getting cluster membership information."
@@ -748,9 +809,13 @@ def get_iserver_node_settings(connection, node, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.get(url=connection.base_url + '/api/admin/restServerSettings/iServer/' +
-                                      node, headers={'X-MSTR-ProjectID': None,
-                                                     'Authorization': connection._get_authorization()})
+    response = connection.session.get(
+        url=connection.base_url + '/api/admin/restServerSettings/iServer/' + node,
+        headers={
+            'X-MSTR-ProjectID': None,
+            'Authorization': connection._get_authorization()
+        },
+    )
     if not response.ok:
         if error_msg is None:
             error_msg = "Error getting I-Server node settings."
@@ -769,10 +834,14 @@ def update_iserver_configuration_settings(connection, body, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.put(url=connection.base_url + '/api/admin/restServerSettings/iServer',
-                                      headers={'X-MSTR-ProjectID': None,
-                                               'Authorization': connection._get_authorization()},
-                                      json=body)
+    response = connection.session.put(
+        url=connection.base_url + '/api/admin/restServerSettings/iServer',
+        headers={
+            'X-MSTR-ProjectID': None,
+            'Authorization': connection._get_authorization()
+        },
+        json=body,
+    )
     if not response.ok:
         if error_msg is None:
             error_msg = "Error updating Intelligence Server configuration settings."
@@ -795,10 +864,14 @@ def update_iserver_node_settings(connection, body, node, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.put(url=f'{connection.base_url}/api/admin/restServerSettings/iServer/{node}',
-                                      headers={'X-MSTR-ProjectID': None,
-                                               'Authorization': connection._get_authorization()},
-                                      json=body)
+    response = connection.session.put(
+        url=f'{connection.base_url}/api/admin/restServerSettings/iServer/{node}',
+        headers={
+            'X-MSTR-ProjectID': None,
+            'Authorization': connection._get_authorization()
+        },
+        json=body,
+    )
     if not response.ok:
         if error_msg is None:
             error_msg = "Error updating I-Server node settings."
@@ -816,9 +889,13 @@ def delete_iserver_node_settings(connection, node, error_msg=None):
         node: Intelligence Server host name
         error_msg (string, optional): Custom Error Message for Error Handling
     """
-    response = connection.session.delete(url=f'{connection.base_url}/api/admin/restServerSettings/iServer/{node}',
-                                         headers={'X-MSTR-ProjectID': None,
-                                                  'Authorization': connection._get_authorization()})
+    response = connection.session.delete(
+        url=f'{connection.base_url}/api/admin/restServerSettings/iServer/{node}',
+        headers={
+            'X-MSTR-ProjectID': None,
+            'Authorization': connection._get_authorization()
+        },
+    )
     if not response.ok:
         if error_msg is None:
             error_msg = "Error deleting I-Server node settings."

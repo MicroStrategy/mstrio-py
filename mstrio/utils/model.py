@@ -49,23 +49,26 @@ class Model(object):
         # check dataset name params
         self.__name = name
         self.__check_param_str(self.__name, msg="Dataset name should be a string.")
-        self.__check_param_len(self.__name,
-                               msg="Dataset name should be <= {} characters.".format(self.__MAX_DESC_LEN),
-                               max_length=self.__MAX_DESC_LEN)
-        self.__check_param_inv_chars(self.__name,
-                                     msg="Dataset name cannot contain '{}', '{}', '{}', '{}'."
-                                     .format(*self._INVALID_CHARS),
-                                     invalid_chars=self._INVALID_CHARS)
+        self.__check_param_len(
+            self.__name,
+            msg="Dataset name should be <= {} characters.".format(self.__MAX_DESC_LEN),
+            max_length=self.__MAX_DESC_LEN)
+        self.__check_param_inv_chars(
+            self.__name,
+            msg="Dataset name cannot contain '{}', '{}', '{}', '{}'.".format(*self._INVALID_CHARS),
+            invalid_chars=self._INVALID_CHARS)
 
         # check dataset description params
         if description is None:
             self.__description = ""
         else:
             self.__description = description
-            self.__check_param_str(self.__description, msg="Dataset description should be a string.")
-            self.__check_param_len(self.__description,
-                                   msg="Dataset description should be <= {} characters.".format(self.__MAX_DESC_LEN),
-                                   max_length=self.__MAX_DESC_LEN)
+            self.__check_param_str(self.__description,
+                                   msg="Dataset description should be a string.")
+            self.__check_param_len(
+                self.__description,
+                msg="Dataset description should be <= {} characters.".format(self.__MAX_DESC_LEN),
+                max_length=self.__MAX_DESC_LEN)
 
         # check folder_id param
         if folder_id is None:
@@ -73,7 +76,7 @@ class Model(object):
         else:
             self._folder_id = folder_id
 
-        # init lists to accumulate table, attr, metric definitions and model object
+        # init lists to accumulate table, attr, metric definitions and model
         self.__tables = []
         self.__attributes = []
         self.__metrics = []
@@ -97,7 +100,8 @@ class Model(object):
             _col_types = self.__get_col_types(table[self._KEY_DATA_FRAME])
 
             # map tables
-            self.__add_table(name=table[self._KEY_TABLE_NAME], col_names=_col_names, col_types=_col_types)
+            self.__add_table(name=table[self._KEY_TABLE_NAME], col_names=_col_names,
+                             col_types=_col_types)
 
             # map attributes and metrics
             for _name, _type in zip(_col_names, _col_types):
@@ -115,12 +119,14 @@ class Model(object):
                         self.__add_attribute(_name, table[self._KEY_TABLE_NAME])
 
         # set model object
-        self.__model = {"name": self.__name,
-                        "description": self.__description,
-                        "folderId": self._folder_id,
-                        "tables": self.__tables,
-                        "metrics": self.__metrics,
-                        "attributes": self.__attributes}
+        self.__model = {
+            "name": self.__name,
+            "description": self.__description,
+            "folderId": self._folder_id,
+            "tables": self.__tables,
+            "metrics": self.__metrics,
+            "attributes": self.__attributes
+        }
 
     def __get_col_types(self, table):
         """Map column types from each column in the list of table."""
@@ -128,20 +134,36 @@ class Model(object):
 
     def __add_metric(self, name, table_name):
         """Add a metric to a metric list instance."""
-        self.__metrics.append({'name': name, 'expressions': [{'tableName': table_name, 'columnName': name}]})
+        self.__metrics.append({
+            'name': name,
+            'expressions': [{
+                'tableName': table_name,
+                'columnName': name
+            }]
+        })
 
     def __add_attribute(self, name, table_name):
         """Add an attribute to an attribute list instance."""
-        self.__attributes.append({'name': name,
-                                  'attributeForms': [{'category': 'ID',
-                                                      'expressions': [{'tableName': table_name,
-                                                                       'columnName': name}]}]})
+        self.__attributes.append({
+            'name': name,
+            'attributeForms': [{
+                'category': 'ID',
+                'expressions': [{
+                    'tableName': table_name,
+                    'columnName': name
+                }]
+            }]
+        })
 
     def __add_table(self, name, col_names, col_types):
         """Add a table to a table list instance."""
-        self.__tables.append({'name': name,
-                              'columnHeaders': [{'name': name, 'dataType': typ} for name, typ in
-                                                zip(col_names, col_types)]})
+        self.__tables.append({
+            'name': name,
+            'columnHeaders': [{
+                'name': name,
+                'dataType': typ
+            } for name, typ in zip(col_names, col_types)]
+        })
 
     def __check_table_list(self, tables):
         """Check integrity of table list parameter."""
@@ -162,7 +184,8 @@ class Model(object):
         """Check integrity of table parameter."""
 
         # force all list elements to be a dict with specific names
-        msg = "Each table must be a dictionary with keys: '{}', '{}', '{},' and '{}'.".format(*self._KEY_TABLES)
+        msg = "Each table must be a dictionary with keys: '{}', '{}', '{},' and '{}'.".format(
+            *self._KEY_TABLES)
         if not isinstance(table, dict):
             raise TypeError(msg)
 
@@ -171,13 +194,18 @@ class Model(object):
 
         # check that the value of the data frame key is a pandas data frame
         if not isinstance(table[self._KEY_DATA_FRAME], pd.DataFrame):
-            msg = "Pandas DataFrame must be passed as the value in the '{}' key.".format(self._KEY_DATA_FRAME)
+            msg = "Pandas DataFrame must be passed as the value in the '{}' key.".format(
+                self._KEY_DATA_FRAME)
             raise TypeError(msg)
 
         # check for presence of invalid characters in data frame column names
         if not self.__ignore_special_chars:
-            if any([col for col in table[self._KEY_DATA_FRAME].columns for inv in self._INVALID_CHARS if inv in col]):
-                msg = "Column names cannot contain '{}', '{}', '{}', '{}'".format(*self._INVALID_CHARS)
+            if any([
+                    col for col in table[self._KEY_DATA_FRAME].columns
+                    for inv in self._INVALID_CHARS if inv in col
+            ]):
+                msg = "Column names cannot contain '{}', '{}', '{}', '{}'".format(
+                    *self._INVALID_CHARS)
                 raise ValueError(msg)
 
     @staticmethod
@@ -190,8 +218,10 @@ class Model(object):
         """Maps a Python data type to a MicroStrategy data type."""
         if datatype == 'object':
             return "STRING"
-        elif datatype in ['int64', 'int32']:
+        elif datatype == 'int32':
             return "INTEGER"
+        elif datatype == 'int64':
+            return "BIGINTEGER"
         elif datatype in ['float64', 'float32']:
             return "DOUBLE"
         elif datatype == 'bool':
@@ -222,7 +252,7 @@ class Model(object):
     def __is_metric(datatype):
         """Helper function for determining if the requested datatype is (by
         default) a metric or attribute."""
-        if datatype in ["DOUBLE", "INTEGER"]:
+        if datatype in ["DOUBLE", "INTEGER", "BIGINTEGER", "BIGDECIMAL"]:
             return True
         else:
             return False

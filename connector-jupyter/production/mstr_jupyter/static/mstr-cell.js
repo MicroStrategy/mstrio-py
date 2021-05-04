@@ -26,7 +26,7 @@ define([
 
   // key event handlers on cells directly
   const keyDownHandler = (event, cell) => {
-    const { key: _key, shiftKey, ctrlKey, metaKey } = event;
+    const { key: _key, shiftKey, ctrlKey, metaKey, target } = event;
     const key = _key.toLowerCase();
     const keysToLock = [
       // eslint-disable-next-line max-len
@@ -38,7 +38,11 @@ define([
       '1', '2', '3', '4', '5', '6', // change cell type: header
     ];
     // stop default Jupyter event for keysToLock
-    if (!shiftKey && !ctrlKey && !metaKey && keysToLock.includes(key)) {
+    // & for input fields, stop event
+    if (
+      (['input', 'textfield'].includes(target.nodeName.toLowerCase()))
+      || (!shiftKey && !ctrlKey && !metaKey && keysToLock.includes(key))
+    ) {
       event.stopPropagation();
       return;
     }
