@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Optional
 from mstrio.utils.helper import camel_to_snake, exception_handler, Dictable
 from datetime import datetime
 
@@ -79,7 +80,8 @@ class ZipSettings(DeliveryDictable):
         "password_protect": [bool, False]
     }
 
-    def __init__(self, filename: str = None, password: str = None, password_protect: bool = False):
+    def __init__(self, filename: Optional[str] = None, password: Optional[str] = None,
+                 password_protect: bool = False):
         self.filename = filename
         self.password = password if password_protect else None
         self.password_protect = password_protect
@@ -144,9 +146,10 @@ class Delivery(DeliveryDictable):
             "zip": [ZipSettings, False]
         }
 
-        def __init__(self, subject: str = None, message: str = None, filename: str = None,
-                     space_delimiter: str = None, send_content_as: SendContentAs = None,
-                     overwrite_older_version: bool = False, zip: ZipSettings = None):
+        def __init__(self, subject: Optional[str] = None, message: Optional[str] = None,
+                     filename: Optional[str] = None, space_delimiter: Optional[str] = None,
+                     send_content_as: Optional[SendContentAs] = None,
+                     overwrite_older_version: bool = False, zip: Optional[ZipSettings] = None):
             self.subject = subject
             self.message = message
             self.filename = filename
@@ -180,8 +183,8 @@ class Delivery(DeliveryDictable):
             "zip": [ZipSettings, False]
         }
 
-        def __init__(self, filename: str = None, space_delimiter: str = None,
-                     burst_sub_folder: str = None, zip: ZipSettings = None):
+        def __init__(self, filename: Optional[str] = None, space_delimiter: Optional[str] = None,
+                     burst_sub_folder: Optional[str] = None, zip: Optional[ZipSettings] = None):
             self.filename = filename
             self.space_delimiter = space_delimiter
             self.burst_sub_folder = burst_sub_folder
@@ -209,8 +212,9 @@ class Delivery(DeliveryDictable):
             "use_print_range": [bool, False]
         }
 
-        def __init__(self, copies: int = None, range_start: int = None, range_end: int = None,
-                     collated: bool = False, orientation: Orientation = Orientation.PORTRAIT.name,
+        def __init__(self, copies: Optional[int] = None, range_start: Optional[int] = None,
+                     range_end: Optional[int] = None, collated: bool = False,
+                     orientation: Orientation = Orientation.PORTRAIT.name,
                      use_print_range: bool = False):
             self.copies = copies
             self.range_start = range_start
@@ -234,8 +238,8 @@ class Delivery(DeliveryDictable):
             "zip": [ZipSettings, False]
         }
 
-        def __init__(self, space_delimiter: str = None, filename: str = None,
-                     zip: ZipSettings = None):
+        def __init__(self, space_delimiter: Optional[str] = None, filename: Optional[str] = None,
+                     zip: Optional[ZipSettings] = None):
             self.space_delimiter = space_delimiter
             self.filename = filename
             self.zip = zip
@@ -280,7 +284,7 @@ class Delivery(DeliveryDictable):
         }
 
         def __init__(self, client_type: ClientType = ClientType.RESERVED.name,
-                     device_id: str = None, do_not_create_update_caches: bool = False,
+                     device_id: Optional[str] = None, do_not_create_update_caches: bool = False,
                      overwrite_older_version: bool = False, re_run_hl: bool = False):
             self.client_type = client_type
             self.device_id = device_id
@@ -307,7 +311,8 @@ class Delivery(DeliveryDictable):
             "re_run_hl": [bool, False]
         }
 
-        def __init__(self, device_id: str = None, do_not_create_update_caches: bool = False,
+        def __init__(self, device_id: Optional[str] = None,
+                     do_not_create_update_caches: bool = False,
                      overwrite_older_version: bool = False, re_run_hl: bool = False):
             self.device_id = device_id
             self.do_not_create_update_caches = do_not_create_update_caches
@@ -327,19 +332,22 @@ class Delivery(DeliveryDictable):
         "history_list": [HistoryList, False]
     }
 
-    def __init__(self, mode=DeliveryMode.EMAIL.value, expiration=None,
-                 contact_security: bool = None, subject: str = None, message: str = None,
-                 filename: str = None, compress: bool = False, zip: ZipSettings = None,
-                 password: str = None, password_protect: bool = False, space_delimiter: str = None,
-                 send_content_as: SendContentAs = SendContentAs.DATA,
-                 overwrite_older_version: bool = False, burst_sub_folder: str = None,
-                 copies: int = None, range_start: int = None, range_end: int = None,
-                 collated: bool = False, orientation: Orientation = Orientation.PORTRAIT.name,
-                 use_print_range: bool = False, cache_type: CacheType = CacheType.RESERVED.name,
-                 shortcut_cache_format: ShortcutCacheFormat = ShortcutCacheFormat.RESERVED.name,
-                 client_type: ClientType = ClientType.RESERVED.name, device_id: str = None,
-                 do_not_create_update_caches: bool = False, re_run_hl: bool = False,
-                 email: Email = None, file: File = None):
+    def __init__(
+            self, mode=DeliveryMode.EMAIL.value, expiration=None,
+            contact_security: Optional[bool] = None, subject: Optional[str] = None,
+            message: Optional[str] = None, filename: Optional[str] = None, compress: bool = False,
+            zip: Optional[ZipSettings] = None, password: Optional[str] = None,
+            password_protect: bool = False, space_delimiter: Optional[str] = None,
+            send_content_as: SendContentAs = SendContentAs.DATA,
+            overwrite_older_version: bool = False, burst_sub_folder: Optional[str] = None,
+            copies: Optional[int] = None, range_start: Optional[int] = None,
+            range_end: Optional[int] = None, collated: bool = False,
+            orientation: Orientation = Orientation.PORTRAIT.name, use_print_range: bool = False,
+            cache_type: CacheType = CacheType.RESERVED.name,
+            shortcut_cache_format: ShortcutCacheFormat = ShortcutCacheFormat.RESERVED.name,
+            client_type: ClientType = ClientType.RESERVED.name, device_id: Optional[str] = None,
+            do_not_create_update_caches: bool = False, re_run_hl: bool = False,
+            email: Optional[Email] = None, file: Optional[File] = None):
         self.mode = mode
         if expiration:
             if not self._expiration_check(expiration):

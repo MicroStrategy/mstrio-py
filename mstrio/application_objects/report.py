@@ -1,4 +1,5 @@
 from concurrent.futures import ThreadPoolExecutor
+from typing import List, Optional, Union
 
 from packaging import version
 import pandas as pd
@@ -9,13 +10,55 @@ from tqdm.auto import tqdm
 from mstrio.api import reports
 import mstrio.config as config
 from mstrio.connection import Connection
+from mstrio.browsing import list_objects, SearchType
+from mstrio.users_and_groups.user import User
+from mstrio.utils.entity import Entity, ObjectTypes
 from mstrio.utils.filter import Filter
 from mstrio.utils.helper import fallback_on_timeout
 import mstrio.utils.helper as helper
 from mstrio.utils.parser import Parser
 
 
-class Report:
+def list_reports(connection: Connection, name_begins: Optional[str] = None,
+                 to_dictionary: bool = False, limit: Optional[int] = None,
+                 **filters) -> Union[List["Report"], List[dict]]:
+    """Get list of Report objects or dicts with them.
+    Optionally filter reports by specifying 'name_begins'.
+
+    Optionally use `to_dictionary` to choose output format.
+
+    Wildcards available for 'name_begins':
+        ? - any character
+        * - 0 or more of any characters
+        e.g name_begins = ?onny wil return Sonny and Tonny
+
+    Args:
+        connection: MicroStrategy connection object returned by
+            `connection.Connection()`
+        name_begins (string, optional): characters that the report name must
+            begin with
+        to_dictionary (bool, optional): If True returns dict, by default (False)
+            returns Report objects
+        limit (integer, optional): limit the number of elements returned. If
+            None all object are returned.
+        **filters: Available filter parameters: ['id', 'name', 'type',
+            'subtype', 'date_created', 'date_modified', 'version', 'owner',
+            'ext_type', 'view_media', 'certified_info']
+
+    Returns:
+        list with Report objects or list of dictionaries
+    """
+    connection._validate_application_selected()
+    objects_ = list_objects(connection, ObjectTypes.REPORT_DEFINITION, connection.application_id,
+                            name=name_begins, pattern=SearchType.BEGIN_WITH, limit=limit,
+                            **filters)
+    if to_dictionary:
+        return objects_
+    else:
+        return [Report.from_dict(obj_, connection) for obj_ in objects_]
+
+
+class Report(Entity):
     """Access, filter, publish, and extract data from in-memory reports.
 
     Create a Report object to load basic information on a report dataset.
@@ -26,26 +69,50 @@ class Report:
     Attributes:
         connection: MicroStrategy connection object returned by
             `connection.Connection()`.
-        report_id: Identifier of a pre-existing report containing the required
+        id: Identifier of a pre-existing report containing the required
             data.
-        instance_id (str): Identifier of an instance if report instance has been
+        name: Report name
+        description: Report description
+        abbreviation: Report abbreviation
+        instance_id: Identifier of an instance if report instance has been
             already initialized, NULL by default.
-        parallel (bool, optional): If True (default), utilize optimal number of
-            threads to increase the download speed. If False, this feature will
-            be disabled.
-        progress_bar(bool, optional): If True (default), show the download
-            progress bar.
+        type: Object type
+        subtype: Object subtype
+        ext_type: Object extended type
+        date_created: Creation time, "yyyy-MM-dd HH:mm:ss" in UTC
+        date_modified: Last modification time, "yyyy-MM-dd
+        version: Version ID
+        owner: owner User object
+        view_media: View media information
+        ancestors: List of ancestor folders
+        certified_info: Information whether report is certifeid or not
+        attributes: List of attributes
+        metrics: List of metrics
+        attr_elements: All attributes elements of report
+        selected_attributes: IDs of filtered attributes
+        selected_metrics: IDs of filtered metrics
+        selected_attr_elements: IDs of filtered attribute elements
+        dataframe: content of a report extracted into a Pandas `DataFrame`
+        acg: Access rights (See EnumDSSXMLAccessRightFlags for possible values)
+        acl: Object access control list
     """
+    _OBJECT_TYPE = ObjectTypes.REPORT_DEFINITION
+    _API_GETTERS = {**Entity._API_GETTERS}
+    _FROM_DICT_MAP = {**Entity._FROM_DICT_MAP, **{'owner': User.from_dict}}
+    _SIZE_LIMIT = 10000000  # this sets desired chunk size in bytes
 
-    def __init__(self, connection: "Connection", report_id: str, instance_id: str = None,
-                 parallel: bool = True, progress_bar: bool = True):
+    def __init__(self, connection: Connection, id: str = None, instance_id: Optional[str] = None,
+                 parallel: bool = True, progress_bar: bool = True,
+                 report_id: Optional[str] = None):
         """Initialize an instance of a report.
 
         Args:
             connection: MicroStrategy connection object returned by
                 `connection.Connection()`.
-            report_id (str): Identifier of a pre-existing report containing
+            id (str): Identifier of a pre-existing report containing
                 the required data.
+            report_id (str): Identifier of a pre-existing report containing
+                the required data. (deprecated)
             instance_id (str): Identifier of an instance if report instance has
                 been already initialized, NULL by default.
             parallel (bool, optional): If True (default), utilize optimal number
@@ -54,29 +121,59 @@ class Report:
             progress_bar(bool, optional): If True (default), show the download
                 progress bar.
         """
-        if not connection.application_id:
-            helper.exception_handler(
-                ("Please provide an application id or application name when creating the"
-                 "Connection object."), ConnectionError)
-        self._connection = connection
-        self._report_id = report_id
-        self.instance_id = instance_id
-        self.parallel = parallel
-        self.progress_bar = True if progress_bar and config.progress_bar else False
+        if report_id:
+            helper.deprecation_warning("`report_id`", "`id`", "21.07.0", module=False)
+        id = id if id else report_id
 
-        self._subtotals = None
-        self.cross_tab = False
-        self.cross_tab_filter = {}
-        self._size_limit = 10000000  # this sets desired chunk size in bytes
-        self._initial_limit = 1000  # initial limit for the report_instance request
+        super().__init__(connection, id, instance_id=instance_id, parallel=parallel,
+                         progress_bar=progress_bar)
+        connection._validate_application_selected()
+
+    def _init_variables(self, **kwargs):
+        super()._init_variables(**kwargs)
+        self.instance_id = kwargs.get("instance_id")
+        self._parallel = kwargs.get("parallel", True)
+        self._initial_limit = 1000
+        self._progress_bar = True if kwargs.get("progress_bar",
+                                                True) and config.progress_bar else False
+        self._cross_tab = False
+        self._cross_tab_filter = {}
+        self._subtotals = {}
         self._dataframe = None
         self._attr_elements = None
 
-        # load report information
-        self.__definition()
-        self.__filter = Filter(attributes=self.attributes, metrics=self.metrics)
+        self._attributes = []
+        self._metrics = []
+        self.__definition_retrieved = False
+        self.__filter = None
 
-    def to_dataframe(self, limit: int = None) -> pd.DataFrame:
+    @classmethod
+    def from_dict(cls, source: dict, connection: Connection) -> "Report":
+        """Initialize a single Report object from a dictionary with report
+        details retrieved from I-Server."""
+        return super().from_dict(source, connection)
+
+    def alter(self, name: Optional[str] = None, description: Optional[str] = None,
+              abbreviation: Optional[str] = None):
+        """Alter Report properties.
+
+        Args:
+            name: new name of the Report
+            description: new description of the Report
+            abbreviation: new abbreviation of the Report
+        """
+        func = self.alter
+        args = func.__code__.co_varnames[:func.__code__.co_argcount]
+        defaults = func.__defaults__  # type: ignore
+        default_dict = dict(zip(args[-len(defaults):], defaults)) if defaults else {}
+        local = locals()
+        properties = {}
+        for property_key in default_dict.keys():
+            if local[property_key] is not None:
+                properties[property_key] = local[property_key]
+        self._alter_properties(**properties)
+
+    def to_dataframe(self, limit: Optional[int] = None) -> pd.DataFrame:
         """Extract contents of a report instance into a Pandas `DataFrame`.
 
         Args:
@@ -117,7 +214,7 @@ class Report:
         # If there are more rows to fetch, fetch them
         if paging['current'] != paging['total']:
             if not limit:
-                limit = max(1000, int((self._initial_limit * self._size_limit) / len(res.content)))
+                limit = max(1000, int((self._initial_limit * self._SIZE_LIMIT) / len(res.content)))
             # Count the number of additional iterations
             it_total = int((paging['total'] - self._initial_limit) / limit) + \
                 ((paging['total'] - self._initial_limit) % limit != 0)
@@ -127,7 +224,7 @@ class Report:
                 with FuturesSession(executor=ThreadPoolExecutor(max_workers=threads),
                                     session=self._connection.session) as session:
                     fetch_pbar = tqdm(desc="Downloading", total=it_total + 1,
-                                      disable=(not self.progress_bar))
+                                      disable=(not self._progress_bar))
                     future = self.__fetch_chunks_future(session, paging, self.instance_id, limit)
                     fetch_pbar.update()
                     for i, f in enumerate(future, start=1):
@@ -146,20 +243,20 @@ class Report:
         self._dataframe = p.dataframe
 
         # filter dataframe if report had crosstabs and filters were applied
-        if self.cross_tab_filter != {}:
-            if self.cross_tab_filter['metrics'] is not None:
+        if self._cross_tab_filter != {}:
+            if self._cross_tab_filter['metrics'] is not None:
                 # drop metrics columns from dataframe
                 metr_names = [
                     el['name'] for el in list(
-                        filter(lambda x: x['id'] not in self.cross_tab_filter['metrics'],
+                        filter(lambda x: x['id'] not in self._cross_tab_filter['metrics'],
                                self.metrics))
                 ]
                 self._dataframe = self._dataframe.drop(metr_names, axis=1)
 
-            if self.cross_tab_filter['attr_elements'] is not None:
+            if self._cross_tab_filter['attr_elements'] is not None:
                 # create dict of attributes and elements to iterate through
                 attr_dict = {}
-                for attribute in self.cross_tab_filter['attr_elements']:
+                for attribute in self._cross_tab_filter['attr_elements']:
                     key = attribute[:32]
                     attr_dict.setdefault(key, []).append(attribute[33:])
                 # initialize indexes series for filter
@@ -174,10 +271,10 @@ class Report:
                 # select datframe indexes with
                 self._dataframe = self._dataframe[indexes]
 
-            if self.cross_tab_filter['attributes'] is not None:
+            if self._cross_tab_filter['attributes'] is not None:
                 attr_names = [
                     el['name'] for el in list(
-                        filter(lambda x: x['id'] not in self.cross_tab_filter['attributes'],
+                        filter(lambda x: x['id'] not in self._cross_tab_filter['attributes'],
                                self.attributes))
                 ]
                 # filtering out attribute forms cloumns
@@ -199,12 +296,13 @@ class Report:
         return self._dataframe
 
     def __fetch_chunks_future(self, future_session, pagination, instance_id, limit):
-        # Fetch add'l rows from this object instance
+        """Fetch add'l rows from this object instance from the Intelligence
+        Server."""
         return [
             reports.report_instance_id_coroutine(
                 future_session,
                 connection=self._connection,
-                report_id=self._report_id,
+                report_id=self._id,
                 instance_id=instance_id,
                 offset=_offset,
                 limit=limit,
@@ -212,10 +310,10 @@ class Report:
         ]
 
     def __fetch_chunks(self, parser, pagination, it_total, instance_id, limit):
-
-        # Fetch add'l rows from this object instance
+        """Fetch add'l rows from this object instance from the Intelligence
+        Server."""
         with tqdm(desc="Downloading", total=it_total + 1,
-                  disable=(not self.progress_bar)) as fetch_pbar:
+                  disable=(not self._progress_bar)) as fetch_pbar:
             fetch_pbar.update()
             for _offset in range(self._initial_limit, pagination['total'], limit):
                 response = self.__get_chunk(instance_id=instance_id, offset=_offset, limit=limit)
@@ -226,10 +324,10 @@ class Report:
     def __initialize_report(self, limit: int) -> requests.Response:
         inst_pbar = tqdm(desc='Initializing an instance of a report. Please wait...',
                          bar_format='{desc}', leave=False, ncols=285,
-                         disable=(not self.progress_bar))
+                         disable=(not self._progress_bar))
 
         # Switch off subtotals if I-Server version is higher than 11.2.1
-        body = self.__filter._filter_body()
+        body = self._filter._filter_body()
         if version.parse(self._connection.iserver_version) >= version.parse("11.2.0100"):
             self._subtotals["visible"] = False
             body["subtotals"] = {"visible": self._subtotals["visible"]}
@@ -237,7 +335,7 @@ class Report:
         # Request a new instance, set instance id
         response = reports.report_instance(
             connection=self._connection,
-            report_id=self._report_id,
+            report_id=self._id,
             body=body,
             offset=0,
             limit=self._initial_limit,
@@ -248,14 +346,14 @@ class Report:
     def __get_chunk(self, instance_id: str, offset: int, limit: int) -> requests.Response:
         return reports.report_instance_id(
             connection=self._connection,
-            report_id=self._report_id,
+            report_id=self._id,
             instance_id=instance_id,
             offset=offset,
             limit=limit,
         )
 
-    def apply_filters(self, attributes: list = None, metrics: list = None,
-                      attr_elements: list = None, operator: str = 'In') -> None:
+    def apply_filters(self, attributes: Optional[list] = None, metrics: Optional[list] = None,
+                      attr_elements: Optional[list] = None, operator: str = 'In') -> None:
         """Apply filters on the reports's objects.
 
         Filter by attributes, metrics and attribute elements.
@@ -275,16 +373,16 @@ class Report:
         filtering_is_requested = bool(not all(
             element is None for element in [attributes, metrics, attr_elements]))
 
-        if self.cross_tab:
-            self.cross_tab_filter = {
+        if self._cross_tab:
+            self._cross_tab_filter = {
                 'attributes': attributes,
                 'metrics': metrics,
                 'attr_elements': attr_elements
             }
         elif filtering_is_requested:
-            self.__filter._clear(attributes=attributes, metrics=metrics,
-                                 attr_elements=attr_elements)
-            self.__filter.operator = operator
+            self._filter._clear(attributes=attributes, metrics=metrics,
+                                attr_elements=attr_elements)
+            self._filter.operator = operator
             self._select_attribute_filter_conditionally(attributes)
             self._select_metric_filter_conditionally(metrics)
             self._select_attr_el_filter_conditionally(attr_elements)
@@ -293,47 +391,46 @@ class Report:
 
     def _select_attribute_filter_conditionally(self, attributes_filtered) -> None:
         if attributes_filtered:
-            self.__filter._select(object_id=attributes_filtered)
+            self._filter._select(object_id=attributes_filtered)
         elif attributes_filtered is not None:
-            self.__filter.attr_selected = []
+            self._filter.attr_selected = []
 
     def _select_metric_filter_conditionally(self, metrics_filtered) -> None:
         if metrics_filtered:
-            self.__filter._select(object_id=metrics_filtered)
+            self._filter._select(object_id=metrics_filtered)
         elif metrics_filtered is not None:
-            self.__filter.metr_selected = []
+            self._filter.metr_selected = []
 
     def _select_attr_el_filter_conditionally(self, attr_el_filtered) -> None:
         if attr_el_filtered is not None:
-            self.__filter._select_attr_el(element_id=attr_el_filtered)
+            self._filter._select_attr_el(element_id=attr_el_filtered)
 
     def clear_filters(self) -> None:
         """Clear previously set filters, allowing all attributes, metrics, and
         attribute elements to be retrieved."""
 
-        self.__filter._clear()
-        if self.cross_tab:
-            self.__filter._select(object_id=[el['id'] for el in self.attributes])
-            self.__filter._select(object_id=[el['id'] for el in self.metrics])
+        self._filter._clear()
+        if self._cross_tab:
+            self._filter._select(object_id=[el['id'] for el in self.attributes])
+            self._filter._select(object_id=[el['id'] for el in self.metrics])
         # Clear instance, to generate new with new filters
         self.instance_id = None
 
-    def __definition(self) -> None:
+    def _get_definition(self) -> None:
         """Get the definition of a report, including attributes and metrics.
 
         Implements GET /v2/reports/<report_id>.
         """
-
         response = reports.report_definition(connection=self._connection,
-                                             report_id=self._report_id).json()
+                                             report_id=self._id).json()
 
         grid = response["definition"]["grid"]
         available_objects = response['definition']['availableObjects']
 
         if version.parse(self._connection.iserver_version) >= version.parse("11.2.0100"):
             self._subtotals = grid["subtotals"]
-        self._name = response["name"]
-        self.cross_tab = grid["crossTab"]
+        self.name = response["name"]
+        self._cross_tab = grid["crossTab"]
 
         # Check if report have custom groups or consolidations
         if available_objects['customGroups']:
@@ -360,6 +457,8 @@ class Report:
             full_metrics = grid[metrics_position["axis"]][metrics_position["index"]]["elements"]
             self._metrics = [{'name': metr['name'], 'id': metr['id']} for metr in full_metrics]
 
+        self.__definition_retrieved = True
+
     def __get_attr_elements(self, limit: int = 50000) -> list:
         """Get elements of report attributes synchronously.
 
@@ -372,7 +471,7 @@ class Report:
             def fetch_for_attribute_given_limit(limit):
                 response = reports.report_single_attribute_elements(
                     connection=self._connection,
-                    report_id=self._report_id,
+                    report_id=self._id,
                     attribute_id=attribute['id'],
                     offset=0,
                     limit=limit,
@@ -387,7 +486,7 @@ class Report:
                 for _offset in range(limit, total, limit):
                     response = reports.report_single_attribute_elements(
                         connection=self._connection,
-                        report_id=self._report_id,
+                        report_id=self._id,
                         attribute_id=attribute['id'],
                         offset=_offset,
                         limit=limit,
@@ -406,7 +505,7 @@ class Report:
         attr_elements = []
         if self.attributes:
             pbar = tqdm(self.attributes, desc="Loading attribute elements", leave=False,
-                        disable=(not self.progress_bar))
+                        disable=(not self._progress_bar))
             attr_elements = [fetch_for_attribute(attribute) for attribute in pbar]
             pbar.close()
 
@@ -426,7 +525,7 @@ class Report:
                 # Fetch first chunk of attribute elements.
                 futures = self.__fetch_attribute_elements_chunks(session, limit)
                 pbar = tqdm(futures, desc="Loading attribute elements", leave=False,
-                            disable=(not self.progress_bar))
+                            disable=(not self._progress_bar))
                 for i, future in enumerate(pbar):
                     attr = self.attributes[i]
                     response = future.result()
@@ -439,7 +538,7 @@ class Report:
                     for _offset in range(limit, total, limit):
                         response = reports.report_single_attribute_elements(
                             connection=self._connection,
-                            report_id=self._report_id,
+                            report_id=self._id,
                             attribute_id=attr["id"],
                             offset=_offset,
                             limit=limit,
@@ -461,52 +560,92 @@ class Report:
             reports.report_single_attribute_elements_coroutine(
                 future_session,
                 connection=self._connection,
-                report_id=self._report_id,
+                report_id=self._id,
                 attribute_id=attribute['id'],
                 offset=0,
                 limit=limit,
             ) for attribute in self.attributes
         ]
 
-    @property
-    def name(self):
-        return self._name
+    def list_properties(self):
+        """List all properties of the object."""
+
+        attributes = {key: self.__dict__[key] for key in self.__dict__ if not key.startswith('_')}
+        attributes = {
+            **attributes, "id": self.id,
+            "instance_id": self.instance_id,
+            "type": self.type,
+            "subtype": self.subtype,
+            "ext_type": self.ext_type,
+            "date_created": self.date_created,
+            "date_modified": self.date_modified,
+            "version": self.version,
+            "owner": self.owner,
+            "view_media": self.view_media,
+            "ancestors": self.ancestors,
+            "certified_info": self.certified_info,
+            "acg": self.acg,
+            "acl": self.acl,
+            "attributes": self.attributes,
+            "metrics": self.metrics
+        }
+        return {
+            key: attributes[key] for key in sorted(attributes, key=helper.sort_object_properties)
+        }
 
     @property
     def attributes(self):
+        if not self.__definition_retrieved:
+            self._get_definition()
         return self._attributes
 
     @property
     def metrics(self):
+        if not self.__definition_retrieved:
+            self._get_definition()
         return self._metrics
 
     @property
     def attr_elements(self):
-        if not self._attr_elements:
-            if self.parallel is True:
+        if not self.__definition_retrieved:
+            self._get_definition()
+        if not self._attr_elements and self._id:
+            if self._parallel is True:
                 # TODO: move the fallback inside the function to apply
                 # per-attribute, like with non-async version.
                 self._attr_elements = fallback_on_timeout()(
                     self.__get_attr_elements_async)(50000)[0]
             else:
                 self._attr_elements = self.__get_attr_elements()
-            self.__filter.attr_elem_selected = self._attr_elements
+            self._filter._populate_attr_elements(self._attr_elements)
         return self._attr_elements
 
     @property
+    def _filter(self):
+        if not self.__definition_retrieved:
+            self._get_definition()
+        if self.__filter is None:
+            self.__filter = Filter(attributes=self._attributes, metrics=self._metrics,
+                                   attr_elements=self._attr_elements)
+        return self.__filter
+
+    @property
     def selected_attributes(self):
-        return self.__filter.attr_selected
+        """Selected attributes for filtering."""
+        return self._filter.attr_selected
 
     @property
     def selected_metrics(self):
-        return self.__filter.metr_selected
+        """Selected metrics for filtering."""
+        return self._filter.metr_selected
 
     @property
     def selected_attr_elements(self):
-        return self.__filter.attr_elem_selected
+        """Selected attribute elements for filtering."""
+        return self._filter.attr_elem_selected
 
     @property
-    def dataframe(self):
+    def dataframe(self) -> pd.DataFrame:
         if self._dataframe is None:
             helper.exception_handler(
                 msg="Dataframe not loaded. Retrieve with Report.to_dataframe().",

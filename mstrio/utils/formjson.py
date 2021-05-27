@@ -1,16 +1,17 @@
-def formjson(df, table_name, as_metrics=None, as_attributes=None):
+def _map_data_type(datatype):
+    if datatype == 'object':
+        return "STRING"
+    elif datatype in ['int64', 'int32']:
+        return "INTEGER"
+    elif datatype in ['float64', 'float32']:
+        return "DOUBLE"
+    elif datatype == 'bool':
+        return "BOOL"
+    elif datatype == 'datetime64[ns]':
+        return 'DATETIME'
 
-    def _map_data_type(datatype):
-        if datatype == 'object':
-            return "STRING"
-        elif datatype in ['int64', 'int32']:
-            return "INTEGER"
-        elif datatype in ['float64', 'float32']:
-            return "DOUBLE"
-        elif datatype == 'bool':
-            return "BOOL"
-        elif datatype == 'datetime64[ns]':
-            return 'DATETIME'
+
+def formjson(df, table_name, as_metrics=None, as_attributes=None):
 
     def _form_column_headers(_col_names, _col_types):
         return [{'name': n, 'dataType': t} for n, t in zip(_col_names, _col_types)]

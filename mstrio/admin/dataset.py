@@ -1,4 +1,4 @@
-from typing import Union, List
+from typing import Optional, Union, List
 
 from mstrio.api import objects
 from mstrio.connection import Connection
@@ -17,8 +17,8 @@ deprecation_warning(
 )
 
 
-def list_datasets(connection, name: str = None, to_dictionary: bool = False,
-                  to_dataframe: bool = False, limit: int = None, **filters):
+def list_datasets(connection, name: Optional[str] = None, to_dictionary: bool = False,
+                  to_dataframe: bool = False, limit: Optional[int] = None, **filters):
     """Get all Datasets stored on the server.
 
     Args:
@@ -45,7 +45,8 @@ def list_datasets(connection, name: str = None, to_dictionary: bool = False,
 class Dataset(Entity, VldbMixin):
     _OBJECT_TYPE = ObjectTypes.REPORT_DEFINITION
 
-    def __init__(self, connection: Connection, id: str = None, name: str = None):
+    def __init__(self, connection: Connection, id: Optional[str] = None,
+                 name: Optional[str] = None):
         """Initialize Dataset object by passing name or id.
 
         Args:
@@ -66,7 +67,7 @@ class Dataset(Entity, VldbMixin):
                 raise ValueError(msg)
         super().__init__(connection=connection, object_id=id, name=name)
 
-    def alter(self, name: str = None, description: str = None):
+    def alter(self, name: Optional[str] = None, description: Optional[str] = None):
         """Alter Dataset name or/and description.
 
         Args:
@@ -85,8 +86,9 @@ class Dataset(Entity, VldbMixin):
         self._alter_properties(**properties)
 
     @classmethod
-    def _list_all(cls, connection: Connection, name: str = None, to_dictionary: bool = False,
-                  to_dataframe: bool = False, limit: int = None,
+    def _list_all(cls, connection: Connection, name: Optional[str] = None,
+                  to_dictionary: bool = False, to_dataframe: bool = False,
+                  limit: Optional[int] = None,
                   **filters) -> Union[List["Dataset"], List[dict], DataFrame]:
         DATASET_SUBTYPES = [776, 779]
         DSS_XML_SEARCH_TYPE_EXACTLY = 2

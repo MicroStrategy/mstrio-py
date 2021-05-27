@@ -209,8 +209,9 @@ Use `Dataset.certify()` to certify / decertify an existing dataset.
 Updating Datasets that were **not** created using the MicroStrategy REST API is not possible. This applies for example to Cubes created via MicroStrategy Web client.
 
 ## Using mstrio as a MicroStrategy Intelligence Server administration tool
-- Application management module (see [examples](examples/application_mgmt.py))
-- Server management module (see [examples](examples/server_mgmt.py))
-- User and Usergroup management modules (see [examples](examples/user_mgmt.py))
-- Subscription and Schedules management modules (see [examples](examples/subscription_mgmt.py))
-- Document and Dossiers in User Library modules (see [examples](examples/user_library.py))
+
+- Application management module (see [examples](https://github.com/MicroStrategy/mstrio-py/blob/master/examples/application_mgmt.py))
+- Server management module (see [examples](https://github.com/MicroStrategy/mstrio-py/blob/master/examples/server_mgmt.py))
+- User and Usergroup management modules (see [examples](https://github.com/MicroStrategy/mstrio-py/blob/master/examples/user_mgmt.py))
+- Subscription and Schedules management modules (see [examples](https://github.com/MicroStrategy/mstrio-py/blob/master/examples/subscription_mgmt.py))
+- Document and Dossiers in User Library modules (see [examples](https://github.com/MicroStrategy/mstrio-py/blob/master/examples/user_library.py))

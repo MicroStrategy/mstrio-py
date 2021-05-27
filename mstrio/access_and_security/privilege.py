@@ -1,14 +1,12 @@
-from typing import TYPE_CHECKING, List, Union
+from typing import List, Optional, Union
 
 from pandas import DataFrame
 from mstrio.users_and_groups.user import User
 from mstrio.users_and_groups.user_group import UserGroup
 from mstrio.api import security
 from mstrio.utils import helper
+from mstrio.connection import Connection
 from mstrio.utils.entity import EntityBase
-
-if TYPE_CHECKING:
-    from mstrio.connection import Connection
 
 
 class Privilege(EntityBase):
@@ -24,7 +22,8 @@ class Privilege(EntityBase):
             server configuration level or project level
     """
 
-    def __init__(self, connection: "Connection", name: str = None, id: str = None) -> None:
+    def __init__(self, connection: Connection, name: Optional[str] = None,
+                 id: Optional[str] = None) -> None:
         """Initialize Privilege object by passing `name` or `id`. When `id` is
         provided (not `None`), `name` is omitted. To explore all available
         privileges use the `list_privileges()` method.
@@ -68,14 +67,14 @@ class Privilege(EntityBase):
         self._categories = kwargs.get("categories")
 
     @classmethod
-    def list_privileges(cls, connection: "Connection", to_dictionary: bool = False,
+    def list_privileges(cls, connection: Connection, to_dictionary: bool = False,
                         to_dataframe: bool = False,
                         **filters) -> Union[List["Privilege"], List[dict], DataFrame]:
         """Get list of privilege objects or privilege dicts. Filter the
         privileges by specifying the `filters` keyword arguments.
 
         Optionally use `to_dictionary` or `to_dataframe` to choose output
-        format. If `to_dictionary` is True, `to_dataframe` is omitted.
+        format.
 
         Args:
             connection: MicroStrategy connection object returned by
@@ -118,7 +117,7 @@ class Privilege(EntityBase):
             users = [User(self.connection, name=users)]
         elif isinstance(users, User):
             users = [users]
-        elif hasattr(users, '__iter__') and all([isinstance(el, str) for el in users]):
+        elif hasattr(users, '__iter__') and all((isinstance(el, str) for el in users)):
             # TODO use list_users(name=[users])
             users = [User(self.connection, name=user) for user in users]
         for user in users:
@@ -134,7 +133,7 @@ class Privilege(EntityBase):
             users = [User(self.connection, name=users)]
         elif isinstance(users, User):
             users = [users]
-        elif hasattr(users, '__iter__') and all([isinstance(el, str) for el in users]):
+        elif hasattr(users, '__iter__') and all((isinstance(el, str) for el in users)):
             # TODO use list_users(name=[users])
             users = [User(self.connection, name=user) for user in users]
         for user in users:
@@ -150,7 +149,7 @@ class Privilege(EntityBase):
             groups = [UserGroup(self.connection, name=groups)]
         elif isinstance(groups, UserGroup):
             groups = [groups]
-        elif hasattr(groups, '__iter__') and all([isinstance(el, str) for el in groups]):
+        elif hasattr(groups, '__iter__') and all((isinstance(el, str) for el in groups)):
             # TODO use list_user_groups(name=[groups])
             groups = [UserGroup(self.connection, name=group) for group in groups]
         for group in groups:
@@ -166,15 +165,17 @@ class Privilege(EntityBase):
             groups = [UserGroup(self.connection, name=groups)]
         elif isinstance(groups, UserGroup):
             groups = [groups]
-        elif hasattr(groups, '__iter__') and all([isinstance(el, str) for el in groups]):
+        elif hasattr(groups, '__iter__') and all((isinstance(el, str) for el in groups)):
             # TODO use list_user_groups(name=[groups])
             groups = [UserGroup(self.connection, name=group) for group in groups]
         for group in groups:
             group.revoke_privilege(self.id)
 
     @staticmethod
-    def _validate_privileges(connection: "Connection", privileges: Union[List, int,
-                                                                         str]) -> List[dict]:
+    def _validate_privileges(
+        connection: Connection, privileges: Union[Union["Privilege", int, str],
+                                                  List[Union["Privilege", int, str]]]
+    ) -> List[dict]:
         """This function validates if the privilege ID/Name/Object is valid and
         returns the IDs.
 
@@ -185,6 +186,8 @@ class Privilege(EntityBase):
         validated = []
 
         privileges = privileges if isinstance(privileges, list) else [privileges]
+        # TODO: This whole thing can probably be made more efficient and elegant
+        # with some list comprehension instead of appending in a loop.
         for privilege in privileges:
             is_str_name = type(privilege) == str and len(privilege) > 3
             is_str_id = type(privilege) == str and len(privilege) > 0 and len(privilege) <= 3
@@ -194,21 +197,17 @@ class Privilege(EntityBase):
             if is_str_name:
                 temp_priv = helper.filter_list_of_dicts(all_privileges, name=privilege)
                 privilege_ok = bool(temp_priv)
-                if privilege_ok:
-                    privilege_id = temp_priv[0]['id']
-                    privilege_name = temp_priv[0]['name']
             elif is_str_id or is_int_id:
                 temp_priv = helper.filter_list_of_dicts(all_privileges, id=str(privilege))
                 privilege_ok = bool(temp_priv)
-                if privilege_ok:
-                    privilege_id = temp_priv[0]['id']
-                    privilege_name = temp_priv[0]['name']
-            elif isinstance(privilege, Privilege):
-                privilege_ok = True
-                privilege_id = privilege.id
-                privilege_name = privilege.name
 
             if privilege_ok:
+                privilege_id = temp_priv[0]['id']
+                privilege_name = temp_priv[0]['name']
+                validated.append({'id': privilege_id, 'name': privilege_name})
+            elif isinstance(privilege, Privilege):
+                privilege_id = privilege.id
+                privilege_name = privilege.name
                 validated.append({'id': privilege_id, 'name': privilege_name})
             else:
                 docs_url = ("https://lw.microstrategy.com/msdz/msdl/GARelease_Current/docs/"
@@ -239,7 +238,7 @@ class PrivilegeList:
         connection: A MicroStrategy connection object
     """
 
-    def __init__(self, connection: "Connection"):
+    def __init__(self, connection: Connection):
         """Initialize PrivilegeList object.
 
         Args:

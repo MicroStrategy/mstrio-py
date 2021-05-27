@@ -10,6 +10,7 @@ options.display.max_rows = max(250, options.display.max_rows)
 options.display.max_colwidth = max(100, options.display.max_colwidth)
 # Warning settings: "error", "ignore", "always", "default", "module", "once"
 print_warnings = 'always'
+module_path = 'mstrio.*'
 save_responses = False  # Used to save REST API responses for mocking
 
 
@@ -19,6 +20,6 @@ def custom_formatwarning(msg, category, *args, **kwargs):
 
 
 warnings.formatwarning = custom_formatwarning
-warnings.filterwarnings(action=print_warnings, category=Warning, module='mstrio.*')
-warnings.filterwarnings(action='always', category=DeprecationWarning, module='mstrio.*')
-warnings.filterwarnings(action='default', category=UserWarning, module='mstrio.*')
+warnings.filterwarnings(action=print_warnings, module=module_path)
+warnings.filterwarnings(action=print_warnings, category=DeprecationWarning, module=module_path)
+warnings.filterwarnings(action='default', category=UserWarning, module=module_path)

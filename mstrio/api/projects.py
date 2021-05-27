@@ -183,7 +183,7 @@ def get_project_settings_config(connection, id, error_msg=None):
         Complete HTTP response object.
     """
     response = connection.session.get(
-        url=connection.base_url + f'/api/v2/projects/{id}/settings/config',
+        url=f'{connection.base_url}/api/v2/projects/{id}/settings/config',
         headers={'X-MSTR-ProjectID': None},
     )
     if not response.ok:
@@ -279,28 +279,6 @@ def get_engine_settings(connection, id, error_msg=None):
     """
     response = connection.session.get(
         url=connection.base_url + '/api/projects/' + id + '/settings/engine',
-        headers={'X-MSTR-ProjectID': None},
-    )
-    if not response.ok:
-        if error_msg is None:
-            error_msg = "Error getting engine settings"
-        response_handler(response, error_msg)
-    return response
-
-
-def get_settings_OLD(connection, id, error_msg=None):
-    """Get available and current settings for a project.
-
-    Args:
-        connection: MicroStrategy REST API connection object
-        id (string): Project id string
-        error_msg (string, optional): Custom Error Message for Error Handling
-
-    Returns:
-        Complete HTTP response object.
-    """
-    response = connection.session.get(
-        url=connection.base_url + '/api/projects/' + id + '/settings',
         headers={'X-MSTR-ProjectID': None},
     )
     if not response.ok:

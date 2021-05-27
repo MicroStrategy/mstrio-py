@@ -1,6 +1,6 @@
 from copy import deepcopy
 import csv
-from enum import Enum
+from enum import Enum, IntEnum
 import inspect
 from pprint import pprint
 from sys import version_info
@@ -18,6 +18,47 @@ from mstrio.utils import helper
 
 if TYPE_CHECKING:
     from mstrio.server.application import Application
+
+
+class Rights(IntEnum):
+    EXECUTE = 0b10000000
+    USE = 0b01000000
+    CONTROL = 0b00100000
+    DELETE = 0b00010000
+    WRITE = 0b00001000
+    READ = 0b00000100
+    USE_EXECUTE = 0b00000010
+    BROWSE = 0b00000001
+
+
+# TODO: This has to be string-based to discern between 'Denied All'
+# and 'Full Control', which have the same mask. Maybe we can change
+# the logic to make it less awkward?
+class Permissions(str, Enum):
+    VIEW = 'View'
+    MODIFY = 'Modify'
+    FULL_CONTROL = 'Full Control'
+    DENIED_ALL = 'Denied All'
+    DEFAULT_ALL = 'Default All'
+    CONSUME = 'Consume'
+
+
+class AggregatedRights(IntEnum):
+    VIEW = 0b11000101
+    MODIFY = 0b11011101
+    ALL = 0b11111111
+    NONE = 0b00000000
+    CONSUME = 0b01000101
+
+
+AGGREGATED_RIGHTS_MAP = {
+    Permissions.VIEW: AggregatedRights.VIEW,
+    Permissions.MODIFY: AggregatedRights.MODIFY,
+    Permissions.FULL_CONTROL: AggregatedRights.ALL,
+    Permissions.DENIED_ALL: AggregatedRights.ALL,
+    Permissions.DEFAULT_ALL: AggregatedRights.NONE,
+    Permissions.CONSUME: AggregatedRights.CONSUME,
+}
 
 
 class ObjectTypes(Enum):
@@ -256,7 +297,7 @@ class Entity(EntityBase):
         self._acg = kwargs.get("acg")
         self._acl = kwargs.get("acl")
 
-    def fetch(self, attr: str = None) -> None:
+    def fetch(self, attr: Optional[str] = None) -> None:
         """Fetch the latest object state from the I-Server.
 
         Args:
@@ -322,7 +363,8 @@ class Entity(EntityBase):
         return None
 
     @classmethod
-    def to_csv(cls, objects, name: str, path: str = None, properties: List[str] = None) -> None:
+    def to_csv(cls, objects, name: str, path: Optional[str] = None,
+               properties: Optional[List[str]] = None) -> None:
         """Export MSTR objects to a csv file.
 
         Optionally, save only the object properties specified in the properties
@@ -426,7 +468,6 @@ class Entity(EntityBase):
 
         # send patch request from the specified update wrapper
         param_value_dict = helper.auto_match_args(func, self, exclude=["body"])
-        # param_value_dict = self.auto_match_args(func, exclude=["body"])
         param_value_dict['body'] = body
         response = func(**param_value_dict)
 
@@ -438,7 +479,7 @@ class Entity(EntityBase):
                 self._set_object(**response)
 
     def _update_nested_properties(self, objects, path: str, op: str,
-                                  existing_ids: List[str] = None) -> Tuple[str, str]:
+                                  existing_ids: Optional[List[str]] = None) -> Tuple[str, str]:
         """Internal method to update objects with the specified patch wrapper.
         Used for adding and removing objects from nested properties of an
         object like memberships.
@@ -494,9 +535,8 @@ class Entity(EntityBase):
         """
         type_map = {**self._AVAILABLE_ATTRIBUTES, **self._PATCH_PATH_TYPES}
         value_type = type_map.get(name, 'Not Found')
-        if value_type != 'Not Found':
-            if type(value) != value_type:
-                raise TypeError(f"'{name}' has incorrect type. Expected type: '{value_type}'")
+        if value_type != 'Not Found' and type(value) != value_type:
+            raise TypeError(f"'{name}' has incorrect type. Expected type: '{value_type}'")
         return value
 
     def __setattr__(self, name: str, value: Any) -> None:
@@ -591,7 +631,7 @@ class CopyMixin:
     Entity or its subclasses.
     """
 
-    def create_copy(self: Entity, name: str = None, folder_id: str = None,
+    def create_copy(self: Entity, name: Optional[str] = None, folder_id: Optional[str] = None,
                     application: Union["Application", str] = None) -> Any:
         """Create a copy of the object on the I-Server.
 
@@ -622,25 +662,26 @@ class VldbMixin:
     Objects currently supporting VLDB settings are dataset, document, dossier.
     Must be mixedin with Entity or its subclasses.
     """
+    _parameter_error = "Please specify the application parameter."
 
-    def list_vldb_settings(self: Entity, application: str = None) -> list:
+    def list_vldb_settings(self: Entity, application: Optional[str] = None) -> list:
         """List VLDB settings."""
 
         connection = self.connection if hasattr(self, 'connection') else self._connection
         if not application and connection.session.headers.get('X-MSTR-ProjectID') is None:
-            raise ValueError("Please specify the application parameter.")
+            raise ValueError(self._parameter_error)
 
         response = objects.get_vldb_settings(connection, self.id, self._OBJECT_TYPE.value,
                                              application)
         return response.json()
 
     def alter_vldb_settings(self: Entity, property_set_name: str, name: str, value: dict,
-                            application: str = None) -> None:
+                            application: Optional[str] = None) -> None:
         """Alter VLDB settings for a given property set."""
 
         connection = self.connection if hasattr(self, 'connection') else self._connection
         if not application and connection.session.headers.get('X-MSTR-ProjectID') is None:
-            raise ValueError("Please specify the application parameter.")
+            raise ValueError(self._parameter_error)
 
         body = [{"name": name, "value": value}]
         response = objects.set_vldb_settings(connection, self.id, self._OBJECT_TYPE.value,
@@ -648,12 +689,12 @@ class VldbMixin:
         if config.verbose and response.ok:
             print("VLDB settings altered")
 
-    def reset_vldb_settings(self: Entity, application: str = None) -> None:
+    def reset_vldb_settings(self: Entity, application: Optional[str] = None) -> None:
         """Reset VLDB settings to default values."""
 
         connection = self.connection if hasattr(self, 'connection') else self._connection
         if not application and connection.session.headers.get('X-MSTR-ProjectID') is None:
-            raise ValueError("Please specify the application parameter.")
+            raise ValueError(self._parameter_error)
 
         response = objects.delete_vldb_settings(connection, self.id, self._OBJECT_TYPE.value,
                                                 application)
@@ -666,27 +707,14 @@ class EntityACL(Entity):
     # TODO streamline methods
     # TODO inherit from this class in supporting objects
     """Entity subclass for ACL management."""
-    RIGHTS_MAP = {
-        "Execute": 128,
-        "Use": 64,
-        "Control": 32,
-        "Delete": 16,
-        "Write": 8,
-        "Read": 4,
-        "UseExecute": 2,
-        "Browse": 1,
-    }
-    AGGREGATED_RIGHTS_MAP = {
-        "View": 197,
-        "Modify": 221,
-        "Full Control": 255,
-        "Denied All": 255,
-        "Default All": 0,
-        "Consume": 69,
-    }
 
-    def update_acl(self, op: str, rights: int, ids: List[str], propagate_to_children: bool = None,
-                   denied: bool = None, inheritable: bool = None):
+    # TODO: `rights` here is fine as an int, but it would be more intuitive
+    # to create a class which not only has this int but also can convert
+    # between its different representations instead of just having a bunch
+    # of functions that convert from one to the other.
+    def update_acl(self, op: str, rights: int, ids: List[str],
+                   propagate_to_children: Optional[bool] = None, denied: Optional[bool] = None,
+                   inheritable: Optional[bool] = None):
         """Updates the access control list for this entity, performs operation
         defined by the `op` parameter on all objects from `ids` list.
 
@@ -736,7 +764,8 @@ class EntityACL(Entity):
         objects.update_object(connection=self.connection, id=self.id, body=body,
                               type=self._OBJECT_TYPE.value)
 
-    def update_acl_add(self, rights: int, ids: List[str], propagate_to_children: bool = None):
+    def update_acl_add(self, rights: int, ids: List[str],
+                       propagate_to_children: Optional[bool] = None):
         """
         Args:
             rights (int): value of rights to use by the operator
@@ -749,7 +778,8 @@ class EntityACL(Entity):
         self.update_acl(op="ADD", rights=rights, ids=ids,
                         propagate_to_children=propagate_to_children)
 
-    def update_acl_remove(self, rights: int, ids: List[str], propagate_to_children: bool = None):
+    def update_acl_remove(self, rights: int, ids: List[str],
+                          propagate_to_children: Optional[bool] = None):
         """
         Args:
             rights (int): value of rights to use by the operator
@@ -762,7 +792,8 @@ class EntityACL(Entity):
         self.update_acl(op="REMOVE", rights=rights, ids=ids,
                         propagate_to_children=propagate_to_children)
 
-    def update_acl_replace(self, rights: int, ids: List[str], propagate_to_children: bool = None):
+    def update_acl_replace(self, rights: int, ids: List[str],
+                           propagate_to_children: Optional[bool] = None):
         """
         Args:
             rights (int): value of rights to use by the operator
@@ -776,45 +807,32 @@ class EntityACL(Entity):
                         propagate_to_children=propagate_to_children)
 
     # TODO make list_acl with df option
-    def _parse_acl_rights_bin_to_dict(self, rights_bin: int):
-        rights_map = [
-            (128, "Execute"),
-            (64, "Use"),
-            (32, "Control"),
-            (16, "Delete"),
-            (8, "Write"),
-            (4, "Read"),
-            (2, "UseExecute"),
-            (1, "Browse"),
-        ]
-        output = {}
-        rights_map = sorted(rights_map, key=lambda x: -x[0])
-
-        for value, right in rights_map:
-            if rights_bin >= value:
-                rights_bin -= value
+    def _parse_acl_rights_bin_to_dict(self, rights_bin: int) -> Dict[Rights, bool]:
+        output: Dict[Rights, bool] = {}
+        for right in Rights:
+            if rights_bin & right.value != 0:
                 output[right] = True
             else:
                 output[right] = False
         return output
 
-    def _parse_acl_rights_dict_to_bin(self, rights_dict: dict):
+    def _parse_acl_rights_dict_to_bin(self, rights_dict: Dict[Rights, bool]) -> int:
         output = 0
-        for key, value in rights_dict.items():
-            if value:
-                output += self.RIGHTS_MAP[key]
+        for right, given in rights_dict.items():
+            if given:
+                output |= right.value
         return output
 
-    def set_acl_by_dict(self, rights_dict: dict, ids: List[str]):
+    def set_acl_by_dict(self, rights_dict: Dict[Rights, bool], ids: List[str]) -> None:
         rights = self._parse_acl_rights_dict_to_bin(rights_dict)
         self.update_acl(op='REPLACE', rights=rights, ids=ids)
-        self.fetch(None)
+        self.fetch()
 
 
-def _modify_rights(connection, trustee_id, op: str, rights: int, object_type: int, ids: List[str],
-                   application: Union[str,
-                                      "Application"] = None, propagate_to_children: bool = None,
-                   denied: bool = None, inheritable: bool = None, verbose: bool = True):
+def _modify_rights(connection, trustee_id: str, op: str, rights: int, object_type: ObjectTypes,
+                   ids: List[str], application: Optional[Union[str, "Application"]] = None,
+                   propagate_to_children: Optional[bool] = None, denied: Optional[bool] = None,
+                   inheritable: Optional[bool] = None, verbose: bool = True):
     if op not in ["ADD", "REMOVE", "REPLACE"]:
         helper.exception_handler("Wrong ACL operator passed. Please use ADD, REMOVE or REPLACE")
 
@@ -829,7 +847,7 @@ def _modify_rights(connection, trustee_id, op: str, rights: int, object_type: in
     if isinstance(ids, str):
         ids = [ids]
     for id in ids:
-        response = objects.get_object_info(connection=connection, id=id, type=object_type,
+        response = objects.get_object_info(connection=connection, id=id, type=object_type.value,
                                            application_id=application)
         if inheritable is None:
             tmp = [
@@ -837,10 +855,7 @@ def _modify_rights(connection, trustee_id, op: str, rights: int, object_type: in
                 for ace in response.json().get('acl', [])
                 if ace['trusteeId'] == trustee_id and ace['deny'] == denied
             ]
-            if not tmp:
-                inheritable = False
-            else:
-                inheritable = tmp[0]
+            inheritable = False if not tmp else tmp[0]
 
         body = {
             "acl": [{
@@ -856,34 +871,30 @@ def _modify_rights(connection, trustee_id, op: str, rights: int, object_type: in
         if isinstance(propagate_to_children, bool):
             body["propagateACLToChildren"] = propagate_to_children
 
-        objects.update_object(connection=connection, id=id, body=body, type=object_type,
+        objects.update_object(connection=connection, id=id, body=body, type=object_type.value,
                               application_id=application, verbose=verbose)
 
 
-def _get_custom_right_value(right: Union[str, List[str]]):
-    custom_rights_map = {**EntityACL.RIGHTS_MAP}
+def _get_custom_right_value(right: Union[Rights, List[Rights]]) -> int:
     right_value = 0
-    if isinstance(right, list):
-        for r in right:
-            if r not in custom_rights_map:
-                msg = ("Invalid `right` value. Available values are: Execute, Use, Control, "
-                       "Delete, Write, Read, Browse.")
+    if not isinstance(right, list):
+        right = [right]
+    for r in right:
+        if not isinstance(r, Rights):
+            try:
+                r = Rights[r.upper()]
+            except ValueError:
+                msg = (f"Invalid custom `right` value: {r}. Available values are: EXECUTE, USE, "
+                       "CONTROL, DELETE, WRITE, READ, BROWSE. See: the Rights enum.")
                 helper.exception_handler(msg)
-            right_value += custom_rights_map[r]
-    else:
-        if right not in custom_rights_map:
-            msg = ("Invalid custom `right` value. Available values are: Execute, Use, "
-                   "Control, Delete, Write, Read, Browse.")
-            helper.exception_handler(msg)
-        right_value += custom_rights_map[right]
+        right_value |= r.value
     return right_value
 
 
-def _modify_custom_rights(connection, trustee_id, right: Union[str,
-                                                               List[str]], to_objects: List[str],
-                          object_type: int, denied: bool, application: Union[str,
-                                                                             "Application"] = None,
-                          default: bool = False, propagate_to_children: bool = None):
+def _modify_custom_rights(connection, trustee_id: str, right: Union[Rights, List[Rights]],
+                          to_objects: List[str], object_type: ObjectTypes, denied: bool,
+                          application: Union[str, "Application"] = None, default: bool = False,
+                          propagate_to_children: Optional[bool] = None):
     right_value = _get_custom_right_value(right)
     try:
         _modify_rights(connection=connection, trustee_id=trustee_id, op='REMOVE',
@@ -903,9 +914,10 @@ def _modify_custom_rights(connection, trustee_id, right: Union[str,
         pass
 
 
-def set_permission(connection, trustee_id, permission: str, to_objects: Union[str, List[str]],
-                   object_type: int, application: Union[str, "Application"] = None,
-                   propagate_to_children: bool = None):
+def set_permission(connection, trustee_id: str, permission: Permissions,
+                   to_objects: Union[str, List[str]], object_type: ObjectTypes,
+                   application: Optional[Union[str, "Application"]] = None,
+                   propagate_to_children: Optional[bool] = None):
     """Set permission to perform actions on given object(s).
 
     Function is used to set permission of the trustee to perform given actions
@@ -934,13 +946,17 @@ def set_permission(connection, trustee_id, permission: str, to_objects: Union[st
         None
     """
 
-    permissions_map = {**EntityACL.AGGREGATED_RIGHTS_MAP}
-    if permission not in permissions_map:
-        msg = ("Invalid `permission` value. Available values are: 'View', "
-               "'Modify', 'Full Control', 'Denied All', 'Default All'.")
-        helper.exception_handler(msg)
-    right_value = permissions_map[permission]
-    if permission == 'Denied All':
+    # permissions_map = {**EntityACL.AGGREGATED_RIGHTS_MAP}
+    if not isinstance(permission, Permissions):
+        try:
+            permission = Permissions(permission)
+        except ValueError:
+            msg = ("Invalid `permission` value. Available values are: 'View', "
+                   "'Modify', 'Full Control', 'Denied All', 'Default All'. "
+                   "See: Permissions enum.")
+            helper.exception_handler(msg)
+    right_value = AGGREGATED_RIGHTS_MAP[permission].value
+    if permission == Permissions.DENIED_ALL:
         denied = True
     else:
         denied = False
@@ -959,17 +975,18 @@ def set_permission(connection, trustee_id, permission: str, to_objects: Union[st
     except HTTPError:
         pass
 
-    if not permission == "Default All":
+    if not permission == Permissions.DEFAULT_ALL:
         _modify_rights(connection=connection, trustee_id=trustee_id, op='ADD', rights=right_value,
                        ids=to_objects, object_type=object_type, application=application,
                        denied=denied, propagate_to_children=propagate_to_children)
 
 
-def set_custom_permissions(connection, trustee_id, to_objects: Union[str,
-                                                                     List[str]], object_type: int,
-                           application: Union[str, "Application"] = None, execute: str = None,
-                           use: str = None, control: str = None, delete: str = None,
-                           write: str = None, read: str = None, browse: str = None):
+def set_custom_permissions(connection, trustee_id: str, to_objects: Union[str, List[str]],
+                           object_type: ObjectTypes, application: Union[str, "Application"] = None,
+                           execute: Optional[str] = None, use: Optional[str] = None,
+                           control: Optional[str] = None, delete: Optional[str] = None,
+                           write: Optional[str] = None, read: Optional[str] = None,
+                           browse: Optional[str] = None):
     """Set custom permissions to perform actions on given object(s).
 
     Function is used to set rights of the trustee to perform given actions on
@@ -1008,13 +1025,13 @@ def set_custom_permissions(connection, trustee_id, to_objects: Union[str,
         None
     """
     rights_dict = {
-        "Execute": execute,
-        "Use": use,
-        "Control": control,
-        "Delete": delete,
-        "Write": write,
-        "Read": read,
-        "Browse": browse
+        Rights.EXECUTE: execute,
+        Rights.USE: use,
+        Rights.CONTROL: control,
+        Rights.DELETE: delete,
+        Rights.WRITE: write,
+        Rights.READ: read,
+        Rights.BROWSE: browse
     }
     if not set(rights_dict.values()).issubset({'grant', 'deny', 'default', None}):
         helper.exception_handler(

@@ -15,6 +15,7 @@ base_url = "https://<>/MicroStrategyLibrary/api"
 username = "some_username"
 password = "some_password"
 conn = Connection(base_url, username, password, login_mode=1)
+MICROSTRATEGY_TUTORIAL = 'MicroStrategy Tutorial'
 
 # get the cluster for given connection
 clstr = Cluster(connection=conn)
@@ -28,7 +29,7 @@ services_by_nodes = clstr.list_services(group_by='nodes')
 services_by_services = clstr.list_services(group_by='services')
 
 # get list of nodes (information about projects within each node is given there)
-nodes = clstr.list_nodes()
+nodes = clstr.list_nodes(to_dictionary=True)
 # remove/add a node from/to a cluster (node with the given name should exist)
 clstr.remove_node(name='env-xxxxxxlaio3use1')
 clstr.add_node(name='env-xxxxxxlaio3use1')
@@ -55,15 +56,15 @@ apps = clstr.list_applications()
 
 # load or unload chosen application (it is possible via class Cluster or
 # Application)
-app = Application(connection=conn, name='MicroStrategy Tutorial')
+app = Application(connection=conn, name=MICROSTRATEGY_TUTORIAL)
 app.load()
 app.unload()
 
 # via Cluster can we also specify on which node(s) application will be loaded
 # or unloaded
-clstr.load_application(application_name='MicroStrategy Tutorial',
+clstr.load_application(application_name=MICROSTRATEGY_TUTORIAL,
                        on_nodes=['env-xxxxxxlaio1use1', 'env-xxxxxxlaio2use1'])
-clstr.unload_application(application_name='MicroStrategy Tutorial',
+clstr.unload_application(application_name=MICROSTRATEGY_TUTORIAL,
                          on_nodes=['env-xxxxxxlaio1use1', 'env-xxxxxxlaio2use1'])
 
 # get settings of a server as a dataframe

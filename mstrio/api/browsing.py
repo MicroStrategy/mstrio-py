@@ -1,5 +1,5 @@
 from mstrio.utils.helper import response_handler
-from typing import List, Union, TYPE_CHECKING
+from typing import List, Optional, Union, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
@@ -7,15 +7,18 @@ if TYPE_CHECKING:
     from mstrio.utils.entity import ObjectTypes, ObjectSubTypes
 
 
-def store_search_instance(connection: "Connection", project_id: str = None, name: str = None,
-                          pattern: Union["SearchType",
-                                         int] = None, domain: Union["SearchDomain",
-                                                                    int] = None, root: str = None,
-                          object_type: Union["ObjectTypes", "ObjectSubTypes", int,
-                                             List[Union["ObjectTypes", "ObjectSubTypes",
-                                                        int]]] = None, uses_object: str = None,
-                          uses_recursive: bool = False, used_by_object: str = None,
-                          used_by_recursive: bool = None, error_msg: str = None):
+def store_search_instance(connection: "Connection", project_id: Optional[str] = None,
+                          name: Optional[str] = None, pattern: Optional[Union["SearchType",
+                                                                              int]] = None,
+                          domain: Optional[Union["SearchDomain",
+                                                 int]] = None, root: Optional[str] = None,
+                          object_type: Optional[Union["ObjectTypes", "ObjectSubTypes", int,
+                                                      List[Union["ObjectTypes", "ObjectSubTypes",
+                                                                 int]]]] = None,
+                          uses_object: Optional[str] = None, uses_recursive: bool = False,
+                          used_by_object: Optional[str] = None,
+                          used_by_recursive: Optional[bool] = None,
+                          error_msg: Optional[str] = None):
     """
     Search the metadata and store an instance of search results.
 
@@ -91,8 +94,8 @@ def store_search_instance(connection: "Connection", project_id: str = None, name
     return response
 
 
-def get_search_results(connection: "Connection", search_id: str, project_id: str = None,
-                       offset: int = 0, limit: int = -1, error_msg: str = None):
+def get_search_results(connection: "Connection", search_id: str, project_id: Optional[str] = None,
+                       offset: int = 0, limit: int = -1, error_msg: Optional[str] = None):
     """
     Get search results in a list format.
 

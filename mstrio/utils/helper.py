@@ -5,7 +5,7 @@ from json.decoder import JSONDecodeError
 from math import floor
 import os
 import re
-from typing import Any, Callable, Dict, List, Optional, Tuple, TYPE_CHECKING, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, TYPE_CHECKING, TypeVar, Union
 import warnings
 
 import pandas as pd
@@ -315,7 +315,11 @@ def make_dict_filter(param: str, expression: Union[str, int, float, dict, list])
     return myfilter
 
 
-def filter_list_of_dicts(list_of_dicts: List[dict], **filters) -> List[dict]:
+KT = TypeVar("KT")
+VT = TypeVar("VT")
+
+
+def filter_list_of_dicts(list_of_dicts: List[Dict[KT, VT]], **filters) -> List[Dict[KT, VT]]:
     """Filter a list of dicts by any given key-value pair.
 
     Support simple logical operators like: '<,>,<=,>=,!'. Supports
@@ -328,8 +332,8 @@ def filter_list_of_dicts(list_of_dicts: List[dict], **filters) -> List[dict]:
     return list_of_dicts
 
 
-def _prepare_objects(objects: Union[dict, List[dict]], filters: dict = None,
-                     dict_unpack_value: str = None):
+def _prepare_objects(objects: Union[dict, List[dict]], filters: Optional[dict] = None,
+                     dict_unpack_value: Optional[str] = None):
     if type(objects) is dict and dict_unpack_value:
         objects = objects[dict_unpack_value]
     objects = camel_to_snake(objects)
@@ -340,7 +344,8 @@ def _prepare_objects(objects: Union[dict, List[dict]], filters: dict = None,
 
 def fetch_objects_async(connection: "Connection", api: Callable, async_api: Callable,
                         limit: Optional[int], chunk_size: int, filters: dict,
-                        error_msg: str = None, dict_unpack_value: str = None, **kwargs) -> list:
+                        error_msg: Optional[str] = None, dict_unpack_value: Optional[str] = None,
+                        **kwargs) -> list:
     """Get all objects asynchronously. Optionally filter the objects using
     `filters` parameter. Works only for endpoints with `limit` and `offset`
     query parameter (pagination).
@@ -408,7 +413,8 @@ def fetch_objects_async(connection: "Connection", api: Callable, async_api: Call
 
 
 def fetch_objects(connection: "Connection", api: Callable, limit: Optional[int], filters: dict,
-                  error_msg: str = None, dict_unpack_value: str = None, **kwargs) -> list:
+                  error_msg: Optional[str] = None, dict_unpack_value: Optional[str] = None,
+                  **kwargs) -> list:
     """Fetch and prepare objects. Optionally filter the objects by using the
     filters parameter. This function only supports endpoints without pagination.
 
@@ -494,6 +500,32 @@ def auto_match_args(func: Callable, obj: Any, exclude: list = [],
     return param_value_dict
 
 
+def __validate_single_param_value(value, param_name, data_type, max_val, min_val,
+                                  regex, valid_example, inv_val, special_values=[]):
+    if value in special_values:
+        return True
+
+    if max_val is not None and value > max_val:
+        msg = f"'{param_name}' has to be less than or equal to {max_val}"
+        exception_handler(msg, inv_val)
+        return False
+    elif min_val is not None and value < min_val:
+        msg = f"'{param_name}' has to be greater than or equal to {min_val}"
+        exception_handler(msg, inv_val)
+        return False
+    elif regex is not None and not re.match(regex, value):
+        pattern = valid_example or regex
+        msg = f"'{param_name}' has to match pattern '{pattern}'"
+        exception_handler(msg, inv_val)
+        return False
+    elif (all(cond is None for cond in [max_val, min_val, regex]) and special_values
+            and str not in data_type):
+        msg = f"'{param_name}' has to be one of {special_values}"
+        exception_handler(msg, inv_val)
+        return False
+    return True
+
+
 def validate_param_value(param_name, param_val, data_type, max_val=None, min_val=None,
                          special_values=[], regex=None, exception=True,
                          valid_example=None) -> bool:
@@ -507,45 +539,21 @@ def validate_param_value(param_name, param_val, data_type, max_val=None, min_val
     inv_val = ValueError if exception else Warning
     data_type = data_type if isinstance(data_type, list) else [data_type]
 
-    def validate_value(value):
-        if value in special_values:
-            return True
-        else:
-            if max_val is not None:
-                if value > max_val:
-                    msg = f"'{param_name}' has to be less than or equal to {max_val}"
-                    exception_handler(msg, inv_val)
-                    return False
-            if min_val is not None:
-                if value < min_val:
-                    msg = f"'{param_name}' has to be greater than or equal to {min_val}"
-                    exception_handler(msg, inv_val)
-                    return False
-            if regex is not None:
-                if not re.match(regex, value):
-                    pattern = valid_example if valid_example else regex
-                    msg = f"'{param_name}' has to match pattern '{pattern}'"
-                    exception_handler(msg, inv_val)
-                    return False
-            if (all(cond is None for cond in [max_val, min_val, regex]) and special_values
-                    and str not in data_type):
-                msg = f"'{param_name}' has to be one of {special_values}"
-                exception_handler(msg, inv_val)
-                return False
-            else:
-                return True
-
     if any(map(lambda x: x == param_val and isinstance(x, type(param_val)), special_values)):
         return True
-    else:
-        if type(param_val) not in data_type:
-            msg = f"'{param_name}' needs to be of type {data_type}"
-            exception_handler(msg, inv_type)
-            return False
-        if type(param_val) == list:
-            return all([validate_value(value) for value in param_val])
-        else:
-            return validate_value(param_val)
+
+    if type(param_val) not in data_type:
+        msg = f"'{param_name}' needs to be of type {data_type}"
+        exception_handler(msg, inv_type)
+        return False
+    if type(param_val) == list:
+        return all([
+            __validate_single_param_value(value, param_name, data_type, max_val, min_val,
+                                          regex, valid_example, inv_val, special_values)
+            for value in param_val])
+
+    return __validate_single_param_value(param_val, param_name, data_type, max_val, min_val,
+                                         regex, valid_example, inv_val, special_values)
 
 
 def extract_all_dict_values(list_of_dicts: List[Dict]) -> List[Any]:
@@ -571,8 +579,8 @@ def delete_none_values(dictionary: dict) -> dict:
     return new_dict
 
 
-def list_folders(connection, name: str = None, to_dataframe: bool = False, limit: int = None,
-                 **filters) -> Union[List[dict], pd.DataFrame]:
+def list_folders(connection, name: Optional[str] = None, to_dataframe: bool = False,
+                 limit: Optional[int] = None, **filters) -> Union[List[dict], pd.DataFrame]:
     """List folders.
 
     Args:
@@ -619,8 +627,9 @@ def list_folders(connection, name: str = None, to_dataframe: bool = False, limit
         return fldrs
 
 
-def create_folder(connection, folder_name: str, folder_description: str = None,
-                  parent_name: str = None, parent_id: str = None, error_msg=None):
+def create_folder(connection, folder_name: str, folder_description: Optional[str] = None,
+                  parent_name: Optional[str] = None, parent_id: Optional[str] = None,
+                  error_msg=None):
     """Create a folder.
 
     Args:
@@ -662,7 +671,8 @@ def create_folder(connection, folder_name: str, folder_description: str = None,
                                  description=folder_description)
 
 
-def delete_folder(connection, id: str = None, name: str = None, error_msg=None):
+def delete_folder(connection, id: Optional[str] = None, name: Optional[str] = None,
+                  error_msg=None):
     """Delete a folder.
 
     Args:
@@ -720,7 +730,7 @@ class Dictable:
         return snake_to_camel(result) if camel_case else result
 
     @classmethod
-    def from_dict(cls, source: Dict[str, Any], connection: "Connection" = None,
+    def from_dict(cls, source: Dict[str, Any], connection: Optional["Connection"] = None,
                   to_snake_case=True):
         type_mapping = cls._FROM_DICT_MAP
         object_source = camel_to_snake(source) if to_snake_case else source

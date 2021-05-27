@@ -1,12 +1,13 @@
-from typing import List
-
-from mstrio.users_and_groups.user import User
+from mstrio.users_and_groups import User
 from mstrio.utils.helper import exception_handler
 from admin_demo_scripts.scripts_helper import get_result_from_db, get_user_group
 from mstrio.connection import Connection
 
+from typing import List
 
-def _create_new_user_account(connection, emp_username, emp_fullname, add_to_user_groups):
+
+def _create_new_user_account(connection: "Connection", emp_username: str, emp_fullname: str,
+                             add_to_user_groups: str) -> None:
     # when user is created it is automatically added to user group "Everyone"
     # and is granted rights to Browse and Read this user group
     new_usr = User.create(connection=connection, username=emp_username, full_name=emp_fullname,
@@ -22,7 +23,7 @@ def _create_new_user_account(connection, emp_username, emp_fullname, add_to_user
 def create_new_hired_users(connection: "Connection", driver: str, server: str, database: str,
                            uid: str, pwd: str, query: str, db_lib: str, emp_username_col: str,
                            emp_fullname_col: str, emp_title_col: str, emp_id_col: str,
-                           add_to_user_groups: List[str] = []) -> list:
+                           add_to_user_groups: List[str] = []) -> List[dict]:
     """Create user account for each new hired employee. It is necessary to
     provide all parameters to connect to database and proper query to retrieve
     information about new hired employees.

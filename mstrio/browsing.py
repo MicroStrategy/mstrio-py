@@ -1,5 +1,5 @@
 from enum import IntEnum
-from typing import Union, List, TYPE_CHECKING
+from typing import Optional, Union, List, TYPE_CHECKING
 from mstrio.utils.entity import ObjectTypes, ObjectSubTypes
 from mstrio.utils import helper
 from mstrio.api import browsing
@@ -32,12 +32,15 @@ class SearchDomain(IntEnum):
 def list_objects(connection: "Connection", object_type: Union[ObjectTypes, ObjectSubTypes, int,
                                                               List[Union[ObjectTypes,
                                                                          ObjectSubTypes, int]]],
-                 application_id: str = None, name: str = None,
-                 pattern: Union[SearchType, int] = None, domain: Union[SearchDomain, int] = None,
-                 root: str = None, uses_object: str = None, uses_recursive: bool = False,
-                 used_by_object: str = None, used_by_recursive: bool = None, limit: int = None,
-                 chunk_size: int = 1000, err_msg_instance: str = None, err_msg_results: str = None,
-                 **filters) -> List[dict]:
+                 application_id: Optional[str] = None, name: Optional[str] = None,
+                 pattern: Optional[Union[SearchType,
+                                         int]] = None, domain: Optional[Union[SearchDomain,
+                                                                              int]] = None,
+                 root: Optional[str] = None, uses_object: Optional[str] = None,
+                 uses_recursive: bool = False, used_by_object: Optional[str] = None,
+                 used_by_recursive: Optional[bool] = None, limit: Optional[int] = None,
+                 chunk_size: int = 1000, err_msg_instance: Optional[str] = None,
+                 err_msg_results: Optional[str] = None, **filters) -> List[dict]:
     """List objects based on provided type. We need to use endpoint from
     Browsing API.
 

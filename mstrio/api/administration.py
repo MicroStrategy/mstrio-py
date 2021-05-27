@@ -730,49 +730,6 @@ def update_iserver_settings(connection, body, error_msg=None):
     return response
 
 
-def get_iserver_settings_OLD(connection, error_msg=None):
-    """Get IServer settings.
-
-    Args:
-        connection: MicroStrategy REST API connection object
-        error_msg (string, optional): Custom Error Message for Error Handling
-
-    Returns:
-        Complete HTTP response object.
-    """
-    response = connection.session.get(url=connection.base_url + '/api/iserver/settings',
-                                      headers={'X-MSTR-ProjectID': None})
-    if not response.ok:
-        if error_msg is None:
-            error_msg = "Error fetching I-Server settings"
-        response_handler(response, error_msg)
-    return response
-
-
-def update_iserver_settings_OLD(connection, body, error_msg=None):
-    """Update some I-Server governing settings.
-
-    Example:
-        {"settings": [
-            {
-            "id": 0,
-            "dataType": 0,
-            "value": "string"
-            }
-        ]}
-    """
-    response = connection.session.put(
-        url=connection.base_url + '/api/iserver/settings',
-        headers={'X-MSTR-ProjectID': None},
-        json=body,
-    )
-    if not response.ok:
-        if error_msg is None:
-            error_msg = "Error updating I-Server settings"
-        response_handler(response, error_msg)
-    return response
-
-
 def get_cluster_membership(connection, error_msg=None):
     """Get IServer cluster membership information.
 

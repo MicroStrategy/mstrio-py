@@ -199,14 +199,12 @@ class Model(object):
             raise TypeError(msg)
 
         # check for presence of invalid characters in data frame column names
-        if not self.__ignore_special_chars:
-            if any([
-                    col for col in table[self._KEY_DATA_FRAME].columns
-                    for inv in self._INVALID_CHARS if inv in col
-            ]):
-                msg = "Column names cannot contain '{}', '{}', '{}', '{}'".format(
-                    *self._INVALID_CHARS)
-                raise ValueError(msg)
+        if not self.__ignore_special_chars and any([
+                col for col in table[self._KEY_DATA_FRAME].columns
+                for inv in self._INVALID_CHARS if inv in col]):
+            msg = "Column names cannot contain '{}', '{}', '{}', '{}'".format(
+                *self._INVALID_CHARS)
+            raise ValueError(msg)
 
     @staticmethod
     def __get_col_names(table):

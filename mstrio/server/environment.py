@@ -53,7 +53,7 @@ class Environment:
         """Fetch the current server settings from the environment."""
         self.server_settings.fetch()
 
-    def create_application(self, name: str, description: str = None,
+    def create_application(self, name: str, description: Optional[str] = None,
                            force: bool = False) -> Optional["Application"]:
         """Create a new application on the envrionment.
 
@@ -64,7 +64,7 @@ class Environment:
         """
         return Application._create(self.connection, name, description, force)
 
-    def list_applications(self, to_dictionary: bool = False, limit: int = None,
+    def list_applications(self, to_dictionary: bool = False, limit: Optional[int] = None,
                           **filters) -> Union[List["Application"], List[dict]]:
         """Return list of application objects or application dicts if
         `to_dictionary=True`. Optionally filter the Applications by specifying
@@ -102,7 +102,8 @@ class Environment:
             **filters,
         )
 
-    def list_nodes(self, application_id: str = None, node_name: str = None) -> List[dict]:
+    def list_nodes(self, application_id: Optional[str] = None,
+                   node_name: Optional[str] = None) -> List[dict]:
         """Return a list of I-Server nodes and their properties. Optionally
         filter by `application_id` or `node_name`.
 
@@ -113,7 +114,8 @@ class Environment:
         response = monitors.get_node_info(self.connection, application_id, node_name).json()
         return response['nodes']
 
-    def is_loaded(self, application_id: str = None, application_name: str = None) -> bool:
+    def is_loaded(self, application_id: Optional[str] = None,
+                  application_name: Optional[str] = None) -> bool:
         """Check if application is loaded, by passing application ID or name,
         returns True or False.
 
@@ -157,39 +159,42 @@ class Environment:
         Returns:
             Dataframe with values of selected application' settings.
         """
+
+        def not_exist_warning(wrong_name):
+            helper.exception_handler(
+                "Application '{}' does not exist and will be skipped.".format(
+                    wrong_name), exception_type=Warning)
+
         if applications:
-            just_objects = [app if isinstance(app, Application) else None for app in applications]
-            just_objects = list(filter(None.__ne__, just_objects))
+            just_objects = [app for app in applications if isinstance(app, Application)]
         else:
             just_objects = []
-        if (len(just_objects) != len(applications)):
-            all_applications = self.list_applications()
-            if type(applications) == list:
-                if len(applications) < 2:
-                    helper.exception_handler(
-                        "Provide more than one application object or name in list",
-                        exception_type=TypeError)
+        if (len(just_objects) == len(applications)):
+            return compare_application_settings(applications, show_diff_only)
 
-                # extract app names from either application object or strings
-                app_names = [
-                    app.name if isinstance(app, Application) else str(app) for app in applications
-                ]
-                # filter only valid applications
-                all_app_names = [app.name for app in all_applications]
-                for app_name in app_names:
-                    if app_name not in all_app_names:
-                        helper.exception_handler(
-                            "Application '{}' does not exist and will be skipped.".format(
-                                app_name), exception_type=Warning)
-
-                applications = list(filter(lambda app: app.name in app_names, all_applications))
-                applications = sorted(applications, key=lambda x: app_names.index(x.name))
-
-            elif applications is None:
-                applications = all_applications
-            else:
+        all_applications = self.list_applications()
+        if type(applications) == list:
+            if len(applications) < 2:
                 helper.exception_handler(
-                    "The 'applications' parameter needs to be a list of len > 1 or None.",
+                    "Provide more than one application object or name in list",
                     exception_type=TypeError)
+
+            # extract app names from either application object or strings
+            app_names = [
+                app.name if isinstance(app, Application) else str(app) for app in applications
+            ]
+            # filter only valid applications
+            all_app_names = [app.name for app in all_applications]
+            [not_exist_warning(a_name) for a_name in app_names if a_name not in all_app_names]
+
+            applications = list(filter(lambda app: app.name in app_names, all_applications))
+            applications = sorted(applications, key=lambda x: app_names.index(x.name))
+
+        elif applications is None:
+            applications = all_applications
+        else:
+            helper.exception_handler(
+                "The 'applications' parameter needs to be a list of len > 1 or None.",
+                exception_type=TypeError)
 
         return compare_application_settings(applications, show_diff_only)

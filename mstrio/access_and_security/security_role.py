@@ -1,25 +1,23 @@
-from typing import TYPE_CHECKING, List, Union, Dict, Any
+from typing import Optional, TYPE_CHECKING, List, Union, Dict, Any
 
 import mstrio.config as config
 from mstrio.api import security
 from mstrio.utils import helper
 from mstrio.utils.entity import Entity, ObjectTypes
 from pandas import DataFrame
+from mstrio.connection import Connection
 
 if TYPE_CHECKING:
     from mstrio.access_and_security.privilege import Privilege
     from mstrio.server.application import Application
-    from mstrio.users_and_groups.user import User
-    from mstrio.users_and_groups.user_group import UserGroup
-    from mstrio.connection import Connection
+    from mstrio.users_and_groups import UserOrGroup
 
 
-def list_security_roles(connection: "Connection", to_dictionary: bool = False,
-                        to_dataframe: bool = False, limit: int = None, **filters):
+def list_security_roles(connection: Connection, to_dictionary: bool = False,
+                        to_dataframe: bool = False, limit: Optional[int] = None, **filters):
     """Get all Security Roles stored on the server.
 
     Optionally use `to_dictionary` or `to_dataframe` to choose output format.
-    If `to_dictionary` is True, `to_dataframe` is omitted.
 
     Args:
         connection(object): MicroStrategy connection object returned
@@ -70,7 +68,8 @@ class SecurityRole(Entity):
     }
     _API_PATCH = [security.update_security_role]
 
-    def __init__(self, connection: "Connection", name: str = None, id: str = None):
+    def __init__(self, connection: Connection, name: Optional[str] = None,
+                 id: Optional[str] = None):
         """Initialize Security Role object by passing name or id.
 
         Args:
@@ -100,15 +99,16 @@ class SecurityRole(Entity):
         self._privileges = kwargs.get("privileges")
 
     @classmethod
-    def create(cls, connection: "Connection", name: str, privileges: List[Union["Privilege", str]],
-               description: str = ""):
+    def create(cls, connection: Connection, name: str,
+               privileges: Union[Union["Privilege", int, str],
+                                 List[Union["Privilege", int, str]]], description: str = ""):
         """Create a new Security Role.
 
         Args:
             connection(object): MicroStrategy connection object returned
                 by 'connection.Connection()'.
             name(string): Name of the Security Role
-            privileges(list): List of privileges which will be assigned to this
+            privileges: List of privileges which will be assigned to this
                 security role. Use privilege IDs or Privilege objects.
             description(string, optional): Description of the Security Role
 
@@ -140,8 +140,8 @@ class SecurityRole(Entity):
 
     @classmethod
     def _list_security_roles(
-            cls, connection: "Connection", to_dictionary: bool = False, to_dataframe: bool = False,
-            limit: int = None,
+            cls, connection: Connection, to_dictionary: bool = False, to_dataframe: bool = False,
+            limit: Optional[int] = None,
             **filters) -> Union[List["SecurityRole"], List[Dict[str, Any]], DataFrame]:
         if to_dictionary and to_dataframe:
             helper.exception_handler(
@@ -162,12 +162,12 @@ class SecurityRole(Entity):
             return [cls.from_dict(source=obj, connection=connection) for obj in objects]
 
     @classmethod
-    def _list_security_role_ids(cls, connection: "Connection", **filters) -> List[str]:
+    def _list_security_role_ids(cls, connection: Connection, **filters) -> List[str]:
         sr_dicts = SecurityRole._list_security_roles(connection, to_dictionary=True,
                                                      **dict(filters))
         return [role.get('id') for role in sr_dicts]  # type: ignore
 
-    def alter(self, name: str = None, description: str = None):
+    def alter(self, name: Optional[str] = None, description: Optional[str] = None):
         """Alter Security Role name or/and description.
 
         Args:
@@ -203,7 +203,7 @@ class SecurityRole(Entity):
             if response.ok:
                 print("Deleted security role {}.".format(self.id))
 
-    def list_members(self, application_name: str = None):
+    def list_members(self, application_name: Optional[str] = None):
         """List all members of the Security Role. Optionally, filter the
         results by Application name.
 
@@ -220,7 +220,7 @@ class SecurityRole(Entity):
                     members.append(member)
         return members
 
-    def grant_to(self, members: Union[List[str], List["User"], List["UserGroup"]],
+    def grant_to(self, members: Union["UserOrGroup", List["UserOrGroup"]],
                  application: Union["Application", str]) -> None:
         """Assign users/user groups to a Security Role.
 
@@ -265,14 +265,13 @@ class SecurityRole(Entity):
             path="members",
             op='add',
         )
-
-        if succeeded:
-            if config.verbose:
+        if config.verbose:
+            if succeeded:
                 print("Granted Security Role '{}' to {}".format(self.name, succeeded))
-        if failed and config.verbose:
-            print("Security Role '{}' already has member(s) {}".format(self.name, failed))
+            if failed:
+                print("Security Role '{}' already has member(s) {}".format(self.name, failed))
 
-    def revoke_from(self, members: Union[List[str], List["User"], List["UserGroup"]],
+    def revoke_from(self, members: Union["UserOrGroup", List["UserOrGroup"]],
                     application: Union["Application", str]) -> None:
         """Remove users/user groups from a Security Role.
 
@@ -319,14 +318,14 @@ class SecurityRole(Entity):
             op='remove',
         )
 
-        if succeeded:
-            if config.verbose:
-                print("Revoked Security Role '{}' from {}".format(self.name, succeeded))
+        if succeeded and config.verbose:
+            print("Revoked Security Role '{}' from {}".format(self.name, succeeded))
         if failed and config.verbose:
             print("Security Role '{}' does not have member(s) {}".format(self.name, failed))
 
-    def grant_privilege(self, privilege: Union[str, List[str], "Privilege",
-                                               List["Privilege"]]) -> None:
+    def grant_privilege(
+        self, privilege: Union[Union["Privilege", int, str], List[Union["Privilege", int,
+                                                                        str]]]) -> None:
         """Grant new project-level privileges to the Security Role.
 
         Args:
@@ -367,8 +366,9 @@ class SecurityRole(Entity):
         if failed and config.verbose:
             print("Security Role '{}' already has privilege(s) {}".format(self.name, failed))
 
-    def revoke_privilege(self, privilege: Union[str, List[str], "Privilege",
-                                                List["Privilege"]]) -> None:
+    def revoke_privilege(
+        self, privilege: Union[Union["Privilege", int, str], List[Union["Privilege", int,
+                                                                        str]]]) -> None:
         """Revoke project-level privileges from the Security Role.
 
         Args:

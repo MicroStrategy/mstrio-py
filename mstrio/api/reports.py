@@ -2,6 +2,8 @@ from packaging import version
 
 from mstrio.utils.helper import response_handler
 
+CUBE_FIELDS = '-data.metricValues.extras,-data.metricValues.formatted'
+
 
 def report_definition(connection, report_id):
     """Get the definition of a specific report, including attributes and
@@ -46,7 +48,7 @@ def report_instance(connection, report_id, body={}, offset=0, limit=5000):
     """
     params = {'offset': offset, 'limit': limit}
     if version.parse(connection.iserver_version) >= version.parse("11.2.0200"):
-        params['fields'] = '-data.metricValues.extras,-data.metricValues.formatted'
+        params['fields'] = CUBE_FIELDS
 
     response = connection.session.post(
         url=connection.base_url + '/api/v2/reports/' + report_id + '/instances/',
@@ -83,7 +85,7 @@ def report_instance_id(connection, report_id, instance_id, offset=0, limit=5000)
     """
     params = {'offset': offset, 'limit': limit}
     if version.parse(connection.iserver_version) >= version.parse("11.2.0200"):
-        params['fields'] = '-data.metricValues.extras,-data.metricValues.formatted'
+        params['fields'] = CUBE_FIELDS
 
     response = connection.session.get(
         url=connection.base_url + '/api/v2/reports/' + report_id + '/instances/' + instance_id,
@@ -104,7 +106,7 @@ def report_instance_id_coroutine(future_session, connection, report_id, instance
     """
     params = {'offset': offset, 'limit': limit}
     if version.parse(connection.iserver_version) >= version.parse("11.2.0200"):
-        params['fields'] = '-data.metricValues.extras,-data.metricValues.formatted'
+        params['fields'] = CUBE_FIELDS
 
     url = connection.base_url + '/api/v2/reports/' + report_id + '/instances/' + instance_id
     future = future_session.get(url, params=params)

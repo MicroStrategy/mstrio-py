@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import List, Optional, Union
 from mstrio.utils import helper
 import mstrio.api.subscriptions as subscriptions_
 from mstrio.distribution_services.subscription.subscription import Subscription
@@ -7,8 +7,8 @@ import mstrio.config as config
 from mstrio.connection import Connection
 
 
-def list_subscriptions(connection: Connection, application_id: str = None,
-                       application_name: str = None, to_dictionary: bool = False,
+def list_subscriptions(connection: Connection, application_id: Optional[str] = None,
+                       application_name: Optional[str] = None, to_dictionary: bool = False,
                        **filters) -> Union[List[Subscription], List[dict]]:
     """Lists all subscriptions filtered by passed params.
     Specify either `application_id` or `application_name`.
@@ -46,8 +46,8 @@ def list_subscriptions(connection: Connection, application_id: str = None,
 class SubscriptionManager:
     """Manage subscriptions."""
 
-    def __init__(self, connection: Connection, application_id: str = None,
-                 application_name: str = None):
+    def __init__(self, connection: Connection, application_id: Optional[str] = None,
+                 application_name: Optional[str] = None):
         """Initialize the SubscriptionManager object.
         Specify either `application_id` or `application_name`.
         When `application_id` is provided (not `None`), `application_name` is
@@ -163,8 +163,10 @@ class SubscriptionManager:
         if response.ok:
             return response.json()['burstingAttributes']
 
-    def available_recipients(self, content_id: str = None, content_type: str = None,
-                             content: "Content" = None, delivery_type='EMAIL') -> List[dict]:
+    def available_recipients(self, content_id: Optional[str] = None,
+                             content_type: Optional[str] = None,
+                             content: Optional["Content"] = None,
+                             delivery_type='EMAIL') -> List[dict]:
         """List available recipients for a subscription contents.
         Specify either both `content_id` and `content_type` or just `content`
         object.

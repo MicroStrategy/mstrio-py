@@ -1,13 +1,13 @@
-from typing import TYPE_CHECKING, List, Union, Dict, Any
-
-import mstrio.config as config
-from mstrio.server.cluster import Cluster
-from mstrio.api import monitors
-from mstrio.utils import helper
+from typing import Optional, TYPE_CHECKING, List, Union, Dict, Any
 from packaging import version
 
+import mstrio.config as config
+from mstrio.api import monitors
+from mstrio.utils import helper
+from mstrio.connection import Connection
+from mstrio.server.cluster import Cluster
+
 if TYPE_CHECKING:
-    from mstrio.connection import Connection
     from mstrio.users_and_groups.user import User
 
 
@@ -21,7 +21,7 @@ class UserConnections():
         user_connections: All active user connections on the environment
     """
 
-    def __init__(self, connection: "Connection"):
+    def __init__(self, connection: Connection):
         """Initialize the `UserConnections` object.
 
         Args:
@@ -36,7 +36,7 @@ class UserConnections():
         connections on the environment."""
         self.user_connections = self.list_connections()
 
-    def filter_connections(self, **filters) -> Union[list, None]:
+    def filter_connections(self, **filters) -> Union[List[Dict[str, Any]], None]:
         """Filter the user connections stored in the `UserConnections` object
         by specifying the `filters` keyword arguments.
 
@@ -56,7 +56,7 @@ class UserConnections():
             filtered_connections = helper.filter_list_of_dicts(self.user_connections, **filters)
         return filtered_connections
 
-    def list_connections(self, nodes: Union[str, List[str]] = None, limit: int = None,
+    def list_connections(self, nodes: Union[str, List[str]] = None, limit: Optional[int] = None,
                          **filters) -> List[Dict[str, Any]]:
         """Get all active user connections. Optionally filter the connections
         by specifying the `filters` keyword arguments.
@@ -71,7 +71,9 @@ class UserConnections():
                 'date_connection_created', 'duration', 'session_id', 'client',
                 'config_level']
         """
-        all_nodes = Cluster(self.connection).list_nodes()
+        # TODO: This fully initialises a Cluster object every timethe function
+        # is run. It would be better to somehow cache it for a given connection.
+        all_nodes = Cluster(self.connection).list_nodes(to_dictionary=True)
         all_connections = []
         if nodes is None:
             nodes = [node['name'] for node in all_nodes if node['status'] == 'running']
@@ -95,8 +97,9 @@ class UserConnections():
         return all_connections
 
     def disconnect_users(self, connection_ids: Union[str, List[str]] = None,
-                         users: Union[List["User"],
-                                      List[str]] = None, nodes: Union[str, List[str]] = None,
+                         users: Optional[Union[List["User"],
+                                               List[str]]] = None, nodes: Union[str,
+                                                                                List[str]] = None,
                          force: bool = False, **filters) -> Union[List[dict], None]:
         """Disconnect user connections by passing in users (objects) or
         connection_ids. Optionally disconnect users by specifying the `filters`
@@ -206,7 +209,10 @@ class UserConnections():
                 err_msg = f"Error disconnecting user sessions: {connection_ids}."
                 return helper.response_handler(response=res, msg=err_msg, throw_error=False)
         else:
-            statuses = []
+            # TODO: This can probably be made more elegant and potentially
+            # performant if we use the ID as dict key and status as value
+            # and maybe use comprehension instead of appending in loop.
+            statuses: List[Dict[str, Union[str, int]]] = []
             for connection_id in connection_ids:
                 response = monitors.delete_user_connection(self.connection, connection_id,
                                                            bulk=True)

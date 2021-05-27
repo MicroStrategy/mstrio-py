@@ -1,4 +1,4 @@
-from typing import List, TYPE_CHECKING, Union
+from typing import List, Optional, Union
 
 from pandas import DataFrame
 
@@ -7,12 +7,12 @@ from mstrio.application_objects.document import Document
 from mstrio.server.environment import Environment
 from mstrio.utils import helper
 
-if TYPE_CHECKING:
-    from mstrio.connection import Connection
+from mstrio.connection import Connection
 
 
-def list_dossiers(connection: "Connection", name: str = None, to_dictionary: bool = False,
-                  to_dataframe: bool = False, limit: int = None, **filters) -> List["Dossier"]:
+def list_dossiers(connection: Connection, name: Optional[str] = None, to_dictionary: bool = False,
+                  to_dataframe: bool = False, limit: Optional[int] = None,
+                  **filters) -> List["Dossier"]:
     """Get all Dossiers stored on the server.
 
     Optionally use `to_dictionary` or `to_dataframe` to choose output format.
@@ -44,9 +44,9 @@ def list_dossiers(connection: "Connection", name: str = None, to_dictionary: boo
                              to_dataframe=to_dataframe, **filters)
 
 
-def list_dossiers_across_projects(connection: "Connection", name: str = None,
+def list_dossiers_across_projects(connection: Connection, name: Optional[str] = None,
                                   to_dictionary: bool = False, to_dataframe: bool = False,
-                                  limit: int = None, **filters) -> List["Dossier"]:
+                                  limit: Optional[int] = None, **filters) -> List["Dossier"]:
     """Get all Dossiers stored on the server.
 
     Optionally use `to_dictionary` or `to_dataframe` to choose output format.
@@ -86,8 +86,9 @@ def list_dossiers_across_projects(connection: "Connection", name: str = None,
 class Dossier(Document):
 
     @classmethod
-    def _list_all(cls, connection: "Connection", name: str = None, to_dictionary: bool = False,
-                  to_dataframe: bool = False, limit: int = None,
+    def _list_all(cls, connection: Connection, name: Optional[str] = None,
+                  to_dictionary: bool = False, to_dataframe: bool = False,
+                  limit: Optional[int] = None,
                   **filters) -> Union[List["Dossier"], List[dict], DataFrame]:
         msg = "Error retrieving documents from the environment."
         if to_dictionary and to_dataframe:

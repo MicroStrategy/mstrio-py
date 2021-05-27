@@ -1,4 +1,4 @@
-from typing import Dict, List, TYPE_CHECKING, Union
+from typing import Dict, List, Optional, TYPE_CHECKING, Union
 
 from pandas import DataFrame
 
@@ -8,16 +8,18 @@ import mstrio.config as config
 from mstrio.utils import helper
 from mstrio.utils.entity import Entity, ObjectTypes, set_custom_permissions, set_permission
 from mstrio.utils.helper import deprecation_warning
+from mstrio.connection import Connection
+from mstrio.access_and_security.privilege_mode import PrivilegeMode
 
 if TYPE_CHECKING:
     from mstrio.access_and_security.privilege import Privilege
-    from mstrio.connection import Connection
     from mstrio.server.application import Application
     from mstrio.users_and_groups.user import User
 
 
-def list_usergroups(connection: "Connection", name_begins: str = None, to_dictionary: bool = False,
-                    limit: int = None, **filters) -> List["UserGroup"]:
+def list_usergroups(connection: Connection, name_begins: Optional[str] = None,
+                    to_dictionary: bool = False, limit: Optional[int] = None,
+                    **filters) -> List["UserGroup"]:
     """Get list of User Group objects or User Group dicts. Optionally filter
     the User Groups by specifying 'name_begins' or other filters.
 
@@ -50,8 +52,8 @@ def list_usergroups(connection: "Connection", name_begins: str = None, to_dictio
     list_user_groups(connection, name_begins, to_dictionary, limit, **filters)
 
 
-def list_user_groups(connection: "Connection", name_begins: str = None,
-                     to_dictionary: bool = False, limit: int = None,
+def list_user_groups(connection: Connection, name_begins: Optional[str] = None,
+                     to_dictionary: bool = False, limit: Optional[int] = None,
                      **filters) -> List["UserGroup"]:
     """Get list of User Group objects or User Group dicts. Optionally filter
     the User Groups by specifying 'name_begins' or other filters.
@@ -125,7 +127,8 @@ class UserGroup(Entity):
     }
     _API_PATCH = [usergroups.update_user_group_info]
 
-    def __init__(self, connection: "Connection", name: str = None, id: str = None) -> None:
+    def __init__(self, connection: Connection, name: Optional[str] = None,
+                 id: Optional[str] = None) -> None:
         """Initialize UserGroup object by passing `name` or `id`. When `id` is
         provided (not `None`), `name` is omitted.
 
@@ -160,7 +163,7 @@ class UserGroup(Entity):
         self._settings = kwargs.get('settings')
 
     @classmethod
-    def create(cls, connection: "Connection", name: str, description: str = None,
+    def create(cls, connection: Connection, name: str, description: Optional[str] = None,
                memberships: List[str] = [], members: List[str] = []):
         """Create a new User Group on the I-Server. Returns `UserGroup` object.
 
@@ -189,8 +192,8 @@ class UserGroup(Entity):
             return cls.from_dict(source=response, connection=connection)
 
     @classmethod
-    def _get_user_groups(cls, connection: "Connection", name_begins: str = None,
-                         to_dictionary: bool = False, limit: int = None,
+    def _get_user_groups(cls, connection: Connection, name_begins: Optional[str] = None,
+                         to_dictionary: bool = False, limit: Optional[int] = None,
                          **filters) -> List["UserGroup"]:
         msg = "Error getting information for a set of User Groups."
         objects = helper.fetch_objects_async(
@@ -209,13 +212,13 @@ class UserGroup(Entity):
             return [cls.from_dict(source=obj, connection=connection) for obj in objects]
 
     @classmethod
-    def _get_user_group_ids(cls, connection: "Connection", name_begins: str = None,
-                            limit: int = None, **filters) -> List[str]:
+    def _get_user_group_ids(cls, connection: Connection, name_begins: Optional[str] = None,
+                            limit: Optional[int] = None, **filters) -> List[str]:
         group_dicts = UserGroup._get_user_groups(connection=connection, name_begins=name_begins,
                                                  to_dictionary=True, limit=limit, **dict(filters))
         return [group['id'] for group in group_dicts]
 
-    def alter(self, name: str = None, description: str = None):
+    def alter(self, name: Optional[str] = None, description: Optional[str] = None):
         """Alter User Group name or/and description.
 
         Args:
@@ -425,12 +428,13 @@ class UserGroup(Entity):
                 print("User Group '{}' does not have any directly granted privileges".format(
                     self.name))
 
-    def list_privileges(self, mode: str = 'ALL', to_dataframe: bool = False) -> list:
+    def list_privileges(self, mode: PrivilegeMode = PrivilegeMode.ALL,
+                        to_dataframe: bool = False) -> list:
         """List privileges for user group.
 
         Args:
-            mode: ['ALL'/'INHERITED'/'GRANTED'] specifies which privileges to
-                list
+            mode: Specifies which privileges to list.
+                See: `privilege.PrivilegeMode` enum.
             to_dataframe: If True, return a DataFrame object containing
                 privileges
         """
@@ -444,27 +448,31 @@ class UserGroup(Entity):
             df.index.name = 'ID'
             return df
 
+        if not isinstance(mode, PrivilegeMode):
+            try:
+                mode = PrivilegeMode(mode)
+            except ValueError:
+                msg = ("Wrong privilege mode has been passed, allowed modes are "
+                       "['ALL'/'INHERITED'/'GRANTED']. See: `privilege.PrivilegeMode` enum.")
+                helper.exception_handler(msg, ValueError)
+
         privileges = list()
-        if mode == 'ALL':
+        if mode == PrivilegeMode.ALL:
             privileges = self.privileges
-        elif mode == 'INHERITED':
+        elif mode == PrivilegeMode.INHERITED:
             for privilege in self.privileges:
                 is_inherited = False
                 for source in privilege['sources']:
                     is_inherited = not source['direct'] or is_inherited
                 if is_inherited:
                     privileges.append(privilege)
-        elif mode == 'GRANTED':
+        else:  # GRANTED
             for privilege in self.privileges:
                 is_granted = False
                 for source in privilege['sources']:
                     is_granted = source['direct'] or is_granted
                 if is_granted:
                     privileges.append(privilege)
-        else:
-            msg = ("Wrong privilege mode has been passed, allowed modes are "
-                   "['ALL'/'INHERITED'/'GRANTED']")
-            helper.exception_handler(msg, ValueError)
 
         return to_df(privileges) if to_dataframe else privileges
 
@@ -508,7 +516,7 @@ class UserGroup(Entity):
 
     def set_permission(self, permission: str, to_objects: Union[str, List[str]], object_type: int,
                        application: Union[str, "Application"] = None,
-                       propagate_to_children: bool = None):
+                       propagate_to_children: Optional[bool] = None):
         """Set permission to perform actions on given object(s).
 
         Function is used to set permission of the trustee to perform given
@@ -536,9 +544,11 @@ class UserGroup(Entity):
                        propagate_to_children=propagate_to_children)
 
     def set_custom_permissions(self, to_objects: Union[str, List[str]], object_type: int,
-                               application: Union[str, "Application"] = None, execute: str = None,
-                               use: str = None, control: str = None, delete: str = None,
-                               write: str = None, read: str = None, browse: str = None):
+                               application: Union[str, "Application"] = None,
+                               execute: Optional[str] = None, use: Optional[str] = None,
+                               control: Optional[str] = None, delete: Optional[str] = None,
+                               write: Optional[str] = None, read: Optional[str] = None,
+                               browse: Optional[str] = None):
         """Set custom permissions to perform actions on given object(s).
 
         Function is used to set rights of the trustee to perform given actions

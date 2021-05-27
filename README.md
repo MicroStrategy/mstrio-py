@@ -15,7 +15,9 @@ With mstrio-py for **system administration**, it’s easy to minimize costs by a
 **MicroStrategy for Jupyter** is an extension for Jupyter Notebook which provides a graphical user interface for mstrio-py methods with the help of which user can perform all of the import and export actions without writing a single line of code manually. MicroStrategy for Jupyter is contained within mstrio-py package and is available after installation and enabling as Jupyter extension
 
 # Table of Contents <!-- omit in toc -->
+
 <!--ts-->
+
 - [Main Features](#main-features)
 - [Documentation](#documentation)
 - [Installation](#installation)
@@ -47,6 +49,8 @@ Since version **11.3.0.1**, **mstrio-py** includes also administration modules:
 - **Document** and **Dossiers** in **User Library** modules (see [examples][example_library])
 - **User Connections** management module
 - **Privilege** and **Security Role** management modules
+- **Cube Cache** management modules (see [examples][example_cache])
+- **Intelligent Cube** management modules (see [examples][example_olap])
 
 # Documentation
 
@@ -88,7 +92,7 @@ jupyter nbextension enable connector-jupyter --py --sys-prefix
 
 # Versioning & Changelog
 
-Current version: **11.3.1.101** (30 April 2021). Check out [**Changelog**][release_notes] to see what's new.
+Current version: **11.3.1.102** (28 May 2021). Check out [**Changelog**][release_notes] to see what's new.
 
 mstrio-py is constantly developed to support newest MicroStrategy REST APIs. Functionalities may be added to mstrio on monthly basis. It is **recommended** to always install the newest version of mstrio-py, as it will be most stable and still maintain backwards compatibility with various MicroStrategy installations, dating back to 11.1.4.
 
@@ -117,7 +121,6 @@ When features (modules, parameters, attributes, methods etc.) are marked for dep
 
 ![Deprecation warning ][deprecation]
 
-
 # More Resources
 
 - [Tutorials for mstrio][mstr_datasci_comm]
@@ -129,25 +132,27 @@ When features (modules, parameters, attributes, methods etc.) are marked for dep
 
 "Jupyter" and the Jupyter logos are trademarks or registered trademarks of NumFOCUS.
 
-[pypi_archive]: <https://pypi.org/project/mstrio-py/#history>
-[py_github]: <https://github.com/MicroStrategy/mstrio-py>
-[r_github]: <https://github.com/MicroStrategy/mstrio>
-[mstr_datasci_comm]: <https://community.microstrategy.com/s/topic/0TO44000000AJ2dGAG/python-r-u108>
-[mstrio_py_doc]: <http://www2.microstrategy.com/producthelp/Current/mstrio-py/>
-[mstr_rest_demo]: <https://demo.microstrategy.com/MicroStrategyLibrary/api-docs/index.html>
-[mstr_rest_docs]: <https://lw.microstrategy.com/msdz/MSDL/GARelease_Current/docs/projects/RESTSDK/Content/topics/REST_API/REST_API.htm>
-[mstr_help_docs]: <https://www2.microstrategy.com/producthelp/current/MSTR-for-Jupyter/Content/mstr_for_jupyter.htm>
-[cors_manual]: <https://lw.microstrategy.com/msdz/MSDL/GARelease_Current/docs/projects/EmbeddingSDK/Content/topics/EnableCORS.htm>
-[same_site_manual]: <https://community.microstrategy.com/s/article/Chrome-v80-Cookie-Behavior-and-the-impact-on-MicroStrategy-Deployments?language=undefined&t=1581355581289>
-[python_venv]: <https://docs.python.org/3/tutorial/venv.html>
-[release_notes]: <https://github.com/MicroStrategy/mstrio-py/blob/master/NEWS.md>
-[logo]: <https://github.com/MicroStrategy/mstrio-py/blob/master/mstr-logo.png?raw=true>
-[deprecation]: <https://github.com/MicroStrategy/mstrio-py/blob/master/deprecation.png?raw=true>
-[example_conn]: <https://github.com/MicroStrategy/mstrio-py/blob/master/examples/connect.py>
-[example_import]: <https://github.com/MicroStrategy/mstrio-py/blob/master/examples/cube_report.py>
-[example_export]: <https://github.com/MicroStrategy/mstrio-py/blob/master/examples/create_dataset.py>
-[example_app]: <https://github.com/MicroStrategy/mstrio-py/blob/master/examples/application_mgmt.py>
-[example_server]: <https://github.com/MicroStrategy/mstrio-py/blob/master/examples/server_mgmt.py>
-[example_user]: <https://github.com/MicroStrategy/mstrio-py/blob/master/examples/user_mgmt.py>
-[example_subs]: <https://github.com/MicroStrategy/mstrio-py/blob/master/examples/subscription_mgmt.py>
-[example_library]: <https://github.com/MicroStrategy/mstrio-py/blob/master/examples/user_library.py>
+[pypi_archive]: https://pypi.org/project/mstrio-py/#history
+[py_github]: https://github.com/MicroStrategy/mstrio-py
+[r_github]: https://github.com/MicroStrategy/mstrio
+[mstr_datasci_comm]: https://community.microstrategy.com/s/topic/0TO44000000AJ2dGAG/python-r-u108
+[mstrio_py_doc]: http://www2.microstrategy.com/producthelp/Current/mstrio-py/
+[mstr_rest_demo]: https://demo.microstrategy.com/MicroStrategyLibrary/api-docs/index.html
+[mstr_rest_docs]: https://lw.microstrategy.com/msdz/MSDL/GARelease_Current/docs/projects/RESTSDK/Content/topics/REST_API/REST_API.htm
+[mstr_help_docs]: https://www2.microstrategy.com/producthelp/current/MSTR-for-Jupyter/Content/mstr_for_jupyter.htm
+[cors_manual]: https://lw.microstrategy.com/msdz/MSDL/GARelease_Current/docs/projects/EmbeddingSDK/Content/topics/EnableCORS.htm
+[same_site_manual]: https://community.microstrategy.com/s/article/Chrome-v80-Cookie-Behavior-and-the-impact-on-MicroStrategy-Deployments?language=undefined&t=1581355581289
+[python_venv]: https://docs.python.org/3/tutorial/venv.html
+[release_notes]: https://github.com/MicroStrategy/mstrio-py/blob/master/NEWS.md
+[logo]: https://github.com/MicroStrategy/mstrio-py/blob/master/mstr-logo.png?raw=true
+[deprecation]: https://github.com/MicroStrategy/mstrio-py/blob/master/deprecation.png?raw=true
+[example_conn]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/connect.py
+[example_import]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/cube_report.py
+[example_export]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/create_dataset.py
+[example_app]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/application_mgmt.py
+[example_server]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/server_mgmt.py
+[example_user]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/user_mgmt.py
+[example_subs]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/subscription_mgmt.py
+[example_library]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/user_library.py
+[example_cache]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/cube_cache.py
+[example_olap]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/intelligent_cube.py

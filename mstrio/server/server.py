@@ -1,12 +1,10 @@
-from typing import Dict, TYPE_CHECKING
+from typing import Dict
 
 from mstrio.api import administration
 import mstrio.config as config
 import mstrio.utils.helper as helper
 from mstrio.utils.settings import BaseSettings
-
-if TYPE_CHECKING:
-    from mstrio.connection import Connection
+from mstrio.connection import Connection
 
 
 class ServerSettings(BaseSettings):
@@ -36,7 +34,7 @@ class ServerSettings(BaseSettings):
         'htmlMaxMemoryConsumption': 'B'
     }
 
-    def __init__(self, connection: "Connection"):
+    def __init__(self, connection: Connection):
         """Initialize `ServerSettings` object.
 
         Args:

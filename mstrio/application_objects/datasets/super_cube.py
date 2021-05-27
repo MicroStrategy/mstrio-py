@@ -1,5 +1,5 @@
 import time
-from typing import List, TYPE_CHECKING, Union
+from typing import List, Optional, Union
 
 from packaging import version
 import pandas as pd
@@ -12,15 +12,13 @@ from mstrio.utils import helper
 from mstrio.utils.encoder import Encoder
 from mstrio.utils.entity import ObjectSubTypes
 from mstrio.utils.model import Model
+from mstrio.connection import Connection
 
 from .cube import _Cube
 
-if TYPE_CHECKING:
-    from mstrio.connection import Connection
 
-
-def list_super_cubes(connection: "Connection", name_begins: str = None,
-                     to_dictionary: bool = False, limit: int = None,
+def list_super_cubes(connection: Connection, name_begins: Optional[str] = None,
+                     to_dictionary: bool = False, limit: Optional[int] = None,
                      **filters) -> Union[List["SuperCube"], List[dict]]:
     """Get list of SuperCube objects or dicts with them.
     Optionally filter cubes by specifying 'name_begins'.
@@ -96,8 +94,9 @@ class SuperCube(_Cube):
     __VALID_POLICY = ['add', 'update', 'replace', 'upsert']
     __MAX_DESC_LEN = 250
 
-    def __init__(self, connection: "Connection", id: str = None, name: str = None,
-                 description: str = None, instance_id: str = None, progress_bar: bool = True,
+    def __init__(self, connection: Connection, id: Optional[str] = None,
+                 name: Optional[str] = None, description: Optional[str] = None,
+                 instance_id: Optional[str] = None, progress_bar: bool = True,
                  parallel: bool = True):
         """Initialize super cube.
 
@@ -211,8 +210,8 @@ class SuperCube(_Cube):
 
         self._tables.append(table)
 
-    def create(self, folder_id: str = None, auto_upload: bool = True, auto_publish: bool = True,
-               chunksize: int = 100000) -> None:
+    def create(self, folder_id: Optional[str] = None, auto_upload: bool = True,
+               auto_publish: bool = True, chunksize: int = 100000) -> None:
         """Create a new super cube and initialize cube object after successful
         creation. This function does not return new super cube, but it updates
         object inplace.
@@ -326,7 +325,8 @@ class SuperCube(_Cube):
         if auto_publish:
             self.publish()
 
-    def save_as(self, name, description=None, folder_id=None, table_name=None) -> "SuperCube":
+    def save_as(self, name: str, description: Optional[str] = None,
+                folder_id: Optional[str] = None, table_name: Optional[str] = None) -> "SuperCube":
         """Creates a new single-table cube with the data frame stored in the
         SuperCube instance `SuperCube.dataframe`.
 
@@ -379,15 +379,10 @@ class SuperCube(_Cube):
                 print("Super cube '%s' published successfully." % self.name)
 
     def certify(self):
-        """Certify the uploaded super cube.
-
-        Returns:
-            response: Response from the Intelligence Server acknowledging the
-                certification process.
-        """
-        response = objects.toggle_certification(connection=self._connection, id=self._id).json()
-        self._set_object(**response)
-        if config.verbose:
+        """Certify the uploaded super cube."""
+        response = objects.toggle_certification(connection=self._connection, id=self._id)
+        self._set_object(**response.json())
+        if response.ok and config.verbose:
             print("The super cube with ID: '{}' has been certified.".format(self._id))
 
     def publish_status(self):
@@ -411,7 +406,7 @@ class SuperCube(_Cube):
         if config.verbose:
             print("Successfully deleted super cube ID: '{}'.".format(self._id))
 
-    def upload_status(self, connection, id, session_id):
+    def upload_status(self, connection: Connection, id: str, session_id: str):
         """Check the status of data that was uploaded to a super cube.
 
         Args:
@@ -469,5 +464,5 @@ class SuperCube(_Cube):
         return self.__upload_body
 
     @property
-    def session_id(self):
+    def session_id(self) -> str:
         return self._session_id

@@ -1,4 +1,4 @@
-from typing import List, TYPE_CHECKING, Union
+from typing import List, Optional, TYPE_CHECKING, Union
 
 from pandas import DataFrame, read_csv
 from requests.exceptions import HTTPError
@@ -6,18 +6,20 @@ from requests.exceptions import HTTPError
 from mstrio.access_and_security.security_role import SecurityRole
 from mstrio.api import users
 import mstrio.config as config
+from mstrio.connection import Connection
 from mstrio.users_and_groups.user_connections import UserConnections
 from mstrio.utils import helper
-from mstrio.utils.entity import Entity, ObjectTypes, set_custom_permissions, set_permission
+from mstrio.utils.entity import (Entity, ObjectTypes, Permissions, set_custom_permissions,
+                                 set_permission)
+from mstrio.access_and_security.privilege_mode import PrivilegeMode
 
 if TYPE_CHECKING:
     from mstrio.access_and_security.privilege import Privilege
-    from mstrio.connection import Connection
     from mstrio.server.application import Application
     from mstrio.users_and_groups.user_group import UserGroup
 
 
-def create_users_from_csv(connection: "Connection", csv_file: str) -> List["User"]:
+def create_users_from_csv(connection: Connection, csv_file: str) -> List["User"]:
     """Create new user objects from csv file. Possible header values for the
     users are the same as in the `User.create()` method.
 
@@ -30,9 +32,9 @@ def create_users_from_csv(connection: "Connection", csv_file: str) -> List["User
     return User._create_users_from_csv(connection=connection, csv_file=csv_file)
 
 
-def list_users(connection: "Connection", name_begins: str = None, abbreviation_begins: str = None,
-               to_dictionary: bool = False, limit: int = None,
-               **filters) -> Union[List["User"], List[dict]]:
+def list_users(connection: Connection, name_begins: Optional[str] = None,
+               abbreviation_begins: Optional[str] = None, to_dictionary: bool = False,
+               limit: Optional[int] = None, **filters) -> Union[List["User"], List[dict]]:
     """Get list of user objects or user dicts. Optionally filter the users by
     specifying 'name_begins', 'abbreviation_begins' or other filters.
 
@@ -128,8 +130,8 @@ class User(Entity):
     # TODO add basic patch endpoint from entity similar to _API_GETTERS
     _API_PATCH = [users.update_user_info]
 
-    def __init__(self, connection: "Connection", username: str = None, name: str = None,
-                 id: str = None) -> None:
+    def __init__(self, connection: Connection, username: Optional[str] = None,
+                 name: Optional[str] = None, id: Optional[str] = None) -> None:
         """Initialize User object by passing username, name, or id.
         When `id` is provided (not `None`), `username` and `name` are omitted.
         When `id` is not provided (`None`) and `username` is provided (not
@@ -185,11 +187,13 @@ class User(Entity):
         self._privileges = kwargs.get("privileges")
 
     @classmethod
-    def create(cls, connection: "Connection", username: str, full_name: str, password: str = None,
-               description: str = None, enabled: bool = True, password_modifiable: bool = True,
-               password_expiration_date: str = None, require_new_password: bool = True,
-               standard_auth: bool = True, ldapdn: str = None, trust_id: str = None,
-               database_auth_login: str = None, memberships: list = []) -> "User":
+    def create(cls, connection: Connection, username: str, full_name: str,
+               password: Optional[str] = None, description: Optional[str] = None,
+               enabled: bool = True, password_modifiable: bool = True,
+               password_expiration_date: Optional[str] = None, require_new_password: bool = True,
+               standard_auth: bool = True, ldapdn: Optional[str] = None,
+               trust_id: Optional[str] = None, database_auth_login: Optional[str] = None,
+               memberships: list = []) -> "User":
         """Create a new user on the I-Server. Returns User object.
 
         Args:
@@ -211,8 +215,6 @@ class User(Entity):
             trust_id: Unique user ID provided by trusted authentication provider
             database_auth_login: Database Authentication Login
             memberships: specify User Groups which User will be member.
-            members: Specify Users which will be members of newly created User
-                Group.
         """
         body = {
             "username": username,
@@ -236,7 +238,7 @@ class User(Entity):
         return cls.from_dict(source=response, connection=connection)
 
     @classmethod
-    def _create_users_from_csv(cls, connection: "Connection", csv_file: str) -> List["User"]:
+    def _create_users_from_csv(cls, connection: Connection, csv_file: str) -> List["User"]:
         func = cls.create
         args = func.__code__.co_varnames[:func.__code__.co_argcount]
         df = read_csv(csv_file, na_filter=False, usecols=lambda x: x in args)
@@ -255,9 +257,9 @@ class User(Entity):
         return user_list
 
     @classmethod
-    def _get_users(cls, connection: "Connection", name_begins: str = None,
-                   abbreviation_begins: str = None, to_dictionary: bool = False, limit: int = None,
-                   **filters) -> Union[List["User"], List[dict]]:
+    def _get_users(cls, connection: Connection, name_begins: Optional[str] = None,
+                   abbreviation_begins: Optional[str] = None, to_dictionary: bool = False,
+                   limit: Optional[int] = None, **filters) -> Union[List["User"], List[dict]]:
         msg = "Error getting information for a set of users."
         objects = helper.fetch_objects_async(
             connection,
@@ -276,8 +278,9 @@ class User(Entity):
             return [cls.from_dict(source=obj, connection=connection) for obj in objects]
 
     @classmethod
-    def _get_user_ids(cls, connection: "Connection", name_begins: str = None,
-                      abbreviation_begins: str = None, limit: int = None, **filters) -> List[str]:
+    def _get_user_ids(cls, connection: Connection, name_begins: Optional[str] = None,
+                      abbreviation_begins: Optional[str] = None, limit: Optional[int] = None,
+                      **filters) -> List[str]:
         user_dicts = User._get_users(
             connection=connection,
             name_begins=name_begins,
@@ -288,11 +291,12 @@ class User(Entity):
         )
         return [user['id'] for user in user_dicts]
 
-    def alter(self, username: str = None, full_name: str = None, description: str = None,
-              password: str = None, enabled: bool = None, password_modifiable: bool = None,
-              password_expiration_date: str = None, standard_auth: bool = None,
-              require_new_password: bool = None, ldapdn: str = None, trust_id: str = None,
-              database_auth_login: str = None) -> None:
+    def alter(self, username: Optional[str] = None, full_name: Optional[str] = None,
+              description: Optional[str] = None, password: Optional[str] = None,
+              enabled: Optional[bool] = None, password_modifiable: Optional[bool] = None,
+              password_expiration_date: Optional[str] = None, standard_auth: Optional[bool] = None,
+              require_new_password: Optional[bool] = None, ldapdn: Optional[str] = None,
+              trust_id: Optional[str] = None, database_auth_login: Optional[str] = None) -> None:
         """Alter user properties.
 
         Args:
@@ -324,7 +328,8 @@ class User(Entity):
 
         self._alter_properties(**properties)
 
-    def add_address(self, name: str = None, address: str = None, default: bool = True) -> None:
+    def add_address(self, name: Optional[str] = None, address: Optional[str] = None,
+                    default: bool = True) -> None:
         """Add new address to the user object.
 
         Args:
@@ -351,7 +356,8 @@ class User(Entity):
                 print("Added address '{}' for user '{}'".format(address, self.name))
             setattr(self, "_addresses", response.json().get('addresses'))
 
-    def remove_address(self, name: str = None, address: str = None, id: str = None) -> None:
+    def remove_address(self, name: Optional[str] = None, address: Optional[str] = None,
+                       id: Optional[str] = None) -> None:
         """Remove existing address from the user object. Specify either address
         ID or name. Warning, address names are not unique and can potentially
         remove multiple addresses.
@@ -412,7 +418,7 @@ class User(Entity):
             return False
 
     def add_to_user_groups(
-            self, user_groups: Union[str, "UserGroup", List[Union["UserGroup", str]]]) -> None:
+            self, user_groups: Union[str, "UserGroup", List[Union[str, "UserGroup"]]]) -> None:
         """Adds this User to user groups specified in user_groups.
 
         Args:
@@ -425,7 +431,7 @@ class User(Entity):
             print("User {} is already a member of {}".format(self.name, failed))
 
     def remove_from_user_groups(
-            self, user_groups: Union[str, "UserGroup", List[Union["UserGroup", str]]]) -> None:
+            self, user_groups: Union[str, "UserGroup", List[Union[str, "UserGroup"]]]) -> None:
         """Removes this User from user groups specified in user_groups.
 
         Args:
@@ -443,9 +449,10 @@ class User(Entity):
         existing_ids = [obj.get('id') for obj in memberships]
         self.remove_from_user_groups(user_groups=existing_ids)
 
-    def set_permission(self, permission: str, to_objects: Union[str, List[str]], object_type: int,
-                       application: Union[str, "Application"] = None,
-                       propagate_to_children: bool = None):
+    def set_permission(self, permission: Permissions, to_objects: Union[str, List[str]],
+                       object_type: ObjectTypes,
+                       application: Optional[Union[str, "Application"]] = None,
+                       propagate_to_children: Optional[bool] = None):
         """Set permission to perform actions on given object(s).
 
         Function is used to set permission of the trustee to perform given
@@ -456,12 +463,11 @@ class User(Entity):
         rights will be given have to be of the same type which is also provided.
 
         Args:
-            permission (str): Name of permission which defines set of rights.
-                Available values are 'View', 'Modify', 'Full Control',
-                'Denied All', 'Default All'.
+            permission: The Permission which defines set of rights.
+                See: `Permissions` enum
             to_objects: (str, list(str)): List of object ids on access list
                 to which the permissions will be set
-            object_type (int): Type of objects on access list
+            object_type: Type of objects on access list
             application (str, Application): Object or id of Application in which
                 the object is located. If not passed, Application
                 (application_id) selected in Connection object is used.
@@ -472,10 +478,12 @@ class User(Entity):
                        to_objects=to_objects, object_type=object_type, application=application,
                        propagate_to_children=propagate_to_children)
 
-    def set_custom_permissions(self, to_objects: Union[str, List[str]], object_type: int,
-                               application: Union[str, "Application"] = None, execute: str = None,
-                               use: str = None, control: str = None, delete: str = None,
-                               write: str = None, read: str = None, browse: str = None):
+    def set_custom_permissions(self, to_objects: Union[str, List[str]], object_type: ObjectTypes,
+                               application: Optional[Union[str, "Application"]] = None,
+                               execute: Optional[str] = None, use: Optional[str] = None,
+                               control: Optional[str] = None, delete: Optional[str] = None,
+                               write: Optional[str] = None, read: Optional[str] = None,
+                               browse: Optional[str] = None):
         """Set custom permissions to perform actions on given object(s).
 
         Function is used to set rights of the trustee to perform given actions
@@ -624,12 +632,13 @@ class User(Entity):
             else:
                 print("User '{}' does not have any directly granted privileges".format(self.name))
 
-    def list_privileges(self, mode: str = 'ALL', to_dataframe: bool = False) -> list:
+    def list_privileges(self, mode: PrivilegeMode = PrivilegeMode.ALL,
+                        to_dataframe: bool = False) -> list:
         """List privileges for user.
 
         Args:
             mode: Filter by source of privileges. One of: `ALL`, `INHERITED`,
-                or `GRANTED`.
+                or `GRANTED`. See: `privilege.PrivilegeMode` enum.
             to_dataframe: If True, return a `DataFrame` object containing
                 privileges.
         """
@@ -643,27 +652,31 @@ class User(Entity):
             df.index.name = 'ID'
             return df
 
+        if not isinstance(mode, PrivilegeMode):
+            try:
+                mode = PrivilegeMode(mode)
+            except ValueError:
+                msg = ("Wrong privilege mode has been passed, allowed modes are "
+                       "['ALL'/'INHERITED'/'GRANTED']. See: `privilege.PrivilegeMode` enum.")
+                helper.exception_handler(msg, ValueError)
+
         privileges = list()
-        if mode == 'ALL':
+        if mode == PrivilegeMode.ALL:
             privileges = self.privileges
-        elif mode == 'INHERITED':
+        elif mode == PrivilegeMode.INHERITED:
             for privilege in self.privileges:
                 is_inherited = False
                 for source in privilege['sources']:
                     is_inherited = not source['direct'] or is_inherited
                 if is_inherited:
                     privileges.append(privilege)
-        elif mode == 'GRANTED':
+        else:  # GRANTED
             for privilege in self.privileges:
                 is_granted = False
                 for source in privilege['sources']:
                     is_granted = source['direct'] or is_granted
                 if is_granted:
                     privileges.append(privilege)
-        else:
-            msg = ("Wrong privilege mode has been passed, allowed modes are "
-                   "['ALL'/'INHERITED'/'GRANTED']")
-            helper.exception_handler(msg)
 
         return to_df(privileges) if to_dataframe else privileges
 

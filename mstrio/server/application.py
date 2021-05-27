@@ -1,6 +1,6 @@
-from enum import Enum
+from enum import Enum, IntEnum
 import time
-from typing import List, Optional, TYPE_CHECKING, Union
+from typing import List, Optional, Union
 
 from pandas import DataFrame, Series
 from tqdm import tqdm
@@ -11,11 +11,10 @@ from mstrio.utils.entity import Entity, ObjectTypes
 import mstrio.utils.helper as helper
 from mstrio.utils.settings import BaseSettings
 
-if TYPE_CHECKING:
-    from mstrio.connection import Connection
+from mstrio.connection import Connection
 
 
-class ProjectStatus(Enum):
+class ProjectStatus(IntEnum):
     ACTIVE = 0
     ERRORSTATE = -3
     EXECIDLE = 1
@@ -25,6 +24,34 @@ class ProjectStatus(Enum):
     ONLINEPENDING = -4
     REQUESTIDLE = 2
     WHEXECIDLE = 4
+
+
+class IdleMode(str, Enum):
+    """Used to specify the exact behaviour of `idle` request.
+
+    `REQUEST` (Request Idle): all executing and queued jobs finish executing
+        and any newly submitted jobs are rejected.
+    `EXECUTION` (Execution Idle for All Jobs): all executing, queued, and
+        newly submitted jobs are placed in the queue, to be executed when
+        the project resumes.
+    `WAREHOUSEEXEC` (Execution Idle for Warehouse jobs): all executing,
+        queued, and newly submitted jobs that require SQL to be submitted
+        to the data warehouse are placed in the queue, to be executed when
+        the project resumes. Any jobs that do not require SQL to be
+        executed against the data warehouse are executed.
+    `FULL` (Request Idle and Execution Idle for All jobs): all executing and
+        queued jobs are canceled, and any newly submitted jobs are rejected.
+    `PARTIAL` (Request Idle and Execution Idle for Warehouse jobs): all
+        executing and queued jobs that do not submit SQL against the data
+        warehouse are canceled, and any newly submitted jobs are rejected.
+        Any currently executing and queued jobs that do not require SQL to
+        be executed against the data warehouse are executed.
+    """
+    REQUEST = "request_idle"
+    EXECUTION = "exec_idle"
+    WAREHOUSEEXEC = "wh_exec_idle"
+    FULL = "partial_idle"
+    PARTIAL = "full_idle"
 
 
 def compare_application_settings(applications: List["Application"],
@@ -86,21 +113,16 @@ class Application(Entity):
         ancestors: List of ancestor folders
     """
     _PATCH_PATH_TYPES = {'name': str, 'description': str}
-    _IDLE_MODE_DICT = {
-        'REQUEST': 'request_idle',
-        'EXECUTION': 'exec_idle',
-        'WAREHOUSEEXEC': 'wh_exec_idle',
-        'PARTIAL': 'partial_idle',
-        'FULL': 'full_idle',
-    }
     _OBJECT_TYPE = ObjectTypes.APPLICATION
     _API_GETTERS = {
         **Entity._API_GETTERS, ('status', 'alias'): projects.get_project,
         'nodes': monitors.get_node_info
     }
     _FROM_DICT_MAP = {'type': ObjectTypes, 'status': ProjectStatus}
+    _STATUS_PATH = "/status"
 
-    def __init__(self, connection: "Connection", name: str = None, id: str = None) -> None:
+    def __init__(self, connection: Connection, name: Optional[str] = None,
+                 id: Optional[str] = None) -> None:
         """Initialize Application object by passing `name` or `id`. When `id` is
         provided (not `None`), `name` is omitted.
 
@@ -144,7 +166,7 @@ class Application(Entity):
         self._nodes = kwargs.get("nodes")
 
     @classmethod
-    def _create(cls, connection: "Connection", name: str, description: str = None,
+    def _create(cls, connection: Connection, name: str, description: Optional[str] = None,
                 force: bool = False) -> Optional["Application"]:
         user_input = 'N'
         if not force:
@@ -155,26 +177,24 @@ class Application(Entity):
             # Create new application
             with tqdm(desc="Please wait while Application '{}' is being created.".format(name),
                       bar_format='{desc}', leave=False, disable=config.verbose):
-                response = projects.create_project(connection, {
-                    "name": name,
-                    "description": description
-                })
+                projects.create_project(connection, {"name": name, "description": description})
                 http_status, i_server_status = 500, 'ERR001'
                 while http_status == 500 and i_server_status == 'ERR001':
                     time.sleep(1)
                     response = projects.get_project(connection, name, whitelist=[('ERR001', 500)])
                     http_status = response.status_code
                     i_server_status = response.json().get('code')
-                    id = response.json().get('id')
+                    id_ = response.json().get('id')
             if config.verbose:
                 print("Application '{}' successfully created.".format(name))
-            return cls(connection, name=name, id=id)
+            return cls(connection, name=name, id=id_)
         else:
             return None
 
     @classmethod
-    def _list_applications(cls, connection: "Connection", to_dictionary: bool = False,
-                           limit: int = None, **filters) -> Union[List["Application"], List[dict]]:
+    def _list_applications(cls, connection: Connection, to_dictionary: bool = False,
+                           limit: Optional[int] = None,
+                           **filters) -> Union[List["Application"], List[dict]]:
         msg = "Error getting information for a set of Applications."
         objects = helper.fetch_objects_async(
             connection,
@@ -202,7 +222,7 @@ class Application(Entity):
             return apps
 
     @classmethod
-    def _list_application_ids(cls, connection: "Connection", limit: int = None,
+    def _list_application_ids(cls, connection: Connection, limit: Optional[int] = None,
                               **filters) -> List[str]:
         application_dicts = Application._list_applications(
             connection=connection,
@@ -213,7 +233,7 @@ class Application(Entity):
         return [app['id'] for app in application_dicts]
 
     @classmethod
-    def _list_loaded_applications(cls, connection: "Connection", to_dictionary: bool = False,
+    def _list_loaded_applications(cls, connection: Connection, to_dictionary: bool = False,
                                   **filters) -> Union[List["Application"], List[dict]]:
         response = projects.get_projects(connection, whitelist=[('ERR014', 403)])
         list_of_dicts = response.json() if response.ok else []
@@ -227,7 +247,7 @@ class Application(Entity):
             # return list of Application objects
             return [cls.from_dict(source=obj, connection=connection) for obj in raw_applications]
 
-    def alter(self, name: str = None, description: str = None):
+    def alter(self, name: Optional[str] = None, description: Optional[str] = None):
         """Alter application name or/and description.
 
         Args:
@@ -246,46 +266,37 @@ class Application(Entity):
 
         self._alter_properties(**properties)
 
-    def idle(self, on_nodes: Union[str, List[str]] = None, mode: str = "REQUEST") -> None:
-        """Request to idle a specific cluster node. Idle application with mode
-        options for `REQUEST`, `EXECUTION`, `WAREHOUSEEXEC`, `PARTIAL`, `FULL`.
+    def __change_app_state(self, func, on_nodes: Union[str, List[str]] = None, **mode):
+        if type(on_nodes) is list:
+            for node in on_nodes:
+                func(node, **mode)
+        elif type(on_nodes) is str:
+            func(on_nodes, **mode)
+        elif on_nodes is None:
+            for node in self.nodes:
+                func(node.get('name'), **mode)  # type: ignore
+        else:
+            helper.exception_handler(
+                "'on_nodes' argument needs to be of type: [list[str], str, NoneType]",
+                exception_type=TypeError)
 
-        `REQUEST` (Request Idle): all executing and queued jobs finish executing
-            and any newly submitted jobs are rejected.
-        `EXECUTION` (Execution Idle for All Jobs): all executing, queued, and
-            newly submitted jobs are placed in the queue, to be executed when
-            the project resumes.
-        `WAREHOUSEEXEC` (Execution Idle for Warehouse jobs): all executing,
-            queued, and newly submitted jobs that require SQL to be submitted
-            to the data warehouse are placed in the queue, to be executed when
-            the project resumes. Any jobs that do not require SQL to be
-            executed against the data warehouse are executed.
-        `FULL` (Request Idle and Execution Idle for All jobs): all executing and
-            queued jobs are canceled, and any newly submitted jobs are rejected.
-        `PARTIAL` (Request Idle and Execution Idle for Warehouse jobs): all
-            executing and queued jobs that do not submit SQL against the data
-            warehouse are canceled, and any newly submitted jobs are rejected.
-            Any currently executing and queued jobs that do not require SQL to
-            be executed against the data warehouse are executed.
+    def idle(self, on_nodes: Optional[Union[str, List[str]]] = None,
+             mode: IdleMode = IdleMode.REQUEST) -> None:
+        """Request to idle a specific cluster node. Idle application with mode
+        options.
 
         Args:
             on_nodes: Name of node, if not passed, application will be idled on
                 all of the nodes.
-            mode: One of: `REQUEST`, `EXECUTION`,`WAREHOUSEEXEC`, `PARTIAL`,
-                `FULL`.
+            mode: One of: `IdleMode` values.)
         """
-        msg = ("Unsupported mode, choose one of: 'REQUEST', 'EXECUTION', 'WAREHOUSEEXEC', "
-               "'PARTIAL', 'FULL'")
-        if mode not in Application._IDLE_MODE_DICT.keys():
-            helper.exception_handler(msg, KeyError)
 
-        def idle_app(node, mode):
-            formatted_mode = Application._IDLE_MODE_DICT.get(mode)
+        def idle_app(node: str, mode: IdleMode):
             body = {
                 "operationList": [{
                     "op": "replace",
-                    "path": "/status",
-                    "value": formatted_mode
+                    "path": self._STATUS_PATH,
+                    "value": mode.value
                 }]
             }
             response = monitors.update_node_properties(self.connection, node, self.id, body)
@@ -293,26 +304,29 @@ class Application(Entity):
                 tmp = helper.filter_list_of_dicts(self.nodes, name=node)
                 tmp[0]['projects'] = [response.json()['project']]
                 self._nodes = tmp
-                if tmp[0]['projects'][0]['status'] != formatted_mode:
+                if tmp[0]['projects'][0]['status'] != mode.value:
                     self.fetch('nodes')
                 if config.verbose:
                     print("Application '{}' changed status to '{}' on node '{}'.".format(
                         self.id, mode, node))
 
-        if type(on_nodes) is list:
-            for node in on_nodes:
-                idle_app(node, mode)
-        elif type(on_nodes) is str:
-            idle_app(on_nodes, mode)
-        elif on_nodes is None:
-            for node in self.nodes:
-                idle_app(node.get('name'), mode)  # type: ignore
-        else:
-            helper.exception_handler(
-                "'on_nodes' argument needs to be of type: [list, str, NoneType]",
-                exception_type=TypeError)
+        if not isinstance(mode, IdleMode):
+            helper.deprecation_warning("String `mode` argument for `idle`", "`IdleMode` instance",
+                                       "11.3.2.102", False)  # NOSONAR
+            # Previously `mode` was just a string with possible values
+            # corresponding to the member names of the current IdleMode enum.
+            # This attempts to convert it to avoid breaking backwards compat.
+            if mode in IdleMode.__members__.values():
+                mode = IdleMode(mode)
+            elif mode in IdleMode.__members__.keys():
+                mode = IdleMode[mode]
+            else:
+                helper.exception_handler(
+                    "Unsupported mode, please provide a valid `IdleMode` value.", KeyError)
 
-    def resume(self, on_nodes: Union[str, List[str]] = None) -> None:
+        self.__change_app_state(func=idle_app, on_nodes=on_nodes, mode=mode)
+
+    def resume(self, on_nodes: Optional[Union[str, List[str]]] = None) -> None:
         """Request to resume the application on the chosen cluster nodes. If
         nodes are not specified, the application will be loaded on all nodes.
 
@@ -322,7 +336,13 @@ class Application(Entity):
         """
 
         def resume_app(node):
-            body = {"operationList": [{"op": "replace", "path": "/status", "value": "loaded"}]}
+            body = {
+                "operationList": [{
+                    "op": "replace",
+                    "path": self._STATUS_PATH,
+                    "value": "loaded"
+                }]
+            }
             response = monitors.update_node_properties(self.connection, node, self.id, body)
             if response.status_code == 202:
                 tmp = helper.filter_list_of_dicts(self.nodes, name=node)
@@ -333,20 +353,9 @@ class Application(Entity):
                 if config.verbose:
                     print("Application '{}' resumed on node '{}'.".format(self.id, node))
 
-        if type(on_nodes) is list:
-            for node in on_nodes:
-                resume_app(node)
-        elif type(on_nodes) is str:
-            resume_app(on_nodes)
-        elif on_nodes is None:
-            for node in self.nodes:
-                resume_app(node.get('name'))  # type: ignore
-        else:
-            helper.exception_handler(
-                "'on_nodes' argument needs to be of type: [list, str, NoneType]",
-                exception_type=TypeError)
+        self.__change_app_state(func=resume_app, on_nodes=on_nodes)
 
-    def load(self, on_nodes: Union[str, List[str]] = None) -> None:
+    def load(self, on_nodes: Optional[Union[str, List[str]]] = None) -> None:
         """Request to load the application onto the chosen cluster nodes. If
         nodes are not specified, the application will be loaded on all nodes.
 
@@ -356,7 +365,13 @@ class Application(Entity):
         """
 
         def load_app(node):
-            body = {"operationList": [{"op": "replace", "path": "/status", "value": "loaded"}]}
+            body = {
+                "operationList": [{
+                    "op": "replace",
+                    "path": self._STATUS_PATH,
+                    "value": "loaded"
+                }]
+            }
             response = monitors.update_node_properties(self.connection, node, self.id, body)
             if response.status_code == 202:
                 tmp = helper.filter_list_of_dicts(self.nodes, name=node)
@@ -367,20 +382,9 @@ class Application(Entity):
                 if config.verbose:
                     print("Application '{}' loaded on node '{}'.".format(self.id, node))
 
-        if type(on_nodes) is list:
-            for node in on_nodes:
-                load_app(node)
-        elif type(on_nodes) is str:
-            load_app(on_nodes)
-        elif on_nodes is None:
-            for node in self.nodes:
-                load_app(node.get('name'))  # type: ignore
-        else:
-            helper.exception_handler(
-                "'on_nodes' argument needs to be of type: [list, str, NoneType]",
-                exception_type=TypeError)
+        self.__change_app_state(func=load_app, on_nodes=on_nodes)
 
-    def unload(self, on_nodes: Union[str, List[str]] = None) -> None:
+    def unload(self, on_nodes: Optional[Union[str, List[str]]] = None) -> None:
         """Request to unload the application from the chosen cluster nodes. If
         nodes are not specified, the application will be unloaded on all nodes.
         The unload action cannot be performed until all jobs and connections
@@ -393,7 +397,13 @@ class Application(Entity):
         """
 
         def unload_app(node):
-            body = {"operationList": [{"op": "replace", "path": "/status", "value": "unloaded"}]}
+            body = {
+                "operationList": [{
+                    "op": "replace",
+                    "path": self._STATUS_PATH,
+                    "value": "unloaded"
+                }]
+            }
             response = monitors.update_node_properties(self.connection, node, self.id, body,
                                                        whitelist=[('ERR001', 500)])
             if response.status_code == 202:
@@ -407,20 +417,9 @@ class Application(Entity):
             if response.status_code == 500 and config.verbose:  # handle whitelisted
                 print("Application '{}' already unloaded on node '{}'.".format(self.id, node))
 
-        if type(on_nodes) is list:
-            for node in on_nodes:
-                unload_app(node)
-        elif type(on_nodes) is str:
-            unload_app(on_nodes)
-        elif on_nodes is None:
-            for node in self.nodes:
-                unload_app(node.get('name'))  # type: ignore
-        else:
-            helper.exception_handler(
-                "'on_nodes' argument needs to be of type: [list, str, NoneType]",
-                exception_type=TypeError)
+        self.__change_app_state(func=unload_app, on_nodes=on_nodes)
 
-    def register(self, on_nodes: Union[str, list] = None) -> None:
+    def register(self, on_nodes: Optional[Union[str, list]] = None) -> None:
         """Register application on nodes.
 
         A registered project will load on node (server) startup.
@@ -436,7 +435,7 @@ class Application(Entity):
             value = list(set(self.load_on_startup) | set(on_nodes))
         self._register(on_nodes=value)
 
-    def unregister(self, on_nodes: Union[str, list] = None) -> None:
+    def unregister(self, on_nodes: Optional[Union[str, list]] = None) -> None:
         """Unregister application on nodes.
 
         An unregistered application will not load on node (server) startup.
@@ -563,7 +562,7 @@ class ApplicationSettings(BaseSettings):
         'cubeIndexGrowthUpperBound': '%'
     }
 
-    def __init__(self, connection: "Connection", application_id: str = None):
+    def __init__(self, connection: Connection, application_id: Optional[str] = None):
         """Initialize `ApplicationSettings` object.
 
         Args:
@@ -578,7 +577,7 @@ class ApplicationSettings(BaseSettings):
         if application_id:
             self.fetch()
 
-    def fetch(self, application_id: str = None) -> None:
+    def fetch(self, application_id: Optional[str] = None) -> None:
         """Fetch current application settings from I-Server and update this
         `ApplicationSettings` object.
 
@@ -588,7 +587,7 @@ class ApplicationSettings(BaseSettings):
         self._check_params(application_id)
         super(ApplicationSettings, self).fetch()
 
-    def update(self, application_id: str = None) -> None:
+    def update(self, application_id: Optional[str] = None) -> None:
         """Update the current application settings on I-Server using this
         Settings object.
 
@@ -621,7 +620,7 @@ class ApplicationSettings(BaseSettings):
             response = projects.get_project_settings_config(self._connection, app_id)
             ApplicationSettings._CONFIG = response.json()
 
-    def _check_params(self, application_id=None):
+    def _check_params(self, application_id: Optional[str] = None):
         if application_id:
             super(BaseSettings, self).__setattr__('_application_id', application_id)
         if not self._connection or not self._application_id:
