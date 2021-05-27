@@ -1,10 +1,12 @@
-from mstrio.users_and_groups.user import User
+from mstrio.users_and_groups import User
 from admin_demo_scripts.scripts_helper import get_result_from_db, get_user_group
 from mstrio.utils.helper import exception_handler
 from mstrio.connection import Connection
 
+from typing import Union, List
 
-def _disable_user_account(connection, username):
+
+def _disable_user_account(connection: "Connection", username: str) -> None:
     # find user with a given username
     u = User(connection=connection, username=username)
     # remove this user from all user groups (it will not be removed from
@@ -20,7 +22,7 @@ def _disable_user_account(connection, username):
 
 def disable_departed_users(connection: "Connection", driver: str, server: str, database: str,
                            uid: str, pwd: str, query: str, db_lib: str, emp_username_col: str,
-                           emp_id_col: str):
+                           emp_id_col: str) -> Union[List[dict], None]:
     """Disable user account for each departed employee. User will be removed
     from all user groups to which it belongs (except from "Everyone" because
     of the way I-Server works) and added to user group "Inactive Users" (only
@@ -45,9 +47,10 @@ def disable_departed_users(connection: "Connection", driver: str, server: str, d
         emp_id_col (str): Name of the column with user's id
             in database query
 
-        Returns:
-            table with information of each new employee's disabling status
-            and its basic details.
+    Returns:
+        table with information of each new employee's disabling status
+        and its basic details or None in case of some problem with database
+        operations.
     """
 
     try:

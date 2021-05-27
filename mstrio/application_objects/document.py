@@ -1,20 +1,18 @@
-from typing import Union, List, TYPE_CHECKING
+from typing import Optional, Union, List
 
 from mstrio.server.environment import Environment
-from mstrio.users_and_groups.user import User, list_users
-from mstrio.users_and_groups.user_group import UserGroup
+from mstrio.users_and_groups import User, list_users, UserGroup, UserOrGroup
 from mstrio.api import documents, library
 from mstrio.application_objects.datasets.cube import _Cube
 from mstrio.utils import helper
 from mstrio.utils.entity import Entity, VldbMixin, ObjectTypes
 from pandas import DataFrame
 
-if TYPE_CHECKING:
-    from mstrio.connection import Connection
+from mstrio.connection import Connection
 
 
-def list_documents(connection: "Connection", name: str = None, to_dictionary: bool = False,
-                   to_dataframe: bool = False, limit: int = None, **filters):
+def list_documents(connection: Connection, name: Optional[str] = None, to_dictionary: bool = False,
+                   to_dataframe: bool = False, limit: Optional[int] = None, **filters):
     """Get all Documents available in the project specified within the
     `connection` object.
 
@@ -47,9 +45,9 @@ def list_documents(connection: "Connection", name: str = None, to_dictionary: bo
                               to_dataframe=to_dataframe, **filters)
 
 
-def list_documents_across_projects(connection: "Connection", name: str = None,
+def list_documents_across_projects(connection: Connection, name: Optional[str] = None,
                                    to_dictionary: bool = False, to_dataframe: bool = False,
-                                   limit: int = None, **filters):
+                                   limit: Optional[int] = None, **filters):
     """Get all Documents stored on the server.
 
     Optionaly use `to_dictionary` or `to_dataframe` to choose output format.
@@ -89,7 +87,8 @@ def list_documents_across_projects(connection: "Connection", name: str = None,
 class Document(Entity, VldbMixin):
     _OBJECT_TYPE = ObjectTypes.DOCUMENT_DEFINITION
 
-    def __init__(self, connection: "Connection", name: str = None, id: str = None):
+    def __init__(self, connection: Connection, name: Optional[str] = None,
+                 id: Optional[str] = None):
         """Initialize Document object by passing name or id.
 
         Args:
@@ -116,7 +115,7 @@ class Document(Entity, VldbMixin):
         self._instance_id = ""
         self._recipients = []
 
-    def alter(self, name: str = None, description: str = None):
+    def alter(self, name: Optional[str] = None, description: Optional[str] = None):
         """Alter Document name or/and description.
 
         Args:
@@ -134,7 +133,7 @@ class Document(Entity, VldbMixin):
                 properties[property_key] = local[property_key]
         self._alter_properties(**properties)
 
-    def publish(self, recipients: Union[List, str, User, UserGroup] = None):
+    def publish(self, recipients: Optional[Union[UserOrGroup, List[UserOrGroup]]] = None):
         """Publish the document for authenticated user. If `recipients`
         parameter is specified publishes the document for the given users.
 
@@ -159,7 +158,7 @@ class Document(Entity, VldbMixin):
         self._instance_id = ''
         library.publish_document(self.connection, body)
 
-    def unpublish(self, recipients: Union[List, str, User, UserGroup] = None):
+    def unpublish(self, recipients: Optional[Union[UserOrGroup, List[UserOrGroup]]] = None):
         """Unpublish the document for all users it was previously published to.
         If `recipients` parameter is specified unpublishes the document for the
         given users.
@@ -187,7 +186,7 @@ class Document(Entity, VldbMixin):
                 library.unpublish_document_for_user(self.connection, document_id=self.id,
                                                     user_id=user_id)
 
-    def share_to(self, users: Union[List, str, User, UserGroup]):
+    def share_to(self, users: Union[UserOrGroup, List[UserOrGroup]]):
         """Shares the document to the listed users' libraries.
 
         Args:
@@ -198,8 +197,9 @@ class Document(Entity, VldbMixin):
         self.publish(users)
 
     @classmethod
-    def _list_all(cls, connection: "Connection", name: str = None, to_dictionary: bool = False,
-                  to_dataframe: bool = False, limit: int = None,
+    def _list_all(cls, connection: Connection, name: Optional[str] = None,
+                  to_dictionary: bool = False, to_dataframe: bool = False,
+                  limit: Optional[int] = None,
                   **filters) -> Union[List["Document"], List[dict], DataFrame]:
         msg = "Error retrieving documents from the environment."
         if to_dictionary and to_dataframe:

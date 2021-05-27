@@ -1,8 +1,10 @@
-from mstrio.users_and_groups.user import list_users
+from mstrio.users_and_groups import User, list_users
 from mstrio.connection import Connection
 
+from typing import List
 
-def add_email_to_new_users(connection: "Connection", domain="microstrategy.com") -> None:
+
+def add_email_to_new_users(connection: "Connection", domain="microstrategy.com") -> List["User"]:
     """Add email address with a form `{username}@microstrategy.com`
     to every user which is enabled but doesn't have an email address.
     For each successfully added email address a messege will be printed.

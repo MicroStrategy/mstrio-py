@@ -1,6 +1,9 @@
 from base64 import b64encode
 from getpass import getpass
 import os
+from typing import Optional, Union
+import requests
+from requests.cookies import RequestsCookieJar
 
 from packaging import version
 from requests import Session
@@ -12,7 +15,59 @@ from mstrio.utils.helper import deprecation_warning
 import mstrio.utils.helper as helper
 
 
-class Connection(object):
+def get_connection(workstation_data: dict, application_name: str = None,
+                   application_id: str = None) -> Union["Connection", None]:
+    """Connect to environment without providing user's credentials.
+
+    It is possible to provide `application_id` or `application_name` to select
+    application. When both `application_id` and `application_name` are `None`,
+    application selection is cleared. When both `application_id` and
+    `application_name` are provided, `application_name` is ignored.
+    Application can be also selected later by calling method
+    `select_application` on Connection object.
+    Args:
+        workstation_data (object): object which is stored in a 'workstationData'
+            variable within Workstation
+        application_name (str, optional): name of application (aka project)
+            to select
+        application_id (str, optional): id of application (aka project)
+            to select
+    Returns:
+        connection to I-Server or None is case of some error
+    """
+    try:
+        print('Creating connection from Workstation Data object...', flush=True)
+        # get base url from Workstation Data object
+        base_url = workstation_data['defaultEnvironment']['url']
+        # get headers from Workstation Data object
+        headers = workstation_data['defaultEnvironment']['headers']
+        # get cookies from Workstation Data object
+        cookies = workstation_data['defaultEnvironment']['cookies']
+
+        # prepare cookies for request
+        jar = RequestsCookieJar()
+        for c in cookies:
+            cookie_values = {'domain': '', 'path': '/'}
+            cookie_values.update(c)
+            jar.set(cookie_values['name'], cookie_values['value'], domain=cookie_values['domain'],
+                    path=cookie_values['path'])
+    except Exception as e:
+        print('Some error occurred while preparing data to get identity token:')
+        print(e)
+        return None
+
+    # get identity token
+    r = requests.post(base_url + 'api/auth/identityToken', headers=headers, cookies=jar)
+    if r.ok:
+        # create connection to I-Server
+        return Connection(base_url, identity_token=r.headers['X-MSTR-IdentityToken'],
+                          application_id=application_id, application_name=application_name)
+    else:
+        print('HTTP %i - %s, Message %s' % (r.status_code, r.reason, r.text), flush=True)
+        return None
+
+
+class Connection():
     """Connect to and interact with the MicroStrategy environment.
 
     Creates a connection object which is used in subsequent requests and
@@ -50,10 +105,12 @@ class Connection(object):
     """
     __VRCH = "11.1.0400"
 
-    def __init__(self, base_url, username=None, password=None, application_name=None,
-                 application_id=None, project_name=None, project_id=None, login_mode=1,
-                 ssl_verify=True, certificate_path=None, proxies=None, identity_token=None,
-                 verbose=True):
+    def __init__(self, base_url: str, username: Optional[str] = None,
+                 password: Optional[str] = None, application_name: Optional[str] = None,
+                 application_id: Optional[str] = None, project_name: Optional[str] = None,
+                 project_id: Optional[str] = None, login_mode: int = 1, ssl_verify: bool = True,
+                 certificate_path: Optional[str] = None, proxies: Optional[dict] = None,
+                 identity_token: Optional[str] = None, verbose: bool = True):
         """Establish a connection with MicroStrategy REST API.
 
         You can establish connection by either providing set of values
@@ -131,7 +188,7 @@ class Connection(object):
             helper.exception_handler(msg="MicroStrategy Version not supported.",
                                      exception_type=exceptions.VersionException)
 
-    def connect(self):
+    def connect(self) -> None:
         """Authenticates the user and creates a new connection with the
         Intelligence Server.
 
@@ -147,7 +204,7 @@ class Connection(object):
             if config.verbose:
                 print("Connection to MicroStrategy Intelligence Server was renewed.")
 
-    def delegate(self):
+    def delegate(self) -> None:
         """Delegates identity token to get authentication token and connect to
         MicroStrategy Intelligence Server."""
         response = authentication.delegate(self, self.identity_token, whitelist=[('ERR003', 401)])
@@ -160,17 +217,17 @@ class Connection(object):
             self.__prompt_credentials()
             self.connect()
 
-    def get_identity_token(self):
+    def get_identity_token(self) -> str:
         """Create new identity token using existing authentication token."""
         response = authentication.identity_token(self)
         return response.headers['X-MSTR-IdentityToken']
 
-    def validate_identity_token(self, token):
+    def validate_identity_token(self) -> bool:
         """Validate the identity token."""
         validate = authentication.validate_identity_token(self, self.identity_token)
         return validate.ok
 
-    def close(self):
+    def close(self) -> None:
         """Closes a connection with MicroStrategy REST API."""
         authentication.logout(connection=self)
         self.session.close()
@@ -178,7 +235,7 @@ class Connection(object):
         if config.verbose:
             print("Connection to MicroStrategy Intelligence Server has been closed")
 
-    def renew(self):
+    def renew(self) -> None:
         """Checks if the session is still alive.
 
         If so, renews the session and extends session expiration.
@@ -210,7 +267,8 @@ class Connection(object):
             print("Connection to MicroStrategy Intelligence Server is not active.")
             return False
 
-    def select_project(self, project_id: str = None, project_name: str = None) -> None:
+    def select_project(self, project_id: Optional[str] = None,
+                       project_name: Optional[str] = None) -> None:
         """Select project for the given connection based on project_id or
         project_name.
 
@@ -228,7 +286,8 @@ class Connection(object):
         deprecation_warning("`select_project` method", "`select_application` method", "11.3.2.101")
         self.select_application(project_id, project_name)
 
-    def select_application(self, application_id: str = None, application_name: str = None) -> None:
+    def select_application(self, application_id: Optional[str] = None,
+                           application_name: Optional[str] = None) -> None:
         """Select application for the given connection based on application_id
         or application_name.
 
@@ -281,7 +340,7 @@ class Connection(object):
         self.project_name = self.application_name
         self.session.headers['X-MSTR-ProjectID'] = self.application_id
 
-    def _get_authorization(self):
+    def _get_authorization(self) -> str:
         self.__prompt_credentials()
         credentials = "{}:{}".format(self.username, self.__password).encode('utf-8')
         encoded_credential = b64encode(credentials)
@@ -293,13 +352,13 @@ class Connection(object):
             raise AttributeError(
                 "Application not selected. Select application using `select_application` method.")
 
-    def __prompt_credentials(self):
+    def __prompt_credentials(self) -> None:
         self.username = self.username if self.username is not None else input("Username: ")
         self.__password = self.__password if self.__password is not None else getpass("Password: ")
         self.login_mode = self.login_mode if self.login_mode else input(
             "Login mode (1 - Standard, 16 - LDAP): ")
 
-    def __check_version(self):
+    def __check_version(self) -> bool:
         """Checks version of I-Server and MicroStrategy Web."""
         json_response = misc.server_status(self).json()
         try:
@@ -380,34 +439,34 @@ class Connection(object):
             return certificate_path
         return find_cert_in_cwd(ssl_verify)
 
-    def __get_user_info(self):
+    def __get_user_info(self) -> None:
         response = authentication.get_info_for_authenticated_user(connection=self).json()
         self._user_id = response.get("id")
         self._user_full_name = response.get("fullName")
         self._user_initials = response.get("initials")
 
     @property
-    def user_id(self):
+    def user_id(self) -> str:
         if not self._user_id:
             self.__get_user_info()
         return self._user_id
 
     @property
-    def user_full_name(self):
+    def user_full_name(self) -> str:
         if not self._user_full_name:
             self.__get_user_info()
         return self._user_full_name
 
     @property
-    def user_initials(self):
+    def user_initials(self) -> str:
         if not self._user_initials:
             self.__get_user_info()
         return self._user_initials
 
     @property
-    def web_version(self):
+    def web_version(self) -> str:
         return self._web_version
 
     @property
-    def iserver_version(self):
+    def iserver_version(self) -> str:
         return self._iserver_version

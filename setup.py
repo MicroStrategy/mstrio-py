@@ -49,6 +49,7 @@ setup(
     },
     install_requires=[
         'requests>=2.25, <2.26',
+        'urllib3>=1.26.0',
         'requests_futures>=1.0.0, <1.1',
         'pandas>=1.1.5, <1.3',
         'numpy>=1.18.1, <1.21',

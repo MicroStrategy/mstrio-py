@@ -260,7 +260,7 @@ def get_datasource_mappings(connection: Connection, default_connection_map: Opti
     return response
 
 
-def create_datasource_mapping(connection: Connection, body, error_msg: str = None):
+def create_datasource_mapping(connection: Connection, body, error_msg: Optional[str] = None):
     """Create a new datasource mapping.
 
     Args:
@@ -280,7 +280,7 @@ def create_datasource_mapping(connection: Connection, body, error_msg: str = Non
     return response
 
 
-def delete_datasource_mapping(connection: Connection, id: str, error_msg: str = None):
+def delete_datasource_mapping(connection: Connection, id: str, error_msg: Optional[str] = None):
     """Delete a datasource mapping based on id.
 
     Args:
@@ -300,7 +300,7 @@ def delete_datasource_mapping(connection: Connection, id: str, error_msg: str = 
     return response
 
 
-def get_datasource_logins(connection: Connection, error_msg: str = None):
+def get_datasource_logins(connection: Connection, error_msg: Optional[str] = None):
     """Get information for all datasource logins.
 
     Args:
@@ -319,7 +319,7 @@ def get_datasource_logins(connection: Connection, error_msg: str = None):
     return response
 
 
-def create_datasource_login(connection: Connection, body, error_msg: str = None):
+def create_datasource_login(connection: Connection, body, error_msg: Optional[str] = None):
     """Create a new datasource login.
 
     Args:
@@ -339,7 +339,7 @@ def create_datasource_login(connection: Connection, body, error_msg: str = None)
     return response
 
 
-def get_datasource_login(connection: Connection, id: str, error_msg: str = None):
+def get_datasource_login(connection: Connection, id: str, error_msg: Optional[str] = None):
     """Get datasource login for a specific id.
 
     Args:
@@ -359,7 +359,7 @@ def get_datasource_login(connection: Connection, id: str, error_msg: str = None)
     return response
 
 
-def delete_datasource_login(connection: Connection, id: str, error_msg: str = None):
+def delete_datasource_login(connection: Connection, id: str, error_msg: Optional[str] = None):
     """Delete a datasource login.
 
     Args:
@@ -379,7 +379,8 @@ def delete_datasource_login(connection: Connection, id: str, error_msg: str = No
     return response
 
 
-def update_datasource_login(connection: Connection, id: str, body, error_msg: str = None):
+def update_datasource_login(connection: Connection, id: str, body,
+                            error_msg: Optional[str] = None):
     """Update a datasource login.
 
     Args:

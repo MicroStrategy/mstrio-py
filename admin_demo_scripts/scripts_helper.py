@@ -1,4 +1,4 @@
-from mstrio.users_and_groups.user_group import UserGroup
+from mstrio.users_and_groups import UserGroup
 import pandas as pd
 
 

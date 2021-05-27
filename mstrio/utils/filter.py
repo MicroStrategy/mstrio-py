@@ -1,3 +1,4 @@
+from typing import Optional
 import mstrio.utils.helper as helper
 
 
@@ -5,8 +6,8 @@ class Filter:
     err_msg_invalid = "Invalid object ID: '{}'"
     err_msg_duplicated = "Duplicate object ID: '{}'"
 
-    def __init__(self, attributes: list, metrics: list, attr_elements: list = None,
-                 row_count_metrics: list = None, operator: str = 'In'):
+    def __init__(self, attributes: list, metrics: list, attr_elements: Optional[list] = None,
+                 row_count_metrics: Optional[list] = None, operator: str = 'In'):
 
         self.attributes = {}
         for a in attributes:
@@ -18,12 +19,7 @@ class Filter:
 
         self.attr_elems = {}
         if attr_elements is not None:
-            for att in attr_elements:
-                for el in att["elements"]:
-                    self.attr_elems[el["id"]] = {
-                        "name": att["attribute_name"],
-                        "attribute_id": att["attribute_id"]
-                    }
+            self._populate_attr_elements(attr_elements)
         self.row_count_metrics = [] if row_count_metrics is None else [
             i['id'] for i in row_count_metrics
         ]
@@ -41,29 +37,25 @@ class Filter:
         if isinstance(object_id, list):
             for i in set(object_id):
                 self._select(object_id=i)
+            return
+
+        if len(object_id) > 32 and object_id[32] == ';':
+            attr_form_object_id = [object_id[:32], object_id[33:]]
+            object_id = attr_form_object_id[0]
+
+        if self.__invalid(object_id):
+            raise ValueError(self.err_msg_invalid.format(object_id))
+        if self.__duplicated(object_id):
+            helper.exception_handler(msg=self.err_msg_duplicated.format(object_id),
+                                     exception_type=Warning)
         else:
-            # object_id = object_id.split(";")
-            # if isinstance(object_id, list):
-            if len(object_id) > 32 and object_id[32] == ';':
-                attr_form_object_id = [object_id[:32], object_id[33:]]
-                object_id = attr_form_object_id[0]
+            typ = self.__type(object_id)
 
-            if self.__invalid(object_id):
-                raise ValueError(self.err_msg_invalid.format(object_id))
-            if self.__duplicated(object_id):
-                helper.exception_handler(msg=self.err_msg_duplicated.format(object_id),
-                                         exception_type=Warning)
-            else:
-                typ = self.__type(object_id)
+            if typ == "attribute":
+                self.attr_selected.append(attr_form_object_id or [object_id])
 
-                if typ == "attribute":
-                    if attr_form_object_id:
-                        self.attr_selected.append(attr_form_object_id)
-                    else:
-                        self.attr_selected.append([object_id])
-
-                if typ == "metric":
-                    self.metr_selected.append(object_id)
+            if typ == "metric":
+                self.metr_selected.append(object_id)
 
     def _select_attr_el(self, element_id):
         if isinstance(element_id, list):
@@ -154,6 +146,14 @@ class Filter:
             fb["viewFilter"] = self._view_filter()
 
         return fb
+
+    def _populate_attr_elements(self, attr_elements):
+        for att in attr_elements:
+            for el in att["elements"]:
+                self.attr_elems[el["id"]] = {
+                    "name": att["attribute_name"],
+                    "attribute_id": att["attribute_id"]
+                }
 
     def __type(self, object_id):
         """Look up and return object type from available objects."""

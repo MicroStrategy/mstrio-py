@@ -1,8 +1,10 @@
-from mstrio.users_and_groups.user import list_users
+from mstrio.users_and_groups import list_users
 from mstrio.connection import Connection
 
+from typing import List
 
-def list_active_user_privileges(connection: "Connection"):
+
+def list_active_user_privileges(connection: "Connection") -> List[dict]:
     """List user privileges for all active users.
 
     Args:

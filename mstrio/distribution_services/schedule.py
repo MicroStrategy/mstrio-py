@@ -1,3 +1,4 @@
+from typing import Optional
 from mstrio.api import schedules
 from mstrio.connection import Connection
 from mstrio.utils import helper
@@ -50,7 +51,8 @@ class Schedule:
 
     _AVAILABLE_ATTRIBUTES = {}
 
-    def __init__(self, connection: Connection, id: str = None, name: str = None) -> None:
+    def __init__(self, connection: Connection, id: Optional[str] = None,
+                 name: Optional[str] = None) -> None:
         """Initialize the Schedule object, populates it with I-Server data.
         Specify either `id` or `name`. When `id` is provided (not `None`),
         `name` is omitted.

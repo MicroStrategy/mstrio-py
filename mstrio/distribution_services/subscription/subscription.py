@@ -1,6 +1,6 @@
 from enum import Enum
 from pprint import pformat, pprint
-from typing import List, Union
+from typing import List, Optional, Union
 
 from mstrio.api import subscriptions
 import mstrio.config as config
@@ -52,43 +52,43 @@ class Subscription:
 
     def alter(
         self,
-        name: str = None,
-        allow_delivery_changes: bool = None,
-        allow_personalization_changes: bool = None,
-        allow_unsubscribe: bool = None,
+        name: Optional[str] = None,
+        allow_delivery_changes: Optional[bool] = None,
+        allow_personalization_changes: Optional[bool] = None,
+        allow_unsubscribe: Optional[bool] = None,
         send_now: bool = False,
-        owner_id: str = None,
+        owner_id: Optional[str] = None,
         schedules_ids: Union[str, List[str]] = None,
-        contents: Content = None,
+        contents: Optional[Content] = None,
         recipients: Union[List[str], List[dict]] = None,
         delivery: Union[Delivery, dict] = None,
-        delivery_mode: str = None,
+        delivery_mode: Optional[str] = None,
         custom_msg=None,
-        delivery_expiration_date: str = None,
-        contact_security: bool = None,
-        filename: str = None,
-        compress: bool = None,
-        space_delimiter: str = None,
-        email_subject: str = None,
-        email_message: str = None,
-        email_send_content_as: str = None,
-        overwrite_older_version: bool = None,
-        zip_filename: str = None,
-        zip_password_protect: bool = None,
-        zip_password: str = None,
-        file_burst_sub_folder: str = None,
-        printer_copies: int = None,
-        printer_range_start: int = None,
-        printer_range_end: int = None,
-        printer_collated: bool = None,
-        printer_orientation: str = None,
-        printer_use_print_range: bool = None,
-        cache_type: str = None,
-        shortcut_cache_format: str = None,
-        mobile_client_type: str = None,
-        device_id: str = None,
-        do_not_create_update_caches: bool = None,
-        re_run_hl: bool = None,
+        delivery_expiration_date: Optional[str] = None,
+        contact_security: Optional[bool] = None,
+        filename: Optional[str] = None,
+        compress: Optional[bool] = None,
+        space_delimiter: Optional[str] = None,
+        email_subject: Optional[str] = None,
+        email_message: Optional[str] = None,
+        email_send_content_as: Optional[str] = None,
+        overwrite_older_version: Optional[bool] = None,
+        zip_filename: Optional[str] = None,
+        zip_password_protect: Optional[bool] = None,
+        zip_password: Optional[str] = None,
+        file_burst_sub_folder: Optional[str] = None,
+        printer_copies: Optional[int] = None,
+        printer_range_start: Optional[int] = None,
+        printer_range_end: Optional[int] = None,
+        printer_collated: Optional[bool] = None,
+        printer_orientation: Optional[str] = None,
+        printer_use_print_range: Optional[bool] = None,
+        cache_type: Optional[str] = None,
+        shortcut_cache_format: Optional[str] = None,
+        mobile_client_type: Optional[str] = None,
+        device_id: Optional[str] = None,
+        do_not_create_update_caches: Optional[bool] = None,
+        re_run_hl: Optional[bool] = None,
     ):
         """
         Alter subscription.
@@ -304,8 +304,8 @@ class Subscription:
             return response.json()['recipients']
 
     def add_recipient(self, recipients: Union[List[dict], dict, List[str],
-                                              str] = [], recipient_id: str = None,
-                      recipient_type: str = None, recipient_include_type: str = 'TO'):
+                                              str] = [], recipient_id: Optional[str] = None,
+                      recipient_type: Optional[str] = None, recipient_include_type: str = 'TO'):
         """Adds recipient to subscription. You can either specify id, type and
         include_type of single recipient, or just pass recipients list as a
         list of dictionaries.
@@ -410,16 +410,19 @@ class Subscription:
             print("No recipients were removed from the subscription.")
 
     def __change_delivery_properties(
-            self, mode=None, expiration=None, contact_security=None, subject: str = None,
-            message: str = None, filename: str = None, compress: bool = None,
-            zip_settings: ZipSettings = None, password: str = None, password_protect: bool = None,
-            space_delimiter: str = None, send_content_as: SendContentAs = None,
-            overwrite_older_version: bool = None, burst_sub_folder: str = None, copies: int = None,
-            range_start: int = None, range_end: int = None, collated: bool = None,
-            orientation: Orientation = None, use_print_range: bool = None,
-            cache_type: CacheType = None, shortcut_cache_format: ShortcutCacheFormat = None,
-            client_type: ClientType = None, device_id: str = None,
-            do_not_create_update_caches: bool = None, re_run_hl: bool = None):
+            self, mode=None, expiration=None, contact_security=None, subject: Optional[str] = None,
+            message: Optional[str] = None, filename: Optional[str] = None,
+            compress: Optional[bool] = None, zip_settings: Optional[ZipSettings] = None,
+            password: Optional[str] = None, password_protect: Optional[bool] = None,
+            space_delimiter: Optional[str] = None, send_content_as: Optional[SendContentAs] = None,
+            overwrite_older_version: Optional[bool] = None, burst_sub_folder: Optional[str] = None,
+            copies: Optional[int] = None, range_start: Optional[int] = None,
+            range_end: Optional[int] = None, collated: Optional[bool] = None,
+            orientation: Optional[Orientation] = None, use_print_range: Optional[bool] = None,
+            cache_type: Optional[CacheType] = None,
+            shortcut_cache_format: Optional[ShortcutCacheFormat] = None,
+            client_type: Optional[ClientType] = None, device_id: Optional[str] = None,
+            do_not_create_update_caches: Optional[bool] = None, re_run_hl: Optional[bool] = None):
 
         func = self.__change_delivery_properties
         args = func.__code__.co_varnames[:func.__code__.co_argcount]
@@ -503,31 +506,31 @@ class Subscription:
         cls,
         connection: Connection,
         name: str,
-        application_id: str = None,
-        application_name: str = None,
-        allow_delivery_changes: bool = None,
-        allow_personalization_changes: bool = None,
-        allow_unsubscribe: bool = None,
-        send_now: bool = None,
-        owner_id: str = None,
+        application_id: Optional[str] = None,
+        application_name: Optional[str] = None,
+        allow_delivery_changes: Optional[bool] = None,
+        allow_personalization_changes: Optional[bool] = None,
+        allow_unsubscribe: Optional[bool] = None,
+        send_now: Optional[bool] = None,
+        owner_id: Optional[str] = None,
         schedules_ids: Union[str, List[str]] = None,
-        contents: Content = None,
+        contents: Optional[Content] = None,
         recipients: Union[List[dict], List[str]] = None,
         delivery: Union[Delivery, dict] = None,
         delivery_mode: str = 'EMAIL',
-        delivery_expiration_date: str = None,
+        delivery_expiration_date: Optional[str] = None,
         contact_security: bool = True,
-        filename: str = None,
+        filename: Optional[str] = None,
         compress: bool = False,
-        space_delimiter: str = None,
-        email_subject: str = None,
-        email_message: str = None,
+        space_delimiter: Optional[str] = None,
+        email_subject: Optional[str] = None,
+        email_message: Optional[str] = None,
         email_send_content_as: str = 'data',
         overwrite_older_version: bool = False,
-        zip_filename: str = None,
-        zip_password_protect: bool = None,
-        zip_password: str = None,
-        file_burst_sub_folder: str = None,
+        zip_filename: Optional[str] = None,
+        zip_password_protect: Optional[bool] = None,
+        zip_password: Optional[str] = None,
+        file_burst_sub_folder: Optional[str] = None,
         printer_copies: int = 1,
         printer_range_start: int = 0,
         printer_range_end: int = 0,
@@ -537,7 +540,7 @@ class Subscription:
         cache_type: str = "RESERVED",
         shortcut_cache_format: str = "RESERVED",
         mobile_client_type: str = "RESERVED",
-        device_id: str = None,
+        device_id: Optional[str] = None,
         do_not_create_update_caches: bool = True,
         re_run_hl: bool = True,
     ):
@@ -750,17 +753,19 @@ class EmailSubscription(Subscription):
             super().__init__(connection, subscription_id, application_id, application_name)
 
     @classmethod
-    def create(cls, connection: Connection, name: str, schedules_ids: Union[str, List[str]],
-               recipients: Union[List[str], List[dict]], application_id: str = None,
-               application_name: str = None, allow_delivery_changes: bool = None,
-               allow_personalization_changes: bool = None, allow_unsubscribe: bool = True,
-               send_now: bool = None, owner_id: str = None, contents: Content = None,
-               delivery_expiration_date: str = None, contact_security: bool = None,
-               email_subject: str = None, email_message: str = None, filename: str = None,
-               compress: bool = False, space_delimiter: str = None,
-               email_send_content_as: str = 'data', overwrite_older_version: bool = False,
-               zip_filename: str = None, zip_password_protect: bool = None,
-               zip_password: str = None):
+    def create(
+            cls, connection: Connection, name: str, schedules_ids: Union[str, List[str]],
+            recipients: Union[List[str], List[dict]], application_id: Optional[str] = None,
+            application_name: Optional[str] = None, allow_delivery_changes: Optional[bool] = None,
+            allow_personalization_changes: Optional[bool] = None, allow_unsubscribe: bool = True,
+            send_now: Optional[bool] = None, owner_id: Optional[str] = None,
+            contents: Optional[Content] = None, delivery_expiration_date: Optional[str] = None,
+            contact_security: Optional[bool] = None, email_subject: Optional[str] = None,
+            email_message: Optional[str] = None, filename: Optional[str] = None,
+            compress: bool = False, space_delimiter: Optional[str] = None,
+            email_send_content_as: str = 'data', overwrite_older_version: bool = False,
+            zip_filename: Optional[str] = None, zip_password_protect: Optional[bool] = None,
+            zip_password: Optional[str] = None):
         """Creates a new email subscription.
 
         Args:

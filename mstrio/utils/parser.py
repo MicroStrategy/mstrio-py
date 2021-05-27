@@ -64,9 +64,6 @@ class Parser:
         return pd.concat([attribute_df, metric_df], axis=1)
 
     def __map_attributes(self, response):
-
-        # def map_index(attribute_indexes, columns):
-        #     return label_map[columns][attribute_indexes]
         label_map = self.__create_attribute_element_map(response=response)
         row_index = self.__extract_attribute_element_row_index(response=response)
         row_index_array = np.array(row_index)
@@ -93,14 +90,15 @@ class Parser:
             """Replicate attribute element values for total, count, etc. to fill
             the lists to correct size. I-Server only sends them once per
             attribute"""
-            if not self.parse_cube:
-                for i, attr in enumerate(self._attribute_elem_form_names):
+            if self.parse_cube:
+                return
 
-                    required_len = len(attr)
+            for i, attr in enumerate(self._attribute_elem_form_names):
+                required_len = len(attr)
 
-                    for r in form_values[i]:
-                        if len(r) < required_len:
-                            r.extend(r * (required_len - 1))
+                for r in form_values[i]:
+                    if len(r) < required_len:
+                        r.extend(r * (required_len - 1))
 
         def separate(form_values):
             """Format into correct list structure. This function separates the

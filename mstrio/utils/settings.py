@@ -4,7 +4,7 @@ import pickle
 from abc import ABCMeta, abstractmethod
 from pprint import pprint
 from sys import version_info
-from typing import List, Dict, Union
+from typing import List, Dict, Optional, Union
 from ast import literal_eval
 import warnings
 
@@ -254,8 +254,8 @@ class BaseSettings(metaclass=ABCMeta):
         if config.verbose:
             print("Settings exported to '{}'".format(file))
 
-    def _validate_settings(self, settings: dict = None, bad_setting=Warning, bad_type=Warning,
-                           bulk_error=True) -> None:
+    def _validate_settings(self, settings: Optional[dict] = None, bad_setting=Warning,
+                           bad_type=Warning, bulk_error=True) -> None:
         """Validate setting-value pairs and raise AttributeError or TypeError
         if invalid. If `bad_setting` or `bad_type` is of type Exception, then
         Exception is raised as soon as the first invalid pair is found. If they

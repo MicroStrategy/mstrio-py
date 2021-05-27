@@ -1,7 +1,8 @@
 from concurrent.futures.thread import ThreadPoolExecutor
 from enum import Enum
 from operator import itemgetter
-from typing import List, TYPE_CHECKING, Union
+from typing import List, Optional, TYPE_CHECKING, Union
+from pandas.core.frame import DataFrame
 
 import requests
 from requests_futures.sessions import FuturesSession
@@ -16,12 +17,13 @@ from mstrio.utils.filter import Filter
 from mstrio.utils.helper import exception_handler, fallback_on_timeout
 import mstrio.utils.helper as helper
 from mstrio.utils.parser import Parser
+from mstrio.connection import Connection
+from mstrio.application_objects.datasets import cube_cache
 
 if TYPE_CHECKING:
-    from mstrio.connection import Connection
-
     from .olap_cube import OlapCube
     from .super_cube import SuperCube
+    from .cube_cache import CubeCache
 
 
 class CubeStates(Enum):
@@ -75,8 +77,8 @@ class CubeStates(Enum):
         return output
 
 
-def list_all_cubes(connection: "Connection", name_begins: str = None, to_dictionary: bool = False,
-                   limit: int = None,
+def list_all_cubes(connection: Connection, name_begins: Optional[str] = None,
+                   to_dictionary: bool = False, limit: Optional[int] = None,
                    **filters) -> Union[List[Union["OlapCube", "SuperCube"]], List[dict]]:
     """Get list of Cube objects (OlapCube or SuperCube) or dicts with them.
     Optionally filter cubes by specifying 'name_begins'.
@@ -123,11 +125,18 @@ def list_all_cubes(connection: "Connection", name_begins: str = None, to_diction
         return all_cubes
 
 
-def load_cube(connection: "Connection", cube_id: str = None, cube_name: str = None,
-              folder_id: str = None,
-              instance_id: str = None) -> Union["OlapCube", "SuperCube", None]:
-    """Load cube specified by either 'cube_id' or both 'cube_name' and
+def load_cube(
+    connection: Connection, cube_id: Optional[str] = None, cube_name: Optional[str] = None,
+    folder_id: Optional[str] = None, instance_id: Optional[str] = None
+) -> Union["OlapCube", "SuperCube", List[Union["OlapCube", "SuperCube"]]]:
+    """Load single cube specified by either 'cube_id' or both 'cube_name' and
     'folder_id'.
+
+    It is also possible to load cube by providing only `cube_name`, but in that
+    case we may retrieve more than one cube as cube's name is unique only within
+    a folder.
+
+    `instance_id` is used only when a single cube is retrieved.
 
     Args:
         connection: MicroStrategy connection object returned by
@@ -136,41 +145,55 @@ def load_cube(connection: "Connection", cube_id: str = None, cube_name: str = No
         cube_name(string, optional): name of cube
         folder_id(string, optional): ID of folder in which the cube is stored
         instance_id (str, optional): Identifier of an instance if cube instance
-            has been already initialized. Will be used if cube is found. None by
-            default.
+            has been already initialized. Will be used if only one cube is
+            found. `None` by default.
 
     Returns:
          object of type OlapCube or SuperCube based on the subtype of a cube
          returned from metadata.
-    """
-    if cube_id and (cube_name or folder_id):
-        msg = "Specify either 'cube_id' or both 'cube_name' and 'folder_id'."
-        exception_handler(msg, Warning, False)
-        return None
-    if not cube_id and (not cube_name or not folder_id):
-        msg = "Specify either 'cube_id' or both 'cube_name' and 'folder_id'."
-        exception_handler(msg, Warning, False)
-        return None
 
+    Raises:
+        ValueError when neither `cube_id` nor `cube_name` are provided.
+    """
     connection._validate_application_selected()
-    tmp_cubes = list_objects(connection, [ObjectSubTypes.OLAP_CUBE, ObjectSubTypes.SUPER_CUBE],
-                             connection.application_id, name=cube_name, pattern=SearchType.EXACTLY,
-                             root=folder_id)
+
     if cube_id:
-        tmp_cubes = [tmp_c for tmp_c in tmp_cubes if tmp_c['id'] == cube_id]
-    if tmp_cubes:
-        cube_subtype = tmp_cubes[0]['subtype']
-        cube_id = tmp_cubes[0]['id']
+        if cube_name:
+            msg = ("Both `cube_id` and `cube_name` provided. Loading cube based on `cube_id`.")
+            exception_handler(msg, Warning, False)
+        elif folder_id:
+            msg = ("Both `cube_id` and `folder_id` provided. "
+                   "Loading cube based on `cube_id` from all folders.")
+            exception_handler(msg, Warning, False)
+        objects_ = list_objects(connection, [ObjectSubTypes.OLAP_CUBE, ObjectSubTypes.SUPER_CUBE],
+                                connection.application_id, pattern=SearchType.EXACTLY, id=cube_id)
+    elif not cube_name:
+        msg = "Specify either `cube_id` or `cube_name`."
+        raise ValueError(msg)
+    else:  # getting cube by `cube_name` and optionally `folder_id`
+        objects_ = list_objects(connection, [ObjectSubTypes.OLAP_CUBE, ObjectSubTypes.SUPER_CUBE],
+                                connection.application_id, name=cube_name,
+                                pattern=SearchType.EXACTLY, root=folder_id)
+
+    ret_cubes = []
+    for object_ in objects_:
+        dict_ = object_ if len(objects_) > 1 else {**object_, "instance_id": instance_id}
+        cube_subtype = object_['subtype']
         if cube_subtype == int(ObjectSubTypes.OLAP_CUBE):
             from .olap_cube import OlapCube
-            return OlapCube(connection, cube_id, instance_id=instance_id)
+            ret_cubes.append(OlapCube.from_dict(dict_, connection))
         elif cube_subtype == int(ObjectSubTypes.SUPER_CUBE):
             from .super_cube import SuperCube
-            return SuperCube(connection, cube_id, instance_id=instance_id)
-    else:
-        msg = "Cube was not found"
-        exception_handler(msg, Warning, False)
+            ret_cubes.append(SuperCube.from_dict(dict_, connection))
+
+    if len(ret_cubes) == 0:
+        exception_handler("Cube was not found.", Warning, False)
         return None
+    elif len(ret_cubes) == 1:
+        return ret_cubes[0]
+    else:
+        exception_handler(f"More than one cube with name {cube_name} was loaded.", Warning, False)
+        return ret_cubes
 
 
 class _Cube(Entity, VldbMixin):
@@ -196,8 +219,10 @@ class _Cube(Entity, VldbMixin):
     _FROM_DICT_MAP = {**Entity._FROM_DICT_MAP, **{'owner': User.from_dict}}
     _SIZE_LIMIT = 10000000  # this sets desired chunk size in bytes
 
-    def __init__(self, connection: "Connection", id: str = None, cube_id: str = None,
-                 name: str = None, instance_id=None, parallel=True, progress_bar=True):
+    def __init__(self, connection: Connection, id: Optional[str] = None,
+                 cube_id: Optional[str] = None, name: Optional[str] = None,
+                 instance_id: Optional[str] = None, parallel: bool = True,
+                 progress_bar: bool = True):
         """Initialize an instance of a cube by its id.
 
         Note:
@@ -251,9 +276,8 @@ class _Cube(Entity, VldbMixin):
         self._table_names = []
         self.__definition_retrieved = False
         # these properties were not fetched from self.__info() and all will be
-        # lazily fetched when calling any of properties: `name`, `owner_id`,
-        # `path`, `last_modified`, `size`, `status`
-        # cube._name = None
+        # lazily fetched when calling any of properties: `owner_id`, `path`,
+        # `last_modified`, `size`, `status`
         self._owner_id = None
         self._path = None
         self._last_modified = None
@@ -261,17 +285,14 @@ class _Cube(Entity, VldbMixin):
         self._size = None
         self._status = None
         self.__info_retrieved = False
+        self.__filter = None
 
-    @classmethod
-    def from_dict(cls, source: dict, connection: "Connection") -> "_Cube":
-        """Initialize a single Cube object from a dictionary with cube details
-        retrieved from I-Server."""
-        cube = super().from_dict(source, connection)
-        cube.__filter = Filter(attributes=cube._attributes, metrics=cube._metrics,
-                               row_count_metrics=cube._row_counts)
-        return cube
+        # caches will be lazily retrieved from I-Server when calling  for cube's
+        # property `caches`
+        self._caches = None
 
-    def alter(self, name: str = None, description: str = None, abbreviation: str = None):
+    def alter(self, name: Optional[str] = None, description: Optional[str] = None,
+              abbreviation: Optional[str] = None):
         """Alter Cube properties.
 
         Args:
@@ -290,7 +311,16 @@ class _Cube(Entity, VldbMixin):
                 properties[property_key] = local[property_key]
         self._alter_properties(**properties)
 
-    def to_dataframe(self, limit=None, multi_df=False):
+    def get_caches(self) -> List["CubeCache"]:
+        """Get list of caches of the cube.
+
+        Returns:
+            list of caches of the cube
+        """
+        self._caches = cube_cache.list_cube_caches(self._connection, cube_id=self._id)
+        return self._caches
+
+    def to_dataframe(self, limit: Optional[int] = None, multi_df: bool = False):
         """Extract contents of a cube into a Pandas `DataFrame`.
 
         Args:
@@ -314,6 +344,7 @@ class _Cube(Entity, VldbMixin):
         if self.instance_id is None:
             res = self.__create_cube_instance(self._initial_limit)
         else:
+
             # try to get first chunk from already initialized instance of cube,
             # if not possible, initialize new instance
             try:
@@ -329,7 +360,7 @@ class _Cube(Entity, VldbMixin):
         paging = _instance['data']['paging']
 
         # initialize parser and process first response
-        p = Parser(response=res.json(), parse_cube=True)
+        p = Parser(response=_instance, parse_cube=True)
         p.parse(response=_instance)
 
         # If there are more rows to fetch, fetch them
@@ -409,14 +440,15 @@ class _Cube(Entity, VldbMixin):
         response = cubes.cube_instance(
             connection=self._connection,
             cube_id=self._id,
-            body=self.__filter._filter_body(),
+            body=self._filter._filter_body(),
             offset=0,
             limit=self._initial_limit,
         )
         inst_pbar.close()
         return response
 
-    def apply_filters(self, attributes=None, metrics=None, attr_elements=None, operator='In'):
+    def apply_filters(self, attributes: Optional[list] = None, metrics: Optional[list] = None,
+                      attr_elements: Optional[list] = None, operator: str = 'In') -> None:
         """Apply filters on the cube's objects.
 
         Filter by attributes, metrics and attribute elements.
@@ -437,9 +469,9 @@ class _Cube(Entity, VldbMixin):
         filtering_is_requested = bool(not all(el is None for el in params))
 
         if filtering_is_requested:
-            self.__filter._clear(attributes=attributes, metrics=metrics,
-                                 attr_elements=attr_elements)
-            self.__filter.operator = operator
+            self._filter._clear(attributes=attributes, metrics=metrics,
+                                attr_elements=attr_elements)
+            self._filter.operator = operator
             self._select_attribute_filter_conditionally(attributes)
             self._select_metric_filter_conditionally(metrics)
             self._select_attr_el_filter_conditionally(attr_elements)
@@ -448,33 +480,33 @@ class _Cube(Entity, VldbMixin):
 
     def _select_attribute_filter_conditionally(self, attributes_filtered):
         if attributes_filtered:
-            self.__filter._select(object_id=attributes_filtered)
+            self._filter._select(object_id=attributes_filtered)
         elif attributes_filtered is not None:
-            self.__filter.attr_selected = []
+            self._filter.attr_selected = []
 
     def _select_metric_filter_conditionally(self, metrics_filtered):
         if metrics_filtered:
-            self.__filter._select(object_id=metrics_filtered)
+            self._filter._select(object_id=metrics_filtered)
         elif metrics_filtered is not None:
-            self.__filter.metr_selected = []
+            self._filter.metr_selected = []
 
     def _select_attr_el_filter_conditionally(self, attr_el_filtered):
         if attr_el_filtered is not None:
-            self.__filter._select_attr_el(element_id=attr_el_filtered)
+            self._filter._select_attr_el(element_id=attr_el_filtered)
 
-    def clear_filters(self):
+    def clear_filters(self) -> None:
         """Clear previously set filters, allowing all attributes, metrics, and
         attribute elements to be retrieved."""
 
-        self.__filter._clear()
+        self._filter._clear()
 
         # once again remove Row Count metrics
         metrics_ids = [metric_id['id'] for metric_id in self.metrics]
-        self.__filter._select(metrics_ids)
+        self._filter._select(metrics_ids)
         # Clear instance, to generate new with new filters
         self.instance_id = None
 
-    def delete(self, force: bool = False):
+    def delete(self, force: bool = False) -> bool:
         """Delete the cube.
 
         Args:
@@ -497,24 +529,24 @@ class _Cube(Entity, VldbMixin):
         else:
             return False
 
-    def refresh_status(self):
+    def refresh_status(self) -> None:
         """Refresh cube's status and show which states it represents."""
         res = cubes.status(self._connection, self._id)
         if res.ok:
             self._status = int(res.headers['X-MSTR-CubeStatus'])
-        self.show_status()
 
-    def show_status(self):
+    def show_status(self) -> List[str]:
         """Show which states are represented by cube's status."""
         return CubeStates.show_status(self.status)
 
-    def list_properties(self):
+    def list_properties(self) -> dict:
         """List all properties of the object."""
 
         attributes = {key: self.__dict__[key] for key in self.__dict__ if not key.startswith('_')}
         attributes = {
             **attributes,
             "id": self.id,
+            "instance_id": self.instance_id,
             "type": self.type,
             "subtype": self.subtype,
             "ext_type": self.ext_type,
@@ -522,7 +554,6 @@ class _Cube(Entity, VldbMixin):
             "date_modified": self.date_modified,
             "version": self.version,
             "owner": self.owner,
-            "icon_path": self.icon_path,
             "view_media": self.view_media,
             "ancestors": self.ancestors,
             "certified_info": self.certified_info,
@@ -531,7 +562,6 @@ class _Cube(Entity, VldbMixin):
             "size": self.size,
             "status": self.status,
             "path": self.path,
-            "owner_id": self.owner_id,
             "attributes": self.attributes,
             "metrics": self.metrics,
         }
@@ -539,7 +569,7 @@ class _Cube(Entity, VldbMixin):
             key: attributes[key] for key in sorted(attributes, key=helper.sort_object_properties)
         }
 
-    def _get_info(self):
+    def _get_info(self) -> None:
         """Get metadata for specific cubes.
 
         Implements GET /cubes to retrieve basic metadata.
@@ -559,7 +589,7 @@ class _Cube(Entity, VldbMixin):
             # for lazy fetch properties
             self.__info_retrieved = True
 
-    def _get_definition(self):
+    def _get_definition(self) -> None:
         """Get the definition of a cube, including attributes and metrics.
 
         Implements GET /v2/cubes/<cube_id>.
@@ -580,8 +610,6 @@ class _Cube(Entity, VldbMixin):
             self.__remove_row_count()
             # for lazy fetch properties
             self.__definition_retrieved = True
-            self.__filter = Filter(attributes=self._attributes, metrics=self._metrics,
-                                   row_count_metrics=self._row_counts)
 
     def __multitable_definition(self):
         """Return all tables names and columns as a dictionary."""
@@ -713,13 +741,46 @@ class _Cube(Entity, VldbMixin):
             ) for attribute in self.attributes
         ]
 
+    def unpublish(self, force: bool = False) -> bool:
+        """Unpublish Cube by removing all of its caches.
+
+        Args:
+            force: If True, then no additional prompt will be shown before
+                deleting Cube.
+
+        Returns:
+            True when all of cube's caches were deleted and it was successfully
+            unpublished. False otherwise.
+        """
+        user_input = 'N'
+        if not force:
+            user_input = input(f"Are you sure you want to unpublish cube '{self.name}' with ID: "
+                               f"{self._id}? This operation will delete all of its caches. "
+                               f"[Y/N]: ") or 'N'
+        if force or user_input == 'Y':
+            all_caches_num = len(self.caches)
+            deleted_caches_num = 0
+            for cache in self.caches:
+                if cache.delete(True):
+                    deleted_caches_num += 1
+            if all_caches_num == deleted_caches_num:
+                print(f"Cube {self.name} with ID: {self._id} was successfully unpublished.")
+                self._caches = []
+                return True
+            else:
+                print(f"Cube {self.name} with ID: {self._id} was not successfully unpublished"
+                      f", because not all of its caches were deleted.")
+                return False
+        else:
+            return False
+
     @property
-    def cube_id(self):
+    def cube_id(self) -> str:
         helper.deprecation_warning("`cube_id`", "`id`", "11.3.2.101", module=False)
         return self._id
 
     @property
-    def size(self):
+    def size(self) -> int:
         if not self.__info_retrieved:
             self._get_info()
         return self._size
@@ -731,7 +792,7 @@ class _Cube(Entity, VldbMixin):
         return self._status
 
     @property
-    def path(self):
+    def path(self) -> str:
         if not self.__info_retrieved:
             self._get_info()
         return self._path
@@ -745,25 +806,25 @@ class _Cube(Entity, VldbMixin):
         return self._last_modified
 
     @property
-    def owner_id(self):
+    def owner_id(self) -> str:
         if not self.__info_retrieved:
             self._get_info()
         return self._owner_id
 
     @property
-    def attributes(self):
+    def attributes(self) -> List[dict]:
         if not self.__definition_retrieved:
             self._get_definition()
         return self._attributes
 
     @property
-    def metrics(self):
+    def metrics(self) -> List[dict]:
         if not self.__definition_retrieved:
             self._get_definition()
         return self._metrics
 
     @property
-    def attr_elements(self):
+    def attr_elements(self) -> list:
         if not self.__definition_retrieved:
             self._get_definition()
         if not self._attr_elements and self._id:
@@ -774,29 +835,35 @@ class _Cube(Entity, VldbMixin):
                     self.__get_attr_elements_async)(50000)[0]
             else:
                 self._attr_elements = self.__get_attr_elements()
-            self.__filter.attr_elem_selected = self._attr_elements
+            self._filter._populate_attr_elements(self._attr_elements)
         return self._attr_elements
 
     @property
-    def selected_attributes(self):
+    def _filter(self):
         if not self.__definition_retrieved:
             self._get_definition()
-        return self.__filter.attr_selected
+        if self.__filter is None:
+            self.__filter = Filter(attributes=self._attributes, metrics=self._metrics,
+                                   attr_elements=self._attr_elements)
+        return self.__filter
+
+    @property
+    def selected_attributes(self):
+        """Selected attributes for filtering."""
+        return self._filter.attr_selected
 
     @property
     def selected_metrics(self):
-        if not self.__definition_retrieved:
-            self._get_definition()
-        return self.__filter.metr_selected
+        """Selected metrics for filtering."""
+        return self._filter.metr_selected
 
     @property
     def selected_attr_elements(self):
-        if not self.__definition_retrieved:
-            self._get_definition()
-        return self.__filter.attr_elem_selected
+        """Selected attribute elements for filtering."""
+        return self._filter.attr_elem_selected
 
     @property
-    def dataframe(self):
+    def dataframe(self) -> DataFrame:
         if self._dataframe is None:
             helper.exception_handler(
                 msg="Dataframe not loaded. Retrieve with Report.to_dataframe().",
@@ -814,3 +881,9 @@ class _Cube(Entity, VldbMixin):
     @property
     def table_definition(self):
         return self._table_definition
+
+    @property
+    def caches(self):
+        if not self._caches:
+            self.get_caches()
+        return self._caches

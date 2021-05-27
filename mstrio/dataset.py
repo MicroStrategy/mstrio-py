@@ -1,3 +1,4 @@
+from typing import Optional
 from packaging import version
 import pandas as pd
 import time
@@ -156,8 +157,8 @@ class Dataset:
 
         self._tables.append(table)
 
-    def create(self, folder_id: str = None, auto_upload: bool = True, auto_publish: bool = True,
-               chunksize: int = 100000):
+    def create(self, folder_id: Optional[str] = None, auto_upload: bool = True,
+               auto_publish: bool = True, chunksize: int = 100000):
         """Creates a new dataset.
 
         Args:
@@ -293,17 +294,10 @@ class Dataset:
                 print("Dataset '%s' published successfully." % self.name)
 
     def certify(self):
-        """Certify the uploaded dataset.
-
-        Returns:
-            response: Response from the Intelligence Server acknowledging the
-                certification process.
-        """
+        """Certify the uploaded dataset."""
         response = datasets.toggle_certification(connection=self._connection, id=self._dataset_id)
-        if self.verbose:
+        if response.ok and self.verbose:
             print("The dataset with ID: '{}' has been certified.".format(self._dataset_id))
-        else:
-            return response
 
     def publish_status(self):
         """Check the status of data that was uploaded to a dataset.

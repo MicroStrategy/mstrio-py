@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from enum import Enum
 
 from mstrio.utils.helper import Dictable
@@ -182,8 +182,8 @@ class Content(Dictable):
             """
 
             def __init__(self, slicing_attributes: List[str] = [],
-                         address_attribute_id: str = None, device_id: str = None,
-                         form_id: str = None):
+                         address_attribute_id: Optional[str] = None,
+                         device_id: Optional[str] = None, form_id: Optional[str] = None):
                 self.slicing_attributes = slicing_attributes
                 self.address_attribute_id = address_attribute_id
                 self.device_id = device_id
@@ -199,8 +199,9 @@ class Content(Dictable):
         def __init__(self, format_mode: FormatMode = FormatMode.DEFAULT,
                      view_mode: ViewMode = ViewMode.DEFAULT,
                      format_type: FormatType = FormatType.PDF,
-                     export_to_pdf_settings: ExportToPdfSettings = None, delimiter: str = None,
-                     bursting: Bursting = None, prompt: Prompt = None, file_name: str = None):
+                     export_to_pdf_settings: Optional[ExportToPdfSettings] = None,
+                     delimiter: Optional[str] = None, bursting: Optional[Bursting] = None,
+                     prompt: Optional[Prompt] = None, file_name: Optional[str] = None):
 
             self.format_mode = format_mode
             self.view_mode = view_mode
@@ -273,8 +274,9 @@ class Content(Dictable):
                 """
 
                 # XXX: Should all of those be optional or all required or what?
-                def __init__(self, db_role_id: str = None, namespace: str = None,
-                             table_name: str = None, url: str = None):
+                def __init__(self, db_role_id: Optional[str] = None,
+                             namespace: Optional[str] = None, table_name: Optional[str] = None,
+                             url: Optional[str] = None):
                     self.db_role_id = db_role_id
                     self.namespace = namespace
                     self.table_name = table_name
@@ -282,7 +284,7 @@ class Content(Dictable):
 
             # TableRefreshInfo
             def __init__(self, id: str, refresh_policy: RefreshPolicy,
-                         alternate_source: AlternateSource = None):
+                         alternate_source: Optional[AlternateSource] = None):
                 self.id = id
                 self.refresh_policy = refresh_policy
                 self.alternate_source = alternate_source
@@ -294,8 +296,8 @@ class Content(Dictable):
 
         # RefreshCondition
         def __init__(self, tables: List[TableRefreshInfo],
-                     dataset_refresh_policy: RefreshPolicy = None,
-                     filters: List[SubscriptionFilter] = None):
+                     dataset_refresh_policy: Optional[RefreshPolicy] = None,
+                     filters: Optional[List[SubscriptionFilter]] = None):
             self.tables = tables
             self.dataset_refresh_policy = dataset_refresh_policy
             self.filters = filters
@@ -313,8 +315,9 @@ class Content(Dictable):
         }
 
     # Content
-    def __init__(self, id: str, type: Type, name: str = None, personalization: Properties = None,
-                 refresh_condition: RefreshCondition = None):
+    def __init__(self, id: str, type: Type, name: Optional[str] = None,
+                 personalization: Optional[Properties] = None,
+                 refresh_condition: Optional[RefreshCondition] = None):
         self.id = id
         self.type = type
         self.name = name

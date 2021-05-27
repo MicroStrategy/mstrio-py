@@ -1,4 +1,4 @@
-from mstrio.users_and_groups.user import list_users
+from mstrio.users_and_groups import list_users
 from mstrio.api.projects import get_projects
 from mstrio.distribution_services.subscription.subscription_manager import SubscriptionManager
 from mstrio.connection import Connection
