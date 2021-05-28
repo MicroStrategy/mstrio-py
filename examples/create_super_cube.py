@@ -1,7 +1,7 @@
-"""This is the demo script to show how to export data into MicroStrategy with
-Datasets. It is possible to create and publish single or multi-table Datasets.
+"""This is the demo script to show how to export data from MicroStrategy with
+SuperCube. It is possible to create and publish single or multi-table SuperCube.
 
-You can update dataset with different policies when adding table:
+You can update super cube with different policies when adding table:
  - add      -> insert entirely new data
  - update   -> update existing data
  - upsert   -> simultaneously updates existing data and inserts new data
@@ -16,7 +16,7 @@ its usage.
 """
 
 from mstrio.connection import Connection
-from mstrio.application_objects.datasets import Dataset
+from mstrio.application_objects.datasets.super_cube import SuperCube
 import pandas as pd
 
 # create connection
@@ -41,9 +41,9 @@ sales_df = pd.DataFrame(sales, columns=["store_id", "category", "sales", "sales_
 # Add tables to the dataset and create it. By default 'create()' will
 # additionally upload data to the I-Server and publish it. You can manipulate it
 # by setting parameters `auto_upload` and `auto_publish`
-ds = Dataset(connection=connection, name="Store Analysis")
-ds.add_table(name="Stores", data_frame=stores_df, update_policy="add")
-ds.add_table(name="Sales", data_frame=sales_df, update_policy="add")
+ds = SuperCube(connection=connection, name="Store Analysis")
+ds.add_table(name="Stores", data_frame=stores_df, update_policy="replace")
+ds.add_table(name="Sales", data_frame=sales_df, update_policy="replace")
 ds.create()
 
 # When using `Dataset.add_table()`, Pandas data types are mapped to
@@ -62,7 +62,7 @@ ds.add_table(name="Sales", data_frame=sales_df, update_policy="add", to_attribut
 # argument 'auto_publish` to False. It is also possible to set chunksize for the
 # update.
 dataset_id = "some_dataset_id"
-ds = Dataset(connection=connection, dataset_id=dataset_id)
+ds = SuperCube(connection=connection, dataset_id=dataset_id)
 ds.add_table(name="Stores", data_frame=stores_df, update_policy="update")
 ds.add_table(name="Sales", data_frame=sales_df, update_policy="upsert")
 ds.update()
