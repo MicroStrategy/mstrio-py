@@ -1,6 +1,6 @@
-"""This is the demo script to show how to import data from Cubes and Reports It
-is possible to select attributes, metrics and attribute forms which is
-presented.
+"""This is the demo script to show how to import data from OlapCubes and
+Reports. It is possible to select attributes, metrics and attribute forms which
+is presented.
 
 This script will not work without replacing parameters with real values.
 Its basic goal is to present what can be done with this module and to
@@ -8,7 +8,7 @@ ease its usage.
 """
 
 from mstrio.connection import Connection
-from mstrio.application_objects.datasets.cube import _Cube
+from mstrio.application_objects.datasets.olap_cube import OlapCube
 from mstrio.application_objects.report import Report
 
 # get connection to an environment
@@ -22,7 +22,7 @@ cube_id = "some_cube_id"
 report_id = "some_report_id"
 
 # get cube based on its id and store it in data frame
-my_cube = _Cube(connection=connection, cube_id=cube_id)
+my_cube = OlapCube(connection=connection, cube_id=cube_id)
 my_cube_df = my_cube.to_dataframe
 
 # get report based on its id and store it in data frame
