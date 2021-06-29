@@ -16,7 +16,7 @@ its usage.
 """
 
 from mstrio.connection import Connection
-from mstrio.application_objects.datasets.super_cube import SuperCube
+from mstrio.application_objects import SuperCube
 import pandas as pd
 
 # create connection
@@ -26,7 +26,7 @@ password = "some_password"
 connection = Connection(base_url, username, password, application_name="MicroStrategy Tutorial",
                         login_mode=1)
 
-# prepare Pandas DataFrames to add it into tables of dataset
+# prepare Pandas DataFrames to add it into tables of super cube
 stores = {"store_id": [1, 2, 3], "location": ["New York", "Seattle", "Los Angeles"]}
 stores_df = pd.DataFrame(stores, columns=["store_id", "location"])
 
@@ -38,7 +38,7 @@ sales = {
 }
 sales_df = pd.DataFrame(sales, columns=["store_id", "category", "sales", "sales_fmt"])
 
-# Add tables to the dataset and create it. By default 'create()' will
+# Add tables to the super cube and create it. By default 'create()' will
 # additionally upload data to the I-Server and publish it. You can manipulate it
 # by setting parameters `auto_upload` and `auto_publish`
 ds = SuperCube(connection=connection, name="Store Analysis")
@@ -46,7 +46,7 @@ ds.add_table(name="Stores", data_frame=stores_df, update_policy="replace")
 ds.add_table(name="Sales", data_frame=sales_df, update_policy="replace")
 ds.create()
 
-# When using `Dataset.add_table()`, Pandas data types are mapped to
+# When using `SuperCube.add_table()`, Pandas data types are mapped to
 # MicroStrategy data types. By default numeric data is modeled as MSTR metrics
 # and non-numeric as attributes. You can set manually which columns treat as
 # attributes and which as metrics.
@@ -55,22 +55,22 @@ ds.add_table(name="Stores", data_frame=stores_df, update_policy="add", to_attrib
 ds.add_table(name="Sales", data_frame=sales_df, update_policy="add", to_attribute=["store_id"],
              to_metric=["sales_fmt"])
 
-# It is possible to update previously created dataset what looks really similar
-# to creation. You can use different update policies which are explained in the
-# description of this script at the top. By default `update()` is publishing
-# data automatically, if you don't want to publish data, you have to set
-# argument 'auto_publish` to False. It is also possible to set chunksize for the
-# update.
-dataset_id = "some_dataset_id"
-ds = SuperCube(connection=connection, dataset_id=dataset_id)
+# It is possible to update previously created super cubes what looks really
+# similar to creation. You can use different update policies which are explained
+# in the description of this script at the top. By default `update()`
+# is publishing data automatically, if you don't want to publish data,
+# you have to set argument 'auto_publish` to False. It is also possible to set
+# chunksize for the update.
+super_cube_id = "1234567890A1234567890A1234567890"
+ds = SuperCube(connection=connection, id=super_cube_id)
 ds.add_table(name="Stores", data_frame=stores_df, update_policy="update")
 ds.add_table(name="Sales", data_frame=sales_df, update_policy="upsert")
 ds.update()
 
-# finally it is possible to certify an existing dataset
+# finally it is possible to certify an existing super cube
 ds.certify()
 
 # Limitations
-# Updating Datasets that were not created using the MicroStrategy REST API is
+# Updating SuperCubes that were not created using the MicroStrategy REST API is
 # not possible. This applies for example to Cubes created via MicroStrategy Web
 # client.

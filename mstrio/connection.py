@@ -2,15 +2,15 @@ from base64 import b64encode
 from getpass import getpass
 import os
 from typing import Optional, Union
-import requests
-from requests.cookies import RequestsCookieJar
 
 from packaging import version
+import requests
 from requests import Session
 from requests.adapters import HTTPAdapter, Retry
+from requests.cookies import RequestsCookieJar
 
+from mstrio import config
 from mstrio.api import authentication, exceptions, misc, projects
-import mstrio.config as config
 from mstrio.utils.helper import deprecation_warning
 import mstrio.utils.helper as helper
 
@@ -74,7 +74,7 @@ class Connection():
     manages the user's connection with the MicroStrategy REST and Intelligence
     Servers.
 
-    Example:
+    Examples:
         >>> from mstrio import connection
         >>>
         >>> # connect to the environment and chosen application

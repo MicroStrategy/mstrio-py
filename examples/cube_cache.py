@@ -6,9 +6,8 @@ ease its usage.
 """
 
 from mstrio.connection import Connection
-from mstrio.application_objects.datasets.cube import OlapCube
-from mstrio.application_objects.datasets.cube_cache import CubeCache,\
-    list_cube_caches, delete_cube_caches, delete_cube_cache
+from mstrio.application_objects import (OlapCube, CubeCache, list_cube_caches, delete_cube_caches,
+                                        delete_cube_cache)
 
 # get connection to an environment
 base_url = "https://<>/MicroStrategyLibrary/api"

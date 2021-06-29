@@ -1,64 +1,27 @@
 from copy import deepcopy
 import csv
-from enum import Enum, IntEnum
+from enum import Enum
 import inspect
+from os.path import join as joinpath
 from pprint import pprint
 from sys import version_info
-from typing import Any, Callable, Dict, List, Optional, Tuple, TYPE_CHECKING, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, TYPE_CHECKING, TypeVar, Union
 
 import dictdiffer
 from pandas import DataFrame
-from requests import HTTPError
+import stringcase
 
+from mstrio import config
 from mstrio.api import objects
 from mstrio.api.exceptions import VersionException
-import mstrio.config as config
 from mstrio.connection import Connection
 from mstrio.utils import helper
+from mstrio.utils.acl import ACLMixin
 
 if TYPE_CHECKING:
-    from mstrio.server.application import Application
+    from mstrio.server import Application
 
-
-class Rights(IntEnum):
-    EXECUTE = 0b10000000
-    USE = 0b01000000
-    CONTROL = 0b00100000
-    DELETE = 0b00010000
-    WRITE = 0b00001000
-    READ = 0b00000100
-    USE_EXECUTE = 0b00000010
-    BROWSE = 0b00000001
-
-
-# TODO: This has to be string-based to discern between 'Denied All'
-# and 'Full Control', which have the same mask. Maybe we can change
-# the logic to make it less awkward?
-class Permissions(str, Enum):
-    VIEW = 'View'
-    MODIFY = 'Modify'
-    FULL_CONTROL = 'Full Control'
-    DENIED_ALL = 'Denied All'
-    DEFAULT_ALL = 'Default All'
-    CONSUME = 'Consume'
-
-
-class AggregatedRights(IntEnum):
-    VIEW = 0b11000101
-    MODIFY = 0b11011101
-    ALL = 0b11111111
-    NONE = 0b00000000
-    CONSUME = 0b01000101
-
-
-AGGREGATED_RIGHTS_MAP = {
-    Permissions.VIEW: AggregatedRights.VIEW,
-    Permissions.MODIFY: AggregatedRights.MODIFY,
-    Permissions.FULL_CONTROL: AggregatedRights.ALL,
-    Permissions.DENIED_ALL: AggregatedRights.ALL,
-    Permissions.DEFAULT_ALL: AggregatedRights.NONE,
-    Permissions.CONSUME: AggregatedRights.CONSUME,
-}
+T = TypeVar("T")
 
 
 class ObjectTypes(Enum):
@@ -83,7 +46,13 @@ class ObjectTypes(Enum):
     CONFIGURATION = 36
     SECURITY_ROLE = 44
     CONSOLIDATION = 47
+    SCHEDULE_EVENT = 49
+    SCHEDULE_OBJECT = 50
+    SCHEDULE_TRIGGER = 51
+    DBTABLE = 53
     DOCUMENT_DEFINITION = 55
+    DBMS = 57
+    SECURITY_FILTER = 58
     NONE = None
 
     def __new__(cls, value):
@@ -98,6 +67,9 @@ class ObjectTypes(Enum):
 class ObjectSubTypes(Enum):
     OLAP_CUBE = 776
     SUPER_CUBE = 779
+    USER = 8704
+    USER_GROUP = 8705
+    MD_SECURITY_FILTER = 14848
     NONE = None
 
     def __new__(cls, value):
@@ -110,31 +82,122 @@ class ObjectSubTypes(Enum):
 
 
 class EntityBase(helper.Dictable):
-    """This class is for objects that do not have a specified MSTR type."""
+    """This class is for objects that do not have a specified MSTR type.
+
+    Attributes:
+        connection: A MicroStrategy connection object
+        id: Object ID
+        type: Object type set to None
+        name: Object name
+    """
     _OBJECT_TYPE: ObjectTypes = ObjectTypes.NONE  # MSTR object type defined in ObjectTypes
-    _FROM_DICT_MAP = {'type': ObjectTypes}  # map attributes to Enums and Composites
+    _API_GETTERS: Dict[Union[str, tuple], Callable] = {}
+    _FROM_DICT_MAP: Dict[str, Callable] = {
+        'type': ObjectTypes
+    }  # map attributes to Enums and Composites
     _AVAILABLE_ATTRIBUTES: Dict[str, type] = {}  # fetched on runtime from all Getters
-    _PATCH_PATH_TYPES: Dict[str, type] = {"name": str}  # used in update_properties method
+    _API_PATCH: dict = {}
+    _PATCH_PATH_TYPES: Dict[str, type] = {}  # used in update_properties method
 
     def __init__(self, connection: Connection, object_id: str, **kwargs) -> None:
         self._init_variables(connection=connection, id=object_id, **kwargs)
+        if config.fetch_on_init and self._find_func("id") is not None:
+            self.fetch("id")
         if config.verbose:
             print(self)
 
     def _init_variables(self, **kwargs):
-        """Set object attributes by providing keyword args."""
+        """Initialize variables given kwargs.
+
+        Note: attributes not accepted by any implementation of this function
+            in the inheritance chain will be disregarded.
+        """
         # create _AVAILABLE_ATTRIBUTES map
         self._AVAILABLE_ATTRIBUTES.update({key: type(val) for key, val in kwargs.items()})
         self._connection = kwargs.get("connection")
         self._id = kwargs.get("id")
-        self._type = self._OBJECT_TYPE
+        self._type = self._OBJECT_TYPE if 'type' in self._FROM_DICT_MAP else kwargs.get(
+            "type", self._OBJECT_TYPE)
         self.name = kwargs.get("name")
+        self._altered_properties = dict()
+
+    def fetch(self, attr: Optional[str] = None) -> None:
+        """Fetch the latest object state from the I-Server.
+
+        Note:
+            This method can overwrite local changes made to the object.
+
+        Args:
+            attr: Attribute name to be fetched.
+        Raises:
+            ValueError: if `attr` cannot be fetched.
+        """
+        functions = self._API_GETTERS  # by default fetch all endpoints
+
+        if attr is not None:  # if attr is specified fetch endpoint matched to the attribute name
+            function = self._find_func(attr)
+            if not function:
+                raise ValueError(f"The attribute `{attr}` cannot be fetched for this object")
+            else:
+                functions = {attr: func for attr, func in functions.items() if func == function}
+
+        for key, func in functions.items():  # call respective API getters
+            param_value_dict = helper.auto_match_args(func, self)
+
+            response = func(**param_value_dict)
+            if response.ok:
+                response = response.json()
+                if type(response) == dict:
+                    object_dict = {
+                        key if isinstance(key, str) and len(response) == 1 else k: v
+                        for k, v in response.items()
+                    }
+                    self._set_object(**object_dict)
+                elif type(response) == list:
+                    self._set_object(**{key: response})
+                # TODO: consider changing camel_to_snake logic to work with
+                # list of keys
+                response = helper.camel_to_snake(response)
+                # keep track of fetched attributes
+                self._add_to_fetched((response.keys() if isinstance(response, dict) else key))
+
+    def _add_to_fetched(self, keys: Union[str, tuple]) -> None:
+        if isinstance(keys, str):
+            keys = [keys]
+        for key in keys:
+            key = key[1:] if key.startswith("_") else key
+            self._fetched_attributes.add(key)
+
+    @classmethod
+    def _find_func(cls, attr: str) -> Optional[Callable]:
+        """Try to find API endpoint in `cls._API_GETTERS` responsible for chosen
+        attribute.
+
+        Returns: Function or None if function not found
+        """
+        if not isinstance(attr, str):
+            raise TypeError("`attr` parameter has to be of type str")
+
+        for attributes, func in cls._API_GETTERS.items():
+            if isinstance(attributes, str):
+                if attr == attributes:
+                    return func
+            elif isinstance(attributes, tuple):
+                if attr in attributes:
+                    return func
+            else:
+                raise NotImplementedError
+        return None
 
     def _set_object(self, **kwargs) -> None:
         """Set object attributes programatically by providing keyword args.
         Support ENUMs and creating component objects."""
 
         object_info = helper.camel_to_snake(kwargs)
+
+        properties = set(
+            (elem[0]
+             for elem in inspect.getmembers(self.__class__, lambda x: isinstance(x, property))))
 
         for key, val in object_info.items():  # type: ignore
             # if self is a composite, create component instance
@@ -149,7 +212,7 @@ class EntityBase(helper.Dictable):
             self._AVAILABLE_ATTRIBUTES.update({key: type(val)})
 
             # check if attr is read-only and if yes return '_' version of it
-            if key not in self._PATCH_PATH_TYPES:
+            if key in properties:
                 key = "_" + key
             setattr(self, key, val)
 
@@ -186,7 +249,7 @@ class EntityBase(helper.Dictable):
             pprint(self.list_properties())
 
     @classmethod
-    def from_dict(cls, source: Dict[str, Any], connection: Connection):
+    def from_dict(cls: T, source: Dict[str, Any], connection: Connection) -> T:
         """Instantiate an object from response without calling any additional
         getters."""
         obj = cls.__new__(cls)  # Does not call __init__
@@ -208,7 +271,7 @@ class EntityBase(helper.Dictable):
         for param, value in param_value_dict.items():
             if param == "connection" and isinstance(value, Connection):
                 params_list.append("connection")
-            elif value is not None:
+            else:
                 params_list.append(f"{param}={repr(value)}")
         formatted_params = ", ".join(params_list)
         return f"{self.__class__.__name__}({formatted_params})"
@@ -235,135 +298,8 @@ class EntityBase(helper.Dictable):
         else:
             return NotImplemented  # don't attempt to compare against unrelated types
 
-    # TODO add docstrings
-    @property
-    def connection(self):
-        return self._connection
-
-    @property
-    def id(self):
-        return self._id
-
-    @property
-    def type(self):
-        return self._type
-
-
-class Entity(EntityBase):
-    """Base class representation of the MSTR object.
-
-    Provides methods to fetch, update, and view the object. To implement
-    this base class all class attributes have to be provided.
-    """
-
-    _API_GETTERS: dict = {
-        ('id', 'name', 'description', 'abbreviation', 'type', 'subtype', 'ext_type',
-         'date_created', 'date_modified', 'version', 'owner', 'icon_path', 'view_media',
-         'ancestors', 'certified_info', 'acg', 'acl'): objects.get_object_info
-    }
-    # TODO refactor API_PATCH to be like API_GETTERS
-    _API_PATCH: list = [objects.update_object]
-    _PATCH_PATH_TYPES = {"name": str, "description": str, "abbreviation": str}
-
-    def __init__(self, connection: Connection, object_id: str, **kwargs) -> None:
-        self._init_variables(connection=connection, id=object_id, **kwargs)
-        if config.fetch_on_init:
-            self.fetch("id")
-        if config.verbose:
-            print(self)
-
-    def _init_variables(self, **kwargs) -> None:
-        """Initialize variables given kwargs."""
-        from mstrio.users_and_groups.user import User
-        self._altered_properties = dict()
-        super(Entity, self)._init_variables(**kwargs)
-        self.description = kwargs.get("description")
-        self.abbreviation = kwargs.get("abbreviation")
-
-        self._subtype = kwargs.get("subtype")
-        self._ext_type = kwargs.get("ext_type")
-        self._date_created = kwargs.get("date_created")
-        self._date_modified = kwargs.get("date_modified")
-        self._version = kwargs.get("version")
-        self._owner = User.from_dict(
-            kwargs.get("owner"),
-            self.connection,
-        ) if kwargs.get("owner") else None
-        self._date_created = kwargs.get("date_created")
-        self._icon_path = kwargs.get("icon_path")
-        self._view_media = kwargs.get("view_media")
-        self._ancestors = kwargs.get("ancestors")
-        self._certified_info = kwargs.get("certified_info")
-        self._acg = kwargs.get("acg")
-        self._acl = kwargs.get("acl")
-
-    def fetch(self, attr: Optional[str] = None) -> None:
-        """Fetch the latest object state from the I-Server.
-
-        Args:
-            attr: Attribute name to be fetched.
-        Note:
-            This method can overwrite local changes made to the object.
-        Raises:
-            ValueError: if `attr` cannot be fetched.
-        """
-        functions = self._API_GETTERS  # by default fetch all endpoints
-
-        if attr:  # if attr is specified fetch endpoint matched to the attribute name
-            function = self._find_func(attr)
-            if not function:
-                raise ValueError("The attribute cannot be fetched for this object")
-            else:
-                functions = {attr: func for attr, func in functions.items() if func == function}
-
-        for key, func in functions.items():  # call respective API getters
-            param_value_dict = helper.auto_match_args(func, self)
-
-            response = func(**param_value_dict)
-            if response.ok:
-                response = response.json()
-                if type(response) == dict:
-                    object_dict = {
-                        key if isinstance(key, str) and len(response) == 1 else k: v
-                        for k, v in response.items()
-                    }
-                    self._set_object(**object_dict)
-                elif type(response) == list:
-                    self._set_object(**{key: response})
-
-                # keep track of fetched attributes
-                self._add_to_fetched(key)
-
-    def _add_to_fetched(self, keys: Union[str, tuple]) -> None:
-        if isinstance(keys, str):
-            keys = [keys]
-        for key in keys:
-            key = key[1:] if key.startswith("_") else key
-            self._fetched_attributes.add(key)
-
     @classmethod
-    def _find_func(cls, attr: str) -> Optional[Callable]:
-        """Try to find API endpoint in `cls._API_GETTERS` responsible for chosen
-        attribute.
-
-        Returns: Function or None if function not found
-        """
-        if not isinstance(attr, str):
-            raise TypeError("`attr` parameter has to be of type str")
-
-        for attributes, func in cls._API_GETTERS.items():
-            if isinstance(attributes, str):
-                if attr == attributes:
-                    return func
-            elif isinstance(attributes, tuple):
-                if attr in attributes:
-                    return func
-            else:
-                raise NotImplementedError
-        return None
-
-    @classmethod
-    def to_csv(cls, objects, name: str, path: Optional[str] = None,
+    def to_csv(cls: T, objects: Union[T, List[T]], name: str, path: Optional[str] = None,
                properties: Optional[List[str]] = None) -> None:
         """Export MSTR objects to a csv file.
 
@@ -377,19 +313,22 @@ class Entity(EntityBase):
             properties: list of object attribute names that should be included
                 in the exported file
         """
-        file = path + '/' + name if path else name
+        file = joinpath(path, name) if path else name
         list_of_objects = []
         if not name.endswith('.csv'):
             msg = ("The file extension is different than '.csv', please note that using a "
                    "different extension might disrupt opening the file correctly.")
             helper.exception_handler(msg, exception_type=Warning)
         if isinstance(objects, cls):
-            properties = objects.list_properties().keys() if properties is None else properties
-            list_of_objects.append({
-                key: value for key, value in objects.list_properties().items() if key in properties
-            })
+            properties_dict = objects.list_properties()
+            if properties:
+                list_of_objects.append(
+                    {key: value for key, value in properties_dict.items() if key in properties})
+            else:
+                list_of_objects.append(properties_dict)
         elif isinstance(objects, list):
-            properties = objects[0].list_properties().keys() if properties is None else properties
+            if not properties:
+                properties = objects[0].list_properties().keys()
             for obj in objects:
                 if isinstance(obj, cls):
                     list_of_objects.append({
@@ -399,11 +338,11 @@ class Entity(EntityBase):
                     })
                 else:
                     helper.exception_handler(
-                        "Object '{}' of type '{}' is not supported.".format(obj, type(obj)),
+                        f"Object '{obj}' of type '{type(obj)}' is not supported.",
                         exception_type=Warning)
         else:
-            raise TypeError((f"Objects should be of type {cls._OBJECT_TYPE.name} or "
-                             f"list of {cls._OBJECT_TYPE.name}."))
+            raise TypeError((f"Objects should be of type {cls.__name__} or "
+                             f"list of {cls.__name__}."))
 
         with open(file, 'w') as f:
             fieldnames = list_of_objects[0].keys()
@@ -411,7 +350,7 @@ class Entity(EntityBase):
             w.writeheader()
             w.writerows(list_of_objects)
         if config.verbose:
-            print("Object exported successfully to '{}'".format(file))
+            print(f"Object exported successfully to '{file}'")
 
     def is_modified(self, to_list: bool = False) -> Union[bool, list]:
         # TODO decide if needed or just deprecate
@@ -442,41 +381,76 @@ class Entity(EntityBase):
         self._alter_properties(**changes)
         self._altered_properties.clear()
 
+    def _send_proper_patch_request(self, properties: dict, op: str = 'replace') -> List[bool]:
+        """Internal method to update objects with the specified patch wrapper.
+        Used for adding and removing objects from nested properties of an
+        object like memberships.
+
+        Args:
+            properties: dictionary of required changes
+            op: operation type, 'replace' by default
+
+        Returns:
+            List of succesfull or unsuccessful requests.
+        """
+        changed = []
+        camel_properties = helper.snake_to_camel(properties)
+        for attrs, (func, func_type) in self._API_PATCH.items():
+            body = {}
+            if func_type == 'partial_put':
+                for name, value in camel_properties.items():
+                    if stringcase.snakecase(name) in attrs:
+                        value = helper.maybe_unpack(value, camel_case=True)
+                        body[name] = self._validate_type(name, value)
+            elif func_type == 'put':  # Update using the generic update_object()
+                for name, value in properties.items():
+                    if name in attrs:
+                        setattr(self, name, self._validate_type(name, value))
+                body = self.to_dict()
+            elif func_type == 'patch':
+                body = {"operationList": []}
+                for name, value in camel_properties.items():
+                    if stringcase.snakecase(name) in attrs:
+                        value = helper.maybe_unpack(value, camel_case=True)
+                        body['operationList'].append({
+                            "op": op,
+                            "path": "/{}".format(name),
+                            "value": self._validate_type(name, value)
+                        })
+            else:
+                msg = f"{func} function is not supported by `_send_proper_patch_request`"
+                raise NotImplementedError(msg)
+
+            if not body:
+                continue
+            # send patch request from the specified update wrapper
+            param_value_dict = helper.auto_match_args(func, self, exclude=["body"])
+            param_value_dict['body'] = body
+            response = func(**param_value_dict)
+
+            if response.ok:
+                changed.append(True)
+                response = response.json()
+                if type(response) == dict:
+                    self._set_object(**response)
+            else:
+                changed.append(False)
+        return changed
+
     def _alter_properties(self, **properties) -> None:
         """Generic alter method that has to be implemented in child classes
         where arguments will be specified."""
-        if not properties and config.verbose:
-            print(f"No changes specified for {type(self).__name__} '{self.name}'.")
+        if not properties:
+            if config.verbose:
+                print(f"No changes specified for {type(self).__name__} '{self.name}'.")
             return None
 
-        body = {}
-        # TODO use _find_func(attr) to search for
-        func = self._API_PATCH[0]
-        properties = helper.snake_to_camel(properties)
+        changed = self._send_proper_patch_request(properties)
 
-        if func == objects.update_object:  # Update using the generic update_object()
-            for name, value in properties.items():
-                body[name] = self._validate_type(name, value)
-        else:  # Update using different update method, if one was specified
-            body = {"operationList": []}
-            for name, value in properties.items():
-                body['operationList'].append({
-                    "op": "replace",
-                    "path": "/{}".format(name),
-                    "value": self._validate_type(name, value)
-                })
-
-        # send patch request from the specified update wrapper
-        param_value_dict = helper.auto_match_args(func, self, exclude=["body"])
-        param_value_dict['body'] = body
-        response = func(**param_value_dict)
-
-        if response.ok:
-            if config.verbose:
-                print("{} '{}' has been modified.".format(type(self).__name__, self.name))
-            response = response.json()
-            if type(response) == dict:
-                self._set_object(**response)
+        if config.verbose and all(changed):
+            msg = (f"{type(self).__name__} '{self.name}' has been modified on the server. "
+                   f"Your changes are saved locally.")
+            print(msg)
 
     def _update_nested_properties(self, objects, path: str, op: str,
                                   existing_ids: Optional[List[str]] = None) -> Tuple[str, str]:
@@ -498,7 +472,8 @@ class Entity(EntityBase):
         object_map = {obj.id: obj.name for obj in objects_list if isinstance(obj, Entity)}
 
         object_ids_list = [
-            obj.id if isinstance(obj, (Entity, Privilege)) else str(obj) for obj in objects_list
+            obj.id if isinstance(obj, (EntityBase, Privilege)) else str(obj)
+            for obj in objects_list
         ]
 
         # check if objects can be manipulated by comparing to existing values
@@ -509,16 +484,8 @@ class Entity(EntityBase):
             filtered_object_ids = sorted(list(filter(lambda x: x in existing_ids,
                                                      object_ids_list)))
         if filtered_object_ids:
-            body = {
-                "operationList": [{
-                    "op": op,
-                    "path": '/{}'.format(path),
-                    "value": filtered_object_ids
-                }]
-            }
-            response = self._API_PATCH[0](self.connection, self.id, body).json()
-            if type(response) == dict:
-                self._set_object(**response)
+            properties = {path: filtered_object_ids}
+            self._send_proper_patch_request(properties, op)
 
         failed = list(sorted(set(object_ids_list) - set(filtered_object_ids)))
         failed_formatted = [object_map.get(object_id, object_id) for object_id in failed]
@@ -527,7 +494,7 @@ class Entity(EntityBase):
         ]
         return (succeeded_formatted, failed_formatted)
 
-    def _validate_type(self, name: str, value: Any) -> Any:
+    def _validate_type(self, name: str, value: T) -> T:
         """Validates whether the attribute is set using correct type.
 
         Raises:
@@ -542,23 +509,29 @@ class Entity(EntityBase):
     def __setattr__(self, name: str, value: Any) -> None:
         """Overloads the __setattr__ method to validate if this attribute can
         be set for current object and verify value data types."""
-        # TODO decide if this is necessary here
-        # self._validate_type(name, value)
+
+        def track_changes():
+            already_tracked = name in self._altered_properties
+            current_val = self._altered_properties[name][0] if already_tracked \
+                else self.__dict__[name]
+            is_changed = not (type(current_val) is type(value) and current_val == value)
+            if is_changed:
+                self._altered_properties.update({name: (current_val, value)})
+            elif already_tracked:
+                del self._altered_properties[name]
+
         # Keep track of changed properties if value is already fetched
         if hasattr(self, "_fetched_attributes"):
             if name in self._PATCH_PATH_TYPES and name in self._fetched_attributes:
-                self._altered_properties.update({name: (self.__dict__[name], value)})
-                changes = self._altered_properties[name]
-                if changes[0] == changes[1]:
-                    del self._altered_properties[name]
+                track_changes()
             # if value not equal to None then treat as fetched
             if value is not None:
                 self._add_to_fetched(name)
-        super(Entity, self).__setattr__(name, value)
+        super(EntityBase, self).__setattr__(name, value)
 
     def __getattribute__(self, name: str) -> Any:
         """Fetch attributes if not fetched."""
-        val = super(Entity, self).__getattribute__(name)
+        val = super(EntityBase, self).__getattribute__(name)
 
         if name in ["_fetched_attributes", "_find_func"]:
             return val
@@ -570,9 +543,85 @@ class Entity(EntityBase):
             can_fetch = self._find_func(_name) is not None and "id" in self._fetched_attributes
             if can_fetch and not was_fetched:
                 self.fetch(_name)  # fetch the relevant object data
-            val = super(Entity, self).__getattribute__(name)
+            val = super(EntityBase, self).__getattribute__(name)
 
         return val
+
+    # TODO add docstrings
+    @property
+    def connection(self) -> Connection:
+        return self._connection
+
+    @property
+    def id(self) -> str:
+        return self._id
+
+    @property
+    def type(self) -> ObjectTypes:
+        return self._type
+
+
+class Entity(EntityBase, ACLMixin):
+    """Base class representation of the MSTR object.
+
+    Provides methods to fetch, update, and view the object. To implement
+    this base class all class attributes have to be provided.
+
+    Attributes:
+        connection: A MicroStrategy connection object
+        id: Object ID
+        name: Object name
+        description: Object description
+        abbreviation: Object abbreviation
+        type: Object type
+        subtype: Object subtype
+        ext_type: Object extended type
+        date_created: Creation time, "yyyy-MM-dd HH:mm:ss" in UTC
+        date_modified: Last modification time, "yyyy-MM-dd HH:mm:ss" in UTC
+        version: Version ID
+        owner: Owner ID and name
+        icon_path: Object icon path
+        view_media: View media settings
+        ancestors: List of ancestor folders
+        certified_info: Certification status, time of certificaton, and
+            information about the certifier (currently only for document and
+            report)
+        acg: Access rights (See EnumDSSXMLAccessRightFlags for possible values)
+        acl: Object access control list
+    """
+
+    _API_GETTERS: Dict[Union[str, tuple], Callable] = {
+        ('id', 'name', 'description', 'abbreviation', 'type', 'subtype', 'ext_type',
+         'date_created', 'date_modified', 'version', 'owner', 'icon_path', 'view_media',
+         'ancestors', 'certified_info', 'acg', 'acl'): objects.get_object_info
+    }
+    _API_PATCH: dict = {
+        ('name', 'description', 'abbreviation'): (objects.update_object, 'partial_put')
+    }
+    _PATCH_PATH_TYPES = {"name": str, "description": str, "abbreviation": str}
+
+    def _init_variables(self, **kwargs) -> None:
+        """Initialize variables given kwargs."""
+        from mstrio.users_and_groups.user import User
+        super(Entity, self)._init_variables(**kwargs)
+        self.description = kwargs.get("description")
+        self.abbreviation = kwargs.get("abbreviation")
+        self._subtype = kwargs.get("subtype")
+        self._ext_type = kwargs.get("ext_type")
+        self._date_created = kwargs.get("date_created")
+        self._date_modified = kwargs.get("date_modified")
+        self._version = kwargs.get("version")
+        self._owner = User.from_dict(
+            kwargs.get("owner"),
+            self.connection,
+        ) if kwargs.get("owner") else None
+        self._date_created = kwargs.get("date_created")
+        self._icon_path = kwargs.get("icon_path")
+        self._view_media = kwargs.get("view_media")
+        self._ancestors = kwargs.get("ancestors")
+        self._certified_info = kwargs.get("certified_info")
+        self._acg = kwargs.get("acg")
+        self._acl = kwargs.get("acl")
 
     # TODO add docstrings to all properties
     @property
@@ -700,352 +749,3 @@ class VldbMixin:
                                                 application)
         if config.verbose and response.ok:
             print("VLDB settings reset to default")
-
-
-class EntityACL(Entity):
-    # TODO Convert to AclMixin class
-    # TODO streamline methods
-    # TODO inherit from this class in supporting objects
-    """Entity subclass for ACL management."""
-
-    # TODO: `rights` here is fine as an int, but it would be more intuitive
-    # to create a class which not only has this int but also can convert
-    # between its different representations instead of just having a bunch
-    # of functions that convert from one to the other.
-    def update_acl(self, op: str, rights: int, ids: List[str],
-                   propagate_to_children: Optional[bool] = None, denied: Optional[bool] = None,
-                   inheritable: Optional[bool] = None):
-        """Updates the access control list for this entity, performs operation
-        defined by the `op` parameter on all objects from `ids` list.
-
-        Args:
-            op (str): ACL update operator, available values are "ADD",
-                "REMOVE" and "REPLACE"
-            rights (int): value of rights to use by the operator
-            ids (list of str): list of ids to update the acl on
-            propagate_to_children (optional, bool): used for folder objects
-                only,  default value is None, if set to True/False adds
-                `propagateACLToChildren` keyword to the request body
-                and sets its value accordingly
-        """
-
-        # TODO move (op, rights, ids, propagate_to_children=None,
-        # denied=None, inheritable=None, types=None) to
-        # separate AccesControlEntry class
-        if op not in ["ADD", "REMOVE", "REPLACE"]:
-            helper.exception_handler(
-                "Wrong ACL operator passed. Please use ADD, REMOVE or REPLACE")
-
-        if rights not in range(256) and rights not in range(536_870_912, 536_871_168):
-            msg = ("Wrong `rights` value, please provide value in range 0-255, or to control "
-                   "inheritability use value 536870912")
-            helper.exception_handler(msg)
-
-        if denied is None:
-            denied = dict(zip(ids, [False] * len(ids)))
-
-        if inheritable is None:
-            inheritable = dict(zip(ids, [False] * len(ids)))
-
-        body = {
-            "acl": [{
-                "op": op,
-                "trustee": id,
-                "rights": rights,
-                "type": 1,
-                "denied": denied.get(id),
-                "inheritable": inheritable.get(id)
-            } for id in ids]
-        }
-
-        if isinstance(propagate_to_children, bool):
-            body["propagateACLToChildren"] = propagate_to_children
-
-        objects.update_object(connection=self.connection, id=self.id, body=body,
-                              type=self._OBJECT_TYPE.value)
-
-    def update_acl_add(self, rights: int, ids: List[str],
-                       propagate_to_children: Optional[bool] = None):
-        """
-        Args:
-            rights (int): value of rights to use by the operator
-            ids (list of str): list of ids to update the acl on
-            propagate_to_children (optional, bool): used for folder objects
-                only,  default value is None, if set to True/False adds
-                `propagateACLToChildren` keyword to the request body
-                and sets its value accordingly
-        """
-        self.update_acl(op="ADD", rights=rights, ids=ids,
-                        propagate_to_children=propagate_to_children)
-
-    def update_acl_remove(self, rights: int, ids: List[str],
-                          propagate_to_children: Optional[bool] = None):
-        """
-        Args:
-            rights (int): value of rights to use by the operator
-            ids (list of str): list of ids to update the acl on
-            propagate_to_children (optional, bool): used for folder objects
-                only,  default value is None, if set to True/False adds
-                `propagateACLToChildren` keyword to the request body
-                and sets its value accordingly
-        """
-        self.update_acl(op="REMOVE", rights=rights, ids=ids,
-                        propagate_to_children=propagate_to_children)
-
-    def update_acl_replace(self, rights: int, ids: List[str],
-                           propagate_to_children: Optional[bool] = None):
-        """
-        Args:
-            rights (int): value of rights to use by the operator
-            ids (list of str): list of ids to update the acl on
-            propagate_to_children (optional, bool): used for folder objects
-                only,  default value is None, if set to True/False adds
-                `propagateACLToChildren` keyword to the request body
-                and sets its value accordingly
-        """
-        self.update_acl(op="REPLACE", rights=rights, ids=ids,
-                        propagate_to_children=propagate_to_children)
-
-    # TODO make list_acl with df option
-    def _parse_acl_rights_bin_to_dict(self, rights_bin: int) -> Dict[Rights, bool]:
-        output: Dict[Rights, bool] = {}
-        for right in Rights:
-            if rights_bin & right.value != 0:
-                output[right] = True
-            else:
-                output[right] = False
-        return output
-
-    def _parse_acl_rights_dict_to_bin(self, rights_dict: Dict[Rights, bool]) -> int:
-        output = 0
-        for right, given in rights_dict.items():
-            if given:
-                output |= right.value
-        return output
-
-    def set_acl_by_dict(self, rights_dict: Dict[Rights, bool], ids: List[str]) -> None:
-        rights = self._parse_acl_rights_dict_to_bin(rights_dict)
-        self.update_acl(op='REPLACE', rights=rights, ids=ids)
-        self.fetch()
-
-
-def _modify_rights(connection, trustee_id: str, op: str, rights: int, object_type: ObjectTypes,
-                   ids: List[str], application: Optional[Union[str, "Application"]] = None,
-                   propagate_to_children: Optional[bool] = None, denied: Optional[bool] = None,
-                   inheritable: Optional[bool] = None, verbose: bool = True):
-    if op not in ["ADD", "REMOVE", "REPLACE"]:
-        helper.exception_handler("Wrong ACL operator passed. Please use ADD, REMOVE or REPLACE")
-
-    if rights not in range(256) and rights not in range(536_870_912, 536_871_168):
-        msg = ("Wrong `rights` value, please provide value in range 0-255, or to control "
-               "inheritability use value 536870912")
-        helper.exception_handler(msg)
-
-    if application:
-        application = application if isinstance(application, str) else application.id
-
-    if isinstance(ids, str):
-        ids = [ids]
-    for id in ids:
-        response = objects.get_object_info(connection=connection, id=id, type=object_type.value,
-                                           application_id=application)
-        if inheritable is None:
-            tmp = [
-                ace['inheritable']
-                for ace in response.json().get('acl', [])
-                if ace['trusteeId'] == trustee_id and ace['deny'] == denied
-            ]
-            inheritable = False if not tmp else tmp[0]
-
-        body = {
-            "acl": [{
-                "op": op,
-                "trustee": trustee_id,
-                "rights": rights,
-                "type": 1,
-                "denied": denied,
-                "inheritable": inheritable
-            }]
-        }
-
-        if isinstance(propagate_to_children, bool):
-            body["propagateACLToChildren"] = propagate_to_children
-
-        objects.update_object(connection=connection, id=id, body=body, type=object_type.value,
-                              application_id=application, verbose=verbose)
-
-
-def _get_custom_right_value(right: Union[Rights, List[Rights]]) -> int:
-    right_value = 0
-    if not isinstance(right, list):
-        right = [right]
-    for r in right:
-        if not isinstance(r, Rights):
-            try:
-                r = Rights[r.upper()]
-            except ValueError:
-                msg = (f"Invalid custom `right` value: {r}. Available values are: EXECUTE, USE, "
-                       "CONTROL, DELETE, WRITE, READ, BROWSE. See: the Rights enum.")
-                helper.exception_handler(msg)
-        right_value |= r.value
-    return right_value
-
-
-def _modify_custom_rights(connection, trustee_id: str, right: Union[Rights, List[Rights]],
-                          to_objects: List[str], object_type: ObjectTypes, denied: bool,
-                          application: Union[str, "Application"] = None, default: bool = False,
-                          propagate_to_children: Optional[bool] = None):
-    right_value = _get_custom_right_value(right)
-    try:
-        _modify_rights(connection=connection, trustee_id=trustee_id, op='REMOVE',
-                       rights=right_value, ids=to_objects, object_type=object_type,
-                       application=application, denied=(not denied),
-                       propagate_to_children=propagate_to_children, verbose=False)
-    except HTTPError:
-        pass
-
-    op = 'REMOVE' if default else 'ADD'
-    verbose = False if default else True
-    try:
-        _modify_rights(connection=connection, trustee_id=trustee_id, op=op, rights=right_value,
-                       ids=to_objects, object_type=object_type, application=application,
-                       denied=denied, propagate_to_children=propagate_to_children, verbose=verbose)
-    except HTTPError:
-        pass
-
-
-def set_permission(connection, trustee_id: str, permission: Permissions,
-                   to_objects: Union[str, List[str]], object_type: ObjectTypes,
-                   application: Optional[Union[str, "Application"]] = None,
-                   propagate_to_children: Optional[bool] = None):
-    """Set permission to perform actions on given object(s).
-
-    Function is used to set permission of the trustee to perform given actions
-    on the provided objects. Within one execution of the function permission
-    will be set in the same manner for each of the provided objects. The only
-    available values of permission are: 'View', 'Modify', 'Full Control',
-    'Denied All', 'Default All'. Permission is the predefined set of rights. All
-    objects to which the rights will be given have to be of the same type which
-    is also provided.
-
-    Args:
-        connection (Connection): connection to MicroStrategy I-Server
-        trustee_id (int): identifier of entity which will (not) have rights
-        permission (str): name of permission which defines set of rights.
-            Available values are 'View', 'Modify', 'Full Control', 'Denied All',
-            'Default All'.
-        to_objects: (str, list(str)): list of object ids on access list to which
-            the permissions will be set
-        object_type (int): type of objects on access list
-        application (str, Application): Object or id of Application in which the
-            object is located. If not passed, Application (application_id)
-            selected in Connection object is used.
-        propagate_to_children: flag used in the request to determine if those
-            rights will be propagated to children of the trustee
-    Returns:
-        None
-    """
-
-    # permissions_map = {**EntityACL.AGGREGATED_RIGHTS_MAP}
-    if not isinstance(permission, Permissions):
-        try:
-            permission = Permissions(permission)
-        except ValueError:
-            msg = ("Invalid `permission` value. Available values are: 'View', "
-                   "'Modify', 'Full Control', 'Denied All', 'Default All'. "
-                   "See: Permissions enum.")
-            helper.exception_handler(msg)
-    right_value = AGGREGATED_RIGHTS_MAP[permission].value
-    if permission == Permissions.DENIED_ALL:
-        denied = True
-    else:
-        denied = False
-
-    try:
-        _modify_rights(connection=connection, trustee_id=trustee_id, op='REMOVE', rights=255,
-                       ids=to_objects, object_type=object_type, application=application,
-                       denied=(not denied), propagate_to_children=propagate_to_children,
-                       verbose=False)
-    except HTTPError:
-        pass
-    try:
-        _modify_rights(connection=connection, trustee_id=trustee_id, op='REMOVE', rights=255,
-                       ids=to_objects, object_type=object_type, application=application,
-                       denied=denied, propagate_to_children=propagate_to_children, verbose=False)
-    except HTTPError:
-        pass
-
-    if not permission == Permissions.DEFAULT_ALL:
-        _modify_rights(connection=connection, trustee_id=trustee_id, op='ADD', rights=right_value,
-                       ids=to_objects, object_type=object_type, application=application,
-                       denied=denied, propagate_to_children=propagate_to_children)
-
-
-def set_custom_permissions(connection, trustee_id: str, to_objects: Union[str, List[str]],
-                           object_type: ObjectTypes, application: Union[str, "Application"] = None,
-                           execute: Optional[str] = None, use: Optional[str] = None,
-                           control: Optional[str] = None, delete: Optional[str] = None,
-                           write: Optional[str] = None, read: Optional[str] = None,
-                           browse: Optional[str] = None):
-    """Set custom permissions to perform actions on given object(s).
-
-    Function is used to set rights of the trustee to perform given actions on
-    the provided objects. Within one execution of the function rights will be
-    set in the same manner for each of the provided objects. None of the rights
-    is necessary, but if provided then only possible values are 'grant'
-    (to grant right), 'deny' (to deny right), 'default' (to reset right) or None
-    which is default value and means that nothing will be changed for this
-    right. All objects to which the rights will be given have to be of the same
-    type which is also provided.
-
-    Args:
-        connection (Connection): connection to MicroStrategy I-Server
-        trustee_id (int): identifier of entity which will (not) have rights
-        to_objects: (str, list(str)): list of object ids on access list to which
-            the permissions will be set
-        object_type (int): type of objects on access list
-        application (str, Application): Object or id of Application in which the
-            object is located. If not passed, Application (application_id)
-            selected in Connection object is used.
-        execute (str): value for right "Execute". Available are 'grant', 'deny',
-            'default' or None.
-        use (str): value for right "Use". Available are 'grant', 'deny',
-            'default' or None.
-        control (str): value for right "Control". Available are 'grant', 'deny',
-            'default' or None.
-        delete (str): value for right "Delete". Available are 'grant', 'deny',
-            'default' or None.
-        write  (str): value for right "Write". Available are 'grant', 'deny',
-            'default' or None.
-        read (str): value for right "Read". Available are 'grant', 'deny',
-            'default' or None.
-        browse (str): value for right "Browse. Available are 'grant', 'deny',
-            'default' or None.
-    Returns:
-        None
-    """
-    rights_dict = {
-        Rights.EXECUTE: execute,
-        Rights.USE: use,
-        Rights.CONTROL: control,
-        Rights.DELETE: delete,
-        Rights.WRITE: write,
-        Rights.READ: read,
-        Rights.BROWSE: browse
-    }
-    if not set(rights_dict.values()).issubset({'grant', 'deny', 'default', None}):
-        helper.exception_handler(
-            "Invalid value of the right. Available values are 'grant', 'deny', 'default' or None.")
-    grant_list = [right for right, value in rights_dict.items() if value == 'grant']
-    deny_list = [right for right, value in rights_dict.items() if value == 'deny']
-    default_list = [right for right, value in rights_dict.items() if value == 'default']
-
-    _modify_custom_rights(connection=connection, trustee_id=trustee_id, right=grant_list,
-                          to_objects=to_objects, object_type=object_type, denied=False,
-                          application=application)
-    _modify_custom_rights(connection=connection, trustee_id=trustee_id, right=deny_list,
-                          to_objects=to_objects, object_type=object_type, denied=True,
-                          application=application)
-    _modify_custom_rights(connection=connection, trustee_id=trustee_id, right=default_list,
-                          to_objects=to_objects, object_type=object_type, denied=True,
-                          application=application, default=True)

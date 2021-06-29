@@ -3,7 +3,7 @@ from mstrio.utils.helper import response_handler
 
 def get_object_info(connection, id, type, application_id=None, error_msg=None):
     """Get information for a specific object in a specific project; if you do
-    not specify a project ID, you get information for the object in all
+    not specify a application ID, you get information for the object in all
     projects.
 
     You identify the object with the object ID and object type. You specify
@@ -16,7 +16,7 @@ def get_object_info(connection, id, type, application_id=None, error_msg=None):
         id (str): Object ID
         type (int): One of EnumDSSXMLObjectTypes. Ex. 34 (User or UserGroup),
             44 (Security Role), 32 (Project), 8 (Folder), 36 (type of I-Server
-            configuration)
+            configuration), 58 (Security Filter)
         application_id(str): ID of a project in which the object is located.
         error_msg (string, optional): Custom Error Message for Error Handling
 
@@ -394,8 +394,8 @@ def toggle_certification(connection, id, dataset_type=3, certify=True):
     """
 
     response = connection.session.put(
-        url=connection.base_url + '/api/objects/' + id + '/certify/?type=' + str(dataset_type)
-        + '&certify=' + str(certify),
+        url=(connection.base_url + '/api/objects/' + id + '/certify/?type=' + str(dataset_type)
+             + '&certify=' + str(certify)),
         headers={
             'Content-Type': 'application/json',
             'Accept': 'application/json'

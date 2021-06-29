@@ -84,18 +84,20 @@ conn = Connection(base_url, mstr_username, mstr_password, project_id=project_id,
 
 Better fetching performance can be achieved by utilizing the parallel download of data chunks. This feature is
 controlled by the `parallel` flag and is enabled by default. Disabling this setting will lower the peak I-Server load.
-To import the contents of a published Cube into a DataFrame for analysis in Python, use the `Cube` class:
+To import the contents of a published Cube into a DataFrame for analysis in Python, use the `OlapCube` `SuperCube` class.
+If you are not sure which type of cube you want to import use load_cube function.
 
 ```python
-from mstrio.application_objects.datasets.cube import Cube
-my_cube = Cube(connection=conn, cube_id=cube_id)
+from mstrio.application_objects import load_cube, OlapCube
+my_cube = OlapCube(connection=conn, id=id)
+my_cube = load_cube(connection=conn, cube_id=cube_id)
 df = my_cube.to_dataframe()
 ```
 
 To import Reports into a DataFrame for analysis in Python use the appropriate `Report` class:
 
 ```python
-from mstrio.application_objects.report import Report
+from mstrio.application_objects import Report
 my_report = Report(connection=conn, report_id=report_id, parallel=False)
 df = my_report.to_dataframe()
 ```
@@ -137,9 +139,9 @@ df = my_cube.to_dataframe()
 
 ## Export Data into MicroStrategy with Datasets
 
-### Create a New Dataset
+### Create a New SuperCube
 
-With **mstrio-py** you can create and publish single or multi-table Datasets. This is done by passing Pandas DataFrames to the `Dataset` constructor which translates the data into the format needed by MicroStrategy.
+With **mstrio-py** you can create and publish single or multi-table Datasets. This is done by passing Pandas DataFrames to the `SuperCube` constructor which translates the data into the format needed by MicroStrategy.
 
 ```python
 import pandas as pd
@@ -153,16 +155,16 @@ sales = {"store_id": [1, 2, 3],
          "sales_fmt": ["$400", "$200", "$100"]}
 sales_df = pd.DataFrame(sales, columns=["store_id", "category", "sales", "sales_fmt"])
 
-from mstrio.application_objects.datasets.dataset import Dataset
-ds = Dataset(connection=conn, name="Store Analysis")
+from mstrio.application_objects import SuperCube
+ds = SuperCube(connection=conn, name="Store Analysis")
 ds.add_table(name="Stores", data_frame=stores_df, update_policy="add")
 ds.add_table(name="Sales", data_frame=sales_df, update_policy="add")
 ds.create()
 ```
 
-By default `Dataset.create()` will create a Dataset, upload the data to the Intelligence Server and publish it. If you just want to _create_ the Dataset and upload the row-level data but leave it unpublished, use `Dataset.create(auto_publish=False)`. If you want to _create_ an empty Dataset, use `Dataset.create(auto_upload=False, auto_publish=False)`. Skipped actions can be performed later using `Dataset.update()` and `Dataset.publish()` methods.
+By default `SuperCube.create()` will create a SuperCube, upload the data to the Intelligence Server and publish it. If you just want to _create_ the SuperCube and upload the row-level data but leave it unpublished, use `SuperCube.create(auto_publish=False)`. If you want to _create_ an empty SuperCube, use `SuperCube.create(auto_upload=False, auto_publish=False)`. Skipped actions can be performed later using `SuperCube.update()` and `SuperCube.publish()` methods.
 
-When using `Dataset.add_table()`, Pandas data types are mapped to MicroStrategy data types. By default, numeric data (integers and floats) are modeled as MicroStrategy Metrics and non-numeric data are modeled as MicroStrategy Attributes. This can be problematic if your data contains columns with integers that should behave as Attributes (e.g. a row ID), or if your data contains string-based, numeric-_looking_ data which should be Metrics (e.g. formatted sales data: `["$450", "$325"]`). To control this behavior, provide a list of columns that you want to convert from one type to another.
+When using `SuperCube.add_table()`, Pandas data types are mapped to MicroStrategy data types. By default, numeric data (integers and floats) are modeled as MicroStrategy Metrics and non-numeric data are modeled as MicroStrategy Attributes. This can be problematic if your data contains columns with integers that should behave as Attributes (e.g. a row ID), or if your data contains string-based, numeric-_looking_ data which should be Metrics (e.g. formatted sales data: `["$450", "$325"]`). To control this behavior, provide a list of columns that you want to convert from one type to another.
 
 ```python
 ds.add_table(name="Stores", data_frame=stores_df, update_policy="add",
@@ -173,26 +175,26 @@ ds.add_table(name="Sales", data_frame=sales_df, update_policy="add",
              to_metric=["sales_fmt"])
 ```
 
-It is also possible to specify where the Dataset should be created by providing a folder ID in `Dataset.create(folder_id=folder_id)`.
+It is also possible to specify where the SuperCube should be created by providing a folder ID in `SuperCube.create(folder_id=folder_id)`.
 
-After creating the Dataset, you can obtain its ID using `Dataset.dataset_id`. This ID is needed for updating the data later.
+After creating the SuperCube, you can obtain its ID using `SuperCube.id`. This ID is needed for updating the data later.
 
-### Update a Dataset
+### Update a SuperCube
 
-When the source data changes and users need the latest data for analysis and reporting in MicroStrategy, **mstrio-py** allows you to update the previously created Dataset.
+When the source data changes and users need the latest data for analysis and reporting in MicroStrategy, **mstrio-py** allows you to update the previously created SuperCube.
 
 ```python
-from mstrio.application_objects.datasets.dataset import Dataset
-ds = Dataset(connection=conn, dataset_id=dataset_id)
+from mstrio.application_objects import SuperCube
+ds = SuperCube(connection=conn, id=dataset_id)
 ds.add_table(name="Stores", data_frame=stores_df, update_policy="update")
 ds.add_table(name="Sales", data_frame=sales_df, update_policy="upsert")
 ds.update()
 ```
 
-The `update_policy` parameter controls how the data in the Dataset gets updated. Currently supported update operations are `add` (inserts entirely new data), `update` (updates existing data), `upsert` (simultaneously updates existing data and inserts new data), and `replace` (truncates and replaces the data).
+The `update_policy` parameter controls how the data in the SuperCube gets updated. Currently supported update operations are `add` (inserts entirely new data), `update` (updates existing data), `upsert` (simultaneously updates existing data and inserts new data), and `replace` (truncates and replaces the data).
 
-By default `Dataset.update()` will upload the data to the Intelligence Server and publish the Dataset. If you just want
-to update the Dataset but not publish the row-level data, use `Dataset.update(auto_publish=False)`. To publish it later, use `Dataset.publish()`.
+By default `SuperCube.update()` will upload the data to the Intelligence Server and publish the SuperCube. If you just want
+to update the SuperCube but not publish the row-level data, use `SuperCube.update(auto_publish=False)`. To publish it later, use `SuperCube.publish()`.
 
 By default, the raw data is transmitted to the server in increments of 100,000 rows. For very large datasets (>1 GB) it is beneficial to increase the number of rows transmitted to the Intelligence Server with each request. Do this with the `chunksize` parameter:
 
@@ -200,9 +202,9 @@ By default, the raw data is transmitted to the server in increments of 100,000 r
 ds.update(chunksize=500000)
 ```
 
-### Certify a dataset
+### Certify a super cube
 
-Use `Dataset.certify()` to certify / decertify an existing dataset.
+Use `SuperCube.certify()` to certify / decertify an existing super cube.
 
 ### Limitations
 

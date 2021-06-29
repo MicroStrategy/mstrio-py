@@ -216,13 +216,14 @@ def update_custom_env():
   metrics = ${JSON.stringify(metrics)},
   attr_elements = ${filters.length > 0 ? JSON.stringify(filters) : 'None'}
 `;
+    const applyFiltersCode = forEndUser || !instanceId ? `${variableName}.apply_filters(${applyFiltersContent})` : '';
 
     return (`
 ${connectionCode}
 
 # Data Import
 ${variableName} = ${method}(mstr_connection, "${datasetId}"${instanceIdCode})
-${variableName}.apply_filters(${applyFiltersContent})
+${applyFiltersCode}
 ${variableName}.to_dataframe()
 ${variableName}_df = ${variableName}.dataframe
 

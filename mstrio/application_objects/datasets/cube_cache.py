@@ -1,8 +1,9 @@
-from typing import TYPE_CHECKING, List, Union
+from typing import List, TYPE_CHECKING, Union
+
+from mstrio import config
 from mstrio.api import monitors
-from mstrio.utils.helper import fetch_objects_async, exception_handler, camel_to_snake
 from mstrio.server.cluster import Cluster
-import mstrio.config as config
+from mstrio.utils.helper import camel_to_snake, exception_handler, fetch_objects_async
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection

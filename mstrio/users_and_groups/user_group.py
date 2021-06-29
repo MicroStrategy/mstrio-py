@@ -2,18 +2,20 @@ from typing import Dict, List, Optional, TYPE_CHECKING, Union
 
 from pandas import DataFrame
 
-from mstrio.access_and_security.security_role import SecurityRole
-from mstrio.api import usergroups
-import mstrio.config as config
-from mstrio.utils import helper
-from mstrio.utils.entity import Entity, ObjectTypes, set_custom_permissions, set_permission
-from mstrio.utils.helper import deprecation_warning
-from mstrio.connection import Connection
+from mstrio import config
 from mstrio.access_and_security.privilege_mode import PrivilegeMode
+from mstrio.access_and_security.security_role import SecurityRole
+from mstrio.api import objects, usergroups
+from mstrio.connection import Connection
+from mstrio.utils import helper
+from mstrio.utils.acl import TrusteeACLMixin
+from mstrio.utils.entity import Entity, ObjectTypes
+from mstrio.utils.helper import deprecation_warning
 
 if TYPE_CHECKING:
     from mstrio.access_and_security.privilege import Privilege
-    from mstrio.server.application import Application
+    from mstrio.access_and_security.security_filter import SecurityFilter
+    from mstrio.server import Application
     from mstrio.users_and_groups.user import User
 
 
@@ -37,8 +39,8 @@ def list_usergroups(connection: Connection, name_begins: Optional[str] = None,
         name_begins: Begining of a User Groups name which we want to list
         to_dictionary: If True returns dict, by default (False) returns
             User Group objects
-        limit: limit the number of elements returned. If `None`, all objects are
-            returned.
+        limit: limit the number of elements returned. If `None` (default), all
+            objects are returned.
         **filters: Available filter parameters: ['name', 'id', 'type',
             'abbreviation', 'description', 'subtype', 'date_created',
             'date_modified', 'version', 'acg', 'owner', 'ext_type']
@@ -72,8 +74,8 @@ def list_user_groups(connection: Connection, name_begins: Optional[str] = None,
         name_begins: Begining of a User Groups name which we want to list
         to_dictionary: If True returns dict, by default (False) returns
             User Group objects
-        limit: limit the number of elements returned. If `None`, all objects are
-            returned.
+        limit: limit the number of elements returned. If `None` (default), all
+            objects are returned.
         **filters: Available filter parameters: ['name', 'id', 'type',
             'abbreviation', 'description', 'subtype', 'date_created',
             'date_modified', 'version', 'acg', 'owner', 'ext_type']
@@ -87,7 +89,7 @@ def list_user_groups(connection: Connection, name_begins: Optional[str] = None,
                                       to_dictionary=to_dictionary, limit=limit, **filters)
 
 
-class UserGroup(Entity):
+class UserGroup(Entity, TrusteeACLMixin):
     """Object representation of MicroStrategy User Group object.
 
     Attributes:
@@ -112,7 +114,7 @@ class UserGroup(Entity):
         acg: Access rights (See EnumDSSXMLAccessRightFlags for possible values)
         acl: Object access control list
     """
-    _PATCH_PATH_TYPES = {"name": str, "description": str}
+
     _SUPPORTED_PATCH_OPERATIONS = {"add": "add", "remove": "remove", "change": "replace"}
     _OBJECT_TYPE = ObjectTypes.USERGROUP
     _API_GETTERS = {
@@ -125,7 +127,16 @@ class UserGroup(Entity):
         'privileges': usergroups.get_privileges,
         'settings': usergroups.get_settings
     }
-    _API_PATCH = [usergroups.update_user_group_info]
+    _PATCH_PATH_TYPES = {
+        "name": str,
+        "description": str,
+        "abbreviation": str,
+    }
+    _API_PATCH: dict = {
+        ('abbreviation'): (objects.update_object, 'partial_put'),
+        ('name', 'description', 'memberships', 'security_roles', 'members', 'privileges'):
+            (usergroups.update_user_group_info, 'patch')
+    }
 
     def __init__(self, connection: Connection, name: Optional[str] = None,
                  id: Optional[str] = None) -> None:
@@ -242,7 +253,7 @@ class UserGroup(Entity):
         successfully deleted.
 
         Args:
-            force: If True, no additional prompt will be showed before deleting
+            force: If True, no additional prompt will be shown before deleting
                 User Group.
         """
         user_input = 'N'
@@ -410,7 +421,7 @@ class UserGroup(Entity):
         """Revoke directly granted group privileges.
 
         Args:
-            force: If True, no additional prompt will be showed before revoking
+            force: If True, no additional prompt will be shown before revoking
                 all privileges from User Group
         """
         user_input = 'N'
@@ -508,84 +519,41 @@ class UserGroup(Entity):
             print("Revoked Security Role '{}' from group: '{}'".format(
                 security_role.name, self.name))
 
+    def apply_security_filter(self, security_filter: Union["SecurityFilter", str]):
+        """Apply a security filter to the user group.
+
+        Args:
+            security_filter (string or object): identifier of security filter or
+                `SecurityFilter` object which will be applied to the user group.
+        Returns:
+            True when applying was successful. False otherwise.
+        """
+        if isinstance(security_filter, str):
+            from mstrio.access_and_security.security_filter import SecurityFilter
+            security_filter = SecurityFilter.from_dict({"id": security_filter}, self.connection)
+        return security_filter.apply(self.id)
+
+    def revoke_security_filter(self, security_filter: Union["SecurityFilter", str]):
+        """Revoke a security filter from the user group.
+
+        Args:
+            security_filter (string or object): identifier of security filter or
+                `SecurityFilter` object which will be revoked from the user
+                group.
+
+        Returns:
+            True when revoking was successful. False otherwise.
+        """
+        if isinstance(security_filter, str):
+            from mstrio.access_and_security.security_filter import SecurityFilter
+            security_filter = SecurityFilter.from_dict({"id": security_filter}, self.connection)
+        return security_filter.revoke(self.id)
+
     def get_settings(self) -> Dict:
         """Get the User Group settings from the I-Server."""
         res = self._API_GETTERS.get('settings')(self.connection, self.id,
                                                 include_access=True)  # type: ignore
         return res.json()
-
-    def set_permission(self, permission: str, to_objects: Union[str, List[str]], object_type: int,
-                       application: Union[str, "Application"] = None,
-                       propagate_to_children: Optional[bool] = None):
-        """Set permission to perform actions on given object(s).
-
-        Function is used to set permission of the trustee to perform given
-        actions on the provided objects. Within one execution of the function
-        permission will be set in the same manner for each of the provided
-        objects.
-        Permission is the predefined set of rights. All objects to which the
-        rights will be given have to be of the same type which is also provided.
-
-        Args:
-            permission (str): Name of permission which defines set of rights.
-                Available values are 'View', 'Modify', 'Full Control',
-                'Denied All', 'Default All'.
-            to_objects: (str, list(str)): List of object ids on access list
-                to which the permissions will be set
-            object_type (int): Type of objects on access list
-            application (str, Application): Object or id of Application in
-                which the object is located. If not passed, Application
-                (application_id) selected in Connection object is used.
-            propagate_to_children: Flag used in the request to determine if
-                those rights will be propagated to children of the user group
-        """
-        set_permission(connection=self.connection, trustee_id=self.id, permission=permission,
-                       to_objects=to_objects, object_type=object_type, application=application,
-                       propagate_to_children=propagate_to_children)
-
-    def set_custom_permissions(self, to_objects: Union[str, List[str]], object_type: int,
-                               application: Union[str, "Application"] = None,
-                               execute: Optional[str] = None, use: Optional[str] = None,
-                               control: Optional[str] = None, delete: Optional[str] = None,
-                               write: Optional[str] = None, read: Optional[str] = None,
-                               browse: Optional[str] = None):
-        """Set custom permissions to perform actions on given object(s).
-
-        Function is used to set rights of the trustee to perform given actions
-        on the provided objects. Within one execution of the function rights
-        will be set in the same manner for each of the provided objects.
-        None of the rights is necessary, but if provided then only possible
-        values are 'grant' (to grant right), 'deny' (to deny right), 'default'
-        (to reset right) or None which is default value and means that nothing
-        will be changed for this right. All objects to which the rights will be
-        given have to be of the same type which is also provided.
-
-        Args:
-            to_objects: (str, list(str)): List of object ids on access list to
-                which the permissions will be set
-            object_type (int): Type of objects on access list
-            application (str, Application): Object or id of Application in which
-                the object is located. If not passed, Application
-                (application_id) selected in Connection object is used.
-            execute (str): value for right "Execute". Available are 'grant',
-                'deny', 'default' or None
-            use (str): value for right "Use". Available are 'grant',
-                'deny', 'default' or None
-            control (str): value for right "Control". Available are 'grant',
-                'deny', 'default' or None
-            delete (str): value for right "Delete". Available are 'grant',
-                'deny', 'default' or None
-            write  (str): value for right "Write". Available are 'grant',
-                'deny', 'default' or None
-            read (str): value for right "Read". Available are 'grant',
-                'deny', 'default' or None
-            browse (str): value for right "Browse. Available are 'grant',
-                'deny', 'default' or None
-        """
-        set_custom_permissions(connection=self.connection, trustee_id=self.id,
-                               to_objects=to_objects, object_type=object_type,
-                               application=application, execute=execute, use=use, control=control,
-                               delete=delete, write=write, read=read, browse=browse)
 
     @property
     def memberships(self):

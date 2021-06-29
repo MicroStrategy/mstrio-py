@@ -1,14 +1,15 @@
+from enum import Enum
 import getpass
 from typing import Dict, Iterable, List, Optional, TYPE_CHECKING, Union
-from enum import Enum
 
 import numpy as np
 import pandas as pd
 
+from mstrio import config
 from mstrio.api import administration, monitors, registrations
-import mstrio.config as config
-import mstrio.utils.helper as helper
 from mstrio.connection import Connection
+import mstrio.utils.helper as helper
+
 from .node import Node
 
 if TYPE_CHECKING:
@@ -44,8 +45,8 @@ class Cluster:
         self.connection = connection
 
     def list_nodes(self, application: Optional[Union[str, "Application"]] = None,
-                   node: Optional[Union[str, Node]] = None, to_dictionary: bool = False,
-                   application_id: Optional[str] = None) -> Union[List[Node], List[dict]]:
+                   node: Optional[Union[str, Node]] = None,
+                   to_dictionary: bool = False) -> Union[List[Node], List[dict]]:
         """Return a list of nodes and their properties within the cluster.
 
         Optionally filter by `application_id` or `node_name`.
@@ -54,16 +55,8 @@ class Cluster:
             application: Application ID or object
             node: Node name or object
         """
-        if application_id is not None:
-            helper.deprecation_warning(
-                "`application_id` argument",
-                "`application`",
-                "11.3.2.102",  # NOSONAR
-                False)
-        else:
-            from mstrio.server.application import Application
-            application_id = application.id if isinstance(application,
-                                                          Application) else application
+        from mstrio.server.application import Application
+        application_id = application.id if isinstance(application, Application) else application
         node_name = node.name if isinstance(node, Node) else node
         response = monitors.get_node_info(self.connection, application_id, node_name)
         node_dicts = response.json()['nodes']
@@ -281,7 +274,7 @@ class Cluster:
                 prompted.
             passwd: password for SSH operation. If not provided, the user will
                 be prompted.
-            force: if True, no additional prompt will be showed before
+            force: if True, no additional prompt will be shown before
         Raises:
             ValueError: If incorrect node/service name is provided
         """

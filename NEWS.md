@@ -1,5 +1,49 @@
 # Changelog
 
+## 11.3.2.101 - 2021/06/30
+
+### Major changes
+
+- added `Schedule` class in `mstrio.distribution_services.schedule` subpackage
+- added `ScheduleTime` class in `mstrio.distribution_services.schedule` subpackage,
+  local object used for specifying time related properties of schedule
+- added `Event` class in `mstrio.distribution_services.event` subpackage
+- changed `Subscription` class to now use `Schedule` objects
+- added datasources subpackage with `Dbms`, `DatabaseConnections`, `DatasourceInstance`,
+  `DatasourceLogin`, `DatasourceMap` classes covering database management functionality
+- added functions `list_available_dbms`, `list_datasource_connections`,
+  `list_datasource_instances`, `list_datasource_logins`, `list_datasource_mappings` to list all
+  datasource related objects
+- add `database_connections` module allowing to browse and manage database connections on the
+  environment
+- add ACL management functionality for all supporting objects by adding `list_acl`, `acl_add`,
+  `acl_remove`, `acl_alter` methods
+- added `SecurityFilter` class and function `list_security_filters` in
+  `mstrio.access_and_security.security_filter` subpackage
+- added `Qualification` class in `mstrio.access_and_security.security_filter` subpackage which is
+  an object used to represent qualification of security filter
+- added classes `PredicateBase`, `PredicateForm`, `PredicateElementList`, `PredicateFilter`,
+  `PredicateJointElementList` and `LogicOperator` in `mstrio.access_and_security.security_filter`
+  subpackage to represent predicates which can be used in creation of qualification for security
+  filter
+- added classes `ParameterBase`, `ConstantParameter`, `ObjectReferenceParameter`,
+  `ExpressionParameter`, `PromptParameter`, `DynamicDateTimeParameter` and
+  `ConstantArrayParameter` in `mstrio.access_and_security.security_filter` subpackage to represent
+  parameters used in `AttributeForm`
+
+### Bug fixes
+
+- fixed urllib3 dependency installing incompatible version
+- Login is case-insensitive now in GUI
+
+### Deprecated
+
+- `mstrio.admin.schedule` is deprecated and is superceded with `mstrio.distribution_services.schedule` subpackage
+- `schedules` replace argument `schedules_id` in `create` and `alter`, methods of `Schedule` class
+- `mstrio.distribution_services.schedule.ScheduleManager` is now deprecated,
+  use `mstrio.distribution_services.schedule.list_schedules()` instead
+- removed features deprecated in release 11.3.1.101 and aliases allowing for backward compatiblity
+
 ## 11.3.1.102 - 2021/05/28
 
 ### Major changes
@@ -26,18 +70,22 @@
 
 ### Deprecated
 
-- `id` replace parameter `report_id` in `Report` class
+- `id` replaces parameter `report_id` in `Report` class
 
 ## 11.3.1.101 - 2021/04/30
 
 ### Major changes
 
 - added `SuperCube` and `OlapCube` classes in `mstrio.application_objects.datasets` subpackage
-- added `list_all_cubes`, `load_cube`, `list_super_cubes`, `list_olap_cubes` functions that allow searching available cubes by name and construct precise objects
-- added possibility to alter `name`, `description`, `abbreviation` properties of cubes
+- added `list_all_cubes`, `load_cube`, `list_super_cubes`, `list_olap_cubes` functions that allow
+  searching available cubes by name and construct precise objects
+- added possibility to alter `name`, `description`, `abbreviation` properties of
+  cubes
 - added more `Cube` object attributes similar to other MSTR objects
-- added `user_id`, `user_full_name`, `user_initials` attributes to `Connection` class
-- added missing parameters `trust_id` and `database_auth_login` in `user.alter()` method
+- added `user_id`, `user_full_name`, `user_initials` attributes to `Connection`
+  class
+- added missing parameters `trust_id` and `database_auth_login` in
+  `user.alter()` method
 
 ### Bug fixes
 
@@ -47,11 +95,16 @@
 
 ### Deprecated
 
-- `mstrio.admin` subpackage is deprecated and its modules are moved according to new structure
-- `mstrio.cube` and `mstrio.dataset` are deprecated and are superceded by `OlapCube` and `SuperCube` from `application_objects.datasets` subpackage
-- `mstrio.report` and `mstrio.library` modules are deprecated and are moved to `application_objects` subpackage
-- `date_modified` and `id` replace parameters/attributes `cube_id` and `last_modified` in new `SuperCube` and `OlapCube` classes
-- `project_id` and `project_name` parameters/attributes are deprecated accross the package in favor of `application_id` and `application_name`
+- `mstrio.admin` subpackage is deprecated and its modules are moved according to
+  new structure
+- `mstrio.cube` and `mstrio.dataset` are deprecated and are superceded by
+  `OlapCube` and `SuperCube` from `application_objects.datasets` subpackage
+- `mstrio.report` and `mstrio.library` modules are deprecated and are moved to
+  `application_objects` subpackage
+- `date_modified` and `id` replace parameters/attributes `cube_id` and
+  `last_modified` in new `SuperCube` and `OlapCube` classes
+- `project_id` and `project_name` parameters/attributes are deprecated accross
+  the package in favor of `application_id` and `application_name`
 
 ## 11.3.0.2 - 2021/01/11
 
@@ -143,7 +196,8 @@
 - fixed issues with Cube / Report filtering during import
 - improved user experience for the GUI's login page
 - added handling of various forms of environment's base URL
-- resolved issues with importing / exporting Datasets containing special characters
+- resolved issues with importing / exporting Datasets containing special
+  characters
 
 ## 11.2.0 - 2019/12/10
 

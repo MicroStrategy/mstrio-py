@@ -6,6 +6,8 @@ from setuptools.extern.packaging import version as packaging_version
 from mstrio import (__author__, __author_email__, __description__, __license__, __title__,
                     __version__)
 
+MANIFEST_FILE = 'MANIFEST.in'
+
 if 'version.txt' in os.listdir():
     with open('version.txt') as f:
         dist_version = f.read().strip()
@@ -26,9 +28,39 @@ class NoNormalizeVersion(packaging_version.Version):
         return self._orig_version
 
 
+def find_in_file(text, file):
+    if file in os.listdir():
+        with open(file, 'r') as f:
+            manifest = f.read()
+        return text in manifest
+    else:
+        raise ValueError(f'Could not find file {file}')
+
+
 packaging_version.Version = NoNormalizeVersion
 with open('README.md') as f:
     long_description = f.read()
+
+requirements = [
+    'requests>=2.25, <2.26',
+    'urllib3>=1.26.0',
+    'requests_futures>=1.0.0, <1.1',
+    'pandas>=1.1.5, <1.3',
+    'numpy>=1.18.1, <1.21',
+    'tqdm>=4.41, <4.70',
+    'packaging>=20.9, <21',
+    'dictdiffer>=0.8.1, <0.9',
+    'stringcase>=1.2, <1.3',
+    'Jinja2>=2.11, <3.0',
+]
+
+# Add dependencies for connector-jupyter if connector-jupyter folder is added
+# Else add workstation_demo_scripts folder
+if find_in_file('graft connector-jupyter', MANIFEST_FILE):
+    requirements.extend(['jupyter_contrib_nbextensions>=0.5.1, <0.6', 'ipywidgets>=7.5.1, <8'])
+elif find_in_file('prune connector-jupyter', MANIFEST_FILE):
+    with open(MANIFEST_FILE, "a+") as f:
+        f.write('graft workstation_demo_scripts')
 
 setup(
     name=__title__,
@@ -47,21 +79,9 @@ setup(
         'Source Code': 'https://github.com/MicroStrategy/mstrio-py',
         'Quick Manual': 'https://www2.microstrategy.com/producthelp/current/MSTR-for-Jupyter/Content/mstr_for_jupyter.htm',  # noqa
     },
-    install_requires=[
-        'requests>=2.25, <2.26',
-        'urllib3>=1.26.0',
-        'requests_futures>=1.0.0, <1.1',
-        'pandas>=1.1.5, <1.3',
-        'numpy>=1.18.1, <1.21',
-        'tqdm>=4.41, <4.70',
-        'jupyter_contrib_nbextensions>=0.5.1, <0.6',
-        'ipywidgets>=7.5.1, <8',
-        'packaging>=20.9, <21',
-        'dictdiffer>=0.8.1, <0.9',
-        'stringcase>=1.2, <1.3',
-    ],
+    install_requires=requirements,
     extras_require={
-        'dev': ['flake8', 'mypy', 'yapf', 'unittest', 'nose', 'coverage', 'isort'],
+        'dev': ['flake8', 'mypy', 'yapf', 'unittest', 'nose', 'coverage', 'pytest-cov', 'isort'],
     },
     packages=find_packages(),
     include_package_data=True,

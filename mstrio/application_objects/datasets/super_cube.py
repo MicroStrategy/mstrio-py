@@ -5,14 +5,14 @@ from packaging import version
 import pandas as pd
 from tqdm.auto import tqdm
 
+from mstrio import config
 from mstrio.api import datasets, objects
 from mstrio.browsing import list_objects, SearchType
-import mstrio.config as config
+from mstrio.connection import Connection
 from mstrio.utils import helper
 from mstrio.utils.encoder import Encoder
 from mstrio.utils.entity import ObjectSubTypes
 from mstrio.utils.model import Model
-from mstrio.connection import Connection
 
 from .cube import _Cube
 
@@ -333,8 +333,8 @@ class SuperCube(_Cube):
         Args:
             name(str): Name of cube.
             description(str): Description of the cube.
-            folder_id (str, optional): ID of the shared folder that the dataset
-                should be created within. If `None`, defaults to the user's
+            folder_id (str, optional): ID of the shared folder that the super
+                cube should be created within. If `None`, defaults to the user's
                 My Reports folder.
             table_name (str, optional): Name of the table. If None (default),
                 the first table name of the original cube will be used.

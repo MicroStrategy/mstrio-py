@@ -1,11 +1,12 @@
-from typing import Optional, TYPE_CHECKING, List, Union, Dict, Any
+from typing import Any, Dict, List, Optional, TYPE_CHECKING, Union
+
 from packaging import version
 
-import mstrio.config as config
+from mstrio import config
 from mstrio.api import monitors
-from mstrio.utils import helper
 from mstrio.connection import Connection
-from mstrio.server.cluster import Cluster
+from mstrio.server import Cluster
+from mstrio.utils import helper
 
 if TYPE_CHECKING:
     from mstrio.users_and_groups.user import User
@@ -110,7 +111,7 @@ class UserConnections():
                 `list_connections()`
             users: List of User objects or usernames
             nodes: Node (server) names on which users will be disconnected
-            force: if True, no additional prompt will be showed before
+            force: if True, no additional prompt will be shown before
                 disconnecting users
             **filters: Available filter parameters: ['id', 'parent_id',
                 'username', 'user_full_name', 'project_index', 'project_id',
@@ -168,7 +169,7 @@ class UserConnections():
         """Disconnect all user connections.
 
         Args:
-            force: if True, no additional prompt will be showed before
+            force: if True, no additional prompt will be shown before
                 disconnecting all users
 
         Returns:
@@ -203,7 +204,7 @@ class UserConnections():
             res = monitors.delete_user_connections(connection=self.connection, ids=connection_ids)
             if res.status_code in [200, 207] or (res.status_code == 403
                                                  and not res.json().get('code', None)):
-                return self.__prepare_disconnect_by_id_message(
+                return self._prepare_disconnect_by_id_message(
                     statuses=res.json()['deleteUserConnectionsStatus'])
             else:
                 err_msg = f"Error disconnecting user sessions: {connection_ids}."
@@ -217,9 +218,10 @@ class UserConnections():
                 response = monitors.delete_user_connection(self.connection, connection_id,
                                                            bulk=True)
                 statuses.append({'id': connection_id, 'status': response.status_code})
-            return self.__prepare_disconnect_by_id_message(statuses=statuses)
+            return self._prepare_disconnect_by_id_message(statuses=statuses)
 
-    def __prepare_disconnect_by_id_message(self, statuses: List[dict]) -> Union[List[dict], None]:
+    @staticmethod
+    def _prepare_disconnect_by_id_message(statuses: List[dict]) -> List[dict]:
         succeeded = []
         failed = []
 

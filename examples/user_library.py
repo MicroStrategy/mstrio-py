@@ -6,10 +6,8 @@ Its basic goal is to present what can be done with this module and to
 ease its usage.
 """
 
-from mstrio.application_objects.document import Document, list_documents
-from mstrio.application_objects.dossier import Dossier, list_dossiers
-from mstrio.users_and_groups.user import User, list_users
-from mstrio.users_and_groups.user_group import UserGroup, list_user_groups
+from mstrio.application_objects import Document, list_documents, Dossier, list_dossiers
+from mstrio.users_and_groups import User, list_users, UserGroup, list_user_groups
 from mstrio.connection import Connection
 
 base_url = "https://<>/MicroStrategyLibrary/api"
