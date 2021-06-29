@@ -37,20 +37,22 @@ With mstrio-py for **system administration**, it’s easy to minimize costs by a
 Main features of **mstrio-py** allows to access MicroStrategy data:
 
 - Connect to your MicroStrategy environment using **Connection** class (see [examples][example_conn])
-- Import and filter data from a **Cube** or **Report** into a Pandas DataFrame (see [examples][example_import])
-- Export data into MicroStrategy by creating or updating **Dataset** (see [examples][example_export])
+- Import and filter data from a **OlapCube**, **SuperCube** or **Report** into a Pandas DataFrame (see [examples][example_import])
+- Export data into MicroStrategy by creating or updating **SuperCube** (see [examples][example_export])
 
 Since version **11.3.0.1**, **mstrio-py** includes also administration modules:
 
 - **Application** management module (see [examples][example_app])
 - **Server** management module (see [examples][example_server])
 - **User** and **Usergroup** management modules (see [examples][example_user])
-- **Subscription** and **Schedules** management modules (see [examples][example_subs])
+- **Schedules** management module (see [examples][example_schedules])
+- **Subscription** management module (see [examples][example_subs])
 - **Document** and **Dossiers** in **User Library** modules (see [examples][example_library])
 - **User Connections** management module
 - **Privilege** and **Security Role** management modules
 - **Cube Cache** management modules (see [examples][example_cache])
 - **Intelligent Cube** management modules (see [examples][example_olap])
+- **Datasources** subpackage for database management
 
 # Documentation
 
@@ -92,7 +94,7 @@ jupyter nbextension enable connector-jupyter --py --sys-prefix
 
 # Versioning & Changelog
 
-Current version: **11.3.1.102** (28 May 2021). Check out [**Changelog**][release_notes] to see what's new.
+Current version: **11.3.2.101** (30 June 2021). Check out [**Changelog**][release_notes] to see what's new.
 
 mstrio-py is constantly developed to support newest MicroStrategy REST APIs. Functionalities may be added to mstrio on monthly basis. It is **recommended** to always install the newest version of mstrio-py, as it will be most stable and still maintain backwards compatibility with various MicroStrategy installations, dating back to 11.1.4.
 
@@ -148,10 +150,11 @@ When features (modules, parameters, attributes, methods etc.) are marked for dep
 [deprecation]: https://github.com/MicroStrategy/mstrio-py/blob/master/deprecation.png?raw=true
 [example_conn]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/connect.py
 [example_import]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/cube_report.py
-[example_export]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/create_dataset.py
+[example_export]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/create_super_cube.py
 [example_app]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/application_mgmt.py
 [example_server]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/server_mgmt.py
 [example_user]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/user_mgmt.py
+[example_schedules]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/schedules.py
 [example_subs]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/subscription_mgmt.py
 [example_library]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/user_library.py
 [example_cache]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/cube_cache.py

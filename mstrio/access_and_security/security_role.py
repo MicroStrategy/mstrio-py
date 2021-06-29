@@ -1,11 +1,12 @@
-from typing import Optional, TYPE_CHECKING, List, Union, Dict, Any
+from typing import Any, Dict, List, Optional, TYPE_CHECKING, Union
 
-import mstrio.config as config
-from mstrio.api import security
+from pandas import DataFrame
+
+from mstrio import config
+from mstrio.api import objects, security
+from mstrio.connection import Connection
 from mstrio.utils import helper
 from mstrio.utils.entity import Entity, ObjectTypes
-from pandas import DataFrame
-from mstrio.connection import Connection
 
 if TYPE_CHECKING:
     from mstrio.access_and_security.privilege import Privilege
@@ -24,6 +25,8 @@ def list_security_roles(connection: Connection, to_dictionary: bool = False,
             by 'connection.Connection()'
         to_dictionary(bool, optional): if True, return Security Roles as
             list of dicts
+        to_dataframe(bool, optional): if True, return  Security Roles as
+            pandas DataFrame
         limit(int, optional): maximum number of security roles returned.
         **filters: Available filter parameters: ['name', 'id', 'type',
             'description', 'subtype', 'date_created', 'date_modified',
@@ -66,7 +69,10 @@ class SecurityRole(Entity):
         ('id', 'name', 'description', 'type', 'subtype', 'date_created', 'date_modified',
          'version', 'owner', 'privileges', 'projects', 'acg', 'acl'): security.get_security_role
     }
-    _API_PATCH = [security.update_security_role]
+    _API_PATCH: dict = {
+        ('abbreviation'): (objects.update_object, 'partial_put'),
+        ('name', 'description'): (security.update_security_role, 'patch')
+    }
 
     def __init__(self, connection: Connection, name: Optional[str] = None,
                  id: Optional[str] = None):

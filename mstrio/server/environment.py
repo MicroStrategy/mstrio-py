@@ -102,15 +102,16 @@ class Environment:
             **filters,
         )
 
-    def list_nodes(self, application_id: Optional[str] = None,
+    def list_nodes(self, application: Optional[Union[str, "Application"]] = None,
                    node_name: Optional[str] = None) -> List[dict]:
         """Return a list of I-Server nodes and their properties. Optionally
-        filter by `application_id` or `node_name`.
+        filter by `application` or `node_name`.
 
         Args:
-            application_id: ID of application
+            application: ID of application or Application object
             node_name: Name of node
         """
+        application_id = application.id if isinstance(application, Application) else application
         response = monitors.get_node_info(self.connection, application_id, node_name).json()
         return response['nodes']
 
@@ -134,7 +135,7 @@ class Environment:
                 msg = f"There is no application with the given name: '{application_name}'"
                 raise ValueError(msg)
 
-        nodes = self.list_nodes(application_id=application_id)
+        nodes = self.list_nodes(application=application_id)
         loaded = False
         for node in nodes:
             status = node['projects'][0]['status']
@@ -162,8 +163,8 @@ class Environment:
 
         def not_exist_warning(wrong_name):
             helper.exception_handler(
-                "Application '{}' does not exist and will be skipped.".format(
-                    wrong_name), exception_type=Warning)
+                "Application '{}' does not exist and will be skipped.".format(wrong_name),
+                exception_type=Warning)
 
         if applications:
             just_objects = [app for app in applications if isinstance(app, Application)]

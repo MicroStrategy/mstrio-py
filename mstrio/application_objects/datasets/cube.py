@@ -2,28 +2,28 @@ from concurrent.futures.thread import ThreadPoolExecutor
 from enum import Enum
 from operator import itemgetter
 from typing import List, Optional, TYPE_CHECKING, Union
-from pandas.core.frame import DataFrame
 
+from pandas.core.frame import DataFrame
 import requests
 from requests_futures.sessions import FuturesSession
 from tqdm.auto import tqdm
 
+from mstrio import config
 from mstrio.api import cubes, datasets, objects
+from mstrio.application_objects.datasets import cube_cache
 from mstrio.browsing import list_objects, SearchType
-import mstrio.config as config
+from mstrio.connection import Connection
 from mstrio.users_and_groups.user import User
 from mstrio.utils.entity import Entity, ObjectSubTypes, ObjectTypes, VldbMixin
 from mstrio.utils.filter import Filter
 from mstrio.utils.helper import exception_handler, fallback_on_timeout
 import mstrio.utils.helper as helper
 from mstrio.utils.parser import Parser
-from mstrio.connection import Connection
-from mstrio.application_objects.datasets import cube_cache
 
 if TYPE_CHECKING:
+    from .cube_cache import CubeCache
     from .olap_cube import OlapCube
     from .super_cube import SuperCube
-    from .cube_cache import CubeCache
 
 
 class CubeStates(Enum):
@@ -45,18 +45,6 @@ class CubeStates(Enum):
     UNKNOWN3 = 16384
 
     @classmethod
-    def __parse_cube_status_bin_to_list(cls, status_bin: int) -> List[str]:
-        output = []
-        # sort states from enum based on its value and return as a table of
-        # tuples (value, name)
-        states = sorted([(s.value, s.name) for s in cls], key=lambda x: -x[0])
-        for state in states:
-            if status_bin >= state[0]:
-                status_bin -= state[0]
-                output.append(state[1])
-        return output
-
-    @classmethod
     def show_status(cls, status: int) -> List[str]:
         """Show states of a cube calculated from numerical value of its state.
         Additionally list of those states' names is returned.
@@ -67,7 +55,19 @@ class CubeStates(Enum):
         Returns:
             List with names of cube's states.
         """
-        states = cls.__parse_cube_status_bin_to_list(status)
+
+        def parse_cube_status_bin_to_list(status_bin: int) -> List[str]:
+            output = []
+            # sort states from enum based on its value and return as a table of
+            # tuples (value, name)
+            states = sorted([(s.value, s.name) for s in cls], key=lambda x: -x[0])
+            for state in states:
+                if status_bin >= state[0]:
+                    status_bin -= state[0]
+                    output.append(state[1])
+            return output
+
+        states = parse_cube_status_bin_to_list(status)
         output = []
         for state in states:
             if 'UNKNOWN' in state:
@@ -215,8 +215,7 @@ class _Cube(Entity, VldbMixin):
     _OBJECT_SUBTYPE = ObjectSubTypes.NONE.value
     # TODO maybe add cube_info call and attribute to
     # TODO API_GETTERS **{('TODO'): cubes.cube_info}
-    _API_GETTERS = {**Entity._API_GETTERS}
-    _FROM_DICT_MAP = {**Entity._FROM_DICT_MAP, **{'owner': User.from_dict}}
+    _FROM_DICT_MAP = {**Entity._FROM_DICT_MAP, 'owner': User.from_dict}
     _SIZE_LIMIT = 10000000  # this sets desired chunk size in bytes
 
     def __init__(self, connection: Connection, id: Optional[str] = None,

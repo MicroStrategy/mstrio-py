@@ -7,10 +7,10 @@ import requests
 from requests_futures.sessions import FuturesSession
 from tqdm.auto import tqdm
 
+from mstrio import config
 from mstrio.api import reports
-import mstrio.config as config
-from mstrio.connection import Connection
 from mstrio.browsing import list_objects, SearchType
+from mstrio.connection import Connection
 from mstrio.users_and_groups.user import User
 from mstrio.utils.entity import Entity, ObjectTypes
 from mstrio.utils.filter import Filter
@@ -97,8 +97,7 @@ class Report(Entity):
         acl: Object access control list
     """
     _OBJECT_TYPE = ObjectTypes.REPORT_DEFINITION
-    _API_GETTERS = {**Entity._API_GETTERS}
-    _FROM_DICT_MAP = {**Entity._FROM_DICT_MAP, **{'owner': User.from_dict}}
+    _FROM_DICT_MAP = {**Entity._FROM_DICT_MAP, 'owner': User.from_dict}
     _SIZE_LIMIT = 10000000  # this sets desired chunk size in bytes
 
     def __init__(self, connection: Connection, id: str = None, instance_id: Optional[str] = None,

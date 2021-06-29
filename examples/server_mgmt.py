@@ -7,9 +7,7 @@ ease its usage.
 """
 
 from mstrio.connection import Connection
-from mstrio.server.cluster import Cluster
-from mstrio.server.environment import Environment
-from mstrio.server.application import Application
+from mstrio.server import Cluster, Environment, Application
 
 base_url = "https://<>/MicroStrategyLibrary/api"
 username = "some_username"

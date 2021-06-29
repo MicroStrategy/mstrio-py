@@ -1,5 +1,5 @@
-import mstrio.config as config
-from mstrio.utils.helper import response_handler, exception_handler
+from mstrio import config
+from mstrio.utils.helper import exception_handler, response_handler
 
 
 def list_subscriptions(connection, project_id, fields=None, offset=0, limit=-1, error_msg=None):

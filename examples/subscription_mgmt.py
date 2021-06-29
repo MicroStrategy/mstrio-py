@@ -7,11 +7,9 @@ ease its usage.
 """
 
 from mstrio.connection import Connection
-from mstrio.distribution_services.subscription.subscription import Subscription, EmailSubscription
-from mstrio.distribution_services.subscription.content import Content
-from mstrio.distribution_services.subscription.subscription_manager import SubscriptionManager,\
-    list_subscriptions
-from mstrio.distribution_services.schedule import Schedule, ScheduleManager
+from mstrio.distribution_services import (Subscription, EmailSubscription, Content,
+                                          SubscriptionManager, list_subscriptions)
+from mstrio.distribution_services import Schedule, ScheduleManager
 
 base_url = "https://<>/MicroStrategyLibrary/api"
 username = "some_username"

@@ -1,10 +1,11 @@
 from typing import List, Optional, Union
-from mstrio.utils import helper
+
+from mstrio import config
 import mstrio.api.subscriptions as subscriptions_
-from mstrio.distribution_services.subscription.subscription import Subscription
-from mstrio.distribution_services.subscription.content import Content
-import mstrio.config as config
 from mstrio.connection import Connection
+from mstrio.distribution_services.subscription.content import Content
+from mstrio.distribution_services.subscription.subscription import Subscription
+from mstrio.utils import helper
 
 
 def list_subscriptions(connection: Connection, application_id: Optional[str] = None,

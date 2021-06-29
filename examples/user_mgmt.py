@@ -7,8 +7,7 @@ ease its usage.
 """
 
 from mstrio.connection import Connection
-from mstrio.users_and_groups.user import User, list_users
-from mstrio.users_and_groups.user_group import UserGroup, list_user_groups
+from mstrio.users_and_groups import User, list_users, UserGroup, list_user_groups
 
 base_url = "https://<>/MicroStrategyLibrary/api"
 username = "some_username"

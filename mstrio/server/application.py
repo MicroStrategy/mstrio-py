@@ -5,13 +5,12 @@ from typing import List, Optional, Union
 from pandas import DataFrame, Series
 from tqdm import tqdm
 
+from mstrio import config
 from mstrio.api import monitors, projects
-import mstrio.config as config
+from mstrio.connection import Connection
 from mstrio.utils.entity import Entity, ObjectTypes
 import mstrio.utils.helper as helper
 from mstrio.utils.settings import BaseSettings
-
-from mstrio.connection import Connection
 
 
 class ProjectStatus(IntEnum):
@@ -112,13 +111,12 @@ class Application(Entity):
         status: Application
         ancestors: List of ancestor folders
     """
-    _PATCH_PATH_TYPES = {'name': str, 'description': str}
     _OBJECT_TYPE = ObjectTypes.APPLICATION
     _API_GETTERS = {
         **Entity._API_GETTERS, ('status', 'alias'): projects.get_project,
         'nodes': monitors.get_node_info
     }
-    _FROM_DICT_MAP = {'type': ObjectTypes, 'status': ProjectStatus}
+    _FROM_DICT_MAP = {**Entity._FROM_DICT_MAP, 'status': ProjectStatus}
     _STATUS_PATH = "/status"
 
     def __init__(self, connection: Connection, name: Optional[str] = None,
@@ -288,7 +286,7 @@ class Application(Entity):
         Args:
             on_nodes: Name of node, if not passed, application will be idled on
                 all of the nodes.
-            mode: One of: `IdleMode` values.)
+            mode: One of: `IdleMode` values.
         """
 
         def idle_app(node: str, mode: IdleMode):
@@ -311,8 +309,6 @@ class Application(Entity):
                         self.id, mode, node))
 
         if not isinstance(mode, IdleMode):
-            helper.deprecation_warning("String `mode` argument for `idle`", "`IdleMode` instance",
-                                       "11.3.2.102", False)  # NOSONAR
             # Previously `mode` was just a string with possible values
             # corresponding to the member names of the current IdleMode enum.
             # This attempts to convert it to avoid breaking backwards compat.

@@ -1,10 +1,10 @@
 from typing import Dict
 
+from mstrio import config
 from mstrio.api import administration
-import mstrio.config as config
+from mstrio.connection import Connection
 import mstrio.utils.helper as helper
 from mstrio.utils.settings import BaseSettings
-from mstrio.connection import Connection
 
 
 class ServerSettings(BaseSettings):

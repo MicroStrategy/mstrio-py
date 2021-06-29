@@ -5,9 +5,9 @@ class Model(object):
     """Internal utility for generating the definition of multi-table and
     single-table datasets.
 
-    Create the definition of a dataset containing one or more tables. The
-    definition includes the name and description of the dataset and the name and
-    description of each table, attribute, and metric within the dataset.
+    Create the definition of a super cube containing one or more tables. The
+    definition includes the name and description of the super cube and the name
+    and description of each table, attribute, and metric within the super cube.
 
     Attributes:
     """
@@ -36,8 +36,8 @@ class Model(object):
             name (str): Name of the data set.
             description (str, optional): Description of the data set. Must be
                 less than or equal to 250 characters.
-            folder_id (str, optional): ID of the shared folder that the dataset
-                should be created within. If `None`, defaults to the user's
+            folder_id (str, optional): ID of the shared folder that the super
+                cube should be created within. If `None`, defaults to the user's
                 My Reports folder.
         """
 
@@ -46,29 +46,27 @@ class Model(object):
         # check integrity of tables list
         self.__check_table_list(tables=tables)
 
-        # check dataset name params
+        # check super cube name params
         self.__name = name
-        self.__check_param_str(self.__name, msg="Dataset name should be a string.")
+        self.__check_param_str(self.__name, msg="SuperCube name should be a string.")
         self.__check_param_len(
             self.__name,
-            msg="Dataset name should be <= {} characters.".format(self.__MAX_DESC_LEN),
+            msg="SuperCube name should be <= {} characters.".format(self.__MAX_DESC_LEN),
             max_length=self.__MAX_DESC_LEN)
         self.__check_param_inv_chars(
-            self.__name,
-            msg="Dataset name cannot contain '{}', '{}', '{}', '{}'.".format(*self._INVALID_CHARS),
-            invalid_chars=self._INVALID_CHARS)
+            self.__name, msg="SuperCube name cannot contain '{}', '{}', '{}', '{}'.".format(
+                *self._INVALID_CHARS), invalid_chars=self._INVALID_CHARS)
 
-        # check dataset description params
+        # check super cube description params
         if description is None:
             self.__description = ""
         else:
             self.__description = description
             self.__check_param_str(self.__description,
-                                   msg="Dataset description should be a string.")
+                                   msg="SuperCube description should be a string.")
             self.__check_param_len(
-                self.__description,
-                msg="Dataset description should be <= {} characters.".format(self.__MAX_DESC_LEN),
-                max_length=self.__MAX_DESC_LEN)
+                self.__description, msg="SuperCube description should be <= {} characters.".format(
+                    self.__MAX_DESC_LEN), max_length=self.__MAX_DESC_LEN)
 
         # check folder_id param
         if folder_id is None:
@@ -174,7 +172,7 @@ class Model(object):
 
         # tables cannot be length 0
         if len(tables) == 0:
-            raise ValueError("No tables have been added to the dataset.")
+            raise ValueError("No tables have been added to the super cube.")
 
         # check integrity of each table passed to tables
         for table in tables:
@@ -201,9 +199,9 @@ class Model(object):
         # check for presence of invalid characters in data frame column names
         if not self.__ignore_special_chars and any([
                 col for col in table[self._KEY_DATA_FRAME].columns
-                for inv in self._INVALID_CHARS if inv in col]):
-            msg = "Column names cannot contain '{}', '{}', '{}', '{}'".format(
-                *self._INVALID_CHARS)
+                for inv in self._INVALID_CHARS if inv in col
+        ]):
+            msg = "Column names cannot contain '{}', '{}', '{}', '{}'".format(*self._INVALID_CHARS)
             raise ValueError(msg)
 
     @staticmethod

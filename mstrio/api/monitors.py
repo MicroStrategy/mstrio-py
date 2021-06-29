@@ -495,3 +495,62 @@ def get_cube_cache_manipulation_status(connection: "Connection", manipulation_id
     if not response.ok:
         response_handler(response, "Error getting cube cache manipulation status.", throw_error)
     return response
+
+
+def get_database_connections(connection: "Connection", nodes_names: str, error_msg: str = None):
+    """Get database connections information on specific intelligence
+        server node.
+
+    Args:
+        connection(object): MicroStrategy connection object returned by
+            `connection.Connection()`.
+        nodes_names (string): Node names split by ",".
+        error_msg (string, optional): Custom Error Message for Error Handling
+    Returns:
+        HTTP response object returned by the MicroStrategy REST server.
+    """
+    response = connection.session.get(
+        url=f"{connection.base_url}/api/monitors/dbConnectionInstances",
+        params={'clusterNodes': nodes_names},
+    )
+    if not response.ok:
+        if error_msg is None:
+            error_msg = f"Error getting database connections for '{nodes_names}' cluster node."
+        response_handler(response, error_msg)
+    return response
+
+
+def delete_database_connection(connection: "Connection", connection_id: str,
+                               error_msg: str = None):
+    """Disconnect a database connection on specific intelligence server node.
+
+    Args:
+        connection(object): MicroStrategy connection object returned by
+            `connection.Connection()`.
+        connection_id (str, optional): Database Connection Id
+        error_msg (string, optional): Custom Error Message for Error Handling
+    """
+    response = connection.session.delete(
+        url=f"{connection.base_url}/api/monitors/dbConnectionInstances/{connection_id}")
+    if not response.ok:
+        if error_msg is None:
+            error_msg = f"Error deleting database connections '{connection_id}'."
+        response_handler(response, error_msg)
+    return response
+
+
+def delete_database_connection_async(future_session: "FuturesSession", connection: "Connection",
+                                     connection_id: str):
+    """Disconnect a database connection on specific intelligence server node.
+
+    Args:
+        future_session: Future Session object to call MicroStrategy REST
+            Server asynchronously
+        connection(object): MicroStrategy connection object returned by
+            `connection.Connection()`.
+        connection_id (str, optional): Database Connection Id
+        error_msg (string, optional): Custom Error Message for Error Handling
+    """
+    url = f"{connection.base_url}/api/monitors/dbConnectionInstances/{connection_id}"
+
+    return future_session.delete(url=url)

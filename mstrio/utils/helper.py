@@ -1,6 +1,7 @@
 from concurrent.futures import ThreadPoolExecutor
 from enum import Enum
 from functools import wraps
+import inspect
 from json.decoder import JSONDecodeError
 from math import floor
 import os
@@ -13,8 +14,8 @@ from requests_futures.sessions import FuturesSession
 import stringcase
 
 from mstrio import __version__ as mstrio_version
-from mstrio.api.exceptions import MstrTimeoutError, VersionException, PromptedContentError
-import mstrio.config as config
+from mstrio import config
+from mstrio.api.exceptions import MstrTimeoutError, PromptedContentError, VersionException
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
@@ -93,10 +94,15 @@ def version_cut(version):
 
 
 def camel_to_snake(response: Union[dict, list]) -> Union[dict, List[dict]]:
-    """Converts dictionary keys from camelCase to snake_case."""
+    """Converts dictionary keys from camelCase to snake_case.
+       It works recursively for dicts in dicts."""
 
     def convert_dict(dictionary):
-        return {stringcase.snakecase(key): value for key, value in dictionary.items()}
+        return {
+            stringcase.snakecase(key):
+            value if not isinstance(value, dict) else convert_dict(value)
+            for key, value in dictionary.items()
+        }
 
     if type(response) == list:
         return [convert_dict(dictionary) for dictionary in response if type(dictionary) == dict]
@@ -107,10 +113,15 @@ def camel_to_snake(response: Union[dict, list]) -> Union[dict, List[dict]]:
 
 
 def snake_to_camel(response: Union[dict, list]) -> Union[dict, List[dict]]:
-    """Converts dictionary keys from snake_case to camelCase."""
+    """Converts dictionary keys from snake_case to camelCase.
+       It works recursively for dicts in dicts."""
 
     def convert_dict(dictionary):
-        return {stringcase.camelcase(key): value for key, value in dictionary.items()}
+        return {
+            stringcase.camelcase(key):
+            value if not isinstance(value, dict) else convert_dict(value)
+            for key, value in dictionary.items()
+        }
 
     if type(response) == list:
         return [convert_dict(dictionary) for dictionary in response if type(dictionary) == dict]
@@ -156,6 +167,12 @@ def response_handler(response, msg, throw_error=True, verbose=True, whitelist=[]
     """
     try:
         res = response.json()
+
+        if res.get('errors') is not None:
+            res = res.get('errors')
+            if len(res) > 0:
+                res = res[0]
+
         server_code = res.get('code')
         server_msg = res.get('message')
         ticket_id = res.get('ticketId')
@@ -438,10 +455,13 @@ def fetch_objects(connection: "Connection", api: Callable, limit: Optional[int],
         arg: kwargs.get(arg) for arg in args if arg not in ['connection', 'error_msg']
     }
     response = api(connection=connection, error_msg=error_msg, **param_value_dict)
-    objects = _prepare_objects(response.json(), filters, dict_unpack_value)
-    if limit:
-        objects = objects[:limit]
-    return objects
+    if response.ok:
+        objects = _prepare_objects(response.json(), filters, dict_unpack_value)
+        if limit:
+            objects = objects[:limit]
+        return objects
+    else:
+        return []
 
 
 def sort_object_properties(dictionary: dict) -> int:
@@ -485,7 +505,7 @@ def auto_match_args(func: Callable, obj: Any, exclude: list = [],
     for arg in args:
         if arg in exclude:
             continue
-        elif arg == 'type' and hasattr(obj, '_OBJECT_TYPE'):
+        elif arg == 'type' and extract_enum_val(getattr(obj, '_OBJECT_TYPE', None)) is not None:
             val = obj._OBJECT_TYPE.value
         else:
             val = obj.__dict__.get(arg, obj.__dict__.get("_" + arg, default_dict.get(arg)))
@@ -500,8 +520,30 @@ def auto_match_args(func: Callable, obj: Any, exclude: list = [],
     return param_value_dict
 
 
-def __validate_single_param_value(value, param_name, data_type, max_val, min_val,
-                                  regex, valid_example, inv_val, special_values=[]):
+def flatten2list(object) -> list:
+    """Flatten to list nested objects of type list, tuple, sets."""
+    gather = []
+    for item in object:
+        if isinstance(item, (list, tuple, set)):
+            gather.extend(flatten2list(item))
+        else:
+            gather.append(item)
+    return gather
+
+
+def dict_compare(d1, d2):
+    d1_keys = set(d1.keys())
+    d2_keys = set(d2.keys())
+    intersect_keys = d1_keys.intersection(d2_keys)
+    added = d1_keys - d2_keys
+    removed = d2_keys - d1_keys
+    modified = {o: (d1[o], d2[o]) for o in intersect_keys if d1[o] != d2[o]}
+    same = set(o for o in intersect_keys if d1[o] == d2[o])
+    return added, removed, modified, same
+
+
+def __validate_single_param_value(value, param_name, data_type, max_val, min_val, regex,
+                                  valid_example, inv_val, special_values=[]):
     if value in special_values:
         return True
 
@@ -519,7 +561,7 @@ def __validate_single_param_value(value, param_name, data_type, max_val, min_val
         exception_handler(msg, inv_val)
         return False
     elif (all(cond is None for cond in [max_val, min_val, regex]) and special_values
-            and str not in data_type):
+          and str not in data_type):
         msg = f"'{param_name}' has to be one of {special_values}"
         exception_handler(msg, inv_val)
         return False
@@ -548,12 +590,13 @@ def validate_param_value(param_name, param_val, data_type, max_val=None, min_val
         return False
     if type(param_val) == list:
         return all([
-            __validate_single_param_value(value, param_name, data_type, max_val, min_val,
-                                          regex, valid_example, inv_val, special_values)
-            for value in param_val])
+            __validate_single_param_value(value, param_name, data_type, max_val, min_val, regex,
+                                          valid_example, inv_val, special_values)
+            for value in param_val
+        ])
 
-    return __validate_single_param_value(param_val, param_name, data_type, max_val, min_val,
-                                         regex, valid_example, inv_val, special_values)
+    return __validate_single_param_value(param_val, param_name, data_type, max_val, min_val, regex,
+                                         valid_example, inv_val, special_values)
 
 
 def extract_all_dict_values(list_of_dicts: List[Dict]) -> List[Any]:
@@ -590,8 +633,8 @@ def list_folders(connection, name: Optional[str] = None, to_dataframe: bool = Fa
             If `None`, all folders will be retrieved.
         to_dataframe (bool, optional): determine if result of retrieval will
             be returned as a list of dicts or DataFrame.
-        limit: limit the number of elements returned. If `None`, all objects are
-            returned.
+        limit: limit the number of elements returned. If `None` (default), all
+            objects are returned.
         **filters: Available filter parameters: ['id', 'name', 'subtype',
             'type','date_created', 'date_modified', 'version', 'acg', 'owner']
 
@@ -711,22 +754,54 @@ def delete_folder(connection, id: Optional[str] = None, name: Optional[str] = No
                                  error_msg=error_msg)
 
 
+def extract_enum_val(obj, enum: Enum = Enum) -> str:
+    """Safely extract value from enum or str."""
+    if isinstance(obj, enum):
+        return obj.value
+    elif isinstance(obj, str) or obj is None:
+        return obj
+    else:
+        raise TypeError(f"Incorrect type. Value should be of type: {enum}")
+
+
+def maybe_unpack(val, camel_case=True):
+    """Unpack Enums, Dictable obj, list of Enums"""
+    if isinstance(val, Enum):
+        return val.value
+    elif isinstance(val, Dictable):
+        return val.to_dict(camel_case)
+    elif isinstance(val, list):
+        if all(isinstance(v, Enum) for v in val):
+            return [v.value for v in val]
+        else:
+            return val
+    else:
+        return val
+
+
 class Dictable:
     _FROM_DICT_MAP: Dict[str, Callable] = {}  # map attributes to Enums and components
-    _CONNECTION = None
 
     def to_dict(self, camel_case=True):
 
-        def maybe_unpack(val):
-            if isinstance(val, Enum):
-                return val.value
-            elif isinstance(val, Dictable):
-                return val.to_dict(camel_case)
-            else:
-                return val
+        hidden_keys = [
+            '_fetched_attributes', '_altered_properties', '_connection', 'connection', '_type'
+        ]
+        cleaned_dict = self.__dict__.copy()
+        properties = set(
+            (elem[0]
+             for elem in inspect.getmembers(self.__class__, lambda x: isinstance(x, property))))
+        for prop in properties:
+            to_be_deleted = '_' + prop
+            cleaned_dict[prop] = cleaned_dict.pop(to_be_deleted, None)
+        result = {
+            key: maybe_unpack(val, camel_case)
+            for key, val in cleaned_dict.items()
+            if key not in hidden_keys
+        }
 
-        result = {key: maybe_unpack(val) for key, val in self.__dict__.items()}
         result = delete_none_values(result)
+        result = {key: result[key] for key in sorted(result, key=sort_object_properties)}
         return snake_to_camel(result) if camel_case else result
 
     @classmethod
@@ -734,12 +809,19 @@ class Dictable:
                   to_snake_case=True):
         type_mapping = cls._FROM_DICT_MAP
         object_source = camel_to_snake(source) if to_snake_case else source
+        object_source["connection"] = connection
 
         def map_val(val, key):
 
             def constructor():
-                return type_mapping[key](val) if isinstance(
-                    type_mapping[key], Enum) else type_mapping[key](val, connection)
+                if isinstance(type_mapping[key], type(Enum)):
+                    return type_mapping[key](val)
+                elif isinstance(type_mapping[key], list):
+                    if (all(isinstance(v, type(Enum)) for v in type_mapping[key])
+                            and val is not None):
+                        return [type_mapping[key][0](v) for v in val]
+                else:
+                    return type_mapping[key](val, connection)
 
             return val if key not in type_mapping else constructor()
 
@@ -749,5 +831,4 @@ class Dictable:
             if key in cls.__init__.__code__.co_varnames
         }
         obj = cls(**args)  # type: ignore
-        obj._CONNECTION = connection
         return obj

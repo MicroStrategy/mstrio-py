@@ -2,9 +2,10 @@ from enum import Enum
 from pprint import pformat, pprint
 from typing import List, Optional, Union
 
+from mstrio import config
 from mstrio.api import subscriptions
-import mstrio.config as config
 from mstrio.connection import Connection
+from mstrio.distribution_services.schedule import Schedule
 from mstrio.distribution_services.subscription.content import Content
 from mstrio.distribution_services.subscription.delivery import (CacheType, ClientType, Delivery,
                                                                 Orientation, SendContentAs,
@@ -59,7 +60,8 @@ class Subscription:
         send_now: bool = False,
         owner_id: Optional[str] = None,
         schedules_ids: Union[str, List[str]] = None,
-        contents: Optional[Content] = None,
+        schedules: Union[str, List[str], Schedule, List[Schedule]] = None,
+        contents: Content = None,
         recipients: Union[List[str], List[dict]] = None,
         delivery: Union[Delivery, dict] = None,
         delivery_mode: Optional[str] = None,
@@ -107,7 +109,9 @@ class Subscription:
                 immediately,
             owner_id(str): ID of the subscription owner, by default logged in
                 user ID,
-            schedules_ids (Union[str, List[str]]) = Schedules IDs,
+            schedules_ids (Union[str, List[str]]): Schedules IDs,
+            schedules (Union[str, List[str], Schedule, List[Schedule]]):
+                Schedules IDs or Schedule objects,
             contents (Content): The content of the subscription.
             recipients (Union[List[str], List[dict]]): list of recipients IDs
                 or dicts,
@@ -172,13 +176,9 @@ class Subscription:
                     return value if value != current_val and value is not None else current_val
 
         # Schedules logic
-        schedules_ids = schedules_ids if isinstance(schedules_ids, list) else [schedules_ids]
-        schedules_ids = [s for s in schedules_ids if s is not None]
-        schedules = [{
-            'id': sch_id
-        } for sch_id in schedules_ids] if schedules_ids else [{
-            'id': trig['id']
-        } for trig in self.schedules]
+        schedules = self.__validate_schedules(schedules_ids=schedules_ids, schedules=schedules)
+        if not schedules:
+            schedules = [{'id': sch.id} for sch in self.schedules]
 
         # Content logic
         if contents:
@@ -239,10 +239,46 @@ class Subscription:
             response = response.json()
             response = helper.camel_to_snake(response)
             for key, value in response.items():
+                if key == 'schedules':
+                    value = [Schedule.from_dict(v, self.connection) for v in value]
                 self.__setattr__(key, value)
             if config.verbose:
                 print(custom_msg if custom_msg else "Updated subscription '{}' with ID: {}."
                       .format(self.name, self.id))
+
+    @staticmethod
+    def __validate_schedules(schedules_ids: Union[str, List[str]] = None,
+                             schedules: Union[str, List[str], Schedule, List[Schedule]] = None):
+        # Schedules logic
+        # TODO change logic when 'schedules_ids' will be fully removed
+        tmp_schedules = []
+        if schedules and schedules_ids:
+            msg = ("Parameter 'schedules_ids' is deprecated and will be replaced with 'schedules'."
+                   " For know, if both are provided, 'schedules' are prioritised.")
+            print(msg)
+        if schedules:
+            schedules = schedules if isinstance(schedules, list) else [schedules]
+            schedules = [s for s in schedules if s is not None]
+            for schedule in schedules:
+                if isinstance(schedule, Schedule):
+                    sch_id = schedule.id
+                elif isinstance(schedule, str):
+                    sch_id = schedule
+                tmp_schedules.append({'id': sch_id})
+        elif schedules_ids:
+            helper.deprecation_warning(
+                "'schedules_ids'",
+                new="'schedules'",
+                version='11.3.3.101',  # NOSONAR
+                module=False)
+            schedules_ids = schedules_ids if isinstance(schedules_ids, list) else [schedules_ids]
+            schedules_ids = [s for s in schedules_ids if s is not None]
+            if any([not isinstance(s, str) for s in schedules_ids]):
+                msg = ("schedules_ids should be strings.")
+                helper.exception_handler(msg)
+            tmp_schedules = [{'id': sch_id} for sch_id in schedules_ids]
+
+        return tmp_schedules
 
     def list_properties(self):
         """Lists all properties of subscription."""
@@ -263,7 +299,7 @@ class Subscription:
         """Delete a subscription. Returns True if deletion was successful.
 
         Args:
-            force: If True, no additional prompt will be showed before deleting
+            force: If True, no additional prompt will be shown before deleting
         """
         user_input = 'N'
         if not force:
@@ -480,6 +516,10 @@ class Subscription:
                 self.__setattr__(key, value)
                 if key == "delivery":
                     self._delivery = Delivery.from_dict(value)
+                elif key == 'schedules':
+                    self.schedules = [
+                        Schedule.from_dict(sch, connection=self.connection) for sch in value
+                    ]
 
     @classmethod
     def from_dict(cls, connection, dictionary, application_id=None, application_name=None):
@@ -499,6 +539,10 @@ class Subscription:
             obj.__setattr__(key, value)
             if key == 'delivery':
                 obj._delivery = Delivery.from_dict(value)
+            elif key == 'schedules':
+                obj.schedules = [
+                    Schedule.from_dict(sch, connection=obj.connection) for sch in value
+                ]
         return obj
 
     @classmethod
@@ -514,7 +558,8 @@ class Subscription:
         send_now: Optional[bool] = None,
         owner_id: Optional[str] = None,
         schedules_ids: Union[str, List[str]] = None,
-        contents: Optional[Content] = None,
+        schedules: Union[str, List[str], Schedule, List[Schedule]] = None,
+        contents: Content = None,
         recipients: Union[List[dict], List[str]] = None,
         delivery: Union[Delivery, dict] = None,
         delivery_mode: str = 'EMAIL',
@@ -561,7 +606,9 @@ class Subscription:
                 immediately,
             owner_id(str): ID of the subscription owner, by default logged in
                 user ID,
-            schedules_ids (Union[str, List[str]]) = Schedules IDs,
+            schedules_ids (Union[str, List[str]]): Schedules IDs,
+            schedules (Union[str, List[str], Schedule, List[Schedule]]):
+                Schedules IDs or Schedule objects,
             contents (Content): The content settings.
             recipients (List[dict],List[str]): list of recipients IDs or dicts,
             delivery(Union[Delivery,dict]): delivery object or dict
@@ -611,8 +658,12 @@ class Subscription:
         application_id = Subscription._app_id_check(connection, application_id, application_name)
 
         # Schedules logic
-        schedules_ids = schedules_ids if isinstance(schedules_ids, list) else [schedules_ids]
-        schedules = [{'id': sch_id} for sch_id in schedules_ids]
+        # TODO change logic when 'schedules_ids' will be fully removed
+        if schedules_ids is None and schedules is None:
+            msg = ("Please specify 'schedules' parameter.")
+            helper.exception_handler(msg)
+
+        schedules = cls.__validate_schedules(schedules_ids=schedules_ids, schedules=schedules)
 
         # Content logic
         contents = contents if isinstance(contents, list) else [contents]
@@ -642,7 +693,6 @@ class Subscription:
         # Recipients logic
         recipients = Subscription._validate_recipients(connection, contents, recipients,
                                                        application_id, delivery['mode'])
-        schedules_ids = schedules_ids if isinstance(schedules_ids, list) else [schedules_ids]
 
         # Create body
         body = {
@@ -753,19 +803,18 @@ class EmailSubscription(Subscription):
             super().__init__(connection, subscription_id, application_id, application_name)
 
     @classmethod
-    def create(
-            cls, connection: Connection, name: str, schedules_ids: Union[str, List[str]],
-            recipients: Union[List[str], List[dict]], application_id: Optional[str] = None,
-            application_name: Optional[str] = None, allow_delivery_changes: Optional[bool] = None,
-            allow_personalization_changes: Optional[bool] = None, allow_unsubscribe: bool = True,
-            send_now: Optional[bool] = None, owner_id: Optional[str] = None,
-            contents: Optional[Content] = None, delivery_expiration_date: Optional[str] = None,
-            contact_security: Optional[bool] = None, email_subject: Optional[str] = None,
-            email_message: Optional[str] = None, filename: Optional[str] = None,
-            compress: bool = False, space_delimiter: Optional[str] = None,
-            email_send_content_as: str = 'data', overwrite_older_version: bool = False,
-            zip_filename: Optional[str] = None, zip_password_protect: Optional[bool] = None,
-            zip_password: Optional[str] = None):
+    def create(cls, connection: Connection, name: str, recipients: Union[List[str], List[dict]],
+               application_id: str = None, schedules_ids: Union[str, List[str]] = None,
+               schedules: Union[str, List[str], Schedule,
+                                List[Schedule]] = None, application_name: str = None,
+               allow_delivery_changes: bool = None, allow_personalization_changes: bool = None,
+               allow_unsubscribe: bool = True, send_now: bool = None, owner_id: str = None,
+               contents: Content = None, delivery_expiration_date: str = None,
+               contact_security: bool = None, email_subject: str = None, email_message: str = None,
+               filename: str = None, compress: bool = False, space_delimiter: str = None,
+               email_send_content_as: str = 'data', overwrite_older_version: bool = False,
+               zip_filename: str = None, zip_password_protect: bool = None,
+               zip_password: str = None):
         """Creates a new email subscription.
 
         Args:
@@ -783,7 +832,9 @@ class EmailSubscription(Subscription):
                 immediately,
             owner_id(str): ID of the subscription owner, by default logged in
                 user ID,
-            schedules_ids(Union[str, List[str]]) = Schedules IDs,
+            schedules_ids (Union[str, List[str]]): Schedules IDs,
+            schedules (Union[str, List[str], Schedule, List[Schedule]]):
+                Schedules IDs or Schedule objects,
             contents(Content): The content settings.
             recipients(Union[List[str], List[dict]]): list of recipients IDs
                 or dicts,
@@ -821,6 +872,7 @@ class EmailSubscription(Subscription):
             send_now=send_now,
             owner_id=owner_id,
             schedules_ids=schedules_ids,
+            schedules=schedules,
             contents=contents,
             recipients=recipients,
             delivery_mode='EMAIL',

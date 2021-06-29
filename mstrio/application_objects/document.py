@@ -27,8 +27,8 @@ def list_documents(connection: Connection, name: Optional[str] = None, to_dictio
             list of dicts
         to_dataframe(bool, optional): if True, return Documents as
             pandas DataFrame
-        limit: limit the number of elements returned. If `None`, all objects are
-            returned.
+        limit: limit the number of elements returned. If `None` (default), all
+            objects are returned.
         **filters: Available filter parameters: ['name', 'id', 'type',
             'subtype', 'date_created', 'date_modified', 'version', 'acg',
             'owner', 'ext_type', 'view_media', 'certified_info', 'project_id']
@@ -61,8 +61,8 @@ def list_documents_across_projects(connection: Connection, name: Optional[str] =
             list of dicts
         to_dataframe(bool, optional): if True, return Documents as
             pandas DataFrame
-        limit: limit the number of elements returned. If `None`, all objects are
-            returned.
+        limit: limit the number of elements returned. If `None` (default), all
+            objects are returned.
         **filters: Available filter parameters: ['name', 'id', 'type',
             'subtype', 'date_created', 'date_modified', 'version', 'acg',
             'owner', 'ext_type', 'view_media', 'certified_info', 'project_id']
