@@ -8,7 +8,7 @@ ease its usage.
 """
 
 from mstrio.connection import Connection
-from mstrio.application_objects import OlapCube, Report
+from mstrio.application_objects import Report, OlapCube
 
 # get connection to an environment
 base_url = "https://<>/MicroStrategyLibrary/api"
@@ -21,7 +21,7 @@ cube_id = "some_cube_id"
 report_id = "some_report_id"
 
 # get cube based on its id and store it in data frame
-my_cube = OlapCube(connection=connection, cube_id=cube_id)
+my_cube = OlapCube(connection=connection, id=cube_id)
 my_cube_df = my_cube.to_dataframe
 
 # get report based on its id and store it in data frame
