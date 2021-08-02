@@ -37,6 +37,8 @@ With mstrio-py for **system administration**, it’s easy to minimize costs by a
 Main features of **mstrio-py** allows to access MicroStrategy data:
 
 - Connect to your MicroStrategy environment using **Connection** class (see [examples][example_conn])
+
+  **Note**: to log into Library and use mstrio-py user needs to have UseLibrary privilege.
 - Import and filter data from a **OlapCube**, **SuperCube** or **Report** into a Pandas DataFrame (see [examples][example_import])
 - Export data into MicroStrategy by creating or updating **SuperCube** (see [examples][example_export])
 
@@ -53,6 +55,9 @@ Since version **11.3.0.1**, **mstrio-py** includes also administration modules:
 - **Cube Cache** management modules (see [examples][example_cache])
 - **Intelligent Cube** management modules (see [examples][example_olap])
 - **Datasources** subpackage for database management
+
+Known limitations in 11.3.2.101:
+- Method *trigger* in Event class is work in progress and might not work correctly yet.
 
 # Documentation
 
