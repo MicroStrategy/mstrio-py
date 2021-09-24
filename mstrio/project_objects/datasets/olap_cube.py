@@ -2,7 +2,7 @@ from typing import List, Optional, Union
 
 import pandas as pd
 
-from mstrio.browsing import list_objects, SearchType
+from mstrio.object_management.search_operations import full_search, SearchPattern
 from mstrio.utils.entity import ObjectSubTypes, ObjectTypes
 from mstrio.api import cubes
 from mstrio.utils.helper import exception_handler
@@ -40,10 +40,10 @@ def list_olap_cubes(connection: Connection, name_begins: Optional[str] = None,
     Returns:
         list with OlapCubes or list of dictionaries
     """
-    connection._validate_application_selected()
-    objects_ = list_objects(connection, ObjectSubTypes.OLAP_CUBE, connection.application_id,
-                            name=name_begins, pattern=SearchType.BEGIN_WITH, limit=limit,
-                            **filters)
+    connection._validate_project_selected()
+    objects_ = full_search(connection, object_types=ObjectSubTypes.OLAP_CUBE,
+                           project=connection.project_id, name=name_begins,
+                           pattern=SearchPattern.BEGIN_WITH, limit=limit, **filters)
     if to_dictionary:
         return objects_
     else:
@@ -65,7 +65,6 @@ class OlapCube(_Cube):
         size(integer): size of cube
         status(integer): status of cube
         path(string): full path of the cube on environment
-        last_modified(string): time when was last modification of cube
         owner_id(string): ID of cube's owner
         attributes(list): all attributes of cube
         metrics(list): all metrics of cube
@@ -180,9 +179,12 @@ class OlapCube(_Cube):
         """Helper function to get available objects based on their type. It
         should be used to get only available attribute, metrics or attribute
         forms."""
-        connection._validate_application_selected()
-        avl_objects = list_objects(connection=connection, object_type=object_type,
-                                   application_id=connection.application_id)
+        connection._validate_project_selected()
+        avl_objects = full_search(
+            connection=connection,
+            object_types=object_type,
+            project=connection.project_id
+        )
         for a in avl_objects:
             new_type = None
             if a['type'] == ObjectTypes.METRIC.value:

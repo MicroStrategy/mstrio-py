@@ -4,77 +4,58 @@ from mstrio import config
 import mstrio.api.subscriptions as subscriptions_
 from mstrio.connection import Connection
 from mstrio.distribution_services.subscription.content import Content
-from mstrio.distribution_services.subscription.subscription import Subscription
+from mstrio.distribution_services.subscription.subscription import list_subscriptions, Subscription
 from mstrio.utils import helper
-
-
-def list_subscriptions(connection: Connection, application_id: Optional[str] = None,
-                       application_name: Optional[str] = None, to_dictionary: bool = False,
-                       **filters) -> Union[List[Subscription], List[dict]]:
-    """Lists all subscriptions filtered by passed params.
-    Specify either `application_id` or `application_name`.
-    When `application_id` is provided (not `None`), `application_name` is
-    omitted.
-
-    Args:
-        connection(object): MicroStrategy connection object
-        application_id: Application ID
-        application_name: Application name
-        to_dictionary: If True returns a list of subscription dicts,
-            otherwise returns a list of subscription objects
-        **filters: Available filter parameters: ['id', 'name', 'editable',
-            'allowDeliveryChanges', 'allowPersonalizationChanges',
-            'allowUnsubscribe', 'dateCreated', 'dateModified', 'owner',
-            'schedules', 'contents', 'recipients', 'delivery']
-    """
-    # TODO add limit parameter
-    # TODO move to subscription module
-    application_id = Subscription._app_id_check(connection, application_id, application_name)
-    response = subscriptions_.list_subscriptions(connection, application_id)
-    subscription_list = helper.filter_list_of_dicts(response.json()['subscriptions'], **filters)
-
-    if to_dictionary:
-        return subscription_list
-    else:
-        subscription_obj_list = []
-        for subscription in subscription_list:
-            sub = Subscription.from_dict(connection=connection, application_id=application_id,
-                                         dictionary=subscription)
-            subscription_obj_list.append(sub)
-        return subscription_obj_list
 
 
 class SubscriptionManager:
     """Manage subscriptions."""
 
-    def __init__(self, connection: Connection, application_id: Optional[str] = None,
+    def __init__(self, connection: Connection, project_id: Optional[str] = None,
+                 project_name: Optional[str] = None, application_id: Optional[str] = None,
                  application_name: Optional[str] = None):
         """Initialize the SubscriptionManager object.
-        Specify either `application_id` or `application_name`.
-        When `application_id` is provided (not `None`), `application_name` is
+        Specify either `project_id` or `project_name`.
+        When `project_id` is provided (not `None`), `project_name` is
         omitted.
 
         Args:
             connection: MicroStrategy connection object returned
                 by `connection.Connection()`
-            application_id: Application ID
+            project_id: Project ID
+            project_name: Project name
+            application_id: deprecated. Use project_id instead.
+            application_name: deprecated. Use project_name instead.
         """
+        if application_id or application_name:
+            helper.deprecation_warning(
+                '`application_name` and `application_id`',
+                '`project_name` and `project_id`',
+                '11.3.4.101',  # NOSONAR
+                False)
+            project_id = project_id or application_id
+            project_name = project_name or application_name
         self.connection = connection
-        self.application_id = Subscription._app_id_check(connection, application_id,
-                                                         application_name)
+        self.project_id = Subscription._project_id_check(connection, project_id, project_name)
 
-    def list_subscriptions(self, to_dictionary: bool = False, **filters):
-        """Lists all subscriptions filtered by passed params.
+    def list_subscriptions(self, to_dictionary: bool = False, limit: Optional[int] = None,
+                           **filters):
+        """Get all subscriptions as list of Subscription objects or
+        dictionaries.
+
+        Optionally filter the subscriptions by specifying filters.
 
         Args:
             to_dictionary: If True returns a list of subscription dicts,
                 otherwise returns a list of subscription objects
+            limit: limit the number of elements returned. If `None` (default),
+                all objects are returned.
             **filters: Available filter parameters: ['id', 'name', 'editable',
                 'allowDeliveryChanges', 'allowPersonalizationChanges',
                 'allowUnsubscribe', 'dateCreated', 'dateModified', 'owner',
                 'schedules', 'contents', 'recipients', 'delivery']
         """
-        return list_subscriptions(connection=self.connection, application_id=self.application_id,
+        return list_subscriptions(connection=self.connection, project_id=self.project_id,
                                   to_dictionary=to_dictionary, **filters)
 
     def delete(self, subscriptions: Union[List[Subscription], List[str]], force=False) -> bool:
@@ -92,7 +73,7 @@ class SubscriptionManager:
             for subscription in subscriptions:
                 subscription = subscription if isinstance(
                     subscription, Subscription) else Subscription(self.connection, subscription,
-                                                                  self.application_id)
+                                                                  self.project_id)
                 temp_subs.append(subscription)
             subscriptions = temp_subs
             succeeded = 0
@@ -112,7 +93,7 @@ class SubscriptionManager:
                     response = subscriptions_.remove_subscription(
                         self.connection,
                         subscription.id,
-                        self.application_id,
+                        self.project_id,
                         error_msg="Subscription '{}' with id '{}'' could not be deleted.".format(
                             subscription.name, subscription.id),
                         exception_type=UserWarning,
@@ -138,8 +119,8 @@ class SubscriptionManager:
             for subscription in subscriptions:
                 subscription = subscription if isinstance(
                     subscription, Subscription) else Subscription(self.connection, subscription,
-                                                                  self.application_id)
-                if subscription.delivery['mode'] == 'EMAIL':
+                                                                  self.project_id)
+                if subscription.delivery.mode == 'EMAIL':
                     subscription.execute()
                 else:
                     msg = (f"Subscription '{subscription.name}' with ID '{subscription.id}' "
@@ -158,7 +139,7 @@ class SubscriptionManager:
         c_id = content['id'] if isinstance(content, dict) else content.id
         c_type = content['type'] if isinstance(content, dict) else content.type
 
-        response = subscriptions_.bursting_attributes(self.connection, self.application_id, c_id,
+        response = subscriptions_.bursting_attributes(self.connection, self.project_id, c_id,
                                                       c_type.upper())
 
         if response.ok:
@@ -195,7 +176,7 @@ class SubscriptionManager:
             }],
         }
 
-        response = subscriptions_.available_recipients(self.connection, self.application_id, body,
+        response = subscriptions_.available_recipients(self.connection, self.project_id, body,
                                                        delivery_type)
 
         if response.ok and config.verbose:

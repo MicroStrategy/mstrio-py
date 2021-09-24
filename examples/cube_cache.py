@@ -6,14 +6,14 @@ ease its usage.
 """
 
 from mstrio.connection import Connection
-from mstrio.application_objects import (OlapCube, CubeCache, list_cube_caches, delete_cube_caches,
-                                        delete_cube_cache)
+from mstrio.project_objects import (OlapCube, CubeCache, list_cube_caches, delete_cube_caches,
+                                    delete_cube_cache)
 
 # get connection to an environment
 base_url = "https://<>/MicroStrategyLibrary/api"
 username = "some_username"
 password = "some_password"
-connection = Connection(base_url, username, password, application_name="MicroStrategy Tutorial",
+connection = Connection(base_url, username, password, project_name="MicroStrategy Tutorial",
                         login_mode=1)
 
 # get caches from an OLAP Cube

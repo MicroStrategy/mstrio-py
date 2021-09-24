@@ -1,4 +1,5 @@
 import warnings
+
 from pandas import options
 
 verbose = True  # Controls the amount of feedback from the I-Server
@@ -12,6 +13,7 @@ options.display.max_colwidth = max(100, options.display.max_colwidth)
 print_warnings = 'always'
 module_path = 'mstrio.*'
 save_responses = False  # Used to save REST API responses for mocking
+wip_warnings_enabled = True  # Controls whether warnings/errors about WIP functionality are emitted
 
 
 def custom_formatwarning(msg, category, *args, **kwargs):

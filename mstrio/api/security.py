@@ -1,6 +1,7 @@
-from mstrio.utils.helper import response_handler
+from mstrio.utils.error_handlers import ErrorHandler
 
 
+@ErrorHandler(err_msg='Error getting privileges.')
 def get_privileges(connection, error_msg=None):
     """Get the set of available privileges for the platform.
 
@@ -11,15 +12,13 @@ def get_privileges(connection, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.get(url=connection.base_url + '/api/iserver/privileges',
-                                      headers={'X-MSTR-ProjectID': None})
-    if not response.ok:
-        if error_msg is None:
-            error_msg = "Error getting privileges"
-        response_handler(response, error_msg)
-    return response
+    return connection.session.get(
+        url=f'{connection.base_url}/api/iserver/privileges',
+        headers={'X-MSTR-ProjectID': None}
+    )
 
 
+@ErrorHandler(err_msg='Error getting privilege categories.')
 def get_privilege_categories(connection, error_msg=None):
     """Get the set of available privilege categories for the platform.
 
@@ -30,17 +29,13 @@ def get_privilege_categories(connection, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.get(
-        url=connection.base_url + '/api/iserver/privileges/categories',
+    return connection.session.get(
+        url=f'{connection.base_url}/api/iserver/privileges/categories',
         headers={'X-MSTR-ProjectID': None},
     )
-    if not response.ok:
-        if error_msg is None:
-            error_msg = "Error getting privilege categories"
-        response_handler(response, error_msg)
-    return response
 
 
+@ErrorHandler(err_msg='Error getting information for set of security roles.')
 def get_security_roles(connection, fields=None, error_msg=None):
     """Get information for all security roles. A security role describes the
     ability to do something, such as create, edit, add, delete, view, manage,
@@ -56,16 +51,14 @@ def get_security_roles(connection, fields=None, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.get(url=connection.base_url + '/api/securityRoles',
-                                      headers={'X-MSTR-ProjectID': None},
-                                      params={'fields': fields})
-    if not response.ok:
-        if error_msg is None:
-            error_msg = "Error getting information for set of security roles"
-        response_handler(response, error_msg)
-    return response
+    return connection.session.get(
+        url=f'{connection.base_url}/api/securityRoles',
+        headers={'X-MSTR-ProjectID': None},
+        params={'fields': fields}
+    )
 
 
+@ErrorHandler(err_msg='Error creating new security role.')
 def create_security_role(connection, body, error_msg=None):
     """Create a new security role.
 
@@ -78,18 +71,14 @@ def create_security_role(connection, body, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.post(
-        url=connection.base_url + '/api/securityRoles',
+    return connection.session.post(
+        url=f'{connection.base_url}/api/securityRoles',
         headers={'X-MSTR-ProjectID': None},
         json=body,
     )
-    if not response.ok:
-        if error_msg is None:
-            error_msg = "Error creating new role"
-        response_handler(response, error_msg)
-    return response
 
 
+@ErrorHandler(err_msg='Error getting security role {id} information.')
 def get_security_role(connection, id, error_msg=None):
     """Get information for a security role with security role Id.
 
@@ -101,15 +90,13 @@ def get_security_role(connection, id, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.get(url=connection.base_url + '/api/securityRoles/' + id,
-                                      headers={'X-MSTR-ProjectID': None})
-    if not response.ok:
-        if error_msg is None:
-            error_msg = "Error getting role information"
-        response_handler(response, error_msg)
-    return response
+    return connection.session.get(
+        url=f'{connection.base_url}/api/securityRoles/{id}',
+        headers={'X-MSTR-ProjectID': None}
+    )
 
 
+@ErrorHandler(err_msg='Error deleting security role with ID {id}.')
 def delete_security_role(connection, id, error_msg=None):
     """Delete info for a security role with given Id.
 
@@ -121,15 +108,13 @@ def delete_security_role(connection, id, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.delete(url=connection.base_url + '/api/securityRoles/' + id,
-                                         headers={'X-MSTR-ProjectID': None})
-    if not response.ok:
-        if error_msg is None:
-            error_msg = "Error deleting role information"
-        response_handler(response, error_msg)
-    return response
+    return connection.session.delete(
+        url=f'{connection.base_url}/api/securityRoles/{id}',
+        headers={'X-MSTR-ProjectID': None}
+    )
 
 
+@ErrorHandler(err_msg='Error updating security role with ID {id}')
 def update_security_role(connection, id, body, error_msg=None):
     """Update information for a specific security role.
 
@@ -143,18 +128,14 @@ def update_security_role(connection, id, body, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.patch(
-        url=connection.base_url + '/api/securityRoles/' + id,
+    return connection.session.patch(
+        url=f'{connection.base_url}/api/securityRoles/{id}',
         headers={'X-MSTR-ProjectID': None},
         json=body,
     )
-    if not response.ok:
-        if error_msg is None:
-            error_msg = "Error updating Security Role information"
-        response_handler(response, error_msg)
-    return response
 
 
+@ErrorHandler(err_msg='Error getting security role with ID {id} for project with ID {project_id}')
 def get_security_role_for_project(connection, id, project_id, error_msg=None):
     """Get all users and user groups that are linked to a specific security
     role.
@@ -168,13 +149,7 @@ def get_security_role_for_project(connection, id, project_id, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.get(
-        url=connection.base_url + '/api/securityRoles/' + id + '/projects/' + project_id
-        + '/members',
+    return connection.session.get(
+        url=f'{connection.base_url}/api/securityRoles/{id}/projects/{project_id}/members',
         headers={'X-MSTR-ProjectID': None},
     )
-    if not response.ok:
-        if error_msg is None:
-            error_msg = "Error getting role information"
-        response_handler(response, error_msg)
-    return response

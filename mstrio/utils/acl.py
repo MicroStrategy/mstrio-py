@@ -1,14 +1,17 @@
 from enum import Enum, IntFlag
-from typing import Dict, List, Optional, TYPE_CHECKING, Union
+from typing import Any, Dict, List, Optional, TYPE_CHECKING, TypeVar, Union
 from mstrio.api import objects
 from mstrio.utils import helper
+from mstrio.utils.helper import Dictable
 import pandas as pd
 from requests import HTTPError
+from mstrio.connection import Connection
+from mstrio.types import ObjectTypes
 
 if TYPE_CHECKING:
     from mstrio.users_and_groups import UserOrGroup
-    from mstrio.utils.entity import Entity, ObjectTypes
-    from mstrio.server import Application
+    from mstrio.utils.entity import Entity
+    from mstrio.server import Project
 
 
 class Rights(IntFlag):
@@ -58,6 +61,69 @@ AGGREGATED_RIGHTS_MAP = {
     Permissions.CONSUME: AggregatedRights.CONSUME,
 }
 
+T = TypeVar("T")
+
+
+class ACE(Dictable):
+
+    _FROM_DICT_MAP = {
+        'rights': Rights,
+    }
+
+    def __init__(self, deny: bool, entry_type: int, rights: Rights, trustee_id: str,
+                 trustee_name: str, trustee_type: int, trustee_subtype: int, inheritable: bool):
+        """Set ACL object.
+
+        Args:
+            deny: Specifies whether access is denied
+            entry_type: Access control entry type (1 for object access).
+                Possible values can be found in EnumDSSXMLAccessEntryType
+            rights: Rights assigned to the designated trustee
+            trustee_id: User ID of the designated trustee
+            trustee_name: User name of the designated trustee
+            trustee_type: Type of the designated trustee
+            trustee_subtype: Sub-type of the designated trustee
+            inheritable: Specifies whether access control is inherited
+        """
+
+        self.deny = deny
+        self.entry_type = entry_type
+        self.rights = rights
+        self.trustee_id = trustee_id
+        self.trustee_name = trustee_name
+        self.trustee_type = trustee_type
+        self.trustee_subtype = trustee_subtype
+        self.inheritable = inheritable
+
+    def __eq__(self, other: object) -> bool:
+        if len(self.__dict__) != len(other.__dict__):
+            return False
+        for attr in self.__dict__:
+            if getattr(self, attr) != getattr(other, attr):
+                return False
+        return True
+
+    @classmethod
+    def from_dict(cls, source: Dict[str, Any], connection: Connection):
+
+        def translate_names(name: str):
+            if name == "type":
+                return "entry_type"
+            return name
+
+        modified_source = {translate_names(key): val for key, val in source.items()}
+        return super().from_dict(modified_source, connection)
+
+    def to_dict(self, camel_case=True):
+
+        def translate_names(name: str):
+            if name == "entry_type" or name == "entryType":
+                return "type"
+            return name
+
+        result_dict = super().to_dict(camel_case=camel_case)
+        return {translate_names(key): val for key, val in result_dict.items()}
+
 
 class ACLMixin:
     """ACLMixin class adds Access Control List (ACL) management for supporting
@@ -87,16 +153,20 @@ class ACLMixin:
         Examples:
             >>> list_acl(deny=True, trustee_name="John")
         """
-        acl = helper.filter_list_of_dicts(self.acl, **filters)
+        acl = helper.filter_obj_list(self.acl, **filters)
         if to_dataframe:
             return pd.DataFrame(acl)
         else:
             return acl
 
     def acl_add(self: "Entity", rights: Union[int, Rights, AggregatedRights],
-                trustees: Union["UserOrGroup", List["UserOrGroup"]],
-                denied: Optional[bool] = False, inheritable: bool = False) -> None:
+                trustees: Union["UserOrGroup", List["UserOrGroup"]], denied: bool = False,
+                inheritable: bool = False, propagate_to_children: Optional[bool] = None) -> None:
         """Add Access Control Element (ACE) to the object ACL.
+
+        Note:
+            Argument `propagate_to_children` is used only for objects with
+            type `ObjectTypes.FOLDER`.
 
         Args:
             rights: The degree to which the user or group is granted or denied
@@ -105,18 +175,28 @@ class ACLMixin:
             trustees: list of trustees (`User` or `UserGroup` objects or ids) to
                 update the ACE for
             denied: flag to indicate granted or denied access to the object
+            inheritable: Applies only to folders. If set, any objects placed in
+                the folder inherit the folder's entry in the ACL.
+            propagate_to_children: used for folder objects only, default value
+                is None, if set to True/False adds `propagateACLToChildren`
+                keyword to the request body and sets its value accordingly
 
         Examples:
             >>> obj.acl_add(rights=Rights.BROWSE | Rights.EXECUTE,
             >>>             trustees=user_obj, denied=True)
         """
         self._update_acl(op="ADD", rights=rights, trustees=trustees, denied=denied,
-                         inheritable=inheritable)
+                         inheritable=inheritable, propagate_to_children=propagate_to_children)
 
     def acl_remove(self: "Entity", rights: Union[int, Rights, AggregatedRights],
-                   trustees: Union["UserOrGroup", List["UserOrGroup"]],
-                   denied: Optional[bool] = False, inheritable: bool = False) -> None:
+                   trustees: Union["UserOrGroup", List["UserOrGroup"]], denied: bool = False,
+                   inheritable: bool = False,
+                   propagate_to_children: Optional[bool] = None) -> None:
         """Remove Access Control Element (ACE) from the object ACL.
+
+        Note:
+            Argument `propagate_to_children` is used only for objects with
+            type `ObjectTypes.FOLDER`.
 
         Args:
             rights: The degree to which the user or group is granted or denied
@@ -125,18 +205,27 @@ class ACLMixin:
             trustees: list of trustees (`User` or `UserGroup` objects or ids) to
                 update the ACE for
             denied: flag to indicate granted or denied access to the object
+            inheritable: Applies only to folders. If set, any objects placed in
+                the folder inherit the folder's entry in the ACL.
+            propagate_to_children: used for folder objects only, default value
+                is None, if set to True/False adds `propagateACLToChildren`
+                keyword to the request body and sets its value accordingly
 
         Examples:
             >>> obj.acl_remove(rights=Rights.BROWSE | Rights.EXECUTE,
-            >>>             trustees=user_obj, denied=True)
+            >>>                trustees=user_obj, denied=True)
         """
         self._update_acl(op="REMOVE", rights=rights, trustees=trustees, denied=denied,
-                         inheritable=inheritable)
+                         inheritable=inheritable, propagate_to_children=propagate_to_children)
 
     def acl_alter(self: "Entity", rights: Union[int, Rights, AggregatedRights],
-                  trustees: Union["UserOrGroup", List["UserOrGroup"]],
-                  denied: Optional[bool] = False, inheritable: bool = False) -> None:
+                  trustees: Union["UserOrGroup", List["UserOrGroup"]], denied: bool = False,
+                  inheritable: bool = False, propagate_to_children: Optional[bool] = None) -> None:
         """Alter an existing Access Control Element (ACE) of the object ACL.
+
+        Note:
+            Argument `propagate_to_children` is used only for objects with
+            type `ObjectTypes.FOLDER`.
 
         Args:
             rights: The degree to which the user or group is granted or denied
@@ -145,35 +234,42 @@ class ACLMixin:
             trustees: list of trustees (`User` or `UserGroup` objects or ids) to
                 update the ACE for
             denied: flag to indicate granted or denied access to the object
+            inheritable: Applies only to folders. If set, any objects placed in
+                the folder inherit the folder's entry in the ACL.
+            propagate_to_children: used for folder objects only, default value
+                is None, if set to True/False adds `propagateACLToChildren`
+                keyword to the request body and sets its value accordingly
 
         Examples:
             >>> obj.acl_alter(rights=Rights.BROWSE | Rights.EXECUTE,
-            >>>             trustees=user_obj, denied=True)
+            >>>               trustees=user_obj, denied=True)
         """
         self._update_acl(op="REPLACE", rights=rights, trustees=trustees, denied=denied,
-                         inheritable=inheritable)
+                         inheritable=inheritable, propagate_to_children=propagate_to_children)
 
     def _update_acl(self: "Entity", op: str, rights: Union[int, Rights, AggregatedRights],
                     trustees: Union["UserOrGroup", List["UserOrGroup"]],
-                    propagate_to_children: Optional[bool] = None, denied: Optional[bool] = False,
-                    inheritable: Optional[bool] = False) -> None:
+                    propagate_to_children: Optional[bool] = None, denied: bool = False,
+                    inheritable: bool = False) -> None:
         """Updates the ACL for this object, performs operation defined by the
         `op` parameter on all objects from `trustees` list.
+
+        Note:
+            Argument `propagate_to_children` is used only for objects with
+            type `ObjectTypes.FOLDER`.
 
         Args:
             op: ACL update operator, available values are "ADD", "REMOVE" and
                 "REPLACE"
             rights: value of rights to use by the operator
             trustees: list of trustees to update the ACE for
-            propagate_to_children: used for folder objects
-                only,  default value is None, if set to True/False adds
-                `propagateACLToChildren` keyword to the request body
-                and sets its value accordingly
+            propagate_to_children: used for folder objects only, default value
+                is None, if set to True/False adds `propagateACLToChildren`
+                keyword to the request body and sets its value accordingly
             denied: flag to indicate granted or denied access to the object
             inheritable: Applies only to folders. If set, any objects placed in
                 the folder inherit the folder's entry in the ACL.
         """
-        # TODO handle propagateACLToChildren param for folder object type
         # TODO merge duplicated code with _modify_rights function
         # TODO move (op, rights, ids, propagate_to_children=None,
         # denied=None, inheritable=None, types=None) to
@@ -207,7 +303,7 @@ class ACLMixin:
             body["propagateACLToChildren"] = propagate_to_children
 
         response = objects.update_object(connection=self.connection, id=self.id, body=body,
-                                         type=self._OBJECT_TYPE.value)
+                                         object_type=self._OBJECT_TYPE.value)
         if response.ok:
             response = response.json()
             self._set_object(**response)
@@ -220,9 +316,9 @@ class TrusteeACLMixin:
     """
 
     def set_permission(self, permission: Permissions, to_objects: Union[str, List[str]],
-                       object_type: "ObjectTypes",
-                       application: Optional[Union[str, "Application"]] = None,
-                       propagate_to_children: Optional[bool] = None) -> None:
+                       object_type: "ObjectTypes", project: Optional[Union[str, "Project"]] = None,
+                       propagate_to_children: Optional[bool] = None,
+                       application: Optional[Union[str, "Project"]] = None) -> None:
         """Set permission to perform actions on given object(s).
 
         Function is used to set permission of the trustee to perform given
@@ -239,14 +335,22 @@ class TrusteeACLMixin:
             to_objects: List of object ids on access list for which the
                 permissions will be set
             object_type: Type of objects on access list. See: `ObjectTypes` enum
-            application: Object or id of Application where the object is
-                located. If not passed, Application (application_id) selected in
+            project: Object or id of Project where the object is
+                located. If not passed, Project (project_id) selected in
                 Connection object is used
+            application: deprecated. Use project instead.
             propagate_to_children: Flag used in the request to determine if
                 those rights will be propagated to children of the trustee
         Returns:
             None
         """
+        if application:
+            helper.deprecation_warning(
+                '`application`',
+                '`project`',
+                '11.3.4.101',  # NOSONAR
+                False)
+            project = project or application
 
         if not isinstance(permission, Permissions):
             try:
@@ -263,14 +367,14 @@ class TrusteeACLMixin:
         try:
             _modify_rights(connection=self.connection, trustee_id=self.id, op='REMOVE',
                            rights=AggregatedRights.ALL.value, ids=to_objects,
-                           object_type=object_type, application=application, denied=(not denied),
+                           object_type=object_type, project=project, denied=(not denied),
                            propagate_to_children=propagate_to_children, verbose=False)
         except HTTPError:
             pass
         try:
             _modify_rights(connection=self.connection, trustee_id=self.id, op='REMOVE',
                            rights=AggregatedRights.ALL.value, ids=to_objects,
-                           object_type=object_type, application=application, denied=denied,
+                           object_type=object_type, project=project, denied=denied,
                            propagate_to_children=propagate_to_children, verbose=False)
         except HTTPError:
             pass
@@ -278,15 +382,23 @@ class TrusteeACLMixin:
         if not permission == Permissions.DEFAULT_ALL:
             _modify_rights(connection=self.connection, trustee_id=self.id, op='ADD',
                            rights=right_value, ids=to_objects, object_type=object_type,
-                           application=application, denied=denied,
+                           project=project, denied=denied,
                            propagate_to_children=propagate_to_children)
 
     def set_custom_permissions(self, to_objects: Union[str, List[str]], object_type: "ObjectTypes",
-                               application: Union[str, "Application"] = None,
-                               execute: Optional[str] = None, use: Optional[str] = None,
-                               control: Optional[str] = None, delete: Optional[str] = None,
-                               write: Optional[str] = None, read: Optional[str] = None,
-                               browse: Optional[str] = None) -> None:
+                               project: Union[str,
+                                              "Project"] = None, execute: Optional[str] = None,
+                               use: Optional[str] = None, control: Optional[str] = None,
+                               delete: Optional[str] = None, write: Optional[str] = None,
+                               read: Optional[str] = None, browse: Optional[str] = None,
+                               application: Union[str, "Project"] = None) -> None:
+        if application:
+            helper.deprecation_warning(
+                '`application`',
+                '`project`',
+                '11.3.4.101',  # NOSONAR
+                False)
+            project = project or application
         """Set custom permissions to perform actions on given object(s).
 
         Function is used to set rights of the trustee to perform given actions
@@ -302,9 +414,10 @@ class TrusteeACLMixin:
             to_objects: (str, list(str)): List of object ids on access list to
                 which the permissions will be set
             object_type (int): Type of objects on access list
-            application (str, Application): Object or id of Application in which
-                the object is located. If not passed, Application
-                (application_id) selected in Connection object is used.
+            project (str, Project): Object or id of Project in which
+                the object is located. If not passed, Project
+                (project_id) selected in Connection object is used.
+            application: deprecated. Use project instead.
             execute (str): value for right "Execute". Available are 'grant',
                 'deny', 'default' or None
             use (str): value for right "Use". Available are 'grant',
@@ -325,14 +438,21 @@ class TrusteeACLMixin:
 
         def modify_custom_rights(connection, trustee_id: str, right: Union[Rights, List[Rights]],
                                  to_objects: List[str], object_type: "ObjectTypes", denied: bool,
-                                 application: Union[str,
-                                                    "Application"] = None, default: bool = False,
-                                 propagate_to_children: Optional[bool] = None) -> None:
+                                 project: Union[str, "Project"] = None, default: bool = False,
+                                 propagate_to_children: Optional[bool] = None,
+                                 application: Union[str, "Project"] = None) -> None:
+            if application:
+                helper.deprecation_warning(
+                    '`application`',
+                    '`project`',
+                    '11.3.4.101',  # NOSONAR
+                    False)
+                project = project or application
             right_value = _get_custom_right_value(right)
             try:
                 _modify_rights(connection=connection, trustee_id=trustee_id, op='REMOVE',
                                rights=right_value, ids=to_objects, object_type=object_type,
-                               application=application, denied=(not denied),
+                               project=project, denied=(not denied),
                                propagate_to_children=propagate_to_children, verbose=False)
             except HTTPError:
                 pass
@@ -342,7 +462,7 @@ class TrusteeACLMixin:
             try:
                 _modify_rights(connection=connection, trustee_id=trustee_id, op=op,
                                rights=right_value, ids=to_objects, object_type=object_type,
-                               application=application, denied=denied,
+                               project=project, denied=denied,
                                propagate_to_children=propagate_to_children, verbose=verbose)
             except HTTPError:
                 pass
@@ -367,17 +487,17 @@ class TrusteeACLMixin:
 
         modify_custom_rights(connection=self.connection, trustee_id=self.id, right=grant_list,
                              to_objects=to_objects, object_type=object_type, denied=False,
-                             application=application)
+                             project=project)
         modify_custom_rights(connection=self.connection, trustee_id=self.id, right=deny_list,
                              to_objects=to_objects, object_type=object_type, denied=True,
-                             application=application)
+                             project=project)
         modify_custom_rights(connection=self.connection, trustee_id=self.id, right=default_list,
                              to_objects=to_objects, object_type=object_type, denied=True,
-                             application=application, default=True)
+                             project=project, default=True)
 
 
 def _modify_rights(connection, trustee_id: str, op: str, rights: int, object_type: "ObjectTypes",
-                   ids: List[str], application: Optional[Union[str, "Application"]] = None,
+                   ids: List[str], project: Optional[Union[str, "Project"]] = None,
                    propagate_to_children: Optional[bool] = None, denied: Optional[bool] = None,
                    inheritable: Optional[bool] = None, verbose: bool = True) -> None:
     if op not in ["ADD", "REMOVE", "REPLACE"]:
@@ -390,15 +510,15 @@ def _modify_rights(connection, trustee_id: str, op: str, rights: int, object_typ
                "Rights enums")
         helper.exception_handler(msg)
 
-    if application:
-        application = application if isinstance(application, str) else application.id
+    if project:
+        project = project if isinstance(project, str) else project.id
 
     if isinstance(ids, str):
         ids = [ids]
     # TODO decide what to do about this code
     for id in ids:
-        response = objects.get_object_info(connection=connection, id=id, type=object_type.value,
-                                           application_id=application)
+        response = objects.get_object_info(connection=connection, id=id,
+                                           object_type=object_type.value, project_id=project)
         if inheritable is None:
             tmp = [
                 ace['inheritable']
@@ -421,8 +541,9 @@ def _modify_rights(connection, trustee_id: str, op: str, rights: int, object_typ
         if isinstance(propagate_to_children, bool):
             body["propagateACLToChildren"] = propagate_to_children
 
-        _ = objects.update_object(connection=connection, id=id, body=body, type=object_type.value,
-                                  application_id=application, verbose=verbose)
+        _ = objects.update_object(connection=connection, id=id, body=body,
+                                  object_type=object_type.value, project_id=project,
+                                  verbose=verbose)
 
 
 def _parse_acl_rights_bin_to_dict(rights_bin: int) -> Dict[Rights, bool]:

@@ -98,7 +98,7 @@ class ScheduleTime(Dictable):
                     and repeat_interval is None):
                 helper.exception_handler(
                     msg=('Value error: execution_repeat_interval '
-                         'can not be None, '
+                         'cannot be None, '
                          'for execution_pattern == ExecutionPattern.Repeat'),
                     exception_type=ValueError)
             if execution_pattern == ScheduleEnums.ExecutionPattern.REPEAT:

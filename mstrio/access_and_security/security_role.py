@@ -6,11 +6,11 @@ from mstrio import config
 from mstrio.api import objects, security
 from mstrio.connection import Connection
 from mstrio.utils import helper
-from mstrio.utils.entity import Entity, ObjectTypes
+from mstrio.utils.entity import Entity, ObjectTypes, DeleteMixin
 
 if TYPE_CHECKING:
     from mstrio.access_and_security.privilege import Privilege
-    from mstrio.server.application import Application
+    from mstrio.server.project import Project
     from mstrio.users_and_groups import UserOrGroup
 
 
@@ -39,7 +39,7 @@ def list_security_roles(connection: Connection, to_dictionary: bool = False,
                                              to_dataframe=to_dataframe, limit=limit, **filters)
 
 
-class SecurityRole(Entity):
+class SecurityRole(Entity, DeleteMixin):
     """A security role is a set of privileges that can be assigned to users and
     reused from project to project. Security roles enable you to assign a
     unique set of privileges to users on a per project basis. They are created
@@ -53,8 +53,8 @@ class SecurityRole(Entity):
         description: Security Role description
         type: Object type
         subtype: Object subtype
-        date_created: Creation time, "yyyy-MM-dd HH:mm:ss" in UTC
-        date_modified: Last modification time, "yyyy-MM-dd
+        date_created: Creation time, DateTime object
+        date_modified: Last modification time, DateTime object
         version: Version ID
         owner: owner ID and name
         privileges: Security Role privileges per project
@@ -154,12 +154,8 @@ class SecurityRole(Entity):
                 "Please select either to_dictionary=True or to_dataframe=True, but not both.",
                 ValueError)
 
-        objects = helper.fetch_objects(
-            connection=connection,
-            api=security.get_security_roles,
-            limit=limit,
-            filters=filters,
-        )
+        objects = helper.fetch_objects(connection=connection, api=security.get_security_roles,
+                                       limit=limit, filters=filters)
         if to_dictionary:
             return objects
         elif to_dataframe:
@@ -192,32 +188,25 @@ class SecurityRole(Entity):
 
         self._alter_properties(**properties)
 
-    def delete(self, force: bool = False) -> None:
-        """Deletes the Security Role. The user will be prompted whether is sure
-        or not about this operation.
-
-        Args:
-            force(bool, optional): if true the role is deleted without a prompt.
-        """
-        user_input = 'N'
-        if not force:
-            user_input = input(
-                "Are you sure you want to delete role '{}' with ID: {}? [Y/N]: ".format(
-                    self.name, self.id))  # noqa
-        if force or user_input == 'Y':
-            response = security.delete_security_role(self.connection, self.id)
-            if response.ok:
-                print("Deleted security role {}.".format(self.id))
-
-    def list_members(self, application_name: Optional[str] = None):
+    def list_members(self, project_name: Optional[str] = None,
+                     application_name: Optional[str] = None):
         """List all members of the Security Role. Optionally, filter the
-        results by Application name.
+        results by Project name.
 
         Args:
-            application_name(str, optional): Application name
+            project_name(str, optional): Project name
+            application_name(str, optional): deprecated. Use project_name
+            instead.
         """
-        if application_name is not None:
-            [filtered_app] = helper.filter_list_of_dicts(self.projects, name=application_name)
+        if application_name:
+            helper.deprecation_warning(
+                '`application_name`',
+                '`project_name`',
+                '11.3.4.101',  # NOSONAR
+                False)
+            project_name = project_name or application_name
+        if project_name is not None:
+            [filtered_app] = helper.filter_list_of_dicts(self.projects, name=project_name)
             members = filtered_app['members']
         else:
             members = []
@@ -227,33 +216,43 @@ class SecurityRole(Entity):
         return members
 
     def grant_to(self, members: Union["UserOrGroup", List["UserOrGroup"]],
-                 application: Union["Application", str]) -> None:
+                 application: Union["Project", str], project: Optional[Union["Project",
+                                                                             str]] = None) -> None:
         """Assign users/user groups to a Security Role.
 
         Args:
             members(list): List of objects or IDs of Users or User Groups which
                 will be assigned to this Security Role.
-            application(Application, str): Application object or name to which
+            application(Project, str): deprecated. Use project instead.
+            project(Project, str): Project object or name to which
                 this removal will apply.
         """
-        from mstrio.server.application import Application
+        from mstrio.server.project import Project
         from mstrio.users_and_groups.user import User
         from mstrio.users_and_groups.user_group import UserGroup
 
-        if isinstance(application, Application):
-            application_id = application.id
-            application_name = application.name
-        elif isinstance(application, str):
-            application_list = Application._list_applications(connection=self.connection,
-                                                              to_dictionary=True, name=application)
-            if application_list:
-                application_id = application_list[0]['id']
-                application_name = application_list[0]['name']
+        helper.deprecation_warning(
+            '`application`',
+            '`project`',
+            '11.3.4.101',  # NOSONAR
+            False,
+            False)
+        project = project or application
+
+        if isinstance(project, Project):
+            project_id = project.id
+            project_name = project.name
+        elif isinstance(project, str):
+            project_list = Project._list_projects(connection=self.connection, to_dictionary=True,
+                                                  name=project)
+            if project_list:
+                project_id = project_list[0]['id']
+                project_name = project_list[0]['name']
             else:
-                helper.exception_handler(
-                    "Application name '{}' does not exist.".format(application), ValueError)
+                helper.exception_handler("Project name '{}' does not exist.".format(project),
+                                         ValueError)
         else:
-            helper.exception_handler("Application parameter must be of type str or Application.",
+            helper.exception_handler("`project` parameter must be of type str or Project.",
                                      TypeError)
 
         # create list of objects from strings/objects/lists
@@ -261,11 +260,11 @@ class SecurityRole(Entity):
         members_list = [
             obj.id if isinstance(obj, (User, UserGroup)) else str(obj) for obj in members_list
         ]
-        existing_ids = [obj['id'] for obj in self.list_members(application_name=application_name)]
+        existing_ids = [obj['id'] for obj in self.list_members(project_name=project_name)]
         succeeded = list(set(members_list) - set(existing_ids))
         failed = list(set(existing_ids).intersection(set(members_list)))
 
-        value = {"projectId": application_id, "memberIds": members_list}
+        value = {"projectId": project_id, "memberIds": members_list}
         self._update_nested_properties(
             objects=value,
             path="members",
@@ -277,34 +276,43 @@ class SecurityRole(Entity):
             if failed:
                 print("Security Role '{}' already has member(s) {}".format(self.name, failed))
 
-    def revoke_from(self, members: Union["UserOrGroup", List["UserOrGroup"]],
-                    application: Union["Application", str]) -> None:
+    def revoke_from(self, members: Union["UserOrGroup",
+                                         List["UserOrGroup"]], application: Union["Project", str],
+                    project: Optional[Union["Project", str]] = None) -> None:
         """Remove users/user groups from a Security Role.
 
         Args:
             members(list): List of objects or IDs of Users or User Groups
                 which will be removed from this Security Role.
-            application(Application, str): Application object or name
+            application(Project, str): deprecated. Use project instead.
+            project(Project, str): Project object or name
                 to which this removal will apply.
         """
-        from mstrio.server.application import Application
+        from mstrio.server.project import Project
         from mstrio.users_and_groups.user import User
         from mstrio.users_and_groups.user_group import UserGroup
 
-        if isinstance(application, Application):
-            application_id = application.id
-            application_name = application.name
-        elif isinstance(application, str):
-            application_list = Application._list_applications(connection=self.connection,
-                                                              to_dictionary=True, name=application)
-            if application_list:
-                application_id = application_list[0]['id']
-                application_name = application_list[0]['name']
+        helper.deprecation_warning(
+            '`application`',
+            '`project`',
+            '11.3.4.101',  # NOSONAR
+            False,
+            False)
+        project = project or application
+
+        if isinstance(project, Project):
+            project_id = project.id
+            project_name = project.name
+        elif isinstance(project, str):
+            project_list = Project._list_projects(connection=self.connection, to_dictionary=True,
+                                                  name=project)
+            if project_list:
+                project_id = project_list[0]['id']
+                project_name = project_list[0]['name']
             else:
-                helper.exception_handler(
-                    "Application name '{}' does not exist.".format(application))
+                helper.exception_handler("Project name '{}' does not exist.".format(project))
         else:
-            helper.exception_handler("Application parameter must be of type str or Application.",
+            helper.exception_handler("Project parameter must be of type str or Project.",
                                      TypeError)
 
         # create list of objects from strings/objects/lists
@@ -313,11 +321,11 @@ class SecurityRole(Entity):
             obj.id if isinstance(obj, (User, UserGroup)) else str(obj) for obj in members_list
         ]
 
-        existing_ids = [obj['id'] for obj in self.list_members(application_name=application_name)]
+        existing_ids = [obj['id'] for obj in self.list_members(project_name=project_name)]
         succeeded = list(set(members_list).intersection(set(existing_ids)))
         failed = list(set(members_list) - set(succeeded))
 
-        value = {"projectId": application_id, "memberIds": members_list}
+        value = {"projectId": project_id, "memberIds": members_list}
         self._update_nested_properties(
             objects=value,
             path="members",

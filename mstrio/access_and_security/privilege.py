@@ -94,12 +94,8 @@ class Privilege(EntityBase):
             helper.exception_handler(
                 "Please select either `to_dictionary=True` or `to_dataframe=True`, but not both.",
                 ValueError)
-        objects = helper.fetch_objects(
-            connection=connection,
-            api=security.get_privileges,
-            limit=None,
-            filters=filters,
-        )
+        objects = helper.fetch_objects(connection=connection, api=security.get_privileges,
+                                       limit=None, filters=filters)
         if to_dictionary:
             return objects
         elif to_dataframe:

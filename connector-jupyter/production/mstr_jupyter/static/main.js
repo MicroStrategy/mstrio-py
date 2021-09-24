@@ -88,22 +88,6 @@ define(['./jupyter-cell', './jupyter-kernel', './python-code', './utilities', '.
   Events.on('kernel_idle.Kernel', () => { Utilities.flagImportExport(false); });
   // ===
 
-  // --- backward compatibility engine ---
-  // [remove at the end of the year 2020]
-  const refactoredEnvironments = [
-    ...JSON.parse(localStorage.getItem('mstr_envs') || '[]'),
-    ...JSON.parse(localStorage.getItem('mstr-environments') || '[]'),
-  ];
-  localStorage.removeItem('mstr_envs');
-  localStorage.setItem('mstr-environments', JSON.stringify(refactoredEnvironments));
-  const refactoredProjects = {
-    ...JSON.parse(localStorage.getItem('mstr_projs') || '{}'),
-    ...JSON.parse(localStorage.getItem('mstr-projects') || '{}'),
-  };
-  localStorage.removeItem('mstr_projs');
-  localStorage.setItem('mstr-projects', JSON.stringify(refactoredProjects));
-  // ---
-
   const restructureTypesToMatchRStudio = (_result) => {
     // clearing structure to copy RStudio output architecture
     const result = { ..._result };
@@ -289,6 +273,7 @@ define(['./jupyter-cell', './jupyter-kernel', './python-code', './utilities', '.
       // debug
       case consoleMSG: {
         const { message } = event.data;
+        // eslint-disable-next-line no-console
         console.log(message);
         window.DEBUG_MESSAGE = message;
         break;
@@ -323,14 +308,10 @@ define(['./jupyter-cell', './jupyter-kernel', './python-code', './utilities', '.
 
         new JupyterKernel(Jupyter.notebook.kernel)
           .code(PythonCode.code().forGettingPackageVersionNumber)
-          .stream()
+          .expectString()
           .execute()
           .then((self) => {
-            const PACKAGE_VERSION_NUMBER = self.getResult()
-              .split('\n') // raw text into rows of data
-              .map((row) => row.split(': ')) // from string "key: value" into array [key, value]
-              .find(([name]) => name === 'Version')[1]; // get value of key==Version
-            backendManager.updatePackageVersionNumber(PACKAGE_VERSION_NUMBER);
+            backendManager.updatePackageVersionNumber(self.getResult());
           });
 
         new JupyterKernel(Jupyter.notebook.kernel)
@@ -477,7 +458,7 @@ define(['./jupyter-cell', './jupyter-kernel', './python-code', './utilities', '.
       }
 
       const hasCorrectStructure = !!messageType || !!responseType;
-
+      console.assert(hasCorrectStructure, 'Incorrect event structure:', event);
       if (!hasCorrectStructure) {
         throw new Error('Incorrect window.postMessage() event structure');
       }
@@ -524,7 +505,7 @@ define(['./jupyter-cell', './jupyter-kernel', './python-code', './utilities', '.
 
     return new Promise((resolve, reject) => {
       uiIframeModal
-        .on('shown.bs.modal', function () {
+        .on('shown.bs.modal', function focusIframe() {
           $(this)
             .find('iframe#mstr-iframe')
             .focus();
@@ -563,7 +544,7 @@ define(['./jupyter-cell', './jupyter-kernel', './python-code', './utilities', '.
           id="mstr-ico"
         >`,
       )
-      .bind('keydown', function (event) {
+      .bind('keydown', function bindSpaceA11y(event) {
         if (event.key === ' ') {
           event.preventDefault();
           $(this).click();

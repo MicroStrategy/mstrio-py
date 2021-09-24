@@ -6,7 +6,7 @@ ease its usage.
 """
 
 from mstrio.connection import Connection
-from mstrio.server import Application
+from mstrio.server import Project
 from mstrio.users_and_groups import User
 from mstrio.datasources import (DatasourceType, ExecutionMode, DatasourceConnection,
                                 DatasourceInstance, DatasourceLogin, DatasourceMap,
@@ -17,7 +17,7 @@ from mstrio.datasources import (DatasourceType, ExecutionMode, DatasourceConnect
 base_url = "https://<>/MicroStrategyLibrary/api"
 username = "some_username"
 password = "some_password"
-conn = Connection(base_url, username, password, application_name="MicroStrategy Tutorial",
+conn = Connection(base_url, username, password, project_name="MicroStrategy Tutorial",
                   login_mode=1)
 
 # create a datasource login
@@ -77,10 +77,10 @@ ds_instance.delete(force=True)
 list_datasource_instances(connection=conn)
 
 # get project by name
-app = Application(connection=conn, name="MicroStrategy Tutorial")
+project = Project(connection=conn, name="MicroStrategy Tutorial")
 
 # list all datasources by project
-list_datasource_instances(connection=conn, application=app)
+list_datasource_instances(connection=conn, project=project)
 
 # list all datasources by datasource connection
 list_datasource_instances(connection=conn, datasource_connection={"id": ds_conn.id})
@@ -88,7 +88,7 @@ list_datasource_instances(connection=conn, datasource_connection={"id": ds_conn.
 # get a user
 user = User(connection=conn, username='mstr')
 # create a datasource map
-ds_map = DatasourceMap.create(connection=conn, application=app, user=user, ds_connection=ds_conn,
+ds_map = DatasourceMap.create(connection=conn, project=project, user=user, ds_connection=ds_conn,
                               datasource=ds_instance, login=login)
 
 # initialise a datasource map

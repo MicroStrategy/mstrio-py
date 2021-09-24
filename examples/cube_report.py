@@ -8,13 +8,13 @@ ease its usage.
 """
 
 from mstrio.connection import Connection
-from mstrio.application_objects import Report, OlapCube
+from mstrio.project_objects import OlapCube, Report
 
 # get connection to an environment
 base_url = "https://<>/MicroStrategyLibrary/api"
 username = "some_username"
 password = "some_password"
-connection = Connection(base_url, username, password, application_name="MicroStrategy Tutorial",
+connection = Connection(base_url, username, password, project_name="MicroStrategy Tutorial",
                         login_mode=1)
 
 cube_id = "some_cube_id"
@@ -25,7 +25,7 @@ my_cube = OlapCube(connection=connection, id=cube_id)
 my_cube_df = my_cube.to_dataframe
 
 # get report based on its id and store it in data frame
-my_report = Report(connection=connection, report_id=report_id, parallel=False)
+my_report = Report(connection=connection, id=report_id, parallel=False)
 my_report_df = my_report.to_dataframe
 
 # get list of ids of metrics, attributes or attribue elements available within

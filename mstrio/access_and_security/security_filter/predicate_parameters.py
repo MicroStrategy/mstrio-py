@@ -1,8 +1,8 @@
 from enum import Enum
-from mstrio.utils.helper import Dictable, Any, camel_to_snake
-from typing import List, Optional, Dict, TYPE_CHECKING
+from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
 from mstrio.access_and_security.security_filter import ObjectReference
+from mstrio.utils.helper import Dictable
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
@@ -50,12 +50,10 @@ class ConstantParameter(ParameterBase):
         self.constant = {"type": type, "value": value}
 
     @classmethod
-    def from_dict(cls, source: Dict[str, Any], connection: Optional["Connection"] = None,
-                  to_snake_case=True):
-        source = camel_to_snake(source) if to_snake_case else source
-        type = source.get('constant', {}).get('type')
-        value = source.get('constant', {}).get('value')
-        return ConstantParameter(type, value)
+    def from_dict(cls, source: Dict[str, Any], connection: Optional["Connection"] = None):
+        source["type"] = source.get('constant', {}).get('type')
+        source["value"] = source.get('constant', {}).get('value')
+        return super().from_dict(source, connection)
 
 
 class ObjectReferenceParameter(ParameterBase):
@@ -109,9 +107,7 @@ class ConstantArrayParameter(ParameterBase):
         self.constants = values
 
     @classmethod
-    def from_dict(cls, source: Dict[str, Any], connection: Optional["Connection"] = None,
-                  to_snake_case=True):
-        source = camel_to_snake(source) if to_snake_case else source
-        type = source.get('constants_type')
-        values = source.get('constants')
-        return ConstantArrayParameter(type, values)
+    def from_dict(cls, source: Dict[str, Any], connection: Optional["Connection"] = None):
+        source["type"] = source.get('constants_type')
+        source["values"] = source.get('constants')
+        return super().from_dict(source, connection)

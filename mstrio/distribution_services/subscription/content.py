@@ -191,7 +191,7 @@ class Content(Dictable):
 
         class Prompt(Dictable):
 
-            def __init__(self, enabled: bool, instance_id: str):
+            def __init__(self, enabled: bool, instance_id: str = None):
                 self.enabled = enabled
                 self.instance_id = instance_id
 

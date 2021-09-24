@@ -1,14 +1,14 @@
 from typing import Optional, Union, List
 
-from mstrio.server.environment import Environment
-from mstrio.users_and_groups import User, list_users, UserGroup, UserOrGroup
-from mstrio.api import documents, library
-from mstrio.application_objects.datasets.cube import _Cube
-from mstrio.utils import helper
-from mstrio.utils.entity import Entity, VldbMixin, ObjectTypes
 from pandas import DataFrame
 
 from mstrio.connection import Connection
+from mstrio.server.environment import Environment
+from mstrio.users_and_groups import User, list_users, UserGroup, UserOrGroup
+from mstrio.api import documents, library
+from mstrio.utils import helper
+from mstrio.utils.certified_info import CertifiedInfo
+from mstrio.utils.entity import Entity, VldbMixin, ObjectTypes
 
 
 def list_documents(connection: Connection, name: Optional[str] = None, to_dictionary: bool = False,
@@ -37,7 +37,7 @@ def list_documents(connection: Connection, name: Optional[str] = None, to_dictio
             List of documents.
     """
     # TODO: consider adding Connection.project_selected attr/method
-    if connection.application_id is None:
+    if connection.project_id is None:
         raise ValueError(("Please log into a specific project to load documents within it. "
                           "To load all documents across the whole environment use "
                           f"{list_documents_across_projects.__name__} function."))
@@ -70,22 +70,26 @@ def list_documents_across_projects(connection: Connection, name: Optional[str] =
     Returns:
             List of documents.
     """
-    application_id_before = connection.application_id
+    project_id_before = connection.project_id
     env = Environment(connection)
-    applications = env.list_applications()
+    projects = env.list_projects()
     output = []
-    for application in applications:
-        connection.select_application(application_id=application.id)
+    for project in projects:
+        connection.select_project(project_id=project.id)
         output.extend(
             Document._list_all(connection, to_dictionary=to_dictionary, name=name, limit=limit,
                                to_dataframe=to_dataframe, **filters))
         output = list(set(output))
-    connection.select_application(application_id=application_id_before)
+    connection.select_project(project_id=project_id_before)
     return output
 
 
 class Document(Entity, VldbMixin):
     _OBJECT_TYPE = ObjectTypes.DOCUMENT_DEFINITION
+    _FROM_DICT_MAP = {
+        **Entity._FROM_DICT_MAP, 'owner': User.from_dict,
+        'certified_info': CertifiedInfo.from_dict
+    }
 
     def __init__(self, connection: Connection, name: Optional[str] = None,
                  id: Optional[str] = None):
@@ -206,17 +210,11 @@ class Document(Entity, VldbMixin):
             helper.exception_handler(
                 "Please select either `to_dictionary=True` or `to_dataframe=True`, but not both.",
                 ValueError)
-        objects = helper.fetch_objects_async(
-            connection,
-            api=documents.get_documents,
-            async_api=documents.get_documents_async,
-            dict_unpack_value='result',
-            limit=limit,
-            chunk_size=1000,
-            error_msg=msg,
-            filters=filters,
-            search_term=name,
-        )
+        objects = helper.fetch_objects_async(connection, api=documents.get_documents,
+                                             async_api=documents.get_documents_async,
+                                             dict_unpack_value='result', limit=limit,
+                                             chunk_size=1000, error_msg=msg, filters=filters,
+                                             search_term=name)
         if to_dictionary:
             return objects
         elif to_dataframe:
@@ -226,9 +224,9 @@ class Document(Entity, VldbMixin):
 
     def get_connected_cubes(self):
         """Lists cubes used by this document."""
-        response = documents.get_cubes_used_by_document(self.connection, self.id).json()
-        # TODO improve
-        return [_Cube(self.connection, el['id']) for el in response]
+        cubes = documents.get_cubes_used_by_document(self.connection, self.id).json()
+        ret_cubes = [helper.choose_cube(self.connection, cube) for cube in cubes]
+        return [tmp for tmp in ret_cubes if tmp]  # remove `None` values
 
     @property
     def instance_id(self):

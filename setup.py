@@ -81,7 +81,8 @@ setup(
     },
     install_requires=requirements,
     extras_require={
-        'dev': ['flake8', 'mypy', 'yapf', 'unittest', 'nose', 'coverage', 'pytest-cov', 'isort'],
+        'dev': ['flake8', 'mypy', 'yapf', 'nose', 'coverage', 'pytest', 'pytest-cov',
+                'isort'],  # noqa
     },
     packages=find_packages(),
     include_package_data=True,

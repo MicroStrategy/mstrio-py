@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import List, Optional, TYPE_CHECKING, Union
 
 from pandas import DataFrame, read_csv
@@ -9,14 +10,14 @@ from mstrio.access_and_security.security_role import SecurityRole
 from mstrio.api import users
 from mstrio.connection import Connection
 from mstrio.users_and_groups.user_connections import UserConnections
-from mstrio.utils import helper
+from mstrio.utils import helper, time_helper
 from mstrio.utils.acl import TrusteeACLMixin
-from mstrio.utils.entity import Entity, ObjectTypes
+from mstrio.utils.entity import DeleteMixin, Entity, ObjectTypes
 
 if TYPE_CHECKING:
     from mstrio.access_and_security.privilege import Privilege
     from mstrio.access_and_security.security_filter import SecurityFilter
-    from mstrio.server.application import Application
+    from mstrio.server.project import Project
     from mstrio.users_and_groups.user_group import UserGroup
 
 
@@ -70,7 +71,7 @@ def list_users(connection: Connection, name_begins: Optional[str] = None,
     )
 
 
-class User(Entity, TrusteeACLMixin):
+class User(Entity, DeleteMixin, TrusteeACLMixin):
     """Object representation of MicroStrategy User object.
 
     Attributes:
@@ -93,8 +94,8 @@ class User(Entity, TrusteeACLMixin):
         password_modifiable: If user password can be modified
         require_new_password: If user is required to change new password
         standard_auth: If standard authentication is allowed for user
-        date_created: Creation time, "yyyy-MM-dd HH:mm:ss" in UTC
-        date_modified: Last modification time, "yyyy-MM-dd HH:mm:ss" in UTC
+        date_created: Creation time, DateTime object
+        date_modified: Last modification time, DateTime object
         type: Object type
         subtype: Object subtype
         ext_type: Object extended type
@@ -111,7 +112,7 @@ class User(Entity, TrusteeACLMixin):
         "password": str,
         "enabled": bool,
         "password_modifiable": bool,
-        "password_expiration_date": str,
+        "password_expiration_date": datetime,
         "standard_auth": bool,
         "require_new_password": bool,
         "ldapdn": str,
@@ -133,6 +134,10 @@ class User(Entity, TrusteeACLMixin):
          'password_modifiable', 'require_new_password', 'password_expiration_date',
          'standard_auth', 'ldapdn', 'trust_id', 'initials', 'privileges', 'memberships',
          'addresses', 'security_roles'): (users.update_user_info, 'patch')
+    }
+    _FROM_DICT_MAP = {
+        **Entity._FROM_DICT_MAP,
+        'password_expiration_date': time_helper.DatetimeFormats.FULLDATETIME,
     }
 
     def __init__(self, connection: Connection, username: Optional[str] = None,
@@ -179,7 +184,6 @@ class User(Entity, TrusteeACLMixin):
         self.full_name = kwargs.get("full_name")
         self.enabled = kwargs.get("enabled")
         self.password_modifiable = kwargs.get("password_modifiable")
-        self.password_expiration_date = kwargs.get("password_expiration_date")
         self.standard_auth = kwargs.get("standard_auth")
         self.require_new_password = kwargs.get("require_new_password")
         self.ldapdn = kwargs.get("ldapdn")
@@ -195,10 +199,11 @@ class User(Entity, TrusteeACLMixin):
     def create(cls, connection: Connection, username: str, full_name: str,
                password: Optional[str] = None, description: Optional[str] = None,
                enabled: bool = True, password_modifiable: bool = True,
-               password_expiration_date: Optional[str] = None, require_new_password: bool = True,
-               standard_auth: bool = True, ldapdn: Optional[str] = None,
-               trust_id: Optional[str] = None, database_auth_login: Optional[str] = None,
-               memberships: list = []) -> "User":
+               password_expiration_date: Optional[Union[str, datetime]] = None,
+               require_new_password: bool = True, standard_auth: bool = True,
+               ldapdn: Optional[str] = None, trust_id: Optional[str] = None,
+               database_auth_login: Optional[str] = None,
+               memberships: Optional[list] = None) -> "User":
         """Create a new user on the I-Server. Returns User object.
 
         Args:
@@ -210,8 +215,8 @@ class User(Entity, TrusteeACLMixin):
             description: user description
             enabled: specifies if user is allowed to log in
             password_modifiable: Specifies if user password can be modified
-            password_expiration_date: Expiration date of user password,
-                "yyyy-MM-dd HH:mm:ss" in UTC
+            password_expiration_date: Expiration date of user password either
+                as a datetime or string: "yyyy-MM-dd HH:mm:ss" in UTC
             require_new_password: Specifies if user is required to provide a new
                 password.
             standard_auth: Specifies whether standard authentication is allowed
@@ -219,8 +224,11 @@ class User(Entity, TrusteeACLMixin):
             ldapdn: User's LDAP distinguished name
             trust_id: Unique user ID provided by trusted authentication provider
             database_auth_login: Database Authentication Login
-            memberships: specify User Groups which User will be member.
+            memberships: specify User Group IDs which User will be member off.
         """
+        password_expiration_date = time_helper.map_datetime_to_str(
+            name='password_expiration_date', date=password_expiration_date,
+            string_to_date_map=cls._FROM_DICT_MAP)
         body = {
             "username": username,
             "fullName": full_name,
@@ -236,7 +244,8 @@ class User(Entity, TrusteeACLMixin):
             "databaseAuthLogin": database_auth_login,
             "memberships": memberships
         }
-        response = users.create_user(connection, body).json()
+        body = helper.delete_none_values(body)
+        response = users.create_user(connection, body, username).json()
         if config.verbose:
             print("Successfully created user named: '{}' with ID: '{}'".format(
                 response.get('username'), response.get('id')))
@@ -266,17 +275,12 @@ class User(Entity, TrusteeACLMixin):
                    abbreviation_begins: Optional[str] = None, to_dictionary: bool = False,
                    limit: Optional[int] = None, **filters) -> Union[List["User"], List[dict]]:
         msg = "Error getting information for a set of users."
-        objects = helper.fetch_objects_async(
-            connection,
-            users.get_users_info,
-            users.get_users_info_async,
-            limit=limit,
-            chunk_size=1000,
-            error_msg=msg,
-            name_begins=name_begins,
-            abbreviation_begins=abbreviation_begins,
-            filters=filters,
-        )
+        objects = helper.fetch_objects_async(connection, users.get_users_info,
+                                             users.get_users_info_async, limit=limit,
+                                             chunk_size=1000, error_msg=msg,
+                                             name_begins=name_begins,
+                                             abbreviation_begins=abbreviation_begins,
+                                             filters=filters)
         if to_dictionary:
             return objects
         else:
@@ -397,31 +401,6 @@ class User(Entity, TrusteeACLMixin):
                         addr['name'], addr['id'], self.name))
                 setattr(self, "_addresses", new_addresses)
 
-    def delete(self, force: bool = False) -> bool:
-        """Deletes the user.
-
-        Deleting the user will not remove the user's shared files.
-
-        Args:
-            force: If True, no additional prompt will be shown before deleting
-                User.
-
-        Returns:
-            True for success. False otherwise.
-        """
-        user_input = 'N'
-        if not force:
-            user_input = input((f"Deleting the user will not remove the user's shared files. Are "
-                                f"you sure you want to delete user '{self.name}' with ID: "
-                                f"{self.id}? [Y/N]: "))
-        if force or user_input == 'Y':
-            response = users.delete_user(self.connection, self.id)
-            if response.status_code == 204 and config.verbose:
-                print("Successfully deleted user {}".format(self.name))
-            return response.ok
-        else:
-            return False
-
     def add_to_user_groups(
             self, user_groups: Union[str, "UserGroup", List[Union[str, "UserGroup"]]]) -> None:
         """Adds this User to user groups specified in user_groups.
@@ -454,34 +433,53 @@ class User(Entity, TrusteeACLMixin):
         existing_ids = [obj.get('id') for obj in memberships]
         self.remove_from_user_groups(user_groups=existing_ids)
 
-    def assign_security_role(self, security_role: Union[SecurityRole, str],
-                             application: Union["Application", str]) -> None:
-        """Assigns a Security Role to the user for given application.
+    def assign_security_role(self, security_role: Union[SecurityRole,
+                                                        str], application: Union["Project", str],
+                             project: Union["Project", str] = None) -> None:  # NOSONAR
+        """Assigns a Security Role to the user for given project.
 
         Args:
             security_role: Security Role ID or object
-            application: Application name or object
+            application: Project name or object. Will be removed from 11.3.4.101
+            project: Will replace application from 11.3.4.101
         """
+        helper.deprecation_warning(
+            '`application`',
+            '`project`',
+            '11.3.4.101',  # NOSONAR
+            False,
+            False)
+        project = application
+
         security_role = security_role if isinstance(security_role, SecurityRole) else SecurityRole(
             self.connection, id=str(security_role))
 
-        security_role.grant_to([self.id], application)
+        security_role.grant_to([self.id], project)
         if config.verbose:
             print("Assigned Security Role '{}' to user: '{}'".format(security_role.name,
                                                                      self.name))
 
-    def revoke_security_role(self, security_role: Union[SecurityRole, str],
-                             application: Union["Application", str]) -> None:
-        """Removes a Security Role from the user for given application.
+    def revoke_security_role(self, security_role: Union[SecurityRole,
+                                                        str], application: Union["Project", str],
+                             project: Union["Project", str] = None) -> None:  # NOSONAR
+        """Removes a Security Role from the user for given project.
 
         Args:
             security_role: Security Role ID or object
-            application: Application name or object
+            application: Project name or object. Will be removed from 11.3.4.101
+            project: Will replace application from 11.3.4.101
         """
+        helper.deprecation_warning(
+            '`application`',
+            '`project`',
+            '11.3.4.101',  # NOSONAR
+            False,
+            False)
+        project = application
         security_role = security_role if isinstance(security_role, SecurityRole) else SecurityRole(
             self.connection, id=str(security_role))
 
-        security_role.revoke_from([self.id], application)
+        security_role.revoke_from([self.id], project)
         if config.verbose:
             print("Revoked Security Role '{}' from user: '{}'".format(
                 security_role.name, self.name))
@@ -650,6 +648,18 @@ class User(Entity, TrusteeACLMixin):
         """
         temp_connections = UserConnections(self.connection)
         temp_connections.disconnect_users(users=self, nodes=nodes)
+
+    def delete(self, force: bool = False) -> bool:
+        """Deletes the user.
+        Deleting the user will not remove the user's shared files.
+
+                Args:
+            force: If True, no additional prompt will be shown before deleting
+                User.
+        Returns:
+            True for success. False otherwise.
+        """
+        return super().delete(force=force)
 
     @property
     def memberships(self):

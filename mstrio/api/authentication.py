@@ -1,6 +1,8 @@
-from mstrio.utils.helper import response_handler
+from mstrio.utils.error_handlers import ErrorHandler
 
 
+@ErrorHandler(
+    err_msg='Authentication error. Check user credentials or REST API URL and try again.')
 def login(connection):
     """Authenticate a user and create an HTTP session on the web server where
     the user’s MicroStrategy sessions are stored.
@@ -20,8 +22,8 @@ def login(connection):
         Complete HTTP response object.
     """
 
-    response = connection.session.post(
-        url=connection.base_url + '/api/auth/login',
+    return connection.session.post(
+        url=f'{connection.base_url}/api/auth/login',
         data={
             'username': connection.username,
             'password': connection._Connection__password,
@@ -29,14 +31,10 @@ def login(connection):
             'applicationType': 35,
         },
     )
-    if not response.ok:
-        response_handler(
-            response,
-            "Authentication error. Check user credentials or REST API URL and try again.")
-    return response
 
 
-def logout(connection):
+@ErrorHandler(err_msg="Failed to logout.")
+def logout(connection, error_msg=None):
     """Close all existing sessions for the authenticated user.
 
     Args:
@@ -45,11 +43,10 @@ def logout(connection):
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.post(url=connection.base_url + '/api/auth/logout',
-                                       headers={'X-MSTR-ProjectID': None})
-    if not response.ok:
-        response_handler(response, "Failed to logout.")
-    return response
+    return connection.session.post(
+        url=f'{connection.base_url}/api/auth/logout',
+        headers={'X-MSTR-ProjectID': None}
+    )
 
 
 def session_renew(connection):
@@ -62,9 +59,10 @@ def session_renew(connection):
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.put(url=connection.base_url + '/api/sessions',
-                                      headers={'X-MSTR-ProjectID': None})
-    return response
+    return connection.session.put(
+        url=f'{connection.base_url}/api/sessions',
+        headers={'X-MSTR-ProjectID': None}
+    )
 
 
 def session_status(connection):
@@ -76,17 +74,18 @@ def session_status(connection):
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.get(url=connection.base_url + '/api/sessions',
-                                      headers={'X-MSTR-ProjectID': None})
+    return connection.session.get(
+        url=f'{connection.base_url}/api/sessions',
+        headers={'X-MSTR-ProjectID': None}
+    )
 
-    return response
 
-
+@ErrorHandler(err_msg='Could not get identity token.')
 def identity_token(connection):
     """Create a new identity token.
 
     An identity token is used to share an existing session with another
-    application, based on the authorization token for the existing
+    project, based on the authorization token for the existing
     session.
 
     Args:
@@ -95,13 +94,10 @@ def identity_token(connection):
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.post(
-        url=connection.base_url + '/api/auth/identityToken',
-        headers={"X-MSTR-AuthToken": connection.session.headers['X-MSTR-AuthToken']},
+    return connection.session.post(
+        url=f'{connection.base_url}/api/auth/identityToken',
+        headers={"X-MSTR-AuthToken": connection.session.headers['X-MSTR-AuthToken']}
     )
-    if not response.ok:
-        response_handler(response, "Could not get identity token.")
-    return response
 
 
 def validate_identity_token(connection, identity_token):
@@ -114,12 +110,15 @@ def validate_identity_token(connection, identity_token):
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.get(url=connection.base_url + '/api/auth/identityToken',
-                                      headers={'X-MSTR-IdentityToken': identity_token})
-    return response
+    return connection.session.get(
+        url=f'{connection.base_url}/api/auth/identityToken',
+        headers={'X-MSTR-IdentityToken': identity_token}
+    )
 
 
-def delegate(connection, identity_token, whitelist=[]):
+@ErrorHandler(
+    err_msg='Error creating a new Web server session that shares an existing IServer session.')
+def delegate(connection, identity_token, whitelist=None):
     """Returns authentication token and cookies from given X-MSTR-
     IdentityToken.
 
@@ -131,22 +130,16 @@ def delegate(connection, identity_token, whitelist=[]):
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.post(
-        url=connection.base_url + '/api/auth/delegate',
+    return connection.session.post(
+        url=f'{connection.base_url}/api/auth/delegate',
         json={
             'loginMode': "-1",
             'identityToken': identity_token
         },
     )
 
-    if not response.ok:
-        response_handler(
-            response,
-            "Error creating a new Web server session that shares an existing IServer session.",
-            whitelist=whitelist)
-    return response
 
-
+@ErrorHandler(err_msg='Error getting privileges list.')
 def user_privileges(connection):
     """Get the list of privileges for the authenticated user.
 
@@ -159,13 +152,10 @@ def user_privileges(connection):
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.get(url=connection.base_url + '/api/sessions/privileges')
-
-    if not response.ok:
-        response_handler(response, "Error getting priviliges list")
-    return response
+    return connection.session.get(url=f"{connection.base_url}/api/sessions/privileges")
 
 
+@ErrorHandler(err_msg='Error getting info for authenticated user.')
 def get_info_for_authenticated_user(connection, error_msg=None):
     """Get information for the authenticated user.
 
@@ -176,12 +166,7 @@ def get_info_for_authenticated_user(connection, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    url = connection.base_url + "/api/sessions/userInfo"
+    url = f'{connection.base_url}/api/sessions/userInfo'
     token = connection.session.headers['X-MSTR-AuthToken']
     headers = {"X-MSTR-AuthToken": token}
-    response = connection.session.get(url=url, headers=headers)
-    if not response.ok:
-        if error_msg is None:
-            error_msg = "Error getting info for authenticated user"
-        response_handler(response, error_msg)
-    return response
+    return connection.session.get(url=url, headers=headers)

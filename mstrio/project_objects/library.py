@@ -1,25 +1,25 @@
 from typing import TYPE_CHECKING, Union, List
 
-from mstrio.application_objects.document import list_documents, Document
-from mstrio.application_objects.dossier import list_dossiers
+from mstrio.project_objects.document import list_documents, Document
+from mstrio.project_objects.dossier import list_dossiers
 from mstrio.api import library
 from mstrio.utils.helper import exception_handler
 
 if TYPE_CHECKING:
-    from mstrio.application_objects.dossier import Dossier
+    from mstrio.project_objects.dossier import Dossier
 
 
 class Library:
 
     def __init__(self, connection):
         # TODO: consider adding Connection.project_selected attr/method
-        if connection.application_id is None:
-            exception_handler("No application selected, library content will not be loaded.",
+        if connection.project_id is None:
+            exception_handler("No project selected, library content will not be loaded.",
                               exception_type=Warning)
         self.connection = connection
         ids = self.__get_library_ids()
         # TODO: consider adding Connection.project_selected attr/method
-        if connection.application_id is None:
+        if connection.project_id is None:
             self._documents = None
             self._dossiers = None
             self._contents = None
@@ -37,21 +37,21 @@ class Library:
 
     @property
     def dossiers(self):
-        if self.connection.application_id is not None:
+        if self.connection.project_id is not None:
             ids = self.__get_library_ids()
             self._dossiers = list_dossiers(self.connection, id=ids)
         return self._dossiers
 
     @property
     def documents(self):
-        if self.connection.application_id is not None:
+        if self.connection.project_id is not None:
             ids = self.__get_library_ids()
             self._documents = list_documents(self.connection, id=ids)
         return self._documents
 
     @property
     def contents(self):
-        if self.connection.application_id is not None:
+        if self.connection.project_id is not None:
             self._contents = self.dossiers + self.documents
         return self._contents
 

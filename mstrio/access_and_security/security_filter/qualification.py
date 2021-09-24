@@ -1,12 +1,13 @@
-from mstrio.utils.helper import Dictable, Any, camel_to_snake
-from typing import Optional, List, Union, Dict, TYPE_CHECKING
+from typing import Dict, List, Optional, TYPE_CHECKING, Union
 
-from mstrio.access_and_security.security_filter import PredicateForm, PredicateFilter,\
-    PredicateElementList, PredicateJointElementList, LogicOperator
+from mstrio.access_and_security.security_filter import (LogicOperator, PredicateElementList,
+                                                        PredicateFilter, PredicateForm,
+                                                        PredicateJointElementList)
+from mstrio.utils.helper import Any, Dictable
 
 if TYPE_CHECKING:
-    from mstrio.connection import Connection
     from mstrio.access_and_security.security_filter import PredicateBase
+    from mstrio.connection import Connection
 
 
 class Qualification(Dictable):
@@ -55,23 +56,21 @@ class Qualification(Dictable):
         self.tokens = tokens
 
     @classmethod
-    def from_dict(cls, source: Dict[str, Any], connection: Optional["Connection"] = None,
-                  to_snake_case=True):
-        source = camel_to_snake(source) if to_snake_case else source
+    def from_dict(cls, source: Dict[str, Any], connection: Optional["Connection"] = None):
         tree = source.get("tree")
         tree_type = tree.get("type")
         if tree_type == "predicate_form_qualification":
-            tree = PredicateForm.from_dict(tree, connection, to_snake_case)
+            tree = PredicateForm.from_dict(tree, connection)
         elif tree_type == "predicate_joint_element_list":
-            tree = PredicateJointElementList.from_dict(tree, connection, to_snake_case)
+            tree = PredicateJointElementList.from_dict(tree, connection)
         elif tree_type == "predicate_filter_qualification":
-            tree = PredicateFilter.from_dict(tree, connection, to_snake_case)
+            tree = PredicateFilter.from_dict(tree, connection)
         elif tree_type == "predicate_element_list":
-            tree = PredicateElementList.from_dict(tree, connection, to_snake_case)
+            tree = PredicateElementList.from_dict(tree, connection)
         elif tree_type == "operator":
-            tree = LogicOperator.from_dict(tree, connection, to_snake_case)
+            tree = LogicOperator.from_dict(tree, connection)
         else:
             tree = None
-        text = source.get("text")
-        tokens = source.get("tokens")
-        return Qualification(tree, text, tokens)
+        new_source = source.copy()
+        new_source["tree"] = tree
+        return super().from_dict(new_source, connection)

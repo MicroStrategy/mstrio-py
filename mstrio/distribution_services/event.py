@@ -5,6 +5,11 @@ from mstrio.api import events, objects
 from mstrio.connection import Connection
 from mstrio.utils import helper
 from mstrio.utils.entity import Entity, ObjectTypes
+from packaging import version
+
+from ..utils.wip import module_wip, WipLevels
+
+module_wip(globals(), level=WipLevels.WARNING)
 
 
 def list_events(connection: Connection, to_dictionary: bool = False, limit: int = None,
@@ -21,13 +26,8 @@ def list_events(connection: Connection, to_dictionary: bool = False, limit: int 
                                                 'id',
                                                 'description']
     """
-    _objects = helper.fetch_objects(
-        connection=connection,
-        api=events.list_events,
-        limit=limit,
-        filters=filters,
-        dict_unpack_value='events',
-    )
+    _objects = helper.fetch_objects(connection=connection, api=events.list_events, limit=limit,
+                                    filters=filters, dict_unpack_value='events')
 
     if to_dictionary:
         return _objects
@@ -64,7 +64,8 @@ class Event(Entity):
             name: Event name
         """
         self._API_GETTERS[('id', 'name', 'description')] = \
-            events.get_event if connection.web_version >= '11.3.2' else objects.get_object_info
+            events.get_event if version.parse(connection.web_version) >= \
+            version.parse('11.3.0200') else objects.get_object_info
 
         if id is None and name is None:
             raise AttributeError(
@@ -80,7 +81,8 @@ class Event(Entity):
             super().__init__(connection=connection, object_id=id, name=name)
 
     def trigger(self):
-        """Triggers the Event"""
+        """Triggers the Event
+        NOTE: WIP, may not work properly"""
         response = events.trigger_event(self.connection, self.id)
         if response.ok and config.verbose:
             print(f'Event \'{self.name}\' with ID : \'{self.id}\' has been triggered.')

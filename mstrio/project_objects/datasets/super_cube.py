@@ -6,12 +6,12 @@ import pandas as pd
 from tqdm.auto import tqdm
 
 from mstrio import config
-from mstrio.api import datasets, objects
-from mstrio.browsing import list_objects, SearchType
+from mstrio.api import datasets
+from mstrio.object_management.search_operations import full_search, SearchPattern
 from mstrio.connection import Connection
 from mstrio.utils import helper
 from mstrio.utils.encoder import Encoder
-from mstrio.utils.entity import ObjectSubTypes
+from mstrio.utils.entity import CertifyMixin, ObjectSubTypes
 from mstrio.utils.model import Model
 
 from .cube import _Cube
@@ -46,17 +46,17 @@ def list_super_cubes(connection: Connection, name_begins: Optional[str] = None,
     Returns:
         list with SuperCubes or list of dictionaries
     """
-    connection._validate_application_selected()
-    objects_ = list_objects(connection, ObjectSubTypes.SUPER_CUBE, connection.application_id,
-                            name=name_begins, pattern=SearchType.BEGIN_WITH, limit=limit,
-                            **filters)
+    connection._validate_project_selected()
+    objects_ = full_search(connection, object_types=ObjectSubTypes.SUPER_CUBE,
+                           project=connection.project_id, name=name_begins,
+                           pattern=SearchPattern.BEGIN_WITH, limit=limit, **filters)
     if to_dictionary:
         return objects_
     else:
         return [SuperCube.from_dict(obj_, connection) for obj_ in objects_]
 
 
-class SuperCube(_Cube):
+class SuperCube(_Cube, CertifyMixin):
     """Manage multiple table cube (MTDI aka Super Cube) - according to
     EnumDSSXMLObjectSubTypes its subtype is 779 (DssXmlSubTypeReportEmmaCube).
     It inherits all properties from Cube.
@@ -78,7 +78,6 @@ class SuperCube(_Cube):
         size(integer): size of cube
         status(integer): status of cube
         path(string): full path of the cube on environment
-        last_modified(string): time when was last modification of cube
         owner_id(string): ID of cube's owner
         attributes(list): all attributes of cube
         metrics(list): all metrics of cube
@@ -134,7 +133,7 @@ class SuperCube(_Cube):
                 description, msg="Super cube description should be <= {} characters.".format(
                     self.__MAX_DESC_LEN), max_length=self.__MAX_DESC_LEN)
 
-        connection._validate_application_selected()
+        connection._validate_project_selected()
 
         if id is not None:
             super().__init__(connection=connection, id=id, instance_id=instance_id,
@@ -354,13 +353,14 @@ class SuperCube(_Cube):
             new_cube.create(folder_id=folder_id)
             return new_cube
 
-    def publish(self):
+    def publish(self) -> bool:
         """Publish the uploaded data to the selected super cube.
 
-        A super cube can be published just once.
+        Note:
+            A super cube can be published just once.
+
         Returns:
-            response: Response from the Intelligence Server acknowledging the
-                publication process.
+            True if the data was published successfully, else False.
         """
 
         response = datasets.publish(connection=self._connection, id=self._id,
@@ -370,20 +370,18 @@ class SuperCube(_Cube):
             # on error, cancel the previously uploaded data
             datasets.publish_cancel(connection=self._connection, id=self._id,
                                     session_id=self._session_id)
+            return False
 
         status = 6  # default initial status
         while status != 1:
             status = self.publish_status()['status']
             time.sleep(1)
             if status == 1:
-                print("Super cube '%s' published successfully." % self.name)
-
-    def certify(self):
-        """Certify the uploaded super cube."""
-        response = objects.toggle_certification(connection=self._connection, id=self._id)
-        self._set_object(**response.json())
-        if response.ok and config.verbose:
-            print("The super cube with ID: '{}' has been certified.".format(self._id))
+                # clear instance_id to force new instance creation
+                self.instance_id = None
+                if config.verbose:
+                    print(f"Super cube '{self.name}' published successfully.")
+                return True
 
     def publish_status(self):
         """Check the status of data that was uploaded to a super cube.
@@ -398,13 +396,6 @@ class SuperCube(_Cube):
             response = datasets.publish_status(connection=self._connection, id=self._id,
                                                session_id=self._session_id)
             return response.json()
-
-    def delete(self):
-        """Delete a super cube that was created using the REST API."""
-        datasets.delete_dataset(connection=self._connection, id=self._id)
-
-        if config.verbose:
-            print("Successfully deleted super cube ID: '{}'.".format(self._id))
 
     def upload_status(self, connection: Connection, id: str, session_id: str):
         """Check the status of data that was uploaded to a super cube.

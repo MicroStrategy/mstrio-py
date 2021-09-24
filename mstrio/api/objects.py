@@ -1,45 +1,15 @@
-from mstrio.utils.helper import response_handler
+from typing import TYPE_CHECKING
+
+from mstrio.utils.error_handlers import ErrorHandler
+from mstrio.utils.helper import deprecation_warning
+
+if TYPE_CHECKING:
+    from requests_futures.sessions import FuturesSession
 
 
-def get_object_info(connection, id, type, application_id=None, error_msg=None):
-    """Get information for a specific object in a specific project; if you do
-    not specify a application ID, you get information for the object in all
-    projects.
-
-    You identify the object with the object ID and object type. You specify
-    the object type as a query parameter; possible values for object type are
-    provided in EnumDSSXMLObjectTypes.
-
-    Args:
-        connection(object): MicroStrategy connection object returned by
-            `connection.Connection()`.
-        id (str): Object ID
-        type (int): One of EnumDSSXMLObjectTypes. Ex. 34 (User or UserGroup),
-            44 (Security Role), 32 (Project), 8 (Folder), 36 (type of I-Server
-            configuration), 58 (Security Filter)
-        application_id(str): ID of a project in which the object is located.
-        error_msg (string, optional): Custom Error Message for Error Handling
-
-    Returns:
-        HTTP response object returned by the MicroStrategy REST server.
-    """
-    if type == 32:
-        headers = {'X-MSTR-ProjectID': None}
-    elif application_id:
-        headers = {'X-MSTR-ProjectID': application_id}
-    else:
-        headers = {'X-MSTR-ProjectID': connection.project_id}
-
-    response = connection.session.get(url=connection.base_url + '/api/objects/' + id,
-                                      headers=headers, params={'type': type})
-    if not response.ok:
-        if error_msg is None:
-            error_msg = "Error getting information for the specific object."
-        response_handler(response, error_msg, whitelist=[('ERR001', 500)])
-    return response
-
-
-def delete_object(connection, id, type, application_id=None, error_msg=None):
+@ErrorHandler(err_msg='Error getting information for the object with ID {id}')
+def get_object_info(connection, id, object_type, project_id=None, error_msg=None,
+                    whitelist=[('ERR001 ', 500)], application_id=None):
     """Get information for a specific object in a specific project; if you do
     not specify a project ID, you get information for the object in all
     projects.
@@ -52,32 +22,82 @@ def delete_object(connection, id, type, application_id=None, error_msg=None):
         connection(object): MicroStrategy connection object returned by
             `connection.Connection()`.
         id (str): Object ID
-        type (int): One of EnumDSSXMLObjectTypes. Ex. 34 (User or UserGroup),
-            44 (Security Role), 32 (Project), 8 (Folder), 36 (type of I-Server
-            configuration)
-        application_id(str): ID of a project in which the object is located.
+        object_type (int): One of EnumDSSXMLObjectTypes. Ex. 34 (User or
+        UserGroup), 44 (Security Role), 32 (Project), 8 (Folder), 36 (type of
+        I-Server configuration), 58 (Security Filter)
+        project_id(str): ID of a project in which the object is located.
+        application_id: deprecated. Use project_id instead.
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
         HTTP response object returned by the MicroStrategy REST server.
     """
-    if type == 32:
-        headers = {'X-MSTR-ProjectID': str(id)}
-    elif application_id:
-        headers = {'X-MSTR-ProjectID': application_id}
+    if application_id:
+        deprecation_warning(
+            '`application`',
+            '`project`',
+            '11.3.4.101',  # NOSONAR
+            False)
+        project_id = project_id or application_id
+
+    if object_type == 32:
+        headers = {'X-MSTR-ProjectID': None}
+    elif project_id:
+        headers = {'X-MSTR-ProjectID': project_id}
     else:
         headers = {'X-MSTR-ProjectID': connection.project_id}
 
-    response = connection.session.delete(url=connection.base_url + '/api/objects/' + id,
-                                         headers=headers, params={'type': type})
-    if not response.ok:
-        if error_msg is None:
-            error_msg = "Error deleting object {}".format(id)
-        response_handler(response, error_msg)
-    return response
+    return connection.session.get(url=f'{connection.base_url}/api/objects/{id}', headers=headers,
+                                  params={'type': object_type})
 
 
-def update_object(connection, id, body, type, application_id=None, error_msg=None, verbose=True):
+@ErrorHandler(err_msg='Error deleting object with ID {id}')
+def delete_object(connection, id, object_type, project_id=None, error_msg=None,
+                  application_id=None):
+    """Get information for a specific object in a specific project; if you do
+    not specify a project ID, you get information for the object in all
+    projects.
+
+    You identify the object with the object ID and object type. You specify
+    the object type as a query parameter; possible values for object type are
+    provided in EnumDSSXMLObjectTypes.
+
+    Args:
+        connection(object): MicroStrategy connection object returned by
+            `connection.Connection()`.
+        id (str): Object ID
+        object_type (int): One of EnumDSSXMLObjectTypes. Ex. 34 (User or
+        UserGroup), 44 (Security Role), 32 (Project), 8 (Folder), 36 (type of
+        I-Server configuration)
+        project_id(str): ID of a project in which the object is located.
+        application_id: deprecated. Use project_id instead.
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        HTTP response object returned by the MicroStrategy REST server.
+    """
+    if application_id:
+        deprecation_warning(
+            '`application`',
+            '`project`',
+            '11.3.4.101',  # NOSONAR
+            False)
+        project_id = project_id or application_id
+
+    if object_type == 32:
+        headers = {'X-MSTR-ProjectID': str(id)}
+    elif project_id:
+        headers = {'X-MSTR-ProjectID': project_id}
+    else:
+        headers = {'X-MSTR-ProjectID': connection.project_id}
+
+    return connection.session.delete(url=f'{connection.base_url}/api/objects/{id}',
+                                     headers=headers, params={'type': object_type})
+
+
+@ErrorHandler(err_msg='Error updating object with ID {id}')
+def update_object(connection, id, body, object_type, project_id=None, error_msg=None, verbose=True,
+                  application_id=None):
     """Get information for a specific object in a specific project; if you do
     not specify a project ID, you get information for the object in all
     projects.
@@ -91,32 +111,37 @@ def update_object(connection, id, body, type, application_id=None, error_msg=Non
             `connection.Connection()`.
         id (str): Object ID
         body: (object): body of the response
-        type (int): One of EnumDSSXMLObjectTypes. Ex. 34 (User or UserGroup),
-        44 (Security Role), 32 (Project), 8 (Folder), 36 (type of I-Server
-        configuration)
-        application_id(str): ID of a project in which the object is located.
+        object_type (int): One of EnumDSSXMLObjectTypes. Ex. 34 (User or
+        UserGroup), 44 (Security Role), 32 (Project), 8 (Folder), 36 (type of
+        I-Server configuration)
+        project_id(str): ID of a project in which the object is located.
+        application_id: deprecated. Use project_id instead.
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
         HTTP response object returned by the MicroStrategy REST server.
     """
-    if type == 32:
+    if application_id:
+        deprecation_warning(
+            '`application`',
+            '`project`',
+            '11.3.4.101',  # NOSONAR
+            False)
+        project_id = project_id or application_id
+    if object_type == 32:
         headers = {'X-MSTR-ProjectID': str(id)}
-    elif application_id:
-        headers = {'X-MSTR-ProjectID': application_id}
+    elif project_id:
+        headers = {'X-MSTR-ProjectID': project_id}
     else:
         headers = {'X-MSTR-ProjectID': connection.project_id}
 
-    response = connection.session.put(url=connection.base_url + '/api/objects/' + id,
-                                      headers=headers, params={'type': type}, json=body)
-    if not response.ok:
-        if error_msg is None:
-            error_msg = "Error updating object {}".format(id)
-        response_handler(response, error_msg, verbose=verbose)
-    return response
+    return connection.session.put(url=f'{connection.base_url}/api/objects/{id}', headers=headers,
+                                  params={'type': object_type}, json=body)
 
 
-def copy_object(connection, id, name, folder_id, type, application_id=None, error_msg=None):
+@ErrorHandler(err_msg='Error creating a copy of object with ID {id}')
+def copy_object(connection, id, name, folder_id, object_type, project_id=None, error_msg=None,
+                application_id=None):
     """Create a copy of a specific object.
 
     You identify the object with the object ID and object type. You obtain the
@@ -134,69 +159,79 @@ def copy_object(connection, id, name, folder_id, type, application_id=None, erro
         connection(object): MicroStrategy connection object returned by
             `connection.Connection()`.
         id (str): Object ID
-        type (int): One of EnumDSSXMLObjectTypes. Ex. 34 (User or UserGroup),
-            44 (Security Role), 32 (Project), 8 (Folder), 36 (type of I-Server
-            configuration)
-        application_id(str): ID of a project in which the object is located.
+        object_type (int): One of EnumDSSXMLObjectTypes. Ex. 34 (User or
+        UserGroup), 44 (Security Role), 32 (Project), 8 (Folder), 36 (type of
+        I-Server configuration)
+        project_id(str): ID of a project in which the object is located.
+        application_id: deprecated. Use project_id instead.
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
         HTTP response object returned by the MicroStrategy REST server.
     """
-    if type == 32:
+    if application_id:
+        deprecation_warning(
+            '`application`',
+            '`project`',
+            '11.3.4.101',  # NOSONAR
+            False)
+        project_id = project_id or application_id
+    if object_type == 32:
         headers = {'X-MSTR-ProjectID': str(id)}
-    elif application_id:
-        headers = {'X-MSTR-ProjectID': application_id}
+    elif project_id:
+        headers = {'X-MSTR-ProjectID': project_id}
     elif connection.project_id:
         headers = {'X-MSTR-ProjectID': connection.project_id}
     else:
-        raise ValueError("Application needs to be specified.")
+        raise ValueError("Project needs to be specified.")
 
     body = {"name": name, "folderId": folder_id}
-    response = connection.session.post(url=connection.base_url + '/api/objects/' + id + '/copy',
-                                       headers=headers, params={'type': type}, json=body)
-    if not response.ok:
-        if error_msg is None:
-            error_msg = "Error creating a copy of object {}".format(id)
-        response_handler(response, error_msg)
-    return response
+    return connection.session.post(url=f'{connection.base_url}/api/objects/{id}/copy',
+                                   headers=headers, params={'type': object_type}, json=body)
 
 
-def get_vldb_settings(connection, id, type, application_id=None, error_msg=None):
+@ErrorHandler(err_msg='Error getting VLDB settings for object with ID {id}')
+def get_vldb_settings(connection, id, object_type, project_id=None, error_msg=None,
+                      application_id=None):
     """Get vldb settings for an object.
 
     Args:
         connection(object): MicroStrategy connection object returned by
             `connection.Connection()`.
         id (str): Object ID
-        type (int): DssXmlTypeReportDefinition(3) for Dataset and
+        object_type (int): DssXmlTypeReportDefinition(3) for Dataset and
             DssXmlTypeDocumentDefinition(55) for document/dossier
-        application_id(str): ID of a project in which the object is located.
+        project_id(str): ID of a project in which the object is located.
+        application_id: deprecated. Use project_id instead.
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
         HTTP response object returned by the MicroStrategy REST server
     """
-    headers = {}
     if application_id:
-        headers = {'X-MSTR-ProjectID': application_id}
+        deprecation_warning(
+            '`application_id`',
+            '`project_id`',
+            '11.3.4.101',  # NOSONAR
+            False)
+        project_id = project_id or application_id
+    headers = {}
+    if project_id:
+        headers = {'X-MSTR-ProjectID': project_id}
     else:
-        connection._validate_application_selected()
+        connection._validate_project_selected()
         headers = {'X-MSTR-ProjectID': connection.project_id}
 
-    response = connection.session.get(
+    return connection.session.get(
         url=f"{connection.base_url}/api/objects/{id}/vldb/propertySets",
-        params={'type': type},
+        params={'type': object_type},
         headers=headers,
     )
-    if not response.ok:
-        if error_msg is None:
-            error_msg = "Error getting VLDB settings for object '{}'".format(id)
-        response_handler(response, error_msg)
-    return response
 
 
-def delete_vldb_settings(connection, id, type, application_id=None, error_msg=None):
+@ErrorHandler(err_msg='Error resetting all custom vldb settings for object with ID {id}')
+def delete_vldb_settings(connection, id, object_type, project_id=None, error_msg=None,
+                         application_id=None):
     """Delete all customized vldb settings in one object, this operation will
     reset all vldb settings to default.
 
@@ -204,71 +239,80 @@ def delete_vldb_settings(connection, id, type, application_id=None, error_msg=No
         connection(object): MicroStrategy connection object returned by
             `connection.Connection()`.
         id (str): Object ID
-        type (int): DssXmlTypeReportDefinition(3) for Dataset and
+        object_type (int): DssXmlTypeReportDefinition(3) for Dataset and
             DssXmlTypeDocumentDefinition(55) for document/dossier
-        application_id(str): ID of a project in which the object is located.
+        project_id(str): ID of a project in which the object is located.
+        application_id: deprecated. Use project_id instead.
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
         HTTP response object returned by the MicroStrategy REST server
     """
-    headers = {}
     if application_id:
-        headers = {'X-MSTR-ProjectID': application_id}
+        deprecation_warning(
+            '`application_id`',
+            '`project_id`',
+            '11.3.4.101',  # NOSONAR
+            False)
+        project_id = project_id or application_id
+    headers = {}
+    if project_id:
+        headers = {'X-MSTR-ProjectID': project_id}
     else:
-        connection._validate_application_selected()
+        connection._validate_project_selected()
         headers = {'X-MSTR-ProjectID': connection.project_id}
 
-    response = connection.session.delete(
+    return connection.session.delete(
         url=f"{connection.base_url}/api/objects/{id}/vldb/propertySets",
-        params={'type': type},
+        params={'type': object_type},
         headers=headers,
     )
-    if not response.ok:
-        if error_msg is None:
-            error_msg = f"Error resetting all custom vldb settings to default for object '{id}'"
-        response_handler(response, error_msg)
-    return response
 
 
-def set_vldb_settings(connection, id, type, name, body, application_id=None, error_msg=None):
+@ErrorHandler(err_msg='Error resetting all custom vldb settings for object with ID {id}')
+def set_vldb_settings(connection, id, object_type, name, body, project_id=None, error_msg=None,
+                      application_id=None):
     """Set vldb settings for one property set in one object.
 
     Args:
         connection(object): MicroStrategy connection object returned by
             `connection.Connection()`.
         id (str): Object ID
-        type (int): DssXmlTypeReportDefinition(3) for Dataset and
+        object_type (int): DssXmlTypeReportDefinition(3) for Dataset and
             DssXmlTypeDocumentDefinition(55) for document/dossier
         name: property set name
         body: [{"name": "string",
                 "value": {}}]
-        application_id(str): ID of a project in which the object is located.
+        project_id(str): ID of a project in which the object is located.
+        application_id: deprecated. Use project_id instead.
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
         HTTP response object returned by the MicroStrategy REST server
     """
-    headers = {}
     if application_id:
-        headers = {'X-MSTR-ProjectID': application_id}
+        deprecation_warning(
+            '`application_id`',
+            '`project_id`',
+            '11.3.4.101',  # NOSONAR
+            False)
+        project_id = project_id or application_id
+    headers = {}
+    if project_id:
+        headers = {'X-MSTR-ProjectID': project_id}
     else:
-        connection._validate_application_selected()
+        connection._validate_project_selected()
         headers = {'X-MSTR-ProjectID': connection.project_id}
 
-    response = connection.session.put(
+    return connection.session.put(
         url=f"{connection.base_url}/api/objects/{id}/vldb/propertySets/{name}",
-        params={'type': type},
+        params={'type': object_type},
         headers=headers,
         json=body,
     )
-    if not response.ok:
-        if error_msg is None:
-            error_msg = "Error setting vldb settings for object '{}'".format(id)
-        response_handler(response, error_msg)
-    return response
 
 
+@ErrorHandler(err_msg='Error getting objects.')
 def create_search_objects_instance(connection, name=None, pattern=4, domain=2, root=None,
                                    object_type=None, error_msg=None):
     """Create a search instance.
@@ -289,8 +333,8 @@ def create_search_objects_instance(connection, name=None, pattern=4, domain=2, r
     Returns:
         HTTP response returned by the MicroStrategy REST server
     """
-    connection._validate_application_selected()
-    response = connection.session.post(
+    connection._validate_project_selected()
+    return connection.session.post(
         url=f"{connection.base_url}/api/objects",
         headers={'X-MSTR-ProjectID': connection.project_id},
         params={
@@ -301,13 +345,9 @@ def create_search_objects_instance(connection, name=None, pattern=4, domain=2, r
             'type': object_type
         },
     )
-    if not response.ok:
-        if error_msg is None:
-            error_msg = "Error getting objects."
-        response_handler(response, error_msg)
-    return response
 
 
+@ErrorHandler(err_msg='Error getting objects using serach with ID {search_id}')
 def get_objects(connection, search_id, offset=0, limit=-1, get_tree=False, error_msg=None):
     """Get list of objects from metadata.
 
@@ -329,8 +369,8 @@ def get_objects(connection, search_id, offset=0, limit=-1, get_tree=False, error
     Returns:
         HTTP response returned by the MicroStrategy REST server
     """
-    connection._validate_application_selected
-    response = connection.session.get(
+    connection._validate_project_selected
+    return connection.session.get(
         url=f"{connection.base_url}/api/objects",
         headers={'X-MSTR-ProjectID': connection.project_id},
         params={
@@ -340,18 +380,15 @@ def get_objects(connection, search_id, offset=0, limit=-1, get_tree=False, error
             'getTree': get_tree
         },
     )
-    if not response.ok:
-        if error_msg is None:
-            error_msg = "Error getting objects."
-        response_handler(response, error_msg)
-    return response
 
 
-def get_objects_async(future_session, connection, search_id, offset=0, limit=-1, get_tree=False,
-                      error_msg=None):
+def get_objects_async(future_session: "FuturesSession", connection, search_id, offset=0, limit=-1,
+                      get_tree=False, error_msg=None):
     """Get list of objects from metadata asynchronously.
 
     Args:
+        future_session(object): Future Session object to call MicroStrategy REST
+            Server asynchronously
         connection(object): MicroStrategy connection object returned by
             `connection.Connection()`.
         search_id: ID for the results of a previous search stored in I-Server
@@ -368,7 +405,7 @@ def get_objects_async(future_session, connection, search_id, offset=0, limit=-1,
     Returns:
         HTTP response returned by the MicroStrategy REST server
     """
-    connection._validate_application_selected()
+    connection._validate_project_selected()
     url = connection.base_url + '/api/objects'
     headers = {'X-MSTR-ProjectID': connection.project_id}
     params = {'searchId': search_id, 'offset': offset, 'limit': limit, 'getTree': get_tree}
@@ -376,7 +413,8 @@ def get_objects_async(future_session, connection, search_id, offset=0, limit=-1,
     return future
 
 
-def toggle_certification(connection, id, dataset_type=3, certify=True):
+@ErrorHandler(err_msg='Error certifying object with ID {id}')
+def toggle_certification(connection, id, object_type=3, certify=True):
     """Certify/Uncertify a multi-table dataset.
 
     Args:
@@ -384,24 +422,20 @@ def toggle_certification(connection, id, dataset_type=3, certify=True):
             `connection.Connection()`.
         id (str): Identifier of a pre-existing dataset. Used when
             certifying a pre-existing dataset.
-        dataset_type (int, optional): Type of dataset to certify as integer;
-            defaults to 3.
+        object_type (int, optional): Type of object to certify as integer;
+            defaults to 3 (dataset)
         certify (bool, optional): boolean representing if the instruction is to
             certify (True) or decertify (False); defaults to True.
 
     Returns:
         HTTP response object returned by the MicroStrategy REST server.
     """
-
-    response = connection.session.put(
-        url=(connection.base_url + '/api/objects/' + id + '/certify/?type=' + str(dataset_type)
-             + '&certify=' + str(certify)),
+    url = f'{connection.base_url}/api/objects/{id}/certify/?type={str(object_type)}' \
+          f'&certify={str(certify)}'
+    return connection.session.put(
+        url=url,
         headers={
             'Content-Type': 'application/json',
             'Accept': 'application/json'
         },
     )
-    if not response.ok:
-        error_msg = "Error certifying dataset with ID: '{}'".format(id)
-        response_handler(response, error_msg)
-    return response

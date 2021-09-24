@@ -9,10 +9,11 @@ from tqdm.auto import tqdm
 
 from mstrio import config
 from mstrio.api import reports
-from mstrio.browsing import list_objects, SearchType
+from mstrio.object_management.search_operations import full_search, SearchPattern
 from mstrio.connection import Connection
 from mstrio.users_and_groups.user import User
-from mstrio.utils.entity import Entity, ObjectTypes
+from mstrio.utils.certified_info import CertifiedInfo
+from mstrio.utils.entity import CertifyMixin, Entity, ObjectTypes
 from mstrio.utils.filter import Filter
 from mstrio.utils.helper import fallback_on_timeout
 import mstrio.utils.helper as helper
@@ -48,17 +49,17 @@ def list_reports(connection: Connection, name_begins: Optional[str] = None,
     Returns:
         list with Report objects or list of dictionaries
     """
-    connection._validate_application_selected()
-    objects_ = list_objects(connection, ObjectTypes.REPORT_DEFINITION, connection.application_id,
-                            name=name_begins, pattern=SearchType.BEGIN_WITH, limit=limit,
-                            **filters)
+    connection._validate_project_selected()
+    objects_ = full_search(connection, object_types=ObjectTypes.REPORT_DEFINITION,
+                           project=connection.project_id, name=name_begins,
+                           pattern=SearchPattern.BEGIN_WITH, limit=limit, **filters)
     if to_dictionary:
         return objects_
     else:
         return [Report.from_dict(obj_, connection) for obj_ in objects_]
 
 
-class Report(Entity):
+class Report(Entity, CertifyMixin):
     """Access, filter, publish, and extract data from in-memory reports.
 
     Create a Report object to load basic information on a report dataset.
@@ -79,13 +80,14 @@ class Report(Entity):
         type: Object type
         subtype: Object subtype
         ext_type: Object extended type
-        date_created: Creation time, "yyyy-MM-dd HH:mm:ss" in UTC
-        date_modified: Last modification time, "yyyy-MM-dd
+        date_created: Creation time, DateTime object
+        date_modified: Last modification time, DateTime object
         version: Version ID
         owner: owner User object
         view_media: View media information
         ancestors: List of ancestor folders
-        certified_info: Information whether report is certifeid or not
+        certified_info: Information whether report is certified or not,
+            CertifiedInfo object
         attributes: List of attributes
         metrics: List of metrics
         attr_elements: All attributes elements of report
@@ -97,12 +99,15 @@ class Report(Entity):
         acl: Object access control list
     """
     _OBJECT_TYPE = ObjectTypes.REPORT_DEFINITION
-    _FROM_DICT_MAP = {**Entity._FROM_DICT_MAP, 'owner': User.from_dict}
+    _FROM_DICT_MAP = {
+        **Entity._FROM_DICT_MAP,
+        'owner': User.from_dict,
+        'certified_info': CertifiedInfo.from_dict,
+    }
     _SIZE_LIMIT = 10000000  # this sets desired chunk size in bytes
 
-    def __init__(self, connection: Connection, id: str = None, instance_id: Optional[str] = None,
-                 parallel: bool = True, progress_bar: bool = True,
-                 report_id: Optional[str] = None):
+    def __init__(self, connection: Connection, id: str, instance_id: Optional[str] = None,
+                 parallel: bool = True, progress_bar: bool = True):
         """Initialize an instance of a report.
 
         Args:
@@ -110,8 +115,6 @@ class Report(Entity):
                 `connection.Connection()`.
             id (str): Identifier of a pre-existing report containing
                 the required data.
-            report_id (str): Identifier of a pre-existing report containing
-                the required data. (deprecated)
             instance_id (str): Identifier of an instance if report instance has
                 been already initialized, NULL by default.
             parallel (bool, optional): If True (default), utilize optimal number
@@ -120,13 +123,9 @@ class Report(Entity):
             progress_bar(bool, optional): If True (default), show the download
                 progress bar.
         """
-        if report_id:
-            helper.deprecation_warning("`report_id`", "`id`", "21.07.0", module=False)
-        id = id if id else report_id
-
+        connection._validate_project_selected()
         super().__init__(connection, id, instance_id=instance_id, parallel=parallel,
                          progress_bar=progress_bar)
-        connection._validate_application_selected()
 
     def _init_variables(self, **kwargs):
         super()._init_variables(**kwargs)
@@ -145,12 +144,6 @@ class Report(Entity):
         self._metrics = []
         self.__definition_retrieved = False
         self.__filter = None
-
-    @classmethod
-    def from_dict(cls, source: dict, connection: Connection) -> "Report":
-        """Initialize a single Report object from a dictionary with report
-        details retrieved from I-Server."""
-        return super().from_dict(source, connection)
 
     def alter(self, name: Optional[str] = None, description: Optional[str] = None,
               abbreviation: Optional[str] = None):
@@ -218,7 +211,7 @@ class Report(Entity):
             it_total = int((paging['total'] - self._initial_limit) / limit) + \
                 ((paging['total'] - self._initial_limit) % limit != 0)
 
-            if self.parallel and it_total > 1:
+            if self._parallel and it_total > 1:
                 threads = helper.get_parallel_number(it_total)
                 with FuturesSession(executor=ThreadPoolExecutor(max_workers=threads),
                                     session=self._connection.session) as session:

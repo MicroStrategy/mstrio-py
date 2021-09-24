@@ -1,21 +1,22 @@
-from typing import Any, Callable, Dict, List, Optional, TypeVar, Union
+from typing import Any, Callable, Dict, List, Optional, Union
 
 from requests import HTTPError
 
 from mstrio import config
-from mstrio.api import datasources
+from mstrio.api import datasources, objects
 from mstrio.connection import Connection
 from mstrio.datasources import DatasourceConnection, DatasourceInstance, DatasourceLogin
-from mstrio.server.application import Application
+from mstrio.server.project import Project
 from mstrio.users_and_groups.user import User
 from mstrio.utils import helper
-from mstrio.utils.entity import EntityBase
+from mstrio.utils.entity import Entity, EntityBase, ObjectTypes
+from mstrio.utils.helper import get_objects_id
 
 
 def list_datasource_mappings(
         connection: Connection, default_connection_map: bool = False,
-        application: Optional[Union[Application, str]] = None, to_dictionary: bool = False,
-        limit: Optional[int] = None,
+        project: Optional[Union[Project, str]] = None, to_dictionary: bool = False,
+        limit: Optional[int] = None, application: Optional[Union[Project, str]] = None,
         **filters) -> Union["DatasourceMap", List["DatasourceMap"], dict, List[dict], None]:
     """Get list of DatasourceLogin objects or dicts. Optionally filter the
     logins by specifying filters.
@@ -25,8 +26,9 @@ def list_datasource_mappings(
             `connection.Connection()`
         default_connection_map: True if connection map is default
             Connection Map. Default False
-        application: The application (or its id) which maps are to be fetched.
+        project: The project (or its id) which maps are to be fetched.
             Optional unless requesting the default map.
+        application: deprecated. Use project instead.
         to_dictionary: If True returns dict, by default (False) returns
             User objects.
         limit: limit the number of elements returned. If `None` (default), all
@@ -44,10 +46,39 @@ def list_datasource_mappings(
     Examples:
         >>> list_datasource_mappings(connection, name='db_login_name')
     """
+    if application:
+        helper.deprecation_warning(
+            '`application`',
+            '`project`',
+            '11.3.4.101',  # NOSONAR
+            False)
+        project = project or application
     return DatasourceMap._list(connection=connection,
-                               default_connection_map=default_connection_map,
-                               application=application, to_dictionary=to_dictionary, limit=limit,
-                               **filters)
+                               default_connection_map=default_connection_map, project=project,
+                               to_dictionary=to_dictionary, limit=limit, **filters)
+
+
+class Locale(Entity):
+    _OBJECT_TYPE = ObjectTypes.LOCALE
+    _API_GETTERS = {
+        ('name', 'id'): objects.get_object_info,
+    }
+
+    def __init__(self, connection: Connection, id: str):
+        """Initialize the Locale object and populate it with I-Server data.
+
+        Args:
+            connection: MicroStrategy connection object returned
+                by `connection.Connection()`.
+            id: Locale ID
+        """
+        if id is None:
+            raise AttributeError("Please specify 'id' parameter in the constructor.")
+        else:
+            super().__init__(connection=connection, object_id=id)
+
+    def _init_variables(self, **kwargs) -> None:
+        super()._init_variables(**kwargs)
 
 
 class DatasourceMap(EntityBase):
@@ -59,43 +90,37 @@ class DatasourceMap(EntityBase):
     Attributes:
         connection: A MicroStrategy connection object
         id: The Map's ID.
-        application: The application the Map is assigned to.
+        project: The project the Map is assigned to.
         default_connection_map: Whether the Map is the default
-            for the application.
+            for the project.
         ds_connection: The mapped Datasource Connection
         datasource: The mapped Datasource Instance
         user: The mapped User
         login: The mapped Datasource Login
         locale: The Map's locale
     """
-    # There is no API endpoint for fetching a single mapping,
-    # and due to Entity's internals, we cannot easily use a wrapper
-    # (as it would have to return a Response object).
-    # TODO: Maybe rework that part of Entity to accept getters
-    # that return a plain dictionary and not a yet unparsed Response.
-    _API_GETTERS: Dict[Union[str, tuple], Callable] = {}
+    _API_GETTERS: Dict[Union[str, tuple], Callable] = {
+        ('id', 'projectId', 'connection', 'datasource', 'user', 'login',
+         'locale'): datasources.get_datasource_mapping,
+    }
     _API_PATCH: List[Callable] = []
     _FROM_DICT_MAP = {
         "ds_connection": DatasourceConnection.from_dict,
         "datasource": DatasourceInstance.from_dict,
         "user": User.from_dict,
-        "login": DatasourceLogin.from_dict
+        "login": DatasourceLogin.from_dict,
+        "locale": Locale.from_dict
     }
 
-    def __init__(
-        self,
-        connection: Connection,
-        id: Optional[str] = None,
-        application: Optional[Union[Application, str]] = None,
-        default_connection_map: bool = False,
-        ds_connection: Optional["DatasourceConnection"] = None,
-        datasource: Optional["DatasourceInstance"] = None,
-        user: Optional["User"] = None,
-        login: Optional["DatasourceLogin"] = None,
-        locale: Optional[Union[str, dict]] = None,
-    ):
+    def __init__(self, connection: Connection, id: Optional[str] = None,
+                 project: Optional[Union[Project,
+                                         str]] = None, default_connection_map: bool = False,
+                 ds_connection: Optional["DatasourceConnection"] = None,
+                 datasource: Optional["DatasourceInstance"] = None, user: Optional["User"] = None,
+                 login: Optional["DatasourceLogin"] = None, locale: Optional[Locale] = None,
+                 application: Optional[Union[Project, str]] = None):
         """Initialise Datasource Map object by passing the ID or by passing
-        True for `default_connection_map` and the application for which to
+        True for `default_connection_map` and the project for which to
         fetch the default map.
 
         To explore all available DatasourceMap objects use the
@@ -105,19 +130,27 @@ class DatasourceMap(EntityBase):
             connection: MicroStrategy connection object returned by
                 `connection.Connection()`.
             id: ID of Datasource Map
-            application: Application object or ID for restricting the search to
-                just this application.
+            project: Project object or ID for restricting the search to
+                just this project.
+            application: deprecated. Use project instead.
                 (Optional except when fetching the default map.)
-            default_connection_map: Whether to fetch the application's
+            default_connection_map: Whether to fetch the project's
                 default map.
         """
+        if application:
+            helper.deprecation_warning(
+                '`application`',
+                '`project`',
+                '11.3.4.101',  # NOSONAR
+                False)
+            project = project or application
         if id is None:
-            if application is None or not default_connection_map:
+            if project is None or not default_connection_map:
                 helper.exception_handler(
                     "Please either specify the `id` or `default_connection_map` and"
-                    " the `application` to find the default map for the given application.")
+                    " the `project` to find the default map for the given project.")
             else:
-                mapping: DatasourceMap = self._list(connection, True, application)
+                mapping: DatasourceMap = self._list(connection, True, project)
                 if mapping:
                     mapping = mapping[0]
                     id = mapping.id
@@ -125,30 +158,27 @@ class DatasourceMap(EntityBase):
                     datasource = mapping.datasource
                     user = mapping.user
                     login = mapping.login
-                    self.__init__(connection, id, application, default_connection_map,
-                                  ds_connection, datasource, user, login)
+                    self.__init__(connection, id, project, default_connection_map, ds_connection,
+                                  datasource, user, login, locale)
                 else:
                     helper.exception_handler(
-                        f"The application {application} has no default datasource map.",
+                        f"The project {project} has no default datasource map.",
                         exception_type=ValueError)
         else:
-            super().__init__(connection, id, application=application,
+            super().__init__(connection, id, project=project,
                              default_connection_map=default_connection_map,
                              ds_connection=ds_connection, datasource=datasource, user=user,
                              login=login, locale=locale)
 
     def _init_variables(self, **kwargs) -> None:
         super()._init_variables(**kwargs)
-        self.application: str = kwargs.get("application")
+        self.project: str = kwargs.get("project")
         self.default_connection_map: bool = kwargs.get("default_connection_map")
         self.ds_connection = kwargs.get("ds_connection")
         self.datasource = kwargs.get("datasource")
         self.user = kwargs.get("user")
         self.login = kwargs.get("login")
-        # TODO: include support for Locale object when it's implemented
-        self.locale: Dict[str, str] = kwargs.get("locale")
-        if isinstance(self.locale, str):
-            self.locale = {"name": self.locale}
+        self.locale = kwargs.get("locale")
 
     def delete(self, force: bool = False) -> bool:
         """Deletes the DatasourceMap.
@@ -176,14 +206,14 @@ class DatasourceMap(EntityBase):
 
     @classmethod
     def _list(cls, connection: Connection, default_connection_map: Optional[bool] = False,
-              application: Optional[Union[Application, str]] = None, to_dictionary: bool = False,
+              project: Optional[Union[Project, str]] = None, to_dictionary: bool = False,
               limit: Optional[int] = None, **filters) -> Union[List["DatasourceMap"], List[dict]]:
-        application_id = application.id if isinstance(application, Application) else application
+        project_id = project.id if isinstance(project, Project) else project
         try:
             mappings = helper.fetch_objects(connection=connection,
                                             api=datasources.get_datasource_mappings,
                                             default_connection_map=default_connection_map,
-                                            application_id=application_id, limit=limit,
+                                            project_id=project_id, limit=limit,
                                             dict_unpack_value="mappings", filters=filters)
         except HTTPError as err:
             if err.errno == 404:
@@ -198,33 +228,47 @@ class DatasourceMap(EntityBase):
             return [cls.from_dict(source=elem, connection=connection) for elem in mappings]
 
     @classmethod
-    def create(cls, connection: Connection, application: Union[Application, str],
+    def create(cls, connection: Connection, application: Union[Project, str],
                user: Union[User, str], ds_connection: Union[DatasourceConnection, str],
-               datasource: Union[DatasourceInstance, str], login: Union[DatasourceLogin, str],
-               locale: Optional[Union[dict, str]] = None) -> "DatasourceMap":
+               datasource: Union[DatasourceInstance,
+                                 str], login: Union[DatasourceLogin,
+                                                    str], locale: Optional[Locale] = None,
+               locale_id: Optional[str] = None, locale_name: Optional[str] = None,
+               project: Optional[Union[Project, str]] = None) -> "DatasourceMap":
         """Create a new Datasource Map object on the server.
+        If more than one locale related parameters are provided,
+        `locale` has priority, then `locale_id`.
 
         Args:
             connection: A MicroStrategy connection object
-            application: The application the Map is to be assigned to
+            application: The project the Map is to be assigned to. Will be
+            removed from 11.3.4.101 and replaced with project.
+            project: Use from 11.3.4.101 instead of application.
             user: The User to be mapped
             ds_connection: The Datasource Connection to be mapped
             datasource: The Datasource Instance to be mapped
             login: The Datasource Login to be mapped
-            locale: The locale to be mapped
+            locale: The locale to be maped.
+            locale_id: The id of locale to be maped.
+            locale_name: The name of locale to be maped.
 
         Returns:
             DatasourceMap object
         """
-        # TODO: docstring
-        application_id = application.id if isinstance(application, Application) else application
-        user_id = user.id if isinstance(user, User) else user
-        connection_id = (ds_connection.id
-                         if isinstance(ds_connection, DatasourceConnection) else ds_connection)
-        datasource_id = datasource.id if isinstance(datasource, DatasourceInstance) else datasource
-        login_id = login.id if isinstance(login, DatasourceLogin) else login
+        helper.deprecation_warning(
+            '`application`',
+            '`project`',
+            '11.3.4.101',  # NOSONAR
+            False,
+            False)
+        project = project or application
+        project_id = get_objects_id(project, Project)
+        user_id = get_objects_id(user, User)
+        connection_id = get_objects_id(ds_connection, DatasourceConnection)
+        datasource_id = get_objects_id(datasource, DatasourceInstance)
+        login_id = get_objects_id(login, DatasourceLogin)
         body = {
-            "projectId": application_id,
+            "projectId": project_id,
             "user": {
                 "id": user_id
             },
@@ -238,9 +282,12 @@ class DatasourceMap(EntityBase):
                 "id": login_id
             },
         }
-        if locale:
-            # TODO: include support for Locale object when it's implemented
-            body["locale"] = {"name": locale} if isinstance(locale, str) else locale
+        if locale and isinstance(locale, Locale):
+            body["locale"] = locale.to_dict()
+        elif locale_id and isinstance(locale_id, str):
+            body["locale"] = {"id": locale}
+        elif locale_name and isinstance(locale_name, str):
+            body["locale"] = {"name": locale}
 
         jresponse = datasources.create_datasource_mapping(connection=connection, body=body).json()
         if config.verbose:
@@ -251,16 +298,14 @@ class DatasourceMap(EntityBase):
     # TODO: improve to/from dict methods to allow renaming
     # on _FROM_DICT_MAP level.
 
-    T = TypeVar("T")
-
     @classmethod
-    def from_dict(cls: T, source: Dict[str, Any], connection: Connection) -> T:
+    def from_dict(cls, source: Dict[str, Any], connection: Connection) -> "DatasourceMap":
 
         def translate_names(name: str):
             if name == "connection":
                 return "ds_connection"
             elif name == "project_id":
-                return "application"
+                return "project"
             else:
                 return name
 
@@ -272,7 +317,7 @@ class DatasourceMap(EntityBase):
         def translate_names(name: str):
             if name == "ds_connection":
                 return "connection"
-            elif name == "application":
+            elif name == "project":
                 return "project_id"
             else:
                 return name

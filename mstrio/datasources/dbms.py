@@ -87,12 +87,8 @@ class Dbms(EntityBase):
     def _list_available_dbms(cls, connection: "Connection", to_dictionary: bool = False,
                              limit: int = None, **filters) -> Union[List["Dbms"], List[dict]]:
 
-        objects = helper.fetch_objects(
-            connection=connection,
-            api=datasources.get_available_dbms,
-            limit=None,
-            filters=None,
-        )
+        objects = helper.fetch_objects(connection=connection, api=datasources.get_available_dbms,
+                                       limit=None, filters=None)
         cls._DBMS_CACHE.update(
             [cls.from_dict(source=obj, connection=connection) for obj in objects])
 

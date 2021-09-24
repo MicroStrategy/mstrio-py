@@ -7,8 +7,8 @@ ease its usage.
 """
 
 from mstrio.connection import Connection
-from mstrio.distribution_services import (Event, list_events, list_schedules, Schedule,
-                                          ScheduleEnums, ScheduleTime, Subscription)
+from mstrio.distribution_services import (Event, list_events, list_schedules, list_subscriptions,
+                                          Schedule, ScheduleEnums, ScheduleTime, Subscription)
 
 base_url = "https://<>/MicroStrategyLibrary/api"
 username = "some_username"
@@ -69,11 +69,11 @@ schedule.delete()
 # which we want to delete and if so alter it before deletion
 other_schedule = Schedule(connection=conn, name="Some other schedule")
 sub1 = Subscription(connection=conn, subscription_id='AA11BB22CC33DD44EE55FF6677889900',
-                    application_id='00FF99EE88DD77CC66BB55AA44332211')
+                    project_id='00FF99EE88DD77CC66BB55AA44332211')
 sub1.alter(schedules=other_schedule)
 
 # get a list of subscriptions using schedule under the given project
-all_subscriptions = list_subscriptions(conn, application_name='Sample Application')
+all_subscriptions = list_subscriptions(conn, project_name='Sample Project')
 subs_with_schedule = [sub for sub in all_subscriptions if sub.schedules[0].id == schedule.id]
 
 # delete all expired schedules - user will be prompted to confirm every deletion
@@ -85,7 +85,7 @@ for sch in expired_schedules:
 # changing schedules for multiple subscriptions can be easily done using simple
 # for loop (batch execution substitute)
 sub2 = Subscription(connection=conn, subscription_id='XX11BB22CC33DD44EE55FF6677889900',
-                    application_id='00FF99EE88DD77CC66BB55AA44332211')
+                    project_id='00FF99EE88DD77CC66BB55AA44332211')
 list_of_subscriptions = [sub1, sub2]
 for subscription in list_of_subscriptions:
     subscription.alter(schedules=schedule)

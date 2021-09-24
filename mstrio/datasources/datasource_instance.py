@@ -6,18 +6,19 @@ from mstrio.api import datasources, objects
 from mstrio.datasources import DatasourceConnection, Dbms
 from mstrio.users_and_groups.user import User
 from mstrio.utils import helper
-from mstrio.utils.datasources import get_objects_id
-from mstrio.utils.entity import CopyMixin, Entity, ObjectTypes
+from mstrio.utils.helper import get_objects_id
+from mstrio.utils.entity import DeleteMixin, CopyMixin, Entity, ObjectTypes
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
-    from mstrio.server.application import Application
+    from mstrio.server.project import Project
 
 
 def list_datasource_instances(connection: "Connection", to_dictionary: bool = False,
                               limit: Optional[int] = None, ids: Optional[List[str]] = None,
                               database_types: Optional[List[str]] = None,
-                              application: Optional[Union["Application", str]] = None,
+                              project: Optional[Union["Project", str]] = None,
+                              application: Optional[Union["Project", str]] = None,
                               **filters) -> Union[List["DatasourceInstance"], List[dict]]:
     """Get list of DatasourceInstance objects or dicts. Optionally filter the
     datasource instances by specifying filters.
@@ -52,9 +53,10 @@ def list_datasource_instances(connection: "Connection", to_dictionary: bool = Fa
             'splunk', 'sql_server', 'square', 'sybase', 'sybase_iq',
             'sybase_sql_any', 'tandem', 'teradata', 'tm1', 'twitter', 'unknown',
             'url_auth', 'vectorwise', 'vertica', 'xquery']
-        application: id (str) of a project or instance of an Application class
+        project: id (str) of a project or instance of an Project class
             to search for the datasource instances in. When provided, both
             `ids` and `database_types` are ignored. By default `None`.
+        application: deprecated. Use project instead.
         **filters: Available filter parameters: ['id', 'name', 'description',
             'date_created', 'date_modified', 'datasource_type', table_prefix,
             'odbc_version', 'intermediate_store_db_name',
@@ -63,13 +65,20 @@ def list_datasource_instances(connection: "Connection", to_dictionary: bool = Fa
     Examples:
         >>> list_datasource_instances(connection, name='ds_instance_name')
     """
+    if application:
+        helper.deprecation_warning(
+            '`application`',
+            '`project`',
+            '11.3.4.101',  # NOSONAR
+            False)
+        project = project or application
     return DatasourceInstance._list_datasource_instances(
         connection=connection,
         ids=ids,
         database_types=database_types,
         to_dictionary=to_dictionary,
         limit=limit,
-        application=application,
+        project=project,
         **filters,
     )
 
@@ -81,7 +90,7 @@ class DatasourceType(Enum):
     DATA_IMPORT_PRIMARY = "data_import_primary"
 
 
-class DatasourceInstance(Entity, CopyMixin):
+class DatasourceInstance(Entity, CopyMixin, DeleteMixin):
     """Object representation of MicroStrategy DataSource Instance object.
 
     Attributes:
@@ -100,8 +109,8 @@ class DatasourceInstance(Entity, CopyMixin):
             name
         type: Object type
         subtype: Object subtype
-        date_created: Creation time, "yyyy-MM-dd HH:mm:ss" in UTC
-        date_modified: Last modification time, "yyyy-MM-dd HH:mm:ss" in UTC
+        date_created: Creation time, DateTime object
+        date_modified: Last modification time, DateTime object
         owner: User object that is the owner
         acg: Access rights (See EnumDSSXMLAccessRightFlags for possible values)
         acl: Object access control list
@@ -255,7 +264,7 @@ class DatasourceInstance(Entity, CopyMixin):
             "name": name,
             "database": database,
             "description": description,
-            "datasourceType": helper.extract_enum_val(datasource_type, DatasourceType),
+            "datasourceType": helper.get_enum_val(datasource_type, DatasourceType),
             "tablePrefix": table_prefix,
             "odbcVersion": odbc_version,
             "intermediateStoreDbName": intermediate_store_db_name,
@@ -309,45 +318,18 @@ class DatasourceInstance(Entity, CopyMixin):
                 properties[property_key] = local[property_key]
         self._alter_properties(**properties)
 
-    def delete(self, force: Optional[bool] = False) -> bool:
-        """Deletes the Datasource Instance from the server.
-
-        Args:
-            force: If True, no additional prompt will be shown before deleting.
-                Default False.
-
-        Returns:
-            True for success. False otherwise.
-        """
-        user_input = 'N'
-        if not force:
-            user_input = input((f"Are you sure you want to delete datasource instance "
-                                f"'{self.name}' with ID: {self.id}? [Y/N]: "))
-        if force or user_input == 'Y':
-            response = datasources.delete_datasource_instance(self.connection, self.id)
-            if response.status_code == 204 and config.verbose:
-                print("Successfully deleted datasource instance {}".format(self.name))
-            return response.ok
-        else:
-            return False
-
     @classmethod
     def _list_datasource_instances(cls, connection: "Connection",
                                    to_dictionary: Optional[bool] = False,
                                    limit: Optional[int] = None, ids: Optional[list] = None,
                                    database_types: Optional[list] = None,
-                                   application: Optional[Union["Application", str]] = None,
+                                   project: Optional[Union["Project", str]] = None,
                                    **filters) -> Union[List["DatasourceInstance"], List[dict]]:
-        objects = helper.fetch_objects(
-            connection=connection,
-            api=datasources.get_datasource_instances,
-            dict_unpack_value="datasources",
-            limit=limit,
-            filters=filters,
-            ids=ids,
-            database_types=database_types,
-            application=application,
-        )
+        objects = helper.fetch_objects(connection=connection,
+                                       api=datasources.get_datasource_instances,
+                                       dict_unpack_value="datasources", limit=limit,
+                                       filters=filters, ids=ids, database_types=database_types,
+                                       project=project)
         if to_dictionary:
             return objects
         else:

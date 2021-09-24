@@ -88,7 +88,7 @@ To import the contents of a published Cube into a DataFrame for analysis in Pyth
 If you are not sure which type of cube you want to import use load_cube function.
 
 ```python
-from mstrio.application_objects import load_cube, OlapCube
+from mstrio.project_objects import load_cube, OlapCube
 my_cube = OlapCube(connection=conn, id=id)
 my_cube = load_cube(connection=conn, cube_id=cube_id)
 df = my_cube.to_dataframe()
@@ -97,7 +97,7 @@ df = my_cube.to_dataframe()
 To import Reports into a DataFrame for analysis in Python use the appropriate `Report` class:
 
 ```python
-from mstrio.application_objects import Report
+from mstrio.project_objects import Report
 my_report = Report(connection=conn, report_id=report_id, parallel=False)
 df = my_report.to_dataframe()
 ```
@@ -155,7 +155,7 @@ sales = {"store_id": [1, 2, 3],
          "sales_fmt": ["$400", "$200", "$100"]}
 sales_df = pd.DataFrame(sales, columns=["store_id", "category", "sales", "sales_fmt"])
 
-from mstrio.application_objects import SuperCube
+from mstrio.project_objects import SuperCube
 ds = SuperCube(connection=conn, name="Store Analysis")
 ds.add_table(name="Stores", data_frame=stores_df, update_policy="add")
 ds.add_table(name="Sales", data_frame=sales_df, update_policy="add")
@@ -184,7 +184,7 @@ After creating the SuperCube, you can obtain its ID using `SuperCube.id`. This I
 When the source data changes and users need the latest data for analysis and reporting in MicroStrategy, **mstrio-py** allows you to update the previously created SuperCube.
 
 ```python
-from mstrio.application_objects import SuperCube
+from mstrio.project_objects import SuperCube
 ds = SuperCube(connection=conn, id=dataset_id)
 ds.add_table(name="Stores", data_frame=stores_df, update_policy="update")
 ds.add_table(name="Sales", data_frame=sales_df, update_policy="upsert")
@@ -212,7 +212,7 @@ Updating Datasets that were **not** created using the MicroStrategy REST API is 
 
 ## Using mstrio as a MicroStrategy Intelligence Server administration tool
 
-- Application management module (see [examples](https://github.com/MicroStrategy/mstrio-py/blob/master/examples/application_mgmt.py))
+- Project management module (see [examples](https://github.com/MicroStrategy/mstrio-py/blob/master/examples/project_mgmt.py))
 - Server management module (see [examples](https://github.com/MicroStrategy/mstrio-py/blob/master/examples/server_mgmt.py))
 - User and Usergroup management modules (see [examples](https://github.com/MicroStrategy/mstrio-py/blob/master/examples/user_mgmt.py))
 - Subscription and Schedules management modules (see [examples](https://github.com/MicroStrategy/mstrio-py/blob/master/examples/subscription_mgmt.py))

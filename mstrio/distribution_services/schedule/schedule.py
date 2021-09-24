@@ -5,12 +5,18 @@ from typing import List, Optional, Union
 from mstrio import config
 from mstrio.api import objects, schedules
 from mstrio.connection import Connection
-from mstrio.distribution_services.event import Event
+from mstrio.distribution_services.schedule import ScheduleEnums, ScheduleTime
 from mstrio.users_and_groups.user import User
 from mstrio.utils import helper
-from mstrio.utils.entity import Entity, ObjectTypes
+from mstrio.utils.entity import DeleteMixin, Entity, ObjectTypes
+from mstrio.utils.time_helper import DatetimeFormats, map_datetime_to_str, map_str_to_datetime
+from mstrio.utils.wip import pause_wip_warnings, resume_wip_warnings
 
-from . import ScheduleEnums, ScheduleTime
+warnings_setting = pause_wip_warnings()
+
+from mstrio.distribution_services.event import Event  # noqa E402
+
+resume_wip_warnings(warnings_setting)
 
 
 def list_schedules(connection: Connection, to_dictionary: bool = False, limit: int = None,
@@ -33,13 +39,8 @@ def list_schedules(connection: Connection, to_dictionary: bool = False, limit: i
         Union[List["Schedule"], List[dict]]: [description]
     """
 
-    objects = helper.fetch_objects(
-        connection=connection,
-        api=schedules.list_schedules,
-        limit=limit,
-        filters=filters,
-        dict_unpack_value='schedules',
-    )
+    objects = helper.fetch_objects(connection=connection, api=schedules.list_schedules,
+                                   limit=limit, filters=filters, dict_unpack_value='schedules')
 
     if to_dictionary:
         return objects
@@ -47,46 +48,7 @@ def list_schedules(connection: Connection, to_dictionary: bool = False, limit: i
         return [Schedule.from_dict(source=obj, connection=connection) for obj in objects]
 
 
-class ScheduleManager:
-    """Manage schedules associated with subscription.
-
-    Attributes:
-        connection: A MicroStrategy connection object
-    """
-
-    helper.deprecation_warning(
-        deprecated='mstrio.distribution_services.schedule.ScheduleManager',
-        new='mstrio.distribution_services.schedule.list_schedules()',
-        version='11.3.3.101',  # NOSONAR
-        module=False,
-    )
-
-    def __init__(self, connection: Connection):
-        """Initialize the ScheduleManager object.
-
-        Args:
-            connection: MicroStrategy connection object returned
-                by `connection.Connection()`.
-        """
-        self.connection = connection
-
-    def list_schedules(self, **filters):
-        """List all schedules.
-
-        Args:
-            **filters: Available filter parameters:['name':,
-                                                    'id',
-                                                    'description',
-                                                    'scheduleType',
-                                                    'scheduleNextDelivery',]
-        """
-        response = schedules.list_schedules(connection=self.connection)
-        if response.ok:
-            response = helper.camel_to_snake(response.json()['schedules'])
-            return helper.filter_list_of_dicts(response, **filters)
-
-
-class Schedule(Entity):
+class Schedule(Entity, DeleteMixin):
     """Class representation of MicroStrategy Schedule object.
 
     Attributes:
@@ -122,6 +84,9 @@ class Schedule(Entity):
         'schedule_type': ScheduleType,
         'time': ScheduleTime.from_dict,
         'event': Event.from_dict,
+        'schedule_next_delivery': DatetimeFormats.YMDHMS,
+        'start_date': DatetimeFormats.DATE,
+        'stop_date': DatetimeFormats.DATE,
     }
     _API_PATCH: dict = {
         ('abbreviation'): (objects.update_object, 'partial_put'),
@@ -134,8 +99,8 @@ class Schedule(Entity):
         'description': str,
         'abbreviation': str,
         'schedule_type': ScheduleType,
-        'start_date': str,
-        'stop_date': str,
+        'start_date': datetime,
+        'stop_date': datetime,
         'time': ScheduleTime,
         'event': Event,
     }
@@ -182,24 +147,28 @@ class Schedule(Entity):
         """
         super()._init_variables(**kwargs)
         self.schedule_type = self.ScheduleType(kwargs.get('schedule_type'))
-        self.start_date = kwargs.get('start_date')
-        self.stop_date = kwargs.get('stop_date')
         self.time = ScheduleTime.from_dict(kwargs.get('time')) if (
             self.schedule_type == self.ScheduleType.TIME_BASED and kwargs.get('time')) else None
         self.event = Event.from_dict(kwargs.get('event'), connection=self._connection) if (
             self.schedule_type == self.ScheduleType.EVENT_BASED and kwargs.get('event')) else None
         self._expired = kwargs.get('expired')
-        self._schedule_next_delivery = kwargs.get('schedule_next_delivery')
+        self._schedule_next_delivery = map_str_to_datetime("schedule_next_delivery",
+                                                           kwargs.get("schedule_next_delivery"),
+                                                           self._FROM_DICT_MAP)
+        self.start_date = map_str_to_datetime("start_date", kwargs.get("start_date"),
+                                              self._FROM_DICT_MAP)
 
-    def enable(self, stop_date: str) -> bool:
+    def enable(self, stop_date: Union[str, datetime]) -> bool:
         """Enables schedule and sets stop date
 
         Args:
-            stop_date(str): stop date in yyyy-MM-dd format,
+            stop_date: stop date provided either as a datetime or
+            as a string in yyyy-MM-dd format
         Returns:
             Returns `True` if enabled properly, else `False`.
         """
-        self._alter_properties(stop_date=stop_date)
+        self._alter_properties(
+            stop_date=map_str_to_datetime('stop_date', stop_date, self._FROM_DICT_MAP))
 
         if config.verbose and not self.expired:
             print(f'Schedule \'{self.name}\' with ID {self.id} has been enabled, '
@@ -209,28 +178,29 @@ class Schedule(Entity):
             print(f'Schedule \'{self.name}\' with ID {self.id} has NOT been enabled.')
             return False
 
-    def disable(self, stop_date: str = None) -> bool:
+    def disable(self, stop_date: Union[str, datetime] = None) -> bool:
         """ Disable the schedule. Optional `stop_date` sets the date when
             the schedule should be disabled.
 
         Args:
-            stop_date(str): stop date in yyyy-MM-dd format
+            stop_date: stop date provided either as a datetime or
+            as a string in yyyy-MM-dd format
         Returns:
             Returns `True` if disabled properly. It does not mean that schedule
             is already expired, as it can take up to one day.
             If operation failed, return `False`.
         """
-        if stop_date is None:
-            stop_date = datetime.now(timezone.utc).strftime('%Y-%m-%d')
+        stop_date = (datetime.now(timezone.utc) if stop_date is None else map_str_to_datetime(
+            'stop_date', stop_date, self._FROM_DICT_MAP))
         self._alter_properties(stop_date=stop_date)
 
         if config.verbose and self.expired:
             print(f'Schedule \'{self.name}\' with ID {self.id} has been disabled.')
             return True
-        elif config.verbose and self.stop_date == stop_date:
+        elif config.verbose and self.stop_date.date() == stop_date.date():
             print(f'Schedule \'{self.name}\' with ID {self.id} has been set for disabling. '
                   f'Depending on the schedule configuration (`event`, `time` and `stop_date`), '
-                  f'it will be disabled by day after \'{self.stop_date}\'.')
+                  f'it will be disabled by day after \'{self.stop_date.date()}\'.')
             return True
         else:
             print(f'Schedule \'{self.name}\' with ID {self.id} has NOT been disabled.')
@@ -238,7 +208,6 @@ class Schedule(Entity):
 
     def list_properties(self):
         """List all properties of the object."""
-
         attributes = {key: self.__dict__[key] for key in self.__dict__ if not key.startswith('_')}
         attributes = {
             **attributes,
@@ -259,14 +228,16 @@ class Schedule(Entity):
             'acg': self.acg,
             'acl': self.acl,
         }
+
         return {
             key: attributes[key] for key in sorted(attributes, key=helper.sort_object_properties)
         }
 
     @classmethod
     def create(cls, connection: Connection, name: str, schedule_type: ScheduleType,
-               start_date: str, description: Optional[str] = None, stop_date: Optional[str] = None,
-               event_id: Optional[str] = None, time: Optional[ScheduleTime] = None,
+               start_date: Union[str, datetime], description: Optional[str] = None,
+               stop_date: Optional[Union[str, datetime]] = None, event_id: Optional[str] = None,
+               time: Optional[ScheduleTime] = None,
                recurrence_pattern: Optional[ScheduleEnums.RecurrencePattern] = None,
                execution_pattern: Optional[ScheduleEnums.ExecutionPattern] = None,
                execution_time: Optional[str] = None, start_time: Optional[str] = None,
@@ -356,6 +327,12 @@ class Schedule(Entity):
                 time = ScheduleTime.from_details(**time_kwargs)
             execution_details = {'type': 'time', 'content': time.to_dict()}
 
+        # Datetime dates to string format conversion
+        start_date = map_datetime_to_str(name='start_date', date=start_date,
+                                         string_to_date_map=cls._FROM_DICT_MAP)
+        stop_date = map_datetime_to_str(name='stop_date', date=stop_date,
+                                        string_to_date_map=cls._FROM_DICT_MAP)
+
         # Create body and send request
         body = {
             'name': name,
@@ -374,9 +351,9 @@ class Schedule(Entity):
             print(f"Created schedule '{name}' with ID: {response['id']}")
         return Schedule.from_dict(source=response, connection=connection)
 
-    def alter(self, name: str = None, description: str = None, start_date: str = None,
-              stop_date: str = None, event: Event = None, event_id: str = None,
-              time: ScheduleTime = None,
+    def alter(self, name: str = None, description: str = None,
+              start_date: Union[str, datetime] = None, stop_date: Union[str, datetime] = None,
+              event: Event = None, event_id: str = None, time: ScheduleTime = None,
               recurrence_pattern: ScheduleEnums.RecurrencePattern = None,
               execution_pattern: ScheduleEnums.ExecutionPattern = None, execution_time: str = None,
               start_time: str = None, stop_time: str = None, execution_repeat_interval: int = None,
@@ -476,9 +453,11 @@ class Schedule(Entity):
         if description:
             properties['description'] = description
         if start_date:
-            properties['start_date'] = start_date
+            properties['start_date'] = map_str_to_datetime('start_date', start_date,
+                                                           self._FROM_DICT_MAP)
         if stop_date:
-            properties['stop_date'] = stop_date
+            properties['stop_date'] = map_str_to_datetime('stop_date', stop_date,
+                                                          self._FROM_DICT_MAP)
 
         self._alter_properties(**properties)
 
@@ -493,25 +472,19 @@ class Schedule(Entity):
         Returns:
             bool: True if deletion was successful else False.
         """
-        # Leaving force logic for when the server behavior changes,
-        # and deleting last schedule from subscription will no longer
-        # delete subscription
-
+        # When the server behavior changes, and deleting last schedule
+        # from subscription will no longer delete subscription,
+        # move 'force' param to method definition
         force = False
-        user_input = 'N'
-        if not force:
-            user_input = input((f"This schedule may be part of a subscription. "
-                                f"Deleting such a schedule will remove the subscription as well. "
-                                f"This action cannot be undone. "
-                                f"Are you sure you want to delete schedule '{self.name}'"
-                                f" with ID: {self.id}?[Y/N]: ")) or 'N'
-        if force or user_input == 'Y':
-            response = schedules.delete_schedule(connection=self.connection, id=self.id)
-            if response.ok and config.verbose:
-                print(f"Deleted schedule '{self.name}' with ID: {self.id}.")
-            return response.ok
-        else:
-            return False
+        self._delete_confirm_msg = (
+            "This schedule may be part of a subscription. "
+            "Deleting such a schedule will remove the subscription as well. "
+            "This action cannot be undone. "
+            f"Are you sure you want to delete the schedule '{self.name}'"
+            f" with ID: {self.id}?[Y/N]: ")
+        self._delete_success_msg = (f"Deleted schedule '{self.name}' with ID: {self.id}.")
+
+        return super().delete(force=force)
 
     @property
     def expired(self):

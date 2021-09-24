@@ -1,14 +1,13 @@
 from typing import List, Optional, TYPE_CHECKING, Union
 
-from mstrio import config
 from mstrio.access_and_security.security_filter import (AttributeRef, ObjectInformation,
                                                         Qualification)
-from mstrio.api import changesets, objects, security_filters
+from mstrio.api import changesets, security_filters
 from mstrio.api.security_filters import ShowExpressionAs, UpdateOperator
-from mstrio.browsing import list_objects
+from mstrio.object_management import full_search
 from mstrio.users_and_groups import User, UserGroup
 from mstrio.utils import helper
-from mstrio.utils.entity import Entity, ObjectSubTypes, ObjectTypes
+from mstrio.utils.entity import Entity, ObjectSubTypes, ObjectTypes, DeleteMixin
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
@@ -34,16 +33,16 @@ def list_security_filters(connection: "Connection", to_dictionary: bool = False,
     Returns:
         list of security filter objects or list of security filter dicts.
     """
-    connection._validate_application_selected()
-    objects_ = list_objects(connection, ObjectTypes.SECURITY_FILTER, connection.application_id,
-                            limit=limit, **filters)
+    connection._validate_project_selected()
+    objects_ = full_search(connection, object_types=ObjectTypes.SECURITY_FILTER,
+                           project=connection.project_id, limit=limit, **filters)
     if to_dictionary:
         return objects_
     else:
         return [SecurityFilter.from_dict(obj_, connection) for obj_ in objects_]
 
 
-class SecurityFilter(Entity):
+class SecurityFilter(Entity, DeleteMixin):
 
     _OBJECT_TYPE = ObjectTypes.SECURITY_FILTER
     _OBJECT_SUBTYPE = ObjectSubTypes.MD_SECURITY_FILTER.value
@@ -64,12 +63,12 @@ class SecurityFilter(Entity):
             name (str): name of security filter.
         """
         super().__init__(connection, id, name=name)
-        connection._validate_application_selected()
+        connection._validate_project_selected()
 
     def _get_definition(self):
         """Get the definition of security filter."""
         res = security_filters.read_security_filter(
-            self.connection, self.id, self.connection.application_id,
+            self.connection, self.id, self.connection.project_id,
             show_expression_as=ShowExpressionAs.TREE.value).json()
         self._information = ObjectInformation.from_dict(res['information'])
         self._qualification = Qualification.from_dict(res['qualification'])
@@ -85,7 +84,7 @@ class SecurityFilter(Entity):
         res = security_filters.get_security_filter_members(
             self.connection,
             self.id,
-            self.connection.application_id,
+            self.connection.project_id,
         ).json()
         self._members = []
         for obj in res['users']:
@@ -280,29 +279,6 @@ class SecurityFilter(Entity):
             self.__definition_retrieved = self._information is not None and self._qualification is\
                 not None and self._top_level is not None and self._bottom_level is not None
 
-    def delete(self, force: bool = False):
-        """Delete the security filter.
-
-        Args:
-            force: If True, then no additional prompt will be shown before
-                deleting security filter.
-
-        Returns:
-            True for success. False otherwise.
-        """
-        user_input = 'N'
-        if not force:
-            user_input = input(f"Are you sure you want to delete security filter '{self.name}' "
-                               f"with ID: {self._id}? [Y/N]: ") or 'N'
-        if force or user_input == 'Y':
-            response = objects.delete_object(self._connection, self._id,
-                                             ObjectTypes.SECURITY_FILTER.value)
-            if response.status_code == 204 and config.verbose:
-                print(f"Successfully deleted security filter with ID: {self._id}.")
-            return response.ok
-        else:
-            return False
-
     @staticmethod
     def __retrieve_ids_from_list(
         objects: Union[str, "User", "UserGroup", List[Union[str, "User",
@@ -321,8 +297,8 @@ class SecurityFilter(Entity):
         users_or_groups = self.__retrieve_ids_from_list(users_and_groups)
         body = {"operationList": [{"op": op.value, "path": "/members", "value": users_or_groups}]}
         res = security_filters.update_security_filter_members(self.connection, self.id, body,
-                                                              self.connection.application_id,
-                                                              throw_err=False)
+                                                              self.connection.project_id,
+                                                              throw_error=False)
         if res.ok:
             self._get_members()
         return res.ok
