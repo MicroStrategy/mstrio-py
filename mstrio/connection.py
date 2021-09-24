@@ -10,31 +10,43 @@ from requests.adapters import HTTPAdapter, Retry
 from requests.cookies import RequestsCookieJar
 
 from mstrio import config
-from mstrio.api import authentication, exceptions, misc, projects
+from mstrio.api import authentication, exceptions, hooks, misc, projects
 from mstrio.utils.helper import deprecation_warning
 import mstrio.utils.helper as helper
 
 
-def get_connection(workstation_data: dict, application_name: str = None,
+def get_connection(workstation_data: dict, project_name: str = None, project_id: str = None,
+                   application_name: str = None,
                    application_id: str = None) -> Union["Connection", None]:
     """Connect to environment without providing user's credentials.
 
-    It is possible to provide `application_id` or `application_name` to select
-    application. When both `application_id` and `application_name` are `None`,
-    application selection is cleared. When both `application_id` and
-    `application_name` are provided, `application_name` is ignored.
-    Application can be also selected later by calling method
-    `select_application` on Connection object.
+    It is possible to provide `project_id` or `project_name` to select
+    project. When both `project_id` and `project_name` are `None`,
+    project selection is cleared. When both `project_id` and
+    `project_name` are provided, `project_name` is ignored.
+    Project can be also selected later by calling method
+    `select_project` on Connection object.
     Args:
         workstation_data (object): object which is stored in a 'workstationData'
             variable within Workstation
-        application_name (str, optional): name of application (aka project)
+        project_name (str, optional): name of project (aka project)
             to select
-        application_id (str, optional): id of application (aka project)
+        project_id (str, optional): id of project (aka project)
             to select
+        application_name(str, optional): deprecated. Use project_name instead.
+        application_id(str, optional): deprecated. Use project_id instead.
     Returns:
         connection to I-Server or None is case of some error
     """
+    if (application_name or application_id):
+        helper.deprecation_warning(
+            '`application_name` and `application_id`',
+            '`project_name` and `project_id`',
+            '11.3.4.101',  # NOSONAR
+            False)
+        project_name = project_name or application_name
+        project_id = project_id or application_id
+
     try:
         print('Creating connection from Workstation Data object...', flush=True)
         # get base url from Workstation Data object
@@ -61,7 +73,7 @@ def get_connection(workstation_data: dict, application_name: str = None,
     if r.ok:
         # create connection to I-Server
         return Connection(base_url, identity_token=r.headers['X-MSTR-IdentityToken'],
-                          application_id=application_id, application_name=application_name)
+                          project_id=project_id, project_name=project_name)
     else:
         print('HTTP %i - %s, Message %s' % (r.status_code, r.reason, r.text), flush=True)
         return None
@@ -77,12 +89,12 @@ class Connection():
     Examples:
         >>> from mstrio import connection
         >>>
-        >>> # connect to the environment and chosen application
+        >>> # connect to the environment and chosen project
         >>> conn = connection.Connection(
         >>>     base_url="https://demo.microstrategy.com/MicroStrategyLibrary",
         >>>     username="username",
         >>>     password="password",
-        >>>     application_name="MicroStrategy Tutorial"
+        >>>     project_name="MicroStrategy Tutorial"
         >>> )
         >>> # disconnect
         >>> conn.close()
@@ -90,10 +102,8 @@ class Connection():
     Attributes:
         base_url: URL of the MicroStrategy REST API server.
         username: Username.
-        application_name: Name of the connected MicroStrategy Applicaiton.
-        application_id: Id of the connected MicroStrategy Applicaiton.
-        project_name: (deprecated) Name of the connected MicroStrategy Project.
-        project_id: (deprecated) Id of the connected MicroStrategy Project.
+        project_name: Name of the connected MicroStrategy Applicaiton.
+        project_id: Id of the connected MicroStrategy Applicaiton.
         login_mode: Authentication mode. Standard = 1 (default) or LDAP = 16.
         ssl_verify: If True (default), verifies the server's SSL certificates
             with each request.
@@ -103,22 +113,21 @@ class Connection():
         iserver_version: Version of the I-Server
         web_version: Version of the Web Server
     """
-    __VRCH = "11.1.0400"
 
     def __init__(self, base_url: str, username: Optional[str] = None,
-                 password: Optional[str] = None, application_name: Optional[str] = None,
-                 application_id: Optional[str] = None, project_name: Optional[str] = None,
+                 password: Optional[str] = None, project_name: Optional[str] = None,
                  project_id: Optional[str] = None, login_mode: int = 1, ssl_verify: bool = True,
                  certificate_path: Optional[str] = None, proxies: Optional[dict] = None,
-                 identity_token: Optional[str] = None, verbose: bool = True):
+                 identity_token: Optional[str] = None, verbose: bool = True,
+                 application_name: Optional[str] = None, application_id: Optional[str] = None):
         """Establish a connection with MicroStrategy REST API.
 
         You can establish connection by either providing set of values
         (`username`, `password`, `login_mode`) or just `identity_token`.
 
-        When both `application_id` and `application_name` are `None`,
-        application selection is cleared. When both `application_id`
-        and `application_name` are provided, `application_name` is ignored.
+        When both `project_id` and `project_name` are `None`,
+        project selection is cleared. When both `project_id`
+        and `project_name` are provided, `project_name` is ignored.
 
         Args:
             base_url (str): URL of the MicroStrategy REST API server.
@@ -126,16 +135,15 @@ class Connection():
                 "https://<mstr_env>.com/MicroStrategyLibrary/api"
             username (str, optional): Username
             password (str, optional): Password
-            project_name (str, optional): this argument will be deprecated, use
-                application_name instead
-            project_id (str, optional): this argument will be deprecated, use
-                application_id instead
-            application_name (str, optional): Name of the application you intend
-                to connect to (case-sensitive). Provide either Application ID
-                or Application Name.
-            application_id (str, optional): Id of the application you intend to
-                connect to (case-sensitive). Provide either Application ID
-                or Application Name.
+            project_name (str, optional): Name of the project you intend
+                to connect to (case-sensitive). Provide either Project ID
+                or Project Name.
+            project_id (str, optional): Id of the project you intend to
+                connect to (case-sensitive). Provide either Project ID
+                or Project Name.
+            application_name (str, optional): deprecated. Use project_name
+            instead.
+            application_id (str, optional): deprecated. Use project_id instead.
             login_mode (int, optional): Specifies the authentication mode to
                 use. Supported authentication modes are: Standard (1)
                 (default) or LDAP (16)
@@ -152,6 +160,13 @@ class Connection():
             verbose (bool, optional): True by default. Controls the amount of
                 feedback from the I-Server.
         """
+        if (application_id or application_name):
+            deprecation_warning(
+                "`application_id` and `application_name`",
+                "`project_id` or `project_name`",
+                "11.3.4.101",  # NOSONAR
+                False)
+
         # set the verbosity globally
         config.verbose = True if verbose and config.verbose else False
         self.base_url = helper.url_check(base_url)
@@ -166,20 +181,15 @@ class Connection():
         self._user_full_name = None
         self._user_initials = None
         self.__password = password
-        application_id = project_id if project_id else application_id
-        application_name = project_name if project_name else application_name
-
-        if project_id or project_name:
-            deprecation_warning("`project_id` and `project_name`",
-                                "`application_id` or `application_name`", "11.3.2.101")
+        project_id = project_id or application_id
+        project_name = project_name or application_name
 
         if self.__check_version():
             # save the version of IServer in config file
             config.iserver_version = self.iserver_version
             # delegate identity token or connect and create new sesssion
             self.delegate() if self.identity_token else self.connect()
-            self.select_application(application_id=application_id,
-                                    application_name=application_name)
+            self.select_project(project_id, project_name)
         else:
             print("""This version of mstrio is only supported on MicroStrategy 11.1.0400 or higher.
                      \rCurrent Intelligence Server version: {}
@@ -283,62 +293,48 @@ class Connection():
         Raises:
             ValueError: if project with given id or name does not exist
         """
-        deprecation_warning("`select_project` method", "`select_application` method", "11.3.2.101")
-        self.select_application(project_id, project_name)
+        if project_id is None and project_name is None:
+            self.project_id = None
+            self.project_name = None
+            if config.verbose:
+                print("No project selected.")
+            return None
+
+        if project_id is not None and project_name is not None:
+            tmp_msg = ("Both `project_id` and `project_name` arguments provided. "
+                       "Selecting project based on `project_id`.")
+            helper.exception_handler(msg=tmp_msg, exception_type=Warning)
+
+        _projects = projects.get_projects(connection=self).json()
+        if project_id is not None:
+            # Find which project name matches the project ID provided
+            tmp_projects = helper.filter_list_of_dicts(_projects, id=project_id)
+            if not tmp_projects:
+                self.project_id, self.project_name = None, None
+                tmp_msg = (f"Error connecting to project with id: {project_id}. "
+                           "Project with given id does not exist or user has no access.")
+                raise ValueError(tmp_msg)
+        elif project_name is not None:
+            # Find which project ID matches the project name provided
+            tmp_projects = helper.filter_list_of_dicts(_projects, name=project_name)
+            if not tmp_projects:
+                self.project_id, self.project_name = None, None
+                tmp_msg = (f"Error connecting to project with name: {project_name}. "
+                           "Project with given name does not exist or user has no access.")
+                raise ValueError(tmp_msg)
+
+        self.project_id = tmp_projects[0]['id']
+        self.project_name = tmp_projects[0]['name']
+        self.session.headers['X-MSTR-ProjectID'] = self.project_id
 
     def select_application(self, application_id: Optional[str] = None,
                            application_name: Optional[str] = None) -> None:
-        """Select application for the given connection based on application_id
-        or application_name.
-
-        When both `application_id` and `application_name` are `None`,
-        application selection is cleared. When both `application_id`
-        and `application_name` are provided, `application_name` is ignored.
-
-        Args:
-            application_id: id of application to select
-            application_name: name of application to select
-
-        Raises:
-            ValueError: if application with given id or name does not exist
-        """
-        if application_id is None and application_name is None:
-            self.application_id = None
-            self.application_name = None
-            self.project_id = self.application_id
-            self.project_name = self.application_name
-            if config.verbose:
-                print("No application selected.")
-            return None
-
-        if application_id is not None and application_name is not None:
-            tmp_msg = ("Both `application_id` and `application_name` arguments provided. "
-                       "Selecting application based on `application_id`.")
-            helper.exception_handler(msg=tmp_msg, exception_type=Warning)
-
-        _applications = projects.get_projects(connection=self).json()
-        if application_id is not None:
-            # Find which application name matches the application ID provided
-            tmp_applications = helper.filter_list_of_dicts(_applications, id=application_id)
-            if not tmp_applications:
-                self.application_id, self.application_name = None, None
-                tmp_msg = (f"Error connecting to application with id: {application_id}. "
-                           "Application with given id does not exist or user has no access.")
-                raise ValueError(tmp_msg)
-        elif application_name is not None:
-            # Find which application ID matches the application name provided
-            tmp_applications = helper.filter_list_of_dicts(_applications, name=application_name)
-            if not tmp_applications:
-                self.application_id, self.application_name = None, None
-                tmp_msg = (f"Error connecting to application with name: {application_name}. "
-                           "Application with given name does not exist or user has no access.")
-                raise ValueError(tmp_msg)
-
-        self.application_id = tmp_applications[0]['id']
-        self.application_name = tmp_applications[0]['name']
-        self.project_id = self.application_id
-        self.project_name = self.application_name
-        self.session.headers['X-MSTR-ProjectID'] = self.application_id
+        deprecation_warning(
+            "`select_application` method",
+            "`select_project` method",
+            "11.3.4.101",  # NOSONAR
+            False)
+        self.select_project(project_id=application_id, project_name=application_name)
 
     def _get_authorization(self) -> str:
         self.__prompt_credentials()
@@ -347,10 +343,10 @@ class Connection():
         auth = "Basic " + str(encoded_credential, 'utf-8')
         return auth
 
-    def _validate_application_selected(self) -> None:
-        if self.application_id is None:
+    def _validate_project_selected(self) -> None:
+        if self.project_id is None:
             raise AttributeError(
-                "Application not selected. Select application using `select_application` method.")
+                "Project not selected. Select project using `select_project` method.")
 
     def __prompt_credentials(self) -> None:
         self.username = self.username if self.username is not None else input("Username: ")
@@ -359,18 +355,22 @@ class Connection():
             "Login mode (1 - Standard, 16 - LDAP): ")
 
     def __check_version(self) -> bool:
-        """Checks version of I-Server and MicroStrategy Web."""
-        json_response = misc.server_status(self).json()
-        try:
-            self._iserver_version = json_response["iServerVersion"][:9]
-        except KeyError:
-            raise exceptions.IServerException(
-                "I-Server is currently unavailable. Please contact your administrator.")
-        web_version = json_response.get("webVersion")
-        self._web_version = web_version[:9] if web_version else None
-        iserver_version_ok = version.parse(self.iserver_version) >= version.parse(self.__VRCH)
+        """Checks version of I-Server and MicroStrategy Web and store these
+        variables."""
 
-        return iserver_version_ok
+        def get_server_status():
+            json_response = misc.server_status(self).json()
+            try:
+                iserver_version = json_response["iServerVersion"][:9]
+            except KeyError:
+                raise exceptions.IServerException(
+                    "I-Server is currently unavailable. Please contact your administrator.")
+            web_version = json_response.get("webVersion")
+            web_version = web_version[:9] if web_version else None
+            return iserver_version, web_version
+
+        self._iserver_version, self._web_version = get_server_status()
+        return version.parse(self.iserver_version) >= version.parse("11.1.0400")
 
     def __configure_session(self, verify, certificate_path, proxies, existing_session=None,
                             retries=2, backoff_factor=0.3):
@@ -396,13 +396,13 @@ class Connection():
         session.proxies = proxies if proxies is not None else {}
         session.verify = self._configure_ssl(verify, certificate_path)
 
-        hooks = []
+        response_hooks = []
         if config.debug:
-            hooks.append(helper.print_url)
+            response_hooks.append(hooks.print_url)
         if config.save_responses:
-            hooks.append(helper.save_response)
-        if hooks:
-            session.hooks['response'] = hooks
+            response_hooks.append(hooks.save_response)
+        if response_hooks:
+            session.hooks['response'] = response_hooks
 
         status_forcelist = frozenset([413, 429, 500, 503])  # retry after status
 
@@ -412,7 +412,6 @@ class Connection():
             connect=retries,
             backoff_factor=backoff_factor,
             status_forcelist=status_forcelist,
-            allowed_methods=Retry.DEFAULT_ALLOWED_METHODS,
             raise_on_status=False,
         )
         adapter = HTTPAdapter(max_retries=retry)

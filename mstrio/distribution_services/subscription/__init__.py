@@ -1,5 +1,6 @@
 # flake8: noqa
-from .subscription import Subscription, EmailSubscription
-from .subscription_manager import SubscriptionManager, list_subscriptions
 from .content import Content
-from .delivery import Delivery, SendContentAs, Orientation, CacheType, ShortcutCacheFormat, ClientType, ZipSettings
+from .delivery import (CacheType, ClientType, Delivery, Orientation, SendContentAs,
+                       ShortcutCacheFormat, ZipSettings)
+from .subscription import EmailSubscription, list_subscriptions, Subscription
+from .subscription_manager import SubscriptionManager

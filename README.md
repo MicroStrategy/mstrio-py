@@ -6,7 +6,7 @@
 
 # mstrio: Simple and Secure Access to MicroStrategy Data <!-- omit in toc -->
 
-**mstrio** provides a high-level interface for [Python][py_github] and [R][r_github] and is designed to give **data scientists**, **developers**, and **administrators** simple and secure access to their MicroStrategy environment. It wraps [MicroStrategy REST APIs][mstr_rest_docs] into simple workflows, allowing users to fetch data from cubes and reports, create new datasets, add new data to existing datasets, and manage Users/User Groups, Servers, Applications, and more. Since it enforces MicroStrategy’s user and object security model, you don’t need to worry about setting up separate security rules.
+**mstrio** provides a high-level interface for [Python][py_github] and [R][r_github] and is designed to give **data scientists**, **developers**, and **administrators** simple and secure access to their MicroStrategy environment. It wraps [MicroStrategy REST APIs][mstr_rest_docs] into simple workflows, allowing users to fetch data from cubes and reports, create new datasets, add new data to existing datasets, and manage Users/User Groups, Servers, Projects, and more. Since it enforces MicroStrategy’s user and object security model, you don’t need to worry about setting up separate security rules.
 
 With mstrio-py for **data science**, it’s easy to integrate cross-departmental, trustworthy business data in machine learning workflows and enable decision-makers to take action on predictive insights in MicroStrategy Reports, Dossiers, HyperIntelligence Cards, and customized, embedded analytical applications.
 
@@ -44,7 +44,7 @@ Main features of **mstrio-py** allows to access MicroStrategy data:
 
 Since version **11.3.0.1**, **mstrio-py** includes also administration modules:
 
-- **Application** management module (see [examples][example_app])
+- **Project** management module (see [examples][example_project])
 - **Server** management module (see [examples][example_server])
 - **User** and **Usergroup** management modules (see [examples][example_user])
 - **Schedules** management module (see [examples][example_schedules])
@@ -54,9 +54,12 @@ Since version **11.3.0.1**, **mstrio-py** includes also administration modules:
 - **Privilege** and **Security Role** management modules
 - **Cube Cache** management modules (see [examples][example_cache])
 - **Intelligent Cube** management modules (see [examples][example_olap])
-- **Datasources** subpackage for database management
+- **Security filter** module (see [examples][example_security_filter])
+- **Datasources** subpackage for database management (see [examples][example_datasource])
+- **Job Monitor** module for job monitoring (see [examples][example_job_monitor])
+- **Object management** module (see [examples][example_object_mgmt])
 
-Known limitations in 11.3.2.101:
+Known limitations in 11.3.3.101:
 - Method *trigger* in Event class is work in progress and might not work correctly yet.
 
 # Documentation
@@ -99,7 +102,7 @@ jupyter nbextension enable connector-jupyter --py --sys-prefix
 
 # Versioning & Changelog
 
-Current version: **11.3.2.101** (30 June 2021). Check out [**Changelog**][release_notes] to see what's new.
+Current version: **11.3.3.101** (24 September 2021). Check out [**Changelog**][release_notes] to see what's new.
 
 mstrio-py is constantly developed to support newest MicroStrategy REST APIs. Functionalities may be added to mstrio on monthly basis. It is **recommended** to always install the newest version of mstrio-py, as it will be most stable and still maintain backwards compatibility with various MicroStrategy installations, dating back to 11.1.4.
 
@@ -156,7 +159,7 @@ When features (modules, parameters, attributes, methods etc.) are marked for dep
 [example_conn]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/connect.py
 [example_import]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/cube_report.py
 [example_export]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/create_super_cube.py
-[example_app]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/application_mgmt.py
+[example_project]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/project_mgmt.py
 [example_server]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/server_mgmt.py
 [example_user]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/user_mgmt.py
 [example_schedules]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/schedules.py
@@ -164,3 +167,7 @@ When features (modules, parameters, attributes, methods etc.) are marked for dep
 [example_library]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/user_library.py
 [example_cache]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/cube_cache.py
 [example_olap]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/intelligent_cube.py
+[example_job_monitor]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/job_monitor.py
+[example_object_mgmt]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/object_mgmt.py
+[example_security_filter]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/security_filters.py
+[example_datasource]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/datasource_mgmt.py

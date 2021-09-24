@@ -1,3 +1,3 @@
 # flake8: noqa
-from .schedule_time import ScheduleTime, ScheduleEnums
-from .schedule import Schedule, ScheduleManager, list_schedules
+from .schedule_time import ScheduleEnums, ScheduleTime
+from .schedule import list_schedules, Schedule

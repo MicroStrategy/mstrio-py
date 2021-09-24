@@ -9,17 +9,17 @@ ease its usage.
 from mstrio.connection import Connection
 from mstrio.distribution_services import (Subscription, EmailSubscription, Content,
                                           SubscriptionManager, list_subscriptions)
-from mstrio.distribution_services import Schedule, ScheduleManager
+from mstrio.distribution_services import Schedule, list_schedules
 
 base_url = "https://<>/MicroStrategyLibrary/api"
 username = "some_username"
 password = "some_password"
 conn = Connection(base_url, username, password, login_mode=1)
 
-# create manager for subscriptions on a chosen application
-sub_mngr = SubscriptionManager(connection=conn, application_name='MicroStrategy Tutorial')
-# get all subscriptions from the given application (it is possible in two ways)
-all_subs = list_subscriptions(connection=conn, application_name='MicroStrategy Tutorial')
+# create manager for subscriptions on a chosen project
+sub_mngr = SubscriptionManager(connection=conn, project_name='MicroStrategy Tutorial')
+# get all subscriptions from the given project (it is possible in two ways)
+all_subs = list_subscriptions(connection=conn, project_name='MicroStrategy Tutorial')
 all_subs = sub_mngr.list_subscriptions()
 
 #  execute/delete subscriptions by passing theirs ids or Subscription objects
@@ -33,7 +33,7 @@ sub_mngr.available_recipients(content_id='11112222333344445555666677778888',
 
 # get a single subscription
 sub = Subscription(connection=conn, subscription_id='AA11BB22CC33DD44EE55FF6677889900',
-                   application_id='00FF99EE88DD77CC66BB55AA44332211')
+                   project_id='00FF99EE88DD77CC66BB55AA44332211')
 # list all recipients of the given subscription and all available for this
 # subscription
 sub.recipients
@@ -58,16 +58,15 @@ for s in sub_mngr.list_subscriptions(to_dictionary=False):
 # create an email subscription
 EmailSubscription.create(
     connection=conn, name="New Email Subscription for a Report",
-    application_name="MicroStrategy Tutorial",
+    project_name="MicroStrategy Tutorial",
     contents=Content(id='ABC123ABC123ABC123ABC123ABC12345', type=Content.Type.REPORT,
                      personalization=Content.Properties(format_type='EXCEL')),
-    schedules_ids=['ABC123ABC123ABC123ABC123ABC12345'],
+    schedules=['ABC123ABC123ABC123ABC123ABC12345'],
     recipients=['ABC123ABC123ABC123ABC123ABC12345'])
 
 # get list of schedules (you can filter them by for example name, id or
 # description)
-schdl_mngr = ScheduleManager(connection=conn)
-all_schdls = schdl_mngr.list_schedules()
+all_schdls = list_schedules(conn)
 
 # get a single schedule by its id or name and then its properties
 schdl = Schedule(connection=conn, name='Some shedule which runs daily')

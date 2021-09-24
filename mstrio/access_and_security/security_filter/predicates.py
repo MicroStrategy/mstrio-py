@@ -1,12 +1,14 @@
 from enum import Enum
-from typing import List, Union, Optional, TYPE_CHECKING, Dict
+from typing import Dict, List, Optional, TYPE_CHECKING, Union
 
-from mstrio.utils.helper import Dictable, delete_none_values, Any, snake_to_camel, camel_to_snake
-
-from mstrio.access_and_security.security_filter import AttributeRef, FilterRef,\
-    AttributeFormSystemRef, AttributeFormNormalRef, AttributeElement, ElementPromptRef,\
-    ParameterType, ConstantParameter, ObjectReferenceParameter, ExpressionParameter,\
-    PromptParameter, DynamicDateTimeParameter, ConstantArrayParameter
+from mstrio.access_and_security.security_filter import (AttributeElement, AttributeFormNormalRef,
+                                                        AttributeFormSystemRef, AttributeRef,
+                                                        ConstantArrayParameter, ConstantParameter,
+                                                        DynamicDateTimeParameter, ElementPromptRef,
+                                                        ExpressionParameter, FilterRef,
+                                                        ObjectReferenceParameter, ParameterType,
+                                                        PromptParameter)
+from mstrio.utils.helper import Any, camel_to_snake, delete_none_values, Dictable, snake_to_camel
 
 if TYPE_CHECKING:
     from mstrio.access_and_security.security_filter import ParameterBase
@@ -80,9 +82,8 @@ class PredicateForm(PredicateBase):
         return snake_to_camel(result) if camel_case else result
 
     @classmethod
-    def from_dict(cls, source: Dict[str, Any], connection: Optional["Connection"] = None,
-                  to_snake_case=True):
-        source = camel_to_snake(source) if to_snake_case else source
+    def from_dict(cls, source: Dict[str, Any], connection: Optional["Connection"] = None):
+        source = camel_to_snake(source)
         predicate_id = source.get("predicate_id")
 
         source = source.get('predicate_tree')
@@ -92,30 +93,29 @@ class PredicateForm(PredicateBase):
         for parameter in source.get("parameters", []):
             parameter_type = parameter.get("parameterType")
             if parameter_type == ParameterType.CONSTANT.value:
-                parameters.append(ConstantParameter.from_dict(parameter, connection,
-                                                              to_snake_case))
+                parameters.append(ConstantParameter.from_dict(parameter, connection))
             elif parameter_type == ParameterType.OBJECT_REFERENCE.value:
                 parameters.append(
-                    ObjectReferenceParameter.from_dict(parameter, connection, to_snake_case))
+                    ObjectReferenceParameter.from_dict(parameter, connection))
             elif parameter_type == ParameterType.EXPRESSION.value:
                 parameters.append(
-                    ExpressionParameter.from_dict(parameter, connection, to_snake_case))
+                    ExpressionParameter.from_dict(parameter, connection))
             elif parameter_type == ParameterType.PROMPT.value:
-                parameters.append(PromptParameter.from_dict(parameter, connection, to_snake_case))
+                parameters.append(PromptParameter.from_dict(parameter, connection))
             elif parameter_type == ParameterType.DYNAMIC_DATE_TIME.value:
                 parameters.append(
-                    DynamicDateTimeParameter.from_dict(parameter, connection, to_snake_case))
+                    DynamicDateTimeParameter.from_dict(parameter, connection))
             elif parameter_type == ParameterType.ARRAY.value:
                 parameters.append(
-                    ConstantArrayParameter.from_dict(parameter, connection, to_snake_case))
+                    ConstantArrayParameter.from_dict(parameter, connection))
 
-        attribute = AttributeRef.from_dict(source.get("attribute"), connection, to_snake_case)
+        attribute = AttributeRef.from_dict(source.get("attribute"), connection)
         form = source.get("form", {})
         form_sub_type = form.get("sub_type")
         if form_sub_type == "attribute_form_system":
-            form = AttributeFormSystemRef.from_dict(source.get("form"), connection, to_snake_case)
+            form = AttributeFormSystemRef.from_dict(source.get("form"), connection)
         elif form_sub_type == "attribute_form_normal":
-            form = AttributeFormNormalRef.from_dict(source.get("form"), connection, to_snake_case)
+            form = AttributeFormNormalRef.from_dict(source.get("form"), connection)
         else:
             form = None
         data_locale = source.get("data_locale")
@@ -206,20 +206,19 @@ class PredicateElementList(PredicateBase):
         return snake_to_camel(result) if camel_case else result
 
     @classmethod
-    def from_dict(cls, source: Dict[str, Any], connection: Optional["Connection"] = None,
-                  to_snake_case=True):
-        source = camel_to_snake(source) if to_snake_case else source
+    def from_dict(cls, source: Dict[str, Any], connection: Optional["Connection"] = None):
+        source = camel_to_snake(source)
         predicate_id = source.get("predicate_id")
 
         source = source.get('predicate_tree')
         function = PredicateElementListFunction(source.get("function"))
-        attribute = AttributeRef.from_dict(source.get("attribute"), connection, to_snake_case)
+        attribute = AttributeRef.from_dict(source.get("attribute"), connection)
         elements = [
-            AttributeElement.from_dict(elem, connection, to_snake_case)
+            AttributeElement.from_dict(elem, connection)
             for elem in source.get("elements")
         ]
         elements_prompt = None if source.get("elements_prompt") is None else [
-            ElementPromptRef.from_dict(elem, connection, to_snake_case)
+            ElementPromptRef.from_dict(elem, connection)
             for elem in source.get("elements_prompt")
         ]
         return PredicateElementList(function, attribute, elements, elements_prompt, predicate_id)
@@ -279,13 +278,12 @@ class PredicateFilter(PredicateBase):
         return snake_to_camel(result) if camel_case else result
 
     @classmethod
-    def from_dict(cls, source: Dict[str, Any], connection: Optional["Connection"] = None,
-                  to_snake_case=True):
-        source = camel_to_snake(source) if to_snake_case else source
+    def from_dict(cls, source: Dict[str, Any], connection: Optional["Connection"] = None):
+        source = camel_to_snake(source)
         predicate_id = source.get("predicate_id")
 
         source = source.get('predicate_tree')
-        filter = FilterRef.from_dict(source.get("filter"), connection, to_snake_case)
+        filter = FilterRef.from_dict(source.get("filter"), connection)
         is_independent = bool(source.get("is_independent"))
 
         return PredicateFilter(filter, is_independent, predicate_id)
@@ -339,14 +337,13 @@ class PredicateJointElementList(PredicateBase):
         return snake_to_camel(result) if camel_case else result
 
     @classmethod
-    def from_dict(cls, source: Dict[str, Any], connection: Optional["Connection"] = None,
-                  to_snake_case=True):
-        source = camel_to_snake(source) if to_snake_case else source
+    def from_dict(cls, source: Dict[str, Any], connection: Optional["Connection"] = None):
+        source = camel_to_snake(source)
         predicate_id = source.get("predicate_id")
 
         source = source.get('predicate_tree')
         level = [
-            AttributeRef.from_dict(obj, connection, to_snake_case) for obj in source.get("level")
+            AttributeRef.from_dict(obj, connection) for obj in source.get("level")
         ]
         tuples = [[AttributeElement.from_dict(elem, connection)
                    for elem in obj]
@@ -418,23 +415,22 @@ class LogicOperator(Dictable):
         return snake_to_camel(result) if camel_case else result
 
     @classmethod
-    def from_dict(cls, source: Dict[str, Any], connection: Optional["Connection"] = None,
-                  to_snake_case=True):
-        source = camel_to_snake(source) if to_snake_case else source
+    def from_dict(cls, source: Dict[str, Any], connection: Optional["Connection"] = None):
+        source = camel_to_snake(source)
         function = LogicFunction(source.get("function"))
         children = []
         for child in source.get("children"):
             child_type = child.get("type")
             if child_type == "predicate_form_qualification":
-                children.append(PredicateForm.from_dict(child, connection, to_snake_case))
+                children.append(PredicateForm.from_dict(child, connection))
             elif child_type == "predicate_joint_element_list":
                 children.append(
-                    PredicateJointElementList.from_dict(child, connection, to_snake_case))
+                    PredicateJointElementList.from_dict(child, connection))
             elif child_type == "predicate_filter_qualification":
-                children.append(PredicateFilter.from_dict(child, connection, to_snake_case))
+                children.append(PredicateFilter.from_dict(child, connection))
             elif child_type == "predicate_element_list":
-                children.append(PredicateElementList.from_dict(child, connection, to_snake_case))
+                children.append(PredicateElementList.from_dict(child, connection))
             elif child_type == "operator":
-                children.append(LogicOperator.from_dict(child, connection, to_snake_case))
+                children.append(LogicOperator.from_dict(child, connection))
 
         return LogicOperator(function, children)

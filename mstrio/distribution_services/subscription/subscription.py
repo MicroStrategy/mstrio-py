@@ -1,6 +1,6 @@
 from enum import Enum
 from pprint import pformat, pprint
-from typing import List, Optional, Union
+from typing import Any, Dict, List, Optional, TypeVar, Union
 
 from mstrio import config
 from mstrio.api import subscriptions
@@ -10,8 +10,10 @@ from mstrio.distribution_services.subscription.content import Content
 from mstrio.distribution_services.subscription.delivery import (CacheType, ClientType, Delivery,
                                                                 Orientation, SendContentAs,
                                                                 ShortcutCacheFormat, ZipSettings)
-from mstrio.server.application import Application
-from mstrio.utils import helper
+from mstrio.users_and_groups import User
+from mstrio.server.project import Project
+from mstrio.utils import helper, time_helper
+from mstrio.utils.entity import EntityBase
 
 
 class RecipientsTypes(Enum):
@@ -23,33 +25,146 @@ class RecipientsTypes(Enum):
     UNSUPPORTED = "UNSUPPORTED"
 
 
-class Subscription:
-    """Class representation of MicroStrategy Subscription object."""
+T = TypeVar("T")
 
-    _API_PATCH = []
-    _AVAILABLE_ATTRIBUTES = {}
+
+def list_subscriptions(connection: Connection, project_id: Optional[str] = None,
+                       project_name: Optional[str] = None, to_dictionary: bool = False,
+                       limit: Optional[int] = None,
+                       **filters) -> Union[List["Subscription"], List[dict]]:
+    """Get all subscriptions per project as list of Subscription objects or
+    dictionaries.
+
+    Optionally filter the subscriptions by specifying filters.
+    Specify either `project_id` or `project_name`.
+    When `project_id` is provided (not `None`), `project_name` is
+    omitted.
+
+    Args:
+        connection(object): MicroStrategy connection object
+        project_id: Project ID
+        project_name: Project name
+        to_dictionary: If True returns a list of subscription dicts,
+            otherwise returns a list of subscription objects
+        limit: limit the number of elements returned. If `None` (default), all
+            objects are returned.
+        **filters: Available filter parameters: ['id', 'name', 'editable',
+            'allowDeliveryChanges', 'allowPersonalizationChanges',
+            'allowUnsubscribe', 'dateCreated', 'dateModified', 'owner',
+            'schedules', 'contents', 'recipients', 'delivery']
+    """
+    project_id = Subscription._project_id_check(connection, project_id, project_name)
+    msg = 'Error getting subscription list.'
+    # NOTE DE208094 x-mstr-total-count is not working correctly for this
+    # endpoint the chunk_size is thus increased to allow downloading all
+    # subscriptions at once. Change to 1000 for async chunking once it is
+    # working
+    objects = helper.fetch_objects_async(
+        connection=connection,
+        api=subscriptions.list_subscriptions,
+        async_api=subscriptions.list_subscriptions_async,
+        limit=limit,
+        chunk_size=100000,
+        filters=filters,
+        error_msg=msg,
+        dict_unpack_value="subscriptions",
+        project_id=project_id,
+    )
+
+    if to_dictionary:
+        return objects
+    else:
+        return [
+            Subscription.from_dict(
+                source=obj,
+                connection=connection,
+                project_id=project_id,
+            ) for obj in objects
+        ]
+
+
+class Subscription(EntityBase):
+    """Class representation of MicroStrategy Subscription object.
+
+    Attributes:
+        id: The ID of the Subscription
+        connection: The MicroStrategy connection object
+        project_id: The ID of the project the Subscription belongs to
+    """
+
+    _API_GETTERS = {
+        ("id", "name", "editable", "date_created", "date_modified", "owner", "schedules",
+         "contents", "recipients", "delivery"): subscriptions.get_subscription
+    }
+    _FROM_DICT_MAP = {
+        "owner": User.from_dict,
+        "contents": lambda source, connection:
+                    [Content.from_dict(content, connection) for content in source],  # noqa: E131
+        "delivery": Delivery.from_dict,
+        "schedules": lambda source, connection:
+                     [Schedule.from_dict(content, connection) for content in source],  # noqa: E131
+        "date_created": time_helper.DatetimeFormats.YMDHMS,
+        "date_modified": time_helper.DatetimeFormats.YMDHMS,
+    }
+    _API_PATCH = [subscriptions.update_subscription]
     _RECIPIENTS_TYPES = [
         'CONTACT_GROUP', 'USER_GROUP', 'CONTACT', 'USER', 'PERSONAL_ADDRESS', 'UNSUPPORTED'
     ]
     _RECIPIENTS_INCLUDE = ['TO', 'CC', 'BCC', None]
 
-    def __init__(self, connection, subscription_id, application_id=None, application_name=None):
+    def __init__(self, connection, subscription_id, project_id=None, project_name=None,
+                 application_id=None, application_name=None):
         """Initialize Subscription object, populates it with I-Server data.
-        Specify either `application_id` or `application_name`.
-        When `application_id` is provided (not `None`), `application_name`
+        Specify either `project_id` or `project_name`.
+        When `project_id` is provided (not `None`), `project_name`
         is omitted.
 
         Args:
             connection: MicroStrategy connection object returned
                 by `connection.Connection()`
             subscription_id: ID of the subscription to be initialized
-            application_id: Application ID
-            application_name: Application name
+            project_id: Project ID
+            project_name: Project name
+            application_id: deprecated. Use project_id instead.
+            application_name: deprecated. Use project_name instead.
         """
-        self.connection = connection
-        self.application_id = self._app_id_check(connection, application_id, application_name)
-        self.id = subscription_id
-        self.__fetch()
+        if application_id or application_name:
+            helper.deprecation_warning(
+                '`application`',
+                '`project`',
+                '11.3.4.101',  # NOSONAR
+                False)
+            project_id = project_id or application_id
+            project_name = project_name or application_name
+
+        project_id = self._project_id_check(connection, project_id, project_name)
+        super().__init__(connection, subscription_id, project_id=project_id)
+
+    def _init_variables(self, project_id, **kwargs):
+        super()._init_variables(**kwargs)
+        self.subscription_id = kwargs.get('id')
+        self.editable = kwargs.get('editable')
+        self.allow_delivery_changes = kwargs.get('allow_delivery_changes')
+        self.allow_personalization_changes = kwargs.get('allow_personalization_changes')
+        self.allow_unsubscribe = kwargs.get('allow_unsubscribe')
+        self.date_created = time_helper.map_str_to_datetime("date_created",
+                                                            kwargs.get("date_created"),
+                                                            self._FROM_DICT_MAP)
+        self.date_modified = time_helper.map_str_to_datetime("date_modified",
+                                                             kwargs.get("date_modified"),
+                                                             self._FROM_DICT_MAP)
+        self.owner = User.from_dict(kwargs.get('owner'),
+                                    self.connection) if kwargs.get('owner') else None
+        self.schedules = [
+            Schedule.from_dict(schedule, self._connection) for schedule in kwargs.get('schedules')
+        ] if kwargs.get('schedules') else None
+        self.contents = [
+            Content.from_dict(content, self._connection) for content in kwargs.get('contents')
+        ] if kwargs.get('contents') else None
+        self.recipients = kwargs.get('recipients', None)
+        self.delivery = Delivery.from_dict(
+            kwargs.get('delivery')) if kwargs.get('delivery') else None
+        self.project_id = project_id
 
     def alter(
         self,
@@ -59,7 +174,6 @@ class Subscription:
         allow_unsubscribe: Optional[bool] = None,
         send_now: bool = False,
         owner_id: Optional[str] = None,
-        schedules_ids: Union[str, List[str]] = None,
         schedules: Union[str, List[str], Schedule, List[Schedule]] = None,
         contents: Content = None,
         recipients: Union[List[str], List[dict]] = None,
@@ -98,7 +212,7 @@ class Subscription:
         Args:
             connection(Connection): a MicroStrategy connection object
             name(str): name of the subscription,
-            application_id(str): application ID,
+            project_id(str): project ID,
             allow_delivery_changes(bool): whether the recipients can change
                 the delivery of the subscription,
             allow_personalization_changes(bool): whether the recipients can
@@ -109,7 +223,6 @@ class Subscription:
                 immediately,
             owner_id(str): ID of the subscription owner, by default logged in
                 user ID,
-            schedules_ids (Union[str, List[str]]): Schedules IDs,
             schedules (Union[str, List[str], Schedule, List[Schedule]]):
                 Schedules IDs or Schedule objects,
             contents (Content): The content of the subscription.
@@ -150,21 +263,12 @@ class Subscription:
             shortcut_cache_format(str,enum): [RESERVED, JSON, BINARY, BOTH]
             mobile_client_type(str,enum): [RESERVED, BLACKBERRY, PHONE, TABLET,
                 ANDROID]
-            device_id(str): the mobile target application,
+            device_id(str): the mobile target project,
             do_not_create_update_caches(bool): whether the current subscription
                 will overwrite earlier versions of the same report or document
                 in the history list,
             re_run_hl(bool): whether subscription will re-run against warehouse
         """
-
-        def validate(body):
-            for key, value in body.items():
-                if key == 'send_now':
-                    pass
-                elif type(value) is not self._AVAILABLE_ATTRIBUTES.get(key):
-                    helper.exception_handler(
-                        "{} is not a valid type of {}, valid type is {}".format(
-                            type(value), key, self._AVAILABLE_ATTRIBUTES.get(key)), TypeError)
 
         def is_changed(nested=None, **kwargs):
             for key, value in kwargs.items():
@@ -176,7 +280,7 @@ class Subscription:
                     return value if value != current_val and value is not None else current_val
 
         # Schedules logic
-        schedules = self.__validate_schedules(schedules_ids=schedules_ids, schedules=schedules)
+        schedules = self.__validate_schedules(schedules=schedules)
         if not schedules:
             schedules = [{'id': sch.id} for sch in self.schedules]
 
@@ -191,7 +295,7 @@ class Subscription:
                 for content in contents
             ]
         else:
-            contents = self.contents
+            contents = [cont.to_dict() for cont in self.contents]
 
         # Delivery logic
         if delivery:
@@ -200,18 +304,18 @@ class Subscription:
         else:
             temp_delivery = self.__change_delivery_properties(
                 delivery_mode, delivery_expiration_date, contact_security, email_subject,
-                email_message, filename, compress, None, zip_password, zip_password_protect,
-                space_delimiter, email_send_content_as, overwrite_older_version,
-                file_burst_sub_folder, printer_copies, printer_range_start, printer_range_end,
-                printer_collated, printer_orientation, printer_use_print_range, cache_type,
-                shortcut_cache_format, mobile_client_type, device_id, do_not_create_update_caches,
-                re_run_hl)
+                email_message, filename, compress, None, zip_filename, zip_password,
+                zip_password_protect, space_delimiter, email_send_content_as,
+                overwrite_older_version, file_burst_sub_folder, printer_copies,
+                printer_range_start, printer_range_end, printer_collated, printer_orientation,
+                printer_use_print_range, cache_type, shortcut_cache_format, mobile_client_type,
+                device_id, do_not_create_update_caches, re_run_hl)
         delivery = temp_delivery.to_dict(camel_case=True)
 
         # Recipients logic
         recipients = is_changed(recipients=recipients)
         recipients = Subscription._validate_recipients(self.connection, contents, recipients,
-                                                       self.application_id, delivery['mode'])
+                                                       self.project_id, delivery['mode'])
 
         body = {
             "name": is_changed(name=name),
@@ -221,7 +325,7 @@ class Subscription:
             "allowUnsubscribe": is_changed(allow_unsubscribe=allow_unsubscribe),
             "sendNow": send_now,
             'owner': {
-                'id': is_changed(nested=self.owner['id'], owner_id=owner_id)
+                'id': is_changed(nested=self.owner.id, owner_id=owner_id)
             },
             "schedules": schedules,
             "contents": contents,
@@ -229,54 +333,30 @@ class Subscription:
             "delivery": delivery,
         }
 
-        validate(helper.camel_to_snake(body))
         body = helper.delete_none_values(body)
 
-        response = subscriptions.update_subscription(self.connection, self.id, self.application_id,
+        response = subscriptions.update_subscription(self.connection, self.id, self.project_id,
                                                      body)
 
         if response.ok:
             response = response.json()
             response = helper.camel_to_snake(response)
-            for key, value in response.items():
-                if key == 'schedules':
-                    value = [Schedule.from_dict(v, self.connection) for v in value]
-                self.__setattr__(key, value)
+            self._set_object(**response)
             if config.verbose:
                 print(custom_msg if custom_msg else "Updated subscription '{}' with ID: {}."
                       .format(self.name, self.id))
 
     @staticmethod
-    def __validate_schedules(schedules_ids: Union[str, List[str]] = None,
-                             schedules: Union[str, List[str], Schedule, List[Schedule]] = None):
-        # Schedules logic
-        # TODO change logic when 'schedules_ids' will be fully removed
+    def __validate_schedules(schedules: Union[str, List[str], Schedule, List[Schedule]] = None):
         tmp_schedules = []
-        if schedules and schedules_ids:
-            msg = ("Parameter 'schedules_ids' is deprecated and will be replaced with 'schedules'."
-                   " For know, if both are provided, 'schedules' are prioritised.")
-            print(msg)
-        if schedules:
-            schedules = schedules if isinstance(schedules, list) else [schedules]
-            schedules = [s for s in schedules if s is not None]
-            for schedule in schedules:
-                if isinstance(schedule, Schedule):
-                    sch_id = schedule.id
-                elif isinstance(schedule, str):
-                    sch_id = schedule
-                tmp_schedules.append({'id': sch_id})
-        elif schedules_ids:
-            helper.deprecation_warning(
-                "'schedules_ids'",
-                new="'schedules'",
-                version='11.3.3.101',  # NOSONAR
-                module=False)
-            schedules_ids = schedules_ids if isinstance(schedules_ids, list) else [schedules_ids]
-            schedules_ids = [s for s in schedules_ids if s is not None]
-            if any([not isinstance(s, str) for s in schedules_ids]):
-                msg = ("schedules_ids should be strings.")
-                helper.exception_handler(msg)
-            tmp_schedules = [{'id': sch_id} for sch_id in schedules_ids]
+        schedules = schedules if isinstance(schedules, list) else [schedules]
+        schedules = [s for s in schedules if s is not None]
+        for schedule in schedules:
+            if isinstance(schedule, Schedule):
+                sch_id = schedule.id
+            elif isinstance(schedule, str):
+                sch_id = schedule
+            tmp_schedules.append({'id': sch_id})
 
         return tmp_schedules
 
@@ -285,7 +365,7 @@ class Subscription:
         return {
             key: self.__dict__[key]
             for key in sorted(self.__dict__, key=helper.sort_object_properties)
-            if key not in ['connection', 'application_id', '_delivery']
+            if key not in ['connection', 'application_id', 'project_id', '_delivery']
         }
 
     def execute(self):
@@ -307,8 +387,7 @@ class Subscription:
                 "Are you sure you want to delete subscription '{}' with ID: {}? [Y/N]: ".format(
                     self.name, self.id))
         if force or user_input == 'Y':
-            response = subscriptions.remove_subscription(self.connection, self.id,
-                                                         self.application_id)
+            response = subscriptions.remove_subscription(self.connection, self.id, self.project_id)
             if response.ok and config.verbose:
                 print("Deleted subscription '{}' with ID: {}.".format(self.name, self.id))
             return response.ok
@@ -319,21 +398,22 @@ class Subscription:
         """Get a list of available attributes for bursting feature."""
         contents_bursting = {}
         for content in self.contents:
-            c_id = content['id']
-            c_type = content['type']
-            response = subscriptions.bursting_attributes(self.connection, self.application_id,
-                                                         c_id, c_type.upper())
-
+            response = subscriptions.bursting_attributes(
+                self.connection,
+                self.project_id,
+                content.id,
+                content.type.upper(),
+            )
             if response.ok:
-                contents_bursting[content['id']] = response.json()['burstingAttributes']
+                contents_bursting[content.id] = response.json()['burstingAttributes']
 
         return contents_bursting
 
     def available_recipients(self) -> List[dict]:
         """List available recipients for subscription content."""
-        body = {"contents": self.contents}
-        delivery_type = self.delivery['mode']
-        response = subscriptions.available_recipients(self.connection, self.application_id, body,
+        body = {"contents": [content.to_dict() for content in self.contents]}
+        delivery_type = self.delivery.mode
+        response = subscriptions.available_recipients(self.connection, self.project_id, body,
                                                       delivery_type)
 
         if response.ok and config.verbose:
@@ -404,8 +484,8 @@ class Subscription:
                     ready_recipients.append(recipient)
 
         ready_recipients = self._validate_recipients(self.connection, self.contents,
-                                                     ready_recipients, self.application_id,
-                                                     self.delivery['mode'])
+                                                     ready_recipients, self.project_id,
+                                                     self.delivery.mode)
 
         if ready_recipients:
             all_recipients.extend(ready_recipients)
@@ -449,8 +529,9 @@ class Subscription:
             self, mode=None, expiration=None, contact_security=None, subject: Optional[str] = None,
             message: Optional[str] = None, filename: Optional[str] = None,
             compress: Optional[bool] = None, zip_settings: Optional[ZipSettings] = None,
-            password: Optional[str] = None, password_protect: Optional[bool] = None,
-            space_delimiter: Optional[str] = None, send_content_as: Optional[SendContentAs] = None,
+            zip_filename: Optional[str] = None, zip_password: Optional[str] = None,
+            zip_password_protect: Optional[bool] = None, space_delimiter: Optional[str] = None,
+            send_content_as: Optional[SendContentAs] = None,
             overwrite_older_version: Optional[bool] = None, burst_sub_folder: Optional[str] = None,
             copies: Optional[int] = None, range_start: Optional[int] = None,
             range_end: Optional[int] = None, collated: Optional[bool] = None,
@@ -471,78 +552,80 @@ class Subscription:
             if local[property_key] is not None:
                 properties[property_key] = local[property_key]
 
-        temp_delivery = self.delivery
-        not_changed = {}
-        obj_dict = self._delivery.VALIDATION_DICT
-        obj_mode_dict = self._delivery.__dict__[temp_delivery['mode'].lower()].VALIDATION_DICT
+        # 'zip_settings' is 'zip' in object
+        if 'zip_settings' in properties.keys():
+            properties['zip'] = properties.pop('zip_settings')
+
+        obj_dict = self.delivery.VALIDATION_DICT
+        obj_mode_dict = self.delivery.__dict__[self.delivery.mode.lower()].VALIDATION_DICT
         obj_mode_zip_dict = {
-            "filename": str,
-            "password": str,
-            "password_protect": bool,
+            "zip_filename": str,
+            "zip_password": str,
+            "zip_password_protect": bool,
         }
-        # if any not None values
-        if properties:
-            # check if key is in delivery dict
+
+        if properties:  # at this point only not None values in properties
             for key, value in properties.items():
-                if temp_delivery.get(key) != value and key in obj_dict.keys():
-                    temp_delivery[key] = value
-                elif key in obj_mode_dict.keys():
-                    check = temp_delivery[temp_delivery['mode'].lower()]
-                    if check.get(key) and check.get(
-                            key) != value:  # if we have key and value is different
-                        check[key] = value
-                    elif not check.get(key):  # if we don't have key but it can be here
-                        # if key == 'filename' and compress == False:
-                        check[key] = value
-                elif temp_delivery[temp_delivery['mode'].lower()].get('zip'):
-                    if temp_delivery[temp_delivery['mode'].lower()].get('zip').get(
-                            key) != value and key in obj_mode_zip_dict.keys():
-                        temp_delivery[temp_delivery['mode'].lower()]['zip'][key] = value
-                elif key in obj_mode_zip_dict.keys():
-                    temp_delivery[temp_delivery['mode'].lower()]['zip'] = {}
-                    temp_delivery[temp_delivery['mode'].lower()]['zip'][key] = value
-
-        return Delivery.from_dict(temp_delivery)
-
-    def __fetch(self):
-        """Retrieve object metadata."""
-        response = subscriptions.get_subscription(self.connection, self.id, self.application_id)
-
-        if response.ok:
-            response = response.json()
-            response = helper.camel_to_snake(response)
-            for key, value in response.items():
-                self._AVAILABLE_ATTRIBUTES.update({key: type(value)})
-                self.__setattr__(key, value)
-                if key == "delivery":
-                    self._delivery = Delivery.from_dict(value)
-                elif key == 'schedules':
-                    self.schedules = [
-                        Schedule.from_dict(sch, connection=self.connection) for sch in value
-                    ]
+                if key in obj_dict.keys():  # Highest level parameters. Mainly mode type and object
+                    # Change mode or set attr if it's not mode param
+                    if not self.delivery.change_mode(key, value):
+                        self.delivery.__setattr__(key, value)
+                elif key in obj_mode_dict.keys():  # parameters of a particular mode e.g. of email
+                    helper.rsetattr(self.delivery, f'{self.delivery.mode.lower()}.{key}', value)
+                elif key in obj_mode_zip_dict.keys():  # zip settings
+                    key = key[4:]
+                    if not helper.rgetattr(self.delivery, f'{self.delivery.mode.lower()}.zip',
+                                           None):
+                        helper.rsetattr(self.delivery, f'{self.delivery.mode.lower()}.zip',
+                                        ZipSettings())
+                    helper.rsetattr(self.delivery, f'{self.delivery.mode.lower()}.zip.{key}',
+                                    value)
+        return self.delivery
 
     @classmethod
-    def from_dict(cls, connection, dictionary, application_id=None, application_name=None):
+    def from_dict(cls: T, source: Dict[str, Any] = None, connection: Optional["Connection"] = None,
+                  project_id: Optional[str] = None, project_name: Optional[str] = None,
+                  dictionary=None, application_id: Optional[str] = None,
+                  application_name: Optional[str] = None) -> T:
         """Initialize Subscription object from dictionary.
-        Specify either `application_id` or `application_name`.
-        When `application_id` is provided (not `None`), `application_name` is
+        Specify either `project_id` or `project_name`.
+        When `project_id` is provided (not `None`), `project_name` is
         omitted."""
+        if application_id or application_name:
+            helper.deprecation_warning(
+                '`application_id` and `application_name`',
+                '`project_id` and `project_name`',
+                '11.3.4.101',  # NOSONAR
+                False)
+            project_id = project_id or application_id
+            project_name = project_name or application_name
 
-        obj = cls.__new__(cls)
-        super(Subscription, obj).__init__()
-        obj.connection = connection
-        obj.application_id = Subscription._app_id_check(connection, application_id,
-                                                        application_name)
-        dictionary = helper.camel_to_snake(dictionary)
-        for key, value in dictionary.items():
-            obj._AVAILABLE_ATTRIBUTES.update({key: type(value)})
-            obj.__setattr__(key, value)
-            if key == 'delivery':
-                obj._delivery = Delivery.from_dict(value)
-            elif key == 'schedules':
-                obj.schedules = [
-                    Schedule.from_dict(sch, connection=obj.connection) for sch in value
-                ]
+        if dictionary:
+            helper.deprecation_warning(
+                "`dictionary`",
+                "`source`",
+                "11.3.4.101",  # NOSONAR
+                module=False,
+            )
+        source = source or dictionary
+        # This is tricky, as we have to consider 3 cases:
+        # - project_id given directly
+        # - project_name given in args
+        # - project_id in dict (if someone serialised to dict
+        #                           and is now deserialising)
+        try:
+            project_id = Subscription._project_id_check(connection, project_id, project_name)
+        except ValueError as err:
+            if source.get("project_id", False):
+                project_id = source["project_id"]
+            else:
+                raise err
+        _source = {
+            **source,
+            "project_id": project_id,
+        }
+        obj: Subscription = super().from_dict(_source, connection)
+
         return obj
 
     @classmethod
@@ -550,14 +633,13 @@ class Subscription:
         cls,
         connection: Connection,
         name: str,
-        application_id: Optional[str] = None,
-        application_name: Optional[str] = None,
+        project_id: Optional[str] = None,
+        project_name: Optional[str] = None,
         allow_delivery_changes: Optional[bool] = None,
         allow_personalization_changes: Optional[bool] = None,
         allow_unsubscribe: Optional[bool] = None,
         send_now: Optional[bool] = None,
         owner_id: Optional[str] = None,
-        schedules_ids: Union[str, List[str]] = None,
         schedules: Union[str, List[str], Schedule, List[Schedule]] = None,
         contents: Content = None,
         recipients: Union[List[dict], List[str]] = None,
@@ -594,8 +676,8 @@ class Subscription:
         Args:
             connection(Connection): a MicroStrategy connection object
             name(str): name of the subscription,
-            application_id(str): application ID,
-            application_name(str): application name,
+            project_id(str): project ID,
+            project_name(str): project name,
             allow_delivery_changes(bool): whether the recipients can change
                 the delivery of the subscription,
             allow_personalization_changes(bool): whether the recipients can
@@ -606,7 +688,6 @@ class Subscription:
                 immediately,
             owner_id(str): ID of the subscription owner, by default logged in
                 user ID,
-            schedules_ids (Union[str, List[str]]): Schedules IDs,
             schedules (Union[str, List[str], Schedule, List[Schedule]]):
                 Schedules IDs or Schedule objects,
             contents (Content): The content settings.
@@ -647,7 +728,7 @@ class Subscription:
             shortcut_cache_format(str,enum): [RESERVED, JSON, BINARY, BOTH]
             mobile_client_type(str,enum): [RESERVED, BLACKBERRY, PHONE, TABLET,
                 ANDROID]
-            device_id(str): the mobile target application,
+            device_id(str): the mobile target project,
             do_not_create_update_caches(bool): whether the current subscription
                 will overwrite earlier versions of the same report or document
                 in the history list,
@@ -655,15 +736,13 @@ class Subscription:
         """
         name = name if len(name) <= 255 else helper.exception_handler(
             "Name too long. Max name length is 255 characters.")
-        application_id = Subscription._app_id_check(connection, application_id, application_name)
+        project_id = Subscription._project_id_check(connection, project_id, project_name)
 
-        # Schedules logic
-        # TODO change logic when 'schedules_ids' will be fully removed
-        if schedules_ids is None and schedules is None:
+        if not schedules:
             msg = ("Please specify 'schedules' parameter.")
             helper.exception_handler(msg)
 
-        schedules = cls.__validate_schedules(schedules_ids=schedules_ids, schedules=schedules)
+        schedules = cls.__validate_schedules(schedules=schedules)
 
         # Content logic
         contents = contents if isinstance(contents, list) else [contents]
@@ -692,7 +771,7 @@ class Subscription:
 
         # Recipients logic
         recipients = Subscription._validate_recipients(connection, contents, recipients,
-                                                       application_id, delivery['mode'])
+                                                       project_id, delivery['mode'])
 
         # Create body
         body = {
@@ -711,18 +790,22 @@ class Subscription:
         }
 
         body = helper.delete_none_values(body)
-        response = subscriptions.create_subscription(connection, application_id, body)
+        response = subscriptions.create_subscription(connection, project_id, body)
         if config.verbose:
             unpacked_response = response.json()
             print("Created subscription '{}' with ID: '{}'.".format(name, unpacked_response['id']))
-        return Subscription.from_dict(connection, response.json(), application_id)
+        return Subscription.from_dict(response.json(), connection, project_id)
 
     @staticmethod
-    def _validate_recipients(connection, contents: Content, recipients, application_id,
-                             delivery_mode):
+    def _validate_recipients(connection, contents: List[Union[Content, dict]], recipients,
+                             project_id, delivery_mode):
         recipients = recipients if isinstance(recipients, list) else [recipients]
-        body = {"contents": contents}
-        available_recipients = subscriptions.available_recipients(connection, application_id, body,
+        body = {
+            "contents": [
+                cont.to_dict() if isinstance(cont, Content) else cont for cont in contents
+            ]
+        }
+        available_recipients = subscriptions.available_recipients(connection, project_id, body,
                                                                   delivery_mode)
         available_recipients = available_recipients.json()['recipients']
         available_recipients_ids = [rec['id'] for rec in available_recipients]
@@ -756,72 +839,84 @@ class Subscription:
         return formatted_recipients
 
     @staticmethod
-    def _app_id_check(connection, application_id, application_name):
-        """Check if the application name exists and returns the application ID.
+    def _project_id_check(connection, project_id, project_name):
+        """Check if the project name exists and returns the project ID.
 
         Args:
             connection(object): MicroStrategy connection object
-            application_id: Application ID
-            application_name: Application name
+            project_id: Project ID
+            project_name: Project name
         """
-        if application_id is None and application_name is None:
-            msg = ("Please specify either 'application_name' or 'application_id' "
+        if project_id is None and project_name is None:
+            msg = ("Please specify either 'project_name' or 'project_id' "
                    "parameter in the constructor.")
             helper.exception_handler(msg)
-        if application_id is None:
-            app_loaded_list = Application._list_loaded_applications(connection, to_dictionary=True,
-                                                                    name=application_name)
+        if project_id is None:
+            project_loaded_list = Project._list_loaded_projects(connection, to_dictionary=True,
+                                                                name=project_name)
             try:
-                application_id = app_loaded_list[0]['id']
+                project_id = project_loaded_list[0]['id']
             except IndexError:
                 helper.exception_handler(
-                    "There is no application with the given name: '{}'".format(application_name),
+                    "There is no project with the given name: '{}'".format(project_name),
                     exception_type=ValueError)
 
-        return application_id
+        return project_id
 
 
 class EmailSubscription(Subscription):
     """Class representation of MicroStrategy Email Subscription object."""
 
-    def __init__(self, connection, subscription_id=None, application_id=None,
-                 application_name=None):
+    def __init__(self, connection, subscription_id=None, project_id=None, project_name=None,
+                 application_id=None, application_name=None):
         """Initialize EmailSubscription object, populates it with I-Server data
         if subscription_id is passed.
-        Specify either `application_id` or `application_name`.
-        When `application_id` is provided (not `None`), `application_name` is
+        Specify either `project_id` or `project_name`.
+        When `project_id` is provided (not `None`), `project_name` is
         omitted.
 
         Args:
             connection: MicroStrategy connection object returned
                 by `connection.Connection()`
             subscription_id: ID of the subscription to be initialized
-            application_id: Application ID
-            application_name: Application name
+            project_id: Project ID
+            project_name: Project name
+            application_id: deprecated. Use project_id instead.
+            application_name: deprecated. Use project_name instead.
         """
+        if application_id or application_name:
+            helper.deprecation_warning(
+                '`application_id` and `application_name`',
+                '`project_id` and `project_name`',
+                '11.3.4.101',  # NOSONAR
+                False)
+            project_id = project_id or application_id
+            project_name = project_name or application_name
         if subscription_id:
-            super().__init__(connection, subscription_id, application_id, application_name)
+            super().__init__(connection, subscription_id, project_id, project_name)
 
     @classmethod
     def create(cls, connection: Connection, name: str, recipients: Union[List[str], List[dict]],
-               application_id: str = None, schedules_ids: Union[str, List[str]] = None,
-               schedules: Union[str, List[str], Schedule,
-                                List[Schedule]] = None, application_name: str = None,
-               allow_delivery_changes: bool = None, allow_personalization_changes: bool = None,
-               allow_unsubscribe: bool = True, send_now: bool = None, owner_id: str = None,
-               contents: Content = None, delivery_expiration_date: str = None,
-               contact_security: bool = None, email_subject: str = None, email_message: str = None,
-               filename: str = None, compress: bool = False, space_delimiter: str = None,
+               project_id: str = None, schedules: Union[str, List[str], Schedule,
+                                                        List[Schedule]] = None,
+               project_name: str = None, allow_delivery_changes: bool = None,
+               allow_personalization_changes: bool = None, allow_unsubscribe: bool = True,
+               send_now: bool = None, owner_id: str = None, contents: Content = None,
+               delivery_expiration_date: str = None, contact_security: bool = None,
+               email_subject: str = None, email_message: str = None, filename: str = None,
+               compress: bool = False, space_delimiter: str = None,
                email_send_content_as: str = 'data', overwrite_older_version: bool = False,
                zip_filename: str = None, zip_password_protect: bool = None,
-               zip_password: str = None):
+               zip_password: str = None, application_id: str = None, application_name: str = None):
         """Creates a new email subscription.
 
         Args:
             connection(Connection): a MicroStrategy connection object
             name(str): name of the subscription,
-            application_id(str): application ID,
-            application_name(str): application name,
+            project_id(str): project ID,
+            project_name(str): project name,
+            application_id: deprecated. Use project_id instead.
+            application_name: deprecated. Use project_name instead.
             allow_delivery_changes(bool): whether the recipients can change
                 the delivery of the subscription,
             allow_personalization_changes(bool): whether the recipients can
@@ -832,7 +927,6 @@ class EmailSubscription(Subscription):
                 immediately,
             owner_id(str): ID of the subscription owner, by default logged in
                 user ID,
-            schedules_ids (Union[str, List[str]]): Schedules IDs,
             schedules (Union[str, List[str], Schedule, List[Schedule]]):
                 Schedules IDs or Schedule objects,
             contents(Content): The content settings.
@@ -860,18 +954,25 @@ class EmailSubscription(Subscription):
             zip_password_protect(bool): whether to password protect zip file,
             zip_password(str): optional password for the compressed file
         """
+        if application_id or application_name:
+            helper.deprecation_warning(
+                '`application_id` and `application_name`',
+                '`project_id` and `project_name`',
+                '11.3.4.101',  # NOSONAR
+                False)
+            project_id = project_id or application_id
+            project_name = project_name or application_name
 
         return super()._Subscription__create(
             connection=connection,
             name=name,
-            application_id=application_id,
-            application_name=application_name,
+            project_id=project_id,
+            project_name=project_name,
             allow_delivery_changes=allow_delivery_changes,
             allow_personalization_changes=allow_personalization_changes,
             allow_unsubscribe=allow_unsubscribe,
             send_now=send_now,
             owner_id=owner_id,
-            schedules_ids=schedules_ids,
             schedules=schedules,
             contents=contents,
             recipients=recipients,

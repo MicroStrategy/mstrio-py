@@ -115,13 +115,12 @@ define([], () => class PythonCode {
   generateConnectionCode(forEndUser = false, forExport = false) {
     const { url, username = '', loginMode, identityToken } = this.authenticationDetails;
     const { projectId, datasetType } = this.dataframeDetails;
+    const whetherIsReportCode = datasetType && datasetType.toLowerCase() === 'report'
+      ? 'from mstrio.project_objects.report import Report'
+      : 'from mstrio.project_objects.datasets.cube import load_cube';
     const datasetTypeImportString = forExport
-      ? 'from mstrio.application_objects.datasets.super_cube import SuperCube'
-      : (
-        datasetType.toLowerCase() === 'report'
-          ? 'from mstrio.application_objects.report import Report'
-          : 'from mstrio.application_objects.datasets.cube import load_cube'
-      );
+      ? 'from mstrio.project_objects.datasets.super_cube import SuperCube'
+      : whetherIsReportCode;
     const importCode = `
 from mstrio.connection import Connection
 ${datasetTypeImportString}
@@ -141,13 +140,14 @@ mstr_login_mode = ${loginMode || 'None'}
 
     const authCode = `
 mstr_base_url = "${url}"
-mstr_application_id = "${projectId}"
+mstr_project_id = "${projectId}"
 ${credentialsCode}
     `.trim();
 
+    const usernameCodePart = username ? `"${username}"` : 'None';
     const connectionCode = forEndUser
-      ? 'mstr_connection = Connection(mstr_base_url, mstr_username, mstr_password, application_id=mstr_application_id, login_mode=mstr_login_mode, verbose=False)'
-      : `mstr_connection = Connection(mstr_base_url, ${username ? `"${username}"` : 'None'}, application_id=mstr_application_id, identity_token=mstr_identity_token, login_mode=mstr_login_mode, verbose=False)`;
+      ? 'mstr_connection = Connection(mstr_base_url, mstr_username, mstr_password, project_id=mstr_project_id, login_mode=mstr_login_mode)'
+      : `mstr_connection = Connection(mstr_base_url, ${usernameCodePart}, project_id=mstr_project_id, identity_token=mstr_identity_token, login_mode=mstr_login_mode)`;
 
     return `
 ${importCode}
@@ -205,7 +205,7 @@ def update_custom_env():
         .replace(/[^A-Za-z0-9_]/gi, '')
     }`;
 
-    const method = datasetType.toLowerCase() === 'report' ? 'Report' : 'load_cube';
+    const method = datasetType && datasetType.toLowerCase() === 'report' ? 'Report' : 'load_cube';
     const connectionCode = this.generateConnectionCode(forEndUser);
     const instanceIdCode = forEndUser ? '' : `, instance_id=${instanceId ? `"${instanceId}"` : 'None'}`;
 
@@ -325,7 +325,8 @@ ${PythonCode.oneLine(`
 
   forGettingPackageVersionNumber() {
     return (`
-pip show mstrio-py
+from mstrio import __version__ as mstrio_version
+mstrio_version
   `).trim();
   }
 

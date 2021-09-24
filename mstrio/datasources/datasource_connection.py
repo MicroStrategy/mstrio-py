@@ -6,8 +6,8 @@ from mstrio.api import datasources, objects
 from mstrio.datasources.datasource_login import DatasourceLogin
 from mstrio.users_and_groups.user import User
 from mstrio.utils import helper
-from mstrio.utils.datasources import get_objects_id
-from mstrio.utils.entity import CopyMixin, Entity, ObjectTypes
+from mstrio.utils.helper import get_objects_id
+from mstrio.utils.entity import DeleteMixin, CopyMixin, Entity, ObjectTypes
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
@@ -58,7 +58,7 @@ class ExecutionMode(Enum):
     SYNCHRONOUS = "synchronous"
 
 
-class DatasourceConnection(Entity, CopyMixin):
+class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
     """Datasource connection configuration object that represents a connection
     to the datasource.
 
@@ -98,8 +98,8 @@ class DatasourceConnection(Entity, CopyMixin):
         oauth_parameter: Used for authentication with oAuth.
         type: Object type
         subtype: Object subtype
-        date_created: Creation time, "yyyy-MM-dd HH:mm:ss" in UTC
-        date_modified: Last modification time, "yyyy-MM-dd HH:mm:ss" in UTC
+        date_created: Creation time, DateTime object
+        date_modified: Last modification time, DateTime object
         owner: User object that is the owner
         acg: Object access rights. It a bit vector where bits are defined at
             [EnumDSSXMLAccessRightFlags].
@@ -332,14 +332,14 @@ class DatasourceConnection(Entity, CopyMixin):
             "name": name,
             "description": description,
             "acg": acg,
-            "executionMode": helper.extract_enum_val(execution_mode, ExecutionMode),
+            "executionMode": helper.get_enum_val(execution_mode, ExecutionMode),
             "maxCancelAttemptTime": max_cancel_attempt_time,
             "maxQueryExeTime": max_query_exe_time,
             "maxConnectionAttemptTime": max_connection_attempt_time,
             "connectionLifetime": connection_lifetime,
             "connectionIdleTimeout": connection_idle_timeout,
-            "charEncodingWindows": helper.extract_enum_val(char_encoding_windows, CharEncoding),
-            "charEncodingUnix": helper.extract_enum_val(char_encoding_unix, CharEncoding),
+            "charEncodingWindows": helper.get_enum_val(char_encoding_windows, CharEncoding),
+            "charEncodingUnix": helper.get_enum_val(char_encoding_unix, CharEncoding),
             "tablePrefix": table_prefix,
             "connectionString": connection_string,
             "parameterizedQueries": parameterized_queries,
@@ -351,7 +351,7 @@ class DatasourceConnection(Entity, CopyMixin):
                 "type": database_type,
                 "version": database_version
             },
-            "driverType": helper.extract_enum_val(driver_type, DriverType),
+            "driverType": helper.get_enum_val(driver_type, DriverType),
             "oauthParameter": oauth_parameter
         }
         body = helper.delete_none_values(body)
@@ -360,29 +360,6 @@ class DatasourceConnection(Entity, CopyMixin):
             print("Successfully created datasource connection named: '{}' with ID: '{}'".format(
                 response.get('name'), response.get('id')))
         return cls.from_dict(source=response, connection=connection)
-
-    def delete(self, force: bool = False) -> bool:
-        """Deletes the datasource connection.
-
-        Args:
-            force: If True, no additional prompt will be shown before deleting.
-                Default False.
-
-        Returns:
-            True for success. False otherwise.
-        """
-        user_input = 'N'
-        if not force:
-            user_input = input(
-                (f"Are you sure you want to delete datasource connection '{self.name}' "
-                 f"with ID: {self.id}? [Y/N]: "))
-        if force or user_input == 'Y':
-            response = datasources.delete_datasource_connection(self.connection, self.id)
-            if response.status_code == 204 and config.verbose:
-                print("Successfully deleted datasource connection {}".format(self.name))
-            return response.ok
-        else:
-            return False
 
     def test_connection(self) -> bool:
         """Test datasource connection object.
@@ -397,13 +374,10 @@ class DatasourceConnection(Entity, CopyMixin):
     def _list_datasource_connections(cls, connection: "Connection", to_dictionary: bool = False,
                                      limit: Optional[int] = None,
                                      **filters) -> Union[List["DatasourceConnection"], List[dict]]:
-        objects = helper.fetch_objects(
-            connection=connection,
-            api=datasources.get_datasource_connections,
-            dict_unpack_value="connections",
-            limit=limit,
-            filters=filters,
-        )
+        objects = helper.fetch_objects(connection=connection,
+                                       api=datasources.get_datasource_connections,
+                                       dict_unpack_value="connections", limit=limit,
+                                       filters=filters)
         if to_dictionary:
             return objects
         else:

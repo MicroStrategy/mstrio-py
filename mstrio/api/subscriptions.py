@@ -1,7 +1,14 @@
+from typing import TYPE_CHECKING
+
 from mstrio import config
+from mstrio.utils.error_handlers import ErrorHandler
 from mstrio.utils.helper import exception_handler, response_handler
 
+if TYPE_CHECKING:
+    from requests_futures.sessions import FuturesSession
 
+
+@ErrorHandler(err_msg='Error getting subscription list.')
 def list_subscriptions(connection, project_id, fields=None, offset=0, limit=-1, error_msg=None):
     """Get list of a subscriptions.
 
@@ -21,16 +28,46 @@ def list_subscriptions(connection, project_id, fields=None, offset=0, limit=-1, 
     Returns:
         HTTP response object returned by the MicroStrategy REST server.
     """
-    response = connection.session.get(url=connection.base_url + '/api/subscriptions',
-                                      params={'fields': fields},
-                                      headers={'X-MSTR-ProjectID': project_id})
-    if not response.ok:
-        if error_msg is None:
-            error_msg = "Error getting subscription list."
-        response_handler(response, error_msg)
-    return response
+    return connection.session.get(
+        url=f'{connection.base_url}/api/subscriptions',
+        params={
+            'offset': offset,
+            'limit': limit,
+            'fields': fields
+        },
+        headers={'X-MSTR-ProjectID': project_id},
+    )
 
 
+def list_subscriptions_async(future_session: "FuturesSession", connection, project_id, fields=None,
+                             offset=0, limit=-1):
+    """Get list of a subscriptions asynchronously.
+
+    Args:
+        future_session: Future Session object to call MicroStrategy REST
+            Server asynchronously
+        connection(object): MicroStrategy connection object returned by
+            `connection.Connection()`.
+        project_id(str): ID of the project
+        fields(list, optional): Comma separated top-level field whitelist. This
+            allows client to selectively retrieve part of the response model.
+        offset (integer, optional): Starting point within the collection of
+            returned search results. Used to control paging behavior.
+        limit (integer, optional): Maximum number of items returned for a single
+            search request. Used to control paging behavior. Use -1 for no limit
+            (subject to governing settings).
+
+    Returns:
+        Complete Future object.
+    """
+    params = {'offset': offset, 'limit': limit, 'fields': fields}
+    url = f'{connection.base_url}/api/subscriptions'
+    headers = {'X-MSTR-ProjectID': project_id}
+
+    return future_session.get(url=url, headers=headers, params=params)
+
+
+@ErrorHandler(err_msg='Error getting subscription {subscription_id} information.')
 def get_subscription(connection, subscription_id, project_id, fields=None, error_msg=None):
     """Get information of a specific subscription for a given project.
 
@@ -46,19 +83,14 @@ def get_subscription(connection, subscription_id, project_id, fields=None, error
     Returns:
         HTTP response object returned by the MicroStrategy REST server
     """
-    response = connection.session.get(
-        url=connection.base_url + '/api/subscriptions/' + subscription_id,
+    return connection.session.get(
+        url=f'{connection.base_url}/api/subscriptions/{subscription_id}',
         params={'fields': fields},
         headers={'X-MSTR-ProjectID': project_id},
     )
 
-    if not response.ok:
-        if error_msg is None:
-            error_msg = "Error getting subscription information."
-        response_handler(response, error_msg)
-    return response
 
-
+@ErrorHandler(err_msg='Error creating new subscription.')
 def create_subscription(connection, project_id, body, fields=None, error_msg=None):
     """Create a new subscription.
 
@@ -181,17 +213,12 @@ def create_subscription(connection, project_id, body, fields=None, error_msg=Non
     Returns:
         HTTP response object returned by the MicroStrategy REST server.
     """
-    response = connection.session.post(
-        url=connection.base_url + '/api/subscriptions',
+    return connection.session.post(
+        url=f'{connection.base_url}/api/subscriptions',
         params={'fields': fields},
         headers={'X-MSTR-ProjectID': project_id},
         json=body,
     )
-    if not response.ok:
-        if error_msg is None:
-            error_msg = "Error creating new subscription."
-        response_handler(response, error_msg)
-    return response
 
 
 def remove_subscription(connection, subscription_id, project_id, error_msg=None,
@@ -225,6 +252,7 @@ def remove_subscription(connection, subscription_id, project_id, error_msg=None,
     return response
 
 
+@ErrorHandler(err_msg='Error updating subscription {subscription_id}')
 def update_subscription(connection, subscription_id, project_id, body, fields=None,
                         error_msg=None):
     """Updates a subscription.
@@ -241,19 +269,15 @@ def update_subscription(connection, subscription_id, project_id, body, fields=No
     Returns:
         HTTP response object returned by the MicroStrategy REST server.
     """
-    response = connection.session.put(
-        url=connection.base_url + '/api/subscriptions/' + subscription_id,
+    return connection.session.put(
+        url=f'{connection.base_url}/api/subscriptions/{subscription_id}',
         params={'fields': fields},
         headers={'X-MSTR-ProjectID': project_id},
         json=body,
     )
-    if not response.ok:
-        if error_msg is None:
-            error_msg = "Error updating subscription '{}'".format(subscription_id)
-        response_handler(response, error_msg)
-    return response
 
 
+@ErrorHandler(err_msg='Error getting recipients list.')
 def available_recipients(connection, project_id, body, delivery_type, offset=0, limit=-1,
                          fields=None, error_msg=None):
     """Get a list of available recipients in shared list, for a given content
@@ -286,8 +310,8 @@ def available_recipients(connection, project_id, body, delivery_type, offset=0, 
     Returns:
         HTTP response object returned by the MicroStrategy REST server
     """
-    response = connection.session.post(
-        url=connection.base_url + '/api/subscriptions/recipients/results',
+    return connection.session.post(
+        url=f'{connection.base_url}/api/subscriptions/recipients/results',
         params={
             'fields': fields,
             'deliveryType': delivery_type,
@@ -297,13 +321,9 @@ def available_recipients(connection, project_id, body, delivery_type, offset=0, 
         headers={'X-MSTR-ProjectID': project_id},
         json=body,
     )
-    if not response.ok:
-        if error_msg is None:
-            error_msg = "Error getting recipients list."
-        response_handler(response, error_msg)
-    return response
 
 
+@ErrorHandler(err_msg='Error getting available bursting attributes list.')
 def bursting_attributes(connection, project_id, content_id, content_type, fields=None,
                         error_msg=None):
     """Get a list of available attributes for bursting feature, for a given
@@ -323,8 +343,8 @@ def bursting_attributes(connection, project_id, content_id, content_type, fields
     Returns:
         HTTP response object returned by the MicroStrategy REST server
     """
-    response = connection.session.get(
-        url=connection.base_url + '/api/subscriptions/bursting',
+    return connection.session.get(
+        url=f'{connection.base_url}/api/subscriptions/bursting',
         params={
             'fields': fields,
             'contentId': content_id,
@@ -332,13 +352,9 @@ def bursting_attributes(connection, project_id, content_id, content_type, fields
         },
         headers={'X-MSTR-ProjectID': project_id},
     )
-    if not response.ok:
-        if error_msg is None:
-            error_msg = "Error getting available bursting attributes list."
-        response_handler(response, error_msg)
-    return response
 
 
+@ErrorHandler(err_msg='Error sending subscription {subscription_id}')
 def send_subscription(connection, subscription_id, project_id, body, fields=None, error_msg=None):
     """Send the existing subscription immediately.
 
@@ -355,14 +371,9 @@ def send_subscription(connection, subscription_id, project_id, body, fields=None
     Returns:
         HTTP response object returned by the MicroStrategy REST server
     """
-    response = connection.session.get(
-        url=connection.base_url + '/api/subscriptions/' + subscription_id + '/send',
+    return connection.session.get(
+        url=f'{connection.base_url}/api/subscriptions/{subscription_id}/send',
         params={'fields': fields},
         headers={'X-MSTR-ProjectID': project_id},
         json=body,
     )
-    if not response.ok:
-        if error_msg is None:
-            error_msg = "Error sending subscription."
-        response_handler(response, error_msg)
-    return response

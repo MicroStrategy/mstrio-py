@@ -25,8 +25,8 @@ def delete_subscriptions_of_departed_users(connection: "Connection") -> None:
     disabled_users = [u for u in all_users if not u.enabled]
 
     for project_ in projects_:
-        app_id = project_['id']
-        sub_manager = SubscriptionManager(connection=connection, application_id=app_id)
+        project_id = project_['id']
+        sub_manager = SubscriptionManager(connection=connection, project_id=project_id)
         for user_ in disabled_users:
             subs = sub_manager.list_subscriptions(owner={'id': user_.id})
             msg = f"subscriptions of user with ID: {user_.id}"

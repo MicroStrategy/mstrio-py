@@ -16,14 +16,14 @@ its usage.
 """
 
 from mstrio.connection import Connection
-from mstrio.application_objects import SuperCube
+from mstrio.project_objects import SuperCube
 import pandas as pd
 
 # create connection
 base_url = "https://<>/MicroStrategyLibrary/api"
 username = "some_username"
 password = "some_password"
-connection = Connection(base_url, username, password, application_name="MicroStrategy Tutorial",
+connection = Connection(base_url, username, password, project_name="MicroStrategy Tutorial",
                         login_mode=1)
 
 # prepare Pandas DataFrames to add it into tables of super cube

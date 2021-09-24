@@ -1,6 +1,7 @@
 import json
 
 from mstrio import config
+from mstrio.utils.error_handlers import ErrorHandler
 from mstrio.utils.helper import response_handler
 
 
@@ -12,12 +13,15 @@ def list_schedules(connection, fields=None, error_msg=None):
             `connection.Connection()`.
         fields(list, optional): Comma separated top-level field whitelist. This
             allows client to selectively retrieve part of the response model.
+        error_msg(str, optional): Customized error message.
     Returns:
         HTTP response object returned by the MicroStrategy REST server
     """
 
-    response = connection.session.get(url=connection.base_url + '/api/schedules',
-                                      params={'fields': fields})
+    response = connection.session.get(
+        url=f'{connection.base_url}/api/schedules',
+        params={'fields': fields}
+    )
     if config.debug:
         print(response.url)
     if not response.ok:
@@ -52,8 +56,10 @@ def get_schedule(connection, id, fields=None, error_msg=None):
         HTTP response object returned by the MicroStrategy REST server
     """
 
-    response = connection.session.get(url=connection.base_url + '/api/schedules/' + id,
-                                      params={'fields': fields})
+    response = connection.session.get(
+        url=f'{connection.base_url}/api/schedules/{id}',
+        params={'fields': fields}
+    )
     if config.debug:
         print(response.url)
     if not response.ok:
@@ -88,8 +94,11 @@ def create_schedule(connection, body, fields=None, error_msg=None):
     if 'event' in body.keys():
         body['event']['eventId'] = body['event'].pop('id')
 
-    response = connection.session.post(url=connection.base_url + '/api/schedules', json=body,
-                                       params={'fields': fields})
+    response = connection.session.post(
+        url=f'{connection.base_url}/api/schedules',
+        json=body,
+        params={'fields': fields}
+    )
 
     if config.debug:
         print(response.url)
@@ -126,8 +135,11 @@ def update_schedule(connection, id, body, fields=None, error_msg=None):
     if 'event' in body.keys():
         body['event']['eventId'] = body['event'].pop('id')
 
-    response = connection.session.put(url=connection.base_url + '/api/schedules/' + id, json=body,
-                                      params={'fields': fields})
+    response = connection.session.put(
+        url=f'{connection.base_url}/api/schedules/{id}',
+        json=body,
+        params={'fields': fields}
+    )
     if config.debug:
         print(response.url)
     if not response.ok:
@@ -144,27 +156,26 @@ def update_schedule(connection, id, body, fields=None, error_msg=None):
     return response
 
 
+@ErrorHandler(err_msg='Error getting schedule {id} information.')
 def delete_schedule(connection, id, fields=None, error_msg=None):
     """Delete a schedule specified by `schedule_id`.
 
     Args:
         connection(object): MicroStrategy connection object returned by
             `connection.Connection()`.
-        schedule_id(str): ID of the schedule
+        id(str): ID of the schedule
         fields(list, optional): Comma separated top-level field whitelist. This
             allows client to selectively retrieve part of the response model.
         error_msg(str, optional): Customized error message.
     Returns:
         HTTP response object returned by the MicroStrategy REST server
     """
-    response = connection.session.delete(url=connection.base_url + '/api/schedules/' + id,
-                                         params={'fields': fields})
+    response = connection.session.delete(
+        url=f'{connection.base_url}/api/schedules/{id}',
+        params={'fields': fields}
+    )
 
     if config.debug:
         print(response.url)
-    if not response.ok:
-        if error_msg is None:
-            error_msg = "Error getting schedule information."
-        response_handler(response, error_msg)
 
     return response

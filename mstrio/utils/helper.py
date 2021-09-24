@@ -1,6 +1,7 @@
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime
 from enum import Enum
-from functools import wraps
+from functools import reduce, wraps
 import inspect
 from json.decoder import JSONDecodeError
 from math import floor
@@ -15,58 +16,43 @@ import stringcase
 
 from mstrio import __version__ as mstrio_version
 from mstrio import config
+from mstrio.types import ObjectSubTypes
 from mstrio.api.exceptions import MstrTimeoutError, PromptedContentError, VersionException
+from mstrio.utils.dict_filter import filter_list_of_dicts
+from mstrio.utils.time_helper import DatetimeFormats, map_datetime_to_str, map_str_to_datetime
 
 if TYPE_CHECKING:
+    from mstrio.types import ObjectTypes
     from mstrio.connection import Connection
+    from mstrio.project_objects.datasets import OlapCube, SuperCube
 
 
-def deprecation_warning(deprecated: str, new: str, version: str, module: bool = True):
+def deprecation_warning(deprecated: str, new: str, version: str, module: bool = True,
+                        change_compatible_immediately=True):
+    """This function is used to provide a user with a warning, that a given
+    functionality is now deprecated, and won't be supported from a given
+    version.
+
+    Args:
+        deprecated (str): name of a functionality that is deprecated
+        new (str): name of a functionality that replaces deprecated one
+        version (str): version from which deprecated functionality won't be
+        supported
+        module (bool, optional): Whether deprecated functionality is a module.
+        Defaults to True.
+        change_compatible_immediately (bool, optional): Whether the new
+        functionality can be used immediately. Defaults to True.
+    """
 
     module = " module" if module else ""
-    msg = (f"{deprecated}{module} is deprecated and will not be supported starting from mstrio-py "
-           f"{version}. Please use {new} instead.")
+    if change_compatible_immediately:
+        msg = (
+            f"{deprecated}{module} is deprecated and will not be supported starting from mstrio-py"
+            f"{version}. Please use {new} instead.")
+    else:
+        msg = (f"From version {version} {deprecated}{module} will be removed and replaced with"
+               f"{new}")
     warnings.warn(DeprecationWarning(msg))
-
-
-def print_url(response, *args, **kwargs):
-    """Response hook to print url for debugging."""
-    print(response.url)
-
-
-def save_response(response, *args, **kwargs):
-    """Response hook to save REST API responses to files structured by the API
-    family."""
-    import json
-    from pathlib import Path
-
-    if response.status_code != 204:
-
-        # Generate file name
-        base_path = Path(__file__).parents[2] / 'tests/resources/auto-api-responses/'
-        url = response.url.rsplit('api/', 1)[1]
-        temp_path = url.split('/')
-        file_name = '-'.join(temp_path[1:]) if len(temp_path) > 1 else temp_path[0]
-        file_name = f'{file_name}-{response.request.method}'
-        file_path = base_path if len(temp_path) == 1 else base_path / temp_path[0]
-        path = str(file_path / file_name)
-
-        # Create target directory & all intermediate directories if don't exists
-        if not os.path.exists(str(file_path)):
-            os.makedirs(file_path)
-            print("Directory ", file_path, " created ")
-        else:
-            print("Directory ", file_path, " already exists")
-
-        # Dump the response to JSON and Pickle
-        # with open(path + '.pkl', 'wb') as f:
-        #     pickle.dump(response, f)
-        with open(path + '.json', 'w') as f:
-            try:
-                json.dump(response.json(), f)
-            except JSONDecodeError:
-                exception_handler("Could not decode response. Skipping creating JSON file.",
-                                  Warning)
 
 
 def url_check(url):
@@ -91,6 +77,20 @@ def url_check(url):
 def version_cut(version):
     res = ".".join([str(int(i)) for i in version.split(".")])
     return res[:6]
+
+
+def get_args_from_func(func: Callable[[Any], Any]):
+    signature = inspect.signature(func)
+    return list(signature.parameters.keys())
+
+
+def get_default_args_from_func(func: Callable[[Any], Any]):
+    signature = inspect.signature(func)
+    return {
+        k: v.default
+        for k, v in signature.parameters.items()
+        if v.default is not inspect.Parameter.empty
+    }
 
 
 def camel_to_snake(response: Union[dict, list]) -> Union[dict, List[dict]]:
@@ -152,7 +152,7 @@ def exception_handler(msg, exception_type=Exception, stack_lvl=2):
         warnings.warn(msg, exception_type, stacklevel=stack_lvl)
 
 
-def response_handler(response, msg, throw_error=True, verbose=True, whitelist=[]):
+def response_handler(response, msg, throw_error=True, verbose=True, whitelist=None):
     """Generic error message handler for transactions against I-Server.
 
     Args:
@@ -165,6 +165,9 @@ def response_handler(response, msg, throw_error=True, verbose=True, whitelist=[]
             respectively, which will not be handled
             i.e. whitelist = [('ERR001', 500),('ERR004', 404)]
     """
+    if whitelist is None:
+        whitelist = []
+
     try:
         res = response.json()
 
@@ -253,102 +256,6 @@ def get_parallel_number(total_chunks):
     return threads
 
 
-def make_dict_filter(param: str, expression: Union[str, int, float, dict, list]):
-    """Return a filter function that takes a dictionary object as parameter.
-
-    Once evaluated it return bool value indicating if given parameter-
-    expression is True or False. This function can be used in the
-    filter() method.
-    """
-
-    op = None
-    if type(expression) is list:
-        op = 'in'
-        filter_value = expression
-    elif type(expression) is str:
-        # extract the operation from the expression if it exists
-        if expression and expression[0] in ['<', '>', '!', '=']:
-            op = expression[0]
-            if expression[0] in ['<', '>', '!'] and expression[1] == '=':
-                op = op + expression[1]
-        filter_value = expression[len(op):] if op is not None else expression
-
-        if filter_value.lower() == 'true':  # Support Bool values
-            filter_value = True
-        elif filter_value.lower() == 'false':
-            filter_value = False
-        op = op if op else '='
-    elif type(expression) is dict:
-        op = 'dict'
-        filter_value = expression
-    elif type(expression) in [int, float, bool]:
-        op = '='
-        filter_value = expression
-    else:
-        exception_handler(
-            "'{}' filter value must be either a string, bool, int, float dict or list".format(
-                param), exception_type=TypeError)
-
-    def myfilter(dict_object):
-        value = dict_object.get(param)
-        allowed = [
-            el for el in dict_object.keys() if type(dict_object[el]) not in [list, tuple, set]
-        ]
-        if param not in allowed:
-            exception_handler(
-                "The filter parameter '{}' is not valid. Please filter by one of: {}".format(
-                    param, allowed), KeyError)
-        value_type = type(value)
-        try:
-            if op == 'in':
-                typed_filter_value = [value_type(val) for val in expression]
-            elif op == 'dict':
-                if value_type is not dict:
-                    raise TypeError(f'"{param}" needs to be a dictionary.')
-            else:
-                typed_filter_value = value_type(filter_value)
-        except ValueError as e:
-            print("'{}' filter value is incorrect.".format(param))
-            raise e
-        else:
-            if op == '=':
-                return value == typed_filter_value
-            elif op == '>':
-                return value > typed_filter_value
-            elif op == '<':
-                return value < typed_filter_value
-            elif op == '>=':
-                return value >= typed_filter_value
-            elif op == '<=':
-                return value <= typed_filter_value
-            elif op in ['!', '!=']:
-                return value != typed_filter_value
-            elif op == 'in':
-                return value in typed_filter_value
-            elif op == 'dict':
-                return all(
-                    (value[k] == v if k in value else False for k, v in filter_value.items()))
-
-    return myfilter
-
-
-KT = TypeVar("KT")
-VT = TypeVar("VT")
-
-
-def filter_list_of_dicts(list_of_dicts: List[Dict[KT, VT]], **filters) -> List[Dict[KT, VT]]:
-    """Filter a list of dicts by any given key-value pair.
-
-    Support simple logical operators like: '<,>,<=,>=,!'. Supports
-    filtering by providing a list value i.e. openJobsCount=[0, 1, 2].
-    """
-
-    for key, value in filters.items():
-        filter_function = make_dict_filter(key, value)
-        list_of_dicts = list(filter(filter_function, list_of_dicts))
-    return list_of_dicts
-
-
 def _prepare_objects(objects: Union[dict, List[dict]], filters: Optional[dict] = None,
                      dict_unpack_value: Optional[str] = None):
     if type(objects) is dict and dict_unpack_value:
@@ -387,7 +294,7 @@ def fetch_objects_async(connection: "Connection", api: Callable, async_api: Call
     all_objects = []
 
     # Extract parameters of the api wrapper and set them using the kwargs
-    args = api.__code__.co_varnames[:api.__code__.co_argcount]
+    args = get_args_from_func(api)
     param_value_dict = {
         arg: kwargs.get(arg)
         for arg in args
@@ -407,12 +314,9 @@ def fetch_objects_async(connection: "Connection", api: Callable, async_api: Call
         with FuturesSession(executor=ThreadPoolExecutor(max_workers=threads),
                             session=connection.session) as session:
             # Extract parameters of the api wrapper and set them using kwargs
-            args = async_api.__code__.co_varnames[:async_api.__code__.co_argcount]
-            param_value_dict = {
-                arg: kwargs.get(arg)
-                for arg in args
-                if arg not in ['connection', 'limit', 'offset', 'future_session', 'error_msg']
-            }
+            param_value_dict = auto_match_args(
+                api, kwargs,
+                exclude=['connection', 'limit', 'offset', 'future_session', 'error_msg'])
             futures = [
                 async_api(future_session=session, connection=connection, offset=offset,
                           limit=chunk_size, **param_value_dict)
@@ -425,7 +329,6 @@ def fetch_objects_async(connection: "Connection", api: Callable, async_api: Call
                 response_handler(response, error_msg, throw_error=False)
             objects = _prepare_objects(response.json(), filters, dict_unpack_value)
             all_objects.extend(objects)
-
     return all_objects
 
 
@@ -449,11 +352,8 @@ def fetch_objects(connection: "Connection", api: Callable, limit: Optional[int],
     """
     validate_param_value('limit', limit, int, min_val=1, special_values=[None])
 
-    # Extract parameters of the api wrapper and set them using the kwargs
-    args = api.__code__.co_varnames[:api.__code__.co_argcount]
-    param_value_dict = {
-        arg: kwargs.get(arg) for arg in args if arg not in ['connection', 'error_msg']
-    }
+    # Extract parameters of the api wrapper and set them using kwargs
+    param_value_dict = auto_match_args(api, kwargs, exclude=['connection', 'error_msg'])
     response = api(connection=connection, error_msg=error_msg, **param_value_dict)
     if response.ok:
         objects = _prepare_objects(response.json(), filters, dict_unpack_value)
@@ -480,16 +380,16 @@ def sort_object_properties(dictionary: dict) -> int:
     return preffered_order.get(dictionary, 50)
 
 
-def auto_match_args(func: Callable, obj: Any, exclude: list = [],
+def auto_match_args(func: Callable, param_dict: dict, exclude: list = [],
                     include_defaults: bool = True) -> dict:
-    """Automatically match `obj` object data to function arguments.
+    """Automatically match dict data to function arguments.
 
     Handles default parameters. Extracts value from Enums. Returns matched
     arguments as dict.
 
     Args:
         function: function for which args will be matched
-        obj: object to use for matching the function args
+        param_dict: dict to use for matching the function args
         exclude: set `exclude` parameter to exclude specific param-value pairs
         include_defaults: if `False` then values which have the same value as
             default will not be included in the result
@@ -497,18 +397,15 @@ def auto_match_args(func: Callable, obj: Any, exclude: list = [],
         KeyError: could not match all required arguments
     """
 
-    args = func.__code__.co_varnames[:func.__code__.co_argcount]
-    defaults = func.__defaults__
-    default_dict = dict(zip(args[-len(defaults):], defaults)) if defaults else {}
+    args = get_args_from_func(func)
+    default_dict = get_default_args_from_func(func)
 
     param_value_dict = {}
     for arg in args:
         if arg in exclude:
             continue
-        elif arg == 'type' and extract_enum_val(getattr(obj, '_OBJECT_TYPE', None)) is not None:
-            val = obj._OBJECT_TYPE.value
         else:
-            val = obj.__dict__.get(arg, obj.__dict__.get("_" + arg, default_dict.get(arg)))
+            val = param_dict.get(arg) if param_dict.get(arg) is not None else default_dict.get(arg)
             if not include_defaults:
                 if arg in default_dict and val == default_dict[arg]:
                     continue
@@ -622,6 +519,14 @@ def delete_none_values(dictionary: dict) -> dict:
     return new_dict
 
 
+def get_objects_id(obj, obj_class):
+    if isinstance(obj, str):
+        return obj
+    elif isinstance(obj, obj_class):
+        return obj.id
+    return None
+
+
 def list_folders(connection, name: Optional[str] = None, to_dataframe: bool = False,
                  limit: Optional[int] = None, **filters) -> Union[List[dict], pd.DataFrame]:
     """List folders.
@@ -653,16 +558,9 @@ def list_folders(connection, name: Optional[str] = None, to_dataframe: bool = Fa
                                                    object_type=FOLDER_TYPE, error_msg=msg)
     search_id = res_e.json()['id']
     msg = "Error while retrieving folders from the environment."
-    fldrs = fetch_objects_async(
-        connection,
-        api=objects.get_objects,
-        async_api=objects.get_objects_async,
-        limit=limit,
-        chunk_size=1000,
-        error_msg=msg,
-        filters=filters,
-        search_id=search_id,
-    )
+    fldrs = fetch_objects_async(connection, api=objects.get_objects,
+                                async_api=objects.get_objects_async, limit=limit, chunk_size=1000,
+                                error_msg=msg, filters=filters, search_id=search_id)
 
     if to_dataframe:
         return pd.DataFrame(fldrs)
@@ -750,37 +648,113 @@ def delete_folder(connection, id: Optional[str] = None, name: Optional[str] = No
             exception_handler(msg)
         id = fldrs[0]['id']
     FOLDER_TYPE = 8
-    return objects.delete_object(connection=connection, id=id, type=FOLDER_TYPE,
+    return objects.delete_object(connection=connection, id=id, object_type=FOLDER_TYPE,
                                  error_msg=error_msg)
 
 
-def extract_enum_val(obj, enum: Enum = Enum) -> str:
+def get_enum_val(obj, enum: Union[Enum, Tuple[Enum]] = Enum) -> str:
     """Safely extract value from enum or str."""
-    if isinstance(obj, enum):
+
+    if isinstance(obj, Enum) and isinstance(obj, enum):
         return obj.value
-    elif isinstance(obj, str) or obj is None:
+    elif obj is None or isinstance(obj, str) or isinstance(obj, int):
         return obj
     else:
         raise TypeError(f"Incorrect type. Value should be of type: {enum}")
 
 
-def maybe_unpack(val, camel_case=True):
-    """Unpack Enums, Dictable obj, list of Enums"""
-    if isinstance(val, Enum):
-        return val.value
-    elif isinstance(val, Dictable):
-        return val.to_dict(camel_case)
-    elif isinstance(val, list):
-        if all(isinstance(v, Enum) for v in val):
-            return [v.value for v in val]
-        else:
-            return val
-    else:
-        return val
+def merge_id_and_type(object_id: str, object_type: Union["ObjectTypes", "ObjectSubTypes", int],
+                      error_msg: Optional[str] = None) -> str:
+    if not object_id or not object_type:
+        exception_handler(msg=error_msg or "Please provide both `id` and `type`.",
+                          exception_type=AttributeError)
+    object_id = get_objects_id(object_id, type(object_id))
+    object_type = get_enum_val(object_type, type(object_type))
+    return f'{object_id};{object_type}'
+
+
+def rsetattr(obj, attr, val):
+    """Recursive setattr. This can only modify last attr in the chain.
+    For example rsetattr(obj, 'attr1.attr2.attr3', new_value) won't work
+    if attr2 doesn't exist.
+
+    Args:
+        obj: An object that is edited
+        attr: attribute name chain/path
+        val: new value
+    Returns:
+        None on success
+    Raises:
+        AttributeError on failure, when the 'attr' is incorrect
+    Example:
+        rsetattr(obj, 'attr1.attr2', new_value)
+    """
+
+    pre, _, post = attr.rpartition('.')
+    return setattr(rgetattr(obj, pre) if pre else obj, post, val)
+
+
+def rgetattr(obj, attr, *default):
+    """Recursive getattr. Third parameter is the default value.
+
+    Args:
+        obj: An object that is inspected
+        attr: attribute name chain/path
+        default (optional): value returned if 'attr' not found
+    Returns:
+        value of 'attr' on success. On failure, default value.
+    Raises:
+        AttributeError on failure, when the 'attr' is incorrect
+        and no default provided
+    Example:
+        rgetattr(obj, 'attr1.attr2', 'default value')
+    """
+
+    def _getattr(obj, attr):
+        return getattr(obj, attr, *default)
+
+    return reduce(_getattr, [obj] + attr.split('.'))
+
+
+T = TypeVar("T")
+
+
+def filter_obj_list(obj_list: List[T], **filters: Dict[str, Any]) -> List[T]:
+    """Filter a list of objects by providing one or more key-value pair filters.
+    """
+    return [obj for obj in obj_list if all(getattr(obj, f) == v for f, v in filters.items())]
+
+
+def choose_cube(connection: "Connection", cube_dict: dict) -> Union["OlapCube", "SuperCube", None]:
+    """Return correct cube object based on dictionary with cube's info.
+
+        Note: In case of wrong subtype, `None` is returned.
+    """
+    cube_subtype = cube_dict['subtype']
+    if cube_subtype == ObjectSubTypes.OLAP_CUBE.value:
+        from mstrio.project_objects.datasets.olap_cube import OlapCube
+        return OlapCube.from_dict(cube_dict, connection)
+    elif cube_subtype == ObjectSubTypes.SUPER_CUBE.value:
+        from mstrio.project_objects.datasets.super_cube import SuperCube
+        return SuperCube.from_dict(cube_dict, connection)
 
 
 class Dictable:
     _FROM_DICT_MAP: Dict[str, Callable] = {}  # map attributes to Enums and components
+
+    @classmethod
+    def _maybe_unpack(cls, key, val, camel_case=True):
+        """Unpack Enums, Dictable obj, list of Enums"""
+        if isinstance(val, datetime):
+            return map_datetime_to_str(key, val, cls._FROM_DICT_MAP)
+        elif isinstance(val, Enum):
+            return val.value
+        elif isinstance(val, Dictable):
+            return val.to_dict(camel_case)
+        elif isinstance(val, list):
+            if all(isinstance(v, Enum) for v in val):
+                return [v.value for v in val]
+        return val
 
     def to_dict(self, camel_case=True):
 
@@ -795,7 +769,7 @@ class Dictable:
             to_be_deleted = '_' + prop
             cleaned_dict[prop] = cleaned_dict.pop(to_be_deleted, None)
         result = {
-            key: maybe_unpack(val, camel_case)
+            key: self._maybe_unpack(key, val, camel_case)
             for key, val in cleaned_dict.items()
             if key not in hidden_keys
         }
@@ -805,16 +779,19 @@ class Dictable:
         return snake_to_camel(result) if camel_case else result
 
     @classmethod
-    def from_dict(cls, source: Dict[str, Any], connection: Optional["Connection"] = None,
-                  to_snake_case=True):
+    def from_dict(cls: T, source: Dict[str, Any], connection: Optional["Connection"] = None,
+                  to_snake_case: bool = True) -> T:
         type_mapping = cls._FROM_DICT_MAP
         object_source = camel_to_snake(source) if to_snake_case else source
-        object_source["connection"] = connection
+        if connection is not None:
+            object_source["connection"] = connection
 
         def map_val(val, key):
 
             def constructor():
-                if isinstance(type_mapping[key], type(Enum)):
+                if isinstance(val, type(DatetimeFormats)):
+                    return map_str_to_datetime(key, val, cls._FROM_DICT_MAP)
+                elif isinstance(type_mapping[key], type(Enum)):
                     return type_mapping[key](val)
                 elif isinstance(type_mapping[key], list):
                     if (all(isinstance(v, type(Enum)) for v in type_mapping[key])

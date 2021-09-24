@@ -21,8 +21,8 @@ def delete_subscriptions_of_departed_users(connection: "Connection") -> None:
     dsbld_usrs = [u for u in all_usrs if not u.enabled]
 
     for prjct in prjcts:
-        app_id = prjct['id']
-        sub_mngr = SubscriptionManager(connection=connection, application_id=app_id)
+        project_id = prjct['id']
+        sub_mngr = SubscriptionManager(connection=connection, project_id=project_id)
         for usr in dsbld_usrs:
             subs = sub_mngr.list_subscriptions(owner={'id': usr.id})
             msg = f"subscriptions of user with ID: {usr.id}"

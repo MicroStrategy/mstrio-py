@@ -1,18 +1,21 @@
-from typing import List, TYPE_CHECKING, Union
+from typing import List, TYPE_CHECKING, Union, Optional
 
 from mstrio import config
 from mstrio.api import monitors
 from mstrio.server.cluster import Cluster
-from mstrio.utils.helper import camel_to_snake, exception_handler, fetch_objects_async
+from mstrio.utils.helper import (camel_to_snake, exception_handler, fetch_objects_async,
+                                 deprecation_warning)
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
 
 
-def list_cube_caches(connection: "Connection", nodes: Union[List[str], str] = None,
-                     cube_id: str = None, loaded: bool = False, db_connection_id: str = None,
-                     application_ids: List[str] = None, to_dictionary: bool = False,
-                     limit: int = None) -> Union[List["CubeCache"], List[dict]]:
+def list_cube_caches(
+        connection: "Connection", nodes: Optional[Union[List[str], str]] = None,
+        cube_id: Optional[str] = None, loaded: Optional[bool] = False,
+        db_connection_id: Optional[str] = None, project_ids: Optional[List[str]] = None,
+        to_dictionary: Optional[bool] = False, limit: Optional[int] = None,
+        application_ids: Optional[List[str]] = None) -> Union[List["CubeCache"], List[dict]]:
     """List cube caches. You can filter them by cube (`cube_id`), database
     connection (`db_connection_id`) and projects (`project_ids`). You can also
     obtain only loaded caches (`loaded=True`).
@@ -32,8 +35,9 @@ def list_cube_caches(connection: "Connection", nodes: Union[List[str], str] = No
             retrieved. Otherwise all cubes will be returned.
         db_connection_id (string, optional): When provided, only caches for the
             database connection with given ID will be returned (if any).
-        application_ids (list of string, optional): When provided only caches
+        project_ids (list of string, optional): When provided only caches
             for projects with given IDs will be returned (if any).
+        application_ids: deprecated. Use project_ids instead.
         to_dictionary (bool, optional): If True returns dict, by default (False)
             returns CubeCache objects
         limit(integer, optional): Cut-off value for the number of objects
@@ -43,12 +47,19 @@ def list_cube_caches(connection: "Connection", nodes: Union[List[str], str] = No
         List of CubeCache objects when parameter `to_dictionary` is set to False
         (default value) or list of dictionaries otherwise.
     """
-    if application_ids is not None:
-        application_ids = ','.join(application_ids)  # form accepted by request
+    if application_ids:
+        deprecation_warning(
+            '`application_ids`',
+            '`project_ids`',
+            '11.3.4.101',  # NOSONAR
+            False)
+        project_ids = project_ids or application_ids
+    if project_ids is not None:
+        project_ids = ','.join(project_ids)  # form accepted by request
 
     if nodes is None:
         cluster_ = Cluster(connection)
-        nodes = cluster_.list_nodes(application=connection.application_id, to_dictionary=True)
+        nodes = cluster_.list_nodes(project=connection.project_id, to_dictionary=True)
         nodes = [node.get('name') for node in nodes]
 
     nodes = [nodes] if type(nodes) == str else nodes
@@ -57,7 +68,7 @@ def list_cube_caches(connection: "Connection", nodes: Union[List[str], str] = No
         caches += fetch_objects_async(connection=connection, api=monitors.get_cube_caches,
                                       async_api=monitors.get_cube_caches_async,
                                       dict_unpack_value='cubeCaches', node=node, limit=limit,
-                                      project_ids=application_ids, chunk_size=1000, loaded=loaded,
+                                      project_ids=project_ids, chunk_size=1000, loaded=loaded,
                                       filters={})
     if cube_id:
         caches = [cache for cache in caches if cache.get('source', {}).get('id', '') == cube_id]
@@ -178,7 +189,7 @@ class CubeCache:
 
     def __save_info(self, cube_cache_dict):
         cube_cache_dict = camel_to_snake(cube_cache_dict)
-        self._application_id = cube_cache_dict.get('project_id', None)
+        self._project_id = cube_cache_dict.get('project_id', None)
         self._source = cube_cache_dict.get('source', None)
         self._state = cube_cache_dict.get('state', None)
         self._last_update_time = cube_cache_dict.get('last_update_time', None)
@@ -294,7 +305,16 @@ class CubeCache:
 
     @property
     def application_id(self):
-        return self._application_id
+        deprecation_warning(
+            '`application_id`',
+            '`project_id`',
+            '11.3.4.101',  # NOSONAR
+            False)
+        return self._project_id
+
+    @property
+    def project_id(self):
+        return self._project_id
 
     @property
     def source(self):

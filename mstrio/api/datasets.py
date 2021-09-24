@@ -1,7 +1,8 @@
-from mstrio.utils.helper import response_handler
+from mstrio.utils.error_handlers import ErrorHandler
 
 
-def dataset_definition(connection, id, fields=None, whitelist=[]):
+@ErrorHandler(err_msg='Error loading dataset {id} Check dataset ID')
+def dataset_definition(connection, id, fields=None, whitelist=None):
     """Get the definition of a dataset.
 
     Args:
@@ -18,15 +19,14 @@ def dataset_definition(connection, id, fields=None, whitelist=[]):
     Returns:
         HTTP response object returned by the MicroStrategy REST server.
     """
-    connection._validate_application_selected()
-    response = connection.session.get(url=connection.base_url + '/api/datasets/' + id,
-                                      params={'fields': fields})
-    if not response.ok:
-        msg = "Error loading dataset '{}'. Check dataset ID.".format(id)
-        response_handler(response, msg, whitelist=whitelist)
-    return response
+    connection._validate_project_selected()
+    return connection.session.get(
+        url=f'{connection.base_url}/api/datasets/{id}',
+        params={'fields': fields}
+    )
 
 
+@ErrorHandler(err_msg='Error creating new dataset model.')
 def create_dataset(connection, body):
     """Create a single-table dataset from external data uploaded to the
     MicroStrategy Intelligence Server.
@@ -40,15 +40,15 @@ def create_dataset(connection, body):
     Returns:
         HTTP response object returned by the MicroStrategy REST server.
     """
-    connection._validate_application_selected()
-    response = connection.session.post(url=connection.base_url + '/api/datasets', json=body)
+    connection._validate_project_selected()
+    return connection.session.post(
+        url=f'{connection.base_url}/api/datasets',
+        json=body
+    )
 
-    if not response.ok:
-        response_handler(response, "Error creating new dataset model.")
-    return response
 
-
-def update_dataset(connection, id, table_name, update_policy, body, table_id=None):
+@ErrorHandler(err_msg='Error updating dataset with ID {id}')
+def update_dataset(connection, id, table_name, update_policy, body):
     """Update a single-table dataset with external data uploaded to the
     MicroStrategy Intelligence Server.
 
@@ -69,16 +69,14 @@ def update_dataset(connection, id, table_name, update_policy, body, table_id=Non
     Returns:
         HTTP response object returned by the MicroStrategy REST server.
     """
-    response = connection.session.patch(
-        url=connection.base_url + '/api/datasets/' + id + '/tables/' + table_name,
+    return connection.session.patch(
+        url=f'{connection.base_url}/api/datasets/{id}/tables/{table_name}',
         headers={'updatePolicy': update_policy},
         json=body,
     )
-    if not response.ok:
-        response_handler(response, "Error updating dataset.")
-    return response
 
 
+@ErrorHandler(err_msg='Error deleting dataset with ID {id}')
 def delete_dataset(connection, id):
     """Delete a dataset previously created using the REST API.
 
@@ -91,14 +89,10 @@ def delete_dataset(connection, id):
     Returns:
         HTTP response object returned by the MicroStrategy REST server.
     """
-    response = connection.session.delete(url=connection.base_url + '/api/objects/' + id
-                                         + '?type=3')
-
-    if not response.ok:
-        response_handler(response, msg="Error deleting dataset with ID: '{}'".format(id))
-    return response
+    return connection.session.delete(url=f'{connection.base_url}/api/objects/{id}?type=3')
 
 
+@ErrorHandler(err_msg='Error creating new dataset model.')
 def create_multitable_dataset(connection, body):
     """Create the definition of a multi-table dataset.
 
@@ -110,14 +104,11 @@ def create_multitable_dataset(connection, body):
     Returns:
         HTTP response object returned by the MicroStrategy REST server.
     """
-    connection._validate_application_selected()
-    response = connection.session.post(url=connection.base_url + '/api/datasets/models', json=body)
-
-    if not response.ok:
-        response_handler(response, "Error creating new dataset model.")
-    return response
+    connection._validate_project_selected()
+    return connection.session.post(url=f'{connection.base_url}/api/datasets/models', json=body)
 
 
+@ErrorHandler(err_msg='Error creating new data upload session.')
 def upload_session(connection, id, body):
     """Create a multi-table dataset upload session.
 
@@ -131,15 +122,15 @@ def upload_session(connection, id, body):
     Returns:
         HTTP response object returned by the MicroStrategy REST server.
     """
-    connection._validate_application_selected()
-    response = connection.session.post(
-        url=connection.base_url + '/api/datasets/' + id + '/uploadSessions', json=body)
-    if not response.ok:
-        response_handler(response, "Error creating new data upload session.")
-    return response
+    connection._validate_project_selected()
+    return connection.session.post(
+        url=f'{connection.base_url}/api/datasets/{id}/uploadSessions',
+        json=body
+    )
 
 
-def upload(connection, id, session_id, body):
+@ErrorHandler(err_msg='Error uploading data to dataset {id}')
+def upload(connection, id, session_id, body, throw_error=False):
     """Upload data to a multi-table dataset.
 
     Args:
@@ -150,20 +141,21 @@ def upload(connection, id, session_id, body):
         session_id (str): Identifer of the server session used for collecting
             uploaded data.
         body (dict): JSON-formatted payload containing the body of the request.
+        throw_error (bool): Flag indicates if the error should be thrown
 
     Returns:
         HTTP response object returned by the MicroStrategy REST server.
     """
-    connection._validate_application_selected()
-    response = connection.session.put(
-        url=connection.base_url + '/api/datasets/' + id + '/uploadSessions/' + session_id,
-        json=body)
-    if not response.ok:
-        response_handler(response, "Error uploading data.", throw_error=False)
-    return response
+    connection._validate_project_selected()
+    return connection.session.put(
+        url=f'{connection.base_url}/api/datasets/{id}/uploadSessions/{session_id}',
+        json=body
+    )
 
 
-def publish(connection, id, session_id):
+@ErrorHandler(
+    err_msg='Error publishing uploaded data for dataset with ID {id} Cancelling publication.')
+def publish(connection, id, session_id, throw_error=False):
     """Publish a multi-table dataset.
 
     Args:
@@ -173,51 +165,17 @@ def publish(connection, id, session_id):
             updating a pre-existing dataset.
         session_id (str): Identifer for the server session used for collecting
             uploaded data.
+        throw_error (bool): Flag indicates if the error should be thrown
 
     Returns:
         HTTP response object returned by the MicroStrategy REST server.
     """
-    connection._validate_application_selected()
-    response = connection.session.post(url=connection.base_url + '/api/datasets/' + id
-                                       + '/uploadSessions/' + session_id + '/publish')
-    if not response.ok:
-        response_handler(response, "Error publishing uploaded data. Cancelling publication.",
-                         throw_error=False)
-    return response
+    connection._validate_project_selected()
+    url = f'{connection.base_url}/api/datasets/{id}/uploadSessions/{session_id}/publish'
+    return connection.session.post(url=url)
 
 
-def toggle_certification(connection, id, dataset_type=3, certify=True):
-    # TODO should be under object api
-    """Certify/Uncertify a multi-table dataset.
-
-    Args:
-        connection (object): MicroStrategy connection object returned by
-            `connection.Connection()`.
-        id (str): Identifier of a pre-existing dataset. Used when
-            certifying a pre-existing dataset.
-        dataset_type (int, optional): Type of dataset to certify as integer;
-            defaults to 3.
-        certify (bool, optional): boolean representing if the instruction is to
-            certify (True) or decertify (False); defaults to True.
-
-    Returns:
-        HTTP response object returned by the MicroStrategy REST server.
-    """
-
-    response = connection.session.put(
-        url=connection.base_url + '/api/objects/' + id + '/certify/?type=' + str(dataset_type)
-        + '&certify=' + str(certify),
-        headers={
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-        },
-    )
-    if not response.ok:
-        error_msg = "Error certifying dataset with ID: '{}'".format(id)
-        response_handler(response, error_msg)
-    return response
-
-
+@ErrorHandler(err_msg='Failed to check dataset {id} publication status.')
 def publish_status(connection, id, session_id):
     """Get multi-table dataset publication status.
 
@@ -233,13 +191,11 @@ def publish_status(connection, id, session_id):
         HTTP response object returned by the MicroStrategy REST server
     """
 
-    response = connection.session.get(url=connection.base_url + '/api/datasets/' + id
-                                      + '/uploadSessions/' + session_id + '/publishStatus')
-    if not response.ok:
-        response_handler(response, "Failed to check the publish status.")
-    return response
+    url = f'{connection.base_url}/api/datasets/{id}/uploadSessions/{session_id}/publishStatus'
+    return connection.session.get(url=url)
 
 
+@ErrorHandler(err_msg='Failed to cancel the publication of dataset with ID {id}')
 def publish_cancel(connection, id, session_id):
     """Delete a multi-table dataset upload session and cancel publication.
 
@@ -254,9 +210,5 @@ def publish_cancel(connection, id, session_id):
     Returns:
         HTTP response object returned by the MicroStrategy REST server
     """
-
-    response = connection.session.delete(
-        url=connection.base_url + '/api/datasets/' + id + '/uploadSessions/' + session_id,)
-    if not response.ok:
-        response_handler(response, "Failed to cancel the publication.")
-    return response
+    url = f'{connection.base_url}/api/datasets/{id}/uploadSessions/{session_id}'
+    return connection.session.delete(url=url)

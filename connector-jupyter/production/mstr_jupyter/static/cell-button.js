@@ -148,7 +148,7 @@ define([
           if (isGrantedStates.includes(result.state)) {
             // app is allowed to put stuff into clipboard:
             navigator.clipboard.writeText(code)
-              .catch((err) => console.warn('Copy to Clipboard failed! ', err));
+              .catch((err) => console.error('Copy to Clipboard failed! ', err));
             return;
           }
         }

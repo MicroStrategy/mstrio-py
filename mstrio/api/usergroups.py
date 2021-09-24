@@ -1,6 +1,12 @@
-from mstrio.utils.helper import response_handler
+from typing import TYPE_CHECKING
+
+from mstrio.utils.error_handlers import ErrorHandler
+
+if TYPE_CHECKING:
+    from requests_futures.sessions import FuturesSession
 
 
+@ErrorHandler(err_msg='Error getting user groups privileges for a group with ID {id}')
 def get_privileges(connection, id, privilege_level=None, project_id=None, error_msg=None):
     """Get user group's privileges of a project including the source of the
     privileges.
@@ -17,22 +23,17 @@ def get_privileges(connection, id, privilege_level=None, project_id=None, error_
         Complete HTTP response object.
     """
 
-    response = connection.session.get(
-        url=connection.base_url + '/api/usergroups/' + id + '/privileges',
+    return connection.session.get(
+        url=f'{connection.base_url}/api/usergroups/{id}/privileges',
         headers={'X-MSTR-ProjectID': None},
         params={
             'privilege.level': privilege_level,
             'projectId': project_id
         },
     )
-    if not response.ok:
-        if error_msg is None:
-            error_msg = ("Error getting user groups privileges. Check user group id, "
-                         "privilege level or project id and try again.")
-        response_handler(response, error_msg)
-    return response
 
 
+@ErrorHandler(err_msg='Error getting user groups memberships for a group with ID {id}')
 def get_memberships(connection, id, error_msg=None):
     """Get information for the user group that is the direct parent of a
     specific user group.
@@ -46,17 +47,13 @@ def get_memberships(connection, id, error_msg=None):
         Complete HTTP response object.
     """
 
-    response = connection.session.get(
-        url=connection.base_url + '/api/usergroups/' + id + '/memberships',
+    return connection.session.get(
+        url=f'{connection.base_url}/api/usergroups/{id}/memberships',
         headers={'X-MSTR-ProjectID': None},
     )
-    if not response.ok:
-        if error_msg is None:
-            error_msg = "Error getting user groups memberships. Check user group id and try again."
-        response_handler(response, error_msg)
-    return response
 
 
+@ErrorHandler(err_msg='Error getting user groups members for a group with ID {id}')
 def get_members(connection, id, include_access=False, offset=0, limit=-1, error_msg=None):
     """Get member information for a specific user group.
 
@@ -76,8 +73,8 @@ def get_members(connection, id, include_access=False, offset=0, limit=-1, error_
         Complete HTTP response object.
     """
 
-    response = connection.session.get(
-        url=connection.base_url + '/api/usergroups/' + id + '/members',
+    return connection.session.get(
+        url=f'{connection.base_url}/api/usergroups/{id}/members',
         headers={'X-MSTR-ProjectID': None},
         params={
             'includeAccess': include_access,
@@ -85,13 +82,9 @@ def get_members(connection, id, include_access=False, offset=0, limit=-1, error_
             'limit': limit
         },
     )
-    if not response.ok:
-        if error_msg is None:
-            error_msg = "Error getting user groups members. Check user group id and try again."
-        response_handler(response, error_msg)
-    return response
 
 
+@ErrorHandler(err_msg='Error getting user group settings for a group with ID {id}')
 def get_settings(connection, id, include_access=False, offset=0, limit=-1, error_msg=None):
     """Update the governing setting of the user group id.
 
@@ -110,17 +103,13 @@ def get_settings(connection, id, include_access=False, offset=0, limit=-1, error
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.get(
-        url=connection.base_url + '/api/usergroups/' + id + '/settings',
+    return connection.session.get(
+        url=f'{connection.base_url}/api/usergroups/{id}/settings',
         headers={'X-MSTR-ProjectID': None},
     )
-    if not response.ok:
-        if error_msg is None:
-            error_msg = "Error getting user group settings. Check user group id and try again."
-        response_handler(response, error_msg)
-    return response
 
 
+@ErrorHandler(err_msg='Error getting user groups top level.')
 def get_top_level(connection, error_msg=None):
     """Get information for all of the user groups that exist at the level of
     the MicroStrategy Everyone user group.
@@ -133,15 +122,11 @@ def get_top_level(connection, error_msg=None):
         Complete HTTP response object.
     """
 
-    response = connection.session.get(url=connection.base_url + '/api/usergroups/topLevel',
-                                      headers={'X-MSTR-ProjectID': None})
-    if not response.ok:
-        if error_msg is None:
-            error_msg = "Error getting user groups top level. Check your privileges and try again."
-        response_handler(response, error_msg)
-    return response
+    return connection.session.get(url=f'{connection.base_url}/api/usergroups/topLevel',
+                                  headers={'X-MSTR-ProjectID': None})
 
 
+@ErrorHandler(err_msg='Error updating user group info with ID {id}')
 def update_user_group_info(connection, id, body, error_msg=None):
     """Update specific information for a specific user group.
 
@@ -155,18 +140,14 @@ def update_user_group_info(connection, id, body, error_msg=None):
         Complete HTTP response object
     """
 
-    response = connection.session.patch(
-        url=connection.base_url + '/api/usergroups/' + id,
+    return connection.session.patch(
+        url=f'{connection.base_url}/api/usergroups/{id}',
         headers={'X-MSTR-ProjectID': None},
         json=body,
     )
-    if not response.ok:
-        if error_msg is None:
-            error_msg = "Error updating user group info. Check user group id and try again."
-        response_handler(response, error_msg)
-    return response
 
 
+@ErrorHandler(err_msg='Error deleting user group with ID {id}')
 def delete_user_group(connection, id, error_msg=None):
     """Delete user group for specific user group id.
 
@@ -179,15 +160,11 @@ def delete_user_group(connection, id, error_msg=None):
         Complete HTTP response object
     """
 
-    response = connection.session.delete(url=connection.base_url + '/api/usergroups/' + id,
-                                         headers={'X-MSTR-ProjectID': None})
-    if not response.ok:
-        if error_msg is None:
-            error_msg = "Error deleting user group. Check user group id and try again."
-        response_handler(response, error_msg)
-    return response
+    return connection.session.delete(url=f'{connection.base_url}/api/usergroups/{id}',
+                                     headers={'X-MSTR-ProjectID': None})
 
 
+@ErrorHandler(err_msg='Error overwriting user group info for a group with ID {id}')
 def replace_user_group_info(connection, id, error_msg=None):
     """Update all of the information for a specific user group.
 
@@ -200,15 +177,11 @@ def replace_user_group_info(connection, id, error_msg=None):
         Complete HTTP response object
     """
 
-    response = connection.session.put(url=connection.base_url + '/api/usergroups/' + id,
-                                      headers={'X-MSTR-ProjectID': None})
-    if not response.ok:
-        if error_msg is None:
-            error_msg = "Error overwriting user group info. Check user group id and try again."
-        response_handler(response, error_msg)
-    return response
+    return connection.session.put(url=f'{connection.base_url}/api/usergroups/{id}',
+                                  headers={'X-MSTR-ProjectID': None})
 
 
+@ErrorHandler(err_msg='Error getting information for a set of user groups.')
 def get_info_all_user_groups(connection, name_begins, offset=0, limit=1000, fields=None,
                              error_msg=None):
     """Get information for a specific set of user groups or all user groups.
@@ -243,8 +216,8 @@ def get_info_all_user_groups(connection, name_begins, offset=0, limit=1000, fiel
         HTTP response object returned by the MicroStrategy REST server
     """
 
-    response = connection.session.get(
-        connection.base_url + '/api/usergroups/',
+    return connection.session.get(
+        f'{connection.base_url}/api/usergroups/',
         headers={'X-MSTR-ProjectID': None},
         params={
             'nameBegins': name_begins,
@@ -253,15 +226,10 @@ def get_info_all_user_groups(connection, name_begins, offset=0, limit=1000, fiel
             'fields': fields
         },
     )
-    if not response.ok:
-        if error_msg is None:
-            error_msg = "Error getting information for a set of user groups."
-        response_handler(response, error_msg)
-    return response
 
 
-def get_info_all_user_groups_async(future_session, connection, name_begins, offset=0, limit=-1,
-                                   fields=None):
+def get_info_all_user_groups_async(future_session: "FuturesSession", connection, name_begins,
+                                   offset=0, limit=-1, fields=None):
     """Get information for a set of users asynchronously.
 
     Args:
@@ -286,12 +254,13 @@ def get_info_all_user_groups_async(future_session, connection, name_begins, offs
         'limit': limit,
         'fields': fields,
     }
-    url = connection.base_url + '/api/usergroups/'
+    url = f'{connection.base_url}/api/usergroups/'
     headers = {'X-MSTR-ProjectID': None}
     future = future_session.get(url=url, headers=headers, params=params)
     return future
 
 
+@ErrorHandler(err_msg='Error creating a new user group.')
 def create_user_group(connection, body):
     """Create a new user group. The response includes the user group ID, which
     other endpoints use as a request parameter to specify the user group to
@@ -312,13 +281,10 @@ def create_user_group(connection, body):
     Returns:
         Complete HTTP response object
     """
-    response = connection.session.post(connection.base_url + '/api/usergroups/', json=body)
-
-    if not response.ok:
-        response_handler(response, "Error creating new user group.")
-    return response
+    return connection.session.post(url=f'{connection.base_url}/api/usergroups/', json=body)
 
 
+@ErrorHandler(err_msg='Error getting user group information for a group with ID {id}')
 def get_user_group_info(connection, id, error_msg=None):
     """Get information for a specific user group.
 
@@ -331,15 +297,11 @@ def get_user_group_info(connection, id, error_msg=None):
         Complete HTTP response object.
     """
 
-    response = connection.session.get(url=connection.base_url + '/api/usergroups/' + id,
-                                      headers={'X-MSTR-ProjectID': None})
-    if not response.ok:
-        if error_msg is None:
-            error_msg = "Error getting user group information. Check user group id and try again."
-        response_handler(response, error_msg)
-    return response
+    return connection.session.get(url=f'{connection.base_url}/api/usergroups/{id}',
+                                  headers={'X-MSTR-ProjectID': None})
 
 
+@ErrorHandler(err_msg='Error getting user group security roles for a group with ID {id}')
 def get_security_roles(connection, id, project_id=None, error_msg=None):
     """Get security roles for a specific user group in a specific project.
 
@@ -353,13 +315,8 @@ def get_security_roles(connection, id, project_id=None, error_msg=None):
         Complete HTTP response object.
     """
 
-    response = connection.session.get(
-        url=connection.base_url + '/api/usergroups/' + id + '/securityRoles',
+    return connection.session.get(
+        url=f'{connection.base_url}/api/usergroups/{id}/securityRoles',
         headers={'X-MSTR-ProjectID': None},
         params={'projectId': project_id},
     )
-    if not response.ok:
-        if error_msg is None:
-            error_msg = "Error getting user group security roles."
-        response_handler(response, error_msg)
-    return response

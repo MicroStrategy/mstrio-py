@@ -7,7 +7,7 @@ ease its usage.
 """
 
 from mstrio.connection import Connection
-from mstrio.server import Cluster, Environment, Application
+from mstrio.server import Cluster, Environment, Project
 
 base_url = "https://<>/MicroStrategyLibrary/api"
 username = "some_username"
@@ -47,23 +47,23 @@ clstr.stop(service='Apache-Kafka', nodes=['env-xxxxxxlaio1use1', 'env-xxxxxxlaio
 clstr.start(service='Apache-Kafka', nodes=['env-xxxxxxlaio1use1', 'env-xxxxxxlaio2use1'])
 
 env = Environment(connection=conn)
-# list all applications available for the given connection (it is possible via
+# list all projects available for the given connection (it is possible via
 # class Cluster or Environment)
-apps = env.list_applications()
-apps = clstr.list_applications()
+projects = env.list_projects()
+projects = clstr.list_projects()
 
-# load or unload chosen application (it is possible via class Cluster or
-# Application)
-app = Application(connection=conn, name=MICROSTRATEGY_TUTORIAL)
-app.load()
-app.unload()
+# load or unload chosen project (it is possible via class Cluster or
+# Project)
+project = Project(connection=conn, name=MICROSTRATEGY_TUTORIAL)
+project.load()
+project.unload()
 
-# via Cluster can we also specify on which node(s) application will be loaded
+# via Cluster can we also specify on which node(s) project will be loaded
 # or unloaded
-clstr.load_application(application_name=MICROSTRATEGY_TUTORIAL,
-                       on_nodes=['env-xxxxxxlaio1use1', 'env-xxxxxxlaio2use1'])
-clstr.unload_application(application_name=MICROSTRATEGY_TUTORIAL,
-                         on_nodes=['env-xxxxxxlaio1use1', 'env-xxxxxxlaio2use1'])
+clstr.load_project(project=MICROSTRATEGY_TUTORIAL,
+                   on_nodes=['env-xxxxxxlaio1use1', 'env-xxxxxxlaio2use1'])
+clstr.unload_project(project=MICROSTRATEGY_TUTORIAL,
+                     on_nodes=['env-xxxxxxlaio1use1', 'env-xxxxxxlaio2use1'])
 
 # get settings of a server as a dataframe
 server_settings_df = env.server_settings.to_dataframe

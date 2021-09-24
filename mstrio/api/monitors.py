@@ -1,11 +1,24 @@
-from mstrio.utils.helper import response_handler, delete_none_values
-from typing import TYPE_CHECKING, List
+from concurrent.futures.thread import ThreadPoolExecutor
+import json
+from typing import List, Optional, TYPE_CHECKING, Union
+from unittest.mock import Mock
+from mstrio.api.exceptions import MstrException, PartialSuccess, Success
+
+from packaging import version
+from requests.adapters import Response
+from requests.sessions import Request
+from requests_futures.sessions import FuturesSession
+
+from mstrio.utils.error_handlers import bulk_operation_response_handler, ErrorHandler
+from mstrio.utils.helper import delete_none_values, filter_list_of_dicts, response_handler
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
-    from requests_futures.sessions import FuturesSession
+
+ISERVER_VERSION_11_3_2 = '11.3.0200'
 
 
+@ErrorHandler(err_msg='Error getting list of all projects from metadata.')
 def get_projects(connection: "Connection", offset: int = 0, limit: int = -1,
                  error_msg: str = None):
     """Get list of all projects from metadata.
@@ -23,19 +36,14 @@ def get_projects(connection: "Connection", offset: int = 0, limit: int = -1,
         HTTP response object returned by the MicroStrategy REST server.
     """
 
-    response = connection.session.get(
-        url=connection.base_url + '/api/monitors/projects',
+    return connection.session.get(
+        url=f'{connection.base_url}/api/monitors/projects',
         headers={'X-MSTR-ProjectID': None},
         params={
             'offset': offset,
             'limit': limit
         },
     )
-    if not response.ok:
-        if error_msg is None:
-            error_msg = "Error getting list of all projects from metadata."
-        response_handler(response, error_msg)
-    return response
 
 
 def get_projects_async(future_session: "FuturesSession", connection: "Connection", offset: int = 0,
@@ -54,13 +62,15 @@ def get_projects_async(future_session: "FuturesSession", connection: "Connection
     Returns:
         HTTP response object returned by the MicroStrategy REST server.
     """
-    url = connection.base_url + '/api/monitors/projects'
+    url = f'{connection.base_url}/api/monitors/projects'
     headers = {'X-MSTR-ProjectID': None}
     params = {'offset': offset, 'limit': limit}
     future = future_session.get(url=url, headers=headers, params=params)
     return future
 
 
+@ErrorHandler(
+    err_msg='Error getting information about nodes in the connected Intelligence Server cluster.')
 def get_node_info(connection: "Connection", id: str = None, node_name: str = None,
                   error_msg: str = None):
     """Get information about nodes in the connected Intelligence Server
@@ -71,29 +81,25 @@ def get_node_info(connection: "Connection", id: str = None, node_name: str = Non
 
     Args:
         connection(object): MicroStrategy connection object returned by
-            `connection.Connection()`.
+
         id (str, optional): Project ID
         node_name (str, optional): Node Name
         error_msg (string, optional): Custom Error Message for Error Handling
     """
-    response = connection.session.get(
-        url=connection.base_url + '/api/monitors/iServer/nodes',
+    return connection.session.get(
+        url=f'{connection.base_url}/api/monitors/iServer/nodes',
         headers={'X-MSTR-ProjectID': None},
         params={
             'projects.id': id,
             'name': node_name
         },
     )
-    if not response.ok:
-        if error_msg is None:
-            error_msg = ("Error getting  information about nodes in the connected Intelligence "
-                         "Server cluster.")
-        response_handler(response, error_msg)
-    return response
 
 
+@ErrorHandler(
+    err_msg='Error updating properties for a project {project_id} for cluster node {node_name}.')
 def update_node_properties(connection: "Connection", node_name: str, project_id: str, body: dict,
-                           error_msg: str = None, whitelist: List[tuple] = []):
+                           error_msg: str = None, whitelist: Optional[List[tuple]] = None):
     """Update properties such as project status for a specific project for
     respective cluster node. You obtain cluster node name and project id from
     GET /monitors/iServer/nodes.
@@ -123,22 +129,16 @@ def update_node_properties(connection: "Connection", node_name: str, project_id:
         HTTP response object returned by the MicroStrategy REST server.
     """
 
-    response = connection.session.patch(
-        url=connection.base_url + '/api/monitors/iServer/nodes/' + node_name + '/projects/'
-        + project_id,
+    return connection.session.patch(
+        url=f'{connection.base_url}/api/monitors/iServer/nodes/{node_name}/projects/{project_id}',
         headers={'X-MSTR-ProjectID': None},
         json=body,
     )
-    if not response.ok:
-        if error_msg is None:
-            error_msg = ("Error updating properties for a specific project for respective "
-                         "cluster node.")
-        response_handler(response, error_msg, whitelist=whitelist)
-    return response
 
 
+@ErrorHandler(err_msg='Error adding node {node_name} to connected Intelligence Server cluster.')
 def add_node(connection: "Connection", node_name: str, error_msg: str = None,
-             whitelist: List[tuple] = []):
+             whitelist: Optional[List[tuple]] = None):
     """Add a node to the connected Intelligence Server cluster. The node must
     meet I-Server clustering requirements. If the node is part of a multi-node
     cluster, all the nodes in that cluster will be added. If the node is
@@ -159,20 +159,16 @@ def add_node(connection: "Connection", node_name: str, error_msg: str = None,
         HTTP response object returned by the MicroStrategy REST server.
     """
 
-    response = connection.session.put(
-        url=connection.base_url + '/api/monitors/iServer/nodes/' + node_name,
+    return connection.session.put(
+        url=f'{connection.base_url}/api/monitors/iServer/nodes/{node_name}',
         headers={'X-MSTR-ProjectID': None},
     )
-    if not response.ok:
-        if error_msg is None:
-            error_msg = (f"Error adding node '{node_name}' to the connected Intelligence Server "
-                         "cluster")
-        response_handler(response, error_msg, whitelist=whitelist)
-    return response
 
 
+@ErrorHandler(
+    err_msg='Error removing node {node_name} from the connected Intelligence Server cluster.')
 def remove_node(connection: "Connection", node_name: str, error_msg: str = None,
-                whitelist: List[tuple] = []):
+                whitelist: Optional[List[tuple]] = None):
     """Remove a node from the connected Intelligence Server cluster. After a
     successful removal, some existing authorization tokens may become
     invalidated and in this case re-login is needed. You cannot remove a node
@@ -193,18 +189,13 @@ def remove_node(connection: "Connection", node_name: str, error_msg: str = None,
         HTTP response object returned by the MicroStrategy REST server.
     """
 
-    response = connection.session.delete(
-        url=connection.base_url + '/api/monitors/iServer/nodes/' + node_name,
+    return connection.session.delete(
+        url=f'{connection.base_url}/api/monitors/iServer/nodes/{node_name}',
         headers={'X-MSTR-ProjectID': None},
     )
-    if not response.ok:
-        if error_msg is None:
-            error_msg = (f"Error removing node '{node_name}' from the connected Intelligence "
-                         "Server cluster.")
-        response_handler(response, error_msg, whitelist=whitelist)
-    return response
 
 
+@ErrorHandler(err_msg='Error getting user connections for {node_name} cluster node.')
 def get_user_connections(connection: "Connection", node_name: str, offset: int = 0,
                          limit: int = 100, error_msg: str = None):
     """Get user connections information on specific intelligence server node.
@@ -223,8 +214,8 @@ def get_user_connections(connection: "Connection", node_name: str, offset: int =
     Returns:
         HTTP response object returned by the MicroStrategy REST server.
     """
-    response = connection.session.get(
-        url=connection.base_url + '/api/monitors/userConnections',
+    return connection.session.get(
+        url=f'{connection.base_url}/api/monitors/userConnections',
         headers={'X-MSTR-ProjectID': None},
         params={
             'clusterNode': node_name,
@@ -232,11 +223,6 @@ def get_user_connections(connection: "Connection", node_name: str, offset: int =
             'limit': limit
         },
     )
-    if not response.ok:
-        if error_msg is None:
-            error_msg = "Error getting user connections for '{}' cluster node.".format(node_name)
-        response_handler(response, error_msg)
-    return response
 
 
 def get_user_connections_async(future_session: "FuturesSession", connection: "Connection",
@@ -257,7 +243,7 @@ def get_user_connections_async(future_session: "FuturesSession", connection: "Co
         HTTP response object returned by the MicroStrategy REST server.
     """
     params = {'clusterNode': node_name, 'offset': offset, 'limit': limit}
-    url = connection.base_url + '/api/monitors/userConnections'
+    url = f'{connection.base_url}/api/monitors/userConnections'
     headers = {'X-MSTR-ProjectID': None}
     future = future_session.get(url=url, headers=headers, params=params)
     return future
@@ -276,12 +262,12 @@ def delete_user_connection(connection: "Connection", id: str, error_msg: str = N
             bulk disconnect
     """
     response = connection.session.delete(
-        url=connection.base_url + '/api/monitors/userConnections/' + id,
+        url=f'{connection.base_url}/api/monitors/userConnections/{id}',
         headers={'X-MSTR-ProjectID': None},
     )
     if not response.ok and bulk:
         if error_msg is None:
-            error_msg = "Error deleting user connections '{}'.".format(id)
+            error_msg = f"Error deleting user connections {id}."
         # whitelist error related to disconnecting yourself or other unallowed
         response_handler(response, error_msg, whitelist=[('ERR001', 500)])
     return response
@@ -297,7 +283,7 @@ def delete_user_connection_async(future_session: "FuturesSession", connection: "
         id (str, optional): Project ID
     """
 
-    url = connection.base_url + '/api/monitors/userConnections/' + id
+    url = f'{connection.base_url}/api/monitors/userConnections/{id}'
     headers = {'X-MSTR-ProjectID': None}
     future = future_session.delete(url=url, headers=headers)
     return future
@@ -316,12 +302,13 @@ def delete_user_connections(connection: "Connection", ids: List[str]):
     """
     body = {"userConnectionIds": ids}
     response = connection.session.post(
-        url=connection.base_url + '/api/monitors/deleteUserConnections',
+        url=f'{connection.base_url}/api/monitors/deleteUserConnections',
         json=body,
     )
     return response
 
 
+@ErrorHandler(err_msg='Error getting cube cache {id} info.')
 def get_cube_cache_info(connection: "Connection", id: str):
     """Get an single cube cache info.
 
@@ -333,12 +320,10 @@ def get_cube_cache_info(connection: "Connection", id: str):
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.get(url=f"{connection.base_url}/api/monitors/caches/cubes/{id}")
-    if not response.ok:
-        response_handler(response, "Error getting cube cache info.")
-    return response
+    return connection.session.get(url=f'{connection.base_url}/api/monitors/caches/cubes/{id}')
 
 
+@ErrorHandler(err_msg='Error deleting cube cache with ID {id}')
 def delete_cube_cache(connection: "Connection", id: str, throw_error: bool = True):
     """Delete an cube cache.
 
@@ -352,13 +337,10 @@ def delete_cube_cache(connection: "Connection", id: str, throw_error: bool = Tru
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.delete(
-        url=f"{connection.base_url}/api/monitors/caches/cubes/{id}")
-    if not response.ok:
-        response_handler(response, "Error deleting cube cache.", throw_error)
-    return response
+    return connection.session.delete(url=f'{connection.base_url}/api/monitors/caches/cubes/{id}')
 
 
+@ErrorHandler(err_msg='Error altering cube cache {id} status.')
 def alter_cube_cache_status(connection: "Connection", id: str, active: bool = None,
                             loaded: bool = None, throw_error: bool = True):
     """Alter an cube cache status. In one request it is possible to set either
@@ -382,14 +364,11 @@ def alter_cube_cache_status(connection: "Connection", id: str, active: bool = No
     body = {'state': {'active': active, 'loadedState': loaded}}
     body = delete_none_values(body)
 
-    response = connection.session.patch(
-        url=f"{connection.base_url}/api/monitors/caches/cubes/{id}", json=body,
-        headers={'Prefer': 'respond-async'})
-    if not response.ok:
-        response_handler(response, "Error altering cube cache status.", throw_error)
-    return response
+    return connection.session.patch(url=f'{connection.base_url}/api/monitors/caches/cubes/{id}',
+                                    json=body, headers={'Prefer': 'respond-async'})
 
 
+@ErrorHandler(err_msg='Error getting list of cube caches for node {node}.')
 def get_cube_caches(connection: "Connection", node: str, offset: int = 0, limit: int = 1000,
                     project_ids: str = None, loaded: bool = False, sort_by: str = None,
                     error_msg: str = None):
@@ -418,20 +397,17 @@ def get_cube_caches(connection: "Connection", node: str, offset: int = 0, limit:
         Complete HTTP response object.
     """
     loaded = 'loaded' if loaded else None
-    response = connection.session.get(
-        url=f"{connection.base_url}/api/monitors/caches/cubes", params={
+    return connection.session.get(
+        url=f'{connection.base_url}/api/monitors/caches/cubes',
+        params={
             'clusterNode': node,
             'offset': offset,
             'limit': limit,
             'projectIds': project_ids,
             'state.loadedState': loaded,
             'sortBy': sort_by
-        })
-    if not response.ok:
-        if error_msg is None:
-            error_msg = "Error getting list of cube caches."
-        response_handler(response, error_msg)
-    return response
+        },
+    )
 
 
 def get_cube_caches_async(future_session: "FuturesSession", connection: "Connection", node: str,
@@ -462,7 +438,7 @@ def get_cube_caches_async(future_session: "FuturesSession", connection: "Connect
         Future with HTTP response returned by the MicroStrategy REST server as
         a result.
     """
-    url = connection.base_url + '/api/monitors/caches/cubes'
+    url = f'{connection.base_url}/api/monitors/caches/cubes'
     params = {
         'clusterNode': node,
         'offset': offset,
@@ -475,6 +451,7 @@ def get_cube_caches_async(future_session: "FuturesSession", connection: "Connect
     return future
 
 
+@ErrorHandler(err_msg='Error getting cube cache manipulation {manipulation_id} status.')
 def get_cube_cache_manipulation_status(connection: "Connection", manipulation_id: str,
                                        throw_error: bool = True):
     """Get the manipulation status of cube cache.
@@ -489,14 +466,11 @@ def get_cube_cache_manipulation_status(connection: "Connection", manipulation_id
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.get(
-        url=(f"{connection.base_url}/api/monitors/caches/cubes/manipulations"
-             f"/{manipulation_id}/status"))
-    if not response.ok:
-        response_handler(response, "Error getting cube cache manipulation status.", throw_error)
-    return response
+    url = f'{connection.base_url}/api/monitors/caches/cubes/manipulations/{manipulation_id}/status'
+    return connection.session.get(url=url)
 
 
+@ErrorHandler(err_msg='Error getting database connections for {nodes_names} cluster node.')
 def get_database_connections(connection: "Connection", nodes_names: str, error_msg: str = None):
     """Get database connections information on specific intelligence
         server node.
@@ -509,17 +483,13 @@ def get_database_connections(connection: "Connection", nodes_names: str, error_m
     Returns:
         HTTP response object returned by the MicroStrategy REST server.
     """
-    response = connection.session.get(
-        url=f"{connection.base_url}/api/monitors/dbConnectionInstances",
+    return connection.session.get(
+        url=f'{connection.base_url}/api/monitors/dbConnectionInstances',
         params={'clusterNodes': nodes_names},
     )
-    if not response.ok:
-        if error_msg is None:
-            error_msg = f"Error getting database connections for '{nodes_names}' cluster node."
-        response_handler(response, error_msg)
-    return response
 
 
+@ErrorHandler(err_msg='Error deleting database connections {connection_id}.')
 def delete_database_connection(connection: "Connection", connection_id: str,
                                error_msg: str = None):
     """Disconnect a database connection on specific intelligence server node.
@@ -530,13 +500,8 @@ def delete_database_connection(connection: "Connection", connection_id: str,
         connection_id (str, optional): Database Connection Id
         error_msg (string, optional): Custom Error Message for Error Handling
     """
-    response = connection.session.delete(
-        url=f"{connection.base_url}/api/monitors/dbConnectionInstances/{connection_id}")
-    if not response.ok:
-        if error_msg is None:
-            error_msg = f"Error deleting database connections '{connection_id}'."
-        response_handler(response, error_msg)
-    return response
+    url = f'{connection.base_url}/api/monitors/dbConnectionInstances/{connection_id}'
+    return connection.session.delete(url=url)
 
 
 def delete_database_connection_async(future_session: "FuturesSession", connection: "Connection",
@@ -551,6 +516,464 @@ def delete_database_connection_async(future_session: "FuturesSession", connectio
         connection_id (str, optional): Database Connection Id
         error_msg (string, optional): Custom Error Message for Error Handling
     """
-    url = f"{connection.base_url}/api/monitors/dbConnectionInstances/{connection_id}"
-
+    url = f'{connection.base_url}/api/monitors/dbConnectionInstances/{connection_id}'
     return future_session.delete(url=url)
+
+
+def get_job(connection: "Connection", id: str, node_name: str = None, fields: List[str] = None,
+            error_msg: str = None):
+    """Get job information.
+
+    Args:
+        connection(object): MicroStrategy connection object returned by
+            `connection.Connection()`.
+        node_name(str, optional): Node name, if not passed list jobs
+            on all nodes
+        fields(list, optional): Comma separated top-level field whitelist. This
+            allows client to selectively retrieve part of the response model.
+        error_msg (string, optional): Custom Error Message for Error Handling
+    Returns:
+        HTTP response object returned by the MicroStrategy REST server
+    """
+    response = Mock()  # create empty mock object to mimick REST API response
+
+    if not node_name:
+        # fetch jobs on all nodes
+        nodes_response = get_node_info(connection).json()
+        nodes = nodes_response['nodes']
+        node_names = [node["name"] for node in nodes]
+
+    if isinstance(node_name, str):
+        node_names = [node_names]
+
+    with FuturesSession(executor=ThreadPoolExecutor(max_workers=8),
+                        session=connection.session) as session:
+        futures = (get_jobs_async(future_session=session, connection=connection, node_name=node)
+                   for node in node_names)
+        jobs = []
+        for f in futures:
+            response = f.result()
+            if not response.ok:
+                response_handler(response, error_msg, throw_error=False)
+            else:
+                jobs.extend(response.json()['jobs'])
+
+    job = filter_list_of_dicts(jobs, id=id)
+    if not job:
+        response.status_code = 400
+        response.reason = f"Error getting job '{id}'"
+        response.raise_for_status()
+    elif len(job) > 1:
+        response.status_code = 400
+        response.reason = f"More than one job with id '{id}' was found."
+        response.raise_for_status()
+    else:
+        job = job[0]
+        job = json.dumps(job).encode('utf-8')
+        response._content = job
+        response.status_code = 200
+        return response
+
+
+@ErrorHandler(err_msg="Error getting job {id}.")
+def get_job_v2(connection: "Connection", id: str, fields: List[str] = None, error_msg: str = None):
+    """Get job information.
+
+    Args:
+        connection(object): MicroStrategy connection object returned by
+            `connection.Connection()`.
+        fields(list, optional): Comma separated top-level field whitelist. This
+            allows client to selectively retrieve part of the response model.
+        error_msg (string, optional): Custom Error Message for Error Handling
+    Returns:
+        HTTP response object returned by the MicroStrategy REST server
+    """
+    return connection.session.get(
+        url=f'{connection.base_url}/api/v2/monitors/jobs/{id}',
+        params={
+            'fields': ",".join(fields) if fields else None,
+        },
+    )
+
+
+@ErrorHandler(err_msg="Error getting jobs list.")
+def get_jobs(connection: "Connection", node_name: str, project_id: str = None, status: str = None,
+             job_type: str = None, user_full_name: str = None, object_id: str = None,
+             sort_by: str = None, fields: List[str] = None, error_msg: str = None) -> Response:
+    """Get list of a jobs.
+
+    Args:
+        connection(object): MicroStrategy connection object returned by
+            `connection.Connection()`.
+        node_name(str, optional): Node name,
+        project_id(str, optional): Project id ,
+        status(str, optional): Job status to filter by,
+        job_type(str, optional): Job type to filter by,
+        user_full_name(str, optional): User full name to filter by,
+        object_id(str, optional): Object id to filter by,
+        sort_by(SortBy, optional): Specifies sorting criteria to
+        fields(list, optional): Comma separated top-level field whitelist. This
+            allows client to selectively retrieve part of the response model.
+        error_msg (string, optional): Custom Error Message for Error Handling
+    Returns:
+        HTTP response object returned by the MicroStrategy REST server
+    """
+    params = {
+        'nodeName': node_name,  # this needs to be first to work
+        'projectId': project_id,
+        'status': status,
+        'jobType': job_type,
+        'userFullName': user_full_name,
+        'objectId': object_id,
+        'sortBy': sort_by,
+        'fields': ",".join(fields) if fields else None,
+    },
+
+    request = Request('GET', url=f'{connection.base_url}/api/monitors/jobs', params=params)
+    prepared_request = request.prepare()
+    url = prepared_request.url.replace("+", "%20")  # REST will not work with +
+    return connection.session.get(url)
+
+
+def get_jobs_async(future_session: "FuturesSession", connection: "Connection", node_name: str,
+                   project_id: str = None, status: str = None, job_type: str = None,
+                   user_full_name: str = None, object_id: str = None, sort_by: str = None,
+                   fields: List[str] = None, error_msg: str = None) -> Response:
+    """Get list of a jobs asynchronously.
+
+    Args:
+        future_session(object): Future Session object to call MicroStrategy REST
+            Server asynchronously
+        connection(object): MicroStrategy connection object returned by
+            `connection.Connection()`.
+        node_name(str, optional): Node name,
+        project_id(str, optional): Project id,
+        status(str, optional): Job status to filter by,
+        job_type(str, optional): Job type to filter by,
+        user_full_name(str, optional): User full name to filter by,
+        object_id(str, optional): Object id to filter by,
+        sort_by(SortBy, optional): Specifies sorting criteria to
+        fields(list, optional): Comma separated top-level field whitelist. This
+            allows client to selectively retrieve part of the response model.
+        error_msg (string, optional): Custom Error Message for Error Handling
+    Returns:
+        FuturesSession object
+    """
+    params = {
+        'nodeName': node_name,  # this needs to be first to work
+        'projectId': project_id,
+        'status': status,
+        'jobType': job_type,
+        'userFullName': user_full_name,
+        'objectId': object_id,
+        'sortBy': sort_by,
+        'fields': ",".join(fields) if fields else None,
+    }
+
+    request = Request('GET', url=f'{connection.base_url}/api/monitors/jobs', params=params)
+    prepared_request = request.prepare()
+    url = prepared_request.url.replace("+", "%20")  # REST will not work with +
+    return future_session.get(url)
+
+
+@ErrorHandler(err_msg="Error getting jobs list")
+def get_jobs_v2(connection: "Connection", node_name: str, user: Union[List[str], str] = None,
+                description: str = None, type: Union[List[str], str] = None,
+                status: Union[List[str], str] = None, object_id: Union[List[str]] = None,
+                object_type: Union[List[str], str] = None, project_id: Union[List[str],
+                                                                             str] = None,
+                project_name: Union[List[str], str] = None, pu_name: Union[List[str], str] = None,
+                subscription_type: Union[List[str],
+                                         str] = None, subscription_recipient: Union[List[str],
+                                                                                    str] = None,
+                memory_usage: str = None, elapsed_time: str = None, sort_by: str = None,
+                fields: List[str] = None, error_msg: str = None):
+    """Get list of a jobs.
+
+    Args:
+        connection(object): MicroStrategy connection object returned by
+            `connection.Connection()`.
+        node_name(str, optional): Node name,
+        user(str, optional): Field to filter on job owner's full name (exact
+            match),
+        description(str, optional): Field to filter on job description (partial
+            match),
+        type(str, optional): Field to filter on job type (exact match),
+        status(str, optional): Job status to filter by,
+        object_id(str, optional): Field to filter on object ID of the job
+            (exact match)
+        object_type(str, optional): Field to filter on object type (exact match)
+        project_id(str, optional): Field to filter on project id (exact
+            match),
+        project_name(str, optional): Field to filter on project name (exact
+            match),
+        pu_name(str, optional): Field to filter on processing unit name (exact
+            match),
+        subscription_type(str, optional): Field to filter on subscription type
+            (exact match),
+        subscription_recipient(str, optional): Field to filter on subscription
+            recipient's full name (exact match),
+        memory_usage(str, optional): Field to filter on the job elapsed time,
+            for example 'gte:100' means filering jobs with memoryUsage greater
+            than or equal to 100 MB. Valid oprators are:
+            gte - greater than or equal
+            lte - less than or equal
+        elapsed_time(str, optional): Field to filter on the job elapsed time,
+            for example 'gte:100' means filering jobs with elapsedTime greater
+            than or equal to 100 seconds. Valid oprators are:
+            gte - greater than or equal
+            lte - less than or equal
+        sort_by(SortBy, optional): Specify sorting criteria, for example
+            '+status' means sorting status is ascending order or '-userFullName'
+            means sorting userFullName in descending order. Currently, the
+            server supports sorting only by single field.
+        fields(list, optional): Comma separated top-level field whitelist. This
+            allows client to selectively retrieve part of the response model.
+        error_msg (string, optional): Custom Error Message for Error Handling
+    Returns:
+        HTTP response object returned by the MicroStrategy REST server
+    """
+    params = {
+        'nodeName': node_name,  # this needs to be first to work
+        'user': user,
+        'description': description,
+        'type': type,
+        'status': status,
+        'objectId': object_id,
+        'objectType': object_type,
+        'projectId': project_id,
+        'projectName': project_name,
+        'puName': pu_name,
+        'subscriptionType': subscription_type,
+        'subscriptionRecipient': subscription_recipient,
+        'memoryUsage': memory_usage,
+        'elapsedTime': elapsed_time,
+        'sortBy': sort_by,
+        'fields': ",".join(fields) if fields else None,
+    }
+
+    request = Request('GET', url=f'{connection.base_url}/api/v2/monitors/jobs', params=params)
+    prepared_request = request.prepare()
+    url = prepared_request.url.replace("+", "%20")  # REST will not work with +
+    return connection.session.get(url)
+
+
+def get_jobs_v2_async(future_session: "FuturesSession", connection: "Connection", node_name: str,
+                      user: Union[List[str], str] = None, description: str = None,
+                      type: Union[List[str], str] = None, status: Union[List[str], str] = None,
+                      object_id: Union[List[str]] = None, object_type: Union[List[str],
+                                                                             str] = None,
+                      project_id: Union[List[str], str] = None, project_name: Union[List[str],
+                                                                                    str] = None,
+                      pu_name: Union[List[str], str] = None, subscription_type: Union[List[str],
+                                                                                      str] = None,
+                      subscription_recipient: Union[List[str], str] = None,
+                      memory_usage: str = None, elapsed_time: str = None, sort_by: str = None,
+                      fields: List[str] = None, error_msg: str = None) -> Response:
+    """Get list of a jobs asynchronously.
+
+    Args:
+        future_session(object): Future Session object to call MicroStrategy REST
+            Server asynchronously
+        connection(object): MicroStrategy connection object returned by
+            `connection.Connection()`.
+        node_name(str, optional): Node name,
+        user(str, optional): Field to filter on job owner's full name (exact
+            match),
+        description(str, optional): Field to filter on job description (partial
+            match),
+        type(str, optional): Field to filter on job type (exact match),
+        status(str, optional): Job status to filter by,
+        object_id(str, optional): Field to filter on object ID of the job
+            (exact match)
+        object_type(str, optional): Field to filter on object type (exact match)
+        project_id(str, optional): Field to filter on project id (exact
+            match),
+        project_name(str, optional): Field to filter on project name (exact
+            match),
+        pu_name(str, optional): Field to filter on processing unit name (exact
+            match),
+        subscription_type(str, optional): Field to filter on subscription type
+            (exact match),
+        subscription_recipient(str, optional): Field to filter on subscription
+            recipient's full name (exact match),
+        memory_usage(str, optional): Field to filter on the job elapsed time,
+            for example 'gte:100' means filering jobs with memoryUsage greater
+            than or equal to 100 MB. Valid oprators are:
+            gte - greater than or equal
+            lte - less than or equal
+        elapsed_time(str, optional): Field to filter on the job elapsed time,
+            for example 'gte:100' means filering jobs with elapsedTime greater
+            than or equal to 100 seconds. Valid oprators are:
+            gte - greater than or equal
+            lte - less than or equal
+        sort_by(SortBy, optional): Specify sorting criteria, for example
+            '+status' means sorting status is ascending order or '-userFullName'
+            means sorting userFullName in descending order. Currently, the
+            server supports sorting only by single field.
+        fields(list, optional): Comma separated top-level field whitelist. This
+            allows client to selectively retrieve part of the response model.
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        FuturesSession object
+    """
+    params = {
+        'nodeName': node_name,  # this needs to be first to work
+        'user': user,
+        'description': description,
+        'type': type,
+        'status': status,
+        'objectId': object_id,
+        'objectType': object_type,
+        'projectId': project_id,
+        'projectName': project_name,
+        'puName': pu_name,
+        'subscriptionType': subscription_type,
+        'subscriptionRecipient': subscription_recipient,
+        'memoryUsage': memory_usage,
+        'elapsedTime': elapsed_time,
+        'sortBy': sort_by,
+        'fields': ",".join(fields) if fields else None,
+    }
+
+    request = Request('GET', url=f'{connection.base_url}/api/v2/monitors/jobs', params=params)
+    prepared_request = request.prepare()
+    url = prepared_request.url.replace("+", "%20")  # REST will not work with +
+    return future_session.get(url)
+
+
+@ErrorHandler(err_msg="Error killing job {id}")
+def cancel_job(connection: "Connection", id: str, fields: List[str] = None, error_msg: str = None):
+    """Cancel a job specified by `id`. Use cancel_job_v1 if I-Server version
+    is 11.3.2 or cancel_job_v2 otherwise.
+
+    Args:
+        connection(object): MicroStrategy connection object returned by
+            `connection.Connection()`.
+        id(str): ID of the job
+        fields(list, optional): Comma separated top-level field whitelist. This
+            allows client to selectively retrieve part of the response model.
+        error_msg(str, optional): Customized error message.
+    Returns:
+        HTTP response object returned by the MicroStrategy REST server
+    """
+    if version.parse(connection.iserver_version) == version.parse(ISERVER_VERSION_11_3_2):
+        return cancel_job_v1(connection, id, fields, error_msg)
+    else:
+        return cancel_job_v2(connection, id, fields, error_msg)
+
+
+@ErrorHandler(err_msg="Error killing job {id}")
+def cancel_job_v1(connection: "Connection", id: str, fields: List[str] = None,
+                  error_msg: str = None):
+    """Cancel a job specified by `id`.
+
+    Args:
+        connection(object): MicroStrategy connection object returned by
+            `connection.Connection()`.
+        id(str): ID of the job
+        fields(list, optional): Comma separated top-level field whitelist. This
+            allows client to selectively retrieve part of the response model.
+        error_msg(str, optional): Customized error message.
+    Returns:
+        HTTP response object returned by the MicroStrategy REST server
+    """
+    params = {'fields': ",".join(fields) if fields else None}
+
+    return connection.session.delete(url=f'{connection.base_url}/api/monitors/jobs/{id}',
+                                     params=params)
+
+
+@ErrorHandler(err_msg="Error killing job {id}")
+def cancel_job_v2(connection: "Connection", id: str, fields: List[str] = None,
+                  error_msg: str = None):
+    """Cancel a job specified by `id`.
+
+    Args:
+        connection(object): MicroStrategy connection object returned by
+            `connection.Connection()`.
+        id(str): ID of the job
+        fields(list, optional): Comma separated top-level field whitelist. This
+            allows client to selectively retrieve part of the response model.
+        error_msg(str, optional): Customized error message.
+    Returns:
+        HTTP response object returned by the MicroStrategy REST server
+    """
+    params = {'fields': ",".join(fields) if fields else None}
+
+    return connection.session.delete(url=f'{connection.base_url}/api/v2/monitors/jobs/{id}',
+                                     params=params)
+
+
+def cancel_jobs(connection: "Connection", ids: List[str], fields: List[str] = None,
+                error_msg: str = None) -> Union[Success, PartialSuccess, MstrException]:
+    """Cancel jobs specified by `ids`. Use cancel_jobs_v1 if I-Server version
+    is 11.3.2 or cancel_jobs_v2 otherwise.
+
+    Args:
+        connection(object): MicroStrategy connection object returned by
+            `connection.Connection()`.
+        ids(List[str]): IDs of the jobs
+        fields(list, optional): Comma separated top-level field whitelist. This
+            allows client to selectively retrieve part of the response model.
+        error_msg(str, optional): Customized error message.
+    Returns:
+        Success: object if all jobs were killed
+        PartialSuccess: if not all jobs were killed
+        MstrException: otherwise
+    """
+    if version.parse(connection.iserver_version) == version.parse(ISERVER_VERSION_11_3_2):
+        response = cancel_jobs_v1(connection, ids, fields, error_msg)
+    else:
+        response = cancel_jobs_v2(connection, ids, fields, error_msg)
+
+    return bulk_operation_response_handler(response, "jobCancellationStatus")
+
+
+def cancel_jobs_v1(connection: "Connection", ids: List[str], fields: List[str] = None,
+                   error_msg: str = None):
+    """Cancel jobs specified by `ids`.
+
+    Args:
+        connection(object): MicroStrategy connection object returned by
+            `connection.Connection()`.
+        ids(List[str]): IDs of the jobs
+        fields(list, optional): Comma separated top-level field whitelist. This
+            allows client to selectively retrieve part of the response model.
+        error_msg(str, optional): Customized error message.
+    Returns:
+        HTTP response object returned by the MicroStrategy REST server
+    """
+    params = {'fields': ",".join(fields) if fields else None}
+
+    if ids:
+        body = {'jobIds': ids}
+        return connection.session.post(url=f'{connection.base_url}/api/monitors/cancelJobs',
+                                       params=params, json=body)
+    else:
+        raise ValueError("No ids have been passed.")
+
+
+def cancel_jobs_v2(connection: "Connection", ids: List[str], fields: List[str] = None,
+                   error_msg: str = None):
+    """Cancel jobs specified by `ids`.
+
+    Args:
+        connection(object): MicroStrategy connection object returned by
+            `connection.Connection()`.
+        ids(List[str]): IDs of the jobs
+        fields(list, optional): Comma separated top-level field whitelist. This
+            allows client to selectively retrieve part of the response model.
+        error_msg(str, optional): Customized error message.
+    Returns:
+        HTTP response object returned by the MicroStrategy REST server
+    """
+    params = {'fields': ",".join(fields) if fields else None}
+
+    if ids:
+        body = {'jobIds': ids}
+        return connection.session.post(url=f'{connection.base_url}/api/v2/monitors/cancelJobs',
+                                       params=params, json=body)
+    else:
+        raise ValueError("No ids have been passed.")

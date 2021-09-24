@@ -1,6 +1,5 @@
 from typing import List, Optional, Union
-from mstrio.server.application import Application
-from mstrio.server.application import compare_application_settings
+from mstrio.server.project import Project, compare_project_settings
 
 from pandas import DataFrame
 
@@ -10,8 +9,8 @@ import mstrio.utils.helper as helper
 
 
 class Environment:
-    """Browse and manage Applications on the environment. List loaded
-    applications, nodes (servers) and compare application settings on the
+    """Browse and manage Projects on the environment. List loaded
+    projects, nodes (servers) and compare project settings on the
     environment. Browse and modify I-Server settings.
 
     Attributes:
@@ -53,89 +52,141 @@ class Environment:
         """Fetch the current server settings from the environment."""
         self.server_settings.fetch()
 
-    def create_application(self, name: str, description: Optional[str] = None,
-                           force: bool = False) -> Optional["Application"]:
-        """Create a new application on the envrionment.
+    def create_project(self, name: str, description: Optional[str] = None,
+                       force: bool = False) -> Optional["Project"]:
+        """Create a new project on the envrionment.
 
         Args:
-            name: Name of Application.
+            name: Name of Project.
             description: Description of Aplication.
             force: If `True`, overrides the prompt.
         """
-        return Application._create(self.connection, name, description, force)
+        return Project._create(self.connection, name, description, force)
 
-    def list_applications(self, to_dictionary: bool = False, limit: Optional[int] = None,
-                          **filters) -> Union[List["Application"], List[dict]]:
-        """Return list of application objects or application dicts if
-        `to_dictionary=True`. Optionally filter the Applications by specifying
+    def create_application(self, name: str, description: Optional[str] = None,
+                           force: bool = False) -> Optional["Project"]:
+
+        helper.deprecation_warning(
+            'create_application function',
+            'create_project function',
+            '11.3.4.101',  # NOSONAR
+            False)
+        return self.create_project(name, description, force)
+
+    def list_projects(self, to_dictionary: bool = False, limit: Optional[int] = None,
+                      **filters) -> Union[List["Project"], List[dict]]:
+        """Return list of project objects or project dicts if
+        `to_dictionary=True`. Optionally filter the Projects by specifying
         the `filters` keyword arguments.
 
         Args:
-            to_dictionary: If True returns list of application dicts.
+            to_dictionary: If True returns list of project dicts.
             limit: limit the number of elements returned. If `None`, all objects
                 are returned.
             **filters: Available filter parameters: ['name', 'id',
                 'description', 'date_created', 'date_modified', 'owner'].
         """
-        return Application._list_applications(
+        return Project._list_projects(
             connection=self.connection,
             to_dictionary=to_dictionary,
             limit=limit,
             **filters,
         )
 
-    def list_loaded_applications(self, to_dictionary: bool = False,
-                                 **filters) -> Union[List["Application"], List[dict]]:
-        """Return list of all loaded application objects or application dicts
+    def list_applications(self, to_dictionary: bool = False, limit: Optional[int] = None,
+                          **filters) -> Union[List["Project"], List[dict]]:
+        # Support for deprecation period, to be removed with version 11.3.4.101
+
+        helper.deprecation_warning(
+            'list_applications function',
+            'list_projects function',
+            '11.3.4.101',  # NOSONAR
+            False)
+        return self.list_projects(to_dictionary, limit, **filters)
+
+    def list_loaded_projects(self, to_dictionary: bool = False,
+                             **filters) -> Union[List["Project"], List[dict]]:
+        """Return list of all loaded project objects or project dicts
         if `to_dictionary=True` that the user has access to. Optionally filter
-        the Applications by specifying the `filters` keyword arguments.
+        the Projects by specifying the `filters` keyword arguments.
 
         Args:
-            to_dictionary: If True, returns list of application dicts
+            to_dictionary: If True, returns list of project dicts
             **filters: Available filter parameters: ['acg', 'id', 'name',
                 'status', 'alias', 'description', 'date_created',
                 'date_modified', 'owner']
         """
-        return Application._list_loaded_applications(
+        return Project._list_loaded_projects(
             connection=self.connection,
             to_dictionary=to_dictionary,
             **filters,
         )
 
-    def list_nodes(self, application: Optional[Union[str, "Application"]] = None,
-                   node_name: Optional[str] = None) -> List[dict]:
+    def list_loaded_applications(self, to_dictionary: bool = False,
+                                 **filters) -> Union[List["Project"], List[dict]]:
+
+        helper.deprecation_warning(
+            'list_loaded_applications function',
+            'list_loaded_projects function',
+            '11.3.4.101',  # NOSONAR
+            False)
+        return self.list_loaded_projects(to_dictionary, **filters)
+
+    def list_nodes(self, project: Optional[Union[str, "Project"]] = None,
+                   node_name: Optional[str] = None,
+                   application: Optional[Union[str, "Project"]] = None) -> List[dict]:
         """Return a list of I-Server nodes and their properties. Optionally
-        filter by `application` or `node_name`.
+        filter by `project` or `node_name`.
 
         Args:
-            application: ID of application or Application object
+            project: ID of project or Project object
+            application: deprecated. Use project instead.
             node_name: Name of node
         """
-        application_id = application.id if isinstance(application, Application) else application
-        response = monitors.get_node_info(self.connection, application_id, node_name).json()
+        if application:
+            helper.deprecation_warning(
+                '`application`',
+                '`project`',
+                '11.3.4.101',  # NOSONAR
+                False)
+            project = project or application
+        project_id = project.id if isinstance(project, Project) else project
+        response = monitors.get_node_info(self.connection, project_id, node_name).json()
         return response['nodes']
 
-    def is_loaded(self, application_id: Optional[str] = None,
+    def is_loaded(self, project_id: Optional[str] = None, project_name: Optional[str] = None,
+                  application_id: Optional[str] = None,
                   application_name: Optional[str] = None) -> bool:
-        """Check if application is loaded, by passing application ID or name,
+        """Check if project is loaded, by passing project ID or name,
         returns True or False.
 
         Args:
-            application_id: Application ID
-            application_name: Application name
+            project_id: Project ID
+            project_name: Project name
+            application_id: deprecated. Use project_id instead.
+            application_name: deprecated. Use project_name instead.
         """
-        if application_id is None and application_name is None:
+        if (application_id or application_name):
+            helper.deprecation_warning(
+                '`application_id` and `application_name`',
+                '`project_id` and `project_name`',
+                '11.3.4.101',  # NOSONAR
+                False)
+            project_id = project_id or application_id
+            project_name = project_name or application_name
+
+        if project_id is None and project_name is None:
             helper.exception_handler(
-                "Please specify either 'application_name' or 'application_id' argument.")
-        if application_id is None:
-            app_list = Application._list_application_ids(self.connection, name=application_name)
-            if app_list:
-                application_id = app_list[0]
+                "Please specify either 'project_name' or 'project_id' argument.")
+        if project_id is None:
+            project_list = Project._list_project_ids(self.connection, name=project_name)
+            if project_list:
+                project_id = project_list[0]
             else:
-                msg = f"There is no application with the given name: '{application_name}'"
+                msg = f"There is no project with the given name: '{project_name}'"
                 raise ValueError(msg)
 
-        nodes = self.list_nodes(application=application_id)
+        nodes = self.list_nodes(project=project_id)
         loaded = False
         for node in nodes:
             status = node['projects'][0]['status']
@@ -144,58 +195,71 @@ class Environment:
                 break
         return loaded
 
-    def compare_settings(self, applications: Union[List[str], List["Application"]] = None,
-                         show_diff_only: bool = False) -> DataFrame:
-        """Compare application' settings to the first application in the
+    def compare_settings(self, projects: Union[List[str], List["Project"]] = None,
+                         show_diff_only: bool = False,
+                         applications: Union[List[str], List["Project"]] = None) -> DataFrame:
+        """Compare project' settings to the first project in the
         provided list.
 
         Args:
-            applications (list of names or application objects, optional): List
-                of application objects or names to be compared. First element of
+            projects (list of names or project objects, optional): List
+                of project objects or names to be compared. First element of
                 list is the one to which the rest is compared. If None, all
-                applications on the environment will be compared.
+                projects on the environment will be compared.
+            applications: deprecated. Use projects instead.
             show_diff_only(bool, optional): Whether to display all settings or
-                only different from first application in list.
+                only different from first project in list.
 
         Returns:
-            Dataframe with values of selected application' settings.
+            Dataframe with values of selected project' settings.
         """
+        if applications:
+            helper.deprecation_warning(
+                '`applications`',
+                '`projects`',
+                '11.3.4.101',  # NOSONAR
+                False)
+            projects = projects or applications
 
         def not_exist_warning(wrong_name):
             helper.exception_handler(
-                "Application '{}' does not exist and will be skipped.".format(wrong_name),
+                "Project '{}' does not exist and will be skipped.".format(wrong_name),
                 exception_type=Warning)
 
-        if applications:
-            just_objects = [app for app in applications if isinstance(app, Application)]
+        if projects:
+            just_objects = [project for project in projects if isinstance(project, Project)]
         else:
             just_objects = []
-        if (len(just_objects) == len(applications)):
-            return compare_application_settings(applications, show_diff_only)
+        if (len(just_objects) == len(projects)):
+            return compare_project_settings(projects, show_diff_only)
 
-        all_applications = self.list_applications()
-        if type(applications) == list:
-            if len(applications) < 2:
-                helper.exception_handler(
-                    "Provide more than one application object or name in list",
-                    exception_type=TypeError)
+        all_projects = self.list_projects()
+        if type(projects) == list:
+            if len(projects) < 2:
+                helper.exception_handler("Provide more than one project object or name in list",
+                                         exception_type=TypeError)
 
-            # extract app names from either application object or strings
-            app_names = [
-                app.name if isinstance(app, Application) else str(app) for app in applications
+            # extract project names from either project object or strings
+            project_names = [
+                project.name if isinstance(project, Project) else str(project)
+                for project in projects
             ]
-            # filter only valid applications
-            all_app_names = [app.name for app in all_applications]
-            [not_exist_warning(a_name) for a_name in app_names if a_name not in all_app_names]
+            # filter only valid projects
+            all_project_names = [project.name for project in all_projects]
+            [
+                not_exist_warning(a_name)
+                for a_name in project_names
+                if a_name not in all_project_names
+            ]
 
-            applications = list(filter(lambda app: app.name in app_names, all_applications))
-            applications = sorted(applications, key=lambda x: app_names.index(x.name))
+            projects = list(filter(lambda project: project.name in project_names, all_projects))
+            projects = sorted(projects, key=lambda x: project_names.index(x.name))
 
-        elif applications is None:
-            applications = all_applications
+        elif projects is None:
+            projects = all_projects
         else:
             helper.exception_handler(
-                "The 'applications' parameter needs to be a list of len > 1 or None.",
+                "The 'projects' parameter needs to be a list of len > 1 or None.",
                 exception_type=TypeError)
 
-        return compare_application_settings(applications, show_diff_only)
+        return compare_project_settings(projects, show_diff_only)

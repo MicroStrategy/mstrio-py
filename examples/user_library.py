@@ -6,14 +6,14 @@ Its basic goal is to present what can be done with this module and to
 ease its usage.
 """
 
-from mstrio.application_objects import Document, list_documents, Dossier, list_dossiers
+from mstrio.project_objects import Document, list_documents, Dossier, list_dossiers
 from mstrio.users_and_groups import User, list_users, UserGroup, list_user_groups
 from mstrio.connection import Connection
 
 base_url = "https://<>/MicroStrategyLibrary/api"
 username = "some_username"
 password = "some_password"
-conn = Connection(base_url, username, password, application_name='MicroStrategy Library',
+conn = Connection(base_url, username, password, project_name='MicroStrategy Library',
                   login_mode=1)
 
 # list all dossiers and documents within a project to which we have connection

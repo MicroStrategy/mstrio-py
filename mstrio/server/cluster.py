@@ -13,7 +13,9 @@ import mstrio.utils.helper as helper
 from .node import Node
 
 if TYPE_CHECKING:
-    from mstrio.server.application import Application
+    from pandas.io.formats.style import Styler
+
+    from mstrio.server.project import Project
 
 
 class GroupBy(str, Enum):
@@ -30,7 +32,7 @@ class Cluster:
     """Manage, list nodes (servers) on a cluster.
 
     Manage Services on nodes. Manage node settings. Load and Unload
-    applications. A "service" is a product developed by MicroStrategy or
+    projects. A "service" is a product developed by MicroStrategy or
     a third-party product distributed by MicroStrategy i.e.
     "MicroStrategy Intelligence Server" or "Apache ZooKeeper".
     """
@@ -44,21 +46,30 @@ class Cluster:
         """
         self.connection = connection
 
-    def list_nodes(self, application: Optional[Union[str, "Application"]] = None,
-                   node: Optional[Union[str, Node]] = None,
-                   to_dictionary: bool = False) -> Union[List[Node], List[dict]]:
+    def list_nodes(
+            self, project: Optional[Union[str, "Project"]] = None,
+            node: Optional[Union[str, Node]] = None, to_dictionary: bool = False,
+            application: Optional[Union[str, "Project"]] = None) -> Union[List[Node], List[dict]]:
         """Return a list of nodes and their properties within the cluster.
 
-        Optionally filter by `application_id` or `node_name`.
+        Optionally filter by `project_id` or `node_name`.
 
         Args:
-            application: Application ID or object
+            project: Project ID or object
+            application: deprecated. Use project instead.
             node: Node name or object
         """
-        from mstrio.server.application import Application
-        application_id = application.id if isinstance(application, Application) else application
+        from mstrio.server.project import Project
+        if application:
+            helper.deprecation_warning(
+                '`application`',
+                '`project`',
+                '11.3.4.101',  # NOSONAR
+                False)
+            project = project or application
+        project_id = project.id if isinstance(project, Project) else project
         node_name = node.name if isinstance(node, Node) else node
-        response = monitors.get_node_info(self.connection, application_id, node_name)
+        response = monitors.get_node_info(self.connection, project_id, node_name)
         node_dicts = response.json()['nodes']
         if to_dictionary:
             return node_dicts
@@ -95,21 +106,21 @@ class Cluster:
         else:  # GroupBy.SERVICES
             return registrations.get_services(connection=self.connection).json()
 
-    def nodes_topology(self) -> pd.DataFrame:
-        """View node topology in a cluster as Pandas DataFrame with following
-        columns:
+    def nodes_topology(self, styled=False) -> Union[pd.DataFrame, "Styler"]:
+        """Return cluster node topology as Pandas DataFrame or Styler object.
+
+        DataFrame columns:
             - displayName -> it shows the name with which service is displayed
-                in Workstation;
-            - id -> name of the service within nodes;
+                in Workstation
+            - id -> name of the service within nodes
             - for each node in the cluster there is given a column which name is
                 name of a node and its content is information with the status of
                 the given service in this node. Available values of status are:
-                'Running' (additionally marked with green color), 'Stopped'
-                (additionally marked with red color), 'Not Available (when
-                service is not available in the node);
+                'Running' (green color), 'Stopped' (red color), 'Not Available
+                (service unavailable on the node)
 
         Returns:
-            DataFrame with topology of nodes.
+            Pandas DataFrame or Styler object if styled is True.
         """
         nodes = self.list_services(group_by=GroupBy.NODES)
         metadata = registrations.get_services_metadata(connection=self.connection).json()
@@ -135,24 +146,27 @@ class Cluster:
             service_type[node_name] = service_type[node_name].fillna('Not Available')
 
         service_type = service_type.rename(columns={'name': 'id'}, inplace=False)
-        service_type = service_type.style.applymap(Cluster._show_color)
-        return service_type
 
-    def services_topology(self) -> pd.DataFrame:
-        """Prepare topology of services in a cluster as DataFrame. This
-        DataFrame has given columns:
-            - service -> name of the service;
+        if styled:
+            return service_type.style.applymap(Cluster._show_color)
+        else:
+            return service_type
+
+    def services_topology(self, styled=False) -> Union[pd.DataFrame, "Styler"]:
+        """Return cluster service topology as Pandas DataFrame or Styler object.
+
+        DataFrame columns:
+            - service -> name of the service
             - node -> name on which service appears (each service can appear in
                 more than one service and then name of the service is provided
-                only once for the group of nodes in which it appears);
+                only once for the group of nodes in which it appears)
             - status -> status which a given service has on a given node.
-                Available values of statuses are: 'Running' (additionally marked
-                with green color), 'Stopped' (additionally marked with red
-                color), 'Not Available (when service is not available in the
-                node)
+                Available values of statuses are: 'Running' (green color),
+                'Stopped' (red color), 'Not Available (service unavailable on
+                the node)
 
         Returns:
-            DataFrame with topology of services.
+            Pandas DataFrame or Styler object if styled is True.
         """
         services = self.list_services(group_by=GroupBy.SERVICES)
         services_topology = [{
@@ -173,8 +187,11 @@ class Cluster:
         tmp_df['status'] = tmp_df['status'].map(lambda x: 'Running'
                                                 if x == "PASSING" else 'Stopped')
         tmp_df = tmp_df.set_index('service', append=True).swaplevel(0, 1)
-        tmp_df = tmp_df.style.applymap(Cluster._show_color, subset='status')
-        return tmp_df
+
+        if styled:
+            return tmp_df.style.applymap(Cluster._show_color, subset='status')
+        else:
+            return tmp_df
 
     def add_node(self, node: Union[str, Node]) -> None:
         """Add server (node) to the cluster.
@@ -381,13 +398,22 @@ class Cluster:
         administration.delete_iserver_node_settings(self.connection, node_name)
 
     def list_applications(self, to_dictionary: bool = False, limit: Optional[int] = None,
-                          **filters) -> List["Application"]:
-        """Return list of application objects or if `to_dictionary=True`
-        application dicts. Optionally filter the Applications by specifying the
+                          **filters) -> List["Project"]:
+        helper.deprecation_warning(
+            'list_applications function',
+            'list_projects function',
+            '11.3.4.101',  # NOSONAR
+            False)
+        return self.list_projects(to_dictionary, limit, **filters)
+
+    def list_projects(self, to_dictionary: bool = False, limit: Optional[int] = None,
+                      **filters) -> List["Project"]:
+        """Return list of project objects or if `to_dictionary=True`
+        project dicts. Optionally filter the Projects by specifying the
         `filters` keyword arguments.
 
         Args:
-            to_dictionary: If True returns list of application dicts
+            to_dictionary: If True returns list of project dicts
             limit: limit the number of elements returned. If `None`, all objects
                 are returned.
             **filters: Available filter parameters: ['name', 'id',
@@ -395,42 +421,68 @@ class Cluster:
         """
         from mstrio.server.environment import Environment
         env = Environment(connection=self.connection)
-        return env.list_applications(to_dictionary=to_dictionary, limit=limit, **filters)
+        return env.list_projects(to_dictionary=to_dictionary, limit=limit, **filters)
 
-    def load_application(self, application: Union[str, "Application"],
-                         on_nodes: Optional[Union[str, List[str]]] = None) -> None:
-        """Request to load the application onto the chosen cluster nodes. If
-        nodes are not specified, the application will be loaded on all nodes.
+    def load_application(self, application: Union[str, "Project"],
+                         on_nodes: Optional[Union[str, List[str]]] = None,
+                         project: Optional[Union[str, "Project"]] = None) -> None:
+        helper.deprecation_warning(
+            'load_application function',
+            'load_project function',
+            '11.3.4.101',  # NOSONAR
+            False)
+        helper.deprecation_warning(
+            '`application`',
+            '`project`',
+            '11.3.4.101',  # NOSONAR
+            False)
+        project = project or application
+        return self.load_project(project, on_nodes)
+
+    def load_project(self, project: Union[str, "Project"],
+                     on_nodes: Optional[Union[str, List[str]]] = None) -> None:
+        """Request to load the project onto the chosen cluster nodes. If
+        nodes are not specified, the project will be loaded on all nodes.
 
         Args:
-            application: name or object of application which will be loaded
-            on_nodes: name of node or nodes, if not passed, application will be
+            project: name or object of project which will be loaded
+            on_nodes: name of node or nodes, if not passed, project will be
                 loaded on all of the nodes
         """
-        from mstrio.server.application import Application
-        application_name = application.name if isinstance(application,
-                                                          Application) else application
-        app = Application._list_applications(self.connection, name=application_name)[0]
-        app.load(on_nodes=on_nodes)
 
-    def unload_application(self, application: Union[str, "Application"],
-                           on_nodes: Optional[Union[str, List[str]]] = None) -> None:
-        """Request to unload the application from the chosen cluster nodes. If
-        nodes are not specified, the application will be unloaded on all nodes.
+        from mstrio.server.project import Project
+        project_name = project.name if isinstance(project, Project) else project
+        project = Project._list_projects(self.connection, name=project_name)[0]
+        project.load(on_nodes=on_nodes)
+
+    def unload_application(self, application: Union[str, "Project"],
+                           on_nodes: Optional[Union[str, List[str]]] = None,
+                           project: Optional[Union[str, "Project"]] = None) -> None:
+        helper.deprecation_warning(
+            'unload_application function',
+            'unload_project function',
+            '11.3.4.101',  # NOSONAR
+            False)
+        project = project or application
+        return self.unload_project(project, on_nodes)
+
+    def unload_project(self, project: Union[str, "Project"],
+                       on_nodes: Optional[Union[str, List[str]]] = None) -> None:
+        """Request to unload the project from the chosen cluster nodes. If
+        nodes are not specified, the project will be unloaded on all nodes.
         The unload action cannot be performed until all jobs and connections
-        for application are completed. Once these processes have finished,
-        pending application will be automatically unloaded.
+        for project are completed. Once these processes have finished,
+        pending project will be automatically unloaded.
 
         Args:
-            application: name or object of application which will be unloaded
-            on_nodes: name of node or nodes, if not passed, application will be
+            project: name or object of project which will be unloaded
+            on_nodes: name of node or nodes, if not passed, project will be
                 unloaded on all of the nodes
         """
-        from mstrio.server.application import Application
-        application_name = application.name if isinstance(application,
-                                                          Application) else application
-        app = Application._list_applications(self.connection, name=application_name)[0]
-        app.unload(on_nodes=on_nodes)
+        from mstrio.server.project import Project
+        project_name = project.name if isinstance(project, Project) else project
+        project = Project._list_projects(self.connection, name=project_name)[0]
+        project.unload(on_nodes=on_nodes)
 
     def _show_start_stop_msg(self, service_name: str, wrong: List[str], good: List[str],
                              action: ServiceAction):

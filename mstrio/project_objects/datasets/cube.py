@@ -9,14 +9,16 @@ from requests_futures.sessions import FuturesSession
 from tqdm.auto import tqdm
 
 from mstrio import config
-from mstrio.api import cubes, datasets, objects
-from mstrio.application_objects.datasets import cube_cache
-from mstrio.browsing import list_objects, SearchType
+from mstrio.api import cubes, datasets
+from mstrio.project_objects.datasets import cube_cache
 from mstrio.connection import Connection
+from mstrio.object_management.search_operations import full_search, SearchPattern
 from mstrio.users_and_groups.user import User
-from mstrio.utils.entity import Entity, ObjectSubTypes, ObjectTypes, VldbMixin
+from mstrio.types import ObjectSubTypes, ObjectTypes
+from mstrio.utils.entity import DeleteMixin, Entity, VldbMixin
+from mstrio.utils.certified_info import CertifiedInfo
 from mstrio.utils.filter import Filter
-from mstrio.utils.helper import exception_handler, fallback_on_timeout
+from mstrio.utils.helper import exception_handler, fallback_on_timeout, choose_cube
 import mstrio.utils.helper as helper
 from mstrio.utils.parser import Parser
 
@@ -106,10 +108,10 @@ def list_all_cubes(connection: Connection, name_begins: Optional[str] = None,
     Returns:
         list with OlapCubes and SuperCubes or list of dictionaries
     """
-    connection._validate_application_selected()
-    objects_ = list_objects(connection, [ObjectSubTypes.OLAP_CUBE, ObjectSubTypes.SUPER_CUBE],
-                            connection.application_id, name=name_begins,
-                            pattern=SearchType.BEGIN_WITH, limit=limit, **filters)
+    connection._validate_project_selected()
+    objects_ = full_search(connection, project=connection.project_id, name=name_begins,
+                           object_types=[ObjectSubTypes.OLAP_CUBE, ObjectSubTypes.SUPER_CUBE],
+                           pattern=SearchPattern.BEGIN_WITH, limit=limit, **filters)
     if to_dictionary:
         return objects_
     else:
@@ -155,7 +157,7 @@ def load_cube(
     Raises:
         ValueError when neither `cube_id` nor `cube_name` are provided.
     """
-    connection._validate_application_selected()
+    connection._validate_project_selected()
 
     if cube_id:
         if cube_name:
@@ -165,26 +167,23 @@ def load_cube(
             msg = ("Both `cube_id` and `folder_id` provided. "
                    "Loading cube based on `cube_id` from all folders.")
             exception_handler(msg, Warning, False)
-        objects_ = list_objects(connection, [ObjectSubTypes.OLAP_CUBE, ObjectSubTypes.SUPER_CUBE],
-                                connection.application_id, pattern=SearchType.EXACTLY, id=cube_id)
+        objects_ = full_search(connection, project=connection.project_id,
+                               object_types=[ObjectSubTypes.OLAP_CUBE, ObjectSubTypes.SUPER_CUBE],
+                               pattern=SearchPattern.EXACTLY, id=cube_id)
     elif not cube_name:
         msg = "Specify either `cube_id` or `cube_name`."
         raise ValueError(msg)
     else:  # getting cube by `cube_name` and optionally `folder_id`
-        objects_ = list_objects(connection, [ObjectSubTypes.OLAP_CUBE, ObjectSubTypes.SUPER_CUBE],
-                                connection.application_id, name=cube_name,
-                                pattern=SearchType.EXACTLY, root=folder_id)
+        objects_ = full_search(connection, project=connection.project_id, name=cube_name,
+                               object_types=[ObjectSubTypes.OLAP_CUBE, ObjectSubTypes.SUPER_CUBE],
+                               pattern=SearchPattern.EXACTLY, root=folder_id)
 
     ret_cubes = []
     for object_ in objects_:
-        dict_ = object_ if len(objects_) > 1 else {**object_, "instance_id": instance_id}
-        cube_subtype = object_['subtype']
-        if cube_subtype == int(ObjectSubTypes.OLAP_CUBE):
-            from .olap_cube import OlapCube
-            ret_cubes.append(OlapCube.from_dict(dict_, connection))
-        elif cube_subtype == int(ObjectSubTypes.SUPER_CUBE):
-            from .super_cube import SuperCube
-            ret_cubes.append(SuperCube.from_dict(dict_, connection))
+        object_ = object_ if len(objects_) > 1 else {**object_, "instance_id": instance_id}
+
+        ret_cubes.append(choose_cube(connection, object_))
+        ret_cubes = [tmp for tmp in ret_cubes if tmp]  # remove `None` values
 
     if len(ret_cubes) == 0:
         exception_handler("Cube was not found.", Warning, False)
@@ -196,7 +195,7 @@ def load_cube(
         return ret_cubes
 
 
-class _Cube(Entity, VldbMixin):
+class _Cube(Entity, VldbMixin, DeleteMixin):
     """Access, filter, publish, and extract data from MicroStrategy in-memory
     cubes.
 
@@ -215,11 +214,13 @@ class _Cube(Entity, VldbMixin):
     _OBJECT_SUBTYPE = ObjectSubTypes.NONE.value
     # TODO maybe add cube_info call and attribute to
     # TODO API_GETTERS **{('TODO'): cubes.cube_info}
-    _FROM_DICT_MAP = {**Entity._FROM_DICT_MAP, 'owner': User.from_dict}
+    _FROM_DICT_MAP = {
+        **Entity._FROM_DICT_MAP, 'owner': User.from_dict,
+        'certified_info': CertifiedInfo.from_dict
+    }
     _SIZE_LIMIT = 10000000  # this sets desired chunk size in bytes
 
-    def __init__(self, connection: Connection, id: Optional[str] = None,
-                 cube_id: Optional[str] = None, name: Optional[str] = None,
+    def __init__(self, connection: Connection, id: str, name: Optional[str] = None,
                  instance_id: Optional[str] = None, parallel: bool = True,
                  progress_bar: bool = True):
         """Initialize an instance of a cube by its id.
@@ -233,8 +234,6 @@ class _Cube(Entity, VldbMixin):
                 `connection.Connection()`.
             id (str): Identifier of a pre-existing cube containing
                 the required data.
-            cube_id (str): Identifier of a pre-existing cube containing
-                the required data. (deprecated)
             name (str): Name of a cube.
             instance_id (str): Identifier of an instance if cube instance has
                 been already initialized, None by default.
@@ -244,16 +243,9 @@ class _Cube(Entity, VldbMixin):
             progress_bar(bool, optional): If True (default), show the download
                 progress bar.
         """
-        if cube_id:
-            helper.deprecation_warning("`cube_id`", "`id`", "11.3.2.101", module=False)
-        if cube_id is None and id is None:
-            raise AttributeError(
-                "To properly initialize cube please provide either `id` or `cube_id`.")
-        id = id if id else cube_id
-
         super().__init__(connection, id, name=name, instance_id=instance_id, parallel=parallel,
                          progress_bar=progress_bar, subtype=self._OBJECT_SUBTYPE)
-        connection._validate_application_selected()
+        connection._validate_project_selected()
         self._get_definition()
 
     def _init_variables(self, **kwargs):
@@ -276,10 +268,9 @@ class _Cube(Entity, VldbMixin):
         self.__definition_retrieved = False
         # these properties were not fetched from self.__info() and all will be
         # lazily fetched when calling any of properties: `owner_id`, `path`,
-        # `last_modified`, `size`, `status`
+        # `size`, `status`
         self._owner_id = None
         self._path = None
-        self._last_modified = None
         self._server_mode = None
         self._size = None
         self._status = None
@@ -505,29 +496,6 @@ class _Cube(Entity, VldbMixin):
         # Clear instance, to generate new with new filters
         self.instance_id = None
 
-    def delete(self, force: bool = False) -> bool:
-        """Delete the cube.
-
-        Args:
-            force: If True, then no additional prompt will be shown before
-                deleting Cube.
-
-        Returns:
-            True for success. False otherwise.
-        """
-        user_input = 'N'
-        if not force:
-            user_input = input(f"Are you sure you want to delete cube '{self.name}' with ID: "
-                               f"{self._id}? [Y/N]: ") or 'N'
-        if force or user_input == 'Y':
-            response = objects.delete_object(self._connection, self._id,
-                                             ObjectTypes.REPORT_DEFINITION.value)
-            if response.status_code == 204 and config.verbose:
-                print(f"Successfully deleted cube with ID: {self._id}.")
-            return response.ok
-        else:
-            return False
-
     def refresh_status(self) -> None:
         """Refresh cube's status and show which states it represents."""
         res = cubes.status(self._connection, self._id)
@@ -580,7 +548,6 @@ class _Cube(Entity, VldbMixin):
             self.name = _info["cubeName"]  # duplicated
             self._owner_id = _info["ownerId"]
             self._path = _info["path"]
-            self._last_modified = _info["modificationTime"]  # duplicated deprecated
             self._server_mode = _info["serverMode"]
             self._size = _info["size"]
             self._status = _info["status"]
@@ -774,11 +741,6 @@ class _Cube(Entity, VldbMixin):
             return False
 
     @property
-    def cube_id(self) -> str:
-        helper.deprecation_warning("`cube_id`", "`id`", "11.3.2.101", module=False)
-        return self._id
-
-    @property
     def size(self) -> int:
         if not self.__info_retrieved:
             self._get_info()
@@ -795,14 +757,6 @@ class _Cube(Entity, VldbMixin):
         if not self.__info_retrieved:
             self._get_info()
         return self._path
-
-    @property
-    def last_modified(self):
-        helper.deprecation_warning("`last_modified`", "`date_modified`", "11.3.2.101",
-                                   module=False)
-        if not self.__info_retrieved:
-            self._get_info()
-        return self._last_modified
 
     @property
     def owner_id(self) -> str:

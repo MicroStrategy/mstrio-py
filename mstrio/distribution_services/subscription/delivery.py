@@ -1,7 +1,8 @@
+from datetime import datetime
 from enum import Enum
 from typing import Optional
-from mstrio.utils.helper import camel_to_snake, exception_handler, Dictable
-from datetime import datetime
+
+from mstrio.utils.helper import camel_to_snake, Dictable, exception_handler
 
 
 class SendContentAs(Enum):
@@ -42,16 +43,16 @@ class DeliveryDictable(Dictable):
     VALIDATION_DICT = {}
 
     @classmethod
-    def from_dict(cls, dictionary):
+    def from_dict(cls, source, **kwargs):
         """Initialize Delivery object from dictionary."""
         obj = cls.__new__(cls)
         super(DeliveryDictable, obj).__init__()
-        dictionary = camel_to_snake(dictionary)
-        for key, value in dictionary.items():
+        source = camel_to_snake(source)
+        for key, value in source.items():
             if key == 'zip':
-                obj.__setattr__(key, ZipSettings.from_dict(value))
+                setattr(obj, key, ZipSettings.from_dict(value))
             else:
-                obj.__setattr__(key, value)
+                setattr(obj, key, value)
         return obj
 
     def validate(self):
@@ -267,7 +268,7 @@ class Delivery(DeliveryDictable):
 
         Attributes:
             client_type: The mobile client type
-            device_id: The mobile target application
+            device_id: The mobile target project
             do_not_create_update_caches: Whether the subscription will use
                 a existing cache
             overwrite_older_version: Whether the current subscription will
@@ -296,7 +297,7 @@ class Delivery(DeliveryDictable):
         """Delivery properties for History List subscriptions
 
         Attributes:
-            device_id: The mobile target application
+            device_id: The mobile target project
             do_not_create_update_caches: Whether the subscription will use
                 a existing cache
             overwrite_older_version: Whether the current subscription will
@@ -322,7 +323,7 @@ class Delivery(DeliveryDictable):
     VALIDATION_DICT = {
         "mode": [str, True],
         "expiration": [str, False],
-        "contactSecurity": [bool, False],
+        "contact_security": [bool, False],
         "email": [Email, False],
         "file": [File, False],
         "printer": [Printer, False],
@@ -383,28 +384,35 @@ class Delivery(DeliveryDictable):
             re_run_hl) if self.DeliveryMode(mode) == self.DeliveryMode.HISTORY_LIST else None
 
     @classmethod
-    def from_dict(cls, dictionary):
+    def from_dict(cls, source, **kwargs):
         """Initialize Delivery object from dictionary."""
         obj = cls.__new__(cls)
         super(Delivery, obj).__init__()
-        dictionary = camel_to_snake(dictionary)
-        for key, value in dictionary.items():
-            if key == 'email':
-                obj.__setattr__(key, cls.Email.from_dict(value))
-            elif key == 'file':
-                obj.__setattr__(key, cls.File.from_dict(value))
-            elif key == 'mobile':
-                obj.__setattr__(key, cls.Mobile.from_dict(value))
-            elif key == 'ftp':
-                obj.__setattr__(key, cls.Ftp.from_dict(value))
-            elif key == 'cache':
-                obj.__setattr__(key, cls.Cache.from_dict(value))
-            elif key == 'history_list':
-                obj.__setattr__(key, cls.HistoryList.from_dict(value))
-            else:
-                obj.__setattr__(key, value)
-
+        source = camel_to_snake(source)
+        for key, value in source.items():
+            if not obj.change_mode(key, value):  # Change mode or set attr if its not mode param
+                setattr(obj, key, value)
         return obj
+
+    def change_mode(self, mode_name: str, mode_value) -> bool:
+        """Change mode of the Delivery object.
+        Return True on success, False if `mode_name` was invalid.
+        """
+        if mode_name == 'email':
+            self.__setattr__(mode_name, self.Email.from_dict(mode_value))
+        elif mode_name == 'file':
+            self.__setattr__(mode_name, self.File.from_dict(mode_value))
+        elif mode_name == 'mobile':
+            self.__setattr__(mode_name, self.Mobile.from_dict(mode_value))
+        elif mode_name == 'ftp':
+            self.__setattr__(mode_name, self.Ftp.from_dict(mode_value))
+        elif mode_name == 'cache':
+            self.__setattr__(mode_name, self.Cache.from_dict(mode_value))
+        elif mode_name == 'history_list':
+            self.__setattr__(mode_name, self.HistoryList.from_dict(mode_value))
+        else:
+            return False
+        return True
 
     def _expiration_check(self, date):
         now = datetime.now().date()

@@ -4,7 +4,7 @@ from mstrio import config
 from mstrio.api import datasources, objects
 from mstrio.users_and_groups.user import User
 from mstrio.utils import helper
-from mstrio.utils.entity import CopyMixin, Entity, ObjectTypes
+from mstrio.utils.entity import DeleteMixin, CopyMixin, Entity, ObjectTypes
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
@@ -37,7 +37,7 @@ def list_datasource_logins(connection: "Connection", to_dictionary: bool = False
     )
 
 
-class DatasourceLogin(Entity, CopyMixin):
+class DatasourceLogin(Entity, CopyMixin, DeleteMixin):
     """A user login configuration object to access a particular datasource. Also
     formerly known as database login.
 
@@ -51,8 +51,8 @@ class DatasourceLogin(Entity, CopyMixin):
         type: Object type. Enum
         subtype: Object subtype
         ext_type: Object extended type.
-        date_created: Creation time, "yyyy-MM-dd HH:mm:ss" in UTC
-        date_modified: Last modification time, "yyyy-MM-dd HH:mm:ss" in UTC
+        date_created: Creation time, DateTime object
+        date_modified: Last modification time, DateTime object
         owner: User object that is the owner
         acg: Access rights (See EnumDSSXMLAccessRightFlags for possible values)
         acl: Object access control list
@@ -142,39 +142,13 @@ class DatasourceLogin(Entity, CopyMixin):
                 response.get('name'), response.get('id')))
         return cls.from_dict(source=response, connection=connection)
 
-    def delete(self, force: bool = False) -> bool:
-        """Deletes the DatasourceLogin from MSTR environment.
-
-        Args:
-            force: If True, no additional prompt will be shown before deleting.
-                Default False.
-
-        Returns:
-            True for success. False otherwise.
-        """
-        user_input = 'N'
-        if not force:
-            user_input = input((f"Are you sure you want to delete datasource login '{self.name}' "
-                                f"with ID: {self.id}? [Y/N]: "))
-        if force or user_input == 'Y':
-            response = datasources.delete_datasource_login(self.connection, self.id)
-            if response.status_code == 204 and config.verbose:
-                print("Successfully deleted datasource login {}".format(self.name))
-            return response.ok
-        else:
-            return False
-
     @classmethod
     def _list_datasource_logins(cls, connection: "Connection", to_dictionary: bool = False,
                                 limit: int = None,
                                 **filters) -> Union[List["DatasourceLogin"], List[dict]]:
-        objects = helper.fetch_objects(
-            connection=connection,
-            api=datasources.get_datasource_logins,
-            dict_unpack_value="logins",
-            limit=limit,
-            filters=filters,
-        )
+        objects = helper.fetch_objects(connection=connection,
+                                       api=datasources.get_datasource_logins,
+                                       dict_unpack_value="logins", limit=limit, filters=filters)
         if to_dictionary:
             return objects
         else:

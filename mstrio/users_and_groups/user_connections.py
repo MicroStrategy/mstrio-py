@@ -44,7 +44,7 @@ class UserConnections():
         Args:
             **filters: Available filter parameters: ['id', 'parent_id',
                 'username', 'user_full_name', 'project_index', 'project_id',
-                'project_name', 'open_jobs_count', 'application_type',
+                'project_name', 'open_jobs_count', 'project_type',
                 'date_connection_created', 'duration', 'session_id', 'client',
                 'config_level']
         """
@@ -68,7 +68,7 @@ class UserConnections():
                 are returned.
             **filters: Available filter parameters: ['id', 'parent_id',
                 'username', 'user_full_name', 'project_index', 'project_id',
-                'project_name', 'open_jobs_count', 'application_type',
+                'project_name', 'open_jobs_count', 'project_type',
                 'date_connection_created', 'duration', 'session_id', 'client',
                 'config_level']
         """
@@ -84,17 +84,11 @@ class UserConnections():
         msg = "Error fetching chunk of active user connections."
         for node in nodes:
             all_connections.extend(
-                helper.fetch_objects_async(
-                    self.connection,
-                    monitors.get_user_connections,
-                    monitors.get_user_connections_async,
-                    dict_unpack_value="userConnections",
-                    limit=limit,
-                    chunk_size=1000,
-                    error_msg=msg,
-                    node_name=node,
-                    filters=filters,
-                ))
+                helper.fetch_objects_async(self.connection, monitors.get_user_connections,
+                                           monitors.get_user_connections_async,
+                                           dict_unpack_value="userConnections", limit=limit,
+                                           chunk_size=1000, error_msg=msg, node_name=node,
+                                           filters=filters))
         return all_connections
 
     def disconnect_users(self, connection_ids: Union[str, List[str]] = None,
@@ -115,7 +109,7 @@ class UserConnections():
                 disconnecting users
             **filters: Available filter parameters: ['id', 'parent_id',
                 'username', 'user_full_name', 'project_index', 'project_id',
-                'project_name', 'open_jobs_count', 'application_type',
+                'project_name', 'open_jobs_count', 'project_type',
                 'date_connection_created', 'duration', 'session_id', 'client',
                 'config_level']
         Returns:

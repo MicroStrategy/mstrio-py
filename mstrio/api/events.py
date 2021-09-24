@@ -1,6 +1,7 @@
-from mstrio.utils.helper import response_handler
+from mstrio.utils.error_handlers import ErrorHandler
 
 
+@ErrorHandler(err_msg='Error triggering event {id}')
 def trigger_event(connection, id, fields=None, error_msg=None):
     """Triggers an event.
 
@@ -13,15 +14,11 @@ def trigger_event(connection, id, fields=None, error_msg=None):
     Returns:
         HTTP response object returned by the MicroStrategy REST server.
     """
-    response = connection.session.put(url=connection.base_url + '/api/events/' + id + '/trigger',
-                                      params={'fields': fields})
-    if not response.ok:
-        if error_msg is None:
-            error_msg = "Error triggering event '{}'".format(id)
-        response_handler(response, error_msg)
-    return response
+    url = f'{connection.base_url}/api/events/{id}/trigger'
+    return connection.session.post(url=url, params={'fields': fields})
 
 
+@ErrorHandler(err_msg='Error getting events list.')
 def list_events(connection, fields=None, error_msg=None):
     """Get list of a events.
 
@@ -33,15 +30,11 @@ def list_events(connection, fields=None, error_msg=None):
     Returns:
         HTTP response object returned by the MicroStrategy REST server.
     """
-    response = connection.session.get(url=connection.base_url + '/api/events',
-                                      params={'fields': fields})
-    if not response.ok:
-        if error_msg is None:
-            error_msg = "Error getting events list."
-        response_handler(response, error_msg)
-    return response
+    return connection.session.get(url=f'{connection.base_url}/api/events',
+                                  params={'fields': fields})
 
 
+@ErrorHandler(err_msg='Error getting event {id} information.')
 def get_event(connection, id, fields=None, error_msg=None):
     """Get information of a specific event
 
@@ -56,13 +49,7 @@ def get_event(connection, id, fields=None, error_msg=None):
     Returns:
         HTTP response object returned by the MicroStrategy REST server
     """
-    response = connection.session.get(
-        url=connection.base_url + '/api/events/' + id,
+    return connection.session.get(
+        url=f'{connection.base_url}/api/events/{id}',
         params={'fields': fields},
     )
-
-    if not response.ok:
-        if error_msg is None:
-            error_msg = "Error getting event information."
-        response_handler(response, error_msg)
-    return response

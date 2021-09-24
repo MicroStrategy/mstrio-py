@@ -9,49 +9,13 @@ from mstrio.api import objects, usergroups
 from mstrio.connection import Connection
 from mstrio.utils import helper
 from mstrio.utils.acl import TrusteeACLMixin
-from mstrio.utils.entity import Entity, ObjectTypes
-from mstrio.utils.helper import deprecation_warning
+from mstrio.utils.entity import Entity, ObjectTypes, DeleteMixin
 
 if TYPE_CHECKING:
     from mstrio.access_and_security.privilege import Privilege
     from mstrio.access_and_security.security_filter import SecurityFilter
-    from mstrio.server import Application
+    from mstrio.server import Project
     from mstrio.users_and_groups.user import User
-
-
-def list_usergroups(connection: Connection, name_begins: Optional[str] = None,
-                    to_dictionary: bool = False, limit: Optional[int] = None,
-                    **filters) -> List["UserGroup"]:
-    """Get list of User Group objects or User Group dicts. Optionally filter
-    the User Groups by specifying 'name_begins' or other filters.
-
-    Optionally use `to_dictionary` or `to_dataframe` to choose output format.
-    If `to_dictionary` is True, `to_dataframe` is omitted.
-
-    Wildcards available for name_begins:
-        ? - any character
-        * - 0 or more of any characters
-        e.g name_begins = ?onny wil return Sonny and Tonny
-
-    Args:
-        connection: MicroStrategy connection object returned by
-            `connection.Connection()`
-        name_begins: Begining of a User Groups name which we want to list
-        to_dictionary: If True returns dict, by default (False) returns
-            User Group objects
-        limit: limit the number of elements returned. If `None` (default), all
-            objects are returned.
-        **filters: Available filter parameters: ['name', 'id', 'type',
-            'abbreviation', 'description', 'subtype', 'date_created',
-            'date_modified', 'version', 'acg', 'owner', 'ext_type']
-
-
-    Examples:
-        >>> list_user_groups(connection, name_begins='Group',
-                             description='New group')
-    """
-    deprecation_warning("`list_usergroups` method", "`list_user_groups` method", "11.3.2.101")
-    list_user_groups(connection, name_begins, to_dictionary, limit, **filters)
 
 
 def list_user_groups(connection: Connection, name_begins: Optional[str] = None,
@@ -89,7 +53,7 @@ def list_user_groups(connection: Connection, name_begins: Optional[str] = None,
                                       to_dictionary=to_dictionary, limit=limit, **filters)
 
 
-class UserGroup(Entity, TrusteeACLMixin):
+class UserGroup(Entity, DeleteMixin, TrusteeACLMixin):
     """Object representation of MicroStrategy User Group object.
 
     Attributes:
@@ -105,8 +69,8 @@ class UserGroup(Entity, TrusteeACLMixin):
         ext_type: Object extended type
         abbreviation: Object abbreviation
         description: Object description
-        date_created: Creation time, "yyyy-MM-dd HH:mm:ss" in UTC
-        date_modified: Last modification time, "yyyy-MM-dd HH:mm:ss" in UTC
+        date_created: Creation time, DateTime object
+        date_modified: Last modification time, DateTime object
         version: Object version ID
         owner: Owner name and ID
         ancestors: List of ancestor folders
@@ -207,16 +171,10 @@ class UserGroup(Entity, TrusteeACLMixin):
                          to_dictionary: bool = False, limit: Optional[int] = None,
                          **filters) -> List["UserGroup"]:
         msg = "Error getting information for a set of User Groups."
-        objects = helper.fetch_objects_async(
-            connection,
-            usergroups.get_info_all_user_groups,
-            usergroups.get_info_all_user_groups_async,
-            limit=limit,
-            chunk_size=1000,
-            error_msg=msg,
-            name_begins=name_begins,
-            filters=filters,
-        )
+        objects = helper.fetch_objects_async(connection, usergroups.get_info_all_user_groups,
+                                             usergroups.get_info_all_user_groups_async,
+                                             limit=limit, chunk_size=1000, error_msg=msg,
+                                             name_begins=name_begins, filters=filters)
         if to_dictionary:
             return objects
         else:
@@ -247,27 +205,6 @@ class UserGroup(Entity, TrusteeACLMixin):
                 properties[property_key] = local[property_key]
 
         self._alter_properties(**properties)
-
-    def delete(self, force=False) -> bool:
-        """Delete the User Group. Returns true if the User Group was
-        successfully deleted.
-
-        Args:
-            force: If True, no additional prompt will be shown before deleting
-                User Group.
-        """
-        user_input = 'N'
-        if not force:
-            user_input = input(
-                "Are you sure you want to delete User Group '{}' with ID: {}? [Y/N]: ".format(
-                    self.name, self.id))
-        if force or user_input == 'Y':
-            response = usergroups.delete_user_group(self.connection, self.id)
-            if response and config.verbose:
-                print("Successfully deleted User Group {}".format(self.name))
-            return True
-        else:
-            return False
 
     def add_users(self, users: Union[str, List[str], "User", List["User"]]) -> None:
         """Add members to the User Group.
@@ -312,17 +249,6 @@ class UserGroup(Entity, TrusteeACLMixin):
         self.fetch('members')
         return helper.filter_list_of_dicts(self.members, **filters)
 
-    def add_to_usergroups(self, groups: Union[str, List[str], "UserGroup",
-                                              List["UserGroup"]]) -> None:
-        """Add User Group to passed groups.
-
-        Args:
-            groups: List of User Group objects or ids
-        """
-        deprecation_warning("`add_to_usergroups` method", "`add_to_user_groups` method",
-                            "11.3.2.101")
-        self.add_to_user_groups(groups)
-
     def add_to_user_groups(self, groups: Union[str, List[str], "UserGroup",
                                                List["UserGroup"]]) -> None:
         """Add User Group to passed groups.
@@ -335,17 +261,6 @@ class UserGroup(Entity, TrusteeACLMixin):
             print("Added group '{}' to group(s): {}".format(self.name, succeeded))
         if failed and config.verbose:
             print("Group '{}' is already a member of {} group(s)".format(self.name, failed))
-
-    def remove_from_usergroups(
-            self, groups: Union[str, List[str], "UserGroup", List["UserGroup"]]) -> None:
-        """Remove User Group from passed groups
-
-        Args:
-            groups: List of User Group objects or ids
-        """
-        deprecation_warning("`remove_from_usergroups` method", "`remove_from_user_groups` method",
-                            "11.3.2.101")
-        self.remove_from_user_groups(groups)
 
     def remove_from_user_groups(
             self, groups: Union[str, List[str], "UserGroup", List["UserGroup"]]) -> None:
@@ -487,34 +402,54 @@ class UserGroup(Entity, TrusteeACLMixin):
 
         return to_df(privileges) if to_dataframe else privileges
 
-    def assign_security_role(self, security_role: Union[SecurityRole, str],
-                             application: Union["Application", str]) -> None:
-        """Assigns a Security Role to the User Group for given application.
+    def assign_security_role(self, security_role: Union[SecurityRole,
+                                                        str], application: Union["Project", str],
+                             project: Union["Project", str] = None) -> None:  # NOSONAR
+        """Assigns a Security Role to the User Group for given project.
 
         Args:
             security_role: Security Role ID or object
-            application: Application name or object
+            application: Project name or object. Will be removed from 11.3.4.101
+            project: Will replace application from 11.3.4.101
         """
+        helper.deprecation_warning(
+            '`application`',
+            '`project`',
+            '11.3.4.101',  # NOSONAR
+            False,
+            False)
+        project = application
+
         security_role = security_role if isinstance(security_role, SecurityRole) else SecurityRole(
             self.connection, id=str(security_role))
 
-        security_role.grant_to([self.id], application)
+        security_role.grant_to([self.id], project)
         if config.verbose:
             print("Assigned Security Role '{}' to group: '{}'".format(
                 security_role.name, self.name))
 
-    def revoke_security_role(self, security_role: Union[SecurityRole, str],
-                             application: Union["Application", str]) -> None:
-        """Removes a Security Role from the User Group for given application.
+    def revoke_security_role(self, security_role: Union[SecurityRole,
+                                                        str], application: Union["Project", str],
+                             project: Union["Project", str] = None) -> None:  # NOSONAR
+        """Removes a Security Role from the User Group for given project.
 
         Args:
             security_role: Security Role ID or object
-            application: Application name or object
+            application: Project name or object. Will be removed from 11.3.4.101
+            project: Will replace application from 11.3.4.101
         """
+        helper.deprecation_warning(
+            '`application`',
+            '`project`',
+            '11.3.4.101',  # NOSONAR
+            False,
+            False)
+        project = application
+
         security_role = security_role if isinstance(security_role, SecurityRole) else SecurityRole(
             self.connection, id=str(security_role))
 
-        security_role.revoke_from([self.id], application)
+        security_role.revoke_from([self.id], project)
         if config.verbose:
             print("Revoked Security Role '{}' from group: '{}'".format(
                 security_role.name, self.name))

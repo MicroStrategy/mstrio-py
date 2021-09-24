@@ -1,6 +1,8 @@
-from mstrio.utils.helper import response_handler
+from mstrio.utils.error_handlers import ErrorHandler
 
 
+@ErrorHandler(
+    err_msg='Error obtaining the list of registered nodes from the MicroStrategy deployment.')
 def get_nodes(connection, error_msg=None):
     """Obtain the list of registered nodes from the MicroStrategy deployment.
 
@@ -9,16 +11,12 @@ def get_nodes(connection, error_msg=None):
             'connection.Connection().
         error_msg (string, optional): Custom Error Message for Error Handling
     """
-    response = connection.session.get(url=connection.base_url + '/api/registrations/nodes')
-
-    if not response.ok:
-        if error_msg is None:
-            error_msg = ("Error obtaining the list of registered nodes from the MicroStrategy "
-                         "deployment")
-        response_handler(response, error_msg)
-    return response
+    return connection.session.get(url=f'{connection.base_url}/api/registrations/nodes')
 
 
+@ErrorHandler(
+    err_msg='Error obtaining the list of registered services available from '
+            'the MicroStrategy deployment')
 def get_services(connection, error_msg=None):
     """Obtain the list of registered services available from the MicroStrategy
     deployment.
@@ -28,16 +26,12 @@ def get_services(connection, error_msg=None):
             'connection.Connection().
         error_msg (string, optional): Custom Error Message for Error Handling
     """
-    response = connection.session.get(url=connection.base_url + '/api/registrations/services')
-
-    if not response.ok:
-        if error_msg is None:
-            error_msg = ("Error obtaining the list of registered services available from the "
-                         "MicroStrategy deployment")
-        response_handler(response, error_msg)
-    return response
+    return connection.session.get(url=f'{connection.base_url}/api/registrations/services')
 
 
+@ErrorHandler(
+    err_msg='Error obtaining the metadata information for the registered services'
+            ' available from the MicroStrategy deployment.')
 def get_services_metadata(connection, error_msg=None):
     """Obtain the metadata information for the registered services available
     from the MicroStrategy deployment.
@@ -47,15 +41,7 @@ def get_services_metadata(connection, error_msg=None):
             'connection.Connection().
         error_msg (string, optional): Custom Error Message for Error Handling
     """
-    response = connection.session.get(url=connection.base_url
-                                      + '/api/registrations/services/metadata')
-
-    if not response.ok:
-        if error_msg is None:
-            error_msg = ("Error obtaining the metadata information for the registered services "
-                         "available from the MicroStrategy deployment")
-        response_handler(response, error_msg)
-    return response
+    return connection.session.get(url=f'{connection.base_url}/api/registrations/services/metadata')
 
 
 def start_stop_service(connection, login, password, name, id, address, action="START",
@@ -83,7 +69,6 @@ def start_stop_service(connection, login, password, name, id, address, action="S
         "login": login,
         "password": password
     }
-
-    response = connection.session.post(
-        url=connection.base_url + '/api/registrations/services/control', json=body)
+    url = f'{connection.base_url}/api/registrations/services/control'
+    response = connection.session.post(url=url, json=body)
     return response

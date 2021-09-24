@@ -1,48 +1,122 @@
 # Changelog
 
+## 11.3.3.101 - 2021/09/24
+
+### Major changes
+
+- added `job_monitor` module with `list_jobs`, `kill jobs`, `kill_all_jobs`
+  functions and `Job` class
+- added `Object` class in `mstrio.object_management` subpackage to allow
+  object management
+- added `list_objects` function to allow listing objects by type
+- added `Folder` class in `mstrio.object_management` subpackage to allow
+  folder management
+- added `list_folders`, `get_my_personal_objects_contents`,
+  `get_predefined_folder_contents` functions to allow listing folders and
+  getting contents of particular folders
+- added enum `PredefinedFolders` with all available values of pre-defined
+  folders
+- added `quick_search`, `quick_search_from_object`, `get_search_suggestions`
+  functions that use the stored results of the Quick Search engine to return
+  search results and suggestions
+- added `full_search` which uses `start_full_search` and `get_search_results`,
+  that can be used to search the metadata for objects in a specific project that
+  match specific search criteria
+- added `list_dependencies` and `list_dependents` methods to most of the classes
+  that provide information about dependence of an object
+- added `Shortcut`class in `mstrio.object_management` subpackage
+
+### Minor changes
+
+- changed `Subscription` class to now use `Content` and `Delivery` objects
+  instead of dicts
+- changed owner field of `Subscription` to `User` objects
+- changed all date fields to `datetime` objects
+- improved filtering performance in listing objects functions
+- Term `application` deprecated (see section 'Deprecated'), and renamed in
+method names, method arguments, file names, class names to `project` (see
+notebooks in 'examples', and demo scripts in 'demos' for details). Examples:
+  - `list_applications()` renamed to `list_projects()`
+  - `application`, `application_name`, `application_id` renamed to
+  `project`, `project_name`, `project_id`
+  - `mstrio.server.application` renamed to `mstrio.server.project`
+  - `Application` renamed to `Project`
+- Updated notebook examples and demo scripts in 'examples' and 'demos' folders
+- changed `certified_info` field of `Report` and `Document` from dict to
+  `CertifiedInfo` object
+- added parameter `propagate_to_children` to methods in `ACLMixin` class
+- `acg` property of an object now use a `Rights` enum
+- `acl` property of an object now use a new class `ACE`
+- `extended_type` property of an object now use a `ExtendedType` enum
+
+### Bug fixes
+
+- fixed server memory settings issues when converting
+- fixed server settings configuration for I-Server version prior to 11.3.0
+- fixed bug where list_subscription is limiting data to 1000 results only
+- fixed `Styler` object being returned instead of `DataFrame` in
+  `nodes_topology` and `services_topology` methods in `Cluster` class
+
+### Deprecated
+- `application`, `application_name`, `application_id` parameters/attributes
+- functions having a term 'application' in their definition
+- modules having a term 'application' in their name
+- class names having a term 'application' in their definition
+**In all of above-mentioned changes, a new term is 'project'**
+- `mstrio.browsing` is deprecated and is superceded
+  with `mstrio.object_management.search_operations` subpackage,
+- `SearchType` enum is now `SearchPattern`
+
 ## 11.3.2.101 - 2021/06/30
 
 ### Major changes
 
 - added `Schedule` class in `mstrio.distribution_services.schedule` subpackage
-- added `ScheduleTime` class in `mstrio.distribution_services.schedule` subpackage,
-  local object used for specifying time related properties of schedule
+- added `ScheduleTime` class in `mstrio.distribution_services.schedule`
+  subpackage, local object used for specifying time related properties of
+  schedule
 - added `Event` class in `mstrio.distribution_services.event` subpackage
 - changed `Subscription` class to now use `Schedule` objects
-- added datasources subpackage with `Dbms`, `DatabaseConnections`, `DatasourceInstance`,
-  `DatasourceLogin`, `DatasourceMap` classes covering database management functionality
+- added datasources subpackage with `Dbms`, `DatabaseConnections`,
+  `DatasourceInstance`, `DatasourceLogin`, `DatasourceMap` classes covering
+  database management functionality
 - added functions `list_available_dbms`, `list_datasource_connections`,
-  `list_datasource_instances`, `list_datasource_logins`, `list_datasource_mappings` to list all
-  datasource related objects
-- add `database_connections` module allowing to browse and manage database connections on the
-  environment
-- add ACL management functionality for all supporting objects by adding `list_acl`, `acl_add`,
-  `acl_remove`, `acl_alter` methods
+  `list_datasource_instances`, `list_datasource_logins`,
+  `list_datasource_mappings` to list all datasource related objects
+- added `database_connections` module allowing to browse and manage database
+  connections on the environment
+- added ACL management functionality for all supporting objects by adding
+  `list_acl`, `acl_add`, `acl_remove`, `acl_alter` methods
 - added `SecurityFilter` class and function `list_security_filters` in
   `mstrio.access_and_security.security_filter` subpackage
-- added `Qualification` class in `mstrio.access_and_security.security_filter` subpackage which is
-  an object used to represent qualification of security filter
-- added classes `PredicateBase`, `PredicateForm`, `PredicateElementList`, `PredicateFilter`,
-  `PredicateJointElementList` and `LogicOperator` in `mstrio.access_and_security.security_filter`
-  subpackage to represent predicates which can be used in creation of qualification for security
+- added `Qualification` class in `mstrio.access_and_security.security_filter`
+  subpackage which is an object used to represent qualification of security
   filter
-- added classes `ParameterBase`, `ConstantParameter`, `ObjectReferenceParameter`,
-  `ExpressionParameter`, `PromptParameter`, `DynamicDateTimeParameter` and
-  `ConstantArrayParameter` in `mstrio.access_and_security.security_filter` subpackage to represent
+- added classes `PredicateBase`, `PredicateForm`, `PredicateElementList`,
+  `PredicateFilter`, `PredicateJointElementList` and `LogicOperator` in
+  `mstrio.access_and_security.security_filter` subpackage to represent
+  predicates which can be used in creation of qualification for security filter
+- added classes `ParameterBase`, `ConstantParameter`,
+  `ObjectReferenceParameter`, `ExpressionParameter`, `PromptParameter`,
+  `DynamicDateTimeParameter` and `ConstantArrayParameter` in
+  `mstrio.access_and_security.security_filter` subpackage to represent
   parameters used in `AttributeForm`
 
 ### Bug fixes
 
 - fixed urllib3 dependency installing incompatible version
-- Login is case-insensitive now in GUI
+- fixed GUI login to be case-insensitive
 
 ### Deprecated
 
-- `mstrio.admin.schedule` is deprecated and is superceded with `mstrio.distribution_services.schedule` subpackage
-- `schedules` replace argument `schedules_id` in `create` and `alter`, methods of `Schedule` class
+- `mstrio.admin.schedule` is deprecated and superceded with
+  `mstrio.distribution_services.schedule` subpackage
+- `schedules` replace argument `schedules_id` in `create` and `alter`, methods
+  of `Schedule` class
 - `mstrio.distribution_services.schedule.ScheduleManager` is now deprecated,
   use `mstrio.distribution_services.schedule.list_schedules()` instead
-- removed features deprecated in release 11.3.1.101 and aliases allowing for backward compatiblity
+- removed features deprecated in release 11.3.1.101 and aliases allowing for
+  backward compatibility
 
 ## 11.3.1.102 - 2021/05/28
 
@@ -50,12 +124,15 @@
 
 - changed files structure to organize the modules in clean and readable way
 - added or improved type hints across the codebase
-- implemented Enums: `PrivilegeMode`, `IdleMode`, `GroupBy`, `ServiceAction`, `Rights` and `Permissions`
+- added Enums: `PrivilegeMode`, `IdleMode`, `GroupBy`, `ServiceAction`,
+  `Rights` and `Permissions`
 - implemented `Node` class to be used for node management in place of a raw dict
 - added `CubeCache` class in `mstrio.application_objects.datasets` subpackage
 - updated method `load_cube` to load cube by name
-- added functions `list_cube_caches` , `delete_cube_caches` and `delete_cube_cache`
-- added methods `create`, `update`, `get_sql_view` and `publish` for class OlapCube
+- added functions `list_cube_caches` , `delete_cube_caches` and
+  `delete_cube_cache`
+- added methods `create`, `update`, `get_sql_view` and `publish` for class
+  OlapCube
 - added method `unpublish` available for classes `OlapCube` and `SuperCube`
 - added `list_reports` function to `Report` module
 - added `alter` and `list_properties` methods to `Report` class
@@ -65,20 +142,24 @@
 - fixed custom cell colapsing at re-run at certain conditions
 - fixed wrong object type for `Entity.__init__()` method
 - fixed `KeyError:'body'` when executing `update_properties` on an object
-- fixed `TypeError: unhashable type:'dict'` after accessing `attr_elements` of cube
-- fixed `mstrio.dataset` module `publish` method sending too frequent requests to API bug
+- fixed `TypeError: unhashable type:'dict'` after accessing `attr_elements` of
+  `Cube`
+- fixed `mstrio.dataset` module `publish` method sending requests too frequently
+  to the REST API
 
 ### Deprecated
 
-- `id` replaces parameter `report_id` in `Report` class
+- `id` replaces field `report_id` in `Report` class
 
 ## 11.3.1.101 - 2021/04/30
 
 ### Major changes
 
-- added `SuperCube` and `OlapCube` classes in `mstrio.application_objects.datasets` subpackage
-- added `list_all_cubes`, `load_cube`, `list_super_cubes`, `list_olap_cubes` functions that allow
-  searching available cubes by name and construct precise objects
+- added `SuperCube` and `OlapCube` classes in
+  `mstrio.application_objects.datasets` subpackage
+- added `list_all_cubes`, `load_cube`, `list_super_cubes`, `list_olap_cubes`
+  functions that allow searching available cubes by name and construct precise
+  objects
 - added possibility to alter `name`, `description`, `abbreviation` properties of
   cubes
 - added more `Cube` object attributes similar to other MSTR objects
@@ -139,7 +220,8 @@
 #### GUI
 
 - added UI-generated **Custom Jupyter Cells** which allow for Python
-  Code edition and use mainly via UI, Buttons and Interactive Button-like Elements
+  Code edition and use mainly via UI, Buttons and Interactive Button-like
+  Elements
 
 ### Bug fixes
 

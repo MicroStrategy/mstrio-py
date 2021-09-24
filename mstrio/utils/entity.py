@@ -15,70 +15,16 @@ from mstrio import config
 from mstrio.api import objects
 from mstrio.api.exceptions import VersionException
 from mstrio.connection import Connection
+from mstrio.types import ObjectTypes, ObjectSubTypes, ExtendedType  # noqa
 from mstrio.utils import helper
-from mstrio.utils.acl import ACLMixin
+from mstrio.utils.acl import ACE, ACLMixin, Rights
+from mstrio.utils.dependence_mixin import DependenceMixin
+from mstrio.utils.time_helper import bulk_str_to_datetime, DatetimeFormats, map_str_to_datetime
 
 if TYPE_CHECKING:
-    from mstrio.server import Application
+    from mstrio.server import Project
 
 T = TypeVar("T")
-
-
-class ObjectTypes(Enum):
-    FILTER = 1
-    REPORT_DEFINITION = 3
-    METRIC = 4
-    AGG_METRIC = 7
-    FOLDER = 8
-    PROMPT = 10
-    ATTRIBUTE = 12
-    FACT = 13
-    TABLE = 15
-    MONITOR = 20
-    ATTRIBUTE_FORM = 21
-    COLUMN = 26
-    DBROLE = 29
-    DBLOGIN = 30
-    DBCONNECTION = 31
-    APPLICATION = 32
-    USER = 34
-    USERGROUP = 34
-    CONFIGURATION = 36
-    SECURITY_ROLE = 44
-    CONSOLIDATION = 47
-    SCHEDULE_EVENT = 49
-    SCHEDULE_OBJECT = 50
-    SCHEDULE_TRIGGER = 51
-    DBTABLE = 53
-    DOCUMENT_DEFINITION = 55
-    DBMS = 57
-    SECURITY_FILTER = 58
-    NONE = None
-
-    def __new__(cls, value):
-        member = object.__new__(cls)
-        member._value_ = value
-        return member
-
-    def __int__(self):
-        return self.value
-
-
-class ObjectSubTypes(Enum):
-    OLAP_CUBE = 776
-    SUPER_CUBE = 779
-    USER = 8704
-    USER_GROUP = 8705
-    MD_SECURITY_FILTER = 14848
-    NONE = None
-
-    def __new__(cls, value):
-        member = object.__new__(cls)
-        member._value_ = value
-        return member
-
-    def __int__(self):
-        return self.value
 
 
 class EntityBase(helper.Dictable):
@@ -91,6 +37,7 @@ class EntityBase(helper.Dictable):
         name: Object name
     """
     _OBJECT_TYPE: ObjectTypes = ObjectTypes.NONE  # MSTR object type defined in ObjectTypes
+    _REST_ATTR_MAP: Dict[str, str] = {}
     _API_GETTERS: Dict[Union[str, tuple], Callable] = {}
     _FROM_DICT_MAP: Dict[str, Callable] = {
         'type': ObjectTypes
@@ -98,6 +45,7 @@ class EntityBase(helper.Dictable):
     _AVAILABLE_ATTRIBUTES: Dict[str, type] = {}  # fetched on runtime from all Getters
     _API_PATCH: dict = {}
     _PATCH_PATH_TYPES: Dict[str, type] = {}  # used in update_properties method
+    _API_DELETE: Callable = staticmethod(objects.delete_object)
 
     def __init__(self, connection: Connection, object_id: str, **kwargs) -> None:
         self._init_variables(connection=connection, id=object_id, **kwargs)
@@ -112,6 +60,7 @@ class EntityBase(helper.Dictable):
         Note: attributes not accepted by any implementation of this function
             in the inheritance chain will be disregarded.
         """
+        kwargs = self._rest_to_python(kwargs)
         # create _AVAILABLE_ATTRIBUTES map
         self._AVAILABLE_ATTRIBUTES.update({key: type(val) for key, val in kwargs.items()})
         self._connection = kwargs.get("connection")
@@ -142,7 +91,7 @@ class EntityBase(helper.Dictable):
                 functions = {attr: func for attr, func in functions.items() if func == function}
 
         for key, func in functions.items():  # call respective API getters
-            param_value_dict = helper.auto_match_args(func, self)
+            param_value_dict = auto_match_args_entity(func, self)
 
             response = func(**param_value_dict)
             if response.ok:
@@ -157,9 +106,9 @@ class EntityBase(helper.Dictable):
                     self._set_object(**{key: response})
                 # TODO: consider changing camel_to_snake logic to work with
                 # list of keys
-                response = helper.camel_to_snake(response)
-                # keep track of fetched attributes
-                self._add_to_fetched((response.keys() if isinstance(response, dict) else key))
+
+            # keep track of fetched attributes
+            self._add_to_fetched(key)
 
     def _add_to_fetched(self, keys: Union[str, tuple]) -> None:
         if isinstance(keys, str):
@@ -189,11 +138,30 @@ class EntityBase(helper.Dictable):
                 raise NotImplementedError
         return None
 
+    @classmethod
+    def _rest_to_python(cls, response: dict) -> dict:
+        """Map REST API field names to Python API field names."""
+        for rest_name, python_name in cls._REST_ATTR_MAP.items():
+            if rest_name in response:
+                old = response.pop(rest_name)
+                if python_name:
+                    response[python_name] = old
+        return response
+
+    @classmethod
+    def _python_to_rest(cls, response: dict) -> dict:
+        """Map Python API field names to REST API field names."""
+        for rest_name, python_name in cls._REST_ATTR_MAP.items():
+            if python_name and python_name in response:
+                response[rest_name] = response.pop(python_name)
+        return response
+
     def _set_object(self, **kwargs) -> None:
-        """Set object attributes programatically by providing keyword args.
+        """Set object attributes programmatically by providing keyword args.
         Support ENUMs and creating component objects."""
 
         object_info = helper.camel_to_snake(kwargs)
+        object_info = self._rest_to_python(object_info)
 
         properties = set(
             (elem[0]
@@ -203,8 +171,18 @@ class EntityBase(helper.Dictable):
             # if self is a composite, create component instance
             if key in self._FROM_DICT_MAP:
                 # determine which constructor will be used
-                if isinstance(self._FROM_DICT_MAP[key], type(Enum)):
+                if isinstance(self._FROM_DICT_MAP[key], DatetimeFormats):
+                    val = map_str_to_datetime(key, val, self._FROM_DICT_MAP)
+                elif isinstance(self._FROM_DICT_MAP[key], type(Enum)):
                     val = self._FROM_DICT_MAP[key](val)
+                elif isinstance(self._FROM_DICT_MAP[key], list) and val is not None:
+                    if isinstance(self._FROM_DICT_MAP[key][0], type(Enum)):
+                        val = [self._FROM_DICT_MAP[key][0](v) for v in val]
+                    else:
+                        val = [
+                            self._FROM_DICT_MAP[key][0](source=v, connection=self.connection)
+                            for v in val
+                        ]
                 else:
                     val = self._FROM_DICT_MAP[key](source=val, connection=self.connection)
 
@@ -214,6 +192,7 @@ class EntityBase(helper.Dictable):
             # check if attr is read-only and if yes return '_' version of it
             if key in properties:
                 key = "_" + key
+
             setattr(self, key, val)
 
     def list_properties(self) -> dict:
@@ -249,11 +228,12 @@ class EntityBase(helper.Dictable):
             pprint(self.list_properties())
 
     @classmethod
-    def from_dict(cls: T, source: Dict[str, Any], connection: Connection) -> T:
+    def from_dict(cls: T, source: Dict[str, Any], connection: Connection,
+                  to_snake_case: bool = True) -> T:
         """Instantiate an object from response without calling any additional
         getters."""
         obj = cls.__new__(cls)  # Does not call __init__
-        object_source = helper.camel_to_snake(source)
+        object_source = helper.camel_to_snake(source) if to_snake_case else source
         obj._init_variables(connection=connection, **object_source)
         return obj
 
@@ -265,7 +245,7 @@ class EntityBase(helper.Dictable):
             return "{} object with ID: '{}'".format(self.__class__.__name__, self.id)
 
     def __repr__(self):
-        param_value_dict = helper.auto_match_args(self.__init__, self, exclude=['self'],
+        param_value_dict = auto_match_args_entity(self.__init__, self, exclude=['self'],
                                                   include_defaults=False)
         params_list = []
         for param, value in param_value_dict.items():
@@ -295,6 +275,10 @@ class EntityBase(helper.Dictable):
             return self.id == other or self.name == other
         elif isinstance(other, type(self)):
             return self.id == other.id
+        elif isinstance(other, dict):
+            # check all items in other dict equal entity object attributes
+            return all(
+                (getattr(self, k) == v if hasattr(self, k) else False for k, v in other.items()))
         else:
             return NotImplemented  # don't attempt to compare against unrelated types
 
@@ -391,7 +375,7 @@ class EntityBase(helper.Dictable):
             op: operation type, 'replace' by default
 
         Returns:
-            List of succesfull or unsuccessful requests.
+            List of successful or unsuccessful requests.
         """
         changed = []
         camel_properties = helper.snake_to_camel(properties)
@@ -400,7 +384,7 @@ class EntityBase(helper.Dictable):
             if func_type == 'partial_put':
                 for name, value in camel_properties.items():
                     if stringcase.snakecase(name) in attrs:
-                        value = helper.maybe_unpack(value, camel_case=True)
+                        value = self._maybe_unpack(name, value, camel_case=True)
                         body[name] = self._validate_type(name, value)
             elif func_type == 'put':  # Update using the generic update_object()
                 for name, value in properties.items():
@@ -411,7 +395,7 @@ class EntityBase(helper.Dictable):
                 body = {"operationList": []}
                 for name, value in camel_properties.items():
                     if stringcase.snakecase(name) in attrs:
-                        value = helper.maybe_unpack(value, camel_case=True)
+                        value = self._maybe_unpack(name, value, camel_case=True)
                         body['operationList'].append({
                             "op": op,
                             "path": "/{}".format(name),
@@ -424,7 +408,7 @@ class EntityBase(helper.Dictable):
             if not body:
                 continue
             # send patch request from the specified update wrapper
-            param_value_dict = helper.auto_match_args(func, self, exclude=["body"])
+            param_value_dict = auto_match_args_entity(func, self, exclude=["body"])
             param_value_dict['body'] = body
             response = func(**param_value_dict)
 
@@ -502,6 +486,7 @@ class EntityBase(helper.Dictable):
         """
         type_map = {**self._AVAILABLE_ATTRIBUTES, **self._PATCH_PATH_TYPES}
         value_type = type_map.get(name, 'Not Found')
+
         if value_type != 'Not Found' and type(value) != value_type:
             raise TypeError(f"'{name}' has incorrect type. Expected type: '{value_type}'")
         return value
@@ -512,8 +497,12 @@ class EntityBase(helper.Dictable):
 
         def track_changes():
             already_tracked = name in self._altered_properties
-            current_val = self._altered_properties[name][0] if already_tracked \
-                else self.__dict__[name]
+            if already_tracked:
+                current_val = self._altered_properties[name][0]
+            elif name in self.__dict__:
+                current_val = self.__dict__[name]
+            else:
+                current_val = None
             is_changed = not (type(current_val) is type(value) and current_val == value)
             if is_changed:
                 self._altered_properties.update({name: (current_val, value)})
@@ -547,6 +536,17 @@ class EntityBase(helper.Dictable):
 
         return val
 
+    def _set_dates(self, **kwargs):
+        """Transform all date strings provided in kwargs to datetime object.
+        Date format strings have to be provided in `_FROM_DICT_MAP`"""
+        kwargs = bulk_str_to_datetime(kwargs, self._FROM_DICT_MAP)
+        for key, val in self._FROM_DICT_MAP.items():
+            if isinstance(val, DatetimeFormats):
+                if kwargs.get(key):
+                    setattr(self, key, kwargs.get(key))
+                elif len(key) > 1 and key[0] == '_' and kwargs.get(key[1:]):
+                    setattr(self, key, kwargs.get(key[1:]))
+
     # TODO add docstrings
     @property
     def connection(self) -> Connection:
@@ -561,7 +561,7 @@ class EntityBase(helper.Dictable):
         return self._type
 
 
-class Entity(EntityBase, ACLMixin):
+class Entity(EntityBase, ACLMixin, DependenceMixin):
     """Base class representation of the MSTR object.
 
     Provides methods to fetch, update, and view the object. To implement
@@ -576,8 +576,8 @@ class Entity(EntityBase, ACLMixin):
         type: Object type
         subtype: Object subtype
         ext_type: Object extended type
-        date_created: Creation time, "yyyy-MM-dd HH:mm:ss" in UTC
-        date_modified: Last modification time, "yyyy-MM-dd HH:mm:ss" in UTC
+        date_created: Creation time, DateTime object
+        date_modified: Last modification time, DateTime object
         version: Version ID
         owner: Owner ID and name
         icon_path: Object icon path
@@ -593,35 +593,53 @@ class Entity(EntityBase, ACLMixin):
     _API_GETTERS: Dict[Union[str, tuple], Callable] = {
         ('id', 'name', 'description', 'abbreviation', 'type', 'subtype', 'ext_type',
          'date_created', 'date_modified', 'version', 'owner', 'icon_path', 'view_media',
-         'ancestors', 'certified_info', 'acg', 'acl'): objects.get_object_info
+         'ancestors', 'certified_info', 'acg', 'acl', 'comments', 'project_id', 'hidden',
+         'target_info'): objects.get_object_info
     }
     _API_PATCH: dict = {
         ('name', 'description', 'abbreviation'): (objects.update_object, 'partial_put')
     }
     _PATCH_PATH_TYPES = {"name": str, "description": str, "abbreviation": str}
+    _FROM_DICT_MAP = {
+        **EntityBase._FROM_DICT_MAP,
+        'ext_type': ExtendedType,
+        'date_created': DatetimeFormats.FULLDATETIME,
+        'date_modified': DatetimeFormats.FULLDATETIME,
+        'acl': [ACE.from_dict],
+        'acg': Rights,
+    }
 
     def _init_variables(self, **kwargs) -> None:
         """Initialize variables given kwargs."""
         from mstrio.users_and_groups.user import User
+        from mstrio.utils.certified_info import CertifiedInfo
         super(Entity, self)._init_variables(**kwargs)
+        self._date_created = map_str_to_datetime("date_created", kwargs.get("date_created"),
+                                                 self._FROM_DICT_MAP)
+        self._date_modified = map_str_to_datetime("date_modified", kwargs.get("date_modified"),
+                                                  self._FROM_DICT_MAP)
         self.description = kwargs.get("description")
         self.abbreviation = kwargs.get("abbreviation")
         self._subtype = kwargs.get("subtype")
-        self._ext_type = kwargs.get("ext_type")
-        self._date_created = kwargs.get("date_created")
-        self._date_modified = kwargs.get("date_modified")
+        self._ext_type = ExtendedType(kwargs["ext_type"]) if kwargs.get("ext_type") else None
         self._version = kwargs.get("version")
         self._owner = User.from_dict(
             kwargs.get("owner"),
             self.connection,
         ) if kwargs.get("owner") else None
-        self._date_created = kwargs.get("date_created")
         self._icon_path = kwargs.get("icon_path")
         self._view_media = kwargs.get("view_media")
         self._ancestors = kwargs.get("ancestors")
-        self._certified_info = kwargs.get("certified_info")
-        self._acg = kwargs.get("acg")
-        self._acl = kwargs.get("acl")
+        self._certified_info = CertifiedInfo.from_dict(
+            kwargs.get("certified_info"),
+            self.connection) if kwargs.get("certified_info") else None
+        self._hidden = kwargs.get("hidden")
+        self._project_id = kwargs.get("project_id")
+        self._comments = kwargs.get("comments")
+        self._target_info = kwargs.get("target_info")
+        self._acg = Rights(kwargs.get("acg")) if kwargs.get("acg") else None
+        self._acl = ([ACE.from_dict(ac, self._connection) for ac in kwargs.get("acl")]
+                     if kwargs.get("acl") else None)
 
     # TODO add docstrings to all properties
     @property
@@ -672,16 +690,33 @@ class Entity(EntityBase, ACLMixin):
     def acl(self):
         return self._acl
 
+    @property
+    def hidden(self):
+        return self._hidden
+
+    @property
+    def project_id(self):
+        return self._project_id
+
+    @property
+    def comments(self):
+        return self._comments
+
+    @property
+    def target_info(self):
+        return self._target_info
+
 
 class CopyMixin:
     """CopyMixin class adds creating copies of objects functionality.
 
-    Currently application objects are not supported. Must be mixedin with
+    Currently project objects are not supported. Must be mixedin with
     Entity or its subclasses.
     """
 
     def create_copy(self: Entity, name: Optional[str] = None, folder_id: Optional[str] = None,
-                    application: Union["Application", str] = None) -> Any:
+                    project: Optional[Union["Project", str]] = None,
+                    application: Optional[Union["Project", str]] = None) -> Any:
         """Create a copy of the object on the I-Server.
 
         Args:
@@ -689,20 +724,105 @@ class CopyMixin:
                 such as 'Old Name (1)'
             folder_id: ID of the destination folder. If None, the object is
                 saved in the same folder as the source object.
-            application_id: By default, the application selected when
-                creating Connection object. Override `application` to specify
-                application where the current object exists.
+            project: By default, the project selected when
+                creating Connection object. Override `project` to specify
+                project where the current object exists.
+            application: deprecated. Use project instead.
 
         Returns:
                 New python object holding the copied object.
         """
+        if application:
+            helper.deprecation_warning(
+                '`application`',
+                '`project`',
+                '11.3.4.101',  # NOSONAR
+                False)
+            project = project or application
         if self._OBJECT_TYPE.value in [32]:
             raise NotImplementedError("Object cannot be copied yet.")
-        # TODO if object uniqness depends on application_id extract app_id
+        # TODO if object uniqueness depends on project_id extract proj_id
         # TODO automatically
         response = objects.copy_object(self.connection, id=self.id, name=name, folder_id=folder_id,
-                                       type=self._OBJECT_TYPE.value, application_id=application)
+                                       object_type=self._OBJECT_TYPE.value, project_id=project)
         return self.from_dict(source=response.json(), connection=self.connection)
+
+
+class DeleteMixin:
+    """DeleteMixin class adds deleting objects functionality.
+    Must be mixedin with Entity or its subclasses.
+    """
+
+    _delete_confirm_msg: str = None
+    _delete_success_msg: str = None
+
+    def delete(self: Entity, force: bool = False) -> bool:
+        """Delete object.
+
+        Args:
+            force: If True, then no additional prompt will be shown before
+                deleting object.
+
+        Returns:
+            True on success. False otherwise.
+        """
+        object_name = self.__class__.__name__
+
+        user_input = 'N'
+        if not force:
+            message = self._delete_confirm_msg or (
+                f"Are you sure you want to delete {object_name} "
+                f"'{self.name}' with ID: {self._id}? [Y/N]: ")
+            user_input = input(message) or 'N'
+        if force or user_input == 'Y':
+            param_value_dict = auto_match_args_entity(self._API_DELETE, self)
+            response = self._API_DELETE(**param_value_dict)
+            if response.status_code == 204 and config.verbose:
+                print(self._delete_success_msg
+                      or f"Successfully deleted {object_name} with ID: {self._id}.")
+            return response.ok
+        else:
+            return False
+
+
+class CertifyMixin:
+    """CertifyMixin class adds certifying and decertifying functionality.
+    Must be mixedin with Entity or its subclasses.
+    """
+
+    def _toggle_certification(self: Entity, certify: bool = True, success_msg: str = None) -> bool:
+        object_name = self.__class__.__name__
+        expected_result = 'certified' if certify else 'decertified'
+
+        self.fetch()
+        if certify == self.certified_info.certified:
+            print(f"The {object_name} with ID: '{self._id}' is already {expected_result}")
+            return True
+
+        response = objects.toggle_certification(connection=self._connection, id=self._id,
+                                                object_type=self._OBJECT_TYPE.value,
+                                                certify=certify)
+        if response.ok and config.verbose:
+            self._set_object(**response.json())
+            print(success_msg
+                  or f"The {object_name} with ID: '{self._id}' has been {expected_result}.")
+        return response.ok
+
+    def certify(self: Entity) -> bool:
+        """Certify object.
+        Args:
+           success_msg: Custom message displayed on success.
+        Returns:
+                True on success, False otherwise."""
+        return self._toggle_certification(certify=True)
+
+    def decertify(self: Entity) -> bool:
+        """Decertify object.
+        Args:
+           success_msg: Custom message displayed on success.
+        Returns:
+                True on success, False otherwise."""
+        return self._toggle_certification(certify=False)
 
 
 class VldbMixin:
@@ -711,41 +831,89 @@ class VldbMixin:
     Objects currently supporting VLDB settings are dataset, document, dossier.
     Must be mixedin with Entity or its subclasses.
     """
-    _parameter_error = "Please specify the application parameter."
+    _parameter_error = "Please specify the project parameter."
 
-    def list_vldb_settings(self: Entity, application: Optional[str] = None) -> list:
+    def list_vldb_settings(self: Entity, project: Optional[str] = None,
+                           application: Optional[str] = None) -> list:
         """List VLDB settings."""
-
+        if application:
+            helper.deprecation_warning(
+                '`application`',
+                '`project`',
+                '11.3.4.101',  # NOSONAR
+                False)
+            project = project or application
         connection = self.connection if hasattr(self, 'connection') else self._connection
-        if not application and connection.session.headers.get('X-MSTR-ProjectID') is None:
+        if not project and connection.session.headers.get('X-MSTR-ProjectID') is None:
             raise ValueError(self._parameter_error)
 
-        response = objects.get_vldb_settings(connection, self.id, self._OBJECT_TYPE.value,
-                                             application)
+        response = objects.get_vldb_settings(connection, self.id, self._OBJECT_TYPE.value, project)
         return response.json()
 
     def alter_vldb_settings(self: Entity, property_set_name: str, name: str, value: dict,
+                            project: Optional[str] = None,
                             application: Optional[str] = None) -> None:
         """Alter VLDB settings for a given property set."""
+        if application:
+            helper.deprecation_warning(
+                '`application`',
+                '`project`',
+                '11.3.4.101',  # NOSONAR
+                False)
+            project = project or application
 
         connection = self.connection if hasattr(self, 'connection') else self._connection
-        if not application and connection.session.headers.get('X-MSTR-ProjectID') is None:
+        if not project and connection.session.headers.get('X-MSTR-ProjectID') is None:
             raise ValueError(self._parameter_error)
 
         body = [{"name": name, "value": value}]
         response = objects.set_vldb_settings(connection, self.id, self._OBJECT_TYPE.value,
-                                             property_set_name, body, application)
+                                             property_set_name, body, project)
         if config.verbose and response.ok:
             print("VLDB settings altered")
 
-    def reset_vldb_settings(self: Entity, application: Optional[str] = None) -> None:
+    def reset_vldb_settings(self: Entity, project: Optional[str] = None,
+                            application: Optional[str] = None) -> None:
         """Reset VLDB settings to default values."""
+        if application:
+            helper.deprecation_warning(
+                '`application`',
+                '`project`',
+                '11.3.4.101',  # NOSONAR
+                False)
+            project = project or application
 
         connection = self.connection if hasattr(self, 'connection') else self._connection
-        if not application and connection.session.headers.get('X-MSTR-ProjectID') is None:
+        if not project and connection.session.headers.get('X-MSTR-ProjectID') is None:
             raise ValueError(self._parameter_error)
 
         response = objects.delete_vldb_settings(connection, self.id, self._OBJECT_TYPE.value,
-                                                application)
+                                                project)
         if config.verbose and response.ok:
             print("VLDB settings reset to default")
+
+
+def auto_match_args_entity(func: Callable, obj: EntityBase, exclude: list = [],
+                           include_defaults: bool = True) -> dict:
+    """Automatically match `obj` object data to function arguments.
+
+    Handles default parameters. Extracts value from Enums. Returns matched
+    arguments as dict.
+
+    Args:
+        function: function for which args will be matched
+        obj: object to use for matching the function args
+        exclude: set `exclude` parameter to exclude specific param-value pairs
+        include_defaults: if `False` then values which have the same value as
+            default will not be included in the result
+    Raises:
+        KeyError: could not match all required arguments
+    """
+    # convert names starting with '_'
+    obj_dict = {key[1:] if key.startswith("_") else key: val for key, val in obj.__dict__.items()}
+    kwargs = helper.auto_match_args(func, obj_dict, exclude, include_defaults)
+
+    if "object_type" in kwargs:
+        kwargs.update({"object_type": obj._OBJECT_TYPE.value})
+
+    return kwargs

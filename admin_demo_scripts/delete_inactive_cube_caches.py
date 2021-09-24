@@ -1,8 +1,7 @@
-from mstrio.application_objects.datasets.cube_cache import CubeCache, list_cube_caches
+from mstrio.project_objects.datasets.cube_cache import CubeCache, list_cube_caches
 from mstrio.connection import Connection
 
 from datetime import datetime, timezone
-
 from typing import List, Union
 
 
@@ -11,8 +10,8 @@ def _get_datetime(date):
     return datetime.strptime(date, '%Y-%m-%dT%H:%M:%S.000%z')
 
 
-def delete_inactive_caches(connection: "Connection", days_diff: str = 30,
-                           nodes: Union[str, List[str]] = None) -> List["CubeCache"]:
+def delete_inactive_caches(connection: Connection, days_diff: str = 30,
+                           nodes: Union[str, List[str]] = None) -> List[CubeCache]:
     """Delete inactive caches which have `hit_count` equals 0 and their
     `last_time_updated` was earlier than `days_diff` before from given `nodes`.
 
@@ -31,7 +30,7 @@ def delete_inactive_caches(connection: "Connection", days_diff: str = 30,
     Return:
         list with cache objects which were deleted
     """
-    connection._validate_application_selected()
+    connection._validate_project_selected()
     caches = list_cube_caches(connection, nodes)
     # delete caches which fulfill requirements to be treated as inactive
     deleted_caches = []

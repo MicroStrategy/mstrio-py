@@ -1,7 +1,8 @@
 from packaging import version
-from mstrio.utils.helper import response_handler
-
 from typing import TYPE_CHECKING
+
+from mstrio.utils.error_handlers import ErrorHandler
+
 if TYPE_CHECKING:
     from mstrio.connection import Connection
     from requests_futures.sessions import FuturesSession
@@ -9,6 +10,7 @@ if TYPE_CHECKING:
 CUBE_FIELDS = '-data.metricValues.extras,-data.metricValues.formatted'
 
 
+@ErrorHandler(err_msg='Error getting cube {id} definition.')
 def cube_definition(connection: "Connection", id: str):
     """Get the definition of a specific cube, including attributes and metrics.
     The cube can be either an Intelligent Cube or a Direct Data Access
@@ -25,14 +27,11 @@ def cube_definition(connection: "Connection", id: str):
     Returns:
         Complete HTTP response object.
     """
-    connection._validate_application_selected()
-    response = connection.session.get(url=connection.base_url + '/api/v2/cubes/' + id)
-
-    if not response.ok:
-        response_handler(response, "Error getting cube definition. Check Cube ID.")
-    return response
+    connection._validate_project_selected()
+    return connection.session.get(url=f'{connection.base_url}/api/v2/cubes/{id}')
 
 
+@ErrorHandler(err_msg='Error getting cube {id} metadata information.')
 def cube_info(connection: "Connection", id: str):
     """Get information for specific cubes in a specific project. The cubes can
     be either Intelligent cubes or Direct Data Access (DDA)/MDX cubes. This
@@ -47,13 +46,10 @@ def cube_info(connection: "Connection", id: str):
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.get(url=connection.base_url + '/api/cubes/?id=' + id)
-
-    if not response.ok:
-        response_handler(response, "Error getting cube metadata information. Check Cube ID.")
-    return response
+    return connection.session.get(url=f'{connection.base_url}/api/cubes/?id={id}')
 
 
+@ErrorHandler(err_msg='Error getting cube {id} metadata information.')
 def get_cube_status(connection: "Connection", id: str):
     """Get the status of a specific cube in a specific project.
 
@@ -65,13 +61,10 @@ def get_cube_status(connection: "Connection", id: str):
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.head(url=connection.base_url + '/api/cubes/' + id)
-
-    if not response.ok:
-        response_handler(response, "Error getting cube metadata information. Check Cube ID.")
-    return response
+    return connection.session.head(url=f'{connection.base_url}/api/cubes/{id}')
 
 
+@ErrorHandler(err_msg='Error creating a new cube instance with ID {cube_id}.')
 def cube_instance(connection: "Connection", cube_id: str, body: dict = {}, offset: int = 0,
                   limit: int = 5000):
     """Create a new instance of a specific cube. This in-memory instance can be
@@ -97,16 +90,14 @@ def cube_instance(connection: "Connection", cube_id: str, body: dict = {}, offse
     if version.parse(connection.iserver_version) >= version.parse("11.2.0200"):
         params['fields'] = CUBE_FIELDS
 
-    response = connection.session.post(
-        url=connection.base_url + '/api/v2/cubes/' + cube_id + '/instances',
+    return connection.session.post(
+        url=f'{connection.base_url}/api/v2/cubes/{cube_id}/instances',
         json=body,
         params=params,
     )
-    if not response.ok:
-        response_handler(response, "Error creating a new cube instance.")
-    return response
 
 
+@ErrorHandler(err_msg='Error getting cube {cube_id} contents.')
 def cube_instance_id(connection: "Connection", cube_id: str, instance_id: str, offset: int = 0,
                      limit: int = 5000):
     """Get the results of a previously created instance for a specific cube,
@@ -134,13 +125,10 @@ def cube_instance_id(connection: "Connection", cube_id: str, instance_id: str, o
     if version.parse(connection.iserver_version) >= version.parse("11.2.0200"):
         params['fields'] = CUBE_FIELDS
 
-    response = connection.session.get(
-        url=connection.base_url + '/api/v2/cubes/' + cube_id + '/instances/' + instance_id,
+    return connection.session.get(
+        url=f'{connection.base_url}/api/v2/cubes/{cube_id}/instances/{instance_id}',
         params=params,
     )
-    if not response.ok:
-        response_handler(response, "Error getting cube contents.")
-    return response
 
 
 def cube_instance_id_coroutine(future_session: "FuturesSession", connection: "Connection",
@@ -155,11 +143,12 @@ def cube_instance_id_coroutine(future_session: "FuturesSession", connection: "Co
     if version.parse(connection.iserver_version) >= version.parse("11.2.0200"):
         params['fields'] = CUBE_FIELDS
 
-    url = connection.base_url + '/api/v2/cubes/' + cube_id + '/instances/' + instance_id
+    url = f'{connection.base_url}/api/v2/cubes/{cube_id}/instances/{instance_id}'
     future = future_session.get(url, params=params)
     return future
 
 
+@ErrorHandler(err_msg='Error getting attribute {attribute_id} elements within cube {cube_id}')
 def cube_single_attribute_elements(connection: "Connection", cube_id: str, attribute_id: str,
                                    offset: int = 0, limit: int = 200000):
     """Get elements of a specific attribute of a specific cube.
@@ -174,17 +163,13 @@ def cube_single_attribute_elements(connection: "Connection", cube_id: str, attri
         Complete HTTP response object.
     """
 
-    response = connection.session.get(
-        url=connection.base_url + '/api/cubes/' + cube_id + '/attributes/' + attribute_id
-        + '/elements',
+    return connection.session.get(
+        url=f'{connection.base_url}/api/cubes/{cube_id}/attributes/{attribute_id}/elements',
         params={
             'offset': offset,
             'limit': limit
         },
     )
-    if not response.ok:
-        response_handler(response, "Error getting attribute " + attribute_id + " elements")
-    return response
 
 
 def cube_single_attribute_elements_coroutine(future_session: "FuturesSession",
@@ -196,12 +181,11 @@ def cube_single_attribute_elements_coroutine(future_session: "FuturesSession",
     Returns:
         Complete Future object.
     """
-    url = (connection.base_url + '/api/cubes/' + cube_id + '/attributes/' + attribute_id
-           + '/elements')
-    future = future_session.get(url, params={'offset': offset, 'limit': limit})
-    return future
+    url = f'{connection.base_url}/api/cubes/{cube_id}/attributes/{attribute_id}/elements'
+    return future_session.get(url, params={'offset': offset, 'limit': limit})
 
 
+@ErrorHandler(err_msg='Error sending request to publish cube with ID {cube_id}')
 def publish(connection: "Connection", cube_id: str):
     """Publish a specific cube in a specific project.
 
@@ -213,12 +197,10 @@ def publish(connection: "Connection", cube_id: str):
         Complete HTTP response object.
     """
 
-    response = connection.session.post(url=connection.base_url + '/api/cubes/' + cube_id)
-    if not response.ok:
-        response_handler(response, "Error sending request to publish cube.")
-    return response
+    return connection.session.post(url=f'{connection.base_url}/api/cubes/{cube_id}')
 
 
+@ErrorHandler(err_msg='Error getting cube {cube_id} status.')
 def status(connection: "Connection", cube_id: str, throw_error: bool = True):
     """Get the status of a specific cube in a specific project. The status is
     returned in HEADER X-MSTR-CubeStatus with a value from EnumDSSCubeStates,
@@ -235,19 +217,17 @@ def status(connection: "Connection", cube_id: str, throw_error: bool = True):
         Complete HTTP response object.
     """
 
-    response = connection.session.head(url=connection.base_url + '/api/cubes/' + cube_id)
-    if not response.ok:
-        response_handler(response, "Error getting cube status.", throw_error)
-    return response
+    return connection.session.head(url=f'{connection.base_url}/api/cubes/{cube_id}')
 
 
+@ErrorHandler(err_msg='Error creating cube {name} definition.')
 def create(connection: "Connection", name: str, folder_id: str, overwrite: bool = None,
            description: str = None, definition: dict = None):
     """
     Create an intelligent cube.
     POST /api/v2/cubes
     """
-    connection._validate_application_selected()
+    connection._validate_project_selected()
 
     body = {
         'name': name,
@@ -256,43 +236,44 @@ def create(connection: "Connection", name: str, folder_id: str, overwrite: bool 
         'overwrite': overwrite,
         'definition': definition
     }
-    params = {'X-MSTR-ProjectID': connection.application_id}
+    params = {'X-MSTR-ProjectID': connection.project_id}
 
-    response = connection.session.post(url=connection.base_url + '/api/v2/cubes', json=body,
-                                       params=params)
-    if not response.ok:
-        response_handler(response, "Error creating cube definition.")
-    return response
+    return connection.session.post(
+        url=f'{connection.base_url}/api/v2/cubes',
+        json=body,
+        params=params
+    )
 
 
+@ErrorHandler(err_msg='Error updating cube {cube_id} definition.')
 def update(connection: "Connection", cube_id: str, definition: dict = None):
     """
     Update an intelligent cube.
     PUT /api/v2/cubes/{cube_id}
     """
-    connection._validate_application_selected()
+    connection._validate_project_selected()
 
     body = {'definition': definition}
-    params = {'X-MSTR-ProjectID': connection.application_id}
+    params = {'X-MSTR-ProjectID': connection.project_id}
 
-    response = connection.session.put(url=f"{connection.base_url}/api/v2/cubes/{cube_id}",
-                                      json=body, params=params)
-    if not response.ok:
-        response_handler(response, "Error updating cube definition.")
-    return response
+    return connection.session.put(
+        url=f"{connection.base_url}/api/v2/cubes/{cube_id}",
+        json=body,
+        params=params
+    )
 
 
+@ErrorHandler(err_msg='Error getting sql view of cube with ID {cube_id}')
 def get_sql_view(connection: "Connection", cube_id: str, project_id: str = None):
     """
     Get the sql view of cube.
     GET /api/v2/cubes/{cube_id}/sqlView
     """
     if not project_id:
-        connection._validate_application_selected()
-        project_id = connection.application_id
+        connection._validate_project_selected()
+        project_id = connection.project_id
 
-    response = connection.session.get(url=f"{connection.base_url}/api/v2/cubes/{cube_id}/sqlView",
-                                      params={'X-MSTR-projectID': project_id})
-    if not response.ok:
-        response_handler(response, "Error getting sql view of cube.")
-    return response
+    return connection.session.get(
+        url=f"{connection.base_url}/api/v2/cubes/{cube_id}/sqlView",
+        params={'X-MSTR-projectID': project_id}
+    )

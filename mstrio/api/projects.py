@@ -1,8 +1,13 @@
+from mstrio.utils.error_handlers import ErrorHandler
 from mstrio.utils.helper import response_handler
 
 
-def get_project(connection, name, error_msg=None, throw_error=True, whitelist=[('ERR001', 500),
-                                                                               ('ERR014', 403)]):
+@ErrorHandler(
+    err_msg='Selected project {name} does not exist or is not loaded.'
+            ' Please load the project or select a valid project '
+            'or create a new project using `create_new` method')
+def get_project(connection, name, error_msg=None, throw_error=True,
+                whitelist=[('ERR001', 500), ('ERR014', 403)]):
     """Get a specific project that the authenticated user has access to.
 
     Args:
@@ -16,17 +21,11 @@ def get_project(connection, name, error_msg=None, throw_error=True, whitelist=[(
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.get(url=connection.base_url + '/api/projects/' + name)
-    if not response.ok:
-        if error_msg is None:
-            error_msg = (f"Selected application '{name}' does not exist or is not loaded. Please "
-                         "load the application or select a valid application or create a new "
-                         "application using `create_new` method")
-        response_handler(response, error_msg, whitelist=whitelist)
-    return response
+    return connection.session.get(url=f'{connection.base_url}/api/projects/{name}')
 
 
-def get_projects(connection, error_msg=None, whitelist=[]):
+@ErrorHandler(err_msg='Error fetching list of available projects.')
+def get_projects(connection, error_msg=None, whitelist=None):
     """Get a list of all projects that the authenticated user has access to.
 
     Args:
@@ -40,13 +39,10 @@ def get_projects(connection, error_msg=None, whitelist=[]):
         Complete HTTP response object.
     """
 
-    response = connection.session.get(url=connection.base_url + '/api/projects',
-                                      headers={'X-MSTR-ProjectID': None})
-    if not response.ok:
-        if error_msg is None:
-            error_msg = "Error fetching list of available projects."
-        response_handler(response, error_msg, whitelist=whitelist)
-    return response
+    return connection.session.get(
+        url=f'{connection.base_url}/api/projects',
+        headers={'X-MSTR-ProjectID': None}
+    )
 
 
 def create_project(connection, body, error_msg=None):
@@ -68,11 +64,12 @@ def create_project(connection, body, error_msg=None):
     )
     if response.status_code != 201:
         if error_msg is None:
-            error_msg = "Application could not be created."
+            error_msg = "Project could not be created."
         response_handler(response, error_msg)
     return response
 
 
+@ErrorHandler(err_msg='Error getting project import quota for project with ID {id}')
 def get_project_import_quota(connection, id, error_msg=None):
     """Get the amount of space, in MB, that can be used for the Data Import
     function for a specific project. This is the default value applied to all
@@ -86,14 +83,10 @@ def get_project_import_quota(connection, id, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.get(url=connection.base_url + '/api/projects/' + id + '/quotas')
-    if not response.ok:
-        if error_msg is None:
-            error_msg = "Error getting project import quota"
-        response_handler(response, error_msg)
-    return response
+    return connection.session.get(url=f'{connection.base_url}/api/projects/{id}/quotas')
 
 
+@ErrorHandler(err_msg='Error setting import quota for project with ID {id}')
 def set_project_import_quota(connection, id, body, error_msg=None):
     """Set the amount of space, in MB, that can be used for the Data Import
     function for a specific project.
@@ -108,18 +101,14 @@ def set_project_import_quota(connection, id, body, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.put(
-        url=connection.base_url + '/api/projects/' + id + '/quotas',
+    return connection.session.put(
+        url=f'{connection.base_url}/api/projects/{id}/quotas',
         headers={'X-MSTR-ProjectID': None},
         json=body,
     )
-    if not response.ok:
-        if error_msg is None:
-            error_msg = "Error setting project import quota"
-        response_handler(response, error_msg)
-    return response
 
 
+@ErrorHandler(err_msg='Error setting user {user_id} import quota for project with ID {id}')
 def set_user_import_quota(connection, id, user_id, body, error_msg=None):
     """Set the amount of space, in MB, that can be used for the Data Import
     function for a specific user. The value provided is rounded to an integer.
@@ -135,18 +124,14 @@ def set_user_import_quota(connection, id, user_id, body, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.put(
-        url=connection.base_url + '/api/projects/' + id + '/users/' + user_id + '/quotas',
+    return connection.session.put(
+        url=f'{connection.base_url}/api/projects/{id}/users/{user_id}/quotas',
         headers={'X-MSTR-ProjectID': None},
         json=body,
     )
-    if not response.ok:
-        if error_msg is None:
-            error_msg = "Error setting user import quota"
-        response_handler(response, error_msg)
-    return response
 
 
+@ErrorHandler(err_msg='Error getting user import quota for project with ID {id}')
 def get_user_import_quota(connection, id, user_id=None, error_msg=None):
     """Get a list of users for whom Data Import quotas have been set and their
     quotas.
@@ -160,18 +145,14 @@ def get_user_import_quota(connection, id, user_id=None, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.get(
-        url=connection.base_url + '/api/projects/' + id + '/users/quotas',
+    return connection.session.get(
+        url=f'{connection.base_url}/api/projects/{id}/users/quotas',
         headers={'X-MSTR-ProjectID': None},
         params={'user_id': user_id},
     )
-    if not response.ok:
-        if error_msg is None:
-            error_msg = "Error getting user import quota"
-        response_handler(response, error_msg)
-    return response
 
 
+@ErrorHandler(err_msg='Error fetching project {id} settings configuration.')
 def get_project_settings_config(connection, id, error_msg=None):
     """Get project settings configurations.
 
@@ -182,18 +163,14 @@ def get_project_settings_config(connection, id, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.get(
+    return connection.session.get(
         url=f'{connection.base_url}/api/v2/projects/{id}/settings/config',
         headers={'X-MSTR-ProjectID': None},
     )
-    if not response.ok:
-        if error_msg is None:
-            error_msg = "Error fetching settings configuration"
-        response_handler(response, error_msg)
-    return response
 
 
-def get_project_settings(connection, id, error_msg=None, whitelist=[]):
+@ErrorHandler(err_msg='Error getting project settings for project with ID {id}')
+def get_project_settings(connection, id, error_msg=None, whitelist=None):
     """Get project settings.
 
     Args:
@@ -207,17 +184,13 @@ def get_project_settings(connection, id, error_msg=None, whitelist=[]):
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.get(
-        url=connection.base_url + '/api/v2/projects/' + id + '/settings',
+    return connection.session.get(
+        url=f'{connection.base_url}/api/v2/projects/{id}/settings',
         headers={'X-MSTR-ProjectID': None},
     )
-    if not response.ok:
-        if error_msg is None:
-            error_msg = "Error getting project settings"
-        response_handler(response, error_msg, whitelist=whitelist)
-    return response
 
 
+@ErrorHandler(err_msg='Error setting project settings for project with ID {id}')
 def set_project_settings(connection, id, body, error_msg=None):
     """Set new project settings.
 
@@ -230,18 +203,14 @@ def set_project_settings(connection, id, body, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.put(
-        url=connection.base_url + '/api/v2/projects/' + id + '/settings',
+    return connection.session.put(
+        url=f'{connection.base_url}/api/v2/projects/{id}/settings',
         headers={'X-MSTR-ProjectID': None},
         json=body,
     )
-    if not response.ok:
-        if error_msg is None:
-            error_msg = "Error setting project settings"
-        response_handler(response, error_msg)
-    return response
 
 
+@ErrorHandler(err_msg='Error updating project settings for project with ID {id}')
 def update_project_settings(connection, id, body, error_msg=None):
     """Update project settings.
 
@@ -254,18 +223,14 @@ def update_project_settings(connection, id, body, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.patch(
-        url=connection.base_url + '/api/v2/projects/' + id + '/settings',
+    return connection.session.patch(
+        url=f'{connection.base_url}/api/v2/projects/{id}/settings',
         headers={'X-MSTR-ProjectID': None},
         json=body,
     )
-    if not response.ok:
-        if error_msg is None:
-            error_msg = "Error updating project settings"
-        response_handler(response, error_msg)
-    return response
 
 
+@ErrorHandler(err_msg='Error getting engine setting for project with ID {id}')
 def get_engine_settings(connection, id, error_msg=None):
     """Get available and current engine settings for a project.
 
@@ -277,19 +242,15 @@ def get_engine_settings(connection, id, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.get(
-        url=connection.base_url + '/api/projects/' + id + '/settings/engine',
+    return connection.session.get(
+        url=f'{connection.base_url}/api/projects/{id}/settings/engine',
         headers={'X-MSTR-ProjectID': None},
     )
-    if not response.ok:
-        if error_msg is None:
-            error_msg = "Error getting engine settings"
-        response_handler(response, error_msg)
-    return response
 
 
-def get_projects_on_startup(connection, error_msg=None, whitelist=[]):
-    """Get a list of applications along with the nodes on which they would be
+@ErrorHandler(err_msg='Error getting project startup settings.')
+def get_projects_on_startup(connection, error_msg=None, whitelist=None):
+    """Get a list of projects along with the nodes on which they would be
     available when the iServer starts up.
 
     Args:
@@ -302,17 +263,15 @@ def get_projects_on_startup(connection, error_msg=None, whitelist=[]):
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.get(url=connection.base_url + '/api/projects/settings/onStartup',
-                                      headers={'X-MSTR-ProjectID': None})
-    if not response.ok:
-        if error_msg is None:
-            error_msg = "Error getting project startup settings."
-        response_handler(response, error_msg, whitelist=whitelist)
-    return response
+    return connection.session.get(
+        url=f'{connection.base_url}/api/projects/settings/onStartup',
+        headers={'X-MSTR-ProjectID': None}
+    )
 
 
-def update_projects_on_startup(connection, body, error_msg=None, whitelist=[]):
-    """Update status of applications on iServer nodes at start up. You provide
+@ErrorHandler(err_msg='Error updating project startup settings.')
+def update_projects_on_startup(connection, body, error_msg=None, whitelist=None):
+    """Update status of projects on iServer nodes at start up. You provide
     the request body as of list of replace operations to be performed on the
     value of array of nodes with the path URI containing the corresponding
     project id that needs to be updated.
@@ -333,13 +292,8 @@ def update_projects_on_startup(connection, body, error_msg=None, whitelist=[]):
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.patch(
-        url=connection.base_url + '/api/projects/settings/onStartup',
+    return connection.session.patch(
+        url=f'{connection.base_url}/api/projects/settings/onStartup',
         headers={'X-MSTR-ProjectID': None},
         json=body,
     )
-    if not response.ok:
-        if error_msg is None:
-            error_msg = "Error updating project startup settings."
-        response_handler(response, error_msg, whitelist=whitelist)
-    return response

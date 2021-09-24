@@ -1,7 +1,7 @@
 """Delete inactive caches which were not used for 30 days. IDs of deleted caches
 will be printed."""
 
-from mstrio.application_objects.datasets.cube_cache import CubeCache, list_cube_caches
+from mstrio.project_objects.datasets.cube_cache import CubeCache, list_cube_caches
 from mstrio.connection import Connection, get_connection
 
 from datetime import datetime, timezone
@@ -31,7 +31,7 @@ def delete_inactive_caches(connection: "Connection", days_diff: str = 30,
     Return:
         list with cache objects which were deleted
     """
-    connection._validate_application_selected()
+    connection._validate_project_selected()
     caches = list_cube_caches(connection, nodes)
     # delete caches which fulfill requirements to be treated as inactive
     deleted_caches = []

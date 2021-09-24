@@ -25,7 +25,8 @@ define(['./python-code'], (PythonCode) => class JupyterKernel {
     this.result = {};
     this.codeString = '';
     this.shellOnly = false;
-    this.expectStream = false;
+    this.expectStreamIndex = undefined;
+    this.expectJSON = true;
     this.showDebug = false;
     this.hasCell = false;
     this.doneFlag = false;
@@ -42,6 +43,7 @@ define(['./python-code'], (PythonCode) => class JupyterKernel {
     this.code = this.code.bind(this);
     this.shell = this.shell.bind(this);
     this.stream = this.stream.bind(this);
+    this.expectString = this.expectString.bind(this);
     this.setCallbacks = this.setCallbacks.bind(this);
     this.verifyCallbackType = this.verifyCallbackType.bind(this);
     this.execute = this.execute.bind(this);
@@ -175,7 +177,7 @@ define(['./python-code'], (PythonCode) => class JupyterKernel {
 
   get successReplies() {
     const { executeResult, stream } = this.replyMessageTypes;
-    return this.expectStream ? [executeResult, stream] : [executeResult];
+    return this.expectStreamIndex ? [executeResult, stream] : [executeResult];
   }
 
   replySuccessful(reply, expected = this.successReplies) { return expected.includes(reply); }
@@ -194,7 +196,7 @@ define(['./python-code'], (PythonCode) => class JupyterKernel {
 
         const waitForAllCallbacks = (retryNumber = 0) => {
           retryNumber > 100 && reject(new Error('executePythonCodeInBackground timed out. Please retry.'));
-          Object.values(solution).every((value) => value) && resolve(solution);
+          Object.values(solution).every((value) => !!value) && resolve(solution);
           setTimeout(waitForAllCallbacks, 50, retryNumber + 1);
         };
 
@@ -207,7 +209,7 @@ define(['./python-code'], (PythonCode) => class JupyterKernel {
               solution.shell = out;
               this.shellOnly = false;
               if (out.msg_type === 'execute_reply' && out.content.status === 'ok') {
-                that.showDebug && console.log('Successful resolution: ', solution);
+                console.assert(!that.showDebug, 'Successful resolution: ', solution);
                 waitForAllCallbacks();
               } else { // reject overall
                 reject(solution);
@@ -222,14 +224,14 @@ define(['./python-code'], (PythonCode) => class JupyterKernel {
               if (expectedId !== that._id) return;
               clearedCustomCallbacks.iopub.output(out, ...args);
               if (that.replySuccessful(out.msg_type)) {
-                if (that.expectStream) {
+                if (that.expectStreamIndex) {
                   responseNumber += 1;
-                  that.showDebug && console.log(`RESPONSE #${responseNumber}:`, out);
-                  if (responseNumber !== that.expectStream) return;
-                  that.showDebug && console.log('EXPECTED RESPONSE INDEX, saving...');
+                  console.assert(!that.showDebug, `RESPONSE #${responseNumber}:`, out);
+                  if (responseNumber !== that.expectStreamIndex) return;
+                  console.assert(!that.showDebug, 'EXPECTED RESPONSE INDEX, saving...');
                 }
                 solution.output = out;
-                if (!that.hasCell && !that.expectStream) {
+                if (!that.hasCell && !that.expectStreamIndex) {
                   solution.output.content.data.parsed = that.parseResult(solution);
                 }
               }
@@ -238,10 +240,8 @@ define(['./python-code'], (PythonCode) => class JupyterKernel {
         }
 
         const props = that.formattedCallbacks(propertiesArgument, clearedCustomCallbacks);
-        if (that.showDebug) {
-          console.log(`CODE TO EXECUTE:\n${that.codeString}`);
-          console.log('PROPERTIES FOR EXECUTION: ', props);
-        }
+        console.assert(!that.showDebug, `CODE TO EXECUTE:\n${that.codeString}`);
+        console.assert(!that.showDebug, 'PROPERTIES FOR EXECUTION: ', props);
         this.msgId = that.kernel.execute(that.codeString, props, {
           silent: false,
           store_history: that.hasCell,
@@ -289,20 +289,26 @@ define(['./python-code'], (PythonCode) => class JupyterKernel {
     if (typeof this.codeString !== 'string') {
       throw new Error('JupyterKernel error: code to execute is not in string format (cannot execute object as string)');
     }
-    this.showDebug && console.log(`APPLIED CODE:\n${this.codeString}`);
+    console.assert(!this.showDebug, `APPLIED CODE:\n${this.codeString}`);
     return this;
   }
 
   shell() {
-    this.showDebug && console.log('APPLY ON SHELL ONLY');
+    console.assert(!this.showDebug, 'APPLY ON SHELL ONLY');
     this.shellOnly = true;
     return this;
   }
 
   stream(responseIndex = 1) {
     // responseIndex => which response from streamed data flow is the expected one (1 = first)
-    this.showDebug && console.log('EXPECT STREAM RESPONSE, INDEX: ', responseIndex);
-    this.expectStream = responseIndex;
+    console.assert(!this.showDebug, 'EXPECT STREAM RESPONSE, INDEX: ', responseIndex);
+    this.expectStreamIndex = responseIndex;
+    return this;
+  }
+
+  expectString() {
+    // for when the python code do not return JSONified object, but a string (or number)
+    this.expectJSON = false;
     return this;
   }
 
@@ -325,15 +331,15 @@ define(['./python-code'], (PythonCode) => class JupyterKernel {
      * param @error: reference to the error outputted by executePythonCodeInBackground
      */
     const catchCallback = _catchCallback || ((error) => {
-      error.code && console.warn(`CODE ERRORED:\n${error.code}`);
+      error.code && console.error(`CODE ERRORED:\n${error.code}`);
       console.error('JupyterKernel error: executePythonCodeInBackground threw an error: ', error);
     });
     this.verifyCallbackType(catchCallback);
-    this.showDebug && !!_catchCallback && console.log('CUSTOM CATCH CALLBACK: ', catchCallback);
+    console.assert(!(this.showDebug && !!_catchCallback), 'CUSTOM CATCH CALLBACK: ', catchCallback);
     this.command = this
       .executePythonCodeInBackground()
       .catch(catchCallback);
-    this.showDebug && console.log('FRESH PROMISE IN EXECUTION: ', this.command);
+    console.assert(!this.showDebug, 'FRESH PROMISE IN EXECUTION: ', this.command);
     return this;
   }
 
@@ -366,7 +372,7 @@ define(['./python-code'], (PythonCode) => class JupyterKernel {
 
   parseResult(_forcedResult) {
     const result = (_forcedResult || this.result).output;
-    this.showDebug && console.log('RESULT TO PARSE: ', result);
+    console.assert(!this.showDebug, 'RESULT TO PARSE: ', result);
     try {
       if (result.content.data) {
         let output = result.content.data['text/plain'];
@@ -374,13 +380,15 @@ define(['./python-code'], (PythonCode) => class JupyterKernel {
         output = output.replace(/\\\\"/ig, '\\"');
         output = output.replace(/\\\\\//ig, '/');
         const toParse = output.charAt(0) === '"' ? output.slice(1, -1) : output;
-        const toReturn = JSON.parse(toParse);
-        this.showDebug && console.log(`PARSED RESULT:\n${toReturn}`);
+        const toReturn = this.expectJSON
+          ? JSON.parse(toParse)
+          : toParse;
+        console.assert(!this.showDebug, `PARSED RESULT:\n${toReturn}`);
         return toReturn;
       }
       return result.content.text.trim();
     } catch (err) {
-      console.warn('JSON.parse() failed with this object: ', result);
+      console.error('JSON.parse() failed with this object: ', result);
       console.error(err);
       throw new Error('JupyterKernel error: result parsing failed');
     }
