@@ -1,11 +1,85 @@
 from typing import List, Optional, Union
 
+from packaging import version
+
 from mstrio import config
 import mstrio.api.subscriptions as subscriptions_
 from mstrio.connection import Connection
-from mstrio.distribution_services.subscription.content import Content
-from mstrio.distribution_services.subscription.subscription import list_subscriptions, Subscription
 from mstrio.utils import helper
+
+from . import CacheUpdateSubscription, EmailSubscription, Subscription
+from .content import Content
+from .delivery import Delivery
+
+
+def list_subscriptions(connection: Connection, project_id: Optional[str] = None,
+                       project_name: Optional[str] = None, to_dictionary: bool = False,
+                       limit: Optional[int] = None,
+                       **filters) -> Union[List["Subscription"], List[dict]]:
+    """Get all subscriptions per project as list of Subscription objects or
+    dictionaries.
+
+    Optionally filter the subscriptions by specifying filters.
+    Specify either `project_id` or `project_name`.
+    When `project_id` is provided (not `None`), `project_name` is
+    omitted.
+
+    Args:
+        connection(object): MicroStrategy connection object
+        project_id: Project ID
+        project_name: Project name
+        to_dictionary: If True returns a list of subscription dicts,
+            otherwise (default) returns a list of subscription objects
+        limit: limit the number of elements returned. If `None` (default), all
+            objects are returned.
+        **filters: Available filter parameters: ['id', 'name', 'editable',
+            'allowDeliveryChanges', 'allowPersonalizationChanges',
+            'allowUnsubscribe', 'dateCreated', 'dateModified', 'owner',
+            'schedules', 'contents', 'recipients', 'delivery']
+    """
+    project_id = Subscription._project_id_check(connection, project_id, project_name)
+    chunk_size = 1000 if version.parse(
+        connection.iserver_version) >= version.parse('11.3.0300') else 1000000
+    msg = 'Error getting subscription list.'
+    objects = helper.fetch_objects_async(
+        connection=connection,
+        api=subscriptions_.list_subscriptions,
+        async_api=subscriptions_.list_subscriptions_async,
+        limit=limit,
+        chunk_size=chunk_size,
+        filters=filters,
+        error_msg=msg,
+        dict_unpack_value="subscriptions",
+        project_id=project_id,
+    )
+
+    if to_dictionary:
+        return objects
+    else:
+        return [
+            dispatch_from_dict(
+                source=obj,
+                connection=connection,
+                project_id=project_id,
+            ) for obj in objects
+        ]
+
+
+DeliveryMode = Delivery.DeliveryMode
+subscription_type_from_delivery_mode_dict = {
+    DeliveryMode.CACHE: CacheUpdateSubscription,
+    DeliveryMode.EMAIL: EmailSubscription,
+}
+
+
+def get_subscription_type_from_delivery_mode(mode: DeliveryMode):
+    return subscription_type_from_delivery_mode_dict.get(mode, Subscription)
+
+
+def dispatch_from_dict(source: dict, connection: Connection, project_id: str):
+    delivery_mode = DeliveryMode(source["delivery"]["mode"])
+    sub_type = get_subscription_type_from_delivery_mode(delivery_mode)
+    return sub_type.from_dict(source, connection, project_id)
 
 
 class SubscriptionManager:

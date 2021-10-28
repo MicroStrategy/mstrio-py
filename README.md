@@ -48,7 +48,7 @@ Since version **11.3.0.1**, **mstrio-py** includes also administration modules:
 - **Server** management module (see [examples][example_server])
 - **User** and **Usergroup** management modules (see [examples][example_user])
 - **Schedules** management module (see [examples][example_schedules])
-- **Subscription** management module (see [examples][example_subs])
+- **Subscription** management modules including **Email Subscription** and **Cache Update Subscription** (see [examples][example_subs])
 - **Document** and **Dossiers** in **User Library** modules (see [examples][example_library])
 - **User Connections** management module
 - **Privilege** and **Security Role** management modules
@@ -59,7 +59,7 @@ Since version **11.3.0.1**, **mstrio-py** includes also administration modules:
 - **Job Monitor** module for job monitoring (see [examples][example_job_monitor])
 - **Object management** module (see [examples][example_object_mgmt])
 
-Known limitations in 11.3.3.101:
+Known limitations in 11.3.3.102:
 - Method *trigger* in Event class is work in progress and might not work correctly yet.
 
 # Documentation
@@ -102,7 +102,7 @@ jupyter nbextension enable connector-jupyter --py --sys-prefix
 
 # Versioning & Changelog
 
-Current version: **11.3.3.101** (24 September 2021). Check out [**Changelog**][release_notes] to see what's new.
+Current version: **11.3.3.102** (29 October 2021). Check out [**Changelog**][release_notes] to see what's new.
 
 mstrio-py is constantly developed to support newest MicroStrategy REST APIs. Functionalities may be added to mstrio on monthly basis. It is **recommended** to always install the newest version of mstrio-py, as it will be most stable and still maintain backwards compatibility with various MicroStrategy installations, dating back to 11.1.4.
 

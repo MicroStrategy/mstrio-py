@@ -194,6 +194,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
         self._memberships = kwargs.get("memberships")
         self._security_roles = kwargs.get("security_roles")
         self._privileges = kwargs.get("privileges")
+        self._security_filters = kwargs.get("security_filters")
 
     @classmethod
     def create(cls, connection: Connection, username: str, full_name: str,
@@ -484,6 +485,42 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
             print("Revoked Security Role '{}' from user: '{}'".format(
                 security_role.name, self.name))
 
+    def list_security_filters(self, projects: Optional[Union[str, List[str]]] = None,
+                              to_dictionary: bool = False) -> dict:
+        """Get the list of security filters for user. They can be filtered by
+        the projects' ids.
+
+        Args:
+            projects (str or list of str, optional): collection of projects' ids
+                which is used for filtering data
+            to_dictionary: If True returns security filters as dicts, by default
+                (False) returns them as objects.
+
+        Returns:
+            Dictionary with project names as keys and list with security
+            filters as values. In case of no securtiy filter for the given user
+            in the particular project, then this project is not placed in
+            the dictionary.
+        """
+        from mstrio.access_and_security.security_filter import SecurityFilter
+        objects_ = users.get_security_filters(self.connection, self.id, projects).json()
+        projects_ = objects_.get("projects")
+
+        objects_ = {
+            project_.get("name"): project_.get("securityFilters")
+            for project_ in projects_
+            if project_.get("securityFilters")
+        }
+
+        self._security_filters = {
+            name:
+            [SecurityFilter.from_dict(sec_filter, self.connection) for sec_filter in sec_filters]
+            for (name, sec_filters) in objects_.items()
+        }
+        if to_dictionary:
+            return objects_
+        return self._security_filters
+
     def apply_security_filter(self, security_filter: Union["SecurityFilter", str]) -> bool:
         """Apply a security filter to the user.
 
@@ -680,3 +717,9 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
     @property
     def privileges(self):
         return self._privileges
+
+    @property
+    def security_filters(self):
+        if not self._security_filters:
+            self.list_security_filters()
+        return self._security_filters
