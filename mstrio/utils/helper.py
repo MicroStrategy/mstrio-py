@@ -16,15 +16,16 @@ import stringcase
 
 from mstrio import __version__ as mstrio_version
 from mstrio import config
+from mstrio.api.exceptions import (MstrTimeoutError, PromptedContentError,
+                                   VersionException)
 from mstrio.types import ObjectSubTypes
-from mstrio.api.exceptions import MstrTimeoutError, PromptedContentError, VersionException
 from mstrio.utils.dict_filter import filter_list_of_dicts
 from mstrio.utils.time_helper import DatetimeFormats, map_datetime_to_str, map_str_to_datetime
 
 if TYPE_CHECKING:
-    from mstrio.types import ObjectTypes
     from mstrio.connection import Connection
     from mstrio.project_objects.datasets import OlapCube, SuperCube
+    from mstrio.types import ObjectTypes
 
 
 def deprecation_warning(deprecated: str, new: str, version: str, module: bool = True,
@@ -50,7 +51,7 @@ def deprecation_warning(deprecated: str, new: str, version: str, module: bool = 
             f"{deprecated}{module} is deprecated and will not be supported starting from mstrio-py"
             f"{version}. Please use {new} instead.")
     else:
-        msg = (f"From version {version} {deprecated}{module} will be removed and replaced with"
+        msg = (f"From version {version} {deprecated}{module} will be removed and replaced with "
                f"{new}")
     warnings.warn(DeprecationWarning(msg))
 
@@ -182,7 +183,7 @@ def response_handler(response, msg, throw_error=True, verbose=True, whitelist=No
         iserver_code = res.get('iServerCode')
         is_whitelisted = (server_code, response.status_code) in whitelist
 
-        if verbose and not is_whitelisted:
+        if not is_whitelisted:
             if ((server_code == 'ERR004' and response.status_code == 404
                  and server_msg == 'HTTP 404 Not Found')
                     or (server_code == 'ERR001' and response.status_code == 405
@@ -198,17 +199,18 @@ def response_handler(response, msg, throw_error=True, verbose=True, whitelist=No
             elif iserver_code == -2147468903:
                 raise PromptedContentError(
                     'Prompted content subscription creation is not supported.')
-            print(msg)
-            print("I-Server Error %s, %s\nTicket ID: %s\n" % (server_code, server_msg, ticket_id))
+            if verbose:
+                print(msg)
+                print("I-Server Error %s, %s\nTicket ID: %s\n" %
+                      (server_code, server_msg, ticket_id))
+            if throw_error:
+                response.raise_for_status()
     except JSONDecodeError:
         if verbose:
             print(msg)
             print(("Could not decode the response from the I-Server. Please check if I-Server "
                    "is running correctly\n"))
             response.raise_for_status()  # raise error if I-Server response cannot be decoded
-    else:
-        if throw_error and not is_whitelisted:
-            response.raise_for_status()
 
 
 def fallback_on_timeout(min_limit: int = 50):

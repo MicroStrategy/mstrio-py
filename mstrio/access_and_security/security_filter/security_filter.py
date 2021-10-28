@@ -15,9 +15,15 @@ if TYPE_CHECKING:
 
 
 def list_security_filters(connection: "Connection", to_dictionary: bool = False,
-                          limit: Optional[int] = None,
+                          limit: Optional[int] = None, user: Optional[Union[str, "User"]] = None,
+                          user_group: Optional[Union[str, "UserGroup"]] = None,
                           **filters) -> Union[List["SecurityFilter"], List[dict]]:
-    """Get list of security filter objects or security filter dicts.
+    """Get list of security filter objects or security filter dicts for the
+    project specified in the connection object. It can be filtered by user or
+    user group.
+
+    Note: It is not possible to provide both `user` and `user_group` parameter.
+        When both arguments are provided error is raised.
 
     Args:
         connection: MicroStrategy connection object returned by
@@ -26,6 +32,10 @@ def list_security_filters(connection: "Connection", to_dictionary: bool = False,
             `SecurityFilter` objects.
         limit: limit the number of elements returned. If `None` (default), all
             objects are returned.
+        user (str or object, optional): Id of user or `User` object used to
+            filter security filters
+        user_group (str or object, optional): Id of user group or `UserGroup`
+            object used to filter security filters
         **filters: Available filter parameters: ['id', 'name', 'description',
             'type', 'subtype', 'date_created', 'date_modified', 'version',
             'acg', 'icon_path', 'owner']
@@ -34,12 +44,28 @@ def list_security_filters(connection: "Connection", to_dictionary: bool = False,
         list of security filter objects or list of security filter dicts.
     """
     connection._validate_project_selected()
-    objects_ = full_search(connection, object_types=ObjectTypes.SECURITY_FILTER,
-                           project=connection.project_id, limit=limit, **filters)
+    if user and user_group:
+        helper.exception_handler(
+            "You cannot filter by both `user` and `user_group` at the same time.")
+
+    if user:
+        user = User(connection, id=user) if isinstance(user, str) else user
+        # filter security filters by user for project specified in `connection`
+        objects_ = user.list_security_filters(connection.project_id,
+                                              to_dictionary=True).get(connection.project_name, [])
+    elif user_group:
+        user_group = UserGroup(connection, id=user_group) if isinstance(user_group,
+                                                                        str) else user_group
+        # filter security filters by the user group for project specified in
+        # `connection`
+        objects_ = user_group.list_security_filters(connection.project_id, to_dictionary=True).get(
+            connection.project_name, [])
+    else:
+        objects_ = full_search(connection, object_types=ObjectTypes.SECURITY_FILTER,
+                               project=connection.project_id, limit=limit, **filters)
     if to_dictionary:
         return objects_
-    else:
-        return [SecurityFilter.from_dict(obj_, connection) for obj_ in objects_]
+    return [SecurityFilter.from_dict(obj_, connection) for obj_ in objects_]
 
 
 class SecurityFilter(Entity, DeleteMixin):
@@ -60,7 +86,7 @@ class SecurityFilter(Entity, DeleteMixin):
                 `connection.Connection()`.
             id (str): Identifier of a pre-existing security filter containing
                 the required data.
-            name (str): name of security filter.
+            name (str, optional): name of security filter.
         """
         super().__init__(connection, id, name=name)
         connection._validate_project_selected()

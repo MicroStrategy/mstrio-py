@@ -1,5 +1,24 @@
 # Changelog
 
+## 11.3.3.102 - 2021/10/29
+
+### Major changes
+- added `CacheUpdateSubscription` class to `subscription` module
+
+### Minor changes
+- return specific type of subscription object when using `list_subscriptions`
+- inner structure of `mstrio.distribution_services.subscription` was changed.
+  Please make sure to import from `mstrio.distribution_services` or
+  `mstrio.distribution_services.subscription` at most, since anything deeper is
+  considered internal implementation details and not guaranteed to remain
+  stable
+- added arguments `user` and `user_group` to function `list_security_filters` to
+  allow filtering results by user or user group
+- added method `list_security_filter` and property `security_filters` to
+  `UserGroup` class
+- added method `list_security_filter` and property `security_filters` to
+  `User` class
+
 ## 11.3.3.101 - 2021/09/24
 
 ### Major changes

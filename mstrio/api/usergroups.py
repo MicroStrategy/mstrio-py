@@ -1,8 +1,9 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional, Union, List
 
 from mstrio.utils.error_handlers import ErrorHandler
 
 if TYPE_CHECKING:
+    from mstrio.connection import Connection
     from requests_futures.sessions import FuturesSession
 
 
@@ -320,3 +321,33 @@ def get_security_roles(connection, id, project_id=None, error_msg=None):
         headers={'X-MSTR-ProjectID': None},
         params={'projectId': project_id},
     )
+
+
+@ErrorHandler(err_msg='Error getting security filters for user with ID {id}.')
+def get_security_filters(connection: "Connection", id: str,
+                         projects: Optional[Union[str, List[str]]] = None, offset: int = 0,
+                         limit: int = -1, error_msg: Optional[str] = None):
+    """Get each project level security filter and its corresponding inherited
+    security filters for the user group with given ID.
+
+    Args:
+        connection: MicroStrategy REST API connection object
+        id (string): User group ID
+        projects (str or list of str, optional): collection of projects' ids
+            which is used for filtering data
+        offset (int, optional): Starting point within the collection of returned
+            results. Used to control paging behavior. Default is 0.
+        limit (int, optional): Maximum number of items returned for a single
+            request. Used to control paging behavior. Use -1 for no limit.
+            Default is -1.
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object. Expected status is 200.
+    """
+    url = f"{connection.base_url}/api/usergroups/{id}/securityFilters"
+    print(projects)
+    projects = (
+        ','.join(projects if isinstance(projects, list) else [projects])) if projects else projects
+    params = {'projects.id': projects, 'offset': offset, 'limit': limit}
+    return connection.session.get(url=url, params=params)

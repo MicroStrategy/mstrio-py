@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import Enum
-from typing import Optional
+from typing import List, Optional, Union
 
 from mstrio.utils.helper import camel_to_snake, Dictable, exception_handler
 
@@ -18,17 +18,16 @@ class Orientation(Enum):
 
 
 class CacheType(Enum):
-    RESERVED = "RESERVED"
-    SHORTCUT = "SHORTCUT"
-    BOOKMARK = "BOOKMARK"
-    SHORTCUTWITHBOOKMARK = "SHORTCUTWITHBOOKMARK"
+    RESERVED = "reserved"
+    SHORTCUT = "shortcut"
+    SHORTCUTWITHBOOKMARK = "shortcut_and_bookmark"
 
 
 class ShortcutCacheFormat(Enum):
-    RESERVED = "RESERVED"
-    JSON = "JSON"
-    BINARY = "BINARY"
-    BOTH = "BOTH"
+    RESERVED = "reserved"
+    JSON = "json"
+    BINARY = "binary"
+    BOTH = "both"
 
 
 class ClientType(Enum):
@@ -37,6 +36,13 @@ class ClientType(Enum):
     PHONE = "PHONE"
     TABLET = "TABLET"
     ANDROID = "ANDROID"
+
+
+class LibraryCacheTypes(Enum):
+    ANDROID = "android"
+    ANDROID_AND_IOS = "android_and_ios"
+    IOS = "ios"
+    WEB = "web"
 
 
 class DeliveryDictable(Dictable):
@@ -251,17 +257,26 @@ class Delivery(DeliveryDictable):
         Attributes:
             cache_type: The cache type to use
             shortcut_cache_format: The shortcut cache format to use
+            library_cache_types: Set of library cache types,
+                available types can be web, android, ios
+            reuse_dataset_cache: Whether to reuse dataset cache
+            is_all_library_users: Whether for all library users
         """
         VALIDATION_DICT = {
-            "cache_type": [str, False],
-            "shortcut_cache_format": [str, False],
+            "library_cache_types": [list, False],
+            "reuse_dataset_cache": [bool, False],
+            "is_all_library_users": [bool, False],
         }
 
-        def __init__(
-                self, cache_type: CacheType = CacheType.RESERVED.name,
-                shortcut_cache_format: ShortcutCacheFormat = ShortcutCacheFormat.RESERVED.name):
+        def __init__(self, cache_type: CacheType = CacheType.RESERVED,
+                     shortcut_cache_format: ShortcutCacheFormat = ShortcutCacheFormat.RESERVED,
+                     library_cache_types: List[LibraryCacheTypes] = None,
+                     reuse_dataset_cache: bool = False, is_all_library_users: bool = False):
             self.cache_type = cache_type
             self.shortcut_cache_format = shortcut_cache_format
+            self.library_cache_types = library_cache_types
+            self.reuse_dataset_cache = reuse_dataset_cache
+            self.is_all_library_users = is_all_library_users
 
     class Mobile(DeliveryDictable):
         """Delivery properties for Mobile subscriptions
@@ -333,22 +348,28 @@ class Delivery(DeliveryDictable):
         "history_list": [HistoryList, False]
     }
 
-    def __init__(
-            self, mode=DeliveryMode.EMAIL.value, expiration=None,
-            contact_security: Optional[bool] = None, subject: Optional[str] = None,
-            message: Optional[str] = None, filename: Optional[str] = None, compress: bool = False,
-            zip: Optional[ZipSettings] = None, password: Optional[str] = None,
-            password_protect: bool = False, space_delimiter: Optional[str] = None,
-            send_content_as: SendContentAs = SendContentAs.DATA,
-            overwrite_older_version: bool = False, burst_sub_folder: Optional[str] = None,
-            copies: Optional[int] = None, range_start: Optional[int] = None,
-            range_end: Optional[int] = None, collated: bool = False,
-            orientation: Orientation = Orientation.PORTRAIT.name, use_print_range: bool = False,
-            cache_type: CacheType = CacheType.RESERVED.name,
-            shortcut_cache_format: ShortcutCacheFormat = ShortcutCacheFormat.RESERVED.name,
-            client_type: ClientType = ClientType.RESERVED.name, device_id: Optional[str] = None,
-            do_not_create_update_caches: bool = False, re_run_hl: bool = False,
-            email: Optional[Email] = None, file: Optional[File] = None):
+    def __init__(self, mode=DeliveryMode.EMAIL.value, expiration: str = None,
+                 contact_security: Optional[bool] = None, subject: Optional[str] = None,
+                 message: Optional[str] = None, filename: Optional[str] = None,
+                 compress: bool = False, zip: Optional[ZipSettings] = None,
+                 password: Optional[str] = None, password_protect: bool = False,
+                 space_delimiter: Optional[str] = None,
+                 send_content_as: SendContentAs = SendContentAs.DATA,
+                 overwrite_older_version: bool = False, burst_sub_folder: Optional[str] = None,
+                 copies: Optional[int] = None, range_start: Optional[int] = None,
+                 range_end: Optional[int] = None, collated: bool = False,
+                 orientation: Orientation = Orientation.PORTRAIT.name,
+                 use_print_range: bool = False, client_type: ClientType = ClientType.RESERVED.name,
+                 device_id: Optional[str] = None, do_not_create_update_caches: bool = False,
+                 re_run_hl: bool = False, email: Optional[Email] = None,
+                 file: Optional[File] = None, cache_type: Union[CacheType,
+                                                                str] = CacheType.RESERVED,
+                 shortcut_cache_format: Union[ShortcutCacheFormat,
+                                              str] = ShortcutCacheFormat.RESERVED,
+                 library_cache_types: List[Union[LibraryCacheTypes, str]] = [LibraryCacheTypes.WEB],  # noqa: E501
+                 reuse_dataset_cache: bool = False,
+                 is_all_library_users: bool = False, notification_enabled: bool = False,
+                 personal_notification_address_id: Optional[str] = None):
         self.mode = mode
         if expiration:
             if not self._expiration_check(expiration):
@@ -362,26 +383,28 @@ class Delivery(DeliveryDictable):
             filename, password, password_protect
         ) if zip is None and compress else zip if zip is not None and compress else None
 
-        self.email = self.Email(
-            subject, message, filename, space_delimiter, send_content_as, overwrite_older_version,
-            temp_zip) if self.DeliveryMode(mode) == self.DeliveryMode.EMAIL else None
-        self.file = self.File(
-            filename, space_delimiter, burst_sub_folder,
-            temp_zip) if self.DeliveryMode(mode) == self.DeliveryMode.FILE else None
-        self.printer = self.Printer(
-            copies, range_start, range_end, collated, orientation,
-            use_print_range) if self.DeliveryMode(mode) == self.DeliveryMode.PRINTER else None
-        self.ftp = self.Ftp(space_delimiter, filename,
-                            temp_zip) if self.DeliveryMode(mode) == self.DeliveryMode.FTP else None
-        self.cache = self.Cache(
-            cache_type,
-            shortcut_cache_format) if self.DeliveryMode(mode) == self.DeliveryMode.CACHE else None
-        self.mobile = self.Mobile(
-            client_type, device_id, do_not_create_update_caches, overwrite_older_version,
-            re_run_hl) if self.DeliveryMode(mode) == self.DeliveryMode.MOBILE else None
-        self.history_list = self.HistoryList(
-            device_id, do_not_create_update_caches, overwrite_older_version,
-            re_run_hl) if self.DeliveryMode(mode) == self.DeliveryMode.HISTORY_LIST else None
+        if self.DeliveryMode(mode) == self.DeliveryMode.EMAIL:
+            self.email = self.Email(subject, message, filename, space_delimiter, send_content_as,
+                                    overwrite_older_version, temp_zip)
+        elif self.DeliveryMode(mode) == self.DeliveryMode.FILE:
+            self.file = self.File(filename, space_delimiter, burst_sub_folder, temp_zip)
+        elif self.DeliveryMode(mode) == self.DeliveryMode.PRINTER:
+            self.printer = self.Printer(copies, range_start, range_end, collated, orientation,
+                                        use_print_range)
+        elif self.DeliveryMode(mode) == self.DeliveryMode.FTP:
+            self.ftp = self.Ftp(space_delimiter, filename, temp_zip)
+        elif self.DeliveryMode(mode) == self.DeliveryMode.CACHE:
+            self.cache = self.Cache(cache_type, shortcut_cache_format, library_cache_types,
+                                    reuse_dataset_cache, is_all_library_users)
+        elif self.DeliveryMode(mode) == self.DeliveryMode.MOBILE:
+            self.mobile = self.Mobile(client_type, device_id, do_not_create_update_caches,
+                                      overwrite_older_version, re_run_hl)
+        elif self.DeliveryMode(mode) == self.DeliveryMode.HISTORY_LIST:
+            self.history_list = self.HistoryList(device_id, do_not_create_update_caches,
+                                                 overwrite_older_version, re_run_hl)
+        if notification_enabled:
+            self.notification_enabled = notification_enabled
+            self.personal_notification = {"address_id": personal_notification_address_id}
 
     @classmethod
     def from_dict(cls, source, **kwargs):

@@ -8,8 +8,10 @@ ease its usage.
 
 from mstrio.connection import Connection
 from mstrio.distribution_services import (Subscription, EmailSubscription, Content,
-                                          SubscriptionManager, list_subscriptions)
+                                          SubscriptionManager, CacheUpdateSubscription, CacheType,
+                                          list_subscriptions)
 from mstrio.distribution_services import Schedule, list_schedules
+from mstrio.distribution_services.subscription.cache_update_subscription import CacheUpdateSubscription
 
 base_url = "https://<>/MicroStrategyLibrary/api"
 username = "some_username"
@@ -63,6 +65,27 @@ EmailSubscription.create(
                      personalization=Content.Properties(format_type='EXCEL')),
     schedules=['ABC123ABC123ABC123ABC123ABC12345'],
     recipients=['ABC123ABC123ABC123ABC123ABC12345'])
+
+# create a cache update subscription
+cache_update_sub = CacheUpdateSubscription(
+    connection=conn, project_name='"MicroStrategy Tutorial',
+    name=f'Cache Update Subscription for a Report', contents=Content(
+        type=Content.Type.REPORT,
+        id='ABC123ABC123ABC123ABC123ABC12345',
+        personalization=Content.Properties(format_type=Content.Properties.FormatType.EXCEL),
+    ), schedules=['ABC123ABC123ABC123ABC123ABC12345'], delivery_expiration_date='2025-12-31',
+    send_now=True, recipients=['ABC123ABC123ABC123ABC123ABC12345'],
+    cache_cache_type=CacheType.RESERVED)
+
+# change name and owner of cache update subscription
+cache_update_sub.alter(name=f"{cache_update_sub.name} (Altered)",
+                       owner_id='AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA')
+
+# list all cache update subscriptions
+cache_update_subs = [
+    sub for sub in list_subscriptions(conn, project_name="MicroStrategy Tutorial")
+    if isinstance(sub, CacheUpdateSubscription)
+]
 
 # get list of schedules (you can filter them by for example name, id or
 # description)
