@@ -3,7 +3,7 @@ define(['./jupyter-cell', './jupyter-kernel', './python-code', './utilities', '.
 (
   JupyterCell, JupyterKernel, PythonCode, Utilities, Globals,
   $, Jupyter, Dialog, Events,
-) => {
+) => { // NOSONAR (Too many params: need to stay as this is the way to implement `define()`)
   const {
     GLOBAL_CONSTANTS: {
       MSTR_ENV_VARIABLE_NAME,

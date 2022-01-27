@@ -18,12 +18,14 @@ class ObjectTypes(Enum):
     MONITOR = 20
     ATTRIBUTE_FORM = 21
     COLUMN = 26
+    PROPERTY_SET = 28
     DBROLE = 29
     DBLOGIN = 30
     DBCONNECTION = 31
     PROJECT = 32
     USER = 34
     USERGROUP = 34
+    SUBSCRIPTION_TRANSMITTER = 35
     CONFIGURATION = 36
     SEARCH = 39
     SECURITY_ROLE = 44
@@ -34,6 +36,7 @@ class ObjectTypes(Enum):
     SCHEDULE_TRIGGER = 51
     DBTABLE = 53
     DOCUMENT_DEFINITION = 55
+    DRILL_MAP = 56
     DBMS = 57
     SECURITY_FILTER = 58
     SHORTCUT = 67
@@ -47,6 +50,13 @@ class ObjectTypes(Enum):
 
     def __int__(self):
         return self.value
+
+    @classmethod
+    def _missing_(cls, value):
+        member = object.__new__(cls)
+        member._value_ = value
+        member._name_ = f'UNDEFINED_TYPE:{value}'
+        return member
 
     @staticmethod
     def contains(item):

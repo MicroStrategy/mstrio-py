@@ -32,7 +32,7 @@ nodes = clstr.list_nodes(to_dictionary=True)
 clstr.remove_node(name='env-xxxxxxlaio3use1')
 clstr.add_node(name='env-xxxxxxlaio3use1')
 
-# get name of default (primary) node of the cluster and set new deafult node
+# get name of default (primary) node of the cluster and set new default node
 clstr.default_node
 clstr.set_primary_node(name='env-xxxxxxlaio3use1')
 

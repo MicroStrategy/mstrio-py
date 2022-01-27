@@ -16,7 +16,7 @@ def get_bookmarks_from_shortcut(connection, shortcut_id, error_msg=None):
         Complete HTTP response object.
     """
     url = f"{connection.base_url}/api/shortcuts/{shortcut_id}/bookmarks"
-    return connection.session.get(url=url)
+    return connection.get(url=url)
 
 
 @ErrorHandler(err_msg='Error updating information for shortcut {shortcut_id}')
@@ -32,7 +32,7 @@ def update_information_for_shortcut(connection, shortcut_id, body, error_msg=Non
         Complete HTTP response object.
     """
     url = connection.base_url + f"​/api/shortcuts/{shortcut_id}"
-    return connection.session.patch(url=url, json=body)
+    return connection.patch(url=url, json=body)
 
 
 @ErrorHandler(err_msg='Error adding a new bookmark.')
@@ -47,7 +47,7 @@ def refresh_document_instance(connection, error_msg=None):
         Complete HTTP response object.
     """
     url = connection.base_url + "​/api​/bookmarks"
-    return connection.session.put(url=url)
+    return connection.put(url=url)
 
 
 @ErrorHandler(err_msg='Error deleting bookmarks.')
@@ -65,7 +65,7 @@ def delete_bookmarks(connection, shortcut_id: str, bookmark_ids: List, error_msg
     """
     body = {"shortcutId": shortcut_id, "bookmarkIds": bookmark_ids}
     url = f'{connection.base_url}/api/bookmarks'
-    return connection.session.delete(url=url, json=body)
+    return connection.delete(url=url, json=body)
 
 
 @ErrorHandler(err_msg='Error deleting bookmark with ID {bookmark_id}')
@@ -83,7 +83,7 @@ def delete_single_bookmark(connection, shortcut_id: str, bookmark_id: str, error
     """
     body = {"shortcutId": shortcut_id}
     url = f'{connection.base_url}/api/bookmarks/{bookmark_id}'
-    return connection.session.delete(url=url, json=body)
+    return connection.delete(url=url, json=body)
 
 
 @ErrorHandler(err_msg='Error updating bookmark {bookmark_id}')
@@ -100,7 +100,7 @@ def update_bookmark(connection, bookmark_id, body, error_msg=None):
         Complete HTTP response object.
     """
     url = f"{connection.base_url}/api/bookmarks/{bookmark_id}"
-    return connection.session.put(url=url, json=body)
+    return connection.put(url=url, json=body)
 
 
 @ErrorHandler(err_msg='Error adding bookmark {bookmark_name}')
@@ -117,7 +117,7 @@ def add_bookmark(connection, bookmark_name, instance_id, shortcut_id,
     """
     body = {"name": bookmark_name, "instanceId": instance_id}
     url = f'{connection.base_url}/api/bookmarks'
-    return connection.session.post(url=url, json=body)
+    return connection.post(url=url, json=body)
 
 
 @ErrorHandler(err_msg='Error getting shortcuts for document {document_id}')
@@ -135,4 +135,4 @@ def get_document_shortcut(connection, document_id, instance_id, error_msg=None):
         Complete HTTP response object.
     """
     endpoint_url = f'/api/documents/{document_id}/instances/{instance_id}/shortcut'
-    return connection.session.get(connection.base_url + endpoint_url)
+    return connection.get(connection.base_url + endpoint_url)

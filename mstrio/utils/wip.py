@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import auto, Enum
 import functools
 from itertools import filterfalse
 import sys
@@ -14,10 +14,10 @@ current_version = Version(__version__)
 
 
 class WipLevels(Enum):
-    SILENT = 0
-    INFO = 1
-    WARNING = 2
-    ERROR = 3
+    SILENT = auto()
+    INFO = auto()
+    WARNING = auto()
+    ERROR = auto()
 
 
 def _wiplevel_error(level):
@@ -126,7 +126,7 @@ def wip(target_release: Optional[Union[Version, str]] = None, level: WipLevels =
             return f(*args, **kwargs)
 
         if mark_attr:
-            wrapped._wip = True  # This makes it trivial to programatically check.
+            wrapped._wip = True  # This makes it trivial to programmatically check.
         if prefix_doc:
             if not wrapped.__doc__:
                 wrapped.__doc__ = ""

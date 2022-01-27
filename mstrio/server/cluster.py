@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import auto
 import getpass
 from typing import Dict, Iterable, List, Optional, TYPE_CHECKING, Union
 
@@ -8,7 +8,8 @@ import pandas as pd
 from mstrio import config
 from mstrio.api import administration, monitors, registrations
 from mstrio.connection import Connection
-import mstrio.utils.helper as helper
+from mstrio.utils.enum_helper import AutoName, AutoUpperName
+from mstrio.utils.helper import exception_handler, filter_list_of_dicts, validate_param_value
 
 from .node import Node
 
@@ -18,14 +19,14 @@ if TYPE_CHECKING:
     from mstrio.server.project import Project
 
 
-class GroupBy(str, Enum):
-    NODES = "nodes"
-    SERVICES = "services"
+class GroupBy(str, AutoName):
+    NODES = auto()
+    SERVICES = auto()
 
 
-class ServiceAction(str, Enum):
-    START = "START"
-    STOP = "STOP"
+class ServiceAction(str, AutoUpperName):
+    START = auto()
+    STOP = auto()
 
 
 class Cluster:
@@ -46,27 +47,18 @@ class Cluster:
         """
         self.connection = connection
 
-    def list_nodes(
-            self, project: Optional[Union[str, "Project"]] = None,
-            node: Optional[Union[str, Node]] = None, to_dictionary: bool = False,
-            application: Optional[Union[str, "Project"]] = None) -> Union[List[Node], List[dict]]:
+    def list_nodes(self, project: Optional[Union[str, "Project"]] = None,
+                   node: Optional[Union[str, Node]] = None,
+                   to_dictionary: bool = False) -> Union[List[Node], List[dict]]:
         """Return a list of nodes and their properties within the cluster.
 
         Optionally filter by `project_id` or `node_name`.
 
         Args:
             project: Project ID or object
-            application: deprecated. Use project instead.
             node: Node name or object
         """
         from mstrio.server.project import Project
-        if application:
-            helper.deprecation_warning(
-                '`application`',
-                '`project`',
-                '11.3.4.101',  # NOSONAR
-                False)
-            project = project or application
         project_id = project.id if isinstance(project, Project) else project
         node_name = node.name if isinstance(node, Node) else node
         response = monitors.get_node_info(self.connection, project_id, node_name)
@@ -77,7 +69,7 @@ class Cluster:
             return [Node.from_dict(node) for node in node_dicts]
 
     # TODO: service should probably be able to be an object too
-    def list_services(self, group_by: GroupBy = GroupBy.NODES) -> List:
+    def list_services(self, group_by: Union[GroupBy, str] = GroupBy.NODES) -> List:
         """List services in the cluster grouped by nodes or services.
 
         When `group_by` is set to `nodes` then in the list for each node there
@@ -243,8 +235,7 @@ class Cluster:
         available_services = list(service_id_map.values())
 
         def get_dependencies_recursively(service_name: str):
-            service = helper.filter_list_of_dicts(self._metadata['serviceTypes'],
-                                                  name=service_name)
+            service = filter_list_of_dicts(self._metadata['serviceTypes'], name=service_name)
             if service:
                 service = service[0]
                 dependencies_set = {
@@ -373,9 +364,9 @@ class Cluster:
             initial_pool_size: Initial number of connections available.
             max_pool_size: Maximum number of connections available.
         """
-        helper.validate_param_value("load_balance_factor", load_balance_factor, int, 100, 1)
-        helper.validate_param_value("initial_pool_size", initial_pool_size, int, 1024, 1)
-        helper.validate_param_value("max_pool_size", max_pool_size, int, 1024, 1)
+        validate_param_value("load_balance_factor", load_balance_factor, int, 100, 1)
+        validate_param_value("initial_pool_size", initial_pool_size, int, 1024, 1)
+        validate_param_value("max_pool_size", max_pool_size, int, 1024, 1)
 
         node_name = node.name if isinstance(node, Node) else node
         body = {
@@ -397,15 +388,6 @@ class Cluster:
         node_name = node.name if isinstance(node, Node) else node
         administration.delete_iserver_node_settings(self.connection, node_name)
 
-    def list_applications(self, to_dictionary: bool = False, limit: Optional[int] = None,
-                          **filters) -> List["Project"]:
-        helper.deprecation_warning(
-            'list_applications function',
-            'list_projects function',
-            '11.3.4.101',  # NOSONAR
-            False)
-        return self.list_projects(to_dictionary, limit, **filters)
-
     def list_projects(self, to_dictionary: bool = False, limit: Optional[int] = None,
                       **filters) -> List["Project"]:
         """Return list of project objects or if `to_dictionary=True`
@@ -423,22 +405,6 @@ class Cluster:
         env = Environment(connection=self.connection)
         return env.list_projects(to_dictionary=to_dictionary, limit=limit, **filters)
 
-    def load_application(self, application: Union[str, "Project"],
-                         on_nodes: Optional[Union[str, List[str]]] = None,
-                         project: Optional[Union[str, "Project"]] = None) -> None:
-        helper.deprecation_warning(
-            'load_application function',
-            'load_project function',
-            '11.3.4.101',  # NOSONAR
-            False)
-        helper.deprecation_warning(
-            '`application`',
-            '`project`',
-            '11.3.4.101',  # NOSONAR
-            False)
-        project = project or application
-        return self.load_project(project, on_nodes)
-
     def load_project(self, project: Union[str, "Project"],
                      on_nodes: Optional[Union[str, List[str]]] = None) -> None:
         """Request to load the project onto the chosen cluster nodes. If
@@ -454,17 +420,6 @@ class Cluster:
         project_name = project.name if isinstance(project, Project) else project
         project = Project._list_projects(self.connection, name=project_name)[0]
         project.load(on_nodes=on_nodes)
-
-    def unload_application(self, application: Union[str, "Project"],
-                           on_nodes: Optional[Union[str, List[str]]] = None,
-                           project: Optional[Union[str, "Project"]] = None) -> None:
-        helper.deprecation_warning(
-            'unload_application function',
-            'unload_project function',
-            '11.3.4.101',  # NOSONAR
-            False)
-        project = project or application
-        return self.unload_project(project, on_nodes)
 
     def unload_project(self, project: Union[str, "Project"],
                        on_nodes: Optional[Union[str, List[str]]] = None) -> None:
@@ -525,7 +480,7 @@ class Cluster:
         ]
 
         if dependencies:
-            helper.exception_handler(
+            exception_handler(
                 f"Service {service_name} depends on services {dependencies} to run correctly.",
                 Warning)
 
@@ -559,9 +514,9 @@ class Cluster:
         If `node_name` is provided, the service status will be given for
         the selected node.
         """
-        nodes_info = helper.filter_list_of_dicts(service_list, service=service_name)[0]['nodes']
+        nodes_info = filter_list_of_dicts(service_list, service=service_name)[0]['nodes']
         if node_name:
-            node_info = helper.filter_list_of_dicts(nodes_info, node=node_name)[0]
+            node_info = filter_list_of_dicts(nodes_info, node=node_name)[0]
             if node_info['status'] == 'PASSING':
                 return True
             else:
@@ -570,19 +525,21 @@ class Cluster:
             return bool([True for node in nodes_info if node['status'] == 'PASSING'])
 
     @staticmethod
-    def _get_node_info(node_name: str, service_name: str, service_list: List[Dict]) -> Dict:
-        nodes_info = helper.filter_list_of_dicts(service_list, service=service_name)[0]['nodes']
-        node_info = helper.filter_list_of_dicts(nodes_info, node=node_name)
+    def _get_node_info(node_name: str, service_name: str,
+                       service_list: List[Dict]) -> Optional[Dict]:
+        nodes_info = filter_list_of_dicts(service_list, service=service_name)[0]['nodes']
+        node_info = filter_list_of_dicts(nodes_info, node=node_name)
+
         if not node_info:
-            helper.exception_handler(f"Service {service_name} is not available on {node_name}",
-                                     exception_type=Warning)
+            exception_handler(f"Service {service_name} is not available on {node_name}",
+                              exception_type=Warning)
             return None
         else:
             node_info = node_info[0]
 
         if node_info.get('serviceControl') is False:
-            helper.exception_handler(f"Service {service_name} cannot be controlled on {node_name}",
-                                     exception_type=Warning)
+            exception_handler(f"Service {service_name} cannot be controlled on {node_name}",
+                              exception_type=Warning)
             return None
         else:
             return node_info

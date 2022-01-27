@@ -70,7 +70,7 @@ class EntityBase(helper.Dictable):
         self.name = kwargs.get("name")
         self._altered_properties = dict()
 
-    def fetch(self, attr: Optional[str] = None) -> None:
+    def fetch(self, attr: Optional[str] = None) -> None:  # NOSONAR
         """Fetch the latest object state from the I-Server.
 
         Note:
@@ -156,6 +156,28 @@ class EntityBase(helper.Dictable):
                 response[rest_name] = response.pop(python_name)
         return response
 
+    def __construct_component(self, key, val):
+        """Construct component instance using info in `self._FROM_DICT_MAP`"""
+
+        if key in self._FROM_DICT_MAP:
+            # determine which constructor will be used
+            if isinstance(self._FROM_DICT_MAP[key], DatetimeFormats):
+                val = map_str_to_datetime(key, val, self._FROM_DICT_MAP)
+            elif isinstance(self._FROM_DICT_MAP[key], type(Enum)):
+                val = self._FROM_DICT_MAP[key](val)
+            elif isinstance(self._FROM_DICT_MAP[key], list) and val is not None:
+                if isinstance(self._FROM_DICT_MAP[key][0], type(Enum)):
+                    val = [self._FROM_DICT_MAP[key][0](v) for v in val]
+                else:
+                    val = [
+                        self._FROM_DICT_MAP[key][0](source=v, connection=self.connection)
+                        for v in val
+                    ]
+            else:
+                val = self._FROM_DICT_MAP[key](source=val, connection=self.connection)
+
+        return val
+
     def _set_object(self, **kwargs) -> None:
         """Set object attributes programmatically by providing keyword args.
         Support ENUMs and creating component objects."""
@@ -169,22 +191,7 @@ class EntityBase(helper.Dictable):
 
         for key, val in object_info.items():  # type: ignore
             # if self is a composite, create component instance
-            if key in self._FROM_DICT_MAP:
-                # determine which constructor will be used
-                if isinstance(self._FROM_DICT_MAP[key], DatetimeFormats):
-                    val = map_str_to_datetime(key, val, self._FROM_DICT_MAP)
-                elif isinstance(self._FROM_DICT_MAP[key], type(Enum)):
-                    val = self._FROM_DICT_MAP[key](val)
-                elif isinstance(self._FROM_DICT_MAP[key], list) and val is not None:
-                    if isinstance(self._FROM_DICT_MAP[key][0], type(Enum)):
-                        val = [self._FROM_DICT_MAP[key][0](v) for v in val]
-                    else:
-                        val = [
-                            self._FROM_DICT_MAP[key][0](source=v, connection=self.connection)
-                            for v in val
-                        ]
-                else:
-                    val = self._FROM_DICT_MAP[key](source=val, connection=self.connection)
+            val = self.__construct_component(key, val)
 
             # create _AVAILABLE_ATTRIBUTES map
             self._AVAILABLE_ATTRIBUTES.update({key: type(val)})
@@ -283,8 +290,9 @@ class EntityBase(helper.Dictable):
             return NotImplemented  # don't attempt to compare against unrelated types
 
     @classmethod
-    def to_csv(cls: T, objects: Union[T, List[T]], name: str, path: Optional[str] = None,
-               properties: Optional[List[str]] = None) -> None:
+    def to_csv(  # NOSONAR
+            cls: T, objects: Union[T, List[T]], name: str, path: Optional[str] = None,
+            properties: Optional[List[str]] = None) -> None:
         """Export MSTR objects to a csv file.
 
         Optionally, save only the object properties specified in the properties
@@ -365,6 +373,32 @@ class EntityBase(helper.Dictable):
         self._alter_properties(**changes)
         self._altered_properties.clear()
 
+    def __partial_put_body(self, attrs, camel_properties) -> dict:
+        body = {}
+        for name, value in camel_properties.items():
+            if stringcase.snakecase(name) in attrs:
+                value = self._obj_to_dict(name, value, camel_case=True)
+                body[name] = self._validate_type(name, value)
+        return body
+
+    def __put_body(self, attrs, properties) -> dict:
+        for name, value in properties.items():
+            if name in attrs:
+                setattr(self, name, self._validate_type(name, value))
+        return self.to_dict()
+
+    def __patch_body(self, attrs, camel_properties, op) -> dict:
+        body = {"operationList": []}
+        for name, value in camel_properties.items():
+            if stringcase.snakecase(name) in attrs:
+                value = self._obj_to_dict(name, value, camel_case=True)
+                body['operationList'].append({
+                    "op": op,
+                    "path": "/{}".format(name),
+                    "value": self._validate_type(name, value)
+                })
+        return body
+
     def _send_proper_patch_request(self, properties: dict, op: str = 'replace') -> List[bool]:
         """Internal method to update objects with the specified patch wrapper.
         Used for adding and removing objects from nested properties of an
@@ -380,27 +414,12 @@ class EntityBase(helper.Dictable):
         changed = []
         camel_properties = helper.snake_to_camel(properties)
         for attrs, (func, func_type) in self._API_PATCH.items():
-            body = {}
             if func_type == 'partial_put':
-                for name, value in camel_properties.items():
-                    if stringcase.snakecase(name) in attrs:
-                        value = self._maybe_unpack(name, value, camel_case=True)
-                        body[name] = self._validate_type(name, value)
+                body = self.__partial_put_body(attrs, camel_properties)
             elif func_type == 'put':  # Update using the generic update_object()
-                for name, value in properties.items():
-                    if name in attrs:
-                        setattr(self, name, self._validate_type(name, value))
-                body = self.to_dict()
+                body = self.__put_body(attrs, properties)
             elif func_type == 'patch':
-                body = {"operationList": []}
-                for name, value in camel_properties.items():
-                    if stringcase.snakecase(name) in attrs:
-                        value = self._maybe_unpack(name, value, camel_case=True)
-                        body['operationList'].append({
-                            "op": op,
-                            "path": "/{}".format(name),
-                            "value": self._validate_type(name, value)
-                        })
+                body = self.__patch_body(attrs, camel_properties, op)
             else:
                 msg = f"{func} function is not supported by `_send_proper_patch_request`"
                 raise NotImplementedError(msg)
@@ -715,8 +734,7 @@ class CopyMixin:
     """
 
     def create_copy(self: Entity, name: Optional[str] = None, folder_id: Optional[str] = None,
-                    project: Optional[Union["Project", str]] = None,
-                    application: Optional[Union["Project", str]] = None) -> Any:
+                    project: Optional[Union["Project", str]] = None) -> Any:
         """Create a copy of the object on the I-Server.
 
         Args:
@@ -727,18 +745,10 @@ class CopyMixin:
             project: By default, the project selected when
                 creating Connection object. Override `project` to specify
                 project where the current object exists.
-            application: deprecated. Use project instead.
 
         Returns:
                 New python object holding the copied object.
         """
-        if application:
-            helper.deprecation_warning(
-                '`application`',
-                '`project`',
-                '11.3.4.101',  # NOSONAR
-                False)
-            project = project or application
         if self._OBJECT_TYPE.value in [32]:
             raise NotImplementedError("Object cannot be copied yet.")
         # TODO if object uniqueness depends on project_id extract proj_id
@@ -753,8 +763,8 @@ class DeleteMixin:
     Must be mixedin with Entity or its subclasses.
     """
 
-    _delete_confirm_msg: str = None
-    _delete_success_msg: str = None
+    _delete_confirm_msg: Optional[str] = None
+    _delete_success_msg: Optional[str] = None
 
     def delete(self: Entity, force: bool = False) -> bool:
         """Delete object.
@@ -833,37 +843,21 @@ class VldbMixin:
     """
     _parameter_error = "Please specify the project parameter."
 
-    def list_vldb_settings(self: Entity, project: Optional[str] = None,
-                           application: Optional[str] = None) -> list:
+    def list_vldb_settings(self: Entity, project: Optional[str] = None) -> list:
         """List VLDB settings."""
-        if application:
-            helper.deprecation_warning(
-                '`application`',
-                '`project`',
-                '11.3.4.101',  # NOSONAR
-                False)
-            project = project or application
         connection = self.connection if hasattr(self, 'connection') else self._connection
-        if not project and connection.session.headers.get('X-MSTR-ProjectID') is None:
+        if not project and not connection.project_id:
             raise ValueError(self._parameter_error)
 
         response = objects.get_vldb_settings(connection, self.id, self._OBJECT_TYPE.value, project)
         return response.json()
 
     def alter_vldb_settings(self: Entity, property_set_name: str, name: str, value: dict,
-                            project: Optional[str] = None,
-                            application: Optional[str] = None) -> None:
+                            project: Optional[str] = None) -> None:
         """Alter VLDB settings for a given property set."""
-        if application:
-            helper.deprecation_warning(
-                '`application`',
-                '`project`',
-                '11.3.4.101',  # NOSONAR
-                False)
-            project = project or application
 
         connection = self.connection if hasattr(self, 'connection') else self._connection
-        if not project and connection.session.headers.get('X-MSTR-ProjectID') is None:
+        if not project and not connection.project_id:
             raise ValueError(self._parameter_error)
 
         body = [{"name": name, "value": value}]
@@ -872,19 +866,11 @@ class VldbMixin:
         if config.verbose and response.ok:
             print("VLDB settings altered")
 
-    def reset_vldb_settings(self: Entity, project: Optional[str] = None,
-                            application: Optional[str] = None) -> None:
+    def reset_vldb_settings(self: Entity, project: Optional[str] = None) -> None:
         """Reset VLDB settings to default values."""
-        if application:
-            helper.deprecation_warning(
-                '`application`',
-                '`project`',
-                '11.3.4.101',  # NOSONAR
-                False)
-            project = project or application
 
         connection = self.connection if hasattr(self, 'connection') else self._connection
-        if not project and connection.session.headers.get('X-MSTR-ProjectID') is None:
+        if not project and not connection.project_id:
             raise ValueError(self._parameter_error)
 
         response = objects.delete_vldb_settings(connection, self.id, self._OBJECT_TYPE.value,

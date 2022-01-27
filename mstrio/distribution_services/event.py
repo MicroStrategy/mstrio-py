@@ -1,15 +1,12 @@
-from typing import List, Union
+from typing import List, Optional, Union
+
+from packaging import version
 
 from mstrio import config
 from mstrio.api import events, objects
 from mstrio.connection import Connection
 from mstrio.utils import helper
-from mstrio.utils.entity import Entity, ObjectTypes
-from packaging import version
-
-from ..utils.wip import module_wip, WipLevels
-
-module_wip(globals(), level=WipLevels.WARNING)
+from mstrio.utils.entity import Entity, ObjectTypes, DeleteMixin
 
 
 def list_events(connection: Connection, to_dictionary: bool = False, limit: int = None,
@@ -35,7 +32,7 @@ def list_events(connection: Connection, to_dictionary: bool = False, limit: int 
         return [Event.from_dict(source=obj, connection=connection) for obj in _objects]
 
 
-class Event(Entity):
+class Event(Entity, DeleteMixin):
     """Class representation of MicroStrategy Event object.
 
     Attributes:
@@ -51,8 +48,13 @@ class Event(Entity):
          'owner', 'icon_path', 'view_media', 'ancestors', 'certified_info', 'acg',
          'acl'): objects.get_object_info,
     }
+    _API_DELETE = staticmethod(events.delete_event)
+    _API_PATCH = {
+        ('name', 'description'): (events.update_event, 'put')
+    }
 
-    def __init__(self, connection: Connection, id: str = None, name: str = None):
+    def __init__(self, connection: Connection, id: Optional[str] = None,
+                 name: Optional[str] = None) -> None:
         """Initialize the Event object, populates it with I-Server data.
         Specify either `id` or `name`. When `id` is provided (not `None`),
         `name` is omitted.
@@ -73,17 +75,49 @@ class Event(Entity):
         if id is None:
             objects_info = list_events(connection, name=name, to_dictionary=True)
             if objects_info:
-                id, object_info = objects_info[0].pop("id"), objects_info[0]
-                super().__init__(connection=connection, object_id=id, **object_info)
+                object_info, object_info["connection"] = objects_info[0], connection
+                self._init_variables(**object_info)
             else:
                 raise ValueError(f"There is no event with the given name: '{name}'")
         else:
             super().__init__(connection=connection, object_id=id, name=name)
 
     def trigger(self):
-        """Triggers the Event
-        NOTE: WIP, may not work properly"""
+        """Trigger the Event"""
         response = events.trigger_event(self.connection, self.id)
         if response.ok and config.verbose:
             print(f'Event \'{self.name}\' with ID : \'{self.id}\' has been triggered.')
         return response.ok
+
+    @classmethod
+    def create(cls, connection: Connection, name: str,
+               description: Optional[str] = None) -> "Event":
+        """Create an Event
+
+        Args:
+            connection: MicroStrategy connection object returned
+                by `connection.Connection()`.
+            name: Name of the new Event
+            description: Description of the new Event
+        """
+        body = helper.delete_none_values({
+            "name": name,
+            "description": description,
+        })
+        response = events.create_event(connection, body)
+        return cls.from_dict(response.json(), connection)
+
+    def alter(self, name: Optional[str] = None, description: Optional[str] = None):
+        """Alter the Event's properties
+
+        Args:
+            name: New name for the Event
+            description: New description for the Event
+        """
+        args = helper.delete_none_values({
+            "name": name,
+            "description": description,
+        })
+        self._alter_properties(**args)
+        if config.verbose:
+            f"Updated subscription '{self.name}' with ID: {self.id}."

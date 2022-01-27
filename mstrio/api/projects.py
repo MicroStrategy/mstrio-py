@@ -21,7 +21,7 @@ def get_project(connection, name, error_msg=None, throw_error=True,
     Returns:
         Complete HTTP response object.
     """
-    return connection.session.get(url=f'{connection.base_url}/api/projects/{name}')
+    return connection.get(url=f'{connection.base_url}/api/projects/{name}')
 
 
 @ErrorHandler(err_msg='Error fetching list of available projects.')
@@ -39,7 +39,7 @@ def get_projects(connection, error_msg=None, whitelist=None):
         Complete HTTP response object.
     """
 
-    return connection.session.get(
+    return connection.get(
         url=f'{connection.base_url}/api/projects',
         headers={'X-MSTR-ProjectID': None}
     )
@@ -57,7 +57,7 @@ def create_project(connection, body, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    response = connection.session.post(
+    response = connection.post(
         url=connection.base_url + '/api/projects',
         headers={'X-MSTR-ProjectID': None},
         json=body,
@@ -83,7 +83,7 @@ def get_project_import_quota(connection, id, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    return connection.session.get(url=f'{connection.base_url}/api/projects/{id}/quotas')
+    return connection.get(url=f'{connection.base_url}/api/projects/{id}/quotas')
 
 
 @ErrorHandler(err_msg='Error setting import quota for project with ID {id}')
@@ -101,7 +101,7 @@ def set_project_import_quota(connection, id, body, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    return connection.session.put(
+    return connection.put(
         url=f'{connection.base_url}/api/projects/{id}/quotas',
         headers={'X-MSTR-ProjectID': None},
         json=body,
@@ -124,7 +124,7 @@ def set_user_import_quota(connection, id, user_id, body, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    return connection.session.put(
+    return connection.put(
         url=f'{connection.base_url}/api/projects/{id}/users/{user_id}/quotas',
         headers={'X-MSTR-ProjectID': None},
         json=body,
@@ -145,7 +145,7 @@ def get_user_import_quota(connection, id, user_id=None, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    return connection.session.get(
+    return connection.get(
         url=f'{connection.base_url}/api/projects/{id}/users/quotas',
         headers={'X-MSTR-ProjectID': None},
         params={'user_id': user_id},
@@ -163,7 +163,7 @@ def get_project_settings_config(connection, id, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    return connection.session.get(
+    return connection.get(
         url=f'{connection.base_url}/api/v2/projects/{id}/settings/config',
         headers={'X-MSTR-ProjectID': None},
     )
@@ -184,7 +184,7 @@ def get_project_settings(connection, id, error_msg=None, whitelist=None):
     Returns:
         Complete HTTP response object.
     """
-    return connection.session.get(
+    return connection.get(
         url=f'{connection.base_url}/api/v2/projects/{id}/settings',
         headers={'X-MSTR-ProjectID': None},
     )
@@ -203,7 +203,7 @@ def set_project_settings(connection, id, body, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    return connection.session.put(
+    return connection.put(
         url=f'{connection.base_url}/api/v2/projects/{id}/settings',
         headers={'X-MSTR-ProjectID': None},
         json=body,
@@ -223,7 +223,7 @@ def update_project_settings(connection, id, body, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    return connection.session.patch(
+    return connection.patch(
         url=f'{connection.base_url}/api/v2/projects/{id}/settings',
         headers={'X-MSTR-ProjectID': None},
         json=body,
@@ -242,7 +242,7 @@ def get_engine_settings(connection, id, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    return connection.session.get(
+    return connection.get(
         url=f'{connection.base_url}/api/projects/{id}/settings/engine',
         headers={'X-MSTR-ProjectID': None},
     )
@@ -263,7 +263,7 @@ def get_projects_on_startup(connection, error_msg=None, whitelist=None):
     Returns:
         Complete HTTP response object.
     """
-    return connection.session.get(
+    return connection.get(
         url=f'{connection.base_url}/api/projects/settings/onStartup',
         headers={'X-MSTR-ProjectID': None}
     )
@@ -292,7 +292,7 @@ def update_projects_on_startup(connection, body, error_msg=None, whitelist=None)
     Returns:
         Complete HTTP response object.
     """
-    return connection.session.patch(
+    return connection.patch(
         url=f'{connection.base_url}/api/projects/settings/onStartup',
         headers={'X-MSTR-ProjectID': None},
         json=body,

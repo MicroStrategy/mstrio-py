@@ -82,8 +82,8 @@ class DatasourceLogin(Entity, CopyMixin, DeleteMixin):
             objects_info = DatasourceLogin._list_datasource_logins(connection=connection,
                                                                    name=name, to_dictionary=True)
             if objects_info:
-                id, object_info = objects_info[0].pop("id"), objects_info[0]
-                super().__init__(connection=connection, object_id=id, **object_info)
+                object_info, object_info["connection"] = objects_info[0], connection
+                self._init_variables(**object_info)
             else:
                 raise ValueError(f"There is no Datasource Login: '{name}'")
         else:

@@ -1,48 +1,49 @@
 from datetime import datetime
-from enum import Enum
+from enum import auto
 from typing import List, Optional, Union
 
+from mstrio.utils.enum_helper import AutoName, AutoUpperName
 from mstrio.utils.helper import camel_to_snake, Dictable, exception_handler
 
 
-class SendContentAs(Enum):
-    DATA = "data"
-    DATA_AND_HISTORY_LIST = "data_and_history_list"
-    DATA_AND_LINK_AND_HISTORY_LIST = "data_and_link_and_history_list"
-    LINK_AND_HISTORY_LIST = "link_and_history_list"
+class SendContentAs(AutoName):
+    DATA = auto()
+    DATA_AND_HISTORY_LIST = auto()
+    DATA_AND_LINK_AND_HISTORY_LIST = auto()
+    LINK_AND_HISTORY_LIST = auto()
 
 
-class Orientation(Enum):
-    PORTRAIT = "PORTRAIT"
-    LANDSCAPE = "LANDSCAPE"
+class Orientation(AutoUpperName):
+    PORTRAIT = auto()
+    LANDSCAPE = auto()
 
 
-class CacheType(Enum):
-    RESERVED = "reserved"
-    SHORTCUT = "shortcut"
-    SHORTCUTWITHBOOKMARK = "shortcut_and_bookmark"
+class CacheType(AutoName):
+    RESERVED = auto()
+    SHORTCUT = auto()
+    SHORTCUTWITHBOOKMARK = 'shortcut_and_bookmark'
 
 
-class ShortcutCacheFormat(Enum):
-    RESERVED = "reserved"
-    JSON = "json"
-    BINARY = "binary"
-    BOTH = "both"
+class ShortcutCacheFormat(AutoName):
+    RESERVED = auto()
+    JSON = auto()
+    BINARY = auto()
+    BOTH = auto()
 
 
-class ClientType(Enum):
-    RESERVED = "RESERVED"
-    BLACKBERRY = "BLACKBERRY"
-    PHONE = "PHONE"
-    TABLET = "TABLET"
-    ANDROID = "ANDROID"
+class ClientType(AutoUpperName):
+    RESERVED = auto()
+    BLACKBERRY = auto()
+    PHONE = auto()
+    TABLET = auto()
+    ANDROID = auto()
 
 
-class LibraryCacheTypes(Enum):
-    ANDROID = "android"
-    ANDROID_AND_IOS = "android_and_ios"
-    IOS = "ios"
-    WEB = "web"
+class LibraryCacheTypes(AutoName):
+    ANDROID = auto()
+    ANDROID_AND_IOS = auto()
+    IOS = auto()
+    WEB = auto()
 
 
 class DeliveryDictable(Dictable):
@@ -113,18 +114,18 @@ class Delivery(DeliveryDictable):
         history_list: HistoryList delivery properties
     """
 
-    class DeliveryMode(Enum):
-        EMAIL = "EMAIL"
-        FILE = "FILE"
-        PRINTER = "PRINTER"
-        HISTORY_LIST = "HISTORY_LIST"
-        CACHE = "CACHE"
-        MOBILE = "MOBILE"
-        FTP = "FTP",
-        SNAPSHOT = "SNAPSHOT",
-        PERSONAL_VIEW = "PERSONAL_VIEW"
-        SHARED_LINK = "SHARED_LINK"
-        UNSUPPORTED = "UNSUPPORTED"
+    class DeliveryMode(AutoUpperName):
+        EMAIL = auto()
+        FILE = auto()
+        PRINTER = auto()
+        HISTORY_LIST = auto()
+        CACHE = auto()
+        MOBILE = auto()
+        FTP = auto()
+        SNAPSHOT = auto()
+        PERSONAL_VIEW = auto()
+        SHARED_LINK = auto()
+        UNSUPPORTED = auto()
 
     class Email(DeliveryDictable):
         """Delivery properties for Email subscriptions

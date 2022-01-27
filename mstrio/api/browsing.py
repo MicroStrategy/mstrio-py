@@ -73,7 +73,7 @@ def store_search_instance(connection: "Connection", project_id: Optional[str] = 
     Returns:
         HTTP response returned by the MicroStrategy REST server.
     """
-    return connection.session.post(
+    return connection.post(
         url=f"{connection.base_url}/api/metadataSearches/results",
         headers={'X-MSTR-ProjectID': project_id}, params={
             'name': name,
@@ -113,12 +113,15 @@ def get_search_results(connection: "Connection", search_id: str, project_id: Opt
     Returns:
         HTTP response returned by the MicroStrategy REST server.
     """
-    return connection.session.get(url=f"{connection.base_url}/api/metadataSearches/results",
-                                  headers={'X-MSTR-ProjectID': project_id}, params={
-                                      'searchId': search_id,
-                                      'offset': offset,
-                                      'limit': limit
-                                  })
+    return connection.get(
+        url=f"{connection.base_url}/api/metadataSearches/results",
+        headers={'X-MSTR-ProjectID': project_id},
+        params={
+            'searchId': search_id,
+            'offset': offset,
+            'limit': limit
+        }
+    )
 
 
 def get_search_results_async(future_session: "FuturesSession", connection: "Connection",
@@ -176,7 +179,7 @@ def get_search_results_tree_format(connection: "Connection", search_id: str,
     Returns:
         HTTP response returned by the MicroStrategy REST server.
     """
-    return connection.session.get(
+    return connection.get(
         url=f"{connection.base_url}/api/metadataSearches/results/tree",
         headers={'X-MSTR-ProjectID': project_id},
         params={
@@ -196,7 +199,7 @@ def get_quick_search_result(connection, project_id: Optional[str] = None,
                             offset: Optional[int] = None, limit: Optional[int] = None,
                             hidden: Optional[bool] = None, get_ancestors: Optional[bool] = None,
                             cross_cluster: Optional[bool] = None, error_msg: Optional[str] = None):
-    return connection.session.get(
+    return connection.get(
         url=f"{connection.base_url}/api/searches/results",
         headers={'X-MSTR-ProjectID': project_id}, params={
             'name': name,
@@ -220,7 +223,7 @@ def get_quick_search_result_from_object(
                                  List[int]]] = None, include_ancestors: Optional[bool] = None,
         include_acl: Optional[bool] = None, limit: Optional[int] = None,
         offset: Optional[int] = None, error_msg: Optional[str] = None):
-    return connection.session.get(
+    return connection.get(
         url=f"{connection.base_url}/api/searchObjects/{search_object_id}/results",
         headers={'X-MSTR-ProjectID': project_id}, params={
             'includeAncestors': include_ancestors,
@@ -256,7 +259,7 @@ def get_shortcuts(connection: "Connection", body: dict, shortcut_info_flag: int 
         Complete HTTP response object.
     """
 
-    return connection.session.post(
+    return connection.post(
         url=(f'{connection.base_url}/api/searches/library/shortcuts'
              f'?shortcutInfoFlag={shortcut_info_flag}'),
         headers={'X-MSTR-ProjectID': None},
@@ -281,7 +284,7 @@ def get_shortcut(connection: "Connection", id: str, project_id: str, shortcut_in
         Complete HTTP response object.
     """
 
-    response = connection.session.post(
+    response = connection.post(
         url=(f'{connection.base_url}/api/searches/library/shortcuts'
              f'?shortcutInfoFlag={shortcut_info_flag}'),
         headers={'X-MSTR-ProjectID': None},
@@ -318,7 +321,7 @@ def get_search_suggestions(connection: "Connection", project_id: Optional[str] =
             with cluster nodes. Default value is `None`
     """
 
-    return connection.session.get(
+    return connection.get(
         url=(f'{connection.base_url}/api/searches/suggestions'
              f'?key={key}?count={count}?isCrossCluster={str(is_cross_cluster).lower()}'),
         headers={'X-MSTR-ProjectID': project_id})

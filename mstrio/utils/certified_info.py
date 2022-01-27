@@ -2,7 +2,8 @@ from typing import Optional
 
 from mstrio.connection import Connection
 from mstrio.users_and_groups.user import User
-from mstrio.utils.helper import Dictable, auto_match_args
+from mstrio.utils.helper import Dictable
+from mstrio.utils.entity import auto_match_args_entity
 
 
 class CertifiedInfo(Dictable):
@@ -33,8 +34,8 @@ class CertifiedInfo(Dictable):
         return f"Object certified on {self.date_certified} by {self._certifier}"
 
     def __repr__(self):
-        param_value_dict = auto_match_args(self.__init__, self, exclude=['self'],
-                                           include_defaults=False)
+        param_value_dict = auto_match_args_entity(self.__init__, self, exclude=['self'],
+                                                  include_defaults=False)
         params_list = []
         for param, value in param_value_dict.items():
             if param == "connection" and isinstance(value, Connection):

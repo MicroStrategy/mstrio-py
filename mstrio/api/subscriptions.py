@@ -28,7 +28,7 @@ def list_subscriptions(connection, project_id, fields=None, offset=0, limit=-1, 
     Returns:
         HTTP response object returned by the MicroStrategy REST server.
     """
-    return connection.session.get(
+    return connection.get(
         url=f'{connection.base_url}/api/subscriptions',
         params={
             'offset': offset,
@@ -83,7 +83,7 @@ def get_subscription(connection, subscription_id, project_id, fields=None, error
     Returns:
         HTTP response object returned by the MicroStrategy REST server
     """
-    return connection.session.get(
+    return connection.get(
         url=f'{connection.base_url}/api/subscriptions/{subscription_id}',
         params={'fields': fields},
         headers={'X-MSTR-ProjectID': project_id},
@@ -213,7 +213,7 @@ def create_subscription(connection, project_id, body, fields=None, error_msg=Non
     Returns:
         HTTP response object returned by the MicroStrategy REST server.
     """
-    return connection.session.post(
+    return connection.post(
         url=f'{connection.base_url}/api/subscriptions',
         params={'fields': fields},
         headers={'X-MSTR-ProjectID': project_id},
@@ -236,7 +236,7 @@ def remove_subscription(connection, subscription_id, project_id, error_msg=None,
     Returns:
         HTTP response object returned by the MicroStrategy REST server.
     """
-    response = connection.session.delete(
+    response = connection.delete(
         url=connection.base_url + '/api/subscriptions/' + subscription_id,
         headers={'X-MSTR-ProjectID': project_id},
     )
@@ -269,7 +269,7 @@ def update_subscription(connection, subscription_id, project_id, body, fields=No
     Returns:
         HTTP response object returned by the MicroStrategy REST server.
     """
-    return connection.session.put(
+    return connection.put(
         url=f'{connection.base_url}/api/subscriptions/{subscription_id}',
         params={'fields': fields},
         headers={'X-MSTR-ProjectID': project_id},
@@ -310,7 +310,7 @@ def available_recipients(connection, project_id, body, delivery_type, offset=0, 
     Returns:
         HTTP response object returned by the MicroStrategy REST server
     """
-    return connection.session.post(
+    return connection.post(
         url=f'{connection.base_url}/api/subscriptions/recipients/results',
         params={
             'fields': fields,
@@ -343,7 +343,7 @@ def bursting_attributes(connection, project_id, content_id, content_type, fields
     Returns:
         HTTP response object returned by the MicroStrategy REST server
     """
-    return connection.session.get(
+    return connection.get(
         url=f'{connection.base_url}/api/subscriptions/bursting',
         params={
             'fields': fields,
@@ -371,7 +371,7 @@ def send_subscription(connection, subscription_id, project_id, body, fields=None
     Returns:
         HTTP response object returned by the MicroStrategy REST server
     """
-    return connection.session.get(
+    return connection.get(
         url=f'{connection.base_url}/api/subscriptions/{subscription_id}/send',
         params={'fields': fields},
         headers={'X-MSTR-ProjectID': project_id},

@@ -7,7 +7,7 @@ from mstrio.utils.datasources import (alter_conn_list_resp, alter_conn_resp,
                                       alter_instance_list_resp, alter_instance_resp,
                                       alter_patch_req_body)
 from mstrio.utils.error_handlers import ErrorHandler
-from mstrio.utils.helper import exception_handler, response_handler, deprecation_warning
+from mstrio.utils.helper import exception_handler, response_handler
 
 
 @ErrorHandler(err_msg='Error getting available DBMSs.')
@@ -22,7 +22,7 @@ def get_available_dbms(connection, error_msg=None):
         Complete HTTP response object. HTTP STATUS 200/400
     """
     url = f"{connection.base_url}/api/dbobjects/dbmss"
-    return connection.session.get(url=url)
+    return connection.get(url=url)
 
 
 @ErrorHandler(err_msg='Error getting available database drivers.')
@@ -37,7 +37,7 @@ def get_available_db_drivers(connection, error_msg=None):
         Complete HTTP response object. HTTP STATUS 200/400
     """
     url = f"{connection.base_url}/api/dbobjects/drivers"
-    return connection.session.get(url=url)
+    return connection.get(url=url)
 
 
 def get_datasource_instance(connection, id, error_msg=None):
@@ -52,7 +52,7 @@ def get_datasource_instance(connection, id, error_msg=None):
         Complete HTTP response object. HTTP STATUS 200/400
     """
     url = f"{connection.base_url}/api/datasources/{id}"
-    response = connection.session.get(url=url)
+    response = connection.get(url=url)
     if not response.ok:
         if error_msg is None:
             error_msg = f"Error getting Datasource Instance with ID: {id}"
@@ -74,7 +74,7 @@ def delete_datasource_instance(connection, id, error_msg=None):
         Complete HTTP response object. HTTP STATUS 204/400
     """
     url = f"{connection.base_url}/api/datasources/{id}"
-    return connection.session.delete(url=url)
+    return connection.delete(url=url)
 
 
 def update_datasource_instance(connection, id, body, error_msg=None):
@@ -97,7 +97,7 @@ def update_datasource_instance(connection, id, body, error_msg=None):
         op_dict = alter_patch_req_body(op_dict, "/dataMartDatasource",
                                        "/databaseDataMartDatasourceId")
         alter_patch_req_body(op_dict, "/dbms", "/dbmsId")
-    response = connection.session.patch(url=url, json=body)
+    response = connection.patch(url=url, json=body)
     if not response.ok:
         if error_msg is None:
             error_msg = f"Error updating Datasource Instance with ID: {id}"
@@ -118,7 +118,7 @@ def create_datasource_instance(connection, body, error_msg=None):
         Complete HTTP response object. HTTP STATUS 201/400
     """
     url = f"{connection.base_url}/api/datasources"
-    response = connection.session.post(url=url, json=body)
+    response = connection.post(url=url, json=body)
     if not response.ok:
         if error_msg is None:
             name = body.get("name", "NA")
@@ -129,14 +129,13 @@ def create_datasource_instance(connection, body, error_msg=None):
 
 
 def get_datasource_instances(connection, ids=None, database_type=None, project=None,
-                             error_msg=None, application=None):
+                             error_msg=None):
     """Get information for all database sources.
 
     Args:
         connection: MicroStrategy REST API connection object
         ids: list of datasources ids
         database_type: list of types (names) of databases
-        application: deprecated. Use project instead.
         project: id (str) of a project or instance of an Project class
             to search for the datasource instances in. When provided, both
             `ids` and `database_types` are ignored. By default `None`.
@@ -145,24 +144,17 @@ def get_datasource_instances(connection, ids=None, database_type=None, project=N
     Returns:
         Complete HTTP response object. HTTP STATUS 200/400
     """
-    if application:
-        deprecation_warning(
-            '`application`',
-            '`project`',
-            '11.3.4.101',  # NOSONAR
-            False)
-        project = project or application
     project = project.id if isinstance(project, Project) else project
     project_provided = project is not None
 
     if project_provided:
         url = f"{connection.base_url}/api/projects/{project}/datasources"
-        response = connection.session.get(url=url)
+        response = connection.get(url=url)
     else:
         database_type = None if database_type is None else database_type.join(",")
         ids = None if ids is None else ids.join(",")
         url = f"{connection.base_url}/api/datasources"
-        response = connection.session.get(url=url, params={
+        response = connection.get(url=url, params={
             'id': ids,
             'database.type': database_type
         })
@@ -203,7 +195,7 @@ def get_datasource_connections(connection, error_msg=None):
     """
     url = f"{connection.base_url}/api/datasources/connections"
 
-    response = connection.session.get(url=url)
+    response = connection.get(url=url)
     if not response.ok:
         if error_msg is None:
             error_msg = "Error getting Datasource Connections"
@@ -224,7 +216,7 @@ def get_datasource_connection(connection, id, error_msg=None):
         Complete HTTP response object. HTTP STATUS 200/400
     """
     url = f"{connection.base_url}/api/datasources/connections/{id}"
-    response = connection.session.get(url=url)
+    response = connection.get(url=url)
     if not response.ok:
         if error_msg is None:
             error_msg = f"Error getting Datasource Connection with ID: {id}"
@@ -248,7 +240,7 @@ def update_datasource_connection(connection, id, body, error_msg=None):
     url = f"{connection.base_url}/api/datasources/connections/{id}"
     for op_dict in body["operationList"]:
         alter_patch_req_body(op_dict, "/datasourceLogin", "/databaseLoginId")
-    response = connection.session.patch(url=url, json=body)
+    response = connection.patch(url=url, json=body)
     if not response.ok:
         if error_msg is None:
             error_msg = f"Error updating Datasource Connection with ID: {id}"
@@ -269,7 +261,7 @@ def delete_datasource_connection(connection, id):
         Complete HTTP response object. HTTP STATUS 204/400
     """
     url = f"{connection.base_url}/api/datasources/connections/{id}"
-    return connection.session.delete(url=url)
+    return connection.delete(url=url)
 
 
 def create_datasource_connection(connection, body, error_msg=None):
@@ -284,7 +276,7 @@ def create_datasource_connection(connection, body, error_msg=None):
         Complete HTTP response object. HTTP STATUS 201/400
     """
     url = f"{connection.base_url}/api/datasources/connections"
-    response = connection.session.post(url=url, json=body)
+    response = connection.post(url=url, json=body)
     if not response.ok:
         if error_msg is None:
             name = body.get("name", "NA")
@@ -308,13 +300,12 @@ def test_datasource_connection(connection, body, error_msg=None):
         Complete HTTP response object. HTTP STATUS 204/400
     """
     url = f"{connection.base_url}/api/datasources/connections/test"
-    return connection.session.post(url=url, json=body)
+    return connection.post(url=url, json=body)
 
 
 @ErrorHandler(err_msg='Error fetching Datasource mappings.')
 def get_datasource_mappings(connection: Connection, default_connection_map: Optional[bool] = False,
-                            project_id: Optional[str] = None, error_msg: Optional[str] = None,
-                            application_id: Optional[str] = None):
+                            project_id: Optional[str] = None, error_msg: Optional[str] = None):
     """Get information for all datasource connection mappings.
 
     Args:
@@ -324,21 +315,13 @@ def get_datasource_mappings(connection: Connection, default_connection_map: Opti
             parameter. Default False.
         project_id: The project_id, required only for default connection
             map.
-        application_id: deprecated. Use project_id instead.
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
         Complete HTTP response object. Expected status is 200.
     """
-    if application_id:
-        deprecation_warning(
-            '`application_id`',
-            '`project_id`',
-            '11.3.4.101',  # NOSONAR
-            False)
-        project_id = project_id or application_id
     url = f"{connection.base_url}/api/datasources/mappings"
-    return connection.session.get(
+    return connection.get(
         url=url, params={
             "defaultConnectionMap": default_connection_map,
             "projectId": project_id
@@ -358,7 +341,7 @@ def get_datasource_mapping(connection: Connection, id=str,
         connection: MicroStrategy REST API connection object
         id: ID of the mapping
         default_connection_map (bool, optional): If True will get the default
-            connection map for an application. Requires `project_id`
+            connection map for a project. Requires `project_id`
             parameter. Default False.
         project_id: The project_id, required only for default connection
             map.
@@ -368,7 +351,7 @@ def get_datasource_mapping(connection: Connection, id=str,
         Complete HTTP response object. Expected status is 200.
     """
     url = f"{connection.base_url}/api/datasources/mappings"
-    response = connection.session.get(
+    response = connection.get(
         url=url, params={
             "defaultConnectionMap": default_connection_map,
             "projectId": project_id
@@ -399,7 +382,7 @@ def create_datasource_mapping(connection: Connection, body, error_msg: Optional[
         Complete HTTP response object. Expected status is 201.
     """
     url = f"{connection.base_url}/api/datasources/mappings"
-    return connection.session.post(url=url, json=body)
+    return connection.post(url=url, json=body)
 
 
 @ErrorHandler(err_msg='Error deleting Datasource mapping with ID {id}')
@@ -415,7 +398,7 @@ def delete_datasource_mapping(connection: Connection, id: str, error_msg: Option
         Complete HTTP response object. Expected status is 204.
     """
     url = f"{connection.base_url}/api/datasources/mappings/{id}"
-    return connection.session.delete(url=url)
+    return connection.delete(url=url)
 
 
 @ErrorHandler(err_msg="Error getting Datasource logins.")
@@ -430,7 +413,7 @@ def get_datasource_logins(connection: Connection, error_msg: Optional[str] = Non
         Complete HTTP response object. Expected status is 200.
     """
     url = f"{connection.base_url}/api/datasources/logins"
-    return connection.session.get(url=url)
+    return connection.get(url=url)
 
 
 @ErrorHandler(err_msg='Error creating Datasource login.')
@@ -446,7 +429,7 @@ def create_datasource_login(connection: Connection, body, error_msg: Optional[st
         Complete HTTP response object. Expected status is 201.
     """
     url = f"{connection.base_url}/api/datasources/logins"
-    return connection.session.post(url=url, json=body)
+    return connection.post(url=url, json=body)
 
 
 @ErrorHandler(err_msg='Error getting Datasource login with ID {id}')
@@ -462,7 +445,7 @@ def get_datasource_login(connection: Connection, id: str, error_msg: Optional[st
         Complete HTTP response object. Expected status is 200.
     """
     url = f"{connection.base_url}/api/datasources/logins/{id}"
-    return connection.session.get(url=url)
+    return connection.get(url=url)
 
 
 @ErrorHandler(err_msg='Error deleting Datasource login with ID {id}')
@@ -478,7 +461,7 @@ def delete_datasource_login(connection: Connection, id: str, error_msg: Optional
         Complete HTTP response object. Expected status is 204.
     """
     url = f"{connection.base_url}/api/datasources/logins/{id}"
-    return connection.session.delete(url=url)
+    return connection.delete(url=url)
 
 
 @ErrorHandler(err_msg='Error updating Datasource login with ID {id}')
@@ -496,4 +479,4 @@ def update_datasource_login(connection: Connection, id: str, body,
         Complete HTTP response object. Expected status is 200.
     """
     url = f"{connection.base_url}/api/datasources/logins/{id}"
-    return connection.session.patch(url=url, json=body)
+    return connection.patch(url=url, json=body)

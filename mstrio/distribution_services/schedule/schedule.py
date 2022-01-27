@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from enum import Enum
+from enum import auto
 from typing import List, Optional, Union
 
 from mstrio import config
@@ -9,6 +9,7 @@ from mstrio.distribution_services.schedule import ScheduleEnums, ScheduleTime
 from mstrio.users_and_groups.user import User
 from mstrio.utils import helper
 from mstrio.utils.entity import DeleteMixin, Entity, ObjectTypes
+from mstrio.utils.enum_helper import AutoName, get_enum_val
 from mstrio.utils.time_helper import DatetimeFormats, map_datetime_to_str, map_str_to_datetime
 from mstrio.utils.wip import pause_wip_warnings, resume_wip_warnings
 
@@ -62,10 +63,10 @@ class Schedule(Entity, DeleteMixin):
         event(Event): Details of event-based schedule
     """
 
-    class ScheduleType(Enum):
+    class ScheduleType(AutoName):
         """Class representation of a type of a Microstrategy Schedule."""
-        EVENT_BASED = 'event_based'
-        TIME_BASED = 'time_based'
+        EVENT_BASED = auto()
+        TIME_BASED = auto()
         NONE = None
 
     _OBJECT_TYPE = ObjectTypes.SCHEDULE_TRIGGER
@@ -127,8 +128,8 @@ class Schedule(Entity, DeleteMixin):
         if id is None:
             objects_info = list_schedules(connection=connection, name=name, to_dictionary=True)
             if objects_info:
-                id, object_info = objects_info[0].pop("id"), objects_info[0]
-                super().__init__(connection=connection, object_id=id, **object_info)
+                object_info, object_info["connection"] = objects_info[0], connection
+                self._init_variables(**object_info)
             else:
                 raise ValueError(f"There is no schedule with the given name: '{name}'")
         else:
@@ -234,23 +235,23 @@ class Schedule(Entity, DeleteMixin):
         }
 
     @classmethod
-    def create(cls, connection: Connection, name: str, schedule_type: ScheduleType,
+    def create(cls, connection: Connection, name: str, schedule_type: Union[ScheduleType, str],
                start_date: Union[str, datetime], description: Optional[str] = None,
                stop_date: Optional[Union[str, datetime]] = None, event_id: Optional[str] = None,
                time: Optional[ScheduleTime] = None,
-               recurrence_pattern: Optional[ScheduleEnums.RecurrencePattern] = None,
-               execution_pattern: Optional[ScheduleEnums.ExecutionPattern] = None,
+               recurrence_pattern: Optional[Union[ScheduleEnums.RecurrencePattern, str]] = None,
+               execution_pattern: Optional[Union[ScheduleEnums.ExecutionPattern, str]] = None,
                execution_time: Optional[str] = None, start_time: Optional[str] = None,
                stop_time: Optional[str] = None, execution_repeat_interval: Optional[int] = None,
-               daily_pattern: Optional[ScheduleEnums.DailyPattern] = None,
+               daily_pattern: Optional[Union[ScheduleEnums.DailyPattern, str]] = None,
                repeat_interval: Optional[int] = None,
-               days_of_week: Optional[List[ScheduleEnums.DaysOfWeek]] = None,
+               days_of_week: Optional[Union[List[ScheduleEnums.DaysOfWeek], List[str]]] = None,
                day: Optional[int] = None, month: Optional[int] = None,
-               week_offset: Optional[ScheduleEnums.WeekOffset] = None,
-               day_of_week: Optional[ScheduleEnums.DaysOfWeek] = None,
+               week_offset: Optional[Union[ScheduleEnums.WeekOffset, str]] = None,
+               day_of_week: Optional[Union[ScheduleEnums.DaysOfWeek, str]] = None,
                weekday_off_set: Optional[str] = None, days_of_month: Optional[List[str]] = None,
-               monthly_pattern: Optional[ScheduleEnums.MonthlyPattern] = None,
-               yearly_pattern: Optional[ScheduleEnums.YearlyPattern] = None):
+               monthly_pattern: Optional[Union[ScheduleEnums.MonthlyPattern, str]] = None,
+               yearly_pattern: Optional[Union[ScheduleEnums.YearlyPattern, str]] = None):
         """Create a Schedule using provided parameters as data.
 
         Args:
@@ -312,7 +313,6 @@ class Schedule(Entity, DeleteMixin):
         Returns:
             Schedule object with provided parameters.
         """
-
         time_kwargs = {
             key: val for key, val in locals().items() if val is not None and key not in [
                 'event_id', 'connection', 'description', 'name', 'schedule_type', 'start_date',
@@ -337,7 +337,7 @@ class Schedule(Entity, DeleteMixin):
         body = {
             'name': name,
             'description': description,
-            'schedule_type': schedule_type.value,
+            'schedule_type': get_enum_val(schedule_type, cls.ScheduleType),
             'start_date': start_date,
             'stop_date': stop_date,
             execution_details['type']: execution_details['content']

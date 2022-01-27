@@ -1,6 +1,6 @@
 # flake8: noqa
-from .project import (ProjectStatus, IdleMode, compare_project_settings, Application, Project,
-                      ProjectSettings, ApplicationSettings, compare_application_settings)
+from .project import (ProjectStatus, IdleMode, compare_project_settings, Project,
+                      ProjectSettings)
 from .cluster import GroupBy, ServiceAction, Cluster
 from .environment import Environment
 from .node import Node

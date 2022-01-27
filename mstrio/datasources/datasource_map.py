@@ -16,8 +16,8 @@ from mstrio.utils.helper import get_objects_id
 def list_datasource_mappings(
         connection: Connection, default_connection_map: bool = False,
         project: Optional[Union[Project, str]] = None, to_dictionary: bool = False,
-        limit: Optional[int] = None, application: Optional[Union[Project, str]] = None,
-        **filters) -> Union["DatasourceMap", List["DatasourceMap"], dict, List[dict], None]:
+        limit: Optional[int] = None, **filters) -> \
+        Union["DatasourceMap", List["DatasourceMap"], dict, List[dict], None]:
     """Get list of DatasourceLogin objects or dicts. Optionally filter the
     logins by specifying filters.
 
@@ -28,7 +28,6 @@ def list_datasource_mappings(
             Connection Map. Default False
         project: The project (or its id) which maps are to be fetched.
             Optional unless requesting the default map.
-        application: deprecated. Use project instead.
         to_dictionary: If True returns dict, by default (False) returns
             User objects.
         limit: limit the number of elements returned. If `None` (default), all
@@ -46,13 +45,6 @@ def list_datasource_mappings(
     Examples:
         >>> list_datasource_mappings(connection, name='db_login_name')
     """
-    if application:
-        helper.deprecation_warning(
-            '`application`',
-            '`project`',
-            '11.3.4.101',  # NOSONAR
-            False)
-        project = project or application
     return DatasourceMap._list(connection=connection,
                                default_connection_map=default_connection_map, project=project,
                                to_dictionary=to_dictionary, limit=limit, **filters)
@@ -117,8 +109,7 @@ class DatasourceMap(EntityBase):
                                          str]] = None, default_connection_map: bool = False,
                  ds_connection: Optional["DatasourceConnection"] = None,
                  datasource: Optional["DatasourceInstance"] = None, user: Optional["User"] = None,
-                 login: Optional["DatasourceLogin"] = None, locale: Optional[Locale] = None,
-                 application: Optional[Union[Project, str]] = None):
+                 login: Optional["DatasourceLogin"] = None, locale: Optional[Locale] = None):
         """Initialise Datasource Map object by passing the ID or by passing
         True for `default_connection_map` and the project for which to
         fetch the default map.
@@ -132,18 +123,9 @@ class DatasourceMap(EntityBase):
             id: ID of Datasource Map
             project: Project object or ID for restricting the search to
                 just this project.
-            application: deprecated. Use project instead.
-                (Optional except when fetching the default map.)
             default_connection_map: Whether to fetch the project's
                 default map.
         """
-        if application:
-            helper.deprecation_warning(
-                '`application`',
-                '`project`',
-                '11.3.4.101',  # NOSONAR
-                False)
-            project = project or application
         if id is None:
             if project is None or not default_connection_map:
                 helper.exception_handler(
@@ -228,22 +210,18 @@ class DatasourceMap(EntityBase):
             return [cls.from_dict(source=elem, connection=connection) for elem in mappings]
 
     @classmethod
-    def create(cls, connection: Connection, application: Union[Project, str],
+    def create(cls, connection: Connection, project: Union[Project, str],
                user: Union[User, str], ds_connection: Union[DatasourceConnection, str],
-               datasource: Union[DatasourceInstance,
-                                 str], login: Union[DatasourceLogin,
-                                                    str], locale: Optional[Locale] = None,
-               locale_id: Optional[str] = None, locale_name: Optional[str] = None,
-               project: Optional[Union[Project, str]] = None) -> "DatasourceMap":
+               datasource: Union[DatasourceInstance, str], login: Union[DatasourceLogin, str],
+               locale: Optional[Locale] = None, locale_id: Optional[str] = None,
+               locale_name: Optional[str] = None) -> "DatasourceMap":
         """Create a new Datasource Map object on the server.
         If more than one locale related parameters are provided,
         `locale` has priority, then `locale_id`.
 
         Args:
             connection: A MicroStrategy connection object
-            application: The project the Map is to be assigned to. Will be
-            removed from 11.3.4.101 and replaced with project.
-            project: Use from 11.3.4.101 instead of application.
+            project: The project the Map is to be assigned to
             user: The User to be mapped
             ds_connection: The Datasource Connection to be mapped
             datasource: The Datasource Instance to be mapped
@@ -255,13 +233,6 @@ class DatasourceMap(EntityBase):
         Returns:
             DatasourceMap object
         """
-        helper.deprecation_warning(
-            '`application`',
-            '`project`',
-            '11.3.4.101',  # NOSONAR
-            False,
-            False)
-        project = project or application
         project_id = get_objects_id(project, Project)
         user_id = get_objects_id(user, User)
         connection_id = get_objects_id(ds_connection, DatasourceConnection)

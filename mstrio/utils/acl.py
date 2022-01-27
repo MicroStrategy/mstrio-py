@@ -1,11 +1,12 @@
 from enum import Enum, IntFlag
 from typing import Any, Dict, List, Optional, TYPE_CHECKING, TypeVar, Union
-from mstrio.api import objects
-from mstrio.utils import helper
-from mstrio.utils.helper import Dictable
+
 import pandas as pd
 from requests import HTTPError
+
+from mstrio.api import objects
 from mstrio.connection import Connection
+from mstrio.utils.helper import Dictable, exception_handler, filter_obj_list
 from mstrio.types import ObjectTypes
 
 if TYPE_CHECKING:
@@ -28,7 +29,7 @@ class Rights(IntFlag):
     INHERITABLE = 0b100000000000000000000000000000
 
 
-class Permissions(str, Enum):
+class Permissions(Enum):
     """Enumeration constants used to specify combination of Rights values
     similar to workstation Security Access.
 
@@ -70,7 +71,7 @@ class ACE(Dictable):
         'rights': Rights,
     }
 
-    def __init__(self, deny: bool, entry_type: int, rights: Rights, trustee_id: str,
+    def __init__(self, deny: bool, entry_type: int, rights: Union[Rights, int], trustee_id: str,
                  trustee_name: str, trustee_type: int, trustee_subtype: int, inheritable: bool):
         """Set ACL object.
 
@@ -88,7 +89,7 @@ class ACE(Dictable):
 
         self.deny = deny
         self.entry_type = entry_type
-        self.rights = rights
+        self.rights = rights if isinstance(rights, Rights) else Rights(rights)
         self.trustee_id = trustee_id
         self.trustee_name = trustee_name
         self.trustee_type = trustee_type
@@ -153,7 +154,7 @@ class ACLMixin:
         Examples:
             >>> list_acl(deny=True, trustee_name="John")
         """
-        acl = helper.filter_obj_list(self.acl, **filters)
+        acl = filter_obj_list(self.acl, **filters)
         if to_dataframe:
             return pd.DataFrame(acl)
         else:
@@ -315,10 +316,10 @@ class TrusteeACLMixin:
     Objects currently supporting this Mixin are: (`User` and `UserGroup`).
     """
 
-    def set_permission(self, permission: Permissions, to_objects: Union[str, List[str]],
-                       object_type: "ObjectTypes", project: Optional[Union[str, "Project"]] = None,
-                       propagate_to_children: Optional[bool] = None,
-                       application: Optional[Union[str, "Project"]] = None) -> None:
+    def set_permission(self, permission: Union[Permissions, str],
+                       to_objects: Union[str, List[str]], object_type: "ObjectTypes",
+                       project: Optional[Union[str, "Project"]] = None,
+                       propagate_to_children: Optional[bool] = None) -> None:
         """Set permission to perform actions on given object(s).
 
         Function is used to set permission of the trustee to perform given
@@ -338,19 +339,11 @@ class TrusteeACLMixin:
             project: Object or id of Project where the object is
                 located. If not passed, Project (project_id) selected in
                 Connection object is used
-            application: deprecated. Use project instead.
             propagate_to_children: Flag used in the request to determine if
                 those rights will be propagated to children of the trustee
         Returns:
             None
         """
-        if application:
-            helper.deprecation_warning(
-                '`application`',
-                '`project`',
-                '11.3.4.101',  # NOSONAR
-                False)
-            project = project or application
 
         if not isinstance(permission, Permissions):
             try:
@@ -359,7 +352,7 @@ class TrusteeACLMixin:
                 msg = ("Invalid `permission` value. Available values are: 'View', "
                        "'Modify', 'Full Control', 'Denied All', 'Default All'. "
                        "See: Permissions enum.")
-                helper.exception_handler(msg)
+                exception_handler(msg)
         right_value = AGGREGATED_RIGHTS_MAP[permission].value
         denied = permission is Permissions.DENIED_ALL
 
@@ -385,20 +378,13 @@ class TrusteeACLMixin:
                            project=project, denied=denied,
                            propagate_to_children=propagate_to_children)
 
-    def set_custom_permissions(self, to_objects: Union[str, List[str]], object_type: "ObjectTypes",
-                               project: Union[str,
-                                              "Project"] = None, execute: Optional[str] = None,
-                               use: Optional[str] = None, control: Optional[str] = None,
-                               delete: Optional[str] = None, write: Optional[str] = None,
-                               read: Optional[str] = None, browse: Optional[str] = None,
-                               application: Union[str, "Project"] = None) -> None:
-        if application:
-            helper.deprecation_warning(
-                '`application`',
-                '`project`',
-                '11.3.4.101',  # NOSONAR
-                False)
-            project = project or application
+    def set_custom_permissions(self, to_objects: Union[str, List[str]],
+                               object_type: Union["ObjectTypes", int],
+                               project: Optional[Union[str, "Project"]] = None,
+                               execute: Optional[str] = None, use: Optional[str] = None,
+                               control: Optional[str] = None, delete: Optional[str] = None,
+                               write: Optional[str] = None, read: Optional[str] = None,
+                               browse: Optional[str] = None) -> None:
         """Set custom permissions to perform actions on given object(s).
 
         Function is used to set rights of the trustee to perform given actions
@@ -417,7 +403,6 @@ class TrusteeACLMixin:
             project (str, Project): Object or id of Project in which
                 the object is located. If not passed, Project
                 (project_id) selected in Connection object is used.
-            application: deprecated. Use project instead.
             execute (str): value for right "Execute". Available are 'grant',
                 'deny', 'default' or None
             use (str): value for right "Use". Available are 'grant',
@@ -438,16 +423,10 @@ class TrusteeACLMixin:
 
         def modify_custom_rights(connection, trustee_id: str, right: Union[Rights, List[Rights]],
                                  to_objects: List[str], object_type: "ObjectTypes", denied: bool,
-                                 project: Union[str, "Project"] = None, default: bool = False,
-                                 propagate_to_children: Optional[bool] = None,
-                                 application: Union[str, "Project"] = None) -> None:
-            if application:
-                helper.deprecation_warning(
-                    '`application`',
-                    '`project`',
-                    '11.3.4.101',  # NOSONAR
-                    False)
-                project = project or application
+                                 project: Optional[Union[str,
+                                                         "Project"]] = None, default: bool = False,
+                                 propagate_to_children: Optional[bool] = None) -> None:
+
             right_value = _get_custom_right_value(right)
             try:
                 _modify_rights(connection=connection, trustee_id=trustee_id, op='REMOVE',
@@ -508,7 +487,7 @@ def _modify_rights(connection, trustee_id: str, op: str, rights: int, object_typ
     if rights not in range(256) and rights not in range(536_870_912, 536_871_168):
         msg = ("Wrong `rights` value, please provide value in range 0-255 or combination of "
                "Rights enums")
-        helper.exception_handler(msg)
+        exception_handler(msg)
 
     if project:
         project = project if isinstance(project, str) else project.id

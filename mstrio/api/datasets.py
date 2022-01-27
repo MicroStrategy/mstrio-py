@@ -20,7 +20,7 @@ def dataset_definition(connection, id, fields=None, whitelist=None):
         HTTP response object returned by the MicroStrategy REST server.
     """
     connection._validate_project_selected()
-    return connection.session.get(
+    return connection.get(
         url=f'{connection.base_url}/api/datasets/{id}',
         params={'fields': fields}
     )
@@ -41,7 +41,7 @@ def create_dataset(connection, body):
         HTTP response object returned by the MicroStrategy REST server.
     """
     connection._validate_project_selected()
-    return connection.session.post(
+    return connection.post(
         url=f'{connection.base_url}/api/datasets',
         json=body
     )
@@ -69,7 +69,7 @@ def update_dataset(connection, id, table_name, update_policy, body):
     Returns:
         HTTP response object returned by the MicroStrategy REST server.
     """
-    return connection.session.patch(
+    return connection.patch(
         url=f'{connection.base_url}/api/datasets/{id}/tables/{table_name}',
         headers={'updatePolicy': update_policy},
         json=body,
@@ -89,7 +89,7 @@ def delete_dataset(connection, id):
     Returns:
         HTTP response object returned by the MicroStrategy REST server.
     """
-    return connection.session.delete(url=f'{connection.base_url}/api/objects/{id}?type=3')
+    return connection.delete(url=f'{connection.base_url}/api/objects/{id}?type=3')
 
 
 @ErrorHandler(err_msg='Error creating new dataset model.')
@@ -105,7 +105,7 @@ def create_multitable_dataset(connection, body):
         HTTP response object returned by the MicroStrategy REST server.
     """
     connection._validate_project_selected()
-    return connection.session.post(url=f'{connection.base_url}/api/datasets/models', json=body)
+    return connection.post(url=f'{connection.base_url}/api/datasets/models', json=body)
 
 
 @ErrorHandler(err_msg='Error creating new data upload session.')
@@ -123,7 +123,7 @@ def upload_session(connection, id, body):
         HTTP response object returned by the MicroStrategy REST server.
     """
     connection._validate_project_selected()
-    return connection.session.post(
+    return connection.post(
         url=f'{connection.base_url}/api/datasets/{id}/uploadSessions',
         json=body
     )
@@ -147,7 +147,7 @@ def upload(connection, id, session_id, body, throw_error=False):
         HTTP response object returned by the MicroStrategy REST server.
     """
     connection._validate_project_selected()
-    return connection.session.put(
+    return connection.put(
         url=f'{connection.base_url}/api/datasets/{id}/uploadSessions/{session_id}',
         json=body
     )
@@ -172,7 +172,7 @@ def publish(connection, id, session_id, throw_error=False):
     """
     connection._validate_project_selected()
     url = f'{connection.base_url}/api/datasets/{id}/uploadSessions/{session_id}/publish'
-    return connection.session.post(url=url)
+    return connection.post(url=url)
 
 
 @ErrorHandler(err_msg='Failed to check dataset {id} publication status.')
@@ -192,7 +192,7 @@ def publish_status(connection, id, session_id):
     """
 
     url = f'{connection.base_url}/api/datasets/{id}/uploadSessions/{session_id}/publishStatus'
-    return connection.session.get(url=url)
+    return connection.get(url=url)
 
 
 @ErrorHandler(err_msg='Failed to cancel the publication of dataset with ID {id}')
@@ -211,4 +211,4 @@ def publish_cancel(connection, id, session_id):
         HTTP response object returned by the MicroStrategy REST server
     """
     url = f'{connection.base_url}/api/datasets/{id}/uploadSessions/{session_id}'
-    return connection.session.delete(url=url)
+    return connection.delete(url=url)

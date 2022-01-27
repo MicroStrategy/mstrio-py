@@ -135,7 +135,7 @@ define(['./python-code'], (PythonCode) => class JupyterKernel {
     });
   }
 
-  formattedCallbacks(callbackObject, defaultValues = null) {
+  formattedCallbacks(callbackObject, defaultValues = null) { // NOSONAR
     /* This is object related to Jupyter Kernel
     * When used as second argument in Jupyter.notebook.kernel.execute,
     * you can control what happens with output of python code
@@ -144,22 +144,22 @@ define(['./python-code'], (PythonCode) => class JupyterKernel {
     */
     const reply = callbackObject.shell && callbackObject.shell.reply
       ? callbackObject.shell.reply
-      : defaultValues ? defaultValues.shell.reply : () => {};
+      : defaultValues ? defaultValues.shell.reply : () => undefined; // NOSONAR
     const payload = callbackObject.shell && callbackObject.shell.payload
       ? callbackObject.shell.payload
-      : defaultValues ? defaultValues.shell.payload : {};
+      : defaultValues ? defaultValues.shell.payload : {}; // NOSONAR
     const output = callbackObject.iopub && callbackObject.iopub.output
       ? callbackObject.iopub.output
-      : defaultValues ? defaultValues.iopub.output : () => {};
+      : defaultValues ? defaultValues.iopub.output : () => undefined; // NOSONAR
     const clearOutput = callbackObject.iopub && callbackObject.iopub.clear_output
       ? callbackObject.iopub.clear_output
-      : defaultValues ? defaultValues.iopub.clear_output : () => {};
+      : defaultValues ? defaultValues.iopub.clear_output : () => undefined; // NOSONAR
     const input = callbackObject.input
       ? callbackObject.input
-      : defaultValues ? defaultValues.input : undefined;
+      : defaultValues ? defaultValues.input : undefined; // NOSONAR
     const clearOnDone = callbackObject.clear_on_done
       ? callbackObject.clear_on_done
-      : defaultValues ? defaultValues.clear_on_done : true;
+      : defaultValues ? defaultValues.clear_on_done : true; // NOSONAR
 
     return {
       shell: {
@@ -182,7 +182,7 @@ define(['./python-code'], (PythonCode) => class JupyterKernel {
 
   replySuccessful(reply, expected = this.successReplies) { return expected.includes(reply); }
 
-  executePythonCodeInBackground() {
+  executePythonCodeInBackground() { // NOSONAR
     let responseNumber = 0;
     const expectedId = this.id; // makes sure that stack of requests refer to proper instance of this class
     const that = { ...this };
@@ -370,7 +370,7 @@ define(['./python-code'], (PythonCode) => class JupyterKernel {
     return this.result.output.content.text.trim() || null;
   }
 
-  parseResult(_forcedResult) {
+  parseResult(_forcedResult) { // NOSONAR
     const result = (_forcedResult || this.result).output;
     console.assert(!this.showDebug, 'RESULT TO PARSE: ', result);
     try {
@@ -415,7 +415,7 @@ define(['./python-code'], (PythonCode) => class JupyterKernel {
       self
         .code(PythonCode.code().forInitialEngine)
         .shell()
-        .execute(() => {});
+        .execute(() => undefined);
     });
     return this;
   }
@@ -426,7 +426,7 @@ define(['./python-code'], (PythonCode) => class JupyterKernel {
       self
         .code(`${customEnvironment} = create_custom_env()`)
         .shell()
-        .execute(() => {});
+        .execute(() => undefined);
     });
     return this;
   }
@@ -437,7 +437,7 @@ define(['./python-code'], (PythonCode) => class JupyterKernel {
       self
         .code(`${customEnvironment} = update_custom_env()`)
         .shell()
-        .execute(() => {});
+        .execute(() => undefined);
     });
     return this;
   }
@@ -454,7 +454,7 @@ else:
     ${customEnvironment} = create_custom_env()
           `).trim())
           .shell()
-          .execute(() => {});
+          .execute(() => undefined);
       });
     return this;
   }

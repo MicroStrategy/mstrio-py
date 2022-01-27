@@ -64,8 +64,6 @@ class CacheUpdateSubscription(Subscription):
             name: name of the subscription,
             project_id: project ID,
             project_name: project name,
-            application_id: deprecated. Use project_id instead.
-            application_name: deprecated. Use project_name instead.
             allow_delivery_changes: whether the recipients can change
                 the delivery of the subscription,
             allow_personalization_changes: whether the recipients can

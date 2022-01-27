@@ -8,7 +8,8 @@ ease its usage.
 """
 
 from mstrio.connection import Connection
-from mstrio.project_objects import OlapCube, Report
+from mstrio.project_objects import Report
+from mstrio.project_objects.datasets import OlapCube
 
 # get connection to an environment
 base_url = "https://<>/MicroStrategyLibrary/api"

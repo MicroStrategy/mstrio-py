@@ -1,4 +1,3 @@
-from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from enum import Enum
 from functools import reduce, wraps
@@ -11,16 +10,17 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, TYPE_CHECKING, Ty
 import warnings
 
 import pandas as pd
-from requests_futures.sessions import FuturesSession
 import stringcase
 
 from mstrio import __version__ as mstrio_version
 from mstrio import config
-from mstrio.api.exceptions import (MstrTimeoutError, PromptedContentError,
-                                   VersionException)
+from mstrio.api.exceptions import MstrTimeoutError, PromptedContentError, VersionException
 from mstrio.types import ObjectSubTypes
 from mstrio.utils.dict_filter import filter_list_of_dicts
+from mstrio.utils.enum_helper import get_enum_val
 from mstrio.utils.time_helper import DatetimeFormats, map_datetime_to_str, map_str_to_datetime
+from mstrio.utils.sessions import FuturesSessionWithRenewal
+
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
@@ -98,15 +98,15 @@ def camel_to_snake(response: Union[dict, list]) -> Union[dict, List[dict]]:
     """Converts dictionary keys from camelCase to snake_case.
        It works recursively for dicts in dicts."""
 
-    def convert_dict(dictionary):
+    def convert_dict(source):
         return {
             stringcase.snakecase(key):
             value if not isinstance(value, dict) else convert_dict(value)
-            for key, value in dictionary.items()
+            for key, value in source.items()
         }
 
     if type(response) == list:
-        return [convert_dict(dictionary) for dictionary in response if type(dictionary) == dict]
+        return [convert_dict(source) for source in response if type(source) == dict]
     elif type(response) == dict:
         return convert_dict(response)
     else:
@@ -117,15 +117,15 @@ def snake_to_camel(response: Union[dict, list]) -> Union[dict, List[dict]]:
     """Converts dictionary keys from snake_case to camelCase.
        It works recursively for dicts in dicts."""
 
-    def convert_dict(dictionary):
+    def convert_dict(source):
         return {
             stringcase.camelcase(key):
             value if not isinstance(value, dict) else convert_dict(value)
-            for key, value in dictionary.items()
+            for key, value in source.items()
         }
 
     if type(response) == list:
-        return [convert_dict(dictionary) for dictionary in response if type(dictionary) == dict]
+        return [convert_dict(source) for source in response if type(source) == dict]
     elif type(response) == dict:
         return convert_dict(response)
     else:
@@ -313,8 +313,7 @@ def fetch_objects_async(connection: "Connection", api: Callable, async_api: Call
     if total_objects > current_count:
         it_total = int(total_objects / chunk_size) + (total_objects % chunk_size != 0)
         threads = get_parallel_number(it_total)
-        with FuturesSession(executor=ThreadPoolExecutor(max_workers=threads),
-                            session=connection.session) as session:
+        with FuturesSessionWithRenewal(connection=connection, max_workers=threads) as session:
             # Extract parameters of the api wrapper and set them using kwargs
             param_value_dict = auto_match_args(
                 api, kwargs,
@@ -366,7 +365,7 @@ def fetch_objects(connection: "Connection", api: Callable, limit: Optional[int],
         return []
 
 
-def sort_object_properties(dictionary: dict) -> int:
+def sort_object_properties(source: dict) -> int:
     """Sort all properties of an object representing an MSTR object."""
     preffered_order = {
         'id': 1,
@@ -379,7 +378,7 @@ def sort_object_properties(dictionary: dict) -> int:
         'acg': 101,
         'acl': 102,
     }
-    return preffered_order.get(dictionary, 50)
+    return preffered_order.get(source, 50)
 
 
 def auto_match_args(func: Callable, param_dict: dict, exclude: list = [],
@@ -408,9 +407,8 @@ def auto_match_args(func: Callable, param_dict: dict, exclude: list = [],
             continue
         else:
             val = param_dict.get(arg) if param_dict.get(arg) is not None else default_dict.get(arg)
-            if not include_defaults:
-                if arg in default_dict and val == default_dict[arg]:
-                    continue
+            if not include_defaults and arg in default_dict and val == default_dict[arg]:
+                continue
 
             if isinstance(val, Enum):
                 val = val.value
@@ -506,14 +504,14 @@ def extract_all_dict_values(list_of_dicts: List[Dict]) -> List[Any]:
     return all_options
 
 
-def delete_none_values(dictionary: dict) -> dict:
+def delete_none_values(source: dict) -> dict:
     """Delete keys with None values from dictionary.
 
     Args:
-        dictionary: dictionary
+        source (dict): dict object from which none values will be deleted
     """
     new_dict = {}
-    for key, value in dictionary.items():
+    for key, value in source.items():
         if isinstance(value, dict):
             new_dict[key] = delete_none_values(value)
         elif value not in [[], {}, None]:
@@ -654,24 +652,14 @@ def delete_folder(connection, id: Optional[str] = None, name: Optional[str] = No
                                  error_msg=error_msg)
 
 
-def get_enum_val(obj, enum: Union[Enum, Tuple[Enum]] = Enum) -> str:
-    """Safely extract value from enum or str."""
-
-    if isinstance(obj, Enum) and isinstance(obj, enum):
-        return obj.value
-    elif obj is None or isinstance(obj, str) or isinstance(obj, int):
-        return obj
-    else:
-        raise TypeError(f"Incorrect type. Value should be of type: {enum}")
-
-
 def merge_id_and_type(object_id: str, object_type: Union["ObjectTypes", "ObjectSubTypes", int],
                       error_msg: Optional[str] = None) -> str:
     if not object_id or not object_type:
         exception_handler(msg=error_msg or "Please provide both `id` and `type`.",
                           exception_type=AttributeError)
     object_id = get_objects_id(object_id, type(object_id))
-    object_type = get_enum_val(object_type, type(object_type))
+    object_type = get_enum_val(object_type, type(object_type)) if isinstance(
+        object_type, Enum) else object_type
     return f'{object_id};{object_type}'
 
 
@@ -745,7 +733,7 @@ class Dictable:
     _FROM_DICT_MAP: Dict[str, Callable] = {}  # map attributes to Enums and components
 
     @classmethod
-    def _maybe_unpack(cls, key, val, camel_case=True):
+    def _obj_to_dict(cls, key, val, camel_case=True):
         """Unpack Enums, Dictable obj, list of Enums"""
         if isinstance(val, datetime):
             return map_datetime_to_str(key, val, cls._FROM_DICT_MAP)
@@ -754,9 +742,29 @@ class Dictable:
         elif isinstance(val, Dictable):
             return val.to_dict(camel_case)
         elif isinstance(val, list):
-            if all(isinstance(v, Enum) for v in val):
-                return [v.value for v in val]
+            return [cls._obj_to_dict(key, v, camel_case) for v in val]
         return val
+
+    @classmethod
+    def _dict_to_obj(cls, connection, val, key):
+
+        def constructor():
+            if isinstance(val, type(DatetimeFormats)):
+                return map_str_to_datetime(key, val, cls._FROM_DICT_MAP)
+            elif isinstance(cls._FROM_DICT_MAP[key], type(Enum)):
+                return cls._FROM_DICT_MAP[key](val)
+            elif isinstance(cls._FROM_DICT_MAP[key], type(Dictable)):
+                return cls._FROM_DICT_MAP[key].from_dict(val)
+            elif isinstance(cls._FROM_DICT_MAP[key], list):
+                if (all(isinstance(v, type(Enum)) for v in cls._FROM_DICT_MAP[key])
+                        and val is not None):
+                    return [cls._FROM_DICT_MAP[key][0](v) for v in val]
+                elif all([isinstance(v, type(Dictable)) for v in cls._FROM_DICT_MAP[key]]):
+                    return [cls._FROM_DICT_MAP[key][0].from_dict(v) for v in val]
+            else:
+                return cls._FROM_DICT_MAP[key](val, connection)
+
+        return val if key not in cls._FROM_DICT_MAP else constructor()
 
     def to_dict(self, camel_case=True):
 
@@ -771,7 +779,7 @@ class Dictable:
             to_be_deleted = '_' + prop
             cleaned_dict[prop] = cleaned_dict.pop(to_be_deleted, None)
         result = {
-            key: self._maybe_unpack(key, val, camel_case)
+            key: self._obj_to_dict(key, val, camel_case)
             for key, val in cleaned_dict.items()
             if key not in hidden_keys
         }
@@ -783,29 +791,12 @@ class Dictable:
     @classmethod
     def from_dict(cls: T, source: Dict[str, Any], connection: Optional["Connection"] = None,
                   to_snake_case: bool = True) -> T:
-        type_mapping = cls._FROM_DICT_MAP
         object_source = camel_to_snake(source) if to_snake_case else source
         if connection is not None:
             object_source["connection"] = connection
 
-        def map_val(val, key):
-
-            def constructor():
-                if isinstance(val, type(DatetimeFormats)):
-                    return map_str_to_datetime(key, val, cls._FROM_DICT_MAP)
-                elif isinstance(type_mapping[key], type(Enum)):
-                    return type_mapping[key](val)
-                elif isinstance(type_mapping[key], list):
-                    if (all(isinstance(v, type(Enum)) for v in type_mapping[key])
-                            and val is not None):
-                        return [type_mapping[key][0](v) for v in val]
-                else:
-                    return type_mapping[key](val, connection)
-
-            return val if key not in type_mapping else constructor()
-
         args = {
-            key: map_val(val, key)
+            key: cls._dict_to_obj(connection, val, key)
             for key, val in object_source.items()
             if key in cls.__init__.__code__.co_varnames
         }

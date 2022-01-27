@@ -188,26 +188,16 @@ class SecurityRole(Entity, DeleteMixin):
 
         self._alter_properties(**properties)
 
-    def list_members(self, project_name: Optional[str] = None,
-                     application_name: Optional[str] = None):
+    def list_members(self, project_name: Optional[str] = None):
         """List all members of the Security Role. Optionally, filter the
         results by Project name.
 
         Args:
             project_name(str, optional): Project name
-            application_name(str, optional): deprecated. Use project_name
-            instead.
         """
-        if application_name:
-            helper.deprecation_warning(
-                '`application_name`',
-                '`project_name`',
-                '11.3.4.101',  # NOSONAR
-                False)
-            project_name = project_name or application_name
         if project_name is not None:
-            [filtered_app] = helper.filter_list_of_dicts(self.projects, name=project_name)
-            members = filtered_app['members']
+            [filtered_project] = helper.filter_list_of_dicts(self.projects, name=project_name)
+            members = filtered_project['members']
         else:
             members = []
             for project in self.projects:
@@ -216,28 +206,18 @@ class SecurityRole(Entity, DeleteMixin):
         return members
 
     def grant_to(self, members: Union["UserOrGroup", List["UserOrGroup"]],
-                 application: Union["Project", str], project: Optional[Union["Project",
-                                                                             str]] = None) -> None:
+                 project: Union["Project", str]) -> None:
         """Assign users/user groups to a Security Role.
 
         Args:
             members(list): List of objects or IDs of Users or User Groups which
                 will be assigned to this Security Role.
-            application(Project, str): deprecated. Use project instead.
             project(Project, str): Project object or name to which
                 this removal will apply.
         """
         from mstrio.server.project import Project
         from mstrio.users_and_groups.user import User
         from mstrio.users_and_groups.user_group import UserGroup
-
-        helper.deprecation_warning(
-            '`application`',
-            '`project`',
-            '11.3.4.101',  # NOSONAR
-            False,
-            False)
-        project = project or application
 
         if isinstance(project, Project):
             project_id = project.id
@@ -276,29 +256,19 @@ class SecurityRole(Entity, DeleteMixin):
             if failed:
                 print("Security Role '{}' already has member(s) {}".format(self.name, failed))
 
-    def revoke_from(self, members: Union["UserOrGroup",
-                                         List["UserOrGroup"]], application: Union["Project", str],
-                    project: Optional[Union["Project", str]] = None) -> None:
+    def revoke_from(self, members: Union["UserOrGroup", List["UserOrGroup"]],
+                    project: Union["Project", str]) -> None:
         """Remove users/user groups from a Security Role.
 
         Args:
             members(list): List of objects or IDs of Users or User Groups
                 which will be removed from this Security Role.
-            application(Project, str): deprecated. Use project instead.
             project(Project, str): Project object or name
                 to which this removal will apply.
         """
         from mstrio.server.project import Project
         from mstrio.users_and_groups.user import User
         from mstrio.users_and_groups.user_group import UserGroup
-
-        helper.deprecation_warning(
-            '`application`',
-            '`project`',
-            '11.3.4.101',  # NOSONAR
-            False,
-            False)
-        project = project or application
 
         if isinstance(project, Project):
             project_id = project.id

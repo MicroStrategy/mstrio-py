@@ -86,8 +86,7 @@ class SubscriptionManager:
     """Manage subscriptions."""
 
     def __init__(self, connection: Connection, project_id: Optional[str] = None,
-                 project_name: Optional[str] = None, application_id: Optional[str] = None,
-                 application_name: Optional[str] = None):
+                 project_name: Optional[str] = None):
         """Initialize the SubscriptionManager object.
         Specify either `project_id` or `project_name`.
         When `project_id` is provided (not `None`), `project_name` is
@@ -98,17 +97,7 @@ class SubscriptionManager:
                 by `connection.Connection()`
             project_id: Project ID
             project_name: Project name
-            application_id: deprecated. Use project_id instead.
-            application_name: deprecated. Use project_name instead.
         """
-        if application_id or application_name:
-            helper.deprecation_warning(
-                '`application_name` and `application_id`',
-                '`project_name` and `project_id`',
-                '11.3.4.101',  # NOSONAR
-                False)
-            project_id = project_id or application_id
-            project_name = project_name or application_name
         self.connection = connection
         self.project_id = Subscription._project_id_check(connection, project_id, project_name)
 

@@ -1,20 +1,21 @@
-from enum import Enum
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+from enum import auto
+from typing import Any, Dict, List, Optional, TYPE_CHECKING, Union
 
 from mstrio.access_and_security.security_filter import ObjectReference
+from mstrio.utils.enum_helper import AutoName, get_enum_val
 from mstrio.utils.helper import Dictable
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
 
 
-class ParameterType(Enum):
-    CONSTANT = "constant"
-    OBJECT_REFERENCE = "object_reference"
-    EXPRESSION = "expression"
-    PROMPT = "prompt"
-    ARRAY = "array"
-    DYNAMIC_DATE_TIME = "dynamic_date_time"
+class ParameterType(AutoName):
+    CONSTANT = auto()
+    OBJECT_REFERENCE = auto()
+    EXPRESSION = auto()
+    PROMPT = auto()
+    ARRAY = auto()
+    DYNAMIC_DATE_TIME = auto()
 
 
 class ParameterBase(Dictable):
@@ -25,20 +26,20 @@ class ParameterBase(Dictable):
         self.parameter_type = self.TYPE
 
 
-class ConstantType:
+class ConstantType(AutoName):
     INT_32 = "int32"
     INT_64 = "int64"
-    DOUBLE = "double"
-    DATE = "date",
-    TIME = "time",
-    STRING = "string"
+    DOUBLE = auto()
+    DATE = auto()
+    TIME = auto()
+    STRING = auto()
 
 
 class ConstantParameter(ParameterBase):
 
     TYPE = ParameterType.CONSTANT
 
-    def __init__(self, type: "ConstantType", value: str):
+    def __init__(self, type: Union["ConstantType", str], value: str):
         """Constant parameter for predicate.
 
         Args:
@@ -47,7 +48,7 @@ class ConstantParameter(ParameterBase):
             value (str): value of constant.
         """
         super().__init__()
-        self.constant = {"type": type, "value": value}
+        self.constant = {"type": get_enum_val(type, ConstantType), "value": value}
 
     @classmethod
     def from_dict(cls, source: Dict[str, Any], connection: Optional["Connection"] = None):
@@ -101,13 +102,14 @@ class ConstantArrayParameter(ParameterBase):
 
     TYPE = ParameterType.ARRAY
 
-    def __init__(self, type: "ConstantType", values: List[str]):
+    def __init__(self, type: Union["ConstantType", str], values: List[str]):
         super().__init__()
-        self.constants_type = type
+        self.constants_type = type if isinstance(type, ConstantType) else ConstantType(type)
         self.constants = values
 
     @classmethod
-    def from_dict(cls, source: Dict[str, Any], connection: Optional["Connection"] = None):
-        source["type"] = source.get('constants_type')
+    def from_dict(cls, source: Dict[str, Any], connection: Optional["Connection"] = None,
+                  to_snake_case: bool = True):
+        source["type"] = source.get('constantsType' if to_snake_case else 'constants_type')
         source["values"] = source.get('constants')
         return super().from_dict(source, connection)

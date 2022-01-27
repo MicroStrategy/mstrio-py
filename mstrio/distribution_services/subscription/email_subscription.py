@@ -1,7 +1,6 @@
-from typing import List, Union
+from typing import List, Union, Optional
 
 from mstrio.connection import Connection
-from mstrio.utils import helper
 
 from ..schedule import Schedule
 from .base_subscription import Subscription
@@ -11,9 +10,8 @@ from .content import Content
 class EmailSubscription(Subscription):
     """Class representation of MicroStrategy Email Subscription object."""
 
-    def __init__(self, connection: Connection, subscription_id: str = None, project_id: str = None,
-                 project_name: str = None, application_id: str = None,
-                 application_name: str = None):
+    def __init__(self, connection: Connection, subscription_id: Optional[str] = None,
+                 project_id: Optional[str] = None, project_name: Optional[str] = None):
         """Initialize EmailSubscription object, populates it with I-Server data
         if subscription_id is passed.
         Specify either `project_id` or `project_name`.
@@ -26,33 +24,38 @@ class EmailSubscription(Subscription):
             subscription_id: ID of the subscription to be initialized
             project_id: Project ID
             project_name: Project name
-            application_id: deprecated. Use project_id instead.
-            application_name: deprecated. Use project_name instead.
         """
-        if application_id or application_name:
-            helper.deprecation_warning(
-                '`application_id` and `application_name`',
-                '`project_id` and `project_name`',
-                '11.3.4.101',  # NOSONAR
-                False)
-            project_id = project_id or application_id
-            project_name = project_name or application_name
         if subscription_id:
             super().__init__(connection, subscription_id, project_id, project_name)
 
     @classmethod
-    def create(cls, connection: Connection, name: str, recipients: Union[List[str], List[dict]],
-               project_id: str = None, schedules: Union[str, List[str], Schedule,
-                                                        List[Schedule]] = None,
-               project_name: str = None, allow_delivery_changes: bool = None,
-               allow_personalization_changes: bool = None, allow_unsubscribe: bool = True,
-               send_now: bool = None, owner_id: str = None, contents: Content = None,
-               delivery_expiration_date: str = None, contact_security: bool = None,
-               email_subject: str = None, email_message: str = None, filename: str = None,
-               compress: bool = False, space_delimiter: str = None,
-               email_send_content_as: str = 'data', overwrite_older_version: bool = False,
-               zip_filename: str = None, zip_password_protect: bool = None,
-               zip_password: str = None, application_id: str = None, application_name: str = None):
+    def create(
+        cls,
+        connection: Connection,
+        name: str,
+        project_id: Optional[str] = None,
+        project_name: Optional[str] = None,
+        allow_delivery_changes: Optional[bool] = None,
+        allow_personalization_changes: Optional[bool] = None,
+        allow_unsubscribe: bool = True,
+        send_now: Optional[bool] = None,
+        owner_id: Optional[str] = None,
+        schedules: Optional[Union[str, List[str], Schedule, List[Schedule]]] = None,
+        contents: Optional[Content] = None,
+        recipients: Union[List[str], List[dict]] = None,
+        delivery_expiration_date: Optional[str] = None,
+        contact_security: Optional[bool] = None,
+        space_delimiter: Optional[str] = None,
+        email_subject: Optional[str] = None,
+        email_message: Optional[str] = None,
+        email_send_content_as: str = 'data',
+        overwrite_older_version: bool = False,
+        filename: Optional[str] = None,
+        compress: bool = False,
+        zip_filename: Optional[str] = None,
+        zip_password_protect: Optional[bool] = None,
+        zip_password: Optional[str] = None
+    ):
         """Creates a new email subscription.
 
         Args:
@@ -60,8 +63,6 @@ class EmailSubscription(Subscription):
             name(str): name of the subscription,
             project_id(str): project ID,
             project_name(str): project name,
-            application_id: deprecated. Use project_id instead.
-            application_name: deprecated. Use project_name instead.
             allow_delivery_changes(bool): whether the recipients can change
                 the delivery of the subscription,
             allow_personalization_changes(bool): whether the recipients can
@@ -96,39 +97,15 @@ class EmailSubscription(Subscription):
             zip_password_protect(bool): whether to password protect zip file,
             zip_password(str): optional password for the compressed file
         """
-        if application_id or application_name:
-            helper.deprecation_warning(
-                '`application_id` and `application_name`',
-                '`project_id` and `project_name`',
-                '11.3.4.101',  # NOSONAR
-                False)
-            project_id = project_id or application_id
-            project_name = project_name or application_name
-
         return super()._Subscription__create(
-            connection=connection,
-            name=name,
-            project_id=project_id,
-            project_name=project_name,
+            connection=connection, name=name, project_id=project_id, project_name=project_name,
             allow_delivery_changes=allow_delivery_changes,
             allow_personalization_changes=allow_personalization_changes,
-            allow_unsubscribe=allow_unsubscribe,
-            send_now=send_now,
-            owner_id=owner_id,
-            schedules=schedules,
-            contents=contents,
-            recipients=recipients,
-            delivery_mode='EMAIL',
-            delivery_expiration_date=delivery_expiration_date,
-            contact_security=contact_security,
-            email_subject=email_subject,
-            email_message=email_message,
-            filename=filename,
-            compress=compress,
-            space_delimiter=space_delimiter,
+            allow_unsubscribe=allow_unsubscribe, send_now=send_now, owner_id=owner_id,
+            schedules=schedules, contents=contents, recipients=recipients, delivery_mode='EMAIL',
+            delivery_expiration_date=delivery_expiration_date, contact_security=contact_security,
+            email_subject=email_subject, email_message=email_message, filename=filename,
+            compress=compress, space_delimiter=space_delimiter,
             email_send_content_as=email_send_content_as,
-            overwrite_older_version=overwrite_older_version,
-            zip_filename=zip_filename,
-            zip_password_protect=zip_password_protect,
-            zip_password=zip_password,
-        )
+            overwrite_older_version=overwrite_older_version, zip_filename=zip_filename,
+            zip_password_protect=zip_password_protect, zip_password=zip_password)

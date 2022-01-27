@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import auto
 from typing import List, Optional, TYPE_CHECKING, Union
 
 from mstrio import config
@@ -6,8 +6,9 @@ from mstrio.api import datasources, objects
 from mstrio.datasources import DatasourceConnection, Dbms
 from mstrio.users_and_groups.user import User
 from mstrio.utils import helper
-from mstrio.utils.helper import get_objects_id
 from mstrio.utils.entity import DeleteMixin, CopyMixin, Entity, ObjectTypes
+from mstrio.utils.enum_helper import AutoName, get_enum_val
+from mstrio.utils.helper import get_objects_id
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
@@ -18,7 +19,6 @@ def list_datasource_instances(connection: "Connection", to_dictionary: bool = Fa
                               limit: Optional[int] = None, ids: Optional[List[str]] = None,
                               database_types: Optional[List[str]] = None,
                               project: Optional[Union["Project", str]] = None,
-                              application: Optional[Union["Project", str]] = None,
                               **filters) -> Union[List["DatasourceInstance"], List[dict]]:
     """Get list of DatasourceInstance objects or dicts. Optionally filter the
     datasource instances by specifying filters.
@@ -56,7 +56,6 @@ def list_datasource_instances(connection: "Connection", to_dictionary: bool = Fa
         project: id (str) of a project or instance of an Project class
             to search for the datasource instances in. When provided, both
             `ids` and `database_types` are ignored. By default `None`.
-        application: deprecated. Use project instead.
         **filters: Available filter parameters: ['id', 'name', 'description',
             'date_created', 'date_modified', 'datasource_type', table_prefix,
             'odbc_version', 'intermediate_store_db_name',
@@ -65,13 +64,6 @@ def list_datasource_instances(connection: "Connection", to_dictionary: bool = Fa
     Examples:
         >>> list_datasource_instances(connection, name='ds_instance_name')
     """
-    if application:
-        helper.deprecation_warning(
-            '`application`',
-            '`project`',
-            '11.3.4.101',  # NOSONAR
-            False)
-        project = project or application
     return DatasourceInstance._list_datasource_instances(
         connection=connection,
         ids=ids,
@@ -83,11 +75,11 @@ def list_datasource_instances(connection: "Connection", to_dictionary: bool = Fa
     )
 
 
-class DatasourceType(Enum):
-    RESERVED = "reserved"
-    NORMAL = "normal"
-    DATA_IMPORT = "data_import"
-    DATA_IMPORT_PRIMARY = "data_import_primary"
+class DatasourceType(AutoName):
+    RESERVED = auto()
+    NORMAL = auto()
+    DATA_IMPORT = auto()
+    DATA_IMPORT_PRIMARY = auto()
 
 
 class DatasourceInstance(Entity, CopyMixin, DeleteMixin):
@@ -175,8 +167,8 @@ class DatasourceInstance(Entity, CopyMixin, DeleteMixin):
             objects_info = DatasourceInstance._list_datasource_instances(
                 connection=connection, name=name, to_dictionary=True)
             if objects_info:
-                id, object_info = objects_info[0].pop("id"), objects_info[0]
-                super().__init__(connection=connection, object_id=id, **object_info)
+                object_info, object_info["connection"] = objects_info[0], connection
+                self._init_variables(**object_info)
             else:
                 helper.exception_handler(f"There is no Datasource Instance: '{name}'",
                                          exception_type=ValueError)
@@ -264,7 +256,7 @@ class DatasourceInstance(Entity, CopyMixin, DeleteMixin):
             "name": name,
             "database": database,
             "description": description,
-            "datasourceType": helper.get_enum_val(datasource_type, DatasourceType),
+            "datasourceType": get_enum_val(datasource_type, DatasourceType),
             "tablePrefix": table_prefix,
             "odbcVersion": odbc_version,
             "intermediateStoreDbName": intermediate_store_db_name,
