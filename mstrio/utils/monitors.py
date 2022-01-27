@@ -1,11 +1,9 @@
-from concurrent.futures.thread import ThreadPoolExecutor
 from typing import Callable, Optional
-
-from requests_futures.sessions import FuturesSession
 
 from mstrio.api import monitors
 from mstrio.server.node import Node
 from mstrio.utils.helper import _prepare_objects, auto_match_args, response_handler
+from mstrio.utils.sessions import FuturesSessionWithRenewal
 
 
 def all_nodes_async(connection, async_api: Callable, filters: dict, error_msg: str,
@@ -26,14 +24,17 @@ def all_nodes_async(connection, async_api: Callable, filters: dict, error_msg: s
     if kwargs.get('error_msg'):
         error_msg = kwargs.get('error_msg')
 
-    with FuturesSession(executor=ThreadPoolExecutor(max_workers=8),
-                        session=connection.session) as session:
+    with FuturesSessionWithRenewal(connection=connection, max_workers=8) as session:
         # Extract parameters of the api wrapper and set them using kwargs
         param_value_dict = auto_match_args(
-            async_api, kwargs,
+            async_api,
+            kwargs,
             exclude=['connection', 'limit', 'offset', 'future_session', 'error_msg', 'node_name'])
-        futures = (async_api(future_session=session, connection=connection, node_name=n,
-                             **param_value_dict) for n in node_names)
+        futures = [
+            async_api(future_session=session, connection=connection, node_name=n,
+                      **param_value_dict)
+            for n in node_names
+        ]
         objects = []
         for f in futures:
             response = f.result()

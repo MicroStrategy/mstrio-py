@@ -91,30 +91,9 @@ class Model(object):
         """Generates the data model by mapping attributes and metrics from list
         of tables."""
 
+        # Map tables one by one
         for table in tables:
-
-            # map column names and column types
-            _col_names = self.__get_col_names(table[self._KEY_DATA_FRAME])
-            _col_types = self.__get_col_types(table[self._KEY_DATA_FRAME])
-
-            # map tables
-            self.__add_table(name=table[self._KEY_TABLE_NAME], col_names=_col_names,
-                             col_types=_col_types)
-
-            # map attributes and metrics
-            for _name, _type in zip(_col_names, _col_types):
-
-                if self.__is_metric(_type):
-                    if self._KEY_AS_ATTR in table.keys() and _name in table[self._KEY_AS_ATTR]:
-                        self.__add_attribute(_name, table[self._KEY_TABLE_NAME])
-                    else:
-                        self.__add_metric(_name, table[self._KEY_TABLE_NAME])
-
-                else:
-                    if self._KEY_AS_METR in table.keys() and _name in table[self._KEY_AS_METR]:
-                        self.__add_metric(_name, table[self._KEY_TABLE_NAME])
-                    else:
-                        self.__add_attribute(_name, table[self._KEY_TABLE_NAME])
+            self.__map_table(table)
 
         # set model object
         self.__model = {
@@ -125,6 +104,30 @@ class Model(object):
             "metrics": self.__metrics,
             "attributes": self.__attributes
         }
+
+    def __map_table(self, table):
+        # map column names and column types
+        _col_names = self.__get_col_names(table[self._KEY_DATA_FRAME])
+        _col_types = self.__get_col_types(table[self._KEY_DATA_FRAME])
+
+        # map tables
+        self.__add_table(name=table[self._KEY_TABLE_NAME], col_names=_col_names,
+                         col_types=_col_types)
+
+        # map attributes and metrics
+        for _name, _type in zip(_col_names, _col_types):
+
+            if self.__is_metric(_type):
+                if self._KEY_AS_ATTR in table.keys() and _name in table[self._KEY_AS_ATTR]:
+                    self.__add_attribute(_name, table[self._KEY_TABLE_NAME])
+                else:
+                    self.__add_metric(_name, table[self._KEY_TABLE_NAME])
+
+            else:
+                if self._KEY_AS_METR in table.keys() and _name in table[self._KEY_AS_METR]:
+                    self.__add_metric(_name, table[self._KEY_TABLE_NAME])
+                else:
+                    self.__add_attribute(_name, table[self._KEY_TABLE_NAME])
 
     def __get_col_types(self, table):
         """Map column types from each column in the list of table."""

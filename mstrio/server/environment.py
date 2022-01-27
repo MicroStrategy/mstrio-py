@@ -1,10 +1,10 @@
 from typing import List, Optional, Union
-from mstrio.server.project import Project, compare_project_settings
 
 from pandas import DataFrame
 
-from mstrio.server.server import ServerSettings
 from mstrio.api import monitors
+from mstrio.server.project import Project, compare_project_settings
+from mstrio.server.server import ServerSettings
 import mstrio.utils.helper as helper
 
 
@@ -63,16 +63,6 @@ class Environment:
         """
         return Project._create(self.connection, name, description, force)
 
-    def create_application(self, name: str, description: Optional[str] = None,
-                           force: bool = False) -> Optional["Project"]:
-
-        helper.deprecation_warning(
-            'create_application function',
-            'create_project function',
-            '11.3.4.101',  # NOSONAR
-            False)
-        return self.create_project(name, description, force)
-
     def list_projects(self, to_dictionary: bool = False, limit: Optional[int] = None,
                       **filters) -> Union[List["Project"], List[dict]]:
         """Return list of project objects or project dicts if
@@ -93,17 +83,6 @@ class Environment:
             **filters,
         )
 
-    def list_applications(self, to_dictionary: bool = False, limit: Optional[int] = None,
-                          **filters) -> Union[List["Project"], List[dict]]:
-        # Support for deprecation period, to be removed with version 11.3.4.101
-
-        helper.deprecation_warning(
-            'list_applications function',
-            'list_projects function',
-            '11.3.4.101',  # NOSONAR
-            False)
-        return self.list_projects(to_dictionary, limit, **filters)
-
     def list_loaded_projects(self, to_dictionary: bool = False,
                              **filters) -> Union[List["Project"], List[dict]]:
         """Return list of all loaded project objects or project dicts
@@ -122,59 +101,28 @@ class Environment:
             **filters,
         )
 
-    def list_loaded_applications(self, to_dictionary: bool = False,
-                                 **filters) -> Union[List["Project"], List[dict]]:
-
-        helper.deprecation_warning(
-            'list_loaded_applications function',
-            'list_loaded_projects function',
-            '11.3.4.101',  # NOSONAR
-            False)
-        return self.list_loaded_projects(to_dictionary, **filters)
-
     def list_nodes(self, project: Optional[Union[str, "Project"]] = None,
-                   node_name: Optional[str] = None,
-                   application: Optional[Union[str, "Project"]] = None) -> List[dict]:
+                   node_name: Optional[str] = None) -> List[dict]:
         """Return a list of I-Server nodes and their properties. Optionally
         filter by `project` or `node_name`.
 
         Args:
             project: ID of project or Project object
-            application: deprecated. Use project instead.
             node_name: Name of node
         """
-        if application:
-            helper.deprecation_warning(
-                '`application`',
-                '`project`',
-                '11.3.4.101',  # NOSONAR
-                False)
-            project = project or application
         project_id = project.id if isinstance(project, Project) else project
         response = monitors.get_node_info(self.connection, project_id, node_name).json()
         return response['nodes']
 
-    def is_loaded(self, project_id: Optional[str] = None, project_name: Optional[str] = None,
-                  application_id: Optional[str] = None,
-                  application_name: Optional[str] = None) -> bool:
+    def is_loaded(self, project_id: Optional[str] = None,
+                  project_name: Optional[str] = None) -> bool:
         """Check if project is loaded, by passing project ID or name,
         returns True or False.
 
         Args:
             project_id: Project ID
             project_name: Project name
-            application_id: deprecated. Use project_id instead.
-            application_name: deprecated. Use project_name instead.
         """
-        if (application_id or application_name):
-            helper.deprecation_warning(
-                '`application_id` and `application_name`',
-                '`project_id` and `project_name`',
-                '11.3.4.101',  # NOSONAR
-                False)
-            project_id = project_id or application_id
-            project_name = project_name or application_name
-
         if project_id is None and project_name is None:
             helper.exception_handler(
                 "Please specify either 'project_name' or 'project_id' argument.")
@@ -196,8 +144,7 @@ class Environment:
         return loaded
 
     def compare_settings(self, projects: Union[List[str], List["Project"]] = None,
-                         show_diff_only: bool = False,
-                         applications: Union[List[str], List["Project"]] = None) -> DataFrame:
+                         show_diff_only: bool = False) -> DataFrame:
         """Compare project' settings to the first project in the
         provided list.
 
@@ -206,21 +153,12 @@ class Environment:
                 of project objects or names to be compared. First element of
                 list is the one to which the rest is compared. If None, all
                 projects on the environment will be compared.
-            applications: deprecated. Use projects instead.
             show_diff_only(bool, optional): Whether to display all settings or
                 only different from first project in list.
 
         Returns:
             Dataframe with values of selected project' settings.
         """
-        if applications:
-            helper.deprecation_warning(
-                '`applications`',
-                '`projects`',
-                '11.3.4.101',  # NOSONAR
-                False)
-            projects = projects or applications
-
         def not_exist_warning(wrong_name):
             helper.exception_handler(
                 "Project '{}' does not exist and will be skipped.".format(wrong_name),

@@ -28,7 +28,7 @@ def cube_definition(connection: "Connection", id: str):
         Complete HTTP response object.
     """
     connection._validate_project_selected()
-    return connection.session.get(url=f'{connection.base_url}/api/v2/cubes/{id}')
+    return connection.get(url=f'{connection.base_url}/api/v2/cubes/{id}')
 
 
 @ErrorHandler(err_msg='Error getting cube {id} metadata information.')
@@ -46,7 +46,7 @@ def cube_info(connection: "Connection", id: str):
     Returns:
         Complete HTTP response object.
     """
-    return connection.session.get(url=f'{connection.base_url}/api/cubes/?id={id}')
+    return connection.get(url=f'{connection.base_url}/api/cubes/?id={id}')
 
 
 @ErrorHandler(err_msg='Error getting cube {id} metadata information.')
@@ -61,7 +61,7 @@ def get_cube_status(connection: "Connection", id: str):
     Returns:
         Complete HTTP response object.
     """
-    return connection.session.head(url=f'{connection.base_url}/api/cubes/{id}')
+    return connection.head(url=f'{connection.base_url}/api/cubes/{id}')
 
 
 @ErrorHandler(err_msg='Error creating a new cube instance with ID {cube_id}.')
@@ -90,7 +90,7 @@ def cube_instance(connection: "Connection", cube_id: str, body: dict = {}, offse
     if version.parse(connection.iserver_version) >= version.parse("11.2.0200"):
         params['fields'] = CUBE_FIELDS
 
-    return connection.session.post(
+    return connection.post(
         url=f'{connection.base_url}/api/v2/cubes/{cube_id}/instances',
         json=body,
         params=params,
@@ -125,7 +125,7 @@ def cube_instance_id(connection: "Connection", cube_id: str, instance_id: str, o
     if version.parse(connection.iserver_version) >= version.parse("11.2.0200"):
         params['fields'] = CUBE_FIELDS
 
-    return connection.session.get(
+    return connection.get(
         url=f'{connection.base_url}/api/v2/cubes/{cube_id}/instances/{instance_id}',
         params=params,
     )
@@ -163,7 +163,7 @@ def cube_single_attribute_elements(connection: "Connection", cube_id: str, attri
         Complete HTTP response object.
     """
 
-    return connection.session.get(
+    return connection.get(
         url=f'{connection.base_url}/api/cubes/{cube_id}/attributes/{attribute_id}/elements',
         params={
             'offset': offset,
@@ -197,7 +197,7 @@ def publish(connection: "Connection", cube_id: str):
         Complete HTTP response object.
     """
 
-    return connection.session.post(url=f'{connection.base_url}/api/cubes/{cube_id}')
+    return connection.post(url=f'{connection.base_url}/api/cubes/{cube_id}')
 
 
 @ErrorHandler(err_msg='Error getting cube {cube_id} status.')
@@ -217,7 +217,7 @@ def status(connection: "Connection", cube_id: str, throw_error: bool = True):
         Complete HTTP response object.
     """
 
-    return connection.session.head(url=f'{connection.base_url}/api/cubes/{cube_id}')
+    return connection.head(url=f'{connection.base_url}/api/cubes/{cube_id}')
 
 
 @ErrorHandler(err_msg='Error creating cube {name} definition.')
@@ -238,7 +238,7 @@ def create(connection: "Connection", name: str, folder_id: str, overwrite: bool 
     }
     params = {'X-MSTR-ProjectID': connection.project_id}
 
-    return connection.session.post(
+    return connection.post(
         url=f'{connection.base_url}/api/v2/cubes',
         json=body,
         params=params
@@ -256,7 +256,7 @@ def update(connection: "Connection", cube_id: str, definition: dict = None):
     body = {'definition': definition}
     params = {'X-MSTR-ProjectID': connection.project_id}
 
-    return connection.session.put(
+    return connection.put(
         url=f"{connection.base_url}/api/v2/cubes/{cube_id}",
         json=body,
         params=params
@@ -273,7 +273,7 @@ def get_sql_view(connection: "Connection", cube_id: str, project_id: str = None)
         connection._validate_project_selected()
         project_id = connection.project_id
 
-    return connection.session.get(
+    return connection.get(
         url=f"{connection.base_url}/api/v2/cubes/{cube_id}/sqlView",
         params={'X-MSTR-projectID': project_id}
     )

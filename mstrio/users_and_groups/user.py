@@ -366,6 +366,35 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
                 print("Added address '{}' for user '{}'".format(address, self.name))
             setattr(self, "_addresses", response.json().get('addresses'))
 
+    def update_address(self, id: str, name: Optional[str] = None, address: Optional[str] = None,
+                       default: Optional[bool] = None) -> None:
+        """Update existing address. The address ID has to be specified
+        as the name is not unique.
+
+        Args:
+            id: ID of the address
+            name: New user-specified name for the address
+            address: New address value
+            default: Whether the address should be (un)marked as default
+        """
+        if id is None:
+            helper.exception_handler("Please specify 'id' parameter in the method.")
+        body = {}
+        if name is not None:
+            helper.validate_param_value('name', name, str)
+            body["name"] = name
+        if address is not None:
+            helper.validate_param_value('address', address, str, regex=r"[^@]+@[^@]+\.[^@]+",
+                                        valid_example="name@mail.com")
+            body["value"] = address
+        if default is not None:
+            helper.validate_param_value('default', default, bool)
+        response = users.update_address(self.connection, self.id, id, body)
+        if response.ok:
+            if config.verbose:
+                print(f"Updated address with ID '{id}' for user '{self.name}'")
+            self.fetch("addresses")
+
     def remove_address(self, name: Optional[str] = None, address: Optional[str] = None,
                        id: Optional[str] = None) -> None:
         """Remove existing address from the user object. Specify either address
@@ -434,23 +463,14 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
         existing_ids = [obj.get('id') for obj in memberships]
         self.remove_from_user_groups(user_groups=existing_ids)
 
-    def assign_security_role(self, security_role: Union[SecurityRole,
-                                                        str], application: Union["Project", str],
+    def assign_security_role(self, security_role: Union[SecurityRole, str],
                              project: Union["Project", str] = None) -> None:  # NOSONAR
         """Assigns a Security Role to the user for given project.
 
         Args:
             security_role: Security Role ID or object
-            application: Project name or object. Will be removed from 11.3.4.101
-            project: Will replace application from 11.3.4.101
+            project: Project name or object
         """
-        helper.deprecation_warning(
-            '`application`',
-            '`project`',
-            '11.3.4.101',  # NOSONAR
-            False,
-            False)
-        project = application
 
         security_role = security_role if isinstance(security_role, SecurityRole) else SecurityRole(
             self.connection, id=str(security_role))
@@ -460,23 +480,15 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
             print("Assigned Security Role '{}' to user: '{}'".format(security_role.name,
                                                                      self.name))
 
-    def revoke_security_role(self, security_role: Union[SecurityRole,
-                                                        str], application: Union["Project", str],
+    def revoke_security_role(self, security_role: Union[SecurityRole, str],
                              project: Union["Project", str] = None) -> None:  # NOSONAR
         """Removes a Security Role from the user for given project.
 
         Args:
             security_role: Security Role ID or object
-            application: Project name or object. Will be removed from 11.3.4.101
-            project: Will replace application from 11.3.4.101
+            project: Project name or object
         """
-        helper.deprecation_warning(
-            '`application`',
-            '`project`',
-            '11.3.4.101',  # NOSONAR
-            False,
-            False)
-        project = application
+
         security_role = security_role if isinstance(security_role, SecurityRole) else SecurityRole(
             self.connection, id=str(security_role))
 
@@ -628,7 +640,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
             else:
                 print("User '{}' does not have any directly granted privileges".format(self.name))
 
-    def list_privileges(self, mode: PrivilegeMode = PrivilegeMode.ALL,
+    def list_privileges(self, mode: Union[PrivilegeMode, str] = PrivilegeMode.ALL,
                         to_dataframe: bool = False) -> list:
         """List privileges for user.
 

@@ -1,10 +1,8 @@
-from concurrent.futures import ThreadPoolExecutor
 from typing import List, Optional, Union
 
 from packaging import version
 import pandas as pd
 import requests
-from requests_futures.sessions import FuturesSession
 from tqdm.auto import tqdm
 
 from mstrio import config
@@ -13,11 +11,12 @@ from mstrio.object_management.search_operations import full_search, SearchPatter
 from mstrio.connection import Connection
 from mstrio.users_and_groups.user import User
 from mstrio.utils.certified_info import CertifiedInfo
-from mstrio.utils.entity import CertifyMixin, Entity, ObjectTypes
+from mstrio.utils.entity import CertifyMixin, DeleteMixin, Entity, ObjectTypes
 from mstrio.utils.filter import Filter
 from mstrio.utils.helper import fallback_on_timeout
 import mstrio.utils.helper as helper
 from mstrio.utils.parser import Parser
+from mstrio.utils.sessions import FuturesSessionWithRenewal
 
 
 def list_reports(connection: Connection, name_begins: Optional[str] = None,
@@ -59,7 +58,7 @@ def list_reports(connection: Connection, name_begins: Optional[str] = None,
         return [Report.from_dict(obj_, connection) for obj_ in objects_]
 
 
-class Report(Entity, CertifyMixin):
+class Report(Entity, CertifyMixin, DeleteMixin):
     """Access, filter, publish, and extract data from in-memory reports.
 
     Create a Report object to load basic information on a report dataset.
@@ -213,8 +212,8 @@ class Report(Entity, CertifyMixin):
 
             if self._parallel and it_total > 1:
                 threads = helper.get_parallel_number(it_total)
-                with FuturesSession(executor=ThreadPoolExecutor(max_workers=threads),
-                                    session=self._connection.session) as session:
+                with FuturesSessionWithRenewal(connection=self._connection,
+                                               max_workers=threads) as session:
                     fetch_pbar = tqdm(desc="Downloading", total=it_total + 1,
                                       disable=(not self._progress_bar))
                     future = self.__fetch_chunks_future(session, paging, self.instance_id, limit)
@@ -512,8 +511,8 @@ class Report(Entity, CertifyMixin):
         attr_elements = []
         if self.attributes:
             threads = helper.get_parallel_number(len(self.attributes))
-            with FuturesSession(executor=ThreadPoolExecutor(max_workers=threads),
-                                session=self._connection.session) as session:
+            with FuturesSessionWithRenewal(connection=self._connection,
+                                           max_workers=threads) as session:
                 # Fetch first chunk of attribute elements.
                 futures = self.__fetch_attribute_elements_chunks(session, limit)
                 pbar = tqdm(futures, desc="Loading attribute elements", leave=False,

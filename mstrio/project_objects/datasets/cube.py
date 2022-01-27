@@ -1,11 +1,9 @@
-from concurrent.futures.thread import ThreadPoolExecutor
 from enum import Enum
 from operator import itemgetter
 from typing import List, Optional, TYPE_CHECKING, Union
 
 from pandas.core.frame import DataFrame
 import requests
-from requests_futures.sessions import FuturesSession
 from tqdm.auto import tqdm
 
 from mstrio import config
@@ -21,6 +19,7 @@ from mstrio.utils.filter import Filter
 from mstrio.utils.helper import exception_handler, fallback_on_timeout, choose_cube
 import mstrio.utils.helper as helper
 from mstrio.utils.parser import Parser
+from mstrio.utils.sessions import FuturesSessionWithRenewal
 
 if TYPE_CHECKING:
     from .cube_cache import CubeCache
@@ -363,8 +362,8 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
 
             if self._parallel and it_total > 1:
                 threads = helper.get_parallel_number(it_total)
-                with FuturesSession(executor=ThreadPoolExecutor(max_workers=threads),
-                                    session=self._connection.session) as session:
+                with FuturesSessionWithRenewal(connection=self._connection,
+                                               max_workers=threads) as session:
                     fetch_pbar = tqdm(desc="Downloading", total=it_total + 1,
                                       disable=(not self._progress_bar))
                     future = self.__fetch_chunks_future(session, paging, self.instance_id, limit)
@@ -659,8 +658,8 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
         attr_elements = []
         if self.attributes:
             threads = helper.get_parallel_number(len(self.attributes))
-            with FuturesSession(executor=ThreadPoolExecutor(max_workers=threads),
-                                session=self._connection.session) as session:
+            with FuturesSessionWithRenewal(connection=self._connection,
+                                           max_workers=threads) as session:
                 # Fetch first chunk of attribute elements.
                 futures = self.__fetch_attribute_elements_chunks(session, limit)
                 pbar = tqdm(futures, desc="Loading attribute elements", leave=False,

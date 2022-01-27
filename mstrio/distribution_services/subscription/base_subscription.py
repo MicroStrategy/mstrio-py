@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import auto
 from pprint import pformat, pprint
 from typing import Any, Dict, List, Optional, TypeVar, Union
 
@@ -15,15 +15,16 @@ from mstrio.server.project import Project
 from mstrio.users_and_groups import User
 from mstrio.utils import helper, time_helper
 from mstrio.utils.entity import EntityBase
+from mstrio.utils.enum_helper import AutoUpperName
 
 
-class RecipientsTypes(Enum):
-    CONTACT_GROUP = "CONTACT_GROUP"
-    USER_GROUP = "USER_GROUP"
-    CONTACT = "CONTACT"
-    USER = "USER"
-    PERSONAL_ADDRESS = "PERSONAL_ADDRESS"
-    UNSUPPORTED = "UNSUPPORTED"
+class RecipientsTypes(AutoUpperName):
+    CONTACT_GROUP = auto()
+    USER_GROUP = auto()
+    CONTACT = auto()
+    USER = auto()
+    PERSONAL_ADDRESS = auto()
+    UNSUPPORTED = auto()
 
 
 T = TypeVar("T")
@@ -44,11 +45,11 @@ class Subscription(EntityBase):
     }
     _FROM_DICT_MAP = {
         "owner": User.from_dict,
-        "contents": lambda source, connection:
-            [Content.from_dict(content, connection) for content in source],
+        "contents": (lambda source, connection:
+                     [Content.from_dict(content, connection) for content in source]),
         "delivery": Delivery.from_dict,
-        "schedules": lambda source, connection:
-            [Schedule.from_dict(content, connection) for content in source],
+        "schedules": (lambda source, connection:
+                      [Schedule.from_dict(content, connection) for content in source]),
         "date_created": time_helper.DatetimeFormats.YMDHMS,
         "date_modified": time_helper.DatetimeFormats.YMDHMS,
     }
@@ -57,8 +58,7 @@ class Subscription(EntityBase):
     _RECIPIENTS_INCLUDE = ['TO', 'CC', 'BCC', None]
 
     def __init__(self, connection: Connection, subscription_id: str, project_id: str = None,
-                 project_name: str = None, application_id: str = None,
-                 application_name: str = None):
+                 project_name: str = None):
         """Initialize Subscription object, populates it with I-Server data.
         Specify either `project_id` or `project_name`.
         When `project_id` is provided (not `None`), `project_name`
@@ -70,18 +70,7 @@ class Subscription(EntityBase):
             subscription_id: ID of the subscription to be initialized
             project_id: Project ID
             project_name: Project name
-            application_id: deprecated. Use project_id instead.
-            application_name: deprecated. Use project_name instead.
         """
-        if application_id or application_name:
-            helper.deprecation_warning(
-                '`application`',
-                '`project`',
-                '11.3.4.101',  # NOSONAR
-                False)
-            project_id = project_id or application_id
-            project_name = project_name or application_name
-
         project_id = self._project_id_check(connection, project_id, project_name)
         super().__init__(connection, subscription_id, project_id=project_id)
 
@@ -112,50 +101,50 @@ class Subscription(EntityBase):
         self.project_id = project_id
 
     def alter(
-        self,
-        name: Optional[str] = None,
-        allow_delivery_changes: Optional[bool] = None,
-        allow_personalization_changes: Optional[bool] = None,
-        allow_unsubscribe: Optional[bool] = None,
-        send_now: bool = False,
-        owner_id: Optional[str] = None,
-        schedules: Optional[Union[str, List[str], Schedule, List[Schedule]]] = None,
-        contents: Optional[Content] = None,
-        recipients: Optional[Union[List[str], List[dict]]] = None,
-        delivery: Optional[Union[Delivery, dict]] = None,
-        delivery_mode: Optional[str] = None,
-        custom_msg: Optional[str] = None,
-        delivery_expiration_date: Optional[str] = None,
-        contact_security: Optional[bool] = None,
-        filename: Optional[str] = None,
-        compress: Optional[bool] = None,
-        space_delimiter: Optional[str] = None,
-        email_subject: Optional[str] = None,
-        email_message: Optional[str] = None,
-        email_send_content_as: Optional[str] = None,
-        overwrite_older_version: Optional[bool] = None,
-        zip_filename: Optional[str] = None,
-        zip_password_protect: Optional[bool] = None,
-        zip_password: Optional[str] = None,
-        file_burst_sub_folder: Optional[str] = None,
-        printer_copies: Optional[int] = None,
-        printer_range_start: Optional[int] = None,
-        printer_range_end: Optional[int] = None,
-        printer_collated: Optional[bool] = None,
-        printer_orientation: Optional[str] = None,
-        printer_use_print_range: Optional[bool] = None,
-        cache_cache_type: Optional[str] = None,
-        cache_shortcut_cache_format: Optional[str] = None,
-        mobile_client_type: Optional[str] = None,
-        device_id: Optional[str] = None,
-        do_not_create_update_caches: Optional[bool] = None,
-        re_run_hl: Optional[bool] = None,
-        cache_library_cache_types: List[Union[LibraryCacheTypes, str]] = [LibraryCacheTypes.WEB],
-        cache_reuse_dataset_cache: bool = False,
-        cache_is_all_library_users: bool = False,
-        delivery_notification_enabled: bool = False,
-        delivery_personal_notification_address_id: Optional[str] = None,
-    ):
+            self,  # NOSONAR
+            name: Optional[str] = None,
+            allow_delivery_changes: Optional[bool] = None,
+            allow_personalization_changes: Optional[bool] = None,
+            allow_unsubscribe: Optional[bool] = None,
+            send_now: bool = False,
+            owner_id: Optional[str] = None,
+            schedules: Optional[Union[str, List[str], Schedule, List[Schedule]]] = None,
+            contents: Optional[Content] = None,
+            recipients: Optional[Union[List[str], List[dict]]] = None,
+            delivery: Optional[Union[Delivery, dict]] = None,
+            delivery_mode: Optional[str] = None,
+            custom_msg: Optional[str] = None,
+            delivery_expiration_date: Optional[str] = None,
+            contact_security: Optional[bool] = None,
+            filename: Optional[str] = None,
+            compress: Optional[bool] = None,
+            space_delimiter: Optional[str] = None,
+            email_subject: Optional[str] = None,
+            email_message: Optional[str] = None,
+            email_send_content_as: Optional[str] = None,
+            overwrite_older_version: Optional[bool] = None,
+            zip_filename: Optional[str] = None,
+            zip_password_protect: Optional[bool] = None,
+            zip_password: Optional[str] = None,
+            file_burst_sub_folder: Optional[str] = None,
+            printer_copies: Optional[int] = None,
+            printer_range_start: Optional[int] = None,
+            printer_range_end: Optional[int] = None,
+            printer_collated: Optional[bool] = None,
+            printer_orientation: Optional[str] = None,
+            printer_use_print_range: Optional[bool] = None,
+            cache_cache_type: Optional[str] = None,
+            cache_shortcut_cache_format: Optional[str] = None,
+            mobile_client_type: Optional[str] = None,
+            device_id: Optional[str] = None,
+            do_not_create_update_caches: Optional[bool] = None,
+            re_run_hl: Optional[bool] = None,
+            cache_library_cache_types: List[Union[LibraryCacheTypes,
+                                                  str]] = [LibraryCacheTypes.WEB],
+            cache_reuse_dataset_cache: bool = False,
+            cache_is_all_library_users: bool = False,
+            delivery_notification_enabled: bool = False,
+            delivery_personal_notification_address_id: Optional[str] = None):
         """
         Alter subscription.
 
@@ -228,15 +217,6 @@ class Subscription(EntityBase):
             delivery_personal_notification_address_id: Notification details
         """
 
-        def is_changed(nested=None, **kwargs):
-            for key, value in kwargs.items():
-                if nested:
-                    return value if value != nested and value is not None else nested
-                else:
-                    current_val = self.__dict__.get(key)
-                    # if not current_val: we need to get
-                    return value if value != current_val and value is not None else current_val
-
         # Schedules logic
         schedules = self.__validate_schedules(schedules=schedules)
         if not schedules:
@@ -244,14 +224,7 @@ class Subscription(EntityBase):
 
         # Content logic
         if contents:
-            contents = contents if isinstance(contents, list) else [contents]
-            content_type_msg = "Contents must be dictionaries or Content objects."
-            contents = [
-                content.to_dict(
-                    camel_case=True) if isinstance(content, Content) else content if isinstance(
-                        content, dict) else helper.exception_handler(content_type_msg, TypeError)
-                for content in contents
-            ]
+            contents = self.__validate_contents(contents)
         else:
             contents = [cont.to_dict() for cont in self.contents]
 
@@ -277,19 +250,20 @@ class Subscription(EntityBase):
         delivery = temp_delivery.to_dict(camel_case=True)
 
         # Recipients logic
-        recipients = is_changed(recipients=recipients)
+        recipients = self.__is_val_changed(recipients=recipients)
         recipients = Subscription._validate_recipients(self.connection, contents, recipients,
                                                        self.project_id, delivery['mode'])
 
         body = {
-            "name": is_changed(name=name),
-            "allowDeliveryChanges": is_changed(allow_delivery_changes=allow_delivery_changes),
+            "name": self.__is_val_changed(name=name),
+            "allowDeliveryChanges":
+                self.__is_val_changed(allow_delivery_changes=allow_delivery_changes),
             "allowPersonalizationChanges":
-                is_changed(allow_personalization_changes=allow_personalization_changes),
-            "allowUnsubscribe": is_changed(allow_unsubscribe=allow_unsubscribe),
+                self.__is_val_changed(allow_personalization_changes=allow_personalization_changes),
+            "allowUnsubscribe": self.__is_val_changed(allow_unsubscribe=allow_unsubscribe),
             "sendNow": send_now,
             'owner': {
-                'id': is_changed(nested=self.owner.id, owner_id=owner_id)
+                'id': self.__is_val_changed(nested=self.owner.id, owner_id=owner_id)
             },
             "schedules": schedules,
             "contents": contents,
@@ -310,6 +284,15 @@ class Subscription(EntityBase):
                 print(custom_msg if custom_msg else "Updated subscription '{}' with ID: {}."
                       .format(self.name, self.id))
 
+    def __is_val_changed(self, nested=None, **kwargs):
+        for key, value in kwargs.items():
+            if nested:
+                return value if value != nested and value is not None else nested
+            else:
+                current_val = self.__dict__.get(key)
+                # if not current_val: we need to get
+                return value if value != current_val and value is not None else current_val
+
     @staticmethod
     def __validate_schedules(schedules: Union[str, List[str], Schedule, List[Schedule]] = None):
         tmp_schedules = []
@@ -324,12 +307,23 @@ class Subscription(EntityBase):
 
         return tmp_schedules
 
+    @staticmethod
+    def __validate_contents(
+            contents: Union[List[Union[Content, dict]], Content, dict]) -> List[dict]:
+        contents = contents if isinstance(contents, list) else [contents]
+        content_type_msg = "Contents must be dictionaries or Content objects."
+        return [
+            content.to_dict(camel_case=True) if isinstance(content, Content) else content if
+            isinstance(content, dict) else helper.exception_handler(content_type_msg, TypeError)
+            for content in contents
+        ]
+
     def list_properties(self):
         """Lists all properties of subscription."""
         return {
             key: self.__dict__[key]
             for key in sorted(self.__dict__, key=helper.sort_object_properties)
-            if key not in ['connection', 'application_id', 'project_id', '_delivery']
+            if key not in ['connection', 'project_id', '_delivery']
         }
 
     def execute(self):
@@ -358,7 +352,7 @@ class Subscription(EntityBase):
         else:
             return False
 
-    def available_bursting_attributes(self) -> List[str]:
+    def available_bursting_attributes(self) -> dict:
         """Get a list of available attributes for bursting feature."""
         contents_bursting = {}
         for content in self.contents:
@@ -384,7 +378,7 @@ class Subscription(EntityBase):
             return response.json()['recipients']
 
     def add_recipient(self, recipients: Union[List[dict], dict, List[str],
-                                              str] = [], recipient_id: Optional[str] = None,
+                                              str] = None, recipient_id: Optional[str] = None,
                       recipient_type: Optional[str] = None, recipient_include_type: str = 'TO'):
         """Adds recipient to subscription. You can either specify id, type and
         include_type of single recipient, or just pass recipients list as a
@@ -401,50 +395,24 @@ class Subscription(EntityBase):
             recipient_include_type: include type of the recipient one of the
                 following: "TO" / "CC" / "BCC", by default "TO"
         """
-        if len(recipients) > 0:
+        if recipients:
             recipients = recipients if isinstance(recipients, list) else [recipients]
+        else:
+            recipients = []
         if recipient_id and recipient_type:
             recipients.append({
                 "id": recipient_id,
                 "type": recipient_type,
                 "includeType": recipient_include_type
             })
-        elif recipients == [] and recipient_id is None:
-            msg = ("Specify either a recipient ID, type and include type or pass recipients "
-                   "dictionaries")
-            helper.exception_handler(msg, ValueError)
-        elif len(recipients) >= 1 and recipient_id:
+        elif (recipients == [] and recipient_id is None) or (len(recipients) >= 1
+                                                             and recipient_id):
             msg = ("Specify either a recipient ID, type and include type or pass recipients "
                    "dictionaries")
             helper.exception_handler(msg, ValueError)
 
         all_recipients = self.recipients.copy()
-        ready_recipients = []
-        exisiting_recipients = [rec['id'] for rec in self.recipients]
-        for recipient in recipients:
-            not_dict_msg = """Wrong recipient format, expected format is
-                              {"id": recipient_id,
-                               "type": "CONTACT_GROUP" / "USER_GROUP" / "CONTACT" /
-                                       "USER" / "PERSONAL_ADDRESS" / "UNSUPPORTED"
-                               "includeType": "TO" / "CC" / "BCC" (optional)
-                              }"""
-            if isinstance(recipient, dict):
-                if list(recipient.keys()) in [['id', 'type', 'includeType'], ['id', 'type']]:
-                    rec_id = recipient['id']
-                    if rec_id in exisiting_recipients:
-                        helper.exception_handler(
-                            "{} is already a recipient of subscription".format(rec_id),
-                            UserWarning)
-                    else:
-                        ready_recipients.append(recipient)
-                else:
-                    helper.exception_handler(not_dict_msg, TypeError)
-            if isinstance(recipient, str):
-                if recipient in exisiting_recipients:
-                    helper.exception_handler(
-                        "{} is already a recipient of subscription".format(recipient), UserWarning)
-                else:
-                    ready_recipients.append(recipient)
+        ready_recipients = self.__prepare_recipients(recipients)
 
         ready_recipients = self._validate_recipients(self.connection, self.contents,
                                                      ready_recipients, self.project_id,
@@ -488,8 +456,36 @@ class Subscription(EntityBase):
         elif len(self.recipients) == len(all_recipients) and config.verbose:
             print("No recipients were removed from the subscription.")
 
-    def __change_delivery_properties(
-        self,
+    def __prepare_recipients(self, recipients):
+
+        exisiting_recipients = [rec['id'] for rec in self.recipients]
+        ready_recipients = []
+
+        def __already_recipient(recipient):
+            if recipient in exisiting_recipients:
+                helper.exception_handler(
+                    "{} is already a recipient of subscription".format(recipient), UserWarning)
+            else:
+                ready_recipients.append(recipient)
+
+        for recipient in recipients:
+            not_dict_msg = """Wrong recipient format, expected format is
+                              {"id": recipient_id,
+                               "type": "CONTACT_GROUP" / "USER_GROUP" / "CONTACT" /
+                                       "USER" / "PERSONAL_ADDRESS" / "UNSUPPORTED"
+                               "includeType": "TO" / "CC" / "BCC" (optional)
+                              }"""
+            if isinstance(recipient, dict):
+                if list(recipient.keys()) in [['id', 'type', 'includeType'], ['id', 'type']]:
+                    __already_recipient(recipient['id'])
+                else:
+                    helper.exception_handler(not_dict_msg, TypeError)
+            if isinstance(recipient, str):
+                __already_recipient(recipient)
+        return ready_recipients
+
+    def __change_delivery_properties(  # NOSONAR
+        self,  # NOSONAR
         mode=None,
         expiration=None,
         contact_security=None,
@@ -567,30 +563,11 @@ class Subscription(EntityBase):
 
     @classmethod
     def from_dict(cls: T, source: Dict[str, Any] = None, connection: Optional["Connection"] = None,
-                  project_id: Optional[str] = None, project_name: Optional[str] = None,
-                  dictionary=None, application_id: Optional[str] = None,
-                  application_name: Optional[str] = None) -> T:
+                  project_id: Optional[str] = None, project_name: Optional[str] = None) -> T:
         """Initialize Subscription object from dictionary.
         Specify either `project_id` or `project_name`.
         When `project_id` is provided (not `None`), `project_name` is
         omitted."""
-        if application_id or application_name:
-            helper.deprecation_warning(
-                '`application_id` and `application_name`',
-                '`project_id` and `project_name`',
-                '11.3.4.101',  # NOSONAR
-                False)
-            project_id = project_id or application_id
-            project_name = project_name or application_name
-
-        if dictionary:
-            helper.deprecation_warning(
-                "`dictionary`",
-                "`source`",
-                "11.3.4.101",  # NOSONAR
-                module=False,
-            )
-        source = source or dictionary
         # This is tricky, as we have to consider 3 cases:
         # - project_id given directly
         # - project_name given in args
@@ -612,54 +589,54 @@ class Subscription(EntityBase):
         return obj
 
     @classmethod
-    def __create(
-        cls,
-        connection: Connection,
-        name: str,
-        project_id: Optional[str] = None,
-        project_name: Optional[str] = None,
-        allow_delivery_changes: Optional[bool] = None,
-        allow_personalization_changes: Optional[bool] = None,
-        allow_unsubscribe: Optional[bool] = None,
-        send_now: Optional[bool] = None,
-        owner_id: Optional[str] = None,
-        schedules: Union[str, List[str], Schedule, List[Schedule]] = None,
-        contents: Content = None,
-        recipients: Union[List[dict], List[str]] = None,
-        delivery: Union[Delivery, dict] = None,
-        delivery_mode: str = Delivery.DeliveryMode.EMAIL,
-        delivery_expiration_date: Optional[str] = None,
-        contact_security: bool = True,
-        filename: Optional[str] = None,
-        compress: bool = False,
-        space_delimiter: Optional[str] = None,
-        email_subject: Optional[str] = None,
-        email_message: Optional[str] = None,
-        email_send_content_as: str = SendContentAs.DATA,
-        overwrite_older_version: bool = False,
-        zip_filename: Optional[str] = None,
-        zip_password_protect: Optional[bool] = None,
-        zip_password: Optional[str] = None,
-        file_burst_sub_folder: Optional[str] = None,
-        printer_copies: int = 1,
-        printer_range_start: int = 0,
-        printer_range_end: int = 0,
-        printer_collated: bool = True,
-        printer_orientation: str = Orientation.PORTRAIT,
-        printer_use_print_range: bool = False,
-        cache_cache_type: Union[CacheType, str] = CacheType.RESERVED,
-        cache_shortcut_cache_format: Union[ShortcutCacheFormat,
-                                           str] = ShortcutCacheFormat.RESERVED,
-        mobile_client_type: str = ClientType.RESERVED,
-        device_id: Optional[str] = None,
-        do_not_create_update_caches: bool = True,
-        re_run_hl: bool = True,
-        cache_library_cache_types: List[Union[LibraryCacheTypes, str]] = [LibraryCacheTypes.WEB],
-        cache_reuse_dataset_cache: bool = False,
-        cache_is_all_library_users: bool = False,
-        delivery_notification_enabled: bool = False,
-        delivery_personal_notification_address_id: Optional[str] = None,
-    ):
+    def __create(  # NOSONAR
+            cls,  # NOSONAR
+            connection: Connection,
+            name: str,
+            project_id: Optional[str] = None,
+            project_name: Optional[str] = None,
+            allow_delivery_changes: Optional[bool] = None,
+            allow_personalization_changes: Optional[bool] = None,
+            allow_unsubscribe: Optional[bool] = None,
+            send_now: Optional[bool] = None,
+            owner_id: Optional[str] = None,
+            schedules: Optional[Union[str, List[str], Schedule, List[Schedule]]] = None,
+            contents: Content = None,
+            recipients: Union[List[dict], List[str]] = None,
+            delivery: Union[Delivery, dict] = None,
+            delivery_mode: str = Delivery.DeliveryMode.EMAIL,
+            delivery_expiration_date: Optional[str] = None,
+            contact_security: bool = True,
+            filename: Optional[str] = None,
+            compress: bool = False,
+            space_delimiter: Optional[str] = None,
+            email_subject: Optional[str] = None,
+            email_message: Optional[str] = None,
+            email_send_content_as: str = SendContentAs.DATA,
+            overwrite_older_version: bool = False,
+            zip_filename: Optional[str] = None,
+            zip_password_protect: Optional[bool] = None,
+            zip_password: Optional[str] = None,
+            file_burst_sub_folder: Optional[str] = None,
+            printer_copies: int = 1,
+            printer_range_start: int = 0,
+            printer_range_end: int = 0,
+            printer_collated: bool = True,
+            printer_orientation: str = Orientation.PORTRAIT,
+            printer_use_print_range: bool = False,
+            cache_cache_type: Union[CacheType, str] = CacheType.RESERVED,
+            cache_shortcut_cache_format: Union[ShortcutCacheFormat,
+                                               str] = ShortcutCacheFormat.RESERVED,
+            mobile_client_type: str = ClientType.RESERVED,
+            device_id: Optional[str] = None,
+            do_not_create_update_caches: bool = True,
+            re_run_hl: bool = True,
+            cache_library_cache_types: List[Union[LibraryCacheTypes,
+                                                  str]] = [LibraryCacheTypes.WEB],
+            cache_reuse_dataset_cache: bool = False,
+            cache_is_all_library_users: bool = False,
+            delivery_notification_enabled: bool = False,
+            delivery_personal_notification_address_id: Optional[str] = None):
         """Creates a subscription Create_Subscription_Outline.
 
         Args:
@@ -799,6 +776,18 @@ class Subscription(EntityBase):
     @staticmethod
     def _validate_recipients(connection, contents: List[Union[Content, dict]], recipients,
                              project_id, delivery_mode):
+
+        def __not_available(recipient):
+            if recipient in available_recipients_ids:
+                rec = helper.filter_list_of_dicts(available_recipients, id=recipient)
+                formatted_recipients.append(rec[0])
+            else:
+                msg = (f"'{recipient}' is not a valid recipient ID for selected content "
+                       "and delivery mode. Available recipients: \n"
+                       f"{pformat(available_recipients,indent=2)}")
+                helper.exception_handler(msg, ValueError)
+                pprint(available_recipients)
+
         recipients = recipients if isinstance(recipients, list) else [recipients]
         body = {
             "contents": [
@@ -814,24 +803,9 @@ class Subscription(EntityBase):
         if recipients:
             for recipient in recipients:
                 if isinstance(recipient, dict):
-                    if recipient['id'] in available_recipients_ids:
-                        formatted_recipients.append(recipient)
-                    else:
-                        msg = (f"'{recipient['id']}' is not a valid recipient ID for selected "
-                               "content and delivery mode. Available recipients: \n"
-                               f"{pformat(available_recipients, indent=2)}")
-                        helper.exception_handler(msg, ValueError)
-                        pprint(available_recipients)
+                    __not_available(recipient['id'])
                 elif isinstance(recipient, str):
-                    if recipient in available_recipients_ids:
-                        rec = helper.filter_list_of_dicts(available_recipients, id=recipient)
-                        formatted_recipients.append(rec[0])
-                    else:
-                        msg = (f"'{recipient}' is not a valid recipient ID for selected content "
-                               "and delivery mode. Available recipients: \n"
-                               f"{pformat(available_recipients,indent=2)}")
-                        helper.exception_handler(msg, ValueError)
-                        pprint(available_recipients)
+                    __not_available(recipient)
                 else:
                     helper.exception_handler(
                         "Recipients must be a dictionaries or a strings, not a {}".format(

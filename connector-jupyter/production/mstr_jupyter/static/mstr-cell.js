@@ -8,7 +8,8 @@ define([
   { CodeCell }, { Cell }, { OutputArea }, { CellToolbar },
   CodeMirror,
   Utilities, CellButton, Globals,
-) => { // not in class structure due to Jupyter CodeCell implementation we need to use
+) => { // NOSONAR (Too many params: need to stay as this is the way to implement `define()`)
+  // not in class structure due to Jupyter CodeCell implementation we need to use
   const { createElement, flagImportExport, XOR } = Utilities;
   const { CELL_METADATA } = Globals;
 
@@ -16,7 +17,7 @@ define([
 # ${
   cellType === 'import'
     ? 'Import from MicroStrategy'
-    : `Export/${cellType === 'update' ? 'Update' : 'Create'} Cube in MicroStrategy`
+    : `Export/${cellType === 'update' ? 'Update' : 'Create'} Cube in MicroStrategy` // NOSONAR
 }
 # Cell Creation Date: ${Utilities.formatDateToUS(timeStamp)}
 # Object Name: ${cubeName}

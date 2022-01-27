@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import auto
 from typing import List, Optional, TYPE_CHECKING, Union
 
 from mstrio import config
@@ -6,8 +6,9 @@ from mstrio.api import datasources, objects
 from mstrio.datasources.datasource_login import DatasourceLogin
 from mstrio.users_and_groups.user import User
 from mstrio.utils import helper
-from mstrio.utils.helper import get_objects_id
 from mstrio.utils.entity import DeleteMixin, CopyMixin, Entity, ObjectTypes
+from mstrio.utils.enum_helper import AutoName, get_enum_val
+from mstrio.utils.helper import get_objects_id
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
@@ -40,22 +41,22 @@ def list_datasource_connections(connection: "Connection", to_dictionary: bool = 
     )
 
 
-class CharEncoding(Enum):
-    UTF8 = "utf8"
+class CharEncoding(AutoName):
+    UTF8 = auto()
     NON_UTF8 = "multibyte"
 
 
-class DriverType(Enum):
-    RESERVED = "reserved"
-    ODBC = "odbc"
-    NATIVE = "native"
+class DriverType(AutoName):
+    RESERVED = auto()
+    ODBC = auto()
+    NATIVE = auto()
 
 
-class ExecutionMode(Enum):
-    RESERVED = "reserved"
-    ASYNCH_CONNECTION = "async_connection"
-    ASYNCH_STATEMENT = "async_statement"
-    SYNCHRONOUS = "synchronous"
+class ExecutionMode(AutoName):
+    RESERVED = auto()
+    ASYNCH_CONNECTION = auto()
+    ASYNCH_STATEMENT = auto()
+    SYNCHRONOUS = auto()
 
 
 class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
@@ -176,8 +177,8 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
             objects_info = DatasourceConnection._list_datasource_connections(
                 connection=connection, name=name, to_dictionary=True)
             if objects_info:
-                id, object_info = objects_info[0].pop("id"), objects_info[0]
-                super().__init__(connection=connection, object_id=id, **object_info)
+                object_info, object_info["connection"] = objects_info[0], connection
+                self._init_variables(**object_info)
             else:
                 raise ValueError(f"There is no Datasource Connection: '{name}'")
         else:
@@ -332,14 +333,14 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
             "name": name,
             "description": description,
             "acg": acg,
-            "executionMode": helper.get_enum_val(execution_mode, ExecutionMode),
+            "executionMode": get_enum_val(execution_mode, ExecutionMode),
             "maxCancelAttemptTime": max_cancel_attempt_time,
             "maxQueryExeTime": max_query_exe_time,
             "maxConnectionAttemptTime": max_connection_attempt_time,
             "connectionLifetime": connection_lifetime,
             "connectionIdleTimeout": connection_idle_timeout,
-            "charEncodingWindows": helper.get_enum_val(char_encoding_windows, CharEncoding),
-            "charEncodingUnix": helper.get_enum_val(char_encoding_unix, CharEncoding),
+            "charEncodingWindows": get_enum_val(char_encoding_windows, CharEncoding),
+            "charEncodingUnix": get_enum_val(char_encoding_unix, CharEncoding),
             "tablePrefix": table_prefix,
             "connectionString": connection_string,
             "parameterizedQueries": parameterized_queries,
@@ -351,7 +352,7 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
                 "type": database_type,
                 "version": database_version
             },
-            "driverType": helper.get_enum_val(driver_type, DriverType),
+            "driverType": get_enum_val(driver_type, DriverType),
             "oauthParameter": oauth_parameter
         }
         body = helper.delete_none_values(body)

@@ -19,7 +19,7 @@ def get_dossiers(connection, search_term, certified_status, search_pattern='EXAC
         Complete HTTP response object.
     """
     url = f'{connection.base_url}/api/dossiers'
-    return connection.session.get(
+    return connection.get(
         url=url,
         params={
             'searchTerm': search_term,
@@ -67,7 +67,7 @@ def get_documents(connection, search_term, certified_status, search_pattern='EXA
         Complete HTTP response object.
     """
     url = f'{connection.base_url}/api/documents/'
-    return connection.session.get(
+    return connection.get(
         url=url,
         params={
             'searchTerm': search_term,
@@ -117,7 +117,7 @@ def get_document_status(connection, document_id, instance_id, error_msg=None):
         Complete HTTP response object.
     """
     url = f"{connection.base_url}​/api​/documents​/{document_id}​/instances​/{instance_id}​/status"
-    return connection.session.get(url=url, headers={'X-MSTR-ProjectID': None})
+    return connection.get(url=url, headers={'X-MSTR-ProjectID': None})
 
 
 @ErrorHandler(err_msg='Error getting prompts for document {document_id}')
@@ -135,7 +135,7 @@ def get_prompts_for_instance(connection, document_id, instance_id, error_msg=Non
         Complete HTTP response object.
     """
     url = f"{connection.base_url}​/api​/documents​/{document_id}​/instances​/{instance_id}​/prompts"  # noqa
-    return connection.session.get(url=url, headers={'X-MSTR-ProjectID': None})
+    return connection.get(url=url, headers={'X-MSTR-ProjectID': None})
 
 
 @ErrorHandler(err_msg='Error getting attribute element for prompt {prompt_identifier}')
@@ -155,7 +155,7 @@ def get_attribute_element_for_prompt(connection, document_id, instance_id, promp
         Complete HTTP response object.
     """
     url = f"{connection.base_url}​/api​/documents​/{document_id}​/instances​/{instance_id}​/prompts​/{prompt_identifier}​/elements"  # noqa
-    return connection.session.get(url=url, headers={'X-MSTR-ProjectID': None})
+    return connection.get(url=url, headers={'X-MSTR-ProjectID': None})
 
 
 @ErrorHandler(err_msg='Error getting available object for prompt {prompt_identifier}')
@@ -173,7 +173,7 @@ def get_available_object(connection, document_id, instance_id, prompt_identifier
         Complete HTTP response object.
     """
     url = f"{connection.base_url}/api​/documents​/{document_id}​/instances​/{instance_id}​/prompts​/{prompt_identifier}​/objects"  # noqa
-    return connection.session.get(url=url, headers={'X-MSTR-ProjectID': None})
+    return connection.get(url=url, headers={'X-MSTR-ProjectID': None})
 
 
 @ErrorHandler(err_msg='Error exporting visualization for document {document_id} to PDF file.')
@@ -193,7 +193,7 @@ def export_visualization_to_pdf(connection, document_id, instance_id, node_key, 
         Complete HTTP response object.
     """
     url = f"{connection.base_url}​/api​/documents​/{document_id}​/instances​/{instance_id}​/visualizations​/{node_key}​/pdf"  # noqa
-    return connection.session.post(url=url, headers={'X-MSTR-ProjectID': None}, json=body)
+    return connection.post(url=url, headers={'X-MSTR-ProjectID': None}, json=body)
 
 
 @ErrorHandler(err_msg='Error exporting visualization for document {document_id} to CSV file.')
@@ -214,7 +214,7 @@ def export_visualization_to_csv(connection, document_id, instance_id, node_key, 
         Complete HTTP response object.
     """
     url = f"{connection.base_url}​/api​/documents​/{document_id}​/instances​/{instance_id}​/visualizations​/{node_key}​/csv"  # noqa
-    return connection.session.post(url=url, headers={'X-MSTR-ProjectID': None}, json=body)
+    return connection.post(url=url, headers={'X-MSTR-ProjectID': None}, json=body)
 
 
 @ErrorHandler(err_msg='Error exporting document {document_id} to PDF file.')
@@ -232,7 +232,7 @@ def export_document_to_pdf(connection, document_id, instance_id, body, error_msg
         Complete HTTP response object.
     """
     url = f"{connection.base_url}​/api​/documents​/{document_id}​/instances​/{instance_id}​/pdf"
-    return connection.session.post(url=url, headers={'X-MSTR-ProjectID': None}, json=body)
+    return connection.post(url=url, headers={'X-MSTR-ProjectID': None}, json=body)
 
 
 @ErrorHandler(err_msg='Error exporting document {document_id} to .mstr file')
@@ -250,7 +250,7 @@ def export_document_to_mstr(connection, document_id, instance_id, body, error_ms
         Complete HTTP response object.
     """
     url = f"{connection.base_url}​/api​/documents​/{document_id}​/instances​/{instance_id}​/mstr"
-    return connection.session.post(url=url, headers={'X-MSTR-ProjectID': None}, json=body)
+    return connection.post(url=url, headers={'X-MSTR-ProjectID': None}, json=body)
 
 
 @ErrorHandler(err_msg='Error exporting document {document_id} to Excel file.')
@@ -268,7 +268,7 @@ def export_document_to_excel(connection, document_id, instance_id, body, error_m
         Complete HTTP response object.
     """
     url = f"{connection.base_url}​/api​/documents​/{document_id}​/instances​/{instance_id}​/excel"
-    return connection.session.post(url=url, headers={'X-MSTR-ProjectID': None}, json=body)
+    return connection.post(url=url, headers={'X-MSTR-ProjectID': None}, json=body)
 
 
 @ErrorHandler(err_msg='Error setting document {document_id} to prompt status.')
@@ -285,7 +285,7 @@ def set_document_to_prompt_status(connection, document_id, instance_id, error_ms
         Complete HTTP response object.
     """
     url = f"{connection.base_url}​/api​/documents​/{document_id}​/instances​/{instance_id}​/rePrompt"  # noqa
-    return connection.session.post(url=url, headers={'X-MSTR-ProjectID': None})
+    return connection.post(url=url, headers={'X-MSTR-ProjectID': None})
 
 
 @ErrorHandler(err_msg='Error getting cubes used by document {document_id}')
@@ -302,7 +302,7 @@ def get_cubes_used_by_document(connection, document_id, error_msg=None):
         Complete HTTP response object.
     """
     url = f"{connection.base_url}/api/documents/{document_id}/cubes"
-    return connection.session.get(url=url)
+    return connection.get(url=url)
 
 
 @ErrorHandler(err_msg='Error overwriting document {document_id}')
@@ -319,7 +319,7 @@ def overwrite_document(connection, document_id, instance_id, error_msg=None):
         Complete HTTP response object.
     """
     url = f"{connection.base_url}​/api​/documents​/{document_id}​/instances​/{instance_id}​/save"
-    return connection.session.post(url=url, headers={'X-MSTR-ProjectID': None})
+    return connection.post(url=url, headers={'X-MSTR-ProjectID': None})
 
 
 @ErrorHandler(err_msg='Error saving document {document_id}')
@@ -336,7 +336,7 @@ def save_document_as(connection, document_id, instance_id, error_msg=None):
         Complete HTTP response object.
     """
     url = f"{connection.base_url}/api​/documents​/{document_id}​/instances​/{instance_id}​/saveAs"  # noqa
-    return connection.session.post(url=url, headers={'X-MSTR-ProjectID': None})
+    return connection.post(url=url, headers={'X-MSTR-ProjectID': None})
 
 
 @ErrorHandler(err_msg='Error creating instance for document {document_id}')
@@ -353,7 +353,7 @@ def create_new_document_instance(connection, document_id, body, error_msg=None):
         Complete HTTP response object.
     """
     url = f"{connection.base_url}/api/documents/{document_id}/instances"
-    return connection.session.post(url=url, json=body)
+    return connection.post(url=url, json=body)
 
 
 @ErrorHandler(err_msg='Error deleting document instance {instance_id}')
@@ -370,7 +370,7 @@ def delete_document_instance(connection, document_id, instance_id, error_msg=Non
         Complete HTTP response object.
     """
     url = f"{connection.base_url}​/api​/documents​/{document_id}​/instances​/{instance_id}​"
-    return connection.session.delete(url=url, headers={'X-MSTR-ProjectID': None})
+    return connection.delete(url=url, headers={'X-MSTR-ProjectID': None})
 
 
 @ErrorHandler(err_msg='Error refreshing document instance {instance_id}')
@@ -388,7 +388,7 @@ def refresh_document_instance(connection, document_id, instance_id, error_msg=No
         Complete HTTP response object.
     """
     url = f"{connection.base_url}​/api​/documents​/{document_id}​/instances/{instance_id}/refresh​"
-    return connection.session.put(url=url, headers={'X-MSTR-ProjectID': None})
+    return connection.put(url=url, headers={'X-MSTR-ProjectID': None})
 
 
 @ErrorHandler(err_msg='Error getting collection of prompts for document {document_id}')
@@ -405,7 +405,7 @@ def get_prompts(connection, document_id, error_msg=None):
         Complete HTTP response object.
     """
     url = f"{connection.base_url}​/api​/documents​/{document_id}​/prompts"
-    return connection.session.get(url=url, headers={'X-MSTR-ProjectID': None})
+    return connection.get(url=url, headers={'X-MSTR-ProjectID': None})
 
 
 @ErrorHandler(err_msg='Error answering prompt for instance {instance_id}')
@@ -425,7 +425,7 @@ def answer_prompts(connection, document_id, instance_id, body, error_msg=None):
         Complete HTTP response object.
     """
     url = f"{connection.base_url}/api​/documents​/{document_id}​/instances/{instance_id}/prompts/answers"  # noqa
-    return connection.session.put(url=url, headers={'X-MSTR-ProjectID': None}, json=body)
+    return connection.put(url=url, headers={'X-MSTR-ProjectID': None}, json=body)
 
 
 @ErrorHandler(err_msg='Error retrieving document shortcut for document {document_id}')
@@ -442,7 +442,7 @@ def get_document_shortcut(connection, document_id, instance_id, error_msg=None):
         Complete HTTP response object.
     """
     url = f"{connection.base_url}/api​/documents​/{document_id}​/instances/{instance_id}/shortcut"
-    return connection.session.get(url=url)
+    return connection.get(url=url)
 
 
 @ErrorHandler(err_msg='Error creating instance for dossier {dossier_id}')
@@ -459,7 +459,7 @@ def create_dossier_instance(connection, dossier_id, body, error_msg=None):
         Complete HTTP response object.
     """
     url = f"{connection.base_url}​/api​/dossiers/{dossier_id}​/instances​"
-    return connection.session.post(url=url, headers={'X-MSTR-ProjectID': None}, json=body)
+    return connection.post(url=url, headers={'X-MSTR-ProjectID': None}, json=body)
 
 
 @ErrorHandler(err_msg='Error getting hierarchy for dossier {id}')
@@ -475,7 +475,7 @@ def get_dossier_hierarchy(connection, id, error_msg=None):
         Complete HTTP response object.
     """
     url = f"{connection.base_url}/api/v2/dossiers/{id}/definition/"
-    return connection.session.get(url=url, headers={'X-MSTR-ProjectID': None})
+    return connection.get(url=url, headers={'X-MSTR-ProjectID': None})
 
 
 @ErrorHandler(err_msg='Error getting definition of document {id}')
@@ -491,7 +491,7 @@ def get_document_definition(connection, id, error_msg=None):
         Complete HTTP response object.
     """
     url = f"{connection.base_url}/api/v2/documents/{id}"
-    return connection.session.get(url=url, headers={'X-MSTR-ProjectID': None})
+    return connection.get(url=url, headers={'X-MSTR-ProjectID': None})
 
 
 @ErrorHandler(err_msg='Error getting dossier hierarchy from instance {instance_id}')
@@ -509,7 +509,7 @@ def get_dossier_hierarchy_from_instance(connection, dossier_id, instance_id, err
         Complete HTTP response object.
     """
     url = f"{connection.base_url}/api​/v2/dossiers/{dossier_id}/​instances/{instance_id}/definition"  # noqa
-    return connection.session.get(url=url, headers={'X-MSTR-ProjectID': None})
+    return connection.get(url=url, headers={'X-MSTR-ProjectID': None})
 
 
 @ErrorHandler(err_msg='Error getting definition and results for dossier {dossier_id}')
@@ -528,4 +528,4 @@ def get_definition_and_results_of_visualization(connection, dossier_id, instance
         Complete HTTP response object.
     """
     url = f"{connection.base_url}/api/​v2/dossiers​/{dossier_id}​/instances​/{instance_id}​/chapters​/{chapter_key}​/visualizations​/{visualization_key}"  # noqa
-    return connection.session.get(url=url, headers={'X-MSTR-ProjectID': None})
+    return connection.get(url=url, headers={'X-MSTR-ProjectID': None})

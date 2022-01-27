@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import auto, Enum
 from typing import List, TYPE_CHECKING, Optional, Union
 
 from packaging import version
@@ -9,6 +9,7 @@ from mstrio.api.exceptions import MstrException, PartialSuccess, Success, Versio
 from mstrio.connection import Connection
 from mstrio.server import Project, Node
 from mstrio.utils.entity import Entity, EntityBase
+from mstrio.utils.enum_helper import AutoName
 from mstrio.utils.helper import validate_param_value
 from mstrio.utils.monitors import all_nodes_async
 from mstrio.utils.time_helper import DatetimeFormats, map_str_to_datetime
@@ -19,29 +20,29 @@ if TYPE_CHECKING:
 ISERVER_VERSION_11_3_2 = '11.3.0200'
 
 
-class DeliveryType(Enum):
-    RESERVED = 'reserved'
-    EMAIL = 'email'
-    FILE = 'file'
-    PRINTER = 'printer'
-    CUSTOM = 'custom'
-    INBOX = 'inbox'
-    CLIENT = 'client'
-    CACHE = 'cache'
-    MOBILE = 'mobile'
-    BLACKBERRY = 'blackberry'
-    IPHONE = 'iphone'
-    IPAD = 'ipad'
-    CAMPAIGN = 'campaign'
-    SNAPSHOT = 'snapshot'
-    FTP = 'ftp'
-    ANDROID = 'android'
-    LAST_ONE = 'last_one'
-    COUNT = 'count'
-    ALL_INCLUDING_SNAPSHOT = 'all_including_snapshot'
+class DeliveryType(AutoName):
+    RESERVED = auto()
+    EMAIL = auto()
+    FILE = auto()
+    PRINTER = auto()
+    CUSTOM = auto()
+    INBOX = auto()
+    CLIENT = auto()
+    CACHE = auto()
+    MOBILE = auto()
+    BLACKBERRY = auto()
+    IPHONE = auto()
+    IPAD = auto()
+    CAMPAIGN = auto()
+    SNAPSHOT = auto()
+    FTP = auto()
+    ANDROID = auto()
+    LAST_ONE = auto()
+    COUNT = auto()
+    ALL_INCLUDING_SNAPSHOT = auto()
 
 
-class SortBy_v1(Enum):
+class SortByV1(Enum):
     JOB_TYPE = 'jobType'
     USER_FULL_NAME = 'userFullName'
     OBJECT_ID = 'objectId'
@@ -54,76 +55,76 @@ class SortBy_v1(Enum):
     JOB_ID = 'jobId'
 
 
-class JobStatus(Enum):
-    READY = 'ready'
-    EXECUTING = 'executing'
-    WAITING = 'waiting'
-    COMPLETED = 'completed'
-    ERROR = 'error'
-    CANCELING = 'canceling'
-    STOPPED = 'stopped'
-    WAITING_ON_GOVERNOR = 'waiting_on_governor'
-    WAITING_FOR_AUTOPROMPT = 'waiting_for_autoprompt'
-    WAITING_FOR_PROJECT = 'waiting_for_project'
-    WAITING_FOR_CACHE = 'waiting_for_cache'
-    WAITING_FOR_CHILDREN = 'waiting_for_children'
-    WAITING_FOR_RESULTS = 'waiting_for_results'
-    LOADING_PROMPT = 'loading_prompt'
-    RESOLVING_DESTINATION = 'resolving_destination'
-    DELIVERING = 'delivering'
-    EXPORTING = 'exporting'
-    CACHE_READY = 'cache_ready'
-    WAITING_FOR_DI_FILE = 'waiting_for_di_file'
-    WAITING_FOR_CONFLICT_RESOLVE = 'waiting_for_conflict_resolve'
-    STEP_PAUSING = 'step_pausing'
+class JobStatus(AutoName):
+    READY = auto()
+    EXECUTING = auto()
+    WAITING = auto()
+    COMPLETED = auto()
+    ERROR = auto()
+    CANCELING = auto()
+    STOPPED = auto()
+    WAITING_ON_GOVERNOR = auto()
+    WAITING_FOR_AUTOPROMPT = auto()
+    WAITING_FOR_PROJECT = auto()
+    WAITING_FOR_CACHE = auto()
+    WAITING_FOR_CHILDREN = auto()
+    WAITING_FOR_RESULTS = auto()
+    LOADING_PROMPT = auto()
+    RESOLVING_DESTINATION = auto()
+    DELIVERING = auto()
+    EXPORTING = auto()
+    CACHE_READY = auto()
+    WAITING_FOR_DI_FILE = auto()
+    WAITING_FOR_CONFLICT_RESOLVE = auto()
+    STEP_PAUSING = auto()
 
 
-class JobType(Enum):
-    INTERACTIVE = 'interactive'
-    SUBSCRIPTION = 'subscription'
-    PREDICTIVE_CACHE = 'predictive_cache'
+class JobType(AutoName):
+    INTERACTIVE = auto()
+    SUBSCRIPTION = auto()
+    PREDICTIVE_CACHE = auto()
 
 
 # NOTE: new endpoint Enums below:
-class ObjectType(Enum):
-    OTHERS = 'others'
-    REPORT = 'report'
-    CUBE = 'cube'
-    DOCUMENT = 'document'
-    DOSSIER = 'dossier'
+class ObjectType(AutoName):
+    OTHERS = auto()
+    REPORT = auto()
+    CUBE = auto()
+    DOCUMENT = auto()
+    DOSSIER = auto()
 
 
-class PUName(Enum):
-    BROWSING = 'browsing'
-    RESOLUTION = 'resolution'
+class PUName(AutoName):
+    BROWSING = auto()
+    RESOLUTION = auto()
     QUERY_EXECUTIONS = 'query_execution'
-    ANALYTICAL = 'analytical'
-    SQL_ENGINE = 'sql_engine'
-    DATA_FORMATTING = 'data_formatting'
-    NSC = 'ncs'
-    REST_ASYNCHRONOUS = 'rest_asynchronous'
+    ANALYTICAL = auto()
+    SQL_ENGINE = auto()
+    DATA_FORMATTING = auto()
+    NCS = auto()
+    REST_ASYNCHRONOUS = auto()
 
 
-class SubscriptionType(Enum):
-    RESERVED = 'reserved'
-    EMAIL = 'email'
-    PRINTER = 'printer'
-    CUSTOM = 'custom'
-    INBOX = 'inbox'
-    CLIENT = 'client'
-    CACHE = 'cache'
-    MOBILE = 'mobile'
-    MOBILE_BLACKBERRY = 'mobile_blackberry'
-    MOBILE_IPHONE = 'mobile_iphone'
-    MOBILE_IPAD = 'mobile_ipad'
-    CAMPAIGN = 'campaign'
-    SNAPSHOT = 'snapshot'
-    FTP = 'ftp'
-    MOBILE_ANDROID = 'mobile_android'
-    LAST_ONE = 'last_one'
-    COUNT = 'count'
-    ALL = 'all'
-    ALL_INCLUDING_SNAPSHOT = 'all_including_snapshot'
+class SubscriptionType(AutoName):
+    RESERVED = auto()
+    EMAIL = auto()
+    PRINTER = auto()
+    CUSTOM = auto()
+    INBOX = auto()
+    CLIENT = auto()
+    CACHE = auto()
+    MOBILE = auto()
+    MOBILE_BLACKBERRY = auto()
+    MOBILE_IPHONE = auto()
+    MOBILE_IPAD = auto()
+    CAMPAIGN = auto()
+    SNAPSHOT = auto()
+    FTP = auto()
+    MOBILE_ANDROID = auto()
+    LAST_ONE = auto()
+    COUNT = auto()
+    ALL = auto()
+    ALL_INCLUDING_SNAPSHOT = auto()
 
 
 class SortBy(Enum):
@@ -182,13 +183,15 @@ def _set_api_wrappers(connection) -> dict:
 
 def list_jobs(connection: "Connection", node: Optional[Union[Node, str]] = None,
               user: Optional[Union["User", str]] = None, description: Optional[str] = None,
-              type: Optional[JobType] = None, status: Optional[JobStatus] = None,
+              type: Optional[Union[JobType, str]] = None, status: Optional[Union[JobStatus,
+                                                                                 str]] = None,
               object_id: Optional[str] = None, object_type: Optional[ObjectType] = None,
-              project: Optional[Union[Project, str]] = None, pu_name: Optional[PUName] = None,
-              subscription_type: Optional[SubscriptionType] = None,
+              project: Optional[Union[Project, str]] = None, pu_name: Optional[Union[PUName,
+                                                                                     str]] = None,
+              subscription_type: Optional[Union[SubscriptionType, str]] = None,
               subscription_recipient: Optional[Union["User", str]] = None,
               memory_usage: Optional[str] = None, elapsed_time: Optional[str] = None,
-              sort_by: Optional[SortBy] = None, to_dictionary: bool = False,
+              sort_by: Optional[Union[SortBy, str]] = None, to_dictionary: bool = False,
               limit: Optional[int] = None, **filters) -> Union[List["Job"], List[dict]]:
     """List jobs objects or job dictionaires.
     Args:
@@ -247,27 +250,8 @@ def list_jobs(connection: "Connection", node: Optional[Union[Node, str]] = None,
 
     # depending on version call either one or the other
     if version.parse(connection.iserver_version) == version.parse(ISERVER_VERSION_11_3_2):
-        # raise VersionException if parameter not supported in v1
-        unsupported_parameters = [
-            description, object_type, pu_name, subscription_type, subscription_recipient,
-            memory_usage
-        ]
-        params_str = ("description, object_type, pu_name, subscription_type, "
-                      "subscription_recipient, memory_usage")
-        if any(unsupported_parameters):
-            msg = (f"Passed unsupported parameter for this version of IServer "
-                   f"({ISERVER_VERSION_11_3_2}) Parameters supported only in 11.3.3+ "
-                   f"versions: {params_str}")
-            raise VersionException(msg)
-
-        if elapsed_time:
-            if isinstance(elapsed_time,
-                          str) and len(elapsed_time) > 3 and (elapsed_time.startswith('gt:')
-                                                              or elapsed_time.startswith('lt:')):
-                filters['duration'] = elapsed_time
-            else:
-                raise TypeError('Incorrect "elapsed_time" format, correct example: "gt:100" ')
-
+        filters = __prepare_v1_request(description, object_type, pu_name, subscription_type,
+                                       subscription_recipient, memory_usage, elapsed_time, filters)
         return list_jobs_v1(connection=connection, node=node, project=project, status=status,
                             job_type=type, user=user, limit=limit, to_dictionary=to_dictionary,
                             **filters)
@@ -290,11 +274,13 @@ def list_jobs(connection: "Connection", node: Optional[Union[Node, str]] = None,
 
 
 def list_jobs_v1(connection: Connection, node: Optional[Union[Node, str]] = None,
-                 project: Optional[Union[Project, str]] = None, status: Optional[JobStatus] = None,
-                 job_type: Optional[JobType] = None, user: Optional[Union["User", str]] = None,
-                 object: Optional[Union[Entity, str]] = None, sort_by: Optional[SortBy] = None,
-                 to_dictionary: bool = False, limit: Optional[int] = None,
-                 **filters) -> Union[List["Job"], List[dict]]:
+                 project: Optional[Union[Project, str]] = None,
+                 status: Optional[Union[JobStatus,
+                                        str]] = None, job_type: Optional[Union[JobType,
+                                                                               str]] = None,
+                 user: Optional[Union["User", str]] = None, object_id: Optional[str] = None,
+                 sort_by: Optional[Union[SortBy, str]] = None, to_dictionary: bool = False,
+                 limit: Optional[int] = None, **filters) -> Union[List["Job"], List[dict]]:
     """List job objects or job dictionaries. Optionally filter list.
     NOTE: list_jobs can return up to 1024 jobs per request.
 
@@ -328,18 +314,9 @@ def list_jobs_v1(connection: Connection, node: Optional[Union[Node, str]] = None
     """
     project_id = project.id if isinstance(project, Project) else project
     user_full_name = user.full_name if isinstance(user, Entity) else user
-    # MstrObject = object #to be added when Object class will be specified
-    object_id = object
-    # object_id = object.id if isinstance(object, MstrObject) else object
 
     if 'duration' in filters:
-        elapsed = filters['duration']
-        if isinstance(elapsed, str) and len(elapsed) > 3 and (elapsed.startswith('gt:')
-                                                              or elapsed.startswith('lt:')):
-            filters['duration'] = f'>{elapsed[3:]}' if elapsed.startswith(
-                'gt') else f'<{elapsed[3:]}' if elapsed.startswith('lt') else elapsed
-        else:
-            raise TypeError('Incorrect "duration" format, correct example: "gt:100" ')
+        filters['duration'] = __elapsed_filtering(filters['duration'])
 
     node_name = node.name if isinstance(node, Node) else node
     msg = "Error fetching chunk of jobs."
@@ -373,12 +350,14 @@ def kill_jobs(connection: Connection,
     return monitors.cancel_jobs(connection, jobs)
 
 
-def kill_all_jobs(connection: Connection, node: Optional[Union[Node, str]] = None,
-                  user: Optional[Union["User", str]] = None, description: Optional[str] = None,
-                  type: Optional[JobType] = None, status: Optional[JobStatus] = None,
-                  object_id: Optional[str] = None, object_type: Optional[ObjectType] = None,
-                  project: Optional[Union[Project, str]] = None, pu_name: Optional[PUName] = None,
-                  subscription_type: Optional[SubscriptionType] = None,
+def kill_all_jobs(connection: Connection, user: Optional[Union["User", str]] = None,
+                  description: Optional[str] = None, type: Optional[Union[JobType, str]] = None,
+                  status: Optional[Union[JobStatus, str]] = None, object_id: Optional[str] = None,
+                  object_type: Optional[Union[ObjectType, str]] = None,
+                  project: Optional[Union[Project,
+                                          str]] = None, pu_name: Optional[Union[PUName,
+                                                                                str]] = None,
+                  subscription_type: Optional[Union[SubscriptionType, str]] = None,
                   subscription_recipient: Optional[Union["User", str]] = None,
                   memory_usage: Optional[str] = None, elapsed_time: Optional[str] = None,
                   force: bool = False, **filters) -> Union[Success, PartialSuccess, MstrException]:
@@ -436,6 +415,39 @@ def kill_all_jobs(connection: Connection, node: Optional[Union[Node, str]] = Non
         user_input = input(("Are you sure you want to kill those jobs?[Y/N]: ")) or 'N'
     if force or user_input == 'Y':
         return kill_jobs(connection, jobs_ids)
+
+
+def __prepare_v1_request(description: str, object_type: str, pu_name: str, subscription_type: str,
+                         subscription_recipient: str, memory_usage: str, elapsed_time: str,
+                         filters: dict) -> dict:
+    # raise VersionException if parameter not supported in v1
+    unsupported_parameters = [
+        description, object_type, pu_name, subscription_type, subscription_recipient, memory_usage
+    ]
+    params_str = ("description, object_type, pu_name, subscription_type, "
+                  "subscription_recipient, memory_usage")
+    if any(unsupported_parameters):
+        msg = (f"Passed unsupported parameter for this version of IServer "
+               f"({ISERVER_VERSION_11_3_2}) Parameters supported only in 11.3.3+ "
+               f"versions: {params_str}")
+        raise VersionException(msg)
+
+    if elapsed_time:
+        filters['duration'] = elapsed_time
+    return filters
+
+
+def __elapsed_filtering(elapsed: str) -> str:
+    if isinstance(elapsed, str) and len(elapsed) > 3 and (elapsed.startswith('gt:')
+                                                          or elapsed.startswith('lt:')):
+        if elapsed.startswith('gt'):
+            return f'>{elapsed[3:]}'
+        elif elapsed.startswith('lt'):
+            return f'<{elapsed[3:]}'
+        else:
+            return elapsed
+    else:
+        raise TypeError('Incorrect "duration" format, correct example: "gt:100" ')
 
 
 class Job(EntityBase):

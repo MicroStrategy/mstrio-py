@@ -1,11 +1,44 @@
 # Changelog
 
+## 11.3.4.101 - 2022/01/28
+
+### Major changes
+
+- added `Contact` class in `mstrio.distribution_services.contact` subpackage to allow
+  contact management
+- added `ContactGroup` class in `mstrio.distribution_services.contact_group` subpackage
+  to allow contact group management
+- added `Device` class in `mstrio.distribution_services.device` subpackage to allow
+  device management
+- added `Transmitter` class in `mstrio.distribution_services.transmitter` subpackage
+  to allow transmitter management
+- added functions `list_contact`, `list_contact_groups`, `list_devices`,
+  `list_transmitters` to allow listing of objects of newly created classes
+- added `Migration` class in `mstrio.server.migration` for migration related functionalities.
+This feature is still work in progress, and it will be completed by 03.2022.
+- added `PackageConfig` class in `mstrio.server.migration` with supporting
+  `PackageSettings` and `PackageContentInfo` used for configurating migration
+- extended `Event` class in `mstrio.distribution_services.event` with functionalities to
+  create, update and delete events.
+
+### Minor changes
+
+- added delete functionality to `Document`, `Dossier` and `Report` classes
+- change `Connection` object to automatically renew the connection or reconnect
+  when the session becomes inactive if authenticated with login and password
+- deprecate `Connection` object attribute `session` and renamed it into `_session`,
+  making it private
+- add the following HTTP requests methods to `Connection` object:
+  `get`, `head`, `post`, `put`, `delete`, `patch`
+
 ## 11.3.3.102 - 2021/10/29
 
 ### Major changes
+
 - added `CacheUpdateSubscription` class to `subscription` module
 
 ### Minor changes
+
 - return specific type of subscription object when using `list_subscriptions`
 - inner structure of `mstrio.distribution_services.subscription` was changed.
   Please make sure to import from `mstrio.distribution_services` or
@@ -53,11 +86,11 @@
 - changed all date fields to `datetime` objects
 - improved filtering performance in listing objects functions
 - Term `application` deprecated (see section 'Deprecated'), and renamed in
-method names, method arguments, file names, class names to `project` (see
-notebooks in 'examples', and demo scripts in 'demos' for details). Examples:
+  method names, method arguments, file names, class names to `project` (see
+  notebooks in 'examples', and demo scripts in 'demos' for details). Examples:
   - `list_applications()` renamed to `list_projects()`
   - `application`, `application_name`, `application_id` renamed to
-  `project`, `project_name`, `project_id`
+    `project`, `project_name`, `project_id`
   - `mstrio.server.application` renamed to `mstrio.server.project`
   - `Application` renamed to `Project`
 - Updated notebook examples and demo scripts in 'examples' and 'demos' folders
@@ -77,11 +110,12 @@ notebooks in 'examples', and demo scripts in 'demos' for details). Examples:
   `nodes_topology` and `services_topology` methods in `Cluster` class
 
 ### Deprecated
+
 - `application`, `application_name`, `application_id` parameters/attributes
 - functions having a term 'application' in their definition
 - modules having a term 'application' in their name
 - class names having a term 'application' in their definition
-**In all of above-mentioned changes, a new term is 'project'**
+  **In all of above-mentioned changes, a new term is 'project'**
 - `mstrio.browsing` is deprecated and is superceded
   with `mstrio.object_management.search_operations` subpackage,
 - `SearchType` enum is now `SearchPattern`

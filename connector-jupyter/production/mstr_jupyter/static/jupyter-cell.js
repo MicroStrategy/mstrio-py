@@ -76,9 +76,9 @@ define([
     const cellsCount = this.notebook.ncells();
     let index = _index === null
       ? cellsCount
-      : cellsCount === 0
+      : cellsCount === 0 // NOSONAR
         ? 0
-        : _index < 0
+        : _index < 0 // NOSONAR
           ? cellsCount + _index + 1
           : _index;
     index > cellsCount && (index = cellsCount);
@@ -182,7 +182,7 @@ define([
       .insertAt(
         forcedIndex !== null
           ? forcedIndex
-          : (this.type === 'import' ? 0 : null),
+          : (this.type === 'import' ? 0 : null), // NOSONAR
       )
       .setInstructions(PythonCode.code()[`for${Utilities.properCase(this.type)}`])
       .execute()

@@ -26,7 +26,7 @@ def report_definition(connection, report_id):
         Complete HTTP response object.
     """
     connection._validate_project_selected()
-    return connection.session.get(url=f'{connection.base_url}/api/v2/reports/{report_id}')
+    return connection.get(url=f'{connection.base_url}/api/v2/reports/{report_id}')
 
 
 @ErrorHandler(err_msg='Error getting report {report_id} contents.')
@@ -57,7 +57,7 @@ def report_instance(connection, report_id, body=None, offset=0, limit=5000):
     if version.parse(connection.iserver_version) >= version.parse("11.2.0200"):
         params['fields'] = CUBE_FIELDS
 
-    return connection.session.post(
+    return connection.post(
         url=f'{connection.base_url}/api/v2/reports/{report_id}/instances/',
         json=body,
         params=params,
@@ -93,7 +93,7 @@ def report_instance_id(connection, report_id, instance_id, offset=0, limit=5000)
     if version.parse(connection.iserver_version) >= version.parse("11.2.0200"):
         params['fields'] = CUBE_FIELDS
 
-    return connection.session.get(
+    return connection.get(
         url=f'{connection.base_url}/api/v2/reports/{report_id}/instances/{instance_id}',
         params=params,
     )
@@ -137,7 +137,7 @@ def report_single_attribute_elements(connection, report_id, attribute_id, offset
         Complete HTTP response object
     """
     url = f'{connection.base_url}/api/reports/{report_id}/attributes/{attribute_id}/elements'
-    return connection.session.get(
+    return connection.get(
         url=url,
         params={
             'offset': offset,
@@ -190,7 +190,7 @@ def get_report_prompts(connection, report_id, closed=None, fields=None):
 
     """
     url = f'{connection.base_url}/api/reports/{report_id}/prompts'
-    return connection.session.get(
+    return connection.get(
         url=url,
         params={
             'closed': closed,
@@ -219,7 +219,7 @@ def get_prompted_instance(connection, report_id, instance_id, closed=None, field
 
     """
     url = f'{connection.base_url}/api/reports/{report_id}/instances/{instance_id}/prompts'
-    return connection.session.get(
+    return connection.get(
         url=url,
         params={
             'closed': closed,

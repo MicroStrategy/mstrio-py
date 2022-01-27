@@ -1,14 +1,14 @@
-from typing import Optional, Union, List
+from typing import List, Optional, Union
 
 from pandas import DataFrame
 
+from mstrio.api import documents, library
 from mstrio.connection import Connection
 from mstrio.server.environment import Environment
 from mstrio.users_and_groups import User, list_users, UserGroup, UserOrGroup
-from mstrio.api import documents, library
 from mstrio.utils import helper
 from mstrio.utils.certified_info import CertifiedInfo
-from mstrio.utils.entity import Entity, VldbMixin, ObjectTypes
+from mstrio.utils.entity import DeleteMixin, Entity, VldbMixin, ObjectTypes
 
 
 def list_documents(connection: Connection, name: Optional[str] = None, to_dictionary: bool = False,
@@ -84,7 +84,7 @@ def list_documents_across_projects(connection: Connection, name: Optional[str] =
     return output
 
 
-class Document(Entity, VldbMixin):
+class Document(Entity, VldbMixin, DeleteMixin):
     _OBJECT_TYPE = ObjectTypes.DOCUMENT_DEFINITION
     _FROM_DICT_MAP = {
         **Entity._FROM_DICT_MAP, 'owner': User.from_dict,

@@ -11,7 +11,7 @@ def get_nodes(connection, error_msg=None):
             'connection.Connection().
         error_msg (string, optional): Custom Error Message for Error Handling
     """
-    return connection.session.get(url=f'{connection.base_url}/api/registrations/nodes')
+    return connection.get(url=f'{connection.base_url}/api/registrations/nodes')
 
 
 @ErrorHandler(
@@ -26,7 +26,7 @@ def get_services(connection, error_msg=None):
             'connection.Connection().
         error_msg (string, optional): Custom Error Message for Error Handling
     """
-    return connection.session.get(url=f'{connection.base_url}/api/registrations/services')
+    return connection.get(url=f'{connection.base_url}/api/registrations/services')
 
 
 @ErrorHandler(
@@ -41,7 +41,7 @@ def get_services_metadata(connection, error_msg=None):
             'connection.Connection().
         error_msg (string, optional): Custom Error Message for Error Handling
     """
-    return connection.session.get(url=f'{connection.base_url}/api/registrations/services/metadata')
+    return connection.get(url=f'{connection.base_url}/api/registrations/services/metadata')
 
 
 def start_stop_service(connection, login, password, name, id, address, action="START",
@@ -70,5 +70,5 @@ def start_stop_service(connection, login, password, name, id, address, action="S
         "password": password
     }
     url = f'{connection.base_url}/api/registrations/services/control'
-    response = connection.session.post(url=url, json=body)
+    response = connection.post(url=url, json=body)
     return response

@@ -199,22 +199,23 @@ def update_custom_env():
   forImport(forEndUser = false) {
     const { name, datasetType, datasetId, body: { attributes, metrics, filters }, instanceId } = this.dataframeDetails;
 
-    const variableName = `${/\d/gi.test(name[0]) ? 'var_' : ''}${
-      name
+    const variableName = `${/\d/gi.test(name[0]) ? 'var_' : ''}${name
         .replace(/ /gi, '_')
-        .replace(/[^A-Za-z0-9_]/gi, '')
-    }`;
+        .replace(/[^A-Za-z0-9_]/gi, '') // NOSONAR
+      }`;
 
     const method = datasetType && datasetType.toLowerCase() === 'report' ? 'Report' : 'load_cube';
     const connectionCode = this.generateConnectionCode(forEndUser);
-    const instanceIdCode = forEndUser ? '' : `, instance_id=${instanceId ? `"${instanceId}"` : 'None'}`;
+    const instanceIdConverted = instanceId ? `"${instanceId}"` : 'None';
+    const instanceIdCode = forEndUser ? '' : `, instance_id=${instanceIdConverted}`;
 
+    const filtersConverted = filters.length > 0 ? JSON.stringify(filters) : 'None';
     const applyFiltersContent = attributes.length + metrics.length + filters.length === 0
       ? 'attributes = None, metrics = None, attr_elements = None'
       : `
   attributes = ${JSON.stringify(attributes)},
   metrics = ${JSON.stringify(metrics)},
-  attr_elements = ${filters.length > 0 ? JSON.stringify(filters) : 'None'}
+  attr_elements = ${filtersConverted}
 `;
     const applyFiltersCode = forEndUser || !instanceId ? `${variableName}.apply_filters(${applyFiltersContent})` : '';
 
@@ -250,13 +251,14 @@ mstr_dataset.add_table(
 
     const connectionCode = this.generateConnectionCode(forEndUser, true);
     const modelingStepsCode = forEndUser ? this.generateApplyStepsCodeInsideExport(dataModelingSteps) : '';
+    const descriptionConverted = description ? `, description="${description}"` : '';
 
     return (`
 ${connectionCode}
 update_custom_env()
 ${modelingStepsCode}
 # Data Export
-mstr_dataset = SuperCube(mstr_connection, name="${saveAsName}"${description ? `, description="${description}"` : ''})
+mstr_dataset = SuperCube(mstr_connection, name="${saveAsName}"${descriptionConverted})
 ${tablesCode}
 mstr_dataset.create(folder_id="${folderId}")
 ${certify ? 'mstr_dataset.certify()' : ''}
@@ -312,13 +314,14 @@ for df_name in dataframe_names:
   // Windows: !where python
   // UNIX: !which python
   forGettingKernelInfo() {
+    const versionConverter = PythonCode.oneLine(`
+'{"Jupyter Version":"' + str(i1[0]).replace(" ", "").replace(",", " - ").replace("\\\\", "").replace("'", "") +
+'","Python Version":"' + str(i2[0]).replace("\\\\", "").replace("'", "") + '"}'
+    `);
     return (`
 i1 = !jupyter --version
 i2 = !python --version
-${PythonCode.oneLine(`
-'{"Jupyter Version":"' + str(i1[0]).replace(" ", "").replace(",", " - ").replace("\\\\", "").replace("'", "") +
-'","Python Version":"' + str(i2[0]).replace("\\\\", "").replace("'", "") + '"}'
-`)}
+${versionConverter}
   `).trim();
   }
 

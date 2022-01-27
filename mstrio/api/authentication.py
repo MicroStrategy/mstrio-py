@@ -1,11 +1,10 @@
 from mstrio.utils.error_handlers import ErrorHandler
 
 
-@ErrorHandler(
-    err_msg='Authentication error. Check user credentials or REST API URL and try again.')
+@ErrorHandler(err_msg='Authentication error. Check user credentials or REST API URL and try again')
 def login(connection):
     """Authenticate a user and create an HTTP session on the web server where
-    the user’s MicroStrategy sessions are stored.
+    the user's MicroStrategy sessions are stored.
 
     This request returns an authorization token (X-MSTR-AuthToken) which will be
     submitted with subsequent requests. The body of the request contains
@@ -22,7 +21,8 @@ def login(connection):
         Complete HTTP response object.
     """
 
-    return connection.session.post(
+    return connection.post(
+        skip_expiration_check=True,
         url=f'{connection.base_url}/api/auth/login',
         data={
             'username': connection.username,
@@ -34,7 +34,7 @@ def login(connection):
 
 
 @ErrorHandler(err_msg="Failed to logout.")
-def logout(connection, error_msg=None):
+def logout(connection, error_msg=None, whitelist=None):
     """Close all existing sessions for the authenticated user.
 
     Args:
@@ -43,9 +43,10 @@ def logout(connection, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    return connection.session.post(
+    return connection.post(
+        skip_expiration_check=True,
         url=f'{connection.base_url}/api/auth/logout',
-        headers={'X-MSTR-ProjectID': None}
+        headers={'X-MSTR-ProjectID': None},
     )
 
 
@@ -59,9 +60,10 @@ def session_renew(connection):
     Returns:
         Complete HTTP response object.
     """
-    return connection.session.put(
+    return connection.put(
+        skip_expiration_check=True,
         url=f'{connection.base_url}/api/sessions',
-        headers={'X-MSTR-ProjectID': None}
+        headers={'X-MSTR-ProjectID': None},
     )
 
 
@@ -74,9 +76,10 @@ def session_status(connection):
     Returns:
         Complete HTTP response object.
     """
-    return connection.session.get(
+    return connection.get(
+        skip_expiration_check=True,
         url=f'{connection.base_url}/api/sessions',
-        headers={'X-MSTR-ProjectID': None}
+        headers={'X-MSTR-ProjectID': None},
     )
 
 
@@ -94,9 +97,8 @@ def identity_token(connection):
     Returns:
         Complete HTTP response object.
     """
-    return connection.session.post(
+    return connection.post(
         url=f'{connection.base_url}/api/auth/identityToken',
-        headers={"X-MSTR-AuthToken": connection.session.headers['X-MSTR-AuthToken']}
     )
 
 
@@ -110,9 +112,9 @@ def validate_identity_token(connection, identity_token):
     Returns:
         Complete HTTP response object.
     """
-    return connection.session.get(
+    return connection.get(
         url=f'{connection.base_url}/api/auth/identityToken',
-        headers={'X-MSTR-IdentityToken': identity_token}
+        headers={'X-MSTR-IdentityToken': identity_token},
     )
 
 
@@ -130,7 +132,8 @@ def delegate(connection, identity_token, whitelist=None):
     Returns:
         Complete HTTP response object.
     """
-    return connection.session.post(
+    return connection.post(
+        skip_expiration_check=True,
         url=f'{connection.base_url}/api/auth/delegate',
         json={
             'loginMode': "-1",
@@ -152,7 +155,7 @@ def user_privileges(connection):
     Returns:
         Complete HTTP response object.
     """
-    return connection.session.get(url=f"{connection.base_url}/api/sessions/privileges")
+    return connection.get(url=f"{connection.base_url}/api/sessions/privileges")
 
 
 @ErrorHandler(err_msg='Error getting info for authenticated user.')
@@ -167,6 +170,4 @@ def get_info_for_authenticated_user(connection, error_msg=None):
         Complete HTTP response object.
     """
     url = f'{connection.base_url}/api/sessions/userInfo'
-    token = connection.session.headers['X-MSTR-AuthToken']
-    headers = {"X-MSTR-AuthToken": token}
-    return connection.session.get(url=url, headers=headers)
+    return connection.get(url=url)

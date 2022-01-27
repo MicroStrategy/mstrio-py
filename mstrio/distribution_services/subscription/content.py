@@ -1,6 +1,7 @@
+from enum import auto
 from typing import List, Optional
-from enum import Enum
 
+from mstrio.utils.enum_helper import AutoName, AutoUpperName
 from mstrio.utils.helper import Dictable
 from mstrio.distribution_services.subscription.common import RefreshPolicy
 
@@ -18,12 +19,12 @@ class Content(Dictable):
 
     """
 
-    class Type(Enum):
-        REPORT = "report"
-        DOCUMENT = "document"
-        CUBE = "cube"
-        DOSSIER = "dossier"
-        UNSUPPORTED = "unsupported"
+    class Type(AutoName):
+        REPORT = auto()
+        DOCUMENT = auto()
+        CUBE = auto()
+        DOSSIER = auto()
+        UNSUPPORTED = auto()
 
     class Properties(Dictable):
         """ Class representation of personalization properties
@@ -41,38 +42,38 @@ class Content(Dictable):
             file_name: file name of content
         """
 
-        class FormatMode(Enum):
-            DEFAULT = "DEFAULT"
-            CURRENT_PAGE = "CURRENT_PAGE"
-            ALL_PAGES = "ALL_PAGES"
-            ALL_PAGES_SEPARATED = "ALL_PAGES_SEPARATED"
-            CURRENT_WINDOW = "CURRENT_WINDOW"
-            CURRENT_LAYOUT = "CURRENT_LAYOUT"
+        class FormatMode(AutoUpperName):
+            DEFAULT = auto()
+            CURRENT_PAGE = auto()
+            ALL_PAGES = auto()
+            ALL_PAGES_SEPARATED = auto()
+            CURRENT_WINDOW = auto()
+            CURRENT_LAYOUT = auto()
 
-        class ViewMode(Enum):
-            DEFAULT = "DEFAULT"
-            GRID = "GRID"
-            GRAPH = "GRAPH"
-            BOTH = "BOTH"
-            NONINTERACTIVE = "NONINTERACTIVE"
+        class ViewMode(AutoUpperName):
+            DEFAULT = auto()
+            GRID = auto()
+            GRAPH = auto()
+            BOTH = auto()
+            NONINTERACTIVE = auto()
 
-        class FormatType(Enum):
-            PLAIN_TEXT = "PLAIN_TEXT"
-            EXCEL = "EXCEL"
-            HTML = "HTML"
-            PDF = "PDF"
-            STREAMING = "STREAMING"
-            SWF_MHT = "SWF_MHT"
-            SWF_HTML = "SWF_HTML"
-            CSV = "CSV"
-            VIEW = "VIEW"
-            INTERACTIVE = "INTERACTIVE"
-            EDITABLE = "EDITABLE"
-            EXPORT_FLASH = "EXPORT_FLASH"
-            PHONE = "PHONE"
-            TABLET = "TABLET"
-            JSON = "JSON"
-            MSTR = "MSTR"
+        class FormatType(AutoUpperName):
+            PLAIN_TEXT = auto()
+            EXCEL = auto()
+            HTML = auto()
+            PDF = auto()
+            STREAMING = auto()
+            SWF_MHT = auto()
+            SWF_HTML = auto()
+            CSV = auto()
+            VIEW = auto()
+            INTERACTIVE = auto()
+            EDITABLE = auto()
+            EXPORT_FLASH = auto()
+            PHONE = auto()
+            TABLET = auto()
+            JSON = auto()
+            MSTR = auto()
 
         class ExportToPdfSettings(Dictable):
             """Export to PDF Settings
@@ -102,45 +103,45 @@ class Content(Dictable):
                 grid_paging_mode: Specifies how grids should be paginated
             """
 
-            class PageOption(Enum):
-                DEFAULT = "DEFAULT"
-                ALL = "ALL"
-                CURRENT = "CURRENT"
-                PAGE = "PAGE"
+            class PageOption(AutoUpperName):
+                DEFAULT = auto()
+                ALL = auto()
+                CURRENT = auto()
+                PAGE = auto()
 
-            class PageSize(Enum):
-                A3 = "a3"
-                A4 = "a4"
-                A5 = "a5"
-                B4 = "b4"
-                B5 = "b5"
-                LETTER = "letter"
-                LEGAL = "legal"
-                LEDGER = "ledger"
-                EXECUTIVE = "executive"
-                FOLIO = "folio"
-                STATEMENT = "statement"
-                UNSUPPORTED = "unsupported"
+            class PageSize(AutoName):
+                A3 = auto()
+                A4 = auto()
+                A5 = auto()
+                B4 = auto()
+                B5 = auto()
+                LETTER = auto()
+                LEGAL = auto()
+                LEDGER = auto()
+                EXECUTIVE = auto()
+                FOLIO = auto()
+                STATEMENT = auto()
+                UNSUPPORTED = auto()
 
-            class PageDetailLevel(Enum):
-                OVERVIEW = "overview"
-                DETAILED_PAGES = "detailed_pages"
-                OVERVIEW_AND_DETAILED_PAGES = "overview_and_detailed_pages"
+            class PageDetailLevel(AutoName):
+                OVERVIEW = auto()
+                DETAILED_PAGES = auto()
+                OVERVIEW_AND_DETAILED_PAGES = auto()
 
-            class Orientation(Enum):
-                AUTOMATIC = "automatic"
-                PORTRAIT = "portrait"
-                LANDSCAPE = "landscape"
+            class Orientation(AutoName):
+                AUTOMATIC = auto()
+                PORTRAIT = auto()
+                LANDSCAPE = auto()
 
-            class GridPagingMode(Enum):
-                NONE = "none"
-                ENLARGE = "enlarge"
+            class GridPagingMode(AutoName):
+                NONE = auto()
+                ENLARGE = auto()
 
-            class FilterSummary(Enum):
-                NONE = "NONE"
-                BAR = "BAR"
-                PAGE = "PAGE"
-                ALL = "ALL"
+            class FilterSummary(AutoUpperName):
+                NONE = auto()
+                BAR = auto()
+                PAGE = auto()
+                ALL = auto()
 
             # ExportToPdfSettings
             def __init__(self, page_option: PageOption = PageOption.PAGE,
@@ -181,10 +182,11 @@ class Content(Dictable):
                 form_id: Form ID in the email burst feature
             """
 
-            def __init__(self, slicing_attributes: List[str] = [],
+            def __init__(self, slicing_attributes: List[str] = None,
                          address_attribute_id: Optional[str] = None,
                          device_id: Optional[str] = None, form_id: Optional[str] = None):
-                self.slicing_attributes = slicing_attributes
+                self.slicing_attributes = slicing_attributes if isinstance(
+                    slicing_attributes, list) else []
                 self.address_attribute_id = address_attribute_id
                 self.device_id = device_id
                 self.form_id = form_id

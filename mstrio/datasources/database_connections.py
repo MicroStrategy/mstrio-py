@@ -1,13 +1,11 @@
-from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Dict, List, Optional, Union
-
-from requests_futures.sessions import FuturesSession
 
 from mstrio import config
 from mstrio.api import monitors
 from mstrio.connection import Connection
 from mstrio.server.cluster import Cluster
 from mstrio.utils import helper
+from mstrio.utils.sessions import FuturesSessionWithRenewal
 
 
 class DatabaseConnections:
@@ -96,12 +94,11 @@ class DatabaseConnections:
 
         connections = self.list_connections()
         threads = helper.get_parallel_number(len(connections))
-        with FuturesSession(executor=ThreadPoolExecutor(max_workers=threads),
-                            session=self.connection.session) as session:
+        with FuturesSessionWithRenewal(connection=self.connection, max_workers=threads) as session:
 
-            futures = (monitors.delete_database_connection_async(session, self.connection,
+            futures = [monitors.delete_database_connection_async(session, self.connection,
                                                                  conn["id"])
-                       for conn in connections)
+                       for conn in connections]
             statuses: List[Dict[str, Union[str, int]]] = []
             for f in futures:
                 response = f.result()

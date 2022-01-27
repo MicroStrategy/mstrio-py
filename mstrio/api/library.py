@@ -14,7 +14,7 @@ def get_document(connection, id, error_msg=None):
         Complete HTTP response object.
     """
     url = f"{connection.base_url}/api/library/{id}"
-    return connection.session.get(url=url)
+    return connection.get(url=url)
 
 
 @ErrorHandler(err_msg='Error unpublishing document with ID {id}')
@@ -32,7 +32,7 @@ def unpublish_document(connection, id, error_msg=None):
         Complete HTTP response object.
     """
     url = f'{connection.base_url}/api/library/{id}'
-    return connection.session.delete(url=url)
+    return connection.delete(url=url)
 
 
 @ErrorHandler(err_msg='Error unpublishing document with ID {document_id}')
@@ -51,7 +51,7 @@ def unpublish_document_for_user(connection, document_id, user_id, error_msg=None
     """
     connection._validate_project_selected()
     url = f"{connection.base_url}/api/library/{document_id}/recipients/{user_id}"
-    return connection.session.delete(url=url)
+    return connection.delete(url=url)
 
 
 @ErrorHandler(err_msg='Error getting library.')
@@ -66,7 +66,7 @@ def get_library(connection, error_msg=None):
         Complete HTTP response object.
     """
     url = f'{connection.base_url}/api/library'
-    return connection.session.get(url=url, headers={'X-MSTR-ProjectID': None})
+    return connection.get(url=url, headers={'X-MSTR-ProjectID': None})
 
 
 @ErrorHandler(err_msg='Error publishing document.')
@@ -84,4 +84,4 @@ def publish_document(connection, body, error_msg=None):
     """
     connection._validate_project_selected()
     url = f'{connection.base_url}/api/library'
-    return connection.session.post(url=url, json=body)
+    return connection.post(url=url, json=body)

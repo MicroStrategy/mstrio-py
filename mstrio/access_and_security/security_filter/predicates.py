@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import auto, Enum
 from typing import Dict, List, Optional, TYPE_CHECKING, Union
 
 from mstrio.access_and_security.security_filter import (AttributeElement, AttributeFormNormalRef,
@@ -8,6 +8,7 @@ from mstrio.access_and_security.security_filter import (AttributeElement, Attrib
                                                         ExpressionParameter, FilterRef,
                                                         ObjectReferenceParameter, ParameterType,
                                                         PromptParameter)
+from mstrio.utils.enum_helper import AutoName
 from mstrio.utils.helper import Any, camel_to_snake, delete_none_values, Dictable, snake_to_camel
 
 if TYPE_CHECKING:
@@ -39,25 +40,25 @@ class PredicateBase(Dictable):
         self.predicate_tree = self._create_predicate_tree(**kwargs)
 
 
-class PredicateFormFunction(Enum):
-    EQUALS = "equals"
+class PredicateFormFunction(AutoName):
+    EQUALS = auto()
     NOT_EQUAL = "not_equals"
-    GREATER = "greater"
-    GREATER_EQUALS = "greater_equals"
-    LESS = "less"
-    LESS_EQUAL = "less_equal"
-    IS_NULL = "is_null"
-    IS_NOT_NULL = "is_not_null"
-    BEGINS_WITH = "begins_with"
-    NOT_BEGINS_WITH = "not_begins_with"
-    CONTAINS = "contains"
-    NOT_CONTAINS = "not_contains"
-    LIKE = "like"
-    NOT_LIKE = "not_like"
-    IN = "in"
-    NOT_IN = "not_in"
-    BETWEEN = "between"
-    NOT_BETWEEN = "not_between"
+    GREATER = auto()
+    GREATER_EQUALS = auto()
+    LESS = auto()
+    LESS_EQUAL = auto()
+    IS_NULL = auto()
+    IS_NOT_NULL = auto()
+    BEGINS_WITH = auto()
+    NOT_BEGINS_WITH = auto()
+    CONTAINS = auto()
+    NOT_CONTAINS = auto()
+    LIKE = auto()
+    NOT_LIKE = auto()
+    IN = auto()
+    NOT_IN = auto()
+    BETWEEN = auto()
+    NOT_BETWEEN = auto()
 
 
 class PredicateForm(PredicateBase):
@@ -391,9 +392,9 @@ class PredicateJointElementList(PredicateBase):
         super().__init__(predicate_id, level=level, tuples=tuples)
 
 
-class LogicFunction(Enum):
-    OR = "or"
-    AND = "and"
+class LogicFunction(AutoName):
+    OR = auto()
+    AND = auto()
 
 
 class LogicOperator(Dictable):

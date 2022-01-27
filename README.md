@@ -20,6 +20,7 @@ With mstrio-py for **system administration**, it’s easy to minimize costs by a
 
 - [Main Features](#main-features)
 - [Documentation](#documentation)
+- [Usage Remarks](#usage-remarks)
 - [Installation](#installation)
   - [Prerequisites](#prerequisites)
     - [mstrio-py](#mstrio-py)
@@ -32,13 +33,14 @@ With mstrio-py for **system administration**, it’s easy to minimize costs by a
 - [Other](#other)
 <!--te-->
 
-# Main Features
+# Main Features<a id="main-features"></a>
 
 Main features of **mstrio-py** allows to access MicroStrategy data:
 
 - Connect to your MicroStrategy environment using **Connection** class (see [examples][example_conn])
 
-  **Note**: to log into Library and use mstrio-py user needs to have UseLibrary privilege.
+  **Note**: to log into Library and use mstrio-py user needs to have _UseLibrary_ privilege.
+
 - Import and filter data from a **OlapCube**, **SuperCube** or **Report** into a Pandas DataFrame (see [examples][example_import])
 - Export data into MicroStrategy by creating or updating **SuperCube** (see [examples][example_export])
 
@@ -58,31 +60,75 @@ Since version **11.3.0.1**, **mstrio-py** includes also administration modules:
 - **Datasources** subpackage for database management (see [examples][example_datasource])
 - **Job Monitor** module for job monitoring (see [examples][example_job_monitor])
 - **Object management** module (see [examples][example_object_mgmt])
+- **Contact** module (see [examples][example_contact])
+- **Contact Group** module (see [examples][example_contact_group])
+- **Device** module (see [examples][example_device])
+- **Transmitter** module (see [examples][example_transmitter])
+- **Event** module (see [examples][example_events])
 
-Known limitations in 11.3.3.102:
-- Method *trigger* in Event class is work in progress and might not work correctly yet.
+Known limitations in v11.3.4.101:
 
-# Documentation
+- `mstrio.server.migration` module is work in progress and not all functionalities are available yet.
+We plan to release them on 03.2022.
+
+# Documentation<a id="documentation"></a>
 
 Detailed information about **mstrio-py** package can be found in [**official documentation**][mstrio_py_doc].
 
-# Installation
+# Usage Remarks<a id="usage-remarks"></a>
 
-## Prerequisites
+## General
 
-### mstrio-py
+- **Chrome** is the only supported web browser. `mstrio-py` should work properly in **Safari**, **Opera** or **Edge** but we cannot guarantee a seamless experience.
+- It is recommended NOT to use Anaconda environment. Please see **Installation** section below for details.
+
+## GUI
+
+- GUI `Import -> Prepare Data` filters out all "**_Row Count - ..._**" columns even if they are an integral part of a Dataset. Starting column's name with "_Row Count_" is not advised.
+
+## Backend
+
+- Currently it is not possible to use `mstrio-py` package to update cubes created via Web. Unfortunately it is not possible to use any REST API endpoint to check whether cube was created
+via Web or via REST API to provide some warning. In case of seeing one of the following error
+messages it is most probable that cube was created via Web and REST API can't handle its update,
+so if you want to update this particular cube you have to use Web.
+
+```
+When we tried to map the new dataset, we detected that some columns are missing or the data type changed, etc.
+```
+
+```
+We could not obtain the data because the DB connection changed and the table does not exist anymore.
+```
+
+- When trying to download a big IMDB Cube (or a Report based on such Cube) on multi-node environment, sometimes the process may fail. This is due to the characteristic of data retrieval of IMDB Cubes with connection to more than one node on iServer. For now, known workaround is to log out and just simply try again. This type of issue can be identified when seeing any of the following error messages during work with IMDB Cube on multi-node environment:
+
+```
+Cube cannot be found.
+```
+(even if previously it was found without issue)
+
+```
+Error getting cube metadata information. I-Server Error ERR001, (ServiceManager: XML syntax error.)
+```
+
+# Installation<a id="installation"></a>
+
+## Prerequisites<a id="prerequisites"></a>
+
+### mstrio-py<a id="mstrio-py"></a>
 
 - Python 3.6+
 - MicroStrategy 2019 Update 4 (11.1.4)+
 
-### MicroStrategy for Jupyter
+### MicroStrategy for Jupyter<a id="microstrategy-for-jupyter"></a>
 
 - [CORS enabled on MicroStrategy Library server][cors_manual]
 - [Cookies sent by MicroStrategy Library server have 'SameSite' parameter set to 'None'][same_site_manual]
 
-## Install the `mstrio-py` Package
+## Install the `mstrio-py` Package<a id="install-the-mstrio-py-package"></a>
 
-**Note**: it is not recommended to install mstrio-py in an Anaconda environment.
+**Note**: it is NOT recommended to install mstrio-py in an Anaconda environment.
 For a seamless experience, install and run it in Python's [virtual environment][python_venv] instead.
 
 Installation is easy when using [pip](https://pypi.org/project/mstrio-py). Read more about installation on MicroStrategy's [product documentation][mstr_help_docs].
@@ -91,7 +137,7 @@ Installation is easy when using [pip](https://pypi.org/project/mstrio-py). Read 
 pip install mstrio-py
 ```
 
-## Enable the Jupyter Notebook extension
+## Enable the Jupyter Notebook extension<a id="enable-the-jupyter-notebook-extension"></a>
 
 Once mstrio-py is installed you can install and enable the Jupyter Notebook extension by using the commands below:
 
@@ -100,9 +146,9 @@ jupyter nbextension install connector-jupyter --py --sys-prefix
 jupyter nbextension enable connector-jupyter --py --sys-prefix
 ```
 
-# Versioning & Changelog
+# Versioning & Changelog<a id="versioning--changelog"></a>
 
-Current version: **11.3.3.102** (29 October 2021). Check out [**Changelog**][release_notes] to see what's new.
+Current version: **11.3.4.101** (28 January 2022). Check out [**Changelog**][release_notes] to see what's new.
 
 mstrio-py is constantly developed to support newest MicroStrategy REST APIs. Functionalities may be added to mstrio on monthly basis. It is **recommended** to always install the newest version of mstrio-py, as it will be most stable and still maintain backwards compatibility with various MicroStrategy installations, dating back to 11.1.4.
 
@@ -125,20 +171,20 @@ To install a specific, archived version of mstrio, choose the desired version av
 pip install mstrio-py==10.11.1
 ```
 
-# Deprecating Features
+# Deprecating Features<a id="deprecating-features"></a>
 
 When features (modules, parameters, attributes, methods etc.) are marked for deprecation but still accessed, the following `DeprecationWarning` will be shown (example below). The functionality will continue to work until the version specified in the warning is released.
 
 ![Deprecation warning ][deprecation]
 
-# More Resources
+# More Resources<a id="more-resources"></a>
 
 - [Tutorials for mstrio][mstr_datasci_comm]
 - [Check out mstrio for R][r_github]
 - [Learn more about the MicroStrategy REST API][mstr_rest_docs]
 - [MicroStrategy REST API demo documentation][mstr_rest_demo]
 
-# Other
+# Other<a id="other"></a>
 
 "Jupyter" and the Jupyter logos are trademarks or registered trademarks of NumFOCUS.
 
@@ -157,6 +203,9 @@ When features (modules, parameters, attributes, methods etc.) are marked for dep
 [logo]: https://github.com/MicroStrategy/mstrio-py/blob/master/mstr-logo.png?raw=true
 [deprecation]: https://github.com/MicroStrategy/mstrio-py/blob/master/deprecation.png?raw=true
 [example_conn]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/connect.py
+[example_contact]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/contacts.py
+[example_contact_group]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/contact_group_mgmt.py
+[example_device]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/device_mgmt.py
 [example_import]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/cube_report.py
 [example_export]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/create_super_cube.py
 [example_project]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/project_mgmt.py
@@ -171,3 +220,5 @@ When features (modules, parameters, attributes, methods etc.) are marked for dep
 [example_object_mgmt]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/object_mgmt.py
 [example_security_filter]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/security_filters.py
 [example_datasource]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/datasource_mgmt.py
+[example_transmitter]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/transmitter_mgmt.py
+[example_events]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/events.py

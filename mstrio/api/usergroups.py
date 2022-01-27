@@ -24,7 +24,7 @@ def get_privileges(connection, id, privilege_level=None, project_id=None, error_
         Complete HTTP response object.
     """
 
-    return connection.session.get(
+    return connection.get(
         url=f'{connection.base_url}/api/usergroups/{id}/privileges',
         headers={'X-MSTR-ProjectID': None},
         params={
@@ -48,7 +48,7 @@ def get_memberships(connection, id, error_msg=None):
         Complete HTTP response object.
     """
 
-    return connection.session.get(
+    return connection.get(
         url=f'{connection.base_url}/api/usergroups/{id}/memberships',
         headers={'X-MSTR-ProjectID': None},
     )
@@ -74,7 +74,7 @@ def get_members(connection, id, include_access=False, offset=0, limit=-1, error_
         Complete HTTP response object.
     """
 
-    return connection.session.get(
+    return connection.get(
         url=f'{connection.base_url}/api/usergroups/{id}/members',
         headers={'X-MSTR-ProjectID': None},
         params={
@@ -104,7 +104,7 @@ def get_settings(connection, id, include_access=False, offset=0, limit=-1, error
     Returns:
         Complete HTTP response object.
     """
-    return connection.session.get(
+    return connection.get(
         url=f'{connection.base_url}/api/usergroups/{id}/settings',
         headers={'X-MSTR-ProjectID': None},
     )
@@ -123,8 +123,10 @@ def get_top_level(connection, error_msg=None):
         Complete HTTP response object.
     """
 
-    return connection.session.get(url=f'{connection.base_url}/api/usergroups/topLevel',
-                                  headers={'X-MSTR-ProjectID': None})
+    return connection.get(
+        url=f'{connection.base_url}/api/usergroups/topLevel',
+        headers={'X-MSTR-ProjectID': None}
+    )
 
 
 @ErrorHandler(err_msg='Error updating user group info with ID {id}')
@@ -141,7 +143,7 @@ def update_user_group_info(connection, id, body, error_msg=None):
         Complete HTTP response object
     """
 
-    return connection.session.patch(
+    return connection.patch(
         url=f'{connection.base_url}/api/usergroups/{id}',
         headers={'X-MSTR-ProjectID': None},
         json=body,
@@ -161,8 +163,10 @@ def delete_user_group(connection, id, error_msg=None):
         Complete HTTP response object
     """
 
-    return connection.session.delete(url=f'{connection.base_url}/api/usergroups/{id}',
-                                     headers={'X-MSTR-ProjectID': None})
+    return connection.delete(
+        url=f'{connection.base_url}/api/usergroups/{id}',
+        headers={'X-MSTR-ProjectID': None}
+    )
 
 
 @ErrorHandler(err_msg='Error overwriting user group info for a group with ID {id}')
@@ -178,8 +182,10 @@ def replace_user_group_info(connection, id, error_msg=None):
         Complete HTTP response object
     """
 
-    return connection.session.put(url=f'{connection.base_url}/api/usergroups/{id}',
-                                  headers={'X-MSTR-ProjectID': None})
+    return connection.put(
+        url=f'{connection.base_url}/api/usergroups/{id}',
+        headers={'X-MSTR-ProjectID': None}
+    )
 
 
 @ErrorHandler(err_msg='Error getting information for a set of user groups.')
@@ -217,7 +223,7 @@ def get_info_all_user_groups(connection, name_begins, offset=0, limit=1000, fiel
         HTTP response object returned by the MicroStrategy REST server
     """
 
-    return connection.session.get(
+    return connection.get(
         f'{connection.base_url}/api/usergroups/',
         headers={'X-MSTR-ProjectID': None},
         params={
@@ -282,7 +288,10 @@ def create_user_group(connection, body):
     Returns:
         Complete HTTP response object
     """
-    return connection.session.post(url=f'{connection.base_url}/api/usergroups/', json=body)
+    return connection.post(
+        url=f'{connection.base_url}/api/usergroups/',
+        json=body
+    )
 
 
 @ErrorHandler(err_msg='Error getting user group information for a group with ID {id}')
@@ -298,8 +307,10 @@ def get_user_group_info(connection, id, error_msg=None):
         Complete HTTP response object.
     """
 
-    return connection.session.get(url=f'{connection.base_url}/api/usergroups/{id}',
-                                  headers={'X-MSTR-ProjectID': None})
+    return connection.get(
+        url=f'{connection.base_url}/api/usergroups/{id}',
+        headers={'X-MSTR-ProjectID': None}
+    )
 
 
 @ErrorHandler(err_msg='Error getting user group security roles for a group with ID {id}')
@@ -316,7 +327,7 @@ def get_security_roles(connection, id, project_id=None, error_msg=None):
         Complete HTTP response object.
     """
 
-    return connection.session.get(
+    return connection.get(
         url=f'{connection.base_url}/api/usergroups/{id}/securityRoles',
         headers={'X-MSTR-ProjectID': None},
         params={'projectId': project_id},
@@ -350,4 +361,4 @@ def get_security_filters(connection: "Connection", id: str,
     projects = (
         ','.join(projects if isinstance(projects, list) else [projects])) if projects else projects
     params = {'projects.id': projects, 'offset': offset, 'limit': limit}
-    return connection.session.get(url=url, params=params)
+    return connection.get(url=url, params=params)

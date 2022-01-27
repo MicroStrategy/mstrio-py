@@ -1,6 +1,7 @@
 from typing import List, Optional, Union
 
 from pandas import DataFrame
+
 from mstrio.users_and_groups.user import User
 from mstrio.users_and_groups.user_group import UserGroup
 from mstrio.api import security

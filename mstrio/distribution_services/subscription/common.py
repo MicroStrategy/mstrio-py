@@ -1,9 +1,11 @@
-from enum import Enum
+from enum import auto
+
+from mstrio.utils.enum_helper import AutoName
 
 
-class RefreshPolicy(Enum):
-    ADD = "add"
-    DELETE = "delete"
-    UPDATE = "update"
-    UPSERT = "upsert"
-    REPLACE = "replace"
+class RefreshPolicy(AutoName):
+    ADD = auto()
+    DELETE = auto()
+    UPDATE = auto()
+    UPSERT = auto()
+    REPLACE = auto()

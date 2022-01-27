@@ -26,7 +26,7 @@ def get_security_filter_members(connection: "Connection", id: str, project_id: s
     if project_id is None:
         connection._validate_project_selected()
         project_id = connection.project_id
-    return connection.session.get(
+    return connection.get(
         url=f"{connection.base_url}/api/securityFilters/{id}/members",
         headers={'X-MSTR-ProjectID': project_id}
     )
@@ -40,7 +40,7 @@ def update_security_filter_members(connection: "Connection", id: str, body: dict
     if project_id is None:
         connection._validate_project_selected()
         project_id = connection.project_id
-    return connection.session.patch(
+    return connection.patch(
         url=f"{connection.base_url}/api/securityFilters/{id}/members",
         headers={'X-MSTR-ProjectID': project_id},
         json=body
@@ -52,7 +52,7 @@ def create_security_filter(connection: "Connection", changeset_id: str, body: di
                            show_filter_tokens: bool = False, show_expression_as: str = None,
                            error_msg: str = None, throw_error: bool = True, **kwargs):
     """Create a security filter."""
-    return connection.session.post(
+    return connection.post(
         url=f"{connection.base_url}/api/model/securityFilters",
         headers={'X-MSTR-MS-Changeset': changeset_id},
         json=body,
@@ -69,7 +69,7 @@ def read_security_filter(connection: "Connection", id: str, project_id: str = No
                          show_fields: str = None, show_filter_tokens: bool = False,
                          error_msg: str = None):
     """Read security filter."""
-    return connection.session.get(
+    return connection.get(
         url=f"{connection.base_url}/api/model/securityFilters/{id}",
         headers={
             'X-MSTR-ProjectID': project_id,
@@ -89,7 +89,7 @@ def update_security_filter(connection: "Connection", id: str, changeset_id: str,
                            show_filter_tokens: bool = False, error_msg: str = None,
                            throw_error: bool = True):
     """Update security filter."""
-    return connection.session.put(
+    return connection.put(
         url=f"{connection.base_url}/api/model/securityFilters/{id}",
         headers={'X-MSTR-MS-Changeset': changeset_id},
         params={

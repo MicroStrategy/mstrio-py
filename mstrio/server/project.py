@@ -25,7 +25,7 @@ class ProjectStatus(IntEnum):
     WHEXECIDLE = 4
 
 
-class IdleMode(str, Enum):
+class IdleMode(Enum):
     """Used to specify the exact behaviour of `idle` request.
 
     `REQUEST` (Request Idle): all executing and queued jobs finish executing
@@ -85,17 +85,6 @@ def compare_project_settings(projects: List["Project"], show_diff_only: bool = F
             print((f"There is no difference in settings between project '{base}' and "
                    f"remaining projects: '{project_names}'"))
     return df
-
-
-def compare_application_settings(applications: List["Project"], show_diff_only: bool = False,
-                                 projects: Optional[List["Project"]] = None) -> DataFrame:
-    helper.deprecation_warning(
-        'compare_application_settings function',
-        'compare_project_settings function',
-        '11.3.4.101',  # NOSONAR
-        False)
-    projects = projects or applications
-    return compare_project_settings(projects, show_diff_only)
 
 
 class Project(Entity):
@@ -283,7 +272,7 @@ class Project(Entity):
                 exception_type=TypeError)
 
     def idle(self, on_nodes: Optional[Union[str, List[str]]] = None,
-             mode: IdleMode = IdleMode.REQUEST) -> None:
+             mode: Union[IdleMode, str] = IdleMode.REQUEST) -> None:
         """Request to idle a specific cluster node. Idle project with mode
         options.
 
@@ -521,17 +510,6 @@ class Project(Entity):
         return self._nodes
 
 
-class Application(Project):
-
-    def __init__(self, *args, **kwargs):
-        helper.deprecation_warning(
-            'class Application',
-            'class Project',
-            '11.3.4.101',  # NOSONAR
-            False)
-        super().__init__(*args, **kwargs)
-
-
 class ProjectSettings(BaseSettings):
     """Object representation of MicroStrategy Project (Project) Settings.
 
@@ -572,23 +550,14 @@ class ProjectSettings(BaseSettings):
         'cubeIndexGrowthUpperBound': '%'
     }
 
-    def __init__(self, connection: Connection, project_id: Optional[str] = None,
-                 application_id: Optional[str] = None):
+    def __init__(self, connection: Connection, project_id: Optional[str] = None):
         """Initialize `ProjectSettings` object.
 
         Args:
             connection: MicroStrategy connection object returned by
                 `connection.Connection()`.
             project_id: Project ID
-            application_id: deprecated. Use project_id instead.
         """
-        if application_id:
-            helper.deprecation_warning(
-                '`application_id`',
-                '`project_id`',
-                '11.3.4.101',  # NOSONAR
-                False)
-            project_id = project_id or application_id
         super(BaseSettings, self).__setattr__('_connection', connection)
         super(BaseSettings, self).__setattr__('_project_id', project_id)
         self._configure_settings()
@@ -596,41 +565,23 @@ class ProjectSettings(BaseSettings):
         if project_id:
             self.fetch()
 
-    def fetch(self, project_id: Optional[str] = None,
-              application_id: Optional[str] = None) -> None:
+    def fetch(self, project_id: Optional[str] = None) -> None:
         """Fetch current project settings from I-Server and update this
         `ProjectSettings` object.
 
         Args:
             project_id: Project ID
-            application_id: deprecated. Use project_id instead.
         """
-        if application_id:
-            helper.deprecation_warning(
-                '`application_id`',
-                '`project_id`',
-                '11.3.4.101',  # NOSONAR
-                False)
-            project_id = project_id or application_id
         self._check_params(project_id)
         super(ProjectSettings, self).fetch()
 
-    def update(self, project_id: Optional[str] = None,
-               application_id: Optional[str] = None) -> None:
+    def update(self, project_id: Optional[str] = None) -> None:
         """Update the current project settings on I-Server using this
         Settings object.
 
         Args:
             project_id: Project ID
-            application_id: deprecated. Use project_id instead.
         """
-        if application_id:
-            helper.deprecation_warning(
-                '`application_id`',
-                '`project_id`',
-                '11.3.4.101',  # NOSONAR
-                False)
-            project_id = project_id or application_id
         self._check_params(project_id)
         set_dict = self._prepare_settings_push()
         response = projects.update_project_settings(self._connection, self._project_id, set_dict)
@@ -666,14 +617,3 @@ class ProjectSettings(BaseSettings):
             super(BaseSettings, self).__setattr__('_project_id', project_id)
         if not self._connection or not self._project_id:
             raise AttributeError("Please provide `connection` and `project_id` parameter")
-
-
-class ApplicationSettings(ProjectSettings):
-
-    def __init__(self, *args, **kwargs):
-        helper.deprecation_warning(
-            'class ApplicationSettings class',
-            'class ProjectSettings',
-            '11.3.4.101',  # NOSONAR
-            False)
-        super().__init__(*args, **kwargs)

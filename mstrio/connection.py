@@ -1,7 +1,8 @@
 from base64 import b64encode
 from getpass import getpass
 import os
-from typing import Optional, Union
+from typing import Optional
+from datetime import datetime
 
 from packaging import version
 import requests
@@ -11,13 +12,11 @@ from requests.cookies import RequestsCookieJar
 
 from mstrio import config
 from mstrio.api import authentication, exceptions, hooks, misc, projects
-from mstrio.utils.helper import deprecation_warning
-import mstrio.utils.helper as helper
+from mstrio.utils import helper, sessions
 
 
-def get_connection(workstation_data: dict, project_name: str = None, project_id: str = None,
-                   application_name: str = None,
-                   application_id: str = None) -> Union["Connection", None]:
+def get_connection(workstation_data: dict, project_name: Optional[str] = None,
+                   project_id: Optional[str] = None) -> Optional["Connection"]:
     """Connect to environment without providing user's credentials.
 
     It is possible to provide `project_id` or `project_name` to select
@@ -33,19 +32,9 @@ def get_connection(workstation_data: dict, project_name: str = None, project_id:
             to select
         project_id (str, optional): id of project (aka project)
             to select
-        application_name(str, optional): deprecated. Use project_name instead.
-        application_id(str, optional): deprecated. Use project_id instead.
     Returns:
         connection to I-Server or None is case of some error
     """
-    if (application_name or application_id):
-        helper.deprecation_warning(
-            '`application_name` and `application_id`',
-            '`project_name` and `project_id`',
-            '11.3.4.101',  # NOSONAR
-            False)
-        project_name = project_name or application_name
-        project_id = project_id or application_id
 
     try:
         print('Creating connection from Workstation Data object...', flush=True)
@@ -79,12 +68,14 @@ def get_connection(workstation_data: dict, project_name: str = None, project_id:
         return None
 
 
-class Connection():
+class Connection:
     """Connect to and interact with the MicroStrategy environment.
 
     Creates a connection object which is used in subsequent requests and
     manages the user's connection with the MicroStrategy REST and Intelligence
     Servers.
+    The connection is automatically renewed, or reconnected if server's session
+    associated with the connection expires due to inactivity.
 
     Examples:
         >>> from mstrio import connection
@@ -112,14 +103,15 @@ class Connection():
         user_initials: Initials of the authenticated user
         iserver_version: Version of the I-Server
         web_version: Version of the Web Server
+        token: authentication token
+        timeout: time after the server's session expires, in seconds
     """
 
     def __init__(self, base_url: str, username: Optional[str] = None,
                  password: Optional[str] = None, project_name: Optional[str] = None,
                  project_id: Optional[str] = None, login_mode: int = 1, ssl_verify: bool = True,
                  certificate_path: Optional[str] = None, proxies: Optional[dict] = None,
-                 identity_token: Optional[str] = None, verbose: bool = True,
-                 application_name: Optional[str] = None, application_id: Optional[str] = None):
+                 identity_token: Optional[str] = None, verbose: bool = True):
         """Establish a connection with MicroStrategy REST API.
 
         You can establish connection by either providing set of values
@@ -141,9 +133,6 @@ class Connection():
             project_id (str, optional): Id of the project you intend to
                 connect to (case-sensitive). Provide either Project ID
                 or Project Name.
-            application_name (str, optional): deprecated. Use project_name
-            instead.
-            application_id (str, optional): deprecated. Use project_id instead.
             login_mode (int, optional): Specifies the authentication mode to
                 use. Supported authentication modes are: Standard (1)
                 (default) or LDAP (16)
@@ -160,12 +149,6 @@ class Connection():
             verbose (bool, optional): True by default. Controls the amount of
                 feedback from the I-Server.
         """
-        if (application_id or application_name):
-            deprecation_warning(
-                "`application_id` and `application_name`",
-                "`project_id` or `project_name`",
-                "11.3.4.101",  # NOSONAR
-                False)
 
         # set the verbosity globally
         config.verbose = True if verbose and config.verbose else False
@@ -174,21 +157,26 @@ class Connection():
         self.login_mode = login_mode
         self.certificate_path = certificate_path
         self.identity_token = identity_token
-        self.session = self.__configure_session(ssl_verify, certificate_path, proxies)
+        self._session = self.__configure_session(ssl_verify, certificate_path, proxies)
         self._web_version = None
         self._iserver_version = None
         self._user_id = None
         self._user_full_name = None
         self._user_initials = None
         self.__password = password
-        project_id = project_id or application_id
-        project_name = project_name or application_name
+        self.last_active = None
+        self.timeout = None
 
         if self.__check_version():
             # save the version of IServer in config file
             config.iserver_version = self.iserver_version
-            # delegate identity token or connect and create new sesssion
-            self.delegate() if self.identity_token else self.connect()
+            # delegate identity token or connect and create new session
+
+            if self.identity_token:
+                self.delegate()
+            else:
+                self.connect()
+
             self.select_project(project_id, project_name)
         else:
             print("""This version of mstrio is only supported on MicroStrategy 11.1.0400 or higher.
@@ -204,22 +192,31 @@ class Connection():
 
         If an active connection is detected, the session is renewed.
         """
-        response = authentication.session_renew(connection=self)
-        if not response.ok:
-            response = authentication.login(connection=self)
-            self.session.headers['X-MSTR-AuthToken'] = response.headers['X-MSTR-AuthToken']
-            if config.verbose:
-                print("Connection to MicroStrategy Intelligence Server has been established.")
-        else:
+        response = self._renew() if self.token else None
+
+        if response and response.ok:
+            self._reset_timeout()
             if config.verbose:
                 print("Connection to MicroStrategy Intelligence Server was renewed.")
+        else:
+            response = self._login()
+            self._reset_timeout()
+            self.token = response.headers['X-MSTR-AuthToken']
+            self.timeout = self._get_session_timeout()
 
-    def delegate(self) -> None:
+            if config.verbose:
+                print("Connection to MicroStrategy Intelligence Server has been established.")
+
+    renew = connect
+
+    def delegate(self):
         """Delegates identity token to get authentication token and connect to
         MicroStrategy Intelligence Server."""
         response = authentication.delegate(self, self.identity_token, whitelist=[('ERR003', 401)])
         if response.ok:
-            self.session.headers['X-MSTR-AuthToken'] = response.headers['X-MSTR-AuthToken']
+            self._reset_timeout()
+            self.token = response.headers['X-MSTR-AuthToken']
+            self.timeout = self._get_session_timeout()
             if config.verbose:
                 print("Connection with MicroStrategy Intelligence Server has been delegated.")
         else:
@@ -237,30 +234,16 @@ class Connection():
         validate = authentication.validate_identity_token(self, self.identity_token)
         return validate.ok
 
-    def close(self) -> None:
+    def close(self):
         """Closes a connection with MicroStrategy REST API."""
-        authentication.logout(connection=self)
-        self.session.close()
+        authentication.logout(connection=self, whitelist=[('ERR009', 401)])
+
+        self._session.close()
+
+        self.token = None
 
         if config.verbose:
             print("Connection to MicroStrategy Intelligence Server has been closed")
-
-    def renew(self) -> None:
-        """Checks if the session is still alive.
-
-        If so, renews the session and extends session expiration.
-        """
-        status = authentication.session_renew(connection=self)
-
-        if status.status_code == 204:
-            if config.verbose:
-                print("Your connection to MicroStrategy Intelligence Server was renewed.")
-        else:
-            response = authentication.login(connection=self)
-            self.session.headers['X-MSTR-AuthToken'] = response.headers['X-MSTR-AuthToken']
-            if config.verbose:
-                print("""Connection with MicroStrategy Intelligence Server was not active.
-                         \rNew connection has been established.""")
 
     def status(self) -> bool:
         """Checks if the session is still alive.
@@ -268,7 +251,7 @@ class Connection():
         Raises:
             HTTPError if I-Server behaves unexpectedly
         """
-        status = authentication.session_status(connection=self)
+        status = self._status()
 
         if status.status_code == 200:
             print("Connection to MicroStrategy Intelligence Server is active.")
@@ -300,13 +283,13 @@ class Connection():
                 print("No project selected.")
             return None
 
-        if project_id is not None and project_name is not None:
+        if project_id and project_name:
             tmp_msg = ("Both `project_id` and `project_name` arguments provided. "
                        "Selecting project based on `project_id`.")
             helper.exception_handler(msg=tmp_msg, exception_type=Warning)
 
         _projects = projects.get_projects(connection=self).json()
-        if project_id is not None:
+        if project_id:
             # Find which project name matches the project ID provided
             tmp_projects = helper.filter_list_of_dicts(_projects, id=project_id)
             if not tmp_projects:
@@ -314,7 +297,7 @@ class Connection():
                 tmp_msg = (f"Error connecting to project with id: {project_id}. "
                            "Project with given id does not exist or user has no access.")
                 raise ValueError(tmp_msg)
-        elif project_name is not None:
+        elif project_name:
             # Find which project ID matches the project name provided
             tmp_projects = helper.filter_list_of_dicts(_projects, name=project_name)
             if not tmp_projects:
@@ -325,16 +308,60 @@ class Connection():
 
         self.project_id = tmp_projects[0]['id']
         self.project_name = tmp_projects[0]['name']
-        self.session.headers['X-MSTR-ProjectID'] = self.project_id
+        self._session.headers['X-MSTR-ProjectID'] = self.project_id
 
-    def select_application(self, application_id: Optional[str] = None,
-                           application_name: Optional[str] = None) -> None:
-        deprecation_warning(
-            "`select_application` method",
-            "`select_project` method",
-            "11.3.4.101",  # NOSONAR
-            False)
-        self.select_project(project_id=application_id, project_name=application_name)
+    @sessions.renew_session
+    def get(self, url, **kwargs):
+        return self._session.get(url, **kwargs)
+
+    @sessions.renew_session
+    def post(self, url, **kwargs):
+        return self._session.post(url, **kwargs)
+
+    @sessions.renew_session
+    def put(self, url, **kwargs):
+        return self._session.put(url, **kwargs)
+
+    @sessions.renew_session
+    def patch(self, url, **kwargs):
+        return self._session.patch(url, **kwargs)
+
+    @sessions.renew_session
+    def delete(self, url, **kwargs):
+        return self._session.delete(url, **kwargs)
+
+    @sessions.renew_session
+    def head(self, url, **kwargs):
+        return self._session.head(url, **kwargs)
+
+    def _status(self):
+        return authentication.session_status(connection=self)
+
+    def _login(self):
+        return authentication.login(connection=self)
+
+    def _renew(self):
+        return authentication.session_renew(connection=self)
+
+    def _renew_or_reconnect(self):
+        response = self._renew() if self.token else None
+
+        if not self.identity_token and (not response or not response.ok):
+            response = self._login()
+            self.token = response.headers['X-MSTR-AuthToken']
+
+        if response.ok:
+            self._reset_timeout()
+
+    def _get_session_timeout(self):
+        res = self._status()
+        return res.json()['timeout'] if res.ok else None
+
+    def _reset_timeout(self):
+        self.last_active = datetime.now()
+
+    def _is_session_expired(self):
+        return (datetime.now() - self.last_active).seconds > self.timeout
 
     def _get_authorization(self) -> str:
         self.__prompt_credentials()
@@ -349,9 +376,9 @@ class Connection():
                 "Project not selected. Select project using `select_project` method.")
 
     def __prompt_credentials(self) -> None:
-        self.username = self.username if self.username is not None else input("Username: ")
-        self.__password = self.__password if self.__password is not None else getpass("Password: ")
-        self.login_mode = self.login_mode if self.login_mode else input(
+        self.username = self.username or input("Username: ")
+        self.__password = self.__password or getpass("Password: ")
+        self.login_mode = self.login_mode or input(
             "Login mode (1 - Standard, 16 - LDAP): ")
 
     def __check_version(self) -> bool:
@@ -393,7 +420,7 @@ class Connection():
                 (set to 0).
         """
         session = existing_session or Session()
-        session.proxies = proxies if proxies is not None else {}
+        session.proxies = proxies or {}
         session.verify = self._configure_ssl(verify, certificate_path)
 
         response_hooks = []
@@ -469,3 +496,16 @@ class Connection():
     @property
     def iserver_version(self) -> str:
         return self._iserver_version
+
+    @property
+    def token(self) -> str:
+        return self._session.headers.get('X-MSTR-AuthToken')
+
+    @token.setter
+    def token(self, token: str) -> str:
+        self._session.headers['X-MSTR-AuthToken'] = token
+        return token
+
+    @property
+    def headers(self):
+        return self._session.headers

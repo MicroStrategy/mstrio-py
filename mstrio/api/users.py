@@ -34,7 +34,7 @@ def get_recipients(connection, search_term, search_pattern="CONTAINS_ANY_WORD", 
     Returns:
         HTTP response object returned by the MicroStrategy REST server.
     """
-    return connection.session.get(
+    return connection.get(
         url=f'{connection.base_url}/api/collaboration/recipients',
         params={
             'searchTerm': search_term,
@@ -69,7 +69,7 @@ def get_users_info(connection, name_begins, abbreviation_begins, offset=0, limit
     Returns:
         HTTP response object returned by the MicroStrategy REST server.
     """
-    return connection.session.get(
+    return connection.get(
         url=f'{connection.base_url}/api/users/',
         params={
             'nameBegins': name_begins,
@@ -152,7 +152,7 @@ def create_user(connection, body, username, fields=None):
         HTTP response object returned by the MicroStrategy REST server.
     """
 
-    return connection.session.post(
+    return connection.post(
         url=f'{connection.base_url}/api/users',
         params={'fields': fields},
         json=body,
@@ -174,8 +174,10 @@ def get_addresses(connection, id, fields=None):
         HTTP response object returned by the MicroStrategy REST server.
     """
 
-    return connection.session.get(url=f'{connection.base_url}/api/users/{id}/addresses',
-                                  params={'fields': fields})
+    return connection.get(
+        url=f'{connection.base_url}/api/users/{id}/addresses',
+        params={'fields': fields}
+    )
 
 
 @ErrorHandler(err_msg='Error creating a new address for user with ID {id}')
@@ -202,7 +204,7 @@ def create_address(connection, id, body, fields=None):
         HTTP response object returned by the MicroStrategy REST server.
     """
 
-    return connection.session.post(
+    return connection.post(
         url=f'{connection.base_url}/api/users/{id}/addresses',
         params={'fields': fields},
         json=body,
@@ -210,7 +212,7 @@ def create_address(connection, id, body, fields=None):
 
 
 @ErrorHandler(err_msg='Error updating address with ID {address_id} for user with ID {id}')
-def update_address(connection, id, address_id, fields=None):
+def update_address(connection, id, address_id, body, fields=None):
     """Update a specific address for a specific user.
 
     Args:
@@ -225,9 +227,10 @@ def update_address(connection, id, address_id, fields=None):
         HTTP response object returned by the MicroStrategy REST server.
     """
 
-    return connection.session.put(
+    return connection.put(
         url=f'{connection.base_url}/api/users/{id}/addresses/{address_id}',
         params={'fields': fields},
+        json=body,
     )
 
 
@@ -247,7 +250,7 @@ def delete_address(connection, id, address_id, fields=None):
         HTTP response object returned by the MicroStrategy REST server.
     """
 
-    return connection.session.delete(
+    return connection.delete(
         url=f'{connection.base_url}/api/users/{id}/addresses/{address_id}',
         headers={'X-MSTR-ProjectID': None},
         params={'fields': fields},
@@ -266,7 +269,7 @@ def get_user_security_roles(connection, id, project_id=None):
     Returns:
         HTTP response object returned by the MicroStrategy REST server.
     """
-    return connection.session.get(
+    return connection.get(
         url=f'{connection.base_url}/api/users/{id}/securityRoles',
         params={'projectId': project_id},
     )
@@ -288,7 +291,7 @@ def get_user_privileges(connection, id, project_id=None, privilege_level=None):
         HTTP response object returned by the MicroStrategy REST server.
     """
     url = f'{connection.base_url}/api/users/{id}/privileges/'
-    return connection.session.get(
+    return connection.get(
         url=url,
         params={
             'privilege.level': privilege_level,
@@ -315,7 +318,7 @@ def get_user_data_usage_limit(connection, id, project_id):
         HTTP response object returned by the MicroStrategy REST server.
     """
     url = f'{connection.base_url}/api/users/{id}/projects/{project_id}/quotas'
-    return connection.session.get(url=url)
+    return connection.get(url=url)
 
 
 @ErrorHandler(err_msg='Error getting information for a user with ID {id}')
@@ -333,8 +336,10 @@ def get_user_info(connection, id, fields=None):
         HTTP response object returned by the MicroStrategy REST server.
     """
 
-    return connection.session.get(url=f'{connection.base_url}/api/users/{id}',
-                                  params={'fields': fields})
+    return connection.get(
+        url=f'{connection.base_url}/api/users/{id}',
+        params={'fields': fields}
+    )
 
 
 @ErrorHandler(err_msg='Error deleting user with ID {id}')
@@ -350,7 +355,7 @@ def delete_user(connection, id):
         HTTP response object returned by the MicroStrategy REST server.
     """
 
-    return connection.session.delete(url=f'{connection.base_url}/api/users/{id}')
+    return connection.delete(url=f'{connection.base_url}/api/users/{id}')
 
 
 @ErrorHandler(err_msg='Error updating information for a user with ID: {id}')
@@ -378,7 +383,7 @@ def update_user_info(connection, id, body, fields=None):
         HTTP response object returned by the MicroStrategy REST server.
     """
 
-    return connection.session.patch(
+    return connection.patch(
         url=f'{connection.base_url}/api/users/{id}',
         params={'fields': fields},
         json=body,
@@ -402,7 +407,7 @@ def get_memberships(connection, id, fields=None):
         HTTP response object returned by the MicroStrategy REST server
     """
 
-    return connection.session.get(
+    return connection.get(
         url=f'{connection.base_url}/api/users/{id}/memberships',
         params={'fields': fields},
     )
@@ -435,4 +440,4 @@ def get_security_filters(connection: "Connection", id: str,
     projects = (
         ','.join(projects if isinstance(projects, list) else [projects])) if projects else projects
     params = {'projects.id': projects, 'offset': offset, 'limit': limit}
-    return connection.session.get(url=url, params=params)
+    return connection.get(url=url, params=params)

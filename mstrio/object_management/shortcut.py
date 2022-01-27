@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional, TypeVar, Union
 from mstrio.api import browsing, objects
 from mstrio.connection import Connection
 from mstrio.utils.entity import Entity, ObjectTypes
+from mstrio.utils.enum_helper import get_enum_val
 from mstrio.utils.helper import fetch_objects
 
 
@@ -31,7 +32,8 @@ class Shortcut(Entity):
 
     def __init__(
             self, connection: Connection, id: str, project_id: str,
-            shortcut_info_flag: ShortcutInfoFlags = ShortcutInfoFlags.DssDossierShortcutInfoTOC):
+            shortcut_info_flag: Union[ShortcutInfoFlags, int] =
+            ShortcutInfoFlags.DssDossierShortcutInfoTOC):
         """Initialize the Shortcut object and populate it with I-Server data.
 
         Args:
@@ -46,8 +48,12 @@ class Shortcut(Entity):
             raise AttributeError(
                 "Please specify 'id' and 'project_id' parameters in the constructor.")
         else:
-            super().__init__(connection=connection, object_id=id, project_id=project_id,
-                             shortcut_info_flag=shortcut_info_flag.value)
+            super().__init__(
+                connection=connection,
+                object_id=id,
+                project_id=project_id,
+                shortcut_info_flag=get_enum_val(shortcut_info_flag, ShortcutInfoFlags)
+            )
 
     def _init_variables(self, **kwargs) -> None:
         super()._init_variables(**kwargs)
@@ -132,7 +138,8 @@ class Shortcut(Entity):
 
 def get_shortcuts(
         connection: Connection, project_id: str, shortcut_ids: List[str],
-        shortcut_info_flag: ShortcutInfoFlags = ShortcutInfoFlags.DssDossierShortcutInfoDefault,
+        shortcut_info_flag: Union[ShortcutInfoFlags, int] =
+        ShortcutInfoFlags.DssDossierShortcutInfoDefault,
         to_dictionary: bool = False, limit: Optional[int] = None,
         **filters) -> Union[List[dict], List[Shortcut]]:
     """Retrieve information about specific published shortcuts
@@ -161,7 +168,7 @@ def get_shortcuts(
             "projectId": project_id,
             "shortcutIds": shortcut_ids
         }],
-        shortcut_info_flag=shortcut_info_flag.value,
+        shortcut_info_flag=get_enum_val(shortcut_info_flag, ShortcutInfoFlags),
     )
 
     if to_dictionary:

@@ -62,3 +62,20 @@ user_group_.set_permission(permission='Full Control',
 # delete a user and a user group
 user_.delete()
 user_group_.delete()
+
+
+# Addresses
+user_john = User(connection=conn, name="John Smith")
+# The user's addresses list is lazily loaded upon first accessing the property
+johns_addresses = user_john.addresses
+# MicroStrategy allows having multiple addresses marked as default
+# so let's construct a list of John's "default" addresses
+johns_default_addresses = [addr for addr in johns_addresses if addr["is_default"]]
+# If we just want a single address to treat as default and we're OK with
+# it being just the first "default" one we can now just take the first element
+# of the list
+johns_default_address = johns_default_addresses[0]
+# Alternatively if we don't care about any addresses besides the first
+# "default one" we can use a generator expression and take its first output
+# to avoid going through the entire list, increasing performance
+johns_default_address = next((addr for addr in user_john.addresses if addr["is_default"]), None)

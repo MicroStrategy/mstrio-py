@@ -11,6 +11,9 @@ import getpass
 # your MicroStrategy environment by providing the URL to the MicroStrategy REST
 # API server, your username, password and the ID of the Project to connect to.
 # When a Connection object is created the user will be automatically logged-in.
+# Connection object automatically renews the connection or reconnects,
+# if session becomes inactive. Reconnection doesn't work if authenticated with
+# identity token.
 base_url = "https://your-microstrategy-server.com/MicroStrategyLibrary/api"
 mstr_username = "Username"
 mstr_password = getpass.getpass("Password: ")
@@ -26,7 +29,6 @@ conn = Connection(base_url, mstr_username, mstr_password, project_id=project_id)
 
 # To manage the connection the following methods are made available:
 conn.connect()
-conn.renew()
 conn.close()
 conn.status()
 

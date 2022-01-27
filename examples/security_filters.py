@@ -8,12 +8,14 @@ ease its usage.
 
 from mstrio.connection import Connection
 
-from mstrio.access_and_security.security_filter import \
-    list_security_filters, SecurityFilter, Qualification,\
-    PredicateForm, PredicateFormFunction,\
-    ConstantParameter, ConstantType,\
-    AttributeRef, AttributeFormSystemRef
-
+from mstrio.access_and_security.security_filter import (AttributeFormSystemRef, AttributeRef,
+                                                        ConstantParameter, ConstantType,
+                                                        LogicFunction, LogicOperator,
+                                                        list_security_filters, PredicateForm,
+                                                        PredicateFormFunction, Qualification,
+                                                        SecurityFilter)
+from mstrio.object_management.search_operations import full_search
+from mstrio.types import ObjectTypes
 from mstrio.users_and_groups import list_users, list_user_groups
 
 base_url = "https://<>/MicroStrategyLibrary/api"
@@ -43,6 +45,47 @@ qualification = Qualification(
                        form=AttributeFormSystemRef("45C11FA478E745FEA08D781CEA190FE5", "ID")))
 
 new_sec_fil = SecurityFilter.create(conn, qualification, name, folder_id)
+
+# Create new security filter with more than one attribute form.
+
+# 1. Find attribute forms for the particular attribute
+# You have to look for objects with type ObjectTypes.ATTRIBUTE_FORM which are
+# used by object with type ObjectTypes.ATTRIBUTE and ID of particular attribute.
+customer_attr_id = '8D679D3C11D3E4981000E787EC6DE8A4'
+attr_forms_of_customer_attr = full_search(
+    conn,
+    project_id="B7CA92F04B9FAE8D941C3E9B7E0CD754",
+    object_types=ObjectTypes.ATTRIBUTE_FORM,
+    to_dictionary=False,
+    used_by_object_id=customer_attr_id,
+    used_by_object_type=ObjectTypes.ATTRIBUTE,
+)
+# just a simple example of extracting just `name` and `id` from each dict of
+# attribute form which was returned
+tmp_dict = [{'id': a.id, 'name': a.name} for a in attr_forms_of_customer_attr]
+
+# 2. To build security filter qualification where there are two attribute
+# forms you have to create two separate `PredicateForm`s and connect them with
+# `LogicOperator`. You cannot set values for two attribute forms in a single
+# `PredicateForm`.
+pf1 = PredicateForm(
+    function=PredicateFormFunction.EQUALS,
+    parameters=[ConstantParameter(ConstantType.STRING, "Smith")],
+    attribute=AttributeRef("8D679D3C11D3E4981000E787EC6DE8A4", "Customer"),
+    form=AttributeFormSystemRef("CCFBE2A5EADB4F50941FB879CCF1721C", "Customer DESC 1"),
+    data_locale="en-US",
+)
+pf2 = PredicateForm(
+    function=PredicateFormFunction.EQUALS,
+    parameters=[ConstantParameter(ConstantType.STRING, "John")],
+    attribute=AttributeRef("8D679D3C11D3E4981000E787EC6DE8A4", "Customer"),
+    form=AttributeFormSystemRef("8D67A35F11D3E4981000E787EC6DE8A4", "Customer DESC 2"),
+    data_locale="en-US",
+)
+logic_operator = LogicOperator(function=LogicFunction.AND, children=[pf1, pf2])
+qualification2 = Qualification(tree=logic_operator)
+name2 = 'Customer John Smith'
+new_sec_fil2 = SecurityFilter(conn, qualification2, name2, folder_id)
 
 # alter security filter - its name, description, qualification and folder
 new_name = "Year > 2020"

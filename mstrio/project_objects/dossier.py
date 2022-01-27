@@ -3,11 +3,10 @@ from typing import List, Optional, Union
 from pandas import DataFrame
 
 from mstrio.api import documents
+from mstrio.connection import Connection
 from mstrio.project_objects.document import Document
 from mstrio.server.environment import Environment
 from mstrio.utils import helper
-
-from mstrio.connection import Connection
 
 
 def list_dossiers(connection: Connection, name: Optional[str] = None, to_dictionary: bool = False,

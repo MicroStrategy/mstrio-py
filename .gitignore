@@ -49,11 +49,10 @@ htmlcov/
 .coverage
 .coverage.*
 .cache
-nosetests.xml
 coverage.xml
 *.cover
 .hypothesis/
-.pytest_cache/
+*test*
 
 # Translations
 *.mo

@@ -1,4 +1,3 @@
-from concurrent.futures.thread import ThreadPoolExecutor
 import json
 from typing import List, Optional, TYPE_CHECKING, Union
 from unittest.mock import Mock
@@ -7,13 +6,14 @@ from mstrio.api.exceptions import MstrException, PartialSuccess, Success
 from packaging import version
 from requests.adapters import Response
 from requests.sessions import Request
-from requests_futures.sessions import FuturesSession
 
 from mstrio.utils.error_handlers import bulk_operation_response_handler, ErrorHandler
 from mstrio.utils.helper import delete_none_values, filter_list_of_dicts, response_handler
+from mstrio.utils.sessions import FuturesSessionWithRenewal
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
+    from requests_futures.sessions import FuturesSession
 
 ISERVER_VERSION_11_3_2 = '11.3.0200'
 
@@ -36,7 +36,7 @@ def get_projects(connection: "Connection", offset: int = 0, limit: int = -1,
         HTTP response object returned by the MicroStrategy REST server.
     """
 
-    return connection.session.get(
+    return connection.get(
         url=f'{connection.base_url}/api/monitors/projects',
         headers={'X-MSTR-ProjectID': None},
         params={
@@ -86,7 +86,7 @@ def get_node_info(connection: "Connection", id: str = None, node_name: str = Non
         node_name (str, optional): Node Name
         error_msg (string, optional): Custom Error Message for Error Handling
     """
-    return connection.session.get(
+    return connection.get(
         url=f'{connection.base_url}/api/monitors/iServer/nodes',
         headers={'X-MSTR-ProjectID': None},
         params={
@@ -129,7 +129,7 @@ def update_node_properties(connection: "Connection", node_name: str, project_id:
         HTTP response object returned by the MicroStrategy REST server.
     """
 
-    return connection.session.patch(
+    return connection.patch(
         url=f'{connection.base_url}/api/monitors/iServer/nodes/{node_name}/projects/{project_id}',
         headers={'X-MSTR-ProjectID': None},
         json=body,
@@ -159,7 +159,7 @@ def add_node(connection: "Connection", node_name: str, error_msg: str = None,
         HTTP response object returned by the MicroStrategy REST server.
     """
 
-    return connection.session.put(
+    return connection.put(
         url=f'{connection.base_url}/api/monitors/iServer/nodes/{node_name}',
         headers={'X-MSTR-ProjectID': None},
     )
@@ -189,7 +189,7 @@ def remove_node(connection: "Connection", node_name: str, error_msg: str = None,
         HTTP response object returned by the MicroStrategy REST server.
     """
 
-    return connection.session.delete(
+    return connection.delete(
         url=f'{connection.base_url}/api/monitors/iServer/nodes/{node_name}',
         headers={'X-MSTR-ProjectID': None},
     )
@@ -214,7 +214,7 @@ def get_user_connections(connection: "Connection", node_name: str, offset: int =
     Returns:
         HTTP response object returned by the MicroStrategy REST server.
     """
-    return connection.session.get(
+    return connection.get(
         url=f'{connection.base_url}/api/monitors/userConnections',
         headers={'X-MSTR-ProjectID': None},
         params={
@@ -261,7 +261,7 @@ def delete_user_connection(connection: "Connection", id: str, error_msg: str = N
         bulk(bool,optional): Whether to ignore errors when using request for
             bulk disconnect
     """
-    response = connection.session.delete(
+    response = connection.delete(
         url=f'{connection.base_url}/api/monitors/userConnections/{id}',
         headers={'X-MSTR-ProjectID': None},
     )
@@ -301,7 +301,7 @@ def delete_user_connections(connection: "Connection", ids: List[str]):
         HTTP response object returned by the MicroStrategy REST server
     """
     body = {"userConnectionIds": ids}
-    response = connection.session.post(
+    response = connection.post(
         url=f'{connection.base_url}/api/monitors/deleteUserConnections',
         json=body,
     )
@@ -320,7 +320,7 @@ def get_cube_cache_info(connection: "Connection", id: str):
     Returns:
         Complete HTTP response object.
     """
-    return connection.session.get(url=f'{connection.base_url}/api/monitors/caches/cubes/{id}')
+    return connection.get(url=f'{connection.base_url}/api/monitors/caches/cubes/{id}')
 
 
 @ErrorHandler(err_msg='Error deleting cube cache with ID {id}')
@@ -337,7 +337,7 @@ def delete_cube_cache(connection: "Connection", id: str, throw_error: bool = Tru
     Returns:
         Complete HTTP response object.
     """
-    return connection.session.delete(url=f'{connection.base_url}/api/monitors/caches/cubes/{id}')
+    return connection.delete(url=f'{connection.base_url}/api/monitors/caches/cubes/{id}')
 
 
 @ErrorHandler(err_msg='Error altering cube cache {id} status.')
@@ -364,8 +364,8 @@ def alter_cube_cache_status(connection: "Connection", id: str, active: bool = No
     body = {'state': {'active': active, 'loadedState': loaded}}
     body = delete_none_values(body)
 
-    return connection.session.patch(url=f'{connection.base_url}/api/monitors/caches/cubes/{id}',
-                                    json=body, headers={'Prefer': 'respond-async'})
+    return connection.patch(url=f'{connection.base_url}/api/monitors/caches/cubes/{id}',
+                            headers={'Prefer': 'respond-async'}, json=body)
 
 
 @ErrorHandler(err_msg='Error getting list of cube caches for node {node}.')
@@ -397,7 +397,7 @@ def get_cube_caches(connection: "Connection", node: str, offset: int = 0, limit:
         Complete HTTP response object.
     """
     loaded = 'loaded' if loaded else None
-    return connection.session.get(
+    return connection.get(
         url=f'{connection.base_url}/api/monitors/caches/cubes',
         params={
             'clusterNode': node,
@@ -467,7 +467,7 @@ def get_cube_cache_manipulation_status(connection: "Connection", manipulation_id
         Complete HTTP response object.
     """
     url = f'{connection.base_url}/api/monitors/caches/cubes/manipulations/{manipulation_id}/status'
-    return connection.session.get(url=url)
+    return connection.get(url=url)
 
 
 @ErrorHandler(err_msg='Error getting database connections for {nodes_names} cluster node.')
@@ -483,7 +483,7 @@ def get_database_connections(connection: "Connection", nodes_names: str, error_m
     Returns:
         HTTP response object returned by the MicroStrategy REST server.
     """
-    return connection.session.get(
+    return connection.get(
         url=f'{connection.base_url}/api/monitors/dbConnectionInstances',
         params={'clusterNodes': nodes_names},
     )
@@ -501,7 +501,7 @@ def delete_database_connection(connection: "Connection", connection_id: str,
         error_msg (string, optional): Custom Error Message for Error Handling
     """
     url = f'{connection.base_url}/api/monitors/dbConnectionInstances/{connection_id}'
-    return connection.session.delete(url=url)
+    return connection.delete(url=url)
 
 
 def delete_database_connection_async(future_session: "FuturesSession", connection: "Connection",
@@ -546,10 +546,11 @@ def get_job(connection: "Connection", id: str, node_name: str = None, fields: Li
     if isinstance(node_name, str):
         node_names = [node_names]
 
-    with FuturesSession(executor=ThreadPoolExecutor(max_workers=8),
-                        session=connection.session) as session:
-        futures = (get_jobs_async(future_session=session, connection=connection, node_name=node)
-                   for node in node_names)
+    with FuturesSessionWithRenewal(connection=connection, max_workers=8) as session:
+        futures = [
+            get_jobs_async(future_session=session, connection=connection, node_name=node)
+            for node in node_names
+        ]
         jobs = []
         for f in futures:
             response = f.result()
@@ -588,7 +589,7 @@ def get_job_v2(connection: "Connection", id: str, fields: List[str] = None, erro
     Returns:
         HTTP response object returned by the MicroStrategy REST server
     """
-    return connection.session.get(
+    return connection.get(
         url=f'{connection.base_url}/api/v2/monitors/jobs/{id}',
         params={
             'fields': ",".join(fields) if fields else None,
@@ -632,7 +633,7 @@ def get_jobs(connection: "Connection", node_name: str, project_id: str = None, s
     request = Request('GET', url=f'{connection.base_url}/api/monitors/jobs', params=params)
     prepared_request = request.prepare()
     url = prepared_request.url.replace("+", "%20")  # REST will not work with +
-    return connection.session.get(url)
+    return connection.get(url)
 
 
 def get_jobs_async(future_session: "FuturesSession", connection: "Connection", node_name: str,
@@ -679,7 +680,7 @@ def get_jobs_async(future_session: "FuturesSession", connection: "Connection", n
 @ErrorHandler(err_msg="Error getting jobs list")
 def get_jobs_v2(connection: "Connection", node_name: str, user: Union[List[str], str] = None,
                 description: str = None, type: Union[List[str], str] = None,
-                status: Union[List[str], str] = None, object_id: Union[List[str]] = None,
+                status: Union[List[str], str] = None, object_id: Optional[List[str]] = None,
                 object_type: Union[List[str], str] = None, project_id: Union[List[str],
                                                                              str] = None,
                 project_name: Union[List[str], str] = None, pu_name: Union[List[str], str] = None,
@@ -755,14 +756,14 @@ def get_jobs_v2(connection: "Connection", node_name: str, user: Union[List[str],
     request = Request('GET', url=f'{connection.base_url}/api/v2/monitors/jobs', params=params)
     prepared_request = request.prepare()
     url = prepared_request.url.replace("+", "%20")  # REST will not work with +
-    return connection.session.get(url)
+    return connection.get(url)
 
 
 def get_jobs_v2_async(future_session: "FuturesSession", connection: "Connection", node_name: str,
                       user: Union[List[str], str] = None, description: str = None,
                       type: Union[List[str], str] = None, status: Union[List[str], str] = None,
-                      object_id: Union[List[str]] = None, object_type: Union[List[str],
-                                                                             str] = None,
+                      object_id: Optional[List[str]] = None, object_type: Union[List[str],
+                                                                                str] = None,
                       project_id: Union[List[str], str] = None, project_name: Union[List[str],
                                                                                     str] = None,
                       pu_name: Union[List[str], str] = None, subscription_type: Union[List[str],
@@ -881,8 +882,7 @@ def cancel_job_v1(connection: "Connection", id: str, fields: List[str] = None,
     """
     params = {'fields': ",".join(fields) if fields else None}
 
-    return connection.session.delete(url=f'{connection.base_url}/api/monitors/jobs/{id}',
-                                     params=params)
+    return connection.delete(url=f'{connection.base_url}/api/monitors/jobs/{id}', params=params)
 
 
 @ErrorHandler(err_msg="Error killing job {id}")
@@ -902,8 +902,7 @@ def cancel_job_v2(connection: "Connection", id: str, fields: List[str] = None,
     """
     params = {'fields': ",".join(fields) if fields else None}
 
-    return connection.session.delete(url=f'{connection.base_url}/api/v2/monitors/jobs/{id}',
-                                     params=params)
+    return connection.delete(url=f'{connection.base_url}/api/v2/monitors/jobs/{id}', params=params)
 
 
 def cancel_jobs(connection: "Connection", ids: List[str], fields: List[str] = None,
@@ -949,8 +948,8 @@ def cancel_jobs_v1(connection: "Connection", ids: List[str], fields: List[str] =
 
     if ids:
         body = {'jobIds': ids}
-        return connection.session.post(url=f'{connection.base_url}/api/monitors/cancelJobs',
-                                       params=params, json=body)
+        return connection.post(url=f'{connection.base_url}/api/monitors/cancelJobs', params=params,
+                               json=body)
     else:
         raise ValueError("No ids have been passed.")
 
@@ -973,7 +972,7 @@ def cancel_jobs_v2(connection: "Connection", ids: List[str], fields: List[str] =
 
     if ids:
         body = {'jobIds': ids}
-        return connection.session.post(url=f'{connection.base_url}/api/v2/monitors/cancelJobs',
-                                       params=params, json=body)
+        return connection.post(url=f'{connection.base_url}/api/v2/monitors/cancelJobs',
+                               params=params, json=body)
     else:
         raise ValueError("No ids have been passed.")

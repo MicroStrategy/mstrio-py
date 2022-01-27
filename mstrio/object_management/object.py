@@ -13,8 +13,8 @@ if TYPE_CHECKING:
 
 
 def list_objects(connection: "Connection", object_type: ObjectTypes,
-                 project_id: Optional[str] = None,
-                 domain: Union[SearchDomain, int] = SearchDomain.CONFIGURATION,
+                 project_id: Optional[str] = None, domain: Union[SearchDomain,
+                                                                 int] = SearchDomain.CONFIGURATION,
                  to_dictionary: bool = False, limit: int = None,
                  **filters) -> Union[List["Object"], List[dict]]:
     """Get list of objects or dicts. Optionally filter the
@@ -80,7 +80,7 @@ class Object(Entity, ACLMixin, CertifyMixin, CopyMixin, DeleteMixin):
     _FROM_DICT_MAP = {
         **Entity._FROM_DICT_MAP,
         'certified_info': CertifiedInfo.from_dict,
-        'owner': User.from_dict
+        'owner': User.from_dict,
     }
     _API_GETTERS = {
         ('id', 'name', 'description', 'date_created', 'date_modified', 'acg', 'abbreviation',
@@ -134,8 +134,14 @@ class Object(Entity, ACLMixin, CertifyMixin, CopyMixin, DeleteMixin):
                       project_id: Optional[str] = None, to_dictionary: bool = False,
                       domain: Union[int, SearchDomain] = SearchDomain.CONFIGURATION,
                       limit: Optional[int] = None, **filters) -> Union[List["Object"], List[dict]]:
-        objects = full_search(connection, object_types=object_type,
-                              project=project_id, domain=domain, limit=limit, **filters)
+        objects = full_search(
+            connection,
+            object_types=object_type,
+            project=project_id,
+            domain=domain,
+            limit=limit,
+            **filters,
+        )
         if to_dictionary:
             return objects
         return [cls.from_dict(source=obj, connection=connection) for obj in objects]

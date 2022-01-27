@@ -355,7 +355,7 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin):
                 print("User Group '{}' does not have any directly granted privileges".format(
                     self.name))
 
-    def list_privileges(self, mode: PrivilegeMode = PrivilegeMode.ALL,
+    def list_privileges(self, mode: Union[PrivilegeMode, str] = PrivilegeMode.ALL,
                         to_dataframe: bool = False) -> list:
         """List privileges for user group.
 
@@ -403,23 +403,14 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin):
 
         return to_df(privileges) if to_dataframe else privileges
 
-    def assign_security_role(self, security_role: Union[SecurityRole,
-                                                        str], application: Union["Project", str],
+    def assign_security_role(self, security_role: Union[SecurityRole, str],
                              project: Union["Project", str] = None) -> None:  # NOSONAR
         """Assigns a Security Role to the User Group for given project.
 
         Args:
             security_role: Security Role ID or object
-            application: Project name or object. Will be removed from 11.3.4.101
-            project: Will replace application from 11.3.4.101
+            project: Project name or object
         """
-        helper.deprecation_warning(
-            '`application`',
-            '`project`',
-            '11.3.4.101',  # NOSONAR
-            False,
-            False)
-        project = application
 
         security_role = security_role if isinstance(security_role, SecurityRole) else SecurityRole(
             self.connection, id=str(security_role))
@@ -429,23 +420,14 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin):
             print("Assigned Security Role '{}' to group: '{}'".format(
                 security_role.name, self.name))
 
-    def revoke_security_role(self, security_role: Union[SecurityRole,
-                                                        str], application: Union["Project", str],
+    def revoke_security_role(self, security_role: Union[SecurityRole, str],
                              project: Union["Project", str] = None) -> None:  # NOSONAR
         """Removes a Security Role from the User Group for given project.
 
         Args:
             security_role: Security Role ID or object
-            application: Project name or object. Will be removed from 11.3.4.101
-            project: Will replace application from 11.3.4.101
+            project: Project name or object
         """
-        helper.deprecation_warning(
-            '`application`',
-            '`project`',
-            '11.3.4.101',  # NOSONAR
-            False,
-            False)
-        project = application
 
         security_role = security_role if isinstance(security_role, SecurityRole) else SecurityRole(
             self.connection, id=str(security_role))
