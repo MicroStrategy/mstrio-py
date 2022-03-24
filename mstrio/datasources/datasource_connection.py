@@ -1,4 +1,5 @@
 from enum import auto
+import logging
 from typing import List, Optional, TYPE_CHECKING, Union
 
 from mstrio import config
@@ -6,12 +7,14 @@ from mstrio.api import datasources, objects
 from mstrio.datasources.datasource_login import DatasourceLogin
 from mstrio.users_and_groups.user import User
 from mstrio.utils import helper
-from mstrio.utils.entity import DeleteMixin, CopyMixin, Entity, ObjectTypes
+from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, ObjectTypes
 from mstrio.utils.enum_helper import AutoName, get_enum_val
 from mstrio.utils.helper import get_objects_id
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
+
+logger = logging.getLogger(__name__)
 
 
 def list_datasource_connections(connection: "Connection", to_dictionary: bool = False,
@@ -156,7 +159,7 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
         "driver_type": str,
         "database_type": str,
         "database_version": str,
-        "datasource_login": str
+        "datasource_login": dict
     }
 
     def __init__(self, connection: "Connection", name: Optional[str] = None,
@@ -258,6 +261,9 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
             database_type: Database type
             database_version: Database version
         """
+        datasource_login = {
+            'id': get_objects_id(datasource_login, DatasourceLogin)
+        } if datasource_login else None
         func = self.alter
         args = func.__code__.co_varnames[:func.__code__.co_argcount]
         defaults = func.__defaults__  # type: ignore
@@ -358,8 +364,10 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
         body = helper.delete_none_values(body)
         response = datasources.create_datasource_connection(connection, body).json()
         if config.verbose:
-            print("Successfully created datasource connection named: '{}' with ID: '{}'".format(
-                response.get('name'), response.get('id')))
+            logger.info(
+                f"Successfully created datasource connection named: '{response.get('name')}' "
+                f"with ID: '{response.get('id')}'"
+            )
         return cls.from_dict(source=response, connection=connection)
 
     def test_connection(self) -> bool:

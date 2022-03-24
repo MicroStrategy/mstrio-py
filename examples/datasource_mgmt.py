@@ -6,13 +6,13 @@ ease its usage.
 """
 
 from mstrio.connection import Connection
+from mstrio.datasources import (
+    DatasourceConnection, DatasourceInstance, DatasourceLogin, DatasourceMap, DatasourceType,
+    ExecutionMode, list_available_dbms, list_datasource_connections, list_datasource_instances,
+    list_datasource_logins, list_datasource_mappings
+)
 from mstrio.server import Project
 from mstrio.users_and_groups import User
-from mstrio.datasources import (DatasourceType, ExecutionMode, DatasourceConnection,
-                                DatasourceInstance, DatasourceLogin, DatasourceMap,
-                                list_datasource_connections, list_available_dbms,
-                                list_datasource_instances, list_datasource_logins,
-                                list_datasource_mappings)
 
 base_url = "https://<>/MicroStrategyLibrary/api"
 username = "some_username"

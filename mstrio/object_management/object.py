@@ -102,9 +102,9 @@ class Object(Entity, ACLMixin, CertifyMixin, CopyMixin, DeleteMixin):
         super().__init__(connection=connection, object_id=id, type=type)
 
     def _init_variables(self, **kwargs) -> None:
-        super()._init_variables(**kwargs)
         self._OBJECT_TYPE = ObjectTypes(kwargs.get("type")) if ObjectTypes.contains(
             kwargs.get("type")) else ObjectTypes.NONE
+        super()._init_variables(**kwargs)
 
     def __str__(self):
         return f"Object named: '{self.name}' with ID: '{self.id}'"

@@ -2,7 +2,7 @@ from builtins import type as get_type
 from enum import auto
 from typing import Optional, Union
 
-from mstrio.access_and_security.security_filter import ObjectReference, ObjectInformation
+from mstrio.access_and_security.security_filter import ObjectInformation, ObjectReference
 from mstrio.utils.enum_helper import AutoName
 from mstrio.utils.helper import Dictable
 

@@ -1,5 +1,16 @@
 # Changelog
 
+## 11.3.5.101 - 2022/03/25
+
+### Major changes
+
+- added `SchemaManagement` class in `mstrio.modeling` subpackage to allow
+  schema management
+- added `UserHierarchy` class in `mstrio.modeling` subpackage to allow
+  user hierarchy management
+- `Migration` module is available now as a Functionality Preview
+- added function `list_user_hierarchies` to allow listing of objects of newly created class `UserHierarchy`
+
 ## 11.3.4.101 - 2022/01/28
 
 ### Major changes
@@ -14,9 +25,9 @@
   to allow transmitter management
 - added functions `list_contact`, `list_contact_groups`, `list_devices`,
   `list_transmitters` to allow listing of objects of newly created classes
-- added `Migration` class in `mstrio.server.migration` for migration related functionalities.
-This feature is still work in progress, and it will be completed by 03.2022.
-- added `PackageConfig` class in `mstrio.server.migration` with supporting
+- added `Migration` class in `mstrio.object_management.migration` for migration related
+  functionalities. This feature is still work in progress, and it will be completed by 03.2022.
+- added `PackageConfig` class in `mstrio.object_management.migration` with supporting
   `PackageSettings` and `PackageContentInfo` used for configurating migration
 - extended `Event` class in `mstrio.distribution_services.event` with functionalities to
   create, update and delete events.

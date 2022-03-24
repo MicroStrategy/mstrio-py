@@ -6,13 +6,13 @@ from requests import HTTPError
 
 from mstrio.api import objects
 from mstrio.connection import Connection
-from mstrio.utils.helper import Dictable, exception_handler, filter_obj_list
 from mstrio.types import ObjectTypes
+from mstrio.utils.helper import Dictable, exception_handler, filter_obj_list
 
 if TYPE_CHECKING:
+    from mstrio.server import Project
     from mstrio.users_and_groups import UserOrGroup
     from mstrio.utils.entity import Entity
-    from mstrio.server import Project
 
 
 class Rights(IntFlag):
@@ -307,7 +307,7 @@ class ACLMixin:
                                          object_type=self._OBJECT_TYPE.value)
         if response.ok:
             response = response.json()
-            self._set_object(**response)
+            self._set_object_attributes(**response)
 
 
 class TrusteeACLMixin:

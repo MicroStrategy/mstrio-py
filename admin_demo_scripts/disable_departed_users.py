@@ -1,9 +1,10 @@
-from mstrio.users_and_groups import User
-from admin_demo_scripts.scripts_helper import get_result_from_db, get_user_group
-from mstrio.utils.helper import exception_handler
-from mstrio.connection import Connection
+from typing import List, Union
 
-from typing import Union, List
+from mstrio.connection import Connection
+from mstrio.users_and_groups import User
+from mstrio.utils.helper import exception_handler
+
+from .scripts_helper import get_result_from_db, get_user_group
 
 
 def _disable_user_account(connection: "Connection", username: str) -> None:
@@ -12,7 +13,7 @@ def _disable_user_account(connection: "Connection", username: str) -> None:
     # remove this user from all user groups (it will not be removed from
     # user group "Everyone" because of the implementation of I-Server
     u.remove_from_all_user_groups()
-    # add this user to user groups 'Inacative Users' when such group exists
+    # add this user to user groups 'Inactive Users' when such group exists
     inactive_users_ug = get_user_group(connection=connection, name="Inactive Users")
     if inactive_users_ug:
         u.add_to_user_groups(user_groups=inactive_users_ug)

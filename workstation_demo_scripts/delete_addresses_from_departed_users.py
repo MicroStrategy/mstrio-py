@@ -2,10 +2,10 @@
 For each successfully removed address a message will be printed.
 """
 
-from mstrio.users_and_groups import list_users
-from mstrio.connection import Connection, get_connection
-
 from typing import List
+
+from mstrio.connection import Connection, get_connection
+from mstrio.users_and_groups import list_users
 
 
 def delete_addresses_from_departed_users(connection: "Connection") -> List[dict]:

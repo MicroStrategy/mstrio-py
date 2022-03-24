@@ -8,8 +8,8 @@ ease its usage.
 """
 
 from mstrio.connection import Connection
-from mstrio.project_objects import Report
-from mstrio.project_objects.datasets import OlapCube
+from mstrio.project_objects import OlapCube, Report
+
 
 # get connection to an environment
 base_url = "https://<>/MicroStrategyLibrary/api"
@@ -29,7 +29,7 @@ my_cube_df = my_cube.to_dataframe
 my_report = Report(connection=connection, id=report_id, parallel=False)
 my_report_df = my_report.to_dataframe
 
-# get list of ids of metrics, attributes or attribue elements available within
+# get list of ids of metrics, attributes or attribute elements available within
 # Cube or Report
 my_cube.metrics
 my_cube.attributes
@@ -52,7 +52,7 @@ my_cube.selected_attr_elements
 
 my_cube_applied_filters_df = my_cube.to_dataframe
 
-# to exclude specific attribue elements, pass the `operator="NotIn"` to
+# to exclude specific attribute elements, pass the `operator="NotIn"` to
 # `apply_filters()` method
 my_cube.apply_filters(
     attributes=["A598372E11E9910D1CBF0080EFD54D63", "A59855D811E9910D1CC50080EFD54D63"],
@@ -63,4 +63,4 @@ my_cube.apply_filters(
     operator="NotIn",
 )
 
-my_cube_exceluded_elements_df = my_cube.to_dataframe
+my_cube_excluded_elements_df = my_cube.to_dataframe

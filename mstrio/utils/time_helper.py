@@ -1,8 +1,9 @@
 from datetime import datetime
 from enum import Enum
 from functools import wraps
-from typing import Union
 import json
+from typing import Union
+
 import pytz
 
 
@@ -14,6 +15,78 @@ class DatetimeFormats(Enum):
     YMD = '%Y-%m-%d'
 
 
+def _without_loc(format_str):
+    """Return format of date without localization."""
+    if format_str.find('%z') != -1:
+        return format_str[:-2]
+    else:
+        return format_str
+
+
+def _adapt_date_to_format(date: str, format_str: str) -> Union[tuple, str]:
+    """Adapt string with `date` to proper format provided in `format_str`.
+    If time is incomplete, fill it with missing zeros to have format with
+    milliseconds which then will be cut to match provided format. When
+    localization is needed but it is not provided in `date` then `format_str`
+    is changed not to require localization.
+
+    Returns:
+        Tuple `(date, format_str)` with new date and new format of date.
+    """
+
+    # save date to return it without changes in case of not supported date
+    # format
+    initial_date = date
+
+    # save localization of date (if any) for later parsing
+    if date[-1] == 'Z':
+        date = date[:-1]
+    plus_index = date.find('+')
+    percent_z_index = format_str.find('%z')
+    localization = '' if plus_index == -1 or percent_z_index == -1 else date[plus_index:]
+    date = date[:plus_index] if plus_index != -1 else date
+
+    # fill time with zeros to match the format with maximum number of details
+    t_index = date.find('T')
+    if t_index == -1:  # there is no time in the date
+        date += 'T00:00:00.000'
+        t_index = date.find('T')  # calculate again as this value was changed
+    elif t_index + 3 == len(date):  # T00
+        date += ':00:00.000'
+    elif t_index + 6 == len(date):  # T00:00
+        date += ':00.000'
+    elif t_index + 9 == len(date):  # T00:00:00
+        date += '.000'
+
+    # cut `date` to match the provided format
+    dot_index = date.find('.')
+
+    if _without_loc(format_str) == _without_loc(DatetimeFormats.YMDHMSmS.value):
+        # when `format_str` is equal to value of `DatetimeFormats.YMDHMSms`
+        # then `date` is properly prepared and doesn't need any more changes
+        pass
+    elif _without_loc(format_str) == _without_loc(DatetimeFormats.YMDHMS.value):
+        date = date[:dot_index]
+    elif _without_loc(format_str) == _without_loc(DatetimeFormats.YMD.value):
+        date = date[:t_index]
+        localization = ''  # don't add localization if format is without time
+    else:
+        from mstrio.utils.helper import exception_handler
+        msg = (f"For given format of date ({format_str}) adapting date to such format is not"
+               "provided.")
+        exception_handler(msg, Warning)
+        return (initial_date, format_str)
+
+    # add localization prepared before if needed
+    date += localization
+
+    # cut localization from format string if it isn't present in date
+    if percent_z_index != -1 and plus_index == -1:
+        format_str = format_str[:-2]
+
+    return (date, format_str)
+
+
 def str_to_datetime(date: str, format_str: str) -> Union[datetime, None]:
     """Change date format to datetime, based on `format_str` provided.
     If `date` is already a datetime object, return it. Make the date aware."""
@@ -21,13 +94,7 @@ def str_to_datetime(date: str, format_str: str) -> Union[datetime, None]:
         return date
 
     if not isinstance(date, datetime):
-        if format_str.find('%z') != -1:
-            # Localization needed. Check if provided.
-            if date[-1] == 'Z':
-                date = date[:-1]
-                format_str = format_str[:-2]
-            elif date.find('+') == -1:
-                format_str = format_str[:-2]
+        date, format_str = _adapt_date_to_format(date, format_str)
         date = datetime.strptime(date, format_str)
     try:  # Localize to utc if not yet localized
         return pytz.utc.localize(date)
@@ -145,7 +212,9 @@ def override_datetime_format(original_format: str, expected_format: str, fields:
         to_unpack: when response returns a list of objects
             probably they need to be unpacked
     """
+
     def decorator_datetime(func):
+
         @wraps(func)
         def wrapped(*args, **kwargs):
             response = func(*args, **kwargs)
@@ -161,5 +230,7 @@ def override_datetime_format(original_format: str, expected_format: str, fields:
             response.encoding, response._content = 'utf-8', json.dumps(response_json).encode(
                 'utf-8')
             return response
+
         return wrapped
+
     return decorator_datetime

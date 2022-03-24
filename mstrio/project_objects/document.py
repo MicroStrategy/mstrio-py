@@ -5,10 +5,10 @@ from pandas import DataFrame
 from mstrio.api import documents, library
 from mstrio.connection import Connection
 from mstrio.server.environment import Environment
-from mstrio.users_and_groups import User, list_users, UserGroup, UserOrGroup
+from mstrio.users_and_groups import list_users, User, UserGroup, UserOrGroup
 from mstrio.utils import helper
 from mstrio.utils.certified_info import CertifiedInfo
-from mstrio.utils.entity import DeleteMixin, Entity, VldbMixin, ObjectTypes
+from mstrio.utils.entity import DeleteMixin, Entity, ObjectTypes, VldbMixin
 
 
 def list_documents(connection: Connection, name: Optional[str] = None, to_dictionary: bool = False,
@@ -38,9 +38,9 @@ def list_documents(connection: Connection, name: Optional[str] = None, to_dictio
     """
     # TODO: consider adding Connection.project_selected attr/method
     if connection.project_id is None:
-        raise ValueError(("Please log into a specific project to load documents within it. "
-                          "To load all documents across the whole environment use "
-                          f"{list_documents_across_projects.__name__} function."))
+        raise ValueError("Please log into a specific project to load documents within it. "
+                         "To load all documents across the whole environment use "
+                         f"{list_documents_across_projects.__name__} function.")
     return Document._list_all(connection, to_dictionary=to_dictionary, name=name, limit=limit,
                               to_dataframe=to_dataframe, **filters)
 
@@ -50,7 +50,7 @@ def list_documents_across_projects(connection: Connection, name: Optional[str] =
                                    limit: Optional[int] = None, **filters):
     """Get all Documents stored on the server.
 
-    Optionaly use `to_dictionary` or `to_dataframe` to choose output format.
+    Optionally use `to_dictionary` or `to_dataframe` to choose output format.
     If `to_dictionary` is True, `to_dataframe` is omitted.
 
     Args:

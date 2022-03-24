@@ -1,3 +1,4 @@
+import logging
 from typing import Dict
 
 from packaging import version
@@ -8,6 +9,8 @@ from mstrio.connection import Connection
 import mstrio.utils.helper as helper
 from mstrio.utils.settings.base_settings import BaseSettings
 from mstrio.utils.settings.setting_types import SettingValue
+
+logger = logging.getLogger(__name__)
 
 
 class ServerSettings(BaseSettings):
@@ -57,7 +60,7 @@ class ServerSettings(BaseSettings):
     def fetch(self) -> None:
         """Fetch current I-Server settings and update this `ServerSettings`
         object."""
-        super(ServerSettings, self).fetch()
+        super().fetch()
 
     def update(self) -> None:
         """Update the current I-Server settings using this `ServerSettings`
@@ -65,7 +68,7 @@ class ServerSettings(BaseSettings):
         set_dict = self._prepare_settings_push()
         response = administration.update_iserver_settings(self._connection, set_dict)
         if response.status_code in [200, 204] and config.verbose:
-            print("I-Server settings updated.")
+            logger.info('I-Server settings updated.')
         if response.status_code == 207:
             helper.exception_handler("Some settings could not be updated.", Warning)
 

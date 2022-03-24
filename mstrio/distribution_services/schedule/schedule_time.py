@@ -1,9 +1,9 @@
-from typing import List, Optional, Union
 from enum import auto
+from typing import List, Optional, Union
 
+from mstrio.utils import helper
 from mstrio.utils.enum_helper import AutoName
 from mstrio.utils.helper import Dictable
-from mstrio.utils import helper
 
 
 class ScheduleEnums:

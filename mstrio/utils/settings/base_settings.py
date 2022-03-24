@@ -1,5 +1,6 @@
 from abc import ABCMeta, abstractmethod
 import json
+import logging
 from pprint import pprint
 from sys import version_info
 from typing import Any, Dict, List, Optional, Union
@@ -13,6 +14,8 @@ import mstrio.utils.helper as helper
 from .setting_types import DeprecatedSetting, SettingValue, SettingValueFactory
 from .settings_helper import convert_settings_to_byte, convert_settings_to_mega_byte
 from .settings_io import CSVSettingsIO, JSONSettingsIO, PickleSettingsIO, SettingsSerializerFactory
+
+logger = logging.getLogger(__name__)
 
 
 class BaseSettings(metaclass=ABCMeta):
@@ -46,7 +49,7 @@ class BaseSettings(metaclass=ABCMeta):
             if hasattr(self, key):
                 setting_obj = getattr(self, key)
                 setting_obj.value = value
-                super(BaseSettings, self).__setattr__(key, setting_obj)
+                super().__setattr__(key, setting_obj)
 
     @abstractmethod
     def _fetch(self):
@@ -90,7 +93,9 @@ class BaseSettings(metaclass=ABCMeta):
                 index = compare & index
             current = current[~index]
             if current.empty and config.verbose:
-                print("There is no difference between current settings and settings from files")
+                logger.info(
+                    'There is no difference between current settings and settings from files.'
+                )
         return current
 
     def to_csv(self, name: str) -> None:
@@ -133,7 +138,7 @@ class BaseSettings(metaclass=ABCMeta):
         for (setting, value) in settings_dict.items():
             setattr(self, setting, value)
         if config.verbose:
-            print("Settings imported from '{}'".format(file))
+            logger.info(f"Settings imported from '{file}'")
 
     def list_properties(self, show_names: bool = True) -> dict:
         """Return settings and their values as dictionary.
@@ -192,7 +197,7 @@ class BaseSettings(metaclass=ABCMeta):
 
         for setting, value in settings.items():
             if setting not in self._CONFIG.keys():
-                msg = "Setting '{}' is not supported.".format(setting)
+                msg = f"Setting '{setting}' is not supported."
                 helper.exception_handler(msg, bad_setting)
                 bad_settings_keys.append((setting, value))
             else:
@@ -250,7 +255,7 @@ class BaseSettings(metaclass=ABCMeta):
             factory = SettingValueFactory()
             value = factory.get_setting(cfg)
             self.__override_settings_config(value)
-            super(BaseSettings, self).__setattr__(setting, value)
+            super().__setattr__(setting, value)
 
     def __override_settings_config(self, value: SettingValue) -> None:
         pass
@@ -269,4 +274,4 @@ class BaseSettings(metaclass=ABCMeta):
                     warnings.warn(msg, Warning)
                 name.value = value
         else:
-            super(BaseSettings, self).__setattr__(name, value)
+            super().__setattr__(name, value)

@@ -1,23 +1,24 @@
+from typing import List
+
+from mstrio.connection import Connection
 from mstrio.users_and_groups import User
 from mstrio.utils.helper import exception_handler
-from admin_demo_scripts.scripts_helper import get_result_from_db, get_user_group
-from mstrio.connection import Connection
 
-from typing import List
+from .scripts_helper import get_result_from_db, get_user_group
 
 
 def _create_new_user_account(connection: "Connection", emp_username: str, emp_fullname: str,
                              add_to_user_groups: str) -> None:
     # when user is created it is automatically added to user group "Everyone"
     # and is granted rights to Browse and Read this user group
-    new_usr = User.create(connection=connection, username=emp_username, full_name=emp_fullname,
-                          trust_id=emp_username)
+    new_user = User.create(connection=connection, username=emp_username, full_name=emp_fullname,
+                           trust_id=emp_username)
 
     # add user to user groups with provided names (during creation it is added to "Everyone"  # noqa
     for user_group_name in add_to_user_groups:
         user_group_ = get_user_group(connection=connection, name=user_group_name)
         if user_group_:
-            user_group_.add_users(users=new_usr)
+            user_group_.add_users(users=new_user)
 
 
 def create_new_hired_users(connection: "Connection", driver: str, server: str, database: str,

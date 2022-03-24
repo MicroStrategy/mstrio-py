@@ -1,10 +1,11 @@
-from typing import TYPE_CHECKING, Optional
+from typing import Optional, TYPE_CHECKING
 
 from mstrio.utils.error_handlers import ErrorHandler
 
 if TYPE_CHECKING:
-    from mstrio.connection import Connection
     from requests_futures.sessions import FuturesSession
+
+    from mstrio.connection import Connection
 
 
 @ErrorHandler(err_msg='Error listing Contact Groups.')

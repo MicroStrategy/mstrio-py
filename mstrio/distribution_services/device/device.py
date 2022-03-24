@@ -1,4 +1,5 @@
 from collections import defaultdict
+import logging
 from enum import auto
 from typing import List, Optional, TYPE_CHECKING, Union
 
@@ -6,16 +7,19 @@ from mstrio import config
 from mstrio.api import devices, objects
 from mstrio.distribution_services.device.device_properties import (
     AndroidDeviceProperties, EmailDeviceProperties, FileDeviceProperties, FtpDeviceProperties,
-    IOSDeviceProperties, PrinterDeviceProperties)
+    IOSDeviceProperties, PrinterDeviceProperties
+)
 from mstrio.distribution_services.transmitter import Transmitter
 from mstrio.types import ObjectTypes
 from mstrio.users_and_groups import User
-from mstrio.utils.entity import Entity, DeleteMixin
+from mstrio.utils.entity import DeleteMixin, Entity
 from mstrio.utils.enum_helper import AutoName, get_enum_val
 from mstrio.utils.helper import delete_none_values, Dictable, fetch_objects, get_objects_id
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
+
+logger = logging.getLogger(__name__)
 
 
 class DeviceType(AutoName):
@@ -60,7 +64,7 @@ class Device(Entity, DeleteMixin):
     """Devices are Distribution Services components that specify the format
      and transmission process of subscribed reports and documents.
      They are instances of transmitters that contain specific settings
-     specific to a user’s environmentis.
+     specific to a user’s environments.
 
     Attributes:
         name: name of the device
@@ -179,7 +183,9 @@ class Device(Entity, DeleteMixin):
         body = delete_none_values(body)
         response = devices.create_device(connection, body).json()
         if config.verbose:
-            print(f"Successfully created device named: '{name}' with ID: '{response['id']}'.")
+            logger.info(
+                f"Successfully created device named: '{name}' with ID: '{response['id']}'."
+            )
         return cls.from_dict(source=response, connection=connection)
 
     def alter(self, name: Optional[str] = None, description: Optional[str] = None,

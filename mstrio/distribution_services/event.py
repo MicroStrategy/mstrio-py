@@ -1,3 +1,4 @@
+import logging
 from typing import List, Optional, Union
 
 from packaging import version
@@ -6,7 +7,9 @@ from mstrio import config
 from mstrio.api import events, objects
 from mstrio.connection import Connection
 from mstrio.utils import helper
-from mstrio.utils.entity import Entity, ObjectTypes, DeleteMixin
+from mstrio.utils.entity import DeleteMixin, Entity, ObjectTypes
+
+logger = logging.getLogger(__name__)
 
 
 def list_events(connection: Connection, to_dictionary: bool = False, limit: int = None,
@@ -86,7 +89,7 @@ class Event(Entity, DeleteMixin):
         """Trigger the Event"""
         response = events.trigger_event(self.connection, self.id)
         if response.ok and config.verbose:
-            print(f'Event \'{self.name}\' with ID : \'{self.id}\' has been triggered.')
+            logger.info(f"Event '{self.name}' with ID : '{self.id}' has been triggered.")
         return response.ok
 
     @classmethod
@@ -120,4 +123,4 @@ class Event(Entity, DeleteMixin):
         })
         self._alter_properties(**args)
         if config.verbose:
-            f"Updated subscription '{self.name}' with ID: {self.id}."
+            logger.info(f"Updated subscription '{self.name}' with ID: {self.id}.")

@@ -1,5 +1,6 @@
 from functools import wraps
 import inspect
+import logging
 from typing import Any, Callable, Union
 
 from requests.adapters import Response
@@ -12,6 +13,9 @@ from mstrio.utils.helper import get_default_args_from_func, response_handler
 def get_args_and_bind_values(func: Callable[[Any], Any], *args, **kwargs):
     signature = inspect.signature(func)
     return signature.bind(*args, **kwargs).arguments
+
+
+logger = logging.getLogger(__name__)
 
 
 class ErrorHandler:
@@ -89,5 +93,5 @@ def bulk_operation_response_handler(
         err = MstrException(response_body)
 
     if config.verbose:
-        print(err)
+        logger.error(err)
     return err

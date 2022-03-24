@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Dict, List, Optional, Union
 
 from mstrio import config
@@ -6,6 +7,9 @@ from mstrio.connection import Connection
 from mstrio.server.cluster import Cluster
 from mstrio.utils import helper
 from mstrio.utils.sessions import FuturesSessionWithRenewal
+
+
+logger = logging.getLogger(__name__)
 
 
 class DatabaseConnections:
@@ -61,12 +65,14 @@ class DatabaseConnections:
         """
         user_input = 'N'
         if not force:
-            user_input = input((f"Are you sure you want to disconnect database connection "
-                                f"'with ID:{connection_id}? [Y/N]: "))
+            user_input = input(f"Are you sure you want to disconnect database connection "
+                               f"'with ID:{connection_id}? [Y/N]: ")
         if force or user_input == 'Y':
             response = monitors.delete_database_connection(self.connection, connection_id)
             if response.status_code == 204 and config.verbose:
-                print(f"Successfully disconnected database connection instance {connection_id}.")
+                logger.info(
+                    f'Successfully disconnected database connection instance {connection_id}.'
+                )
             return response.ok
         else:
             return False
@@ -123,9 +129,13 @@ class DatabaseConnections:
 
         if config.verbose:
             if succeeded:
-                print("Database connections with ids listed "
-                      "below were successfully disconnected:\n\t" + ',\n\t'.join(succeeded))
+                logger.info(
+                    'Database connections with ids listed below were successfully '
+                    'disconnected:\n\t' + ',\n\t'.join(succeeded)
+                )
             if failed:
-                print("Database connections with ids listed "
-                      "below were not disconnected:\n\t" + ',\n\t'.join(failed))
+                logger.warning(
+                    'Database connections with ids listed below were not disconnected:\n\t'
+                    + ',\n\t'.join(failed)
+                )
         return statuses

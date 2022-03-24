@@ -6,8 +6,9 @@ ease its usage.
 """
 
 from mstrio.connection import Connection
-from mstrio.project_objects import (OlapCube, CubeCache, list_cube_caches, delete_cube_caches,
-                                    delete_cube_cache)
+from mstrio.project_objects import (
+    CubeCache, delete_cube_cache, delete_cube_caches, list_cube_caches, OlapCube
+)
 
 CUBE_ID = '<cube id>'
 NODE_NAME = '<node name>'

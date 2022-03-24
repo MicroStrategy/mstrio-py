@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Dict, List, Optional, TYPE_CHECKING, Union
 
 from pandas import DataFrame
@@ -6,12 +7,14 @@ from mstrio import config
 from mstrio.api import objects, security
 from mstrio.connection import Connection
 from mstrio.utils import helper
-from mstrio.utils.entity import Entity, ObjectTypes, DeleteMixin
+from mstrio.utils.entity import DeleteMixin, Entity, ObjectTypes
 
 if TYPE_CHECKING:
     from mstrio.access_and_security.privilege import Privilege
     from mstrio.server.project import Project
     from mstrio.users_and_groups import UserOrGroup
+
+logger = logging.getLogger(__name__)
 
 
 def list_security_roles(connection: Connection, to_dictionary: bool = False,
@@ -95,7 +98,7 @@ class SecurityRole(Entity, DeleteMixin):
                 id = security_roles[0]
             else:
                 helper.exception_handler(
-                    "There is no Security Role associated with the given name: '{}'".format(name),
+                    f"There is no Security Role associated with the given name: '{name}'",
                     exception_type=ValueError)
         super().__init__(connection=connection, object_id=id, name=name)
 
@@ -131,7 +134,7 @@ class SecurityRole(Entity, DeleteMixin):
 
         # validate and filter passed privileges
         privileges = Privilege._validate_privileges(connection, privileges)
-        server_level = list(set([priv['id'] for priv in privileges]) - set(project_level))
+        server_level = list({priv['id'] for priv in privileges} - set(project_level))
         privileges = helper.filter_list_of_dicts(privileges, id=project_level)
 
         body = {"name": name, "description": description, "privileges": privileges}
@@ -139,7 +142,7 @@ class SecurityRole(Entity, DeleteMixin):
         response = security.create_security_role(connection, body)
         if response.ok:
             if server_level:
-                msg = ("Privileges {} are server-level and will be ommited. Only project-level "
+                msg = ("Privileges {} are server-level and will be omitted. Only project-level "
                        "privileges can be granted by this method.").format(sorted(server_level))
                 helper.exception_handler(msg, exception_type=Warning)
             return cls(connection=connection, id=response.json()['id'])
@@ -229,7 +232,7 @@ class SecurityRole(Entity, DeleteMixin):
                 project_id = project_list[0]['id']
                 project_name = project_list[0]['name']
             else:
-                helper.exception_handler("Project name '{}' does not exist.".format(project),
+                helper.exception_handler(f"Project name '{project}' does not exist.",
                                          ValueError)
         else:
             helper.exception_handler("`project` parameter must be of type str or Project.",
@@ -252,9 +255,9 @@ class SecurityRole(Entity, DeleteMixin):
         )
         if config.verbose:
             if succeeded:
-                print("Granted Security Role '{}' to {}".format(self.name, succeeded))
+                logger.info(f"Granted Security Role '{self.name}' to {succeeded}")
             if failed:
-                print("Security Role '{}' already has member(s) {}".format(self.name, failed))
+                logger.warning(f"Security Role '{self.name}' already has member(s) {failed}")
 
     def revoke_from(self, members: Union["UserOrGroup", List["UserOrGroup"]],
                     project: Union["Project", str]) -> None:
@@ -280,7 +283,7 @@ class SecurityRole(Entity, DeleteMixin):
                 project_id = project_list[0]['id']
                 project_name = project_list[0]['name']
             else:
-                helper.exception_handler("Project name '{}' does not exist.".format(project))
+                helper.exception_handler(f"Project name '{project}' does not exist.")
         else:
             helper.exception_handler("Project parameter must be of type str or Project.",
                                      TypeError)
@@ -303,9 +306,9 @@ class SecurityRole(Entity, DeleteMixin):
         )
 
         if succeeded and config.verbose:
-            print("Revoked Security Role '{}' from {}".format(self.name, succeeded))
+            logger.info(f"Revoked Security Role '{self.name}' from {succeeded}")
         if failed and config.verbose:
-            print("Security Role '{}' does not have member(s) {}".format(self.name, failed))
+            logger.warning(f"Security Role '{self.name}' does not have member(s) {failed}")
 
     def grant_privilege(
         self, privilege: Union[Union["Privilege", int, str], List[Union["Privilege", int,
@@ -324,7 +327,7 @@ class SecurityRole(Entity, DeleteMixin):
 
         # validate and filter passed privileges
         privileges = Privilege._validate_privileges(self.connection, privilege)
-        server_level = list(set([priv['id'] for priv in privileges]) - set(project_level))
+        server_level = list({priv['id'] for priv in privileges} - set(project_level))
         privileges = helper.filter_list_of_dicts(privileges, id=project_level)
 
         # create lists for print purposes
@@ -334,7 +337,7 @@ class SecurityRole(Entity, DeleteMixin):
         failed = list(set(existing_ids).intersection(set(privilege_ids)))
 
         if server_level:
-            msg = ("Privileges {} are server-level and will be ommited. Only project-level "
+            msg = ("Privileges {} are server-level and will be omitted. Only project-level "
                    "privileges can be granted by this method.").format(sorted(server_level))
             helper.exception_handler(msg, exception_type=Warning)
 
@@ -346,9 +349,9 @@ class SecurityRole(Entity, DeleteMixin):
         if succeeded:
             self.fetch()  # fetch the object properties and set object attributes
             if config.verbose:
-                print("Granted privilege(s) {} to '{}'".format(succeeded, self.name))
+                logger.info(f"Granted privilege(s) {succeeded} to '{self.name}'")
         if failed and config.verbose:
-            print("Security Role '{}' already has privilege(s) {}".format(self.name, failed))
+            logger.warning(f"Security Role '{self.name}' already has privilege(s) {failed}")
 
     def revoke_privilege(
         self, privilege: Union[Union["Privilege", int, str], List[Union["Privilege", int,
@@ -367,7 +370,7 @@ class SecurityRole(Entity, DeleteMixin):
 
         # validate and filter passed privileges
         privileges = Privilege._validate_privileges(self.connection, privilege)
-        server_level = list(set([priv['id'] for priv in privileges]) - set(project_level))
+        server_level = list({priv['id'] for priv in privileges} - set(project_level))
         privileges = helper.filter_list_of_dicts(privileges, id=project_level)
 
         # create lists for print purposes
@@ -377,7 +380,7 @@ class SecurityRole(Entity, DeleteMixin):
         failed = list(set(privilege_ids) - set(succeeded))
 
         if server_level:
-            msg = ("Privilege(s) {} are server-level and will be ommited. Only project-level "
+            msg = ("Privilege(s) {} are server-level and will be omitted. Only project-level "
                    "privileges can be granted by this method.").format(sorted(server_level))
             helper.exception_handler(msg, exception_type=Warning)
 
@@ -385,9 +388,9 @@ class SecurityRole(Entity, DeleteMixin):
         if succeeded:
             self.fetch()  # fetch the object properties and set object attributes
             if config.verbose:
-                print("Revoked privilege(s) {} from '{}'".format(succeeded, self.name))
+                logger.info(f"Revoked privilege(s) {succeeded} from '{self.name}'")
         elif failed and config.verbose:
-            print("Security Role '{}' does not have privilege(s) {}".format(self.name, failed))
+            logger.warning(f"Security Role '{self.name}' does not have privilege(s) {failed}")
 
     def revoke_all_privileges(self, force: bool = False) -> None:
         """Revoke all granted project-level privileges.
@@ -411,7 +414,7 @@ class SecurityRole(Entity, DeleteMixin):
             if to_revoke:
                 self.revoke_privilege(privilege=to_revoke)
             else:
-                print("Security Role '{}' does not have any privilege(s)".format(self.name))
+                logger.warning(f"Security Role '{self.name}' does not have any privilege(s)")
 
     def list_privileges(self, to_dataframe: bool = False) -> Union[dict, DataFrame]:
         """List ALL privileges for Security Role. Optionally return a
@@ -435,7 +438,7 @@ class SecurityRole(Entity, DeleteMixin):
         body = {
             "operationList": [{
                 "op": op,
-                "path": '/{}'.format(path),
+                "path": f'/{path}',
                 "value": objects
             }],
         }
@@ -443,7 +446,7 @@ class SecurityRole(Entity, DeleteMixin):
         response = security.update_security_role(self.connection, self.id, body)
         response = response.json()
         if type(response) == dict:
-            self._set_object(**response)
+            self._set_object_attributes(**response)
 
     @property
     def projects(self):

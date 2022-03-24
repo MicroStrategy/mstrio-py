@@ -1,3 +1,4 @@
+import logging
 from typing import List, Optional, Union
 
 from packaging import version
@@ -10,6 +11,8 @@ from mstrio.utils import helper
 from . import CacheUpdateSubscription, EmailSubscription, Subscription
 from .content import Content
 from .delivery import Delivery
+
+logger = logging.getLogger(__name__)
 
 
 def list_subscriptions(connection: Connection, project_id: Optional[str] = None,
@@ -130,7 +133,7 @@ class SubscriptionManager:
         """
         subscriptions = subscriptions if isinstance(subscriptions, list) else [subscriptions]
         if not subscriptions and config.verbose:
-            print("No subscriptions passed.")
+            logger.info('No subscriptions passed.')
         else:
             temp_subs = []
             for subscription in subscriptions:
@@ -143,7 +146,7 @@ class SubscriptionManager:
             user_input = 'N'
             if not force:
                 to_be_deleted = [
-                    "Subscription '{}' with ID: '{}'".format(sub.name, sub.id)
+                    f"Subscription '{sub.name}' with ID: '{sub.id}'"
                     for sub in subscriptions
                 ]
                 print("Found subscriptions:")
@@ -164,8 +167,10 @@ class SubscriptionManager:
                     if response.ok:
                         succeeded += 1
                         if config.verbose:
-                            print("Deleted subscription '{}' with ID '{}''.".format(
-                                subscription.name, subscription.id))
+                            logger.info(
+                                f"Deleted subscription '{subscription.name}' "
+                                f"with ID '{subscription.id}'."
+                            )
 
                 return succeeded == len(subscriptions)
 
@@ -176,7 +181,7 @@ class SubscriptionManager:
             subscriptions: list of subscriptions to be executed
         """
         if not subscriptions and config.verbose:
-            print("No subscriptions passed.")
+            logger.info('No subscriptions passed.')
         else:
             subscriptions = subscriptions if isinstance(subscriptions, list) else [subscriptions]
             for subscription in subscriptions:

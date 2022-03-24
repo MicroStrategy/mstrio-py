@@ -1,5 +1,6 @@
 from enum import auto, Enum
-from typing import List, TYPE_CHECKING, Optional, Union
+import logging
+from typing import List, Optional, TYPE_CHECKING, Union
 
 from packaging import version
 
@@ -7,7 +8,7 @@ from mstrio import config
 from mstrio.api import monitors
 from mstrio.api.exceptions import MstrException, PartialSuccess, Success, VersionException
 from mstrio.connection import Connection
-from mstrio.server import Project, Node
+from mstrio.server import Node, Project
 from mstrio.utils.entity import Entity, EntityBase
 from mstrio.utils.enum_helper import AutoName
 from mstrio.utils.helper import validate_param_value
@@ -16,6 +17,8 @@ from mstrio.utils.time_helper import DatetimeFormats, map_str_to_datetime
 
 if TYPE_CHECKING:
     from mstrio.users_and_groups import User
+
+logger = logging.getLogger(__name__)
 
 ISERVER_VERSION_11_3_2 = '11.3.0200'
 
@@ -48,7 +51,8 @@ class SortByV1(Enum):
     OBJECT_ID = 'objectId'
     STATUS = 'status'
     PROJECT_ID = 'projectId'
-    # check if valid as there are multiple incosistent information about sorting
+    # check if valid as there are multiple
+    # inconsistent information about sorting
     PROJECT_NAME = 'projectName'
     CREATION_TIME = 'creationTime'
     DESCRIPTION = 'description'
@@ -412,7 +416,7 @@ def kill_all_jobs(connection: Connection, user: Optional[Union["User", str]] = N
     jobs_ids = [job.id for job in jobs]
     if not force:
         print(f"Found jobs: {jobs}")
-        user_input = input(("Are you sure you want to kill those jobs?[Y/N]: ")) or 'N'
+        user_input = input("Are you sure you want to kill those jobs?[Y/N]: ") or 'N'
     if force or user_input == 'Y':
         return kill_jobs(connection, jobs_ids)
 
@@ -466,7 +470,7 @@ class Job(EntityBase):
         object_id: Id of object
         object_type: Type of object
         parent_id: Parent ID
-        childs_ids: Array of childs IDs
+        childs_ids: Array of children IDs
         subscription_recipient: Subscription recipient of the job
         subscription_type: Subscription delivery type of the job
         processing_unit_priority: Job Processing Unit Priority
@@ -589,14 +593,14 @@ class Job(EntityBase):
         """Kill the job.
 
         Returns:
-            True if succesfully killed job, False otherwise.
+            True if successfully killed job, False otherwise.
         """
         response = monitors.cancel_job(self._connection, str(self.id))
         if config.verbose:
             success_msg = f"Successfully killed {self.id}."
             fail_msg = f"Error killing job {self.id}."
             msg = success_msg if response.ok else fail_msg
-            print(msg)
+            logger.info(msg)
         return response.ok
 
     def list_properties(self) -> dict:

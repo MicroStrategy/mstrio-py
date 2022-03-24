@@ -1,6 +1,7 @@
-import pandas as pd
-import numpy as np
 from itertools import chain
+
+import numpy as np
+import pandas as pd
 
 from mstrio.utils.helper import exception_handler
 
@@ -26,7 +27,7 @@ class Parser:
         # extract attribute names
         self._attribute_names = self.__extract_attribute_names(response=response)
 
-        # exract attribute form names
+        # extract attribute form names
         self._attribute_elem_form_names = self.__extract_attribute_form_names(response=response)
 
         # parse attribute column names including attribute form names into final column names  # noqa
@@ -76,7 +77,7 @@ class Parser:
         return vfunc(row_index_array, range(columns))
 
     def __create_attribute_element_map(self, response):
-        """Creat a map of type nested list for attribute element labels.
+        """Create a map of type nested list for attribute element labels.
 
         The index of the list corresponds to attribute element row index from
         the grid headers. The map is used to map the integer-based grid

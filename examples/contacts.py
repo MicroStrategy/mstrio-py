@@ -7,12 +7,10 @@ ease its usage.
 """
 
 from mstrio.connection import Connection
-from mstrio.distribution_services.contact import (
-    Contact, ContactAddress,ContactDeliveryType, list_contacts
+from mstrio.distribution_services import (
+    Contact, ContactAddress, ContactDeliveryType, ContactGroup, Device, list_contacts
 )
-from mstrio.distribution_services.contact_group import ContactGroup
-from mstrio.distribution_services.device import Device
-from mstrio.users_and_groups.user import User
+from mstrio.users_and_groups import User
 
 
 base_url = "https://<>/MicroStrategyLibrary/api"

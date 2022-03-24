@@ -7,15 +7,15 @@ ease its usage.
 """
 
 from mstrio.connection import Connection
-from mstrio.object_management import (Folder, list_folders, get_predefined_folder_contents,
-                                      get_my_personal_objects_contents, PredefinedFolders, Object,
-                                      list_objects, SearchObject, get_search_suggestions,
-                                      quick_search, quick_search_from_object, full_search,
-                                      start_full_search, get_search_results, SearchPattern,
-                                      SearchResultsFormat)
-from mstrio.project_objects.dossier import Dossier
-from mstrio.utils.entity import Rights
+from mstrio.object_management import (
+    Folder, full_search, get_my_personal_objects_contents,get_predefined_folder_contents,
+    get_search_results, get_search_suggestions, list_folders, list_objects, Object,
+    PredefinedFolders, quick_search, quick_search_from_object, SearchObject, SearchPattern,
+    SearchResultsFormat, start_full_search
+)
+from mstrio.project_objects import Dossier
 from mstrio.types import ObjectSubTypes, ObjectTypes
+from mstrio.utils.entity import Rights
 
 base_url = "https://<>/MicroStrategyLibrary/api"
 username = "some_username"
@@ -90,7 +90,7 @@ Object(conn, ObjectTypes.DOCUMENT_DEFINITION, "document id").delete(force=True)
 search_object = SearchObject(conn, id="search_object_id")
 
 # get search suggestions with the pattern set performed in all unique projects
-# accross the cluster (ti takes effect only in I-Server with cluster nodes)
+# across the cluster (ti takes effect only in I-Server with cluster nodes)
 suggestions = get_search_suggestions(conn, project="project_id", key="search pattern",
                                      max_results=20, cross_cluster=True)
 
@@ -125,12 +125,12 @@ results = full_search(conn, "project_id", name="document", pattern=SearchPattern
 # return cubes that are used by the given dossier (it can be performed with the
 # function `full_search` or method `get_connected_cubes` from `Document` class
 # or method `get_dependencies` from `Entity` class)
-сubes = Dossier(conn, id="dossier_id").get_connected_cubes()
+cubes = Dossier(conn, id="dossier_id").get_connected_cubes()
 cubes = Dossier(conn, id="dossier_id").list_dependencies(
     project="project_id", object_types=[ObjectSubTypes.OLAP_CUBE, ObjectSubTypes.SUPER_CUBE])
 cubes = full_search(conn, project="project_id",
-                    object_types=[ObjectSubTypes.OLAP_CUBE,
-                                  ObjectSubTypes.SUPER_CUBE], used_by_object_id="dossier_id",
+                    object_types=[ObjectSubTypes.OLAP_CUBE, ObjectSubTypes.SUPER_CUBE],
+                    used_by_object_id="dossier_id",
                     used_by_object_type=ObjectTypes.DOCUMENT_DEFINITION)
 
 # we can also list cubes which uses given dossier

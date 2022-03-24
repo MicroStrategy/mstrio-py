@@ -2,11 +2,11 @@ from typing import List, Optional, Union
 
 from pandas import DataFrame
 
+from mstrio.api import security
+from mstrio.connection import Connection
 from mstrio.users_and_groups.user import User
 from mstrio.users_and_groups.user_group import UserGroup
-from mstrio.api import security
 from mstrio.utils import helper
-from mstrio.connection import Connection
 from mstrio.utils.entity import EntityBase
 
 
@@ -45,20 +45,20 @@ class Privilege(EntityBase):
                                                    id=str(id))
             if privileges:
                 [privilege] = privileges
-                self._set_object(**privilege)
+                self._set_object_attributes(**privilege)
             else:
                 helper.exception_handler(
-                    "There is no Privilege with the given id: '{}'".format(id),
+                    f"There is no Privilege with the given id: '{id}'",
                     exception_type=ValueError)
         if id is None:
             privileges = Privilege.list_privileges(connection=connection, to_dictionary=True,
                                                    name=name)
             if privileges:
                 [privilege] = privileges
-                self._set_object(**privilege)
+                self._set_object_attributes(**privilege)
             else:
                 helper.exception_handler(
-                    "There is no Privilege with the given name: '{}'".format(name),
+                    f"There is no Privilege with the given name: '{name}'",
                     exception_type=ValueError)
         super().__init__(connection, self.id, name=self.name)
 
@@ -114,7 +114,7 @@ class Privilege(EntityBase):
             users = [User(self.connection, name=users)]
         elif isinstance(users, User):
             users = [users]
-        elif hasattr(users, '__iter__') and all((isinstance(el, str) for el in users)):
+        elif hasattr(users, '__iter__') and all(isinstance(el, str) for el in users):
             # TODO use list_users(name=[users])
             users = [User(self.connection, name=user) for user in users]
         for user in users:
@@ -130,7 +130,7 @@ class Privilege(EntityBase):
             users = [User(self.connection, name=users)]
         elif isinstance(users, User):
             users = [users]
-        elif hasattr(users, '__iter__') and all((isinstance(el, str) for el in users)):
+        elif hasattr(users, '__iter__') and all(isinstance(el, str) for el in users):
             # TODO use list_users(name=[users])
             users = [User(self.connection, name=user) for user in users]
         for user in users:
@@ -146,7 +146,7 @@ class Privilege(EntityBase):
             groups = [UserGroup(self.connection, name=groups)]
         elif isinstance(groups, UserGroup):
             groups = [groups]
-        elif hasattr(groups, '__iter__') and all((isinstance(el, str) for el in groups)):
+        elif hasattr(groups, '__iter__') and all(isinstance(el, str) for el in groups):
             # TODO use list_user_groups(name=[groups])
             groups = [UserGroup(self.connection, name=group) for group in groups]
         for group in groups:
@@ -162,7 +162,7 @@ class Privilege(EntityBase):
             groups = [UserGroup(self.connection, name=groups)]
         elif isinstance(groups, UserGroup):
             groups = [groups]
-        elif hasattr(groups, '__iter__') and all((isinstance(el, str) for el in groups)):
+        elif hasattr(groups, '__iter__') and all(isinstance(el, str) for el in groups):
             # TODO use list_user_groups(name=[groups])
             groups = [UserGroup(self.connection, name=group) for group in groups]
         for group in groups:

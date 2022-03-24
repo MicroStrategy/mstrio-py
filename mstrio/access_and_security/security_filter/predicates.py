@@ -1,13 +1,11 @@
 from enum import auto, Enum
 from typing import Dict, List, Optional, TYPE_CHECKING, Union
 
-from mstrio.access_and_security.security_filter import (AttributeElement, AttributeFormNormalRef,
-                                                        AttributeFormSystemRef, AttributeRef,
-                                                        ConstantArrayParameter, ConstantParameter,
-                                                        DynamicDateTimeParameter, ElementPromptRef,
-                                                        ExpressionParameter, FilterRef,
-                                                        ObjectReferenceParameter, ParameterType,
-                                                        PromptParameter)
+from mstrio.access_and_security.security_filter import (
+    AttributeElement, AttributeFormNormalRef, AttributeFormSystemRef, AttributeRef,
+    ConstantArrayParameter, ConstantParameter, DynamicDateTimeParameter, ElementPromptRef,
+    ExpressionParameter, FilterRef, ObjectReferenceParameter, ParameterType, PromptParameter
+)
 from mstrio.utils.enum_helper import AutoName
 from mstrio.utils.helper import Any, camel_to_snake, delete_none_values, Dictable, snake_to_camel
 

@@ -1,7 +1,7 @@
 import pandas as pd
 
 
-class Model(object):
+class Model:
     """Internal utility for generating the definition of multi-table and
     single-table datasets.
 
@@ -51,7 +51,7 @@ class Model(object):
         self.__check_param_str(self.__name, msg="SuperCube name should be a string.")
         self.__check_param_len(
             self.__name,
-            msg="SuperCube name should be <= {} characters.".format(self.__MAX_DESC_LEN),
+            msg=f"SuperCube name should be <= {self.__MAX_DESC_LEN} characters.",
             max_length=self.__MAX_DESC_LEN)
         self.__check_param_inv_chars(
             self.__name, msg="SuperCube name cannot contain '{}', '{}', '{}', '{}'.".format(

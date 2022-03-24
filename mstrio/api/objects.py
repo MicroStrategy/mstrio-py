@@ -299,7 +299,7 @@ def create_search_objects_instance(connection, name=None, pattern=4, domain=2, r
     )
 
 
-@ErrorHandler(err_msg='Error getting objects using serach with ID {search_id}')
+@ErrorHandler(err_msg='Error getting objects using search with ID {search_id}')
 def get_objects(connection, search_id, offset=0, limit=-1, get_tree=False, error_msg=None):
     """Get list of objects from metadata.
 

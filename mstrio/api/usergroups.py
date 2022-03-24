@@ -1,10 +1,11 @@
-from typing import TYPE_CHECKING, Optional, Union, List
+from typing import List, Optional, TYPE_CHECKING, Union
 
 from mstrio.utils.error_handlers import ErrorHandler
 
 if TYPE_CHECKING:
-    from mstrio.connection import Connection
     from requests_futures.sessions import FuturesSession
+
+    from mstrio.connection import Connection
 
 
 @ErrorHandler(err_msg='Error getting user groups privileges for a group with ID {id}')
@@ -357,7 +358,6 @@ def get_security_filters(connection: "Connection", id: str,
         Complete HTTP response object. Expected status is 200.
     """
     url = f"{connection.base_url}/api/usergroups/{id}/securityFilters"
-    print(projects)
     projects = (
         ','.join(projects if isinstance(projects, list) else [projects])) if projects else projects
     params = {'projects.id': projects, 'offset': offset, 'limit': limit}

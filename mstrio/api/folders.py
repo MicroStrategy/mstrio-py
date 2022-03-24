@@ -1,6 +1,7 @@
-from mstrio.utils.error_handlers import ErrorHandler
+from typing import Optional, TYPE_CHECKING
+
 from mstrio.connection import Connection
-from typing import TYPE_CHECKING, Optional
+from mstrio.utils.error_handlers import ErrorHandler
 
 if TYPE_CHECKING:
     from requests_futures.sessions import FuturesSession

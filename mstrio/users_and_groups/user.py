@@ -1,4 +1,5 @@
 from datetime import datetime
+import logging
 from typing import List, Optional, TYPE_CHECKING, Union
 
 from pandas import DataFrame, read_csv
@@ -19,6 +20,8 @@ if TYPE_CHECKING:
     from mstrio.access_and_security.security_filter import SecurityFilter
     from mstrio.server.project import Project
     from mstrio.users_and_groups.user_group import UserGroup
+
+logger = logging.getLogger(__name__)
 
 
 def create_users_from_csv(connection: Connection, csv_file: str) -> List["User"]:
@@ -43,7 +46,7 @@ def list_users(connection: Connection, name_begins: Optional[str] = None,
     Wildcards available for name_begins and abbreviation_begins:
         ? - any character
         * - 0 or more of any characters
-        e.g name_begins = ?onny wil return Sonny and Tonny
+        e.g. name_begins = ?onny will return Sonny and Tonny
 
     Args:
         connection: MicroStrategy connection object returned by
@@ -80,7 +83,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
         name: User name
         username: User username
         full_name: full name of the User
-        intitials: User initials, derived from user's last name or username
+        initials: User initials, derived from user's last name or username
         abbreviation: User login name
         description: User description
         memberships: IDs and names of direct parent groups for user
@@ -112,7 +115,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
         "password": str,
         "enabled": bool,
         "password_modifiable": bool,
-        "password_expiration_date": datetime,
+        "password_expiration_date": str,
         "standard_auth": bool,
         "require_new_password": bool,
         "ldapdn": str,
@@ -173,7 +176,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
                 [id] = users
             else:
                 temp_name = name if name else username
-                helper.exception_handler("There is no user: '{}'".format(temp_name),
+                helper.exception_handler(f"There is no user: '{temp_name}'",
                                          exception_type=ValueError)
 
         super().__init__(connection=connection, object_id=id, username=username, name=name)
@@ -248,8 +251,10 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
         body = helper.delete_none_values(body)
         response = users.create_user(connection, body, username).json()
         if config.verbose:
-            print("Successfully created user named: '{}' with ID: '{}'".format(
-                response.get('username'), response.get('id')))
+            logger.info(
+                f"Successfully created user named: '{response.get('username')}' "
+                f"with ID: '{response.get('id')}'"
+            )
         return cls.from_dict(source=response, connection=connection)
 
     @classmethod
@@ -363,7 +368,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
         response = users.create_address(self.connection, self.id, body)
         if response.ok:
             if config.verbose:
-                print("Added address '{}' for user '{}'".format(address, self.name))
+                logger.info(f"Added address '{address}' for user '{self.name}'")
             setattr(self, "_addresses", response.json().get('addresses'))
 
     def update_address(self, id: str, name: Optional[str] = None, address: Optional[str] = None,
@@ -392,7 +397,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
         response = users.update_address(self.connection, self.id, id, body)
         if response.ok:
             if config.verbose:
-                print(f"Updated address with ID '{id}' for user '{self.name}'")
+                logger.info(f"Updated address with ID '{id}' for user '{self.name}'")
             self.fetch("addresses")
 
     def remove_address(self, name: Optional[str] = None, address: Optional[str] = None,
@@ -413,22 +418,24 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
                 "Please specify either 'name' or 'id' parameter in the method.")
         if id is not None:
             addresses = helper.filter_list_of_dicts(initial_addresses, id=id)
-            new_addresses = helper.filter_list_of_dicts(initial_addresses, id='!={}'.format(id))
+            new_addresses = helper.filter_list_of_dicts(initial_addresses, id=f'!={id}')
         elif address is not None:
             addresses = helper.filter_list_of_dicts(initial_addresses, value=address)
             new_addresses = helper.filter_list_of_dicts(initial_addresses,
-                                                        value='!={}'.format(address))
+                                                        value=f'!={address}')
         elif name is not None:
             addresses = helper.filter_list_of_dicts(initial_addresses, name=name)
             new_addresses = helper.filter_list_of_dicts(initial_addresses,
-                                                        name='!={}'.format(name))
+                                                        name=f'!={name}')
 
         for addr in addresses:
             response = users.delete_address(self.connection, id=self.id, address_id=addr['id'])
             if response.ok:
                 if config.verbose:
-                    print("Removed address '{}' with id {} from user '{}'".format(
-                        addr['name'], addr['id'], self.name))
+                    logger.info(
+                        f"Removed address '{addr['name']}' with id {addr['id']} "
+                        f"from user '{self.name}'"
+                    )
                 setattr(self, "_addresses", new_addresses)
 
     def add_to_user_groups(
@@ -440,9 +447,9 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
         """
         succeeded, failed = self._update_nested_properties(user_groups, "memberships", "add")
         if succeeded and config.verbose:
-            print("Added user '{}' to group(s): {}".format(self.name, succeeded))
+            logger.info(f"Added user '{self.name}' to group(s): {succeeded}")
         elif failed and config.verbose:
-            print("User {} is already a member of {}".format(self.name, failed))
+            logger.info(f"User '{self.name}' is already a member of {failed}")
 
     def remove_from_user_groups(
             self, user_groups: Union[str, "UserGroup", List[Union[str, "UserGroup"]]]) -> None:
@@ -453,9 +460,9 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
         """
         succeeded, failed = self._update_nested_properties(user_groups, "memberships", "remove")
         if succeeded and config.verbose:
-            print("Removed user '{}' from group(s): {}".format(self.name, succeeded))
+            logger.info(f"Removed user '{self.name}' from group(s): {succeeded}")
         elif failed and config.verbose:
-            print("User {} is not in {} group(s)".format(self.name, failed))
+            logger.info(f"User '{self.name}' is not in {failed} group(s)")
 
     def remove_from_all_user_groups(self) -> None:
         """Removes this User from all user groups."""
@@ -477,8 +484,9 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
 
         security_role.grant_to([self.id], project)
         if config.verbose:
-            print("Assigned Security Role '{}' to user: '{}'".format(security_role.name,
-                                                                     self.name))
+            logger.info(
+                f"Assigned Security Role '{security_role.name}' to user: '{self.name}'"
+            )
 
     def revoke_security_role(self, security_role: Union[SecurityRole, str],
                              project: Union["Project", str] = None) -> None:  # NOSONAR
@@ -494,8 +502,9 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
 
         security_role.revoke_from([self.id], project)
         if config.verbose:
-            print("Revoked Security Role '{}' from user: '{}'".format(
-                security_role.name, self.name))
+            logger.info(
+                f"Revoked Security Role '{security_role.name}' from user: '{self.name}'"
+            )
 
     def list_security_filters(self, projects: Optional[Union[str, List[str]]] = None,
                               to_dictionary: bool = False) -> dict:
@@ -510,7 +519,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
 
         Returns:
             Dictionary with project names as keys and list with security
-            filters as values. In case of no securtiy filter for the given user
+            filters as values. In case of no security filter for the given user
             in the particular project, then this project is not placed in
             the dictionary.
         """
@@ -582,9 +591,13 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
         if succeeded:
             self.fetch('privileges')  # fetch the object properties and set object attributes
             if config.verbose:
-                print("Granted privilege(s) {} to '{}'".format(succeeded, self.name))
+                logger.info(
+                    f"Granted privilege(s) {succeeded} to '{self.name}'"
+                )
         if failed and config.verbose:
-            print("User '{}' already has privilege(s) {}".format(self.name, failed))
+            logger.info(
+                f"User '{self.name}' already has privilege(s) {failed}"
+            )
 
     def revoke_privilege(self, privilege: Union[str, List[str], "Privilege",
                                                 List["Privilege"]]) -> None:
@@ -594,19 +607,19 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
             privilege: list of privilege objects, ids or names
         """
         from mstrio.access_and_security.privilege import Privilege
-        privileges = set(
-            [priv['id'] for priv in Privilege._validate_privileges(self.connection, privilege)])
+        privileges = {
+            priv['id'] for priv in Privilege._validate_privileges(self.connection, privilege)}
         existing_ids = [
             privilege['privilege']['id'] for privilege in self.list_privileges(mode='ALL')
         ]
-        directly_granted = set(
-            [privilege['privilege']['id'] for privilege in self.list_privileges(mode='GRANTED')])
+        directly_granted = {
+            privilege['privilege']['id'] for privilege in self.list_privileges(mode='GRANTED')}
         to_revoke = list(privileges.intersection(directly_granted))
         not_directly_granted = list(
             (set(existing_ids) - directly_granted).intersection(privileges))
 
         if not_directly_granted:
-            msg = (f"Privileges {sorted(not_directly_granted)} are inherited and will be ommited. "
+            msg = (f"Privileges {sorted(not_directly_granted)} are inherited and will be omitted. "
                    "Only directly granted privileges can be revoked by this method.")
             helper.exception_handler(msg, exception_type=Warning)
 
@@ -615,9 +628,9 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
         if succeeded:
             self.fetch('privileges')  # fetch the object properties and set object attributes
             if config.verbose:
-                print("Revoked privilege(s) {} from '{}'".format(succeeded, self.name))
+                logger.info(f"Revoked privilege(s) {succeeded} from '{self.name}'")
         if failed and config.verbose:
-            print("User '{}' does not have privilege(s) {}".format(self.name, failed))
+            logger.warning(f"User '{self.name}' does not have privilege(s) {failed}")
 
     def revoke_all_privileges(self, force: bool = False) -> None:
         """Revoke directly granted user privileges.
@@ -638,7 +651,9 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
             if to_revoke:
                 self.revoke_privilege(privilege=to_revoke)
             else:
-                print("User '{}' does not have any directly granted privileges".format(self.name))
+                logger.info(
+                    f"User '{self.name}' does not have any directly granted privileges"
+                )
 
     def list_privileges(self, mode: Union[PrivilegeMode, str] = PrivilegeMode.ALL,
                         to_dataframe: bool = False) -> list:
@@ -728,6 +743,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
 
     @property
     def privileges(self):
+        self.fetch('privileges')
         return self._privileges
 
     @property

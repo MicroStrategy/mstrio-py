@@ -1,16 +1,19 @@
 from enum import auto, Enum
+import logging
 from pathlib import Path
 from typing import Callable, List, Optional, Union
 
 from mstrio import config
 from mstrio.api.exceptions import VersionException
 from mstrio.connection import Connection
-from mstrio.server.migration.package import Package, PackageConfig, PackageImport
+from mstrio.object_management.migration.package import Package, PackageConfig, PackageImport
 from mstrio.utils.helper import Dictable, exception_handler
 from mstrio.utils.progress_bar_mixin import ProgressBarMixin
 from mstrio.utils.wip import module_wip, WipLevels
 
-module_wip(globals(), target_release="22.03", level=WipLevels.WARNING)
+module_wip(globals(), level=WipLevels.PREVIEW)
+
+logger = logging.getLogger(__name__)
 
 
 class MigrationStatus(Enum):
@@ -40,7 +43,7 @@ class Migration(Dictable, ProgressBarMixin):
         configuration(PackageConfig): a configuration of the migration
         save_path(str): a full path used when saving import package to a
         file. It is also used for saving undo package with the addition of
-        `_undo` sufix. By default uses ~cwd/migration.mmp and
+        `_undo` suffix. By default, uses ~cwd/migration.mmp and
         ~cwd/migration_undo.mmp.
         source_connection(Connection): A MicroStrategy connection object
           to the source env,
@@ -74,7 +77,7 @@ class Migration(Dictable, ProgressBarMixin):
         if not self._validate_envs_version(source_connection, target_connection):
             exception_handler(
                 msg=("Environments must run IServer version 11.3.0200 or newer. "
-                     "Please update your enviroments to use this feature."),
+                     "Please update your environments to use this feature."),
                 exception_type=VersionException)
         self.name = name
         self.source_connection = source_connection
@@ -291,7 +294,7 @@ class Migration(Dictable, ProgressBarMixin):
     def _save_package_binary_locally(self, filename: str, file_extension: str, _bytes: bytes):
         with open(f"{filename}{file_extension}", "wb") as f:
             f.write(_bytes)
-        print(f"Package / package undo binary created at:{filename}{file_extension}")
+        logger.info(f'Package / package undo binary created at:{filename}{file_extension}')
 
     @property
     def package(self):

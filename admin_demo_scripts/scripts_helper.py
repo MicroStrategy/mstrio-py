@@ -1,12 +1,13 @@
-from mstrio.users_and_groups import UserGroup
 import pandas as pd
+
+from mstrio.users_and_groups import UserGroup
 
 
 def get_result_from_db(driver: str, server: str, database: str, uid: str, pwd: str, query: str,
                        db_lib: str) -> pd.DataFrame:
     """Connect to database and execute the SELECT query. You need to have
     installed on your machine the library to connect with database as well as
-    driver to connect with databse.
+    driver to connect with database.
 
     Args:
         driver (str): name of driver used to connect with database

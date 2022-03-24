@@ -4,26 +4,41 @@ from typing import Tuple, Union
 
 
 class AutoName(Enum):
+
     def _generate_next_value_(name, start, count, last_values):
         return name.lower()
 
 
 class AutoUpperName(Enum):
+
     def _generate_next_value_(name, start, count, last_values):
         return name
 
 
-def get_enum_val(obj, enum: Union[Enum, Tuple[Enum]] = Enum) -> Union[str, None]:
-    """Safely extract value from enum or str."""
+def __get_enum_helper(obj, enum: Union[Enum, Tuple[Enum]] = Enum,
+                      get_value: bool = False) -> Union[str, Enum, None]:
+    """Helper function for `get_enum` and `get_enum_val`."""
     if obj is None:
         return obj
-    if isinstance(obj, Enum) and isinstance(obj, enum):
-        return obj.value
+    elif isinstance(obj, Enum) and isinstance(obj, enum):
+        obj = obj.value if get_value else obj
     elif isinstance(obj, (str, int)):
         validate_enum_value(obj, enum)
-        return obj
+        obj = obj if get_value else enum(obj)
     else:
-        raise TypeError(f"Incorrect type. Value should be of type: {enum}")
+        raise TypeError(f"Incorrect type. Value should be of type: {enum}.")
+
+    return obj
+
+
+def get_enum(obj, enum: Union[Enum, Tuple[Enum]] = Enum) -> Union[Enum, None]:
+    """Safely get enum from enum or str."""
+    return __get_enum_helper(obj, enum)
+
+
+def get_enum_val(obj, enum: Union[Enum, Tuple[Enum]] = Enum) -> Union[str, None]:
+    """Safely extract value from enum or str."""
+    return __get_enum_helper(obj, enum, True)
 
 
 def validate_enum_value(obj, enum):

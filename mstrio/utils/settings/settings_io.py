@@ -2,6 +2,7 @@ from abc import ABCMeta, abstractclassmethod
 from ast import literal_eval
 import csv
 import json
+import logging
 import pickle
 from typing import Optional, TYPE_CHECKING, Union
 
@@ -13,6 +14,8 @@ from .settings_helper import convert_settings_to_mega_byte
 
 if TYPE_CHECKING:
     from mstrio.utils.settings.base_settings import BaseSettings
+
+logger = logging.getLogger(__name__)
 
 EXPORTED_MSG = "Settings exported to"
 
@@ -54,8 +57,8 @@ class SettingsIO(metaclass=ABCMeta):
         if not isinstance(cls.FILE_NAME, (str, tuple)):
             raise NotImplementedError("FILE_NAME not defined")
         elif not file.endswith(cls.FILE_NAME):
-            msg = ("The file extension is different than {cls.FILE_NAME}, please note that using"
-                   " a different extension might disrupt opening the file correctly.")
+            msg = (f'The file extension is different than {cls.FILE_NAME}, please note that using'
+                   ' a different extension might disrupt opening the file correctly.')
             helper.exception_handler(msg, exception_type=Warning)
 
     @classmethod
@@ -63,7 +66,7 @@ class SettingsIO(metaclass=ABCMeta):
         if settings_type is None:
             return None
         elif settings_type != settings_obj._TYPE:
-            raise TypeError("Unsupported settings")
+            raise TypeError('Unsupported settings.')
 
     @classmethod
     def check_version(cls, version: Union[str, int, None], settings_type: Union[str,
@@ -104,7 +107,7 @@ class PickleSettingsIO(SettingsIO):
                                  __page__=settings_obj._TYPE)
             pickle.dump(settings_dict, f, protocol=4)  # pickle protocol added in python 3.4
         if config.verbose:
-            print(f"{EXPORTED_MSG} '{file}'")
+            logger.info(f"{EXPORTED_MSG} '{file}'")
 
     @classmethod
     def from_file(cls, file: str, settings_obj: "BaseSettings") -> dict:
@@ -141,12 +144,12 @@ class JSONSettingsIO(SettingsIO):
                                  __page__=settings_obj._TYPE)
             json.dump(settings_dict, f, indent=4)
         if config.verbose:
-            print(f"{EXPORTED_MSG} '{file}'")
+            logger.info(f"{EXPORTED_MSG} '{file}'")
 
     @classmethod
     def from_file(cls, file: str, settings_obj: "BaseSettings") -> dict:
 
-        with open(file, 'r') as f:
+        with open(file) as f:
             settings_dict = json.load(f)
 
             # check versioning and type
@@ -180,12 +183,12 @@ class CSVSettingsIO(SettingsIO):
             rows = [{'Name': setting, 'Value': value} for setting, value in settings_dict.items()]
             w.writerows(rows)
             if config.verbose:
-                print(f"{EXPORTED_MSG} '{file}'")
+                logger.info(f"{EXPORTED_MSG} '{file}'")
 
     @classmethod
     def from_file(cls, file: str, settings_obj: "BaseSettings") -> dict:
 
-        with open(file, 'r') as f:
+        with open(file) as f:
             settings_dict = dict(csv.reader(f, quoting=csv.QUOTE_ALL))
             return cls.process_csv_settings(settings_dict, settings_obj)
 
@@ -225,14 +228,14 @@ class CSVSettingsIO(SettingsIO):
     @classmethod
     def check_type(cls, settings_type: Union[str, None], settings_obj: "BaseSettings") -> None:
         if settings_type is None:
-            raise ValueError("CSV settings are missing `#__page__` header")
+            raise ValueError('CSV settings are missing `#__page__` header')
         elif settings_type != settings_obj._TYPE:
-            raise TypeError("Unsupported settings")
+            raise TypeError('Unsupported settings.')
 
     @classmethod
     def check_version(cls, version: Union[int, None], settings_type: str) -> None:
         if version is None:
-            raise ValueError("CSV settings are missing `#__version__` header")
+            raise ValueError('CSV settings are missing `#__version__` header')
         elif isinstance(version, str):
             version = int(version)
 
@@ -241,4 +244,4 @@ class CSVSettingsIO(SettingsIO):
         project_settings_not_supported = (settings_type == "allProjectSettings"
                                           and version > cls.PROJECT_VERSION)
         if server_settings_not_supported or project_settings_not_supported:
-            raise VersionException("Unsupported CSV settings version")
+            raise VersionException('Unsupported CSV settings version.')

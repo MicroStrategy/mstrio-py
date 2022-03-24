@@ -7,8 +7,10 @@ ease its usage.
 """
 
 from mstrio.connection import Connection
-from mstrio.distribution_services import (Event, list_events, list_schedules, list_subscriptions,
-                                          Schedule, ScheduleEnums, ScheduleTime, Subscription)
+from mstrio.distribution_services import (
+    list_schedules, list_subscriptions, Schedule, ScheduleEnums, ScheduleTime, Subscription
+)
+from mstrio.distribution_services import Event, list_events
 
 base_url = "https://<>/MicroStrategyLibrary/api"
 username = "some_username"
@@ -28,7 +30,7 @@ events = list_events(connection=conn)
 
 # get single Schedule and list its properties
 schedule = Schedule(connection=conn, id='AA11BB22CC33DD44EE55FF6677889900')
-scheudle = Schedule(connection=conn, name='On Database Load')
+schedule = Schedule(connection=conn, name='On Database Load')
 schedule.list_properties()
 
 # get single Event and list its properties
@@ -54,12 +56,12 @@ schedule.alter(time=schedule_time)
 new_schedule = Schedule.create(
     connection=conn, name='Test Schedule', schedule_type=Schedule.ScheduleType.TIME_BASED,
     start_date='2021-06-24', recurrence_pattern=ScheduleEnums.RecurrencePattern.DAILY,
-    repeat_interval=2, daily_pattern=ScheduleEnums.DailyPattern.DAILY,
+    repeat_interval=2, daily_pattern=ScheduleEnums.DailyPattern.DAY,
     execution_pattern=ScheduleEnums.ExecutionPattern.ONCE, execution_time='02:00:00')
 # create event based schedule
-new_schedule = Schedule(connection=conn, name='Test Schedule',
-                        schedule_type=Schedule.ScheduleType.EVENT_BASED, event=event,
-                        start_date='2021-06-24', stop_date='2022-01-01')
+new_schedule = Schedule.create(connection=conn, name='Test Schedule',
+                               schedule_type=Schedule.ScheduleType.EVENT_BASED, event_id=event.id,
+                               start_date='2021-06-24', stop_date='2022-01-01')
 
 # delete schedule
 # (Note: deleting schedule will also delete related subscriptions!)

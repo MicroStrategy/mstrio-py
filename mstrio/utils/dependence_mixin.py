@@ -1,11 +1,12 @@
 from typing import Optional, TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
-    from mstrio.utils.entity import Entity
+    from mstrio.object_management.search_enums import (
+        SearchDomain, SearchPattern, SearchResultsFormat
+    )
     from mstrio.server import Project
     from mstrio.types import TypeOrSubtype
-    from mstrio.object_management.search_enums import (SearchDomain, SearchPattern,
-                                                       SearchResultsFormat)
+    from mstrio.utils.entity import Entity
 
 
 class DependenceMixin:

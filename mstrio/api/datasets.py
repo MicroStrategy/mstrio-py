@@ -138,7 +138,7 @@ def upload(connection, id, session_id, body, throw_error=False):
             `connection.Connection()`.
         id (str): Identifier of a pre-existing dataset. Used when
             updating a pre-existing dataset.
-        session_id (str): Identifer of the server session used for collecting
+        session_id (str): Identifier of the server session used for collecting
             uploaded data.
         body (dict): JSON-formatted payload containing the body of the request.
         throw_error (bool): Flag indicates if the error should be thrown
@@ -163,7 +163,7 @@ def publish(connection, id, session_id, throw_error=False):
             `connection.Connection()`.
         id (str): Identifier of a pre-existing dataset. Used when
             updating a pre-existing dataset.
-        session_id (str): Identifer for the server session used for collecting
+        session_id (str): Identifier for the server session used for collecting
             uploaded data.
         throw_error (bool): Flag indicates if the error should be thrown
 
@@ -184,7 +184,7 @@ def publish_status(connection, id, session_id):
             `connection.Connection()`.
         id (str): Identifier of a pre-existing dataset. Used when
             updating a pre-existing dataset.
-        session_id (str): Identifer for the server session used for collecting
+        session_id (str): Identifier for the server session used for collecting
             uploaded data.
 
     Returns:
@@ -204,7 +204,7 @@ def publish_cancel(connection, id, session_id):
             `connection.Connection()`.
         id (str): Identifier of a pre-existing dataset. Used when
             updating a pre-existing dataset.
-        session_id (str): Identifer for the server session used for collecting
+        session_id (str): Identifier for the server session used for collecting
             uploaded data.
 
     Returns:

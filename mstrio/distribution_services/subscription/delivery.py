@@ -71,7 +71,7 @@ class DeliveryDictable(Dictable):
                     "{} has incorrect type {}. Correct type is {}.".format(
                         key, type(value), vtype), TypeError)
             elif value is None and obligatory:
-                exception_handler("{} is obligatory and cannot be empty.".format(key), ValueError)
+                exception_handler(f"{key} is obligatory and cannot be empty.", ValueError)
 
 
 class ZipSettings(DeliveryDictable):

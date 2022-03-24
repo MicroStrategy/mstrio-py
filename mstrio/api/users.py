@@ -1,10 +1,11 @@
-from typing import TYPE_CHECKING, Optional, Union, List
+from typing import List, Optional, TYPE_CHECKING, Union
 
 from mstrio.utils.error_handlers import ErrorHandler
 
 if TYPE_CHECKING:
-    from mstrio.connection import Connection
     from requests_futures.sessions import FuturesSession
+
+    from mstrio.connection import Connection
 
 
 @ErrorHandler(err_msg='Error getting information for a set of recipients.')
@@ -190,7 +191,7 @@ def create_address(connection, id, body, fields=None):
         id(string): User ID.
         fields(list, optional): Comma separated top-level field whitelist. This
             allows client to selectively retrieve part of the response model.
-        body: JSON-formatted addres:
+        body: JSON-formatted address:
                 {
                 "name": "string",
                 "deliveryMode": "EMAIL",

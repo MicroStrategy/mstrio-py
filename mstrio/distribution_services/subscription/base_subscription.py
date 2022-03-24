@@ -1,5 +1,6 @@
 from enum import auto
-from pprint import pformat, pprint
+import logging
+from pprint import pformat
 from typing import Any, Dict, List, Optional, TypeVar, Union
 
 from mstrio import config
@@ -7,15 +8,17 @@ from mstrio.api import subscriptions
 from mstrio.connection import Connection
 from mstrio.distribution_services.schedule import Schedule
 from mstrio.distribution_services.subscription.content import Content
-from mstrio.distribution_services.subscription.delivery import (CacheType, ClientType, Delivery,
-                                                                LibraryCacheTypes, Orientation,
-                                                                SendContentAs, ShortcutCacheFormat,
-                                                                ZipSettings)
+from mstrio.distribution_services.subscription.delivery import (
+    CacheType, ClientType, Delivery, LibraryCacheTypes, Orientation, SendContentAs,
+    ShortcutCacheFormat, ZipSettings
+)
 from mstrio.server.project import Project
 from mstrio.users_and_groups import User
 from mstrio.utils import helper, time_helper
 from mstrio.utils.entity import EntityBase
 from mstrio.utils.enum_helper import AutoUpperName
+
+logger = logging.getLogger(__name__)
 
 
 class RecipientsTypes(AutoUpperName):
@@ -279,10 +282,11 @@ class Subscription(EntityBase):
         if response.ok:
             response = response.json()
             response = helper.camel_to_snake(response)
-            self._set_object(**response)
+            self._set_object_attributes(**response)
             if config.verbose:
-                print(custom_msg if custom_msg else "Updated subscription '{}' with ID: {}."
-                      .format(self.name, self.id))
+                msg = f"Updated subscription '{self.name}' with ID: {self.id}."
+                msg = custom_msg if custom_msg else msg
+                logger.info(msg)
 
     def __is_val_changed(self, nested=None, **kwargs):
         for key, value in kwargs.items():
@@ -331,7 +335,7 @@ class Subscription(EntityBase):
         """
         self.alter(
             send_now=True,
-            custom_msg="Executed subscription '{}' with ID '{}'.".format(self.name, self.id))
+            custom_msg=f"Executed subscription '{self.name}' with ID '{self.id}'.")
 
     def delete(self, force: bool = False) -> bool:
         """Delete a subscription. Returns True if deletion was successful.
@@ -347,7 +351,9 @@ class Subscription(EntityBase):
         if force or user_input == 'Y':
             response = subscriptions.remove_subscription(self.connection, self.id, self.project_id)
             if response.ok and config.verbose:
-                print("Deleted subscription '{}' with ID: {}.".format(self.name, self.id))
+                logger.info(
+                    f"Deleted subscription '{self.name}' with ID: {self.id}."
+                )
             return response.ok
         else:
             return False
@@ -422,7 +428,7 @@ class Subscription(EntityBase):
             all_recipients.extend(ready_recipients)
             self.alter(recipients=all_recipients)
         elif config.verbose:
-            print("No recipients were added to the subscription.")
+            logger.info('No recipients were added to the subscription.')
 
     def remove_recipient(self, recipients):
         """Removes recipient from given subscription in given project.
@@ -444,7 +450,7 @@ class Subscription(EntityBase):
         for recipient in recipients:
             rec_id = recipient['id'] if isinstance(recipient, dict) else recipient
             if rec_id not in exisiting_recipients:
-                helper.exception_handler("{} is not a recipient of subscription".format(rec_id),
+                helper.exception_handler(f"{rec_id} is not a recipient of subscription",
                                          UserWarning)
             else:
                 all_recipients = [rec for rec in all_recipients if rec['id'] != rec_id]
@@ -454,7 +460,7 @@ class Subscription(EntityBase):
         elif len(self.recipients) - len(all_recipients) > 0:
             self.alter(recipients=all_recipients)
         elif len(self.recipients) == len(all_recipients) and config.verbose:
-            print("No recipients were removed from the subscription.")
+            logger.info('No recipients were removed from the subscription.')
 
     def __prepare_recipients(self, recipients):
 
@@ -464,7 +470,7 @@ class Subscription(EntityBase):
         def __already_recipient(recipient):
             if recipient in exisiting_recipients:
                 helper.exception_handler(
-                    "{} is already a recipient of subscription".format(recipient), UserWarning)
+                    f"{recipient} is already a recipient of subscription", UserWarning)
             else:
                 ready_recipients.append(recipient)
 
@@ -770,7 +776,9 @@ class Subscription(EntityBase):
         response = subscriptions.create_subscription(connection, project_id, body)
         if config.verbose:
             unpacked_response = response.json()
-            print("Created subscription '{}' with ID: '{}'.".format(name, unpacked_response['id']))
+            logger.info(
+                f"Created subscription '{name}' with ID: '{unpacked_response['id']}'."
+            )
         return cls.from_dict(response.json(), connection, project_id)
 
     @staticmethod
@@ -786,7 +794,6 @@ class Subscription(EntityBase):
                        "and delivery mode. Available recipients: \n"
                        f"{pformat(available_recipients,indent=2)}")
                 helper.exception_handler(msg, ValueError)
-                pprint(available_recipients)
 
         recipients = recipients if isinstance(recipients, list) else [recipients]
         body = {
@@ -832,7 +839,7 @@ class Subscription(EntityBase):
                 project_id = project_loaded_list[0]['id']
             except IndexError:
                 helper.exception_handler(
-                    "There is no project with the given name: '{}'".format(project_name),
+                    f"There is no project with the given name: '{project_name}'",
                     exception_type=ValueError)
 
         return project_id

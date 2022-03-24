@@ -51,7 +51,7 @@ conn = Connection(base_url, identity_token=identity_token, project_id=project_id
 conn = Connection(base_url, mstr_username, mstr_password, project_id=project_id,
                   ssl_verify=False)
 
-# If you are using a SSL with a self - signed certificate you will need to
+# If you are using an SSL with a self-signed certificate you will need to
 # perform an additional step to configure your connection. There are 2 ways to
 # set it up:
 

@@ -2,10 +2,10 @@
 either name or id of user group. Without any changes this script will be
 executed for user group 'System Administrators'."""
 
-from mstrio.users_and_groups import User, UserGroup
-from mstrio.connection import Connection, get_connection
-
 from typing import List
+
+from mstrio.connection import Connection, get_connection
+from mstrio.users_and_groups import User, UserGroup
 
 
 def list_security_roles_per_user(connection: "Connection", user_group_name: str = None,

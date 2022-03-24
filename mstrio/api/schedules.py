@@ -69,7 +69,7 @@ def create_schedule(connection, body, fields=None, error_msg=None):
     Args:
         connection(object): MicroStrategy connection object returned by
             `connection.Connection()`.
-        body(dict): Dictionary containging data used for creating schedule.
+        body(dict): Dictionary containing data used for creating schedule.
         fields(list, optional): Comma separated top-level field whitelist. This
             allows client to selectively retrieve part of the response model.
         error_msg(str, optional): Customized error message.
@@ -102,7 +102,7 @@ def update_schedule(connection, id, body, fields=None, error_msg=None):
         connection(object): MicroStrategy connection object returned by
             `connection.Connection()`.
         schedule_id(str): ID of the schedule
-        body(dict): Dictionary containging data used for replacing schedule.
+        body(dict): Dictionary containing data used for replacing schedule.
         fields(list, optional): Comma separated top-level field whitelist. This
             allows client to selectively retrieve part of the response model.
         error_msg(str, optional): Customized error message.

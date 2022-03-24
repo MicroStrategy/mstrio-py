@@ -1,4 +1,5 @@
 from enum import auto
+import logging
 from typing import List, Optional, TYPE_CHECKING, Union
 
 from mstrio import config
@@ -6,13 +7,15 @@ from mstrio.api import datasources, objects
 from mstrio.datasources import DatasourceConnection, Dbms
 from mstrio.users_and_groups.user import User
 from mstrio.utils import helper
-from mstrio.utils.entity import DeleteMixin, CopyMixin, Entity, ObjectTypes
+from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, ObjectTypes
 from mstrio.utils.enum_helper import AutoName, get_enum_val
 from mstrio.utils.helper import get_objects_id
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
     from mstrio.server.project import Project
+
+logger = logging.getLogger(__name__)
 
 
 def list_datasource_instances(connection: "Connection", to_dictionary: bool = False,
@@ -140,10 +143,10 @@ class DatasourceInstance(Entity, CopyMixin, DeleteMixin):
         "intermediate_store_db_name": str,
         "intermediate_store_table_space_name": str,
         "odbc_version": str,
-        "datasource_connection": str,
-        "primary_datasource": str,
-        "data_mart_datasource": str,
-        "dbms": str,
+        "datasource_connection": dict,
+        "primary_datasource": dict,
+        "data_mart_datasource": dict,
+        "dbms": dict,
     }
 
     def __init__(self, connection: "Connection", name: Optional[str] = None,
@@ -228,8 +231,8 @@ class DatasourceInstance(Entity, CopyMixin, DeleteMixin):
             intermediate_store_table_space_name: intermediate store table space
                 name
             datasource_connection: `DatasourceConnection` object or ID
-            database_type: Databse type
-            database_version: Databse version
+            database_type: Database type
+            database_version: Database version
             primary_datasource: `DatasourceInstance` object or ID
             data_mart_datasource: `DatasourceInstance` object or ID
 
@@ -268,8 +271,10 @@ class DatasourceInstance(Entity, CopyMixin, DeleteMixin):
         body = helper.delete_none_values(body)
         response = datasources.create_datasource_instance(connection, body).json()
         if config.verbose:
-            print("Successfully created datasource instance named: '{}' with ID: '{}'".format(
-                response.get('name'), response.get('id')))
+            logger.info(
+                f"Successfully created datasource instance named: '{response.get('name')}' "
+                f"with ID: '{response.get('id')}'"
+            )
         return cls.from_dict(source=response, connection=connection)
 
     def alter(self, name: Optional[str] = None, description: Optional[str] = None,
@@ -299,6 +304,16 @@ class DatasourceInstance(Entity, CopyMixin, DeleteMixin):
             data_mart_datasource: `DatasourceInstance` object or ID
 
         """
+        dbms = {'id': get_objects_id(dbms, Dbms)} if dbms else None
+        datasource_connection = {
+            'id': get_objects_id(datasource_connection, DatasourceConnection)
+        } if datasource_connection else None
+        primary_datasource = {
+            'id': get_objects_id(primary_datasource, self)
+        } if primary_datasource else None
+        data_mart_datasource = {
+            'id': get_objects_id(data_mart_datasource, self)
+        } if data_mart_datasource else None
         func = self.alter
         args = func.__code__.co_varnames[:func.__code__.co_argcount]
         defaults = func.__defaults__  # type: ignore
@@ -327,8 +342,8 @@ class DatasourceInstance(Entity, CopyMixin, DeleteMixin):
         else:
             return [cls.from_dict(source=obj, connection=connection) for obj in objects]
 
-    def _set_object(self, **kwargs) -> None:
-        super(DatasourceInstance, self)._set_object(**kwargs)
+    def _set_object_attributes(self, **kwargs) -> None:
+        super()._set_object_attributes(**kwargs)
         if kwargs.get("primary_datasource"):
             setattr(
                 self, 'primary_datasource',

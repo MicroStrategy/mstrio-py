@@ -1,13 +1,14 @@
 from typing import List, Optional, TYPE_CHECKING, Union
 
-from mstrio.access_and_security.security_filter import (AttributeRef, ObjectInformation,
-                                                        Qualification)
+from mstrio.access_and_security.security_filter import (
+    AttributeRef, ObjectInformation, Qualification
+)
 from mstrio.api import changesets, security_filters
 from mstrio.api.security_filters import ShowExpressionAs, UpdateOperator
 from mstrio.object_management import full_search
 from mstrio.users_and_groups import User, UserGroup
 from mstrio.utils import helper
-from mstrio.utils.entity import Entity, ObjectSubTypes, ObjectTypes, DeleteMixin
+from mstrio.utils.entity import DeleteMixin, Entity, ObjectSubTypes, ObjectTypes
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
@@ -157,9 +158,9 @@ class SecurityFilter(Entity, DeleteMixin):
         Args:
             attr (str, optional): Attribute name to be fetched.
             fetch_definition (bool, optional): flag which indicates whether
-                definition of security filter is fetched. By defualt `True`.
+                definition of security filter is fetched. By default `True`.
             fetch_members (bool, optional): flag which indicates whether
-                members of security filter is fetched. By defualt `True`.
+                members of security filter is fetched. By default `True`.
 
         Raises:
             ValueError: if `attr` cannot be fetched.
@@ -211,7 +212,7 @@ class SecurityFilter(Entity, DeleteMixin):
             connection=connection, changeset_id=changeset_id, throw_error=False, id=id,
             body=SecurityFilter.__prepare_body(qualification, id, name, folder_id, description,
                                                top_level_dicts, bottom_level_dicts))
-        # there might be a case when response below is correct but commiting
+        # there might be a case when response below is correct but committing
         # changes is incorrect
         res_commit = changesets.commit_changeset_changes(connection, changeset_id,
                                                          throw_error=False)

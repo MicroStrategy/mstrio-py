@@ -1,23 +1,21 @@
 from datetime import datetime, timezone
 from enum import auto
+import logging
 from typing import List, Optional, Union
 
 from mstrio import config
 from mstrio.api import objects, schedules
 from mstrio.connection import Connection
+from mstrio.distribution_services.event import Event
 from mstrio.distribution_services.schedule import ScheduleEnums, ScheduleTime
 from mstrio.users_and_groups.user import User
 from mstrio.utils import helper
 from mstrio.utils.entity import DeleteMixin, Entity, ObjectTypes
 from mstrio.utils.enum_helper import AutoName, get_enum_val
 from mstrio.utils.time_helper import DatetimeFormats, map_datetime_to_str, map_str_to_datetime
-from mstrio.utils.wip import pause_wip_warnings, resume_wip_warnings
 
-warnings_setting = pause_wip_warnings()
 
-from mstrio.distribution_services.event import Event  # noqa E402
-
-resume_wip_warnings(warnings_setting)
+logger = logging.getLogger(__name__)
 
 
 def list_schedules(connection: Connection, to_dictionary: bool = False, limit: int = None,
@@ -99,11 +97,11 @@ class Schedule(Entity, DeleteMixin):
         'name': str,
         'description': str,
         'abbreviation': str,
-        'schedule_type': ScheduleType,
-        'start_date': datetime,
-        'stop_date': datetime,
-        'time': ScheduleTime,
-        'event': Event,
+        'schedule_type': str,
+        'start_date': str,
+        'stop_date': str,
+        'time': dict,
+        'event': dict,
     }
 
     def __init__(self, connection: Connection, id: str = None, name: str = None) -> None:
@@ -172,11 +170,13 @@ class Schedule(Entity, DeleteMixin):
             stop_date=map_str_to_datetime('stop_date', stop_date, self._FROM_DICT_MAP))
 
         if config.verbose and not self.expired:
-            print(f'Schedule \'{self.name}\' with ID {self.id} has been enabled, '
-                  f'until {self.stop_date}.')
+            logger.info(
+                f'Schedule \'{self.name}\' with ID {self.id} has been enabled, '
+                f'until {self.stop_date}.'
+            )
             return True
         elif config.verbose:
-            print(f'Schedule \'{self.name}\' with ID {self.id} has NOT been enabled.')
+            logger.info(f'Schedule \'{self.name}\' with ID {self.id} has NOT been enabled.')
             return False
 
     def disable(self, stop_date: Union[str, datetime] = None) -> bool:
@@ -196,15 +196,17 @@ class Schedule(Entity, DeleteMixin):
         self._alter_properties(stop_date=stop_date)
 
         if config.verbose and self.expired:
-            print(f'Schedule \'{self.name}\' with ID {self.id} has been disabled.')
+            logger.info(f'Schedule \'{self.name}\' with ID {self.id} has been disabled.')
             return True
         elif config.verbose and self.stop_date.date() == stop_date.date():
-            print(f'Schedule \'{self.name}\' with ID {self.id} has been set for disabling. '
-                  f'Depending on the schedule configuration (`event`, `time` and `stop_date`), '
-                  f'it will be disabled by day after \'{self.stop_date.date()}\'.')
+            logger.info(
+                f"Schedule '{self.name}' with ID '{self.id}' has been set for disabling. "
+                f"Depending on the schedule configuration (`event`, `time` and `stop_date`),"
+                f" it will be disabled by day after '{self.stop_date.date()}'."
+            )
             return True
         else:
-            print(f'Schedule \'{self.name}\' with ID {self.id} has NOT been disabled.')
+            logger.info(f"Schedule '{self.name}' with ID '{self.id}' has NOT been disabled.")
             return False
 
     def list_properties(self):
@@ -348,7 +350,7 @@ class Schedule(Entity, DeleteMixin):
         response = schedules.create_schedule(connection, body)
         response = response.json()
         if config.verbose:
-            print(f"Created schedule '{name}' with ID: {response['id']}")
+            logger.info(f"Created schedule '{name}' with ID: {response['id']}")
         return Schedule.from_dict(source=response, connection=connection)
 
     def alter(self, name: str = None, description: str = None,

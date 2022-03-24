@@ -1,7 +1,7 @@
-from mstrio.users_and_groups import UserGroup, list_user_groups
-from mstrio.connection import Connection
-
 from typing import List
+
+from mstrio.connection import Connection
+from mstrio.users_and_groups import list_user_groups, UserGroup
 
 
 def list_empty_user_groups(connection: "Connection") -> List["UserGroup"]:

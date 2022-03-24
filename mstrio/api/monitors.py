@@ -1,19 +1,20 @@
 import json
 from typing import List, Optional, TYPE_CHECKING, Union
 from unittest.mock import Mock
-from mstrio.api.exceptions import MstrException, PartialSuccess, Success
 
 from packaging import version
 from requests.adapters import Response
 from requests.sessions import Request
 
+from mstrio.api.exceptions import MstrException, PartialSuccess, Success
 from mstrio.utils.error_handlers import bulk_operation_response_handler, ErrorHandler
 from mstrio.utils.helper import delete_none_values, filter_list_of_dicts, response_handler
 from mstrio.utils.sessions import FuturesSessionWithRenewal
 
 if TYPE_CHECKING:
-    from mstrio.connection import Connection
     from requests_futures.sessions import FuturesSession
+
+    from mstrio.connection import Connection
 
 ISERVER_VERSION_11_3_2 = '11.3.0200'
 
@@ -535,7 +536,7 @@ def get_job(connection: "Connection", id: str, node_name: str = None, fields: Li
     Returns:
         HTTP response object returned by the MicroStrategy REST server
     """
-    response = Mock()  # create empty mock object to mimick REST API response
+    response = Mock()  # create empty mock object to mimic REST API response
 
     if not node_name:
         # fetch jobs on all nodes

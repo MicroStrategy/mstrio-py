@@ -6,17 +6,15 @@ Its basic goal is to present what can be done with this module and to
 ease its usage.
 """
 
+from mstrio.access_and_security.security_filter import (
+    AttributeFormSystemRef, AttributeRef, ConstantParameter, ConstantType, list_security_filters,
+    LogicFunction, LogicOperator, PredicateForm, PredicateFormFunction, Qualification,
+    SecurityFilter
+)
 from mstrio.connection import Connection
-
-from mstrio.access_and_security.security_filter import (AttributeFormSystemRef, AttributeRef,
-                                                        ConstantParameter, ConstantType,
-                                                        LogicFunction, LogicOperator,
-                                                        list_security_filters, PredicateForm,
-                                                        PredicateFormFunction, Qualification,
-                                                        SecurityFilter)
-from mstrio.object_management.search_operations import full_search
+from mstrio.object_management import full_search
 from mstrio.types import ObjectTypes
-from mstrio.users_and_groups import list_users, list_user_groups
+from mstrio.users_and_groups import list_user_groups, list_users
 
 base_url = "https://<>/MicroStrategyLibrary/api"
 username = "some_username"
@@ -39,10 +37,13 @@ sec_fil.members
 name = "Year > 2015"
 folder_id = "E28806A611E5B55F088C0080EF555BA1"
 qualification = Qualification(
-    tree=PredicateForm(function=PredicateFormFunction.GREATER, parameters=[
-        ConstantParameter(ConstantType.DOUBLE, "2015.0")
-    ], attribute=AttributeRef("8D679D5111D3E4981000E787EC6DE8A4", "Year"),
-                       form=AttributeFormSystemRef("45C11FA478E745FEA08D781CEA190FE5", "ID")))
+    tree=PredicateForm(
+        function=PredicateFormFunction.GREATER,
+        parameters=[ConstantParameter(ConstantType.DOUBLE, "2015.0")],
+        attribute=AttributeRef("8D679D5111D3E4981000E787EC6DE8A4", "Year"),
+        form=AttributeFormSystemRef("45C11FA478E745FEA08D781CEA190FE5", "ID")
+    )
+)
 
 new_sec_fil = SecurityFilter.create(conn, qualification, name, folder_id)
 
@@ -85,7 +86,7 @@ pf2 = PredicateForm(
 logic_operator = LogicOperator(function=LogicFunction.AND, children=[pf1, pf2])
 qualification2 = Qualification(tree=logic_operator)
 name2 = 'Customer John Smith'
-new_sec_fil2 = SecurityFilter(conn, qualification2, name2, folder_id)
+new_sec_fil2 = SecurityFilter.create(conn, qualification2, name2, folder_id)
 
 # alter security filter - its name, description, qualification and folder
 new_name = "Year > 2020"

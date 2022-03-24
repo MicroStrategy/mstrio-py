@@ -1,14 +1,17 @@
+import logging
 from typing import List, Optional, Union
 
 import pandas as pd
 
+from mstrio.api import cubes
+from mstrio.connection import Connection
 from mstrio.object_management.search_operations import full_search, SearchPattern
 from mstrio.utils.entity import ObjectSubTypes, ObjectTypes
-from mstrio.api import cubes
 from mstrio.utils.helper import exception_handler
 
-from mstrio.connection import Connection
 from .cube import _Cube, load_cube
+
+logger = logging.getLogger(__name__)
 
 
 def list_olap_cubes(connection: Connection, name_begins: Optional[str] = None,
@@ -22,7 +25,7 @@ def list_olap_cubes(connection: Connection, name_begins: Optional[str] = None,
     Wildcards available for 'name_begins':
         ? - any character
         * - 0 or more of any characters
-        e.g name_begins = ?onny wil return Sonny and Tonny
+        e.g. name_begins = ?onny will return Sonny and Tonny
 
     Args:
         connection: MicroStrategy connection object returned by
@@ -376,7 +379,7 @@ class OlapCube(_Cube):
         asynchronous operation, so the result of it can be seen after calling
         method `refresh_status()` inherited from Cube class."""
         cubes.publish(self._connection, self._id)
-        print(f"Request for publishing cube {self.name} was sent.")
+        logger.info(f"Request for publishing cube '{self.name}' was sent.")
 
     def export_sql_view(self):
         """Export SQL View of an OLAP Cube.
