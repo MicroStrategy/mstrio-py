@@ -3,7 +3,7 @@ from enum import Enum
 from functools import reduce, wraps
 import inspect
 from json.decoder import JSONDecodeError
-from math import floor
+import logging
 import os
 import re
 from typing import Any, Callable, Dict, List, Optional, Tuple, TYPE_CHECKING, TypeVar, Union
@@ -18,14 +18,16 @@ from mstrio.api.exceptions import MstrTimeoutError, PromptedContentError, Versio
 from mstrio.types import ObjectSubTypes
 from mstrio.utils.dict_filter import filter_list_of_dicts
 from mstrio.utils.enum_helper import get_enum_val
-from mstrio.utils.time_helper import DatetimeFormats, map_datetime_to_str, map_str_to_datetime
 from mstrio.utils.sessions import FuturesSessionWithRenewal
-
+from mstrio.utils.time_helper import DatetimeFormats, map_datetime_to_str, map_str_to_datetime
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
     from mstrio.project_objects.datasets import OlapCube, SuperCube
     from mstrio.types import ObjectTypes
+
+
+logger = logging.getLogger(__name__)
 
 
 def deprecation_warning(deprecated: str, new: str, version: str, module: bool = True,
@@ -101,7 +103,7 @@ def camel_to_snake(response: Union[dict, list]) -> Union[dict, List[dict]]:
     def convert_dict(source):
         return {
             stringcase.snakecase(key):
-            value if not isinstance(value, dict) else convert_dict(value)
+                value if not isinstance(value, dict) else convert_dict(value)
             for key, value in source.items()
         }
 
@@ -120,7 +122,7 @@ def snake_to_camel(response: Union[dict, list]) -> Union[dict, List[dict]]:
     def convert_dict(source):
         return {
             stringcase.camelcase(key):
-            value if not isinstance(value, dict) else convert_dict(value)
+                value if not isinstance(value, dict) else convert_dict(value)
             for key, value in source.items()
         }
 
@@ -200,16 +202,20 @@ def response_handler(response, msg, throw_error=True, verbose=True, whitelist=No
                 raise PromptedContentError(
                     'Prompted content subscription creation is not supported.')
             if verbose:
-                print(msg)
-                print("I-Server Error %s, %s\nTicket ID: %s\n" %
-                      (server_code, server_msg, ticket_id))
+                logger.error(
+                    f'{msg}\n'
+                    f'I-Server Error {server_code}, {server_msg}\n'
+                    f'Ticket ID: {ticket_id}'
+                )
             if throw_error:
                 response.raise_for_status()
     except JSONDecodeError:
         if verbose:
-            print(msg)
-            print(("Could not decode the response from the I-Server. Please check if I-Server "
-                   "is running correctly\n"))
+            logger.error(
+                f'{msg}\n'
+                f'Could not decode the response from the I-Server. Please check if I-Server is '
+                f'running correctly'
+            )
             response.raise_for_status()  # raise error if I-Server response cannot be decoded
 
 
@@ -234,10 +240,12 @@ def fallback_on_timeout(min_limit: int = 50):
             try:
                 return func(limit), limit
             except MstrTimeoutError as err:
-                new_limit = floor(limit / 2)
+                new_limit = limit // 2
                 if new_limit >= min_limit:
-                    warnings.warn((f"Timout hit when executing {func.__name__} with limit "
-                                   f"{limit}, retrying with limit {new_limit}"))
+                    logger.warning(
+                        f'Timout hit when executing {func.__name__} with limit {limit}, '
+                        f'retrying with limit {new_limit}'
+                    )
                     return fot_wrapper(new_limit)
                 else:
                     raise err
@@ -381,7 +389,7 @@ def sort_object_properties(source: dict) -> int:
     return preffered_order.get(source, 50)
 
 
-def auto_match_args(func: Callable, param_dict: dict, exclude: list = [],
+def auto_match_args(func: Callable, param_dict: dict, exclude: Optional[list] = None,
                     include_defaults: bool = True) -> dict:
     """Automatically match dict data to function arguments.
 
@@ -398,6 +406,7 @@ def auto_match_args(func: Callable, param_dict: dict, exclude: list = [],
         KeyError: could not match all required arguments
     """
 
+    exclude = exclude or []
     args = get_args_from_func(func)
     default_dict = get_default_args_from_func(func)
 
@@ -435,12 +444,13 @@ def dict_compare(d1, d2):
     added = d1_keys - d2_keys
     removed = d2_keys - d1_keys
     modified = {o: (d1[o], d2[o]) for o in intersect_keys if d1[o] != d2[o]}
-    same = set(o for o in intersect_keys if d1[o] == d2[o])
+    same = {o for o in intersect_keys if d1[o] == d2[o]}
     return added, removed, modified, same
 
 
 def __validate_single_param_value(value, param_name, data_type, max_val, min_val, regex,
-                                  valid_example, inv_val, special_values=[]):
+                                  valid_example, inv_val, special_values=None):
+    special_values = special_values or []
     if value in special_values:
         return True
 
@@ -466,7 +476,7 @@ def __validate_single_param_value(value, param_name, data_type, max_val, min_val
 
 
 def validate_param_value(param_name, param_val, data_type, max_val=None, min_val=None,
-                         special_values=[], regex=None, exception=True,
+                         special_values=None, regex=None, exception=True,
                          valid_example=None) -> bool:
     """Validate param data type and optionally max, min special values.
 
@@ -474,6 +484,7 @@ def validate_param_value(param_name, param_val, data_type, max_val=None, min_val
         TypeError
         ValueError
     """
+    special_values = special_values or []
     inv_type = TypeError if exception else Warning
     inv_val = ValueError if exception else Warning
     data_type = data_type if isinstance(data_type, list) else [data_type]
@@ -658,8 +669,8 @@ def merge_id_and_type(object_id: str, object_type: Union["ObjectTypes", "ObjectS
         exception_handler(msg=error_msg or "Please provide both `id` and `type`.",
                           exception_type=AttributeError)
     object_id = get_objects_id(object_id, type(object_id))
-    object_type = get_enum_val(object_type, type(object_type)) if isinstance(
-        object_type, Enum) else object_type
+    object_type = get_enum_val(object_type, type(object_type)) if isinstance(object_type,
+                                                                             Enum) else object_type
     return f'{object_id};{object_type}'
 
 
@@ -730,10 +741,13 @@ def choose_cube(connection: "Connection", cube_dict: dict) -> Union["OlapCube", 
 
 
 class Dictable:
+    """The fundamental class in mstrio-py package. Includes support for
+    converting an object to a dictionary, and creating an object from a
+    dictionary."""
     _FROM_DICT_MAP: Dict[str, Callable] = {}  # map attributes to Enums and components
 
     @classmethod
-    def _obj_to_dict(cls, key, val, camel_case=True):
+    def _unpack_objects(cls, key, val, camel_case=True):
         """Unpack Enums, Dictable obj, list of Enums"""
         if isinstance(val, datetime):
             return map_datetime_to_str(key, val, cls._FROM_DICT_MAP)
@@ -742,14 +756,14 @@ class Dictable:
         elif isinstance(val, Dictable):
             return val.to_dict(camel_case)
         elif isinstance(val, list):
-            return [cls._obj_to_dict(key, v, camel_case) for v in val]
+            return [cls._unpack_objects(key, v, camel_case) for v in val]
         return val
 
     @classmethod
     def _dict_to_obj(cls, connection, val, key):
 
         def constructor():
-            if isinstance(val, type(DatetimeFormats)):
+            if isinstance(cls._FROM_DICT_MAP[key], DatetimeFormats):
                 return map_str_to_datetime(key, val, cls._FROM_DICT_MAP)
             elif isinstance(cls._FROM_DICT_MAP[key], type(Enum)):
                 return cls._FROM_DICT_MAP[key](val)
@@ -766,20 +780,34 @@ class Dictable:
 
         return val if key not in cls._FROM_DICT_MAP else constructor()
 
-    def to_dict(self, camel_case=True):
+    def to_dict(self, camel_case: bool = True) -> dict:
+        """Converts an object to a dictionary excluding object's private
+        properties. When converting the object to a dictionary, the object's
+        attributes become the dictionary's keys and are in camel case by default
+        Attribute values stored as objects are automatically converted to
+        non-/ primitive data structures.
+
+        Args:
+            camel_case (bool, optional): Set to True if attribute names should
+                be converted from snake case to camel case. Defaults to True.
+
+        Returns:
+            dict: A dictionary representation of object's attributes and values.
+                By default the dictionary keys are in camel case.
+        """
 
         hidden_keys = [
             '_fetched_attributes', '_altered_properties', '_connection', 'connection', '_type'
         ]
         cleaned_dict = self.__dict__.copy()
-        properties = set(
-            (elem[0]
-             for elem in inspect.getmembers(self.__class__, lambda x: isinstance(x, property))))
+        properties = {
+            elem[0]
+            for elem in inspect.getmembers(self.__class__, lambda x: isinstance(x, property))}
         for prop in properties:
             to_be_deleted = '_' + prop
             cleaned_dict[prop] = cleaned_dict.pop(to_be_deleted, None)
         result = {
-            key: self._obj_to_dict(key, val, camel_case)
+            key: self._unpack_objects(key, val, camel_case)
             for key, val in cleaned_dict.items()
             if key not in hidden_keys
         }
@@ -791,6 +819,24 @@ class Dictable:
     @classmethod
     def from_dict(cls: T, source: Dict[str, Any], connection: Optional["Connection"] = None,
                   to_snake_case: bool = True) -> T:
+        """Creates an object from a dictionary. The dictionary's keys in camel
+        case are changed to object's attribute names (by default in snake case)
+        and dict values are composed to their proper data types such as Enums,
+        list of Enums etc. as specified in _FROM_DICT_MAP.
+
+        Args:
+            cls (T): Class (type) of an object that should be created.
+            source (Dict[str, Any]): A dictionary from which an object will be
+                constructed.
+            connection (Connection, optional): A MSTR Connection object.
+                Defaults to None.
+            to_snake_case (bool, optional): Set to True if attribute names
+                should be converted from camel case to snake case. Defaults to
+                True.
+
+        Returns:
+            T: An object of type T.
+        """
         object_source = camel_to_snake(source) if to_snake_case else source
         if connection is not None:
             object_source["connection"] = connection
@@ -802,3 +848,19 @@ class Dictable:
         }
         obj = cls(**args)  # type: ignore
         return obj
+
+    def __repr__(self) -> str:
+        from mstrio.utils.entity import auto_match_args_entity
+        param_dict = auto_match_args_entity(
+            self.__init__,
+            self,
+            exclude=['self'],
+            include_defaults=False,
+        )
+        formatted_params = ', '.join(
+            (
+                f'{param}={repr(value)}' for param, value
+                in param_dict.items()
+            )
+        )
+        return f'{self.__class__.__name__}({formatted_params})'

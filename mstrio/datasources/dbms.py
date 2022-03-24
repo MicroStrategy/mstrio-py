@@ -76,7 +76,7 @@ class Dbms(EntityBase):
                                  version=temp_dbms["version"])
             else:
                 identifier = name if name else id
-                raise ValueError("There is no Dbms: '{}'".format(identifier))
+                raise ValueError(f"There is no Dbms: '{identifier}'")
 
     def _init_variables(self, **kwargs) -> None:
         """Set object attributes by providing keyword args."""

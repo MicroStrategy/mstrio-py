@@ -94,7 +94,7 @@ class DynamicDateTimeParameter(ParameterBase):
 
     def __init__(self, dynamic_date_time: dict):
         super().__init__()
-        # TODO think about some object for dynamic_date_stucture
+        # TODO think about some object for dynamic_date_structure
         self.dynamic_date_time = dynamic_date_time
 
 

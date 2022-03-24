@@ -1,20 +1,24 @@
 from collections import defaultdict
 from enum import auto
+import logging
 from typing import Iterable, List, Optional, TYPE_CHECKING, Union
 
 from mstrio import config
 from mstrio.api import contacts
 from mstrio.distribution_services.contact_group import ContactGroup
 from mstrio.distribution_services.device import Device
+from mstrio.users_and_groups.user import User
 from mstrio.utils.entity import auto_match_args_entity, DeleteMixin, EntityBase
 from mstrio.utils.enum_helper import AutoName
 from mstrio.utils.helper import (
     camel_to_snake, delete_none_values, Dictable, fetch_objects, get_objects_id
 )
-from mstrio.users_and_groups.user import User
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
+
+
+logger = logging.getLogger(__name__)
 
 
 class ContactDeliveryType(AutoName):
@@ -252,7 +256,7 @@ class Contact(EntityBase, DeleteMixin):
         response = contacts.create_contact(connection, body).json()
 
         if config.verbose:
-            print(
+            logger.info(
                 f"Successfully created contact named: '{name}' with ID: '{response['id']}'"
             )
 

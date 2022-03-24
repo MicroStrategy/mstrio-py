@@ -5,9 +5,13 @@ This script will not work without replacing parameters with real values.
 Its basic goal is to present what can be done with this module and to
 ease its usage.
 """
+import csv
 
 from mstrio.connection import Connection
-from mstrio.users_and_groups import User, list_users, UserGroup, list_user_groups
+from mstrio.users_and_groups import (
+    create_users_from_csv, list_user_groups, list_users, User, UserGroup
+)
+
 
 base_url = "https://<>/MicroStrategyLibrary/api"
 username = "some_username"
@@ -34,6 +38,16 @@ users_array = [{
 }]
 for u in users_array:
     User.create(connection=conn, username=u['username'], full_name=u['fullName'])
+
+# Also, you can create users from a CSV file
+newly_created_users = create_users_from_csv(connection=conn, csv_file="path/to/file.csv")
+
+# Or you can do it manually
+with open("path/to/file.csv", "r") as f:
+    users = csv.DictReader(f)
+
+    for user in users:
+        User.create(connection=conn, username=user['username'], full_name=user['full_name'])
 
 # create a single user and get users which name begins with "John" and have
 # additional filter for initials

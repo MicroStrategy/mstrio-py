@@ -5,16 +5,18 @@ This script will not work without replacing parameters with real values.
 Its basic goal is to present what can be done with this module and to
 ease its usage.
 
-`mstrio.server.migration` module is still work in progress. We plan to release all
-functionalities in 03.2022
+`mstrio.object_management.migration` module is available as a Functionality Preview.
+It is subject to change until it is released as Generally Available.
 """
 
-from mstrio.connection import Connection
 from mstrio.access_and_security.privilege import Privilege
-from mstrio.users_and_groups.user import User
-from mstrio.server.migration import (bulk_migrate_package, bulk_full_migration, Migration,
-                                     PackageConfig, PackageContentInfo, PackageSettings)
+from mstrio.connection import Connection
+from mstrio.object_management.migration import (
+    bulk_full_migration, bulk_migrate_package, Migration, PackageConfig, PackageContentInfo,
+    PackageSettings
+)
 from mstrio.types import ObjectTypes
+from mstrio.users_and_groups.user import User
 
 # Create connection to the source environment
 source_base_url = "https://<>/MicroStrategyLibrary/api"
@@ -46,7 +48,6 @@ Privilege(target_conn, name='Apply package').add_to_user(user2)
 # Create PackageConfig with information what object should be migrated and how.
 # The options are of type Enum with all possible values listed.
 dossier_id = 'some dossier id'
-document_id = 'some document id'
 report_id = 'some report id'
 
 package_settings = PackageSettings(
@@ -76,7 +77,7 @@ package_config2 = PackageConfig(PackageConfig.PackageUpdateType.PROJECT, package
 save_path = 'some/path/import_package.mmp'
 custom_package_path = 'some/other/path/other_import_package.mmp'
 
-# Create Migrations objects that can use all the funcionalities
+# Create Migrations objects that can use all the functionalities
 mig = Migration(
     save_path=save_path,
     source_connection=source_conn,
@@ -113,7 +114,7 @@ mig3.migrate_package()
 mig.perform_full_migration()
 
 # Detailed version
-# Create import package and save it to the file sepecified with `save_path`
+# Create import package and save it to the file specified with `save_path`
 # argument during creation of migration object
 mig.create_package()
 mig2.create_package()

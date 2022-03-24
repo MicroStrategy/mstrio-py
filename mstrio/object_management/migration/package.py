@@ -1,4 +1,5 @@
 from enum import auto
+import logging
 from time import sleep
 from typing import Any, Dict, List, Optional, Union
 
@@ -13,8 +14,9 @@ from mstrio.utils.enum_helper import AutoName
 from mstrio.utils.helper import Dictable, exception_handler
 from mstrio.utils.wip import module_wip, WipLevels
 
-module_wip(globals(), target_release="22.03", level=WipLevels.WARNING)
+module_wip(globals(), level=WipLevels.PREVIEW)
 
+logger = logging.getLogger(__name__)
 
 TIMEOUT = 10
 TIMEOUT_INCREMENT = 0.25
@@ -134,11 +136,11 @@ class PackageSettings(Dictable):
 
 
 class PackageContentInfo(Dictable):
-    """Object representation of package content informations
+    """Object representation of package content information
 
     Attributes:
         id(str): object ID
-        action(Action): The asction to resolve the conflict.
+        action(Action): The action to resolve the conflict.
         name(Optional[str]): object name
         version(Optional[str]): object version
         type(Optional[ObjectTypes]): object type
@@ -332,7 +334,7 @@ class Package(EntityBase, DeleteMixin):
     def create(cls, connection: Connection, progress_bar: bool = False):
         response = migration.create_package_holder(connection).json()
         if config.verbose and not progress_bar:
-            print(f"Created package with ID: {response.get('id')}")
+            logger.info(f"Created package with ID: '{response.get('id')}'")
         return cls.from_dict(source=response, connection=connection)
 
     def update_config(self, package_config: PackageConfig):
@@ -352,7 +354,7 @@ class Package(EntityBase, DeleteMixin):
             total_time += TIMEOUT_INCREMENT
 
             if total_time > TIMEOUT:
-                helper.exception_handler('Time out on updating package', Warning)
+                logger.warning('Time out on updating package')
                 return False
 
         self.fetch()
@@ -362,12 +364,16 @@ class Package(EntityBase, DeleteMixin):
         response = migration.upload_package(self.connection, self.id, package_binary).json()
         self.status = response.get('status')
         if config.verbose and not progress_bar:
-            print(f"Uploaded package binary to package holder with ID: {response.get('id')}")
+            logger.info(
+                f"Uploaded package binary to package holder with ID: '{response.get('id')}'"
+            )
 
     def download_package_binary(self, progress_bar: bool = False) -> bytes:
         response = migration.download_package(self.connection, self.id)
         if config.verbose and not progress_bar:
-            print(f"Downloaded binary of a package with ID: {self.id}")
+            logger.info(
+                f"Downloaded binary of a package with ID: '{self.id}'"
+            )
         return response.content
 
 
@@ -422,11 +428,11 @@ class PackageImport(EntityBase, DeleteMixin):
             total_time += TIMEOUT_INCREMENT
 
             if total_time > TIMEOUT:
-                helper.exception_handler('Time out on creating import', Warning)
+                logger.warning('Time out on creating import')
                 return False
 
         if config.verbose and not progress_bar:
-            print(f"Created package import process with ID: {response.get('id')}")
+            logger.info(f"Created package import process with ID: '{response.get('id')}'")
         return cls.from_dict(source=response, connection=connection)
 
     def download_undo_binary(self, progress_bar=False):
@@ -440,10 +446,10 @@ class PackageImport(EntityBase, DeleteMixin):
             total_time += TIMEOUT_INCREMENT
 
             if total_time > TIMEOUT:
-                helper.exception_handler('Time out on downloading undo binary', Warning)
+                logger.warning('Time out on downloading undo binary')
                 return False
 
         response = migration.create_undo(self.connection, self.id)
         if config.verbose and not progress_bar:
-            print(f"Downloaded undo package binary for import process with ID: {self.id}")
+            logger.info(f"Downloaded undo package binary for import process with ID: '{self.id}'")
         return response.content

@@ -530,7 +530,7 @@ def get_security_settings(connection, error_msg=None):
 def update_security_settings(connection, body, error_msg=None):
     """Update the security settings. In the body of the request you can specify
     the secret key that will be used in identity token generation, whether to
-    enable Corss Origin Resource Sharing (CORS), and whether to disable URL
+    enable Cross Origin Resource Sharing (CORS), and whether to disable URL
     validation when specifying domains for CORS configuration.
 
     Args:

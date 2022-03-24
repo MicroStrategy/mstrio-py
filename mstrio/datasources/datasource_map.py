@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Callable, Dict, List, Optional, Union
 
 from requests import HTTPError
@@ -11,6 +12,8 @@ from mstrio.users_and_groups.user import User
 from mstrio.utils import helper
 from mstrio.utils.entity import Entity, EntityBase, ObjectTypes
 from mstrio.utils.helper import get_objects_id
+
+logger = logging.getLogger(__name__)
 
 
 def list_datasource_mappings(
@@ -177,11 +180,11 @@ class DatasourceMap(EntityBase):
         user_input = 'N'
         if not force:
             user_input = input(
-                (f"Are you sure you want to delete datasource map with ID: {self.id}? [Y/N]: "))
+                f"Are you sure you want to delete datasource map with ID: {self.id}? [Y/N]: ")
         if force or user_input == 'Y':
             response = datasources.delete_datasource_mapping(self.connection, self.id)
             if response.status_code == 204 and config.verbose:
-                print(f"Successfully deleted datasource map with ID: {self.id}")
+                logger.info(f"Successfully deleted datasource map with ID: '{self.id}'")
             return response.ok
         else:
             return False
@@ -200,7 +203,7 @@ class DatasourceMap(EntityBase):
         except HTTPError as err:
             if err.errno == 404:
                 if config.verbose:
-                    print("No mapping found.")
+                    logger.info('No mapping found.')
                 return None
             else:
                 raise err
@@ -226,9 +229,9 @@ class DatasourceMap(EntityBase):
             ds_connection: The Datasource Connection to be mapped
             datasource: The Datasource Instance to be mapped
             login: The Datasource Login to be mapped
-            locale: The locale to be maped.
-            locale_id: The id of locale to be maped.
-            locale_name: The name of locale to be maped.
+            locale: The locale to be mapped.
+            locale_id: The id of locale to be mapped.
+            locale_name: The name of locale to be mapped.
 
         Returns:
             DatasourceMap object
@@ -262,8 +265,9 @@ class DatasourceMap(EntityBase):
 
         jresponse = datasources.create_datasource_mapping(connection=connection, body=body).json()
         if config.verbose:
-            print("Successfully created datasource connection map "
-                  f"with ID: '{jresponse.get('id')}'")
+            logger.info(
+                f"Successfully created datasource connection map with ID: '{jresponse.get('id')}'"
+            )
         return cls.from_dict(source=helper.camel_to_snake(jresponse), connection=connection)
 
     # TODO: improve to/from dict methods to allow renaming

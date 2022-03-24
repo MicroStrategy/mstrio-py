@@ -1,5 +1,6 @@
 from enum import auto
 import getpass
+import logging
 from typing import Dict, Iterable, List, Optional, TYPE_CHECKING, Union
 
 import numpy as np
@@ -17,6 +18,8 @@ if TYPE_CHECKING:
     from pandas.io.formats.style import Styler
 
     from mstrio.server.project import Project
+
+logger = logging.getLogger(__name__)
 
 
 class GroupBy(str, AutoName):
@@ -194,7 +197,7 @@ class Cluster:
         name = node.name if isinstance(node, Node) else node
         monitors.add_node(self.connection, name)
         if config.verbose:
-            print("{} added to cluster.".format(name))
+            logger.info(f'{name} added to cluster.')
 
     def remove_node(self, node: Union[str, Node]) -> None:
         """Remove server (node) from the cluster.
@@ -205,7 +208,7 @@ class Cluster:
         name = node.name if isinstance(node, Node) else node
         monitors.remove_node(self.connection, name)
         if config.verbose:
-            print("{} removed from cluster.".format(name))
+            logger.info(f'{name} removed from cluster.')
 
     def set_primary_node(self, node: Union[str, Node]) -> None:
         """Set default/primary server (node) for the cluster.
@@ -216,10 +219,12 @@ class Cluster:
         """
         name = node.name if isinstance(node, Node) else node
         body = {"defaultHostname": name}
-        res = administration.update_iserver_configuration_settings(connection=self.connection,
-                                                                   body=body)
+        res = administration.update_iserver_configuration_settings(
+            connection=self.connection,
+            body=body
+        )
         if res.ok and config.verbose:
-            print("Primary node of the cluster was set to {}.".format(name))
+            logger.info(f'Primary node of the cluster was set to {name}.')
 
     def check_dependency(self, service: str) -> List[str]:
         """Check all dependencies for the given service.
@@ -249,8 +254,8 @@ class Cluster:
                 else:
                     return {}
             else:
-                raise ValueError((f"Service {service_name} is incorrect. Please choose one of: "
-                                  f"{available_services}"))
+                raise ValueError(f"Service {service_name} is incorrect. Please choose one of: "
+                                 f"{available_services}")
 
         return list(get_dependencies_recursively(service))
 
@@ -299,8 +304,11 @@ class Cluster:
         # ask for confirmation when stopping MicroStrategy-Intelligence-Server
         if action == ServiceAction.STOP:
             if not force and service == 'MicroStrategy-Intelligence-Server':
-                print(("Stopping the Intelligence Server can affect all the users' sessions, "
-                       "including this current session."))
+                msg = (
+                    "Stopping the Intelligence Server can affect all the users' sessions, "
+                    "including this current session."
+                )
+                logger.info(msg)
                 if input("Are you sure you want to proceed? [Y/N]:") != 'Y':
                     return
         if action == ServiceAction.START:
@@ -376,7 +384,7 @@ class Cluster:
         }
         response = administration.update_iserver_node_settings(self.connection, body, node_name)
         if config.verbose and response.ok:
-            print(f"Intelligence Server configuration updated for {node_name}")
+            logger.info(f'Intelligence Server configuration updated for {node_name}')
 
     def reset_node_settings(self, node: Union[str, Node]) -> None:
         """Remove I-Server configuration settings for given node within a
@@ -448,11 +456,13 @@ class Cluster:
         if len(wrong) > 0:
             action_msg = 'started' if action == ServiceAction.START else 'stopped'
             nodes_msg = ', '.join(wrong)
-            print(f'Service {service_name} was not {action_msg} for node(s) {nodes_msg}.')
+            logger.warning(f'Service {service_name} was not {action_msg} for node(s) {nodes_msg}.')
         if len(good) > 0:
             action_msg = 'start' if action == ServiceAction.START else 'stop'
             nodes_msg = ','.join(good)
-            print(f'Request to {action_msg} {service_name} was sent for node(s) {nodes_msg}.')
+            logger.info(
+                f'Request to {action_msg} {service_name} was sent for node(s) {nodes_msg}.'
+            )
 
     def _check_service(self, service_name: str, service_list: List[Dict]) -> None:
         """Checks if the name of the given service is one of the names of

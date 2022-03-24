@@ -7,8 +7,8 @@ from tqdm.auto import tqdm
 
 from mstrio import config
 from mstrio.api import reports
-from mstrio.object_management.search_operations import full_search, SearchPattern
 from mstrio.connection import Connection
+from mstrio.object_management.search_operations import full_search, SearchPattern
 from mstrio.users_and_groups.user import User
 from mstrio.utils.certified_info import CertifiedInfo
 from mstrio.utils.entity import CertifyMixin, DeleteMixin, Entity, ObjectTypes
@@ -30,7 +30,7 @@ def list_reports(connection: Connection, name_begins: Optional[str] = None,
     Wildcards available for 'name_begins':
         ? - any character
         * - 0 or more of any characters
-        e.g name_begins = ?onny wil return Sonny and Tonny
+        e.g. name_begins = ?onny will return Sonny and Tonny
 
     Args:
         connection: MicroStrategy connection object returned by
@@ -180,7 +180,6 @@ class Report(Entity, CertifyMixin, DeleteMixin):
         """
         if limit:
             self._initial_limit = limit
-            self.instance_id = None
 
         if self.instance_id is None:
             res = self.__initialize_report(self._initial_limit)
@@ -259,7 +258,7 @@ class Report(Entity, CertifyMixin, DeleteMixin):
                                             self.attributes))[0]['name']
                     elements = attr_dict[attribute]
                     indexes = indexes | self._dataframe[attr_name].isin(elements)
-                # select datframe indexes with
+                # select dataframe indexes with
                 self._dataframe = self._dataframe[indexes]
 
             if self._cross_tab_filter['attributes'] is not None:
@@ -268,7 +267,7 @@ class Report(Entity, CertifyMixin, DeleteMixin):
                         filter(lambda x: x['id'] not in self._cross_tab_filter['attributes'],
                                self.attributes))
                 ]
-                # filtering out attribute forms cloumns
+                # filtering out attribute forms columns
                 to_be_removed = []
                 to_be_added = []
                 for attr in attr_names:

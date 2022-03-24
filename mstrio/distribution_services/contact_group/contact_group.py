@@ -1,6 +1,8 @@
-from typing import Iterable, Optional, Union, List, TYPE_CHECKING
 from collections import defaultdict
 from enum import auto
+import logging
+from typing import Iterable, Optional, Union, List, TYPE_CHECKING
+
 
 from mstrio import config
 from mstrio.api import contact_groups
@@ -12,6 +14,8 @@ from mstrio.utils.helper import Dictable, fetch_objects_async, get_objects_id
 if TYPE_CHECKING:
     from mstrio.connection import Connection
     from mstrio.distribution_services.contact import Contact
+
+logger = logging.getLogger(__name__)
 
 
 class ContactGroupMemberType(AutoName):
@@ -213,8 +217,10 @@ class ContactGroup(EntityBase, DeleteMixin):
         }
         res = contact_groups.create_contact_group(connection, body).json()
         if config.verbose:
-            print("Successfully created contact group named: '{}' with ID: '{}'".format(
-                res.get('name'), res.get('id')))
+            logger.info(
+                f"Successfully created contact group named: '{res.get('name')}' "
+                f"with ID: '{res.get('id')}'"
+            )
         return cls.from_dict(res, connection)
 
     def alter(self, name: Optional[str] = None, description: Optional[str] = None,
@@ -267,8 +273,8 @@ class ContactGroup(EntityBase, DeleteMixin):
             return objects
         return [ContactGroup.from_dict(source=obj, connection=connection) for obj in objects]
 
-    def _set_object(self, **kwargs) -> None:
-        super(ContactGroup, self)._set_object(**kwargs)
+    def _set_object_attributes(self, **kwargs) -> None:
+        super()._set_object_attributes(**kwargs)
         memberships = kwargs.get("memberships")
 
         memberships_objs = [

@@ -1,6 +1,5 @@
 from typing import TYPE_CHECKING
 
-from mstrio import config
 from mstrio.utils.error_handlers import ErrorHandler
 from mstrio.utils.helper import exception_handler, response_handler
 
@@ -240,11 +239,9 @@ def remove_subscription(connection, subscription_id, project_id, error_msg=None,
         url=connection.base_url + '/api/subscriptions/' + subscription_id,
         headers={'X-MSTR-ProjectID': project_id},
     )
-    if config.debug:
-        print(response.url)
     if not response.ok:
         if error_msg is None:
-            error_msg = "Error unsubscribing Subscription {}".format(subscription_id)
+            error_msg = f"Error unsubscribing Subscription {subscription_id}"
         if exception_type is None:
             response_handler(response, error_msg)
         else:

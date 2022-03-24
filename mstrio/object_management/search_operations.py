@@ -1,18 +1,24 @@
+import logging
 from typing import List, Optional, TYPE_CHECKING, Union
 
 from mstrio.api import browsing
 from mstrio.connection import Connection
-from mstrio.object_management.search_enums import (CertifiedStatus, SearchDomain, SearchPattern,
-                                                   SearchResultsFormat)
+from mstrio.object_management.search_enums import (
+    CertifiedStatus, SearchDomain, SearchPattern, SearchResultsFormat
+)
 from mstrio.server.project import Project
+from mstrio.types import ObjectSubTypes, ObjectTypes
 from mstrio.users_and_groups import User
 from mstrio.utils.entity import Entity, EntityBase
-from mstrio.utils.helper import (exception_handler, fetch_objects_async, get_enum_val,
-                                 get_objects_id, get_args_from_func, merge_id_and_type)
-from mstrio.types import ObjectTypes, ObjectSubTypes
+from mstrio.utils.helper import (
+    exception_handler, fetch_objects_async, get_args_from_func, get_enum_val, get_objects_id,
+    merge_id_and_type
+)
 
 if TYPE_CHECKING:
     from mstrio.types import TypeOrSubtype
+
+logger = logging.getLogger(__name__)
 
 
 class SearchObject(Entity):
@@ -418,8 +424,10 @@ def get_search_results(connection: Connection, search_id: str,
     project_id = get_objects_id(project, Project)
     get_result_params['project_id'] = project_id
     if results_format == SearchResultsFormat.TREE:
-        print('Notice. When results_format is equal to TREE, '
-              'results are always returned in a dictionary format.')
+        logger.info(
+            'Notice. When results_format is equal to TREE, results are always returned'
+            ' in a dictionary format.'
+        )
         return _get_search_result_tree_format(**get_result_params)
     get_result_params.update({**filters, 'to_dictionary': to_dictionary})
     return _get_search_result_list_format(**get_result_params)

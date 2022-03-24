@@ -1,21 +1,20 @@
-from copy import deepcopy
 import csv
 from enum import Enum
 import inspect
+import logging
 from os.path import join as joinpath
 from pprint import pprint
 from sys import version_info
 from typing import Any, Callable, Dict, List, Optional, Tuple, TYPE_CHECKING, TypeVar, Union
 
-import dictdiffer
 from pandas import DataFrame
-import stringcase
+from stringcase import snakecase
 
 from mstrio import config
 from mstrio.api import objects
 from mstrio.api.exceptions import VersionException
 from mstrio.connection import Connection
-from mstrio.types import ObjectTypes, ObjectSubTypes, ExtendedType  # noqa
+from mstrio.types import ExtendedType, ObjectSubTypes, ObjectTypes
 from mstrio.utils import helper
 from mstrio.utils.acl import ACE, ACLMixin, Rights
 from mstrio.utils.dependence_mixin import DependenceMixin
@@ -24,17 +23,114 @@ from mstrio.utils.time_helper import bulk_str_to_datetime, DatetimeFormats, map_
 if TYPE_CHECKING:
     from mstrio.server import Project
 
+logger = logging.getLogger(__name__)
+
 T = TypeVar("T")
 
 
 class EntityBase(helper.Dictable):
     """This class is for objects that do not have a specified MSTR type.
 
-    Attributes:
-        connection: A MicroStrategy connection object
-        id: Object ID
-        type: Object type set to None
-        name: Object name
+    Class attributes:
+    _OBJECT_TYPE (ObjectTypes): MSTR Object type defined in ObjectTypes
+    _REST_ATTR_MAP (Dict[str, str]): A dictionary whose keys are names of
+        fields of an HTTP response from the server, and values are their
+        respective Python API mappings. This dictionary is mainly used when
+        overriding `_init_variables` function to convert field names to
+        attribute names before the object's attributes initialization. For
+        example, if a value of the `job_type` field should be stored in a 'type'
+        attribute, one can specify this dictionary as: {"job_type" : "type"} and
+        override `_init_variables` method to implement this mapping such as:
+         ```
+            kwargs = self._rest_to_python(kwargs)
+            self._AVAILABLE_ATTRIBUTES.update({key: type(val) for key, val
+                in kwargs.items()})
+            # init logic follows
+        ```
+    _API_GETTERS (Dict[Union[str, tuple], Callable]): A dictionary whose keys
+        are either a name of an attribute (as a string) or names of attributes
+        (as a tuple), and values are the REST API wrapper functions used to
+        fetch related data from a server. For example:
+        {'id': objects.get_object_info} or
+        {('id', 'name', 'description): objects.get_object_info}
+    _FROM_DICT_MAP (Dict[str, Callable]): A dictionary whose keys are
+        attribute's name and values are the attribute's type. This mapping is
+        required to determine a proper composite form in which a value will be
+        stored (such as an Enum, list of Enums etc.). Therefore, only attributes
+        with composite and not primitive data types should be included here.
+    _AVAILABLE_ATTRIBUTES (Dict[str, type]): A dictionary which keys are
+        object's attribute names as strings, and which values are types of
+        attributes value. It is used for validating attribute's type during the
+        process of properties update. This dictionary is created from keyword
+        arguments passed to an object's constructor.
+    _API_PATCH (Dict[Tuple[str], Tuple[Union[Callable, str]]]): A dictionary
+        whose keys are tuples with an object's attribute names as strings, and
+        values are tuples with two elements: first element is a REST API wrapper
+        function used to update the object's properties, and the second element
+        is a definition (as a string) how this update should be performed. For
+        example:
+        {('name', 'description', 'abbreviation'):
+            (objects.update_object, 'partial_put')}
+    _PATCH_PATH_TYPES (Dict[str, type]): A dictionary whose keys are names of
+        object's attributes and values are attribute types. Used to
+        validate correctness of a new value during the process of properties
+        update. For example: {'id': str, 'enabled': bool}
+    _API_DELETE(Callable): A function which is used to delete an object from the
+        server. Defaults to staticmethod(objects.delete_object).
+
+
+    Instance attributes:
+        connection (Connection): A MicroStrategy connection object
+        id (str): Object's ID
+        type (ObjectTypes): MicroStrategy Object Type
+        name (str): Object's name
+        _altered_properties (dict): This is a private attribute which is used to
+            track and validate local changes to the object. It is used whenever
+            an attribute is trying to be set on the object (see `__setattr__`).
+            It is also used to determine which properties should be updated on
+            a server (see `update_properties`)
+        _fetched_attributes (set): This is a private attribute which is used to
+            track which attributes have been already fetched from the server.
+            The logic of `__getattribute__` method is based on information
+            in this set.
+        subtype (ObjectSubTypes): The enumeration constant used to specify the
+            object's sub-type, which reveals more specific information than the
+            object's type.
+        ext_type (ExtendedType): A part of an object stored in the metadata.
+            It is used is to store additional custom information that can be
+            used to achieve new functionality. For example, to display a report
+            as a map and save it as part of the Report object, you can create an
+            extended property for displaying a report as a map and store it on
+            a server in the object's properties set.
+        date_created (DatetimeFormats): The object's creation time.
+        date_modified (DatetimeFormats): The object's last modification time.
+        version (str): The object's version ID. Used to compare if two MSTR
+            objects are identical. If both objects IDs and objects version IDs
+            are the same, MSTR Object Manager determines that objects as
+            'Exists Indentically'. Otherwise, if their IDs match but their
+            version IDs mismatch, MSTR Object Manager determines that objects
+            'Exists Differently'.
+        owner (User): The object's owner information.
+        icon_path (str): A path to a location where the object's icon is stored.
+        view_media (int): The enumeration constant used to represent the default
+            mode of a RSD or a dossier, and available modes of a RSD or a
+            dossier.
+        ancestors (List[Dict]): A list of the object's ancestor folders.
+        certified_info (CertifiedInfo): The object's certification status,
+            time of certification, and information about the certifier
+            (currently only for document and report)
+        acg (Rights): The enumeration constant used to specify the access
+            granted attribute of the object.
+        acl (List[ACE]): A list of permissions on the object so that users, or
+            user groups have control over individual objects in the system.
+            Those permissions decide whether or not a user can perform a
+            particular class of operations on a particular object. For example,
+            a user may have permissions to view and execute a report , but
+            cannot modify the report definition or delete the report.
+        hidden (bool): Determines whether the object is hidden on a server.
+        project_id (str): The ID of a project in which the object resides.
+        comments (List[str]): Custom user's comments related to the object
+        target_info (dict): ?
     """
     _OBJECT_TYPE: ObjectTypes = ObjectTypes.NONE  # MSTR object type defined in ObjectTypes
     _REST_ATTR_MAP: Dict[str, str] = {}
@@ -43,7 +139,7 @@ class EntityBase(helper.Dictable):
         'type': ObjectTypes
     }  # map attributes to Enums and Composites
     _AVAILABLE_ATTRIBUTES: Dict[str, type] = {}  # fetched on runtime from all Getters
-    _API_PATCH: dict = {}
+    _API_PATCH: Dict[Tuple[str], Tuple[Union[Callable, str]]] = {}
     _PATCH_PATH_TYPES: Dict[str, type] = {}  # used in update_properties method
     _API_DELETE: Callable = staticmethod(objects.delete_object)
 
@@ -52,10 +148,17 @@ class EntityBase(helper.Dictable):
         if config.fetch_on_init and self._find_func("id") is not None:
             self.fetch("id")
         if config.verbose:
-            print(self)
+            logger.info(self)
 
-    def _init_variables(self, **kwargs):
-        """Initialize variables given kwargs.
+    def _init_variables(self, **kwargs) -> None:
+        """Initializes object's attributes from kwargs. This method is often
+        overridden by subclasses of Entity / EntityBase to abstract the process
+        of initialization as it automatically sets attributes mutual for all
+        entities, adds information about object-specific attributes to
+        `_AVAILABLE_ATTRIBUTES` dictionary and creates a `_altered_properties`
+        dictionary which is used to track and validate any local
+        changes to the object. `_altered_properties` is later used to
+        properly update object's properties on a server.
 
         Note: attributes not accepted by any implementation of this function
             in the inheritance chain will be disregarded.
@@ -71,15 +174,17 @@ class EntityBase(helper.Dictable):
         self._altered_properties = dict()
 
     def fetch(self, attr: Optional[str] = None) -> None:  # NOSONAR
-        """Fetch the latest object state from the I-Server.
+        """Fetch the latest object's state from the I-Server.
 
         Note:
             This method can overwrite local changes made to the object.
 
         Args:
-            attr: Attribute name to be fetched.
+            attr (Optional[str]): Attribute name to be fetched. If not specified
+            it will use all getters specified in `_API_GETTERS` dictionary.
+            Defaults to None.
         Raises:
-            ValueError: if `attr` cannot be fetched.
+            ValueError: If `attr` cannot be fetched.
         """
         functions = self._API_GETTERS  # by default fetch all endpoints
 
@@ -101,9 +206,9 @@ class EntityBase(helper.Dictable):
                         key if isinstance(key, str) and len(response) == 1 else k: v
                         for k, v in response.items()
                     }
-                    self._set_object(**object_dict)
+                    self._set_object_attributes(**object_dict)
                 elif type(response) == list:
-                    self._set_object(**{key: response})
+                    self._set_object_attributes(**{key: response})
                 # TODO: consider changing camel_to_snake logic to work with
                 # list of keys
 
@@ -111,6 +216,11 @@ class EntityBase(helper.Dictable):
             self._add_to_fetched(key)
 
     def _add_to_fetched(self, keys: Union[str, tuple]) -> None:
+        """Adds name/-s of attribute/-s to the `_fetched_attributes` set.
+
+        Args:
+            keys (Union[str, tuple]): Name, or tuple with names of attributes.
+        """
         if isinstance(keys, str):
             keys = [keys]
         for key in keys:
@@ -119,10 +229,20 @@ class EntityBase(helper.Dictable):
 
     @classmethod
     def _find_func(cls, attr: str) -> Optional[Callable]:
-        """Try to find API endpoint in `cls._API_GETTERS` responsible for chosen
-        attribute.
+        """Searches cls._API_GETTERS dictionary for a REST API wrapper function
+        used to fetch `attr` from a server.
 
-        Returns: Function or None if function not found
+        Args:
+            attr (str): Name of an attribute to be fetched from the server.
+
+        Raises:
+            TypeError: `attr` not passed as a string.
+            NotImplementedError: cls._API_GETTERS dictionary was not specified
+            properly.
+
+        Returns:
+            Optional[Callable]: REST API wrapper function corresponding with
+                `attr` parameter, else None.
         """
         if not isinstance(attr, str):
             raise TypeError("`attr` parameter has to be of type str")
@@ -140,7 +260,16 @@ class EntityBase(helper.Dictable):
 
     @classmethod
     def _rest_to_python(cls, response: dict) -> dict:
-        """Map REST API field names to Python API field names."""
+        """Map REST API field names to Python API field names as specified in
+        cls._REST_ATTR_MAP.
+
+        Args:
+            response (dict): A dictionary representing an HTTP response.
+
+        Returns:
+            dict: A dictionary with field names converted to Python API names.
+        """
+        """"""
         for rest_name, python_name in cls._REST_ATTR_MAP.items():
             if rest_name in response:
                 old = response.pop(rest_name)
@@ -150,15 +279,32 @@ class EntityBase(helper.Dictable):
 
     @classmethod
     def _python_to_rest(cls, response: dict) -> dict:
-        """Map Python API field names to REST API field names."""
+        """Map Python API field names to REST API field names as specified in
+        cls._REST_ATTR_MAP.
+
+        Args:
+            response (dict): A dictionary representing an HTTP response.
+
+        Returns:
+            dict: A dictionary with field names converted to REST API names.
+        """
         for rest_name, python_name in cls._REST_ATTR_MAP.items():
             if python_name and python_name in response:
                 response[rest_name] = response.pop(python_name)
         return response
 
-    def __construct_component(self, key, val):
-        """Construct component instance using info in `self._FROM_DICT_MAP`"""
+    def __compose_val(self, key: str, val: Any) -> Any:
+        """Converts a value to a correct composite form such as Datetime, Enum,
+        list of Enums etc. Information about the correct form of the value is
+        stored in the `self._FROM_DICT_MAP`
 
+        Args:
+            key (str): An object's attribute name used to determine the correct
+                form of a value.
+            val (Any): A value which will be converted to a correct form
+        Returns:
+            Any: A value converted to a correct form.
+        """
         if key in self._FROM_DICT_MAP:
             # determine which constructor will be used
             if isinstance(self._FROM_DICT_MAP[key], DatetimeFormats):
@@ -178,22 +324,25 @@ class EntityBase(helper.Dictable):
 
         return val
 
-    def _set_object(self, **kwargs) -> None:
-        """Set object attributes programmatically by providing keyword args.
-        Support ENUMs and creating component objects."""
+    def _set_object_attributes(self, **kwargs) -> None:
+        """Set object's attributes programmatically by providing keyword args.
+        Support ENUMs and creating composites. This function inspects whether
+        the attribute was set as a property, and if yes it stores the attribute
+        with '_' prefix """
 
         object_info = helper.camel_to_snake(kwargs)
         object_info = self._rest_to_python(object_info)
 
-        properties = set(
-            (elem[0]
-             for elem in inspect.getmembers(self.__class__, lambda x: isinstance(x, property))))
+        # determine which attributes should be private
+        properties = {
+            elem[0]
+            for elem in inspect.getmembers(self.__class__, lambda x: isinstance(x, property))}
 
         for key, val in object_info.items():  # type: ignore
             # if self is a composite, create component instance
-            val = self.__construct_component(key, val)
+            val = self.__compose_val(key, val)
 
-            # create _AVAILABLE_ATTRIBUTES map
+            # update _AVAILABLE_ATTRIBUTES map
             self._AVAILABLE_ATTRIBUTES.update({key: type(val)})
 
             # check if attr is read-only and if yes return '_' version of it
@@ -203,7 +352,14 @@ class EntityBase(helper.Dictable):
             setattr(self, key, val)
 
     def list_properties(self) -> dict:
-        """List all properties of the object."""
+        """Fetches all attributes from the server and converts all properties of
+        the object to a dictionary.
+
+        Returns:
+            dict: A dictionary which keys are object's attribute names, and
+                which values are object's attribute values.
+        """
+
         if hasattr(self, "_API_GETTERS"):  # fetch attributes not loaded on init
             attr = [
                 attr for attr in self._API_GETTERS.keys() if isinstance(attr, str)  # type: ignore
@@ -224,7 +380,11 @@ class EntityBase(helper.Dictable):
         }
 
     def to_dataframe(self) -> DataFrame:
-        """Return a `DataFrame` object containing object properties."""
+        """Converts all properties of the object to a dataframe.
+
+        Returns:
+            DataFrame: A `DataFrame` object containing object properties.
+        """
         return DataFrame.from_dict(self.list_properties(), orient='index', columns=['value'])
 
     def print(self) -> None:
@@ -237,19 +397,38 @@ class EntityBase(helper.Dictable):
     @classmethod
     def from_dict(cls: T, source: Dict[str, Any], connection: Connection,
                   to_snake_case: bool = True) -> T:
-        """Instantiate an object from response without calling any additional
-        getters."""
+        """Overrides `Dictable.from_dict()` to instantiate an object from
+            a dictionary without calling any additional getters.
+
+        Args:
+            cls (T): Class (type) of an object that should be created.
+            source (Dict[str, Any]): a dictionary from which an object will be
+                constructed.
+            connection (Connection): A MicroStrategy Connection object.
+            to_snake_case (bool, optional): Set to True if attribute names
+            should be converted from camel case to snake case. Defaults to True.
+
+        Returns:
+            T: An object of type T.
+        """
+
         obj = cls.__new__(cls)  # Does not call __init__
         object_source = helper.camel_to_snake(source) if to_snake_case else source
         obj._init_variables(connection=connection, **object_source)
         return obj
 
-    def __str__(self):
+    def __str__(self) -> str:
+        """Overrides default `__str__` method to provide more informative
+        description of an object.
+
+        Returns:
+            str: A formatted string consisting of object's type, name and id.
+        """
         if self.__dict__.get("name"):
             return "{} object named: '{}' with ID: '{}'".format(self.__class__.__name__, self.name,
                                                                 self.id)
         else:
-            return "{} object with ID: '{}'".format(self.__class__.__name__, self.id)
+            return f"{self.__class__.__name__} object with ID: '{self.id}'"
 
     def __repr__(self):
         param_value_dict = auto_match_args_entity(self.__init__, self, exclude=['self'],
@@ -293,17 +472,24 @@ class EntityBase(helper.Dictable):
     def to_csv(  # NOSONAR
             cls: T, objects: Union[T, List[T]], name: str, path: Optional[str] = None,
             properties: Optional[List[str]] = None) -> None:
-        """Export MSTR objects to a csv file.
+        """Exports MSTR objects to a csv file.
 
-        Optionally, save only the object properties specified in the properties
+        Optionally, saves only the object properties specified in the properties
         parameter.
 
         Args:
-            objects: List of objects of the same type that will be exported
-            name: name of the csv file ending with '.csv'
-            path: path to the directory where the file will be saved
-            properties: list of object attribute names that should be included
-                in the exported file
+            objects (Union[T, List[T]]): List of objects of the same type that
+            will be exported.
+            name (str): The name of the csv file ending with '.csv'
+            path (Optional[str], optional): A path to the directory where the
+                file will be saved. Defaults to None.
+            properties (Optional[List[str]], optional): A list of object's
+                attribute names that should be included in the exported file.
+                Defaults to None.
+
+        Raises:
+            TypeError: If `objects` is not of type `T` or list of type `T`
+            objects.
         """
         file = joinpath(path, name) if path else name
         list_of_objects = []
@@ -333,8 +519,8 @@ class EntityBase(helper.Dictable):
                         f"Object '{obj}' of type '{type(obj)}' is not supported.",
                         exception_type=Warning)
         else:
-            raise TypeError((f"Objects should be of type {cls.__name__} or "
-                             f"list of {cls.__name__}."))
+            raise TypeError(f"Objects should be of type {cls.__name__} or "
+                            f"list of {cls.__name__}.")
 
         with open(file, 'w') as f:
             fieldnames = list_of_objects[0].keys()
@@ -342,74 +528,117 @@ class EntityBase(helper.Dictable):
             w.writeheader()
             w.writerows(list_of_objects)
         if config.verbose:
-            print(f"Object exported successfully to '{file}'")
-
-    def is_modified(self, to_list: bool = False) -> Union[bool, list]:
-        # TODO decide if needed or just deprecate
-        """Compare the current object to the object on I-Server.
-
-        Args:
-            to_list: If True, return a list of tuples with object differences
-        """
-        temp = deepcopy(self)
-        temp.fetch()
-        differences = list(dictdiffer.diff(temp.__dict__, self.__dict__))
-        if len(differences) == 0:
-            if config.verbose:
-                print("There are no differences between local and remote '{}' object.".format(
-                    ObjectTypes(self.type).name))
-            return differences if to_list else False
-        else:
-            return differences if to_list else True
+            logger.info(f"Object exported successfully to '{file}'")
 
     def update_properties(self) -> None:
         """Save compatible local changes of the object attributes to the
-        I-Server.
+        I-Server. Changes are retrieved from the `self._altered_properties`
+        dictionary. After the process of update has finished,
+        `self._altered_properties` is cleared. For this method to work
+        properly, you must override the `_alter_properties()` method in a
+        subclass.
 
         Raises:
-            requests.HTTPError: if I-Server raises exception
+            requests.HTTPError: If I-Server raises exception
         """
         changes = {k: v[1] for k, v in self._altered_properties.items()}
         self._alter_properties(**changes)
         self._altered_properties.clear()
 
-    def __partial_put_body(self, attrs, camel_properties) -> dict:
+    def __partial_put_body(self, attrs: tuple, camel_properties: dict) -> dict:
+        """Prepares the 'partial put' update request's body.
+
+        Args:
+            attrs (tuple): A tuple consisting of name/-s of attributes.
+                Corresponds to keys in a `_API_PATCH` dictionary.
+            camel_properties (dict): A dictionary representation of an object's
+                attribute names (in camel case) and values.
+
+        Returns:
+            dict: A dictionary used as a PUT request body.
+        """
         body = {}
         for name, value in camel_properties.items():
-            if stringcase.snakecase(name) in attrs:
-                value = self._obj_to_dict(name, value, camel_case=True)
-                body[name] = self._validate_type(name, value)
+            snake_case_name = snakecase(name)
+            if snake_case_name in attrs:
+                value = self._unpack_objects(name, value, camel_case=True)
+                body[name] = self._validate_type(snake_case_name, value)
         return body
 
-    def __put_body(self, attrs, properties) -> dict:
+    def __put_body(self, attrs: tuple, properties: dict) -> dict:
+        """Prepares the 'put' update request's body.
+
+        Args:
+            attrs (tuple): A tuple consisting of name/-s of attributes.
+                Corresponds to keys in a `_API_PATCH` dictionary.
+            properties (dict): A dictionary representation of an object's
+                attribute names (in snake case) and values.
+
+        Returns:
+            dict: A dictionary used as a PUT request body.
+        """
         for name, value in properties.items():
             if name in attrs:
+                value = self._unpack_objects(name, value, camel_case=True)
                 setattr(self, name, self._validate_type(name, value))
         return self.to_dict()
 
-    def __patch_body(self, attrs, camel_properties, op) -> dict:
+    def __patch_body(self, attrs: tuple, camel_properties: dict, op: str) -> dict:
+        """Prepares the 'patch' update request's body.
+
+        Args:
+            attrs (tuple): A tuple consisting of name/-s of attributes.
+                Corresponds to keys in a `_API_PATCH` dictionary.
+            camel_properties (dict): A dictionary representation of an object's
+                attribute names (in snake case) and values.
+            op (str): An operation type. Possible values are add, replace,
+                remove, removeElement, addElement, removeElements or
+                addElements.
+
+        Returns:
+            dict: A dictionary used as a PATCH request body.
+        """
+
         body = {"operationList": []}
         for name, value in camel_properties.items():
-            if stringcase.snakecase(name) in attrs:
-                value = self._obj_to_dict(name, value, camel_case=True)
+            snake_case_name = snakecase(name)
+            if snake_case_name in attrs:
+                value = self._unpack_objects(name, value, camel_case=True)
                 body['operationList'].append({
                     "op": op,
-                    "path": "/{}".format(name),
-                    "value": self._validate_type(name, value)
+                    "path": f"/{name}",
+                    "value": self._validate_type(snake_case_name, value)
                 })
         return body
 
     def _send_proper_patch_request(self, properties: dict, op: str = 'replace') -> List[bool]:
         """Internal method to update objects with the specified patch wrapper.
         Used for adding and removing objects from nested properties of an
-        object like memberships.
+        object like memberships. Automatically converts `properties` keys from
+        a snake case to a camel case. The update's type is specified in the
+        `self._API_PATCH` dictionary and be described as follows:
+        - 'patch' : Used when the REST API provides a PATCH endpoint to update
+            the object.
+        - 'put': Used when the REST API requires that a body of a request
+            consists of all the object's attributes.
+        - 'partial_put': Used when the REST API requires that a body of a
+            request consists only of attributes that are being updated. Although
+            it resembles and imitates PATCH request, a PUT HTTP method is used,
+            hence its name.
 
         Args:
-            properties: dictionary of required changes
-            op: operation type, 'replace' by default
+            properties (dict): A dictionary of required changes
+            op (str): An operation type. Possible values are add, replace,
+                remove, removeElement, addElement, removeElements or
+                addElements. Defaults to 'replace'.
 
         Returns:
-            List of successful or unsuccessful requests.
+            A list of successful or unsuccessful requests.
+
+        Raises:
+            NotImplementedError: If there is no information in `self._API_PATCH`
+                dictionary about the update's type ('partial_put', 'put' or
+                'patch').
         """
         changed = []
         camel_properties = helper.snake_to_camel(properties)
@@ -435,17 +664,21 @@ class EntityBase(helper.Dictable):
                 changed.append(True)
                 response = response.json()
                 if type(response) == dict:
-                    self._set_object(**response)
+                    self._set_object_attributes(**response)
             else:
                 changed.append(False)
         return changed
 
     def _alter_properties(self, **properties) -> None:
         """Generic alter method that has to be implemented in child classes
-        where arguments will be specified."""
+        where arguments will be specified. If a **properties dictionary is empty
+        the method will not dispatch any request. If there is at least one entry
+        in **properties, an update will be performed according to the update
+        type specified in `_API_PATCH` dictionary. A message with update status
+        is printed both on failure and success."""
         if not properties:
             if config.verbose:
-                print(f"No changes specified for {type(self).__name__} '{self.name}'.")
+                logger.info(f"No changes specified for {type(self).__name__} '{self.name}'.")
             return None
 
         changed = self._send_proper_patch_request(properties)
@@ -453,16 +686,27 @@ class EntityBase(helper.Dictable):
         if config.verbose and all(changed):
             msg = (f"{type(self).__name__} '{self.name}' has been modified on the server. "
                    f"Your changes are saved locally.")
-            print(msg)
+            logger.info(msg)
 
-    def _update_nested_properties(self, objects, path: str, op: str,
+    def _update_nested_properties(self, objects: Union[Any, List[Any]], path: str, op: str,
                                   existing_ids: Optional[List[str]] = None) -> Tuple[str, str]:
         """Internal method to update objects with the specified patch wrapper.
         Used for adding and removing objects from nested properties of an
         object like memberships.
 
+        Args:
+            objects (Union[Any, List[Any]]): An id, object or list of objects
+                or/ and object ids on which nested properties should be updated.
+            path (str): The name of an attribute that nests other objects.
+            op (str): An operation type. Non-ignored values are 'add' or
+                'remove'.
+            existing_ids (Optional[List[str]], optional): IDs of objects which
+                are already nested in `path` attribute. Defaults to None.
+
         Returns:
-            IDs of succeeded and failed operations by filtering by existing IDs.
+            Tuple[List[str]]: A tuple whose first element is a list of IDs of
+                successful operations, and second element is a list of IDs of
+                failed operations.
         """
         from mstrio.access_and_security.privilege import Privilege
 
@@ -498,10 +742,19 @@ class EntityBase(helper.Dictable):
         return (succeeded_formatted, failed_formatted)
 
     def _validate_type(self, name: str, value: T) -> T:
-        """Validates whether the attribute is set using correct type.
+        """Uses information specified in `self._AVAILABLE_ATTRIBUTES` and
+        `self._PATCH_PATH_TYPES` dictionaries to validate type of `value` of an
+        attribute with a specified `name`.
+
+        Args:
+            name (str): An attribute's name
+            value (T): A value to be validated.
 
         Raises:
-            TypeError if incorrect.
+            TypeError: If value's type is incorrect.
+
+        Returns:
+            T: Unchanged `value` parameter.
         """
         type_map = {**self._AVAILABLE_ATTRIBUTES, **self._PATCH_PATH_TYPES}
         value_type = type_map.get(name, 'Not Found')
@@ -512,7 +765,11 @@ class EntityBase(helper.Dictable):
 
     def __setattr__(self, name: str, value: Any) -> None:
         """Overloads the __setattr__ method to validate if this attribute can
-        be set for current object and verify value data types."""
+        be set for current object. If type of `value` or its literal differs
+        from the one that is currently stored, the change will be tracked in a
+        dictionary `self._altered_properties` which is later used to update
+        properties on a server.
+        """
 
         def track_changes():
             already_tracked = name in self._altered_properties
@@ -535,11 +792,16 @@ class EntityBase(helper.Dictable):
             # if value not equal to None then treat as fetched
             if value is not None:
                 self._add_to_fetched(name)
-        super(EntityBase, self).__setattr__(name, value)
+        super().__setattr__(name, value)
 
     def __getattribute__(self, name: str) -> Any:
-        """Fetch attributes if not fetched."""
-        val = super(EntityBase, self).__getattribute__(name)
+        """On first fetch, it creates a set `_fetched_attributes` used to track
+            attributes that were already fetched from the server. Additionally,
+            it checks if there is an API getter in a `_API_GETTERS` dictionary
+            that corresponds to the attribute's name. If there is and the object
+            has an id and it has not been fetched yet it will fetch the value
+            from the server. If not, it will return the value straight away. """
+        val = super().__getattribute__(name)
 
         if name in ["_fetched_attributes", "_find_func"]:
             return val
@@ -551,7 +813,7 @@ class EntityBase(helper.Dictable):
             can_fetch = self._find_func(_name) is not None and "id" in self._fetched_attributes
             if can_fetch and not was_fetched:
                 self.fetch(_name)  # fetch the relevant object data
-            val = super(EntityBase, self).__getattribute__(name)
+            val = super().__getattribute__(name)
 
         return val
 
@@ -566,17 +828,20 @@ class EntityBase(helper.Dictable):
                 elif len(key) > 1 and key[0] == '_' and kwargs.get(key[1:]):
                     setattr(self, key, kwargs.get(key[1:]))
 
-    # TODO add docstrings
     @property
     def connection(self) -> Connection:
+        """An object representation of MicroStrategy connection specific to the
+        object."""
         return self._connection
 
     @property
     def id(self) -> str:
+        """The object's id. """
         return self._id
 
     @property
     def type(self) -> ObjectTypes:
+        """The object's type. """
         return self._type
 
 
@@ -602,7 +867,7 @@ class Entity(EntityBase, ACLMixin, DependenceMixin):
         icon_path: Object icon path
         view_media: View media settings
         ancestors: List of ancestor folders
-        certified_info: Certification status, time of certificaton, and
+        certified_info: Certification status, time of certification, and
             information about the certifier (currently only for document and
             report)
         acg: Access rights (See EnumDSSXMLAccessRightFlags for possible values)
@@ -632,7 +897,7 @@ class Entity(EntityBase, ACLMixin, DependenceMixin):
         """Initialize variables given kwargs."""
         from mstrio.users_and_groups.user import User
         from mstrio.utils.certified_info import CertifiedInfo
-        super(Entity, self)._init_variables(**kwargs)
+        super()._init_variables(**kwargs)
         self._date_created = map_str_to_datetime("date_created", kwargs.get("date_created"),
                                                  self._FROM_DICT_MAP)
         self._date_modified = map_str_to_datetime("date_modified", kwargs.get("date_modified"),
@@ -660,25 +925,24 @@ class Entity(EntityBase, ACLMixin, DependenceMixin):
         self._acl = ([ACE.from_dict(ac, self._connection) for ac in kwargs.get("acl")]
                      if kwargs.get("acl") else None)
 
-    # TODO add docstrings to all properties
     @property
-    def subtype(self):
+    def subtype(self) -> ObjectSubTypes:
         return self._subtype
 
     @property
-    def ext_type(self):
+    def ext_type(self) -> ExtendedType:
         return self._ext_type
 
     @property
-    def date_created(self):
+    def date_created(self) -> DatetimeFormats:
         return self._date_created
 
     @property
-    def date_modified(self):
+    def date_modified(self) -> DatetimeFormats:
         return self._date_modified
 
     @property
-    def version(self):
+    def version(self) -> str:
         return self._version
 
     @property
@@ -686,15 +950,15 @@ class Entity(EntityBase, ACLMixin, DependenceMixin):
         return self._owner
 
     @property
-    def icon_path(self):
+    def icon_path(self) -> str:
         return self._icon_path
 
     @property
-    def view_media(self):
+    def view_media(self) -> int:
         return self._view_media
 
     @property
-    def ancestors(self):
+    def ancestors(self) -> List[Dict]:
         return self._ancestors
 
     @property
@@ -702,27 +966,27 @@ class Entity(EntityBase, ACLMixin, DependenceMixin):
         return self._certified_info
 
     @property
-    def acg(self):
+    def acg(self) -> Rights:
         return self._acg
 
     @property
-    def acl(self):
+    def acl(self) -> List[ACE]:
         return self._acl
 
     @property
-    def hidden(self):
+    def hidden(self) -> bool:
         return self._hidden
 
     @property
-    def project_id(self):
+    def project_id(self) -> str:
         return self._project_id
 
     @property
-    def comments(self):
+    def comments(self) -> List[str]:
         return self._comments
 
     @property
-    def target_info(self):
+    def target_info(self) -> dict:
         return self._target_info
 
 
@@ -788,8 +1052,9 @@ class DeleteMixin:
             param_value_dict = auto_match_args_entity(self._API_DELETE, self)
             response = self._API_DELETE(**param_value_dict)
             if response.status_code == 204 and config.verbose:
-                print(self._delete_success_msg
-                      or f"Successfully deleted {object_name} with ID: {self._id}.")
+                msg = (self._delete_success_msg
+                       or f"Successfully deleted {object_name} with ID: '{self._id}'.")
+                logger.info(msg)
             return response.ok
         else:
             return False
@@ -806,16 +1071,17 @@ class CertifyMixin:
 
         self.fetch()
         if certify == self.certified_info.certified:
-            print(f"The {object_name} with ID: '{self._id}' is already {expected_result}")
+            logger.warning(f"The {object_name} with ID: '{self._id}' is already {expected_result}")
             return True
 
         response = objects.toggle_certification(connection=self._connection, id=self._id,
                                                 object_type=self._OBJECT_TYPE.value,
                                                 certify=certify)
         if response.ok and config.verbose:
-            self._set_object(**response.json())
-            print(success_msg
-                  or f"The {object_name} with ID: '{self._id}' has been {expected_result}.")
+            self._set_object_attributes(**response.json())
+            msg = (success_msg
+                   or f"The {object_name} with ID: '{self._id}' has been {expected_result}.")
+            logger.info(msg)
         return response.ok
 
     def certify(self: Entity) -> bool:
@@ -864,7 +1130,7 @@ class VldbMixin:
         response = objects.set_vldb_settings(connection, self.id, self._OBJECT_TYPE.value,
                                              property_set_name, body, project)
         if config.verbose and response.ok:
-            print("VLDB settings altered")
+            logger.info('VLDB settings altered.')
 
     def reset_vldb_settings(self: Entity, project: Optional[str] = None) -> None:
         """Reset VLDB settings to default values."""
@@ -876,7 +1142,7 @@ class VldbMixin:
         response = objects.delete_vldb_settings(connection, self.id, self._OBJECT_TYPE.value,
                                                 project)
         if config.verbose and response.ok:
-            print("VLDB settings reset to default")
+            logger.info('VLDB settings reset to default.')
 
 
 def auto_match_args_entity(func: Callable, obj: EntityBase, exclude: list = [],

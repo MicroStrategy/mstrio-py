@@ -1,15 +1,16 @@
-from .objects_and_references import ObjectInformation, ObjectReference, AttributeRef,\
-    AttributeFormSystemRef, AttributeFormNormalRef, AttributeElement, ElementPromptRef,\
-    FilterRef  # noqa: F401
-
-from .predicate_parameters import ParameterType, ParameterBase, ConstantType, ConstantParameter,\
-    ObjectReferenceParameter, ExpressionParameter, PromptParameter, DynamicDateTimeParameter,\
-    ConstantArrayParameter  # noqa: F401
-
-from .predicates import PredicateBase, PredicateFormFunction, PredicateForm,\
-    PredicateElementListFunction, PredicateElementList, PredicateFilter,\
-    PredicateJointElementList, LogicFunction, LogicOperator  # noqa: F401
-
-from .qualification import Qualification  # noqa: F401
-
-from .security_filter import SecurityFilter, list_security_filters  # noqa: F401
+# flake8: noqa
+from .objects_and_references import (
+    AttributeElement, AttributeFormNormalRef, AttributeFormSystemRef, AttributeRef,
+    ElementPromptRef, FilterRef, ObjectInformation, ObjectReference
+)
+from .predicate_parameters import (
+    ConstantArrayParameter, ConstantParameter, ConstantType, DynamicDateTimeParameter,
+    ExpressionParameter, ObjectReferenceParameter, ParameterBase, ParameterType, PromptParameter
+)
+from .predicates import (
+    LogicFunction, LogicOperator, PredicateBase, PredicateElementList,
+    PredicateElementListFunction, PredicateFilter, PredicateForm, PredicateFormFunction,
+    PredicateJointElementList
+)
+from .qualification import Qualification
+from .security_filter import list_security_filters, SecurityFilter

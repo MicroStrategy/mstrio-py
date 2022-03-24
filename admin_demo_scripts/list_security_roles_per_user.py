@@ -1,7 +1,7 @@
-from mstrio.users_and_groups import User, UserGroup
-from mstrio.connection import Connection
-
 from typing import List
+
+from mstrio.connection import Connection
+from mstrio.users_and_groups import User, UserGroup
 
 
 def list_security_roles_per_user(connection: "Connection", user_group_name: str = None,

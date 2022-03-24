@@ -43,16 +43,17 @@ with open('README.md') as f:
 
 requirements = [
     'notebook>=6.4.5',  # Jupyter Notebook - ver required by WS
-    'requests>=2.25, <2.26',
+    'ipython>=8.1.1, <9',  # dep of dep - higher ver required for SEC
+    'requests>=2.27, <2.28',
     'urllib3>=1.26.0',  # dep of dep (but ver 1.25.x is incompatible)
     'requests_futures>=1.0.0, <1.1',
-    'pandas>=1.1.5, <1.3',
-    'numpy>=1.18.1, <1.22',
+    'pandas>=1.1.5, <=1.5',
+    'numpy>=1.22.2, <1.23',
     'tqdm>=4.41, <4.70',
-    'packaging>=20.9, <21',
-    'dictdiffer>=0.8.1, <0.9',
+    'packaging>=21.3, <22',
+    'dictdiffer>=0.8.1, <0.10',
     'stringcase>=1.2, <1.3',
-    'Jinja2>=2.11, <3.0',
+    'Jinja2>=3.0, <4.0',
 ]
 
 # Add dependencies for connector-jupyter if connector-jupyter folder is added
@@ -69,7 +70,7 @@ elif find_in_file('prune connector-jupyter', MANIFEST_FILE):
 
 setup(
     name=__title__,
-    python_requires='>=3.6',
+    python_requires='>=3.9',
     version=dist_version,
     license=__license__,
     description=__description__,
@@ -87,7 +88,7 @@ setup(
     install_requires=requirements,
     extras_require={
         'dev': ['flake8', 'mypy', 'yapf', 'nose', 'coverage', 'pytest', 'pytest-cov',
-                'isort'],  # noqa
+                'isort', 'pre-commit'],  # noqa
     },
     packages=find_packages(),
     include_package_data=True,
@@ -97,10 +98,8 @@ setup(
         'Programming Language :: JavaScript',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: 3.7',
-        'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
         'Programming Language :: Python :: 3 :: Only',
         'Intended Audience :: Developers',
         'Intended Audience :: System Administrators',

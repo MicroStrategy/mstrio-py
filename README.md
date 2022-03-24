@@ -65,11 +65,10 @@ Since version **11.3.0.1**, **mstrio-py** includes also administration modules:
 - **Device** module (see [examples][example_device])
 - **Transmitter** module (see [examples][example_transmitter])
 - **Event** module (see [examples][example_events])
-
-Known limitations in v11.3.4.101:
-
-- `mstrio.server.migration` module is work in progress and not all functionalities are available yet.
-We plan to release them on 03.2022.
+- **Migration** module (see [examples][example_migration]) - **NOTE**: available as a Functionality Preview.
+It is subject to change until it is released as Generally Available.
+- **Schema Management** module (see [examples][example_schema_mgmt])
+- **User Hierarchy** module (see [examples][example_user_hierarchy])
 
 # Documentation<a id="documentation"></a>
 
@@ -118,7 +117,7 @@ Error getting cube metadata information. I-Server Error ERR001, (ServiceManager:
 
 ### mstrio-py<a id="mstrio-py"></a>
 
-- Python 3.6+
+- Python 3.9+
 - MicroStrategy 2019 Update 4 (11.1.4)+
 
 ### MicroStrategy for Jupyter<a id="microstrategy-for-jupyter"></a>
@@ -148,7 +147,7 @@ jupyter nbextension enable connector-jupyter --py --sys-prefix
 
 # Versioning & Changelog<a id="versioning--changelog"></a>
 
-Current version: **11.3.4.101** (28 January 2022). Check out [**Changelog**][release_notes] to see what's new.
+Current version: **11.3.5.101** (25 March 2022). Check out [**Changelog**][release_notes] to see what's new.
 
 mstrio-py is constantly developed to support newest MicroStrategy REST APIs. Functionalities may be added to mstrio on monthly basis. It is **recommended** to always install the newest version of mstrio-py, as it will be most stable and still maintain backwards compatibility with various MicroStrategy installations, dating back to 11.1.4.
 
@@ -222,3 +221,6 @@ When features (modules, parameters, attributes, methods etc.) are marked for dep
 [example_datasource]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/datasource_mgmt.py
 [example_transmitter]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/transmitter_mgmt.py
 [example_events]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/events.py
+[example_migration]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/migration.py
+[example_schema_mgmt]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/schema_mgmt.py
+[example_user_hierarchy]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/user_hierarchy_mgmt.py

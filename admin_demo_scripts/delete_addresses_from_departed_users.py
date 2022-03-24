@@ -1,7 +1,7 @@
-from mstrio.users_and_groups import list_users
-from mstrio.connection import Connection
-
 from typing import List
+
+from mstrio.connection import Connection
+from mstrio.users_and_groups import list_users
 
 
 def delete_addresses_from_departed_users(connection: "Connection") -> List[dict]:
@@ -17,10 +17,10 @@ def delete_addresses_from_departed_users(connection: "Connection") -> List[dict]
     """
 
     # get all users that are disabled
-    all_usrs = list_users(connection=connection)
-    usrs = [u for u in all_usrs if not u.enabled]
+    all_users = list_users(connection=connection)
+    users = [u for u in all_users if not u.enabled]
     removed_addresses = []
-    for usr in usrs:
+    for usr in users:
         # remove all email addresses from the given user
         if usr.addresses:
             for addr in usr.addresses:

@@ -1,4 +1,5 @@
 from enum import Enum
+import logging
 from operator import itemgetter
 from typing import List, Optional, TYPE_CHECKING, Union
 
@@ -8,15 +9,15 @@ from tqdm.auto import tqdm
 
 from mstrio import config
 from mstrio.api import cubes, datasets
-from mstrio.project_objects.datasets import cube_cache
 from mstrio.connection import Connection
 from mstrio.object_management.search_operations import full_search, SearchPattern
-from mstrio.users_and_groups.user import User
+from mstrio.project_objects.datasets import cube_cache
 from mstrio.types import ObjectSubTypes, ObjectTypes
-from mstrio.utils.entity import DeleteMixin, Entity, VldbMixin
+from mstrio.users_and_groups.user import User
 from mstrio.utils.certified_info import CertifiedInfo
+from mstrio.utils.entity import DeleteMixin, Entity, VldbMixin
 from mstrio.utils.filter import Filter
-from mstrio.utils.helper import exception_handler, fallback_on_timeout, choose_cube
+from mstrio.utils.helper import choose_cube, exception_handler, fallback_on_timeout
 import mstrio.utils.helper as helper
 from mstrio.utils.parser import Parser
 from mstrio.utils.sessions import FuturesSessionWithRenewal
@@ -25,6 +26,8 @@ if TYPE_CHECKING:
     from .cube_cache import CubeCache
     from .olap_cube import OlapCube
     from .super_cube import SuperCube
+
+logger = logging.getLogger(__name__)
 
 
 class CubeStates(Enum):
@@ -61,7 +64,7 @@ class CubeStates(Enum):
             output = []
             # sort states from enum based on its value and return as a table of
             # tuples (value, name)
-            states = sorted([(s.value, s.name) for s in cls], key=lambda x: -x[0])
+            states = sorted(((s.value, s.name) for s in cls), key=lambda x: -x[0])
             for state in states:
                 if status_bin >= state[0]:
                     status_bin -= state[0]
@@ -89,7 +92,7 @@ def list_all_cubes(connection: Connection, name_begins: Optional[str] = None,
     Wildcards available for 'name_begins':
         ? - any character
         * - 0 or more of any characters
-        e.g name_begins = ?onny wil return Sonny and Tonny
+        e.g. name_begins = ?onny will return Sonny and Tonny
 
     Args:
         connection: MicroStrategy connection object returned by
@@ -160,7 +163,7 @@ def load_cube(
 
     if cube_id:
         if cube_name:
-            msg = ("Both `cube_id` and `cube_name` provided. Loading cube based on `cube_id`.")
+            msg = "Both `cube_id` and `cube_name` provided. Loading cube based on `cube_id`."
             exception_handler(msg, Warning, False)
         elif folder_id:
             msg = ("Both `cube_id` and `folder_id` provided. "
@@ -328,7 +331,6 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
         """
         if limit:
             self._initial_limit = limit
-            self.instance_id = None
 
         if self.instance_id is None:
             res = self.__create_cube_instance(self._initial_limit)
@@ -570,7 +572,7 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
             self._metrics = [{'name': metr['name'], 'id': metr['id']} for metr in full_metrics]
 
             self._table_names = self.__multitable_definition().keys()
-            row_counts = ['Row Count - {}'.format(table_name) for table_name in self._table_names]
+            row_counts = [f'Row Count - {table_name}' for table_name in self._table_names]
             self._row_counts = list(filter(lambda x: x['name'] in row_counts, self._metrics))
             self.__remove_row_count()
             # for lazy fetch properties
@@ -729,12 +731,16 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
                 if cache.delete(True):
                     deleted_caches_num += 1
             if all_caches_num == deleted_caches_num:
-                print(f"Cube {self.name} with ID: {self._id} was successfully unpublished.")
+                logger.info(
+                    f"Cube '{self.name}' with ID: '{self._id}' was successfully unpublished."
+                )
                 self._caches = []
                 return True
             else:
-                print(f"Cube {self.name} with ID: {self._id} was not successfully unpublished"
-                      f", because not all of its caches were deleted.")
+                logger.warning(
+                    f"Cube '{self.name}' with ID: '{self._id}' was not successfully unpublished"
+                    f", because not all of its caches were deleted."
+                )
                 return False
         else:
             return False

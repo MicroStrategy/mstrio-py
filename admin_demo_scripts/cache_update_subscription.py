@@ -1,6 +1,7 @@
 from mstrio.connection import Connection
-from mstrio.distribution_services import (CacheUpdateSubscription, Content,
-                                          list_subscriptions, CacheType)
+from mstrio.distribution_services import (
+    CacheType, CacheUpdateSubscription, Content, list_subscriptions
+)
 
 
 # create new cache update subscription

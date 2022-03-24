@@ -1,2 +1,2 @@
 # flake8: noqa
-from .contact import ContactDeliveryType, Contact, ContactAddress, list_contacts
+from .contact import Contact, ContactAddress, ContactDeliveryType, list_contacts

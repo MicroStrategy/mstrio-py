@@ -3,7 +3,7 @@ from typing import List, Optional, Union
 from pandas import DataFrame
 
 from mstrio.api import monitors
-from mstrio.server.project import Project, compare_project_settings
+from mstrio.server.project import compare_project_settings, Project
 from mstrio.server.server import ServerSettings
 import mstrio.utils.helper as helper
 
@@ -54,11 +54,11 @@ class Environment:
 
     def create_project(self, name: str, description: Optional[str] = None,
                        force: bool = False) -> Optional["Project"]:
-        """Create a new project on the envrionment.
+        """Create a new project on the environment.
 
         Args:
             name: Name of Project.
-            description: Description of Aplication.
+            description: Description of Application.
             force: If `True`, overrides the prompt.
         """
         return Project._create(self.connection, name, description, force)
@@ -161,14 +161,14 @@ class Environment:
         """
         def not_exist_warning(wrong_name):
             helper.exception_handler(
-                "Project '{}' does not exist and will be skipped.".format(wrong_name),
+                f"Project '{wrong_name}' does not exist and will be skipped.",
                 exception_type=Warning)
 
         if projects:
             just_objects = [project for project in projects if isinstance(project, Project)]
         else:
             just_objects = []
-        if (len(just_objects) == len(projects)):
+        if len(just_objects) == len(projects):
             return compare_project_settings(projects, show_diff_only)
 
         all_projects = self.list_projects()

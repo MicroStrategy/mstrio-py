@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Dict, List, Optional, TYPE_CHECKING, Union
 
 from packaging import version
@@ -11,8 +12,10 @@ from mstrio.utils import helper
 if TYPE_CHECKING:
     from mstrio.users_and_groups.user import User
 
+logger = logging.getLogger(__name__)
 
-class UserConnections():
+
+class UserConnections:
     """Browse and manage active user connections on the environment. Use the
     `fetch()` method to fetch the latest active user connections. Filter the
     `user_connections` by using `filter_connections()` method.
@@ -52,7 +55,8 @@ class UserConnections():
         if not self.user_connections:
             helper.exception_handler(
                 "Populate the `UserConnections` object with `UserConnections.fetch` first.",
-                Warning)
+                Warning
+            )
         else:
             filtered_connections = helper.filter_list_of_dicts(self.user_connections, **filters)
         return filtered_connections
@@ -72,7 +76,7 @@ class UserConnections():
                 'date_connection_created', 'duration', 'session_id', 'client',
                 'config_level']
         """
-        # TODO: This fully initialises a Cluster object every timethe function
+        # TODO: This fully initialises a Cluster object every time the function
         # is run. It would be better to somehow cache it for a given connection.
         all_nodes = Cluster(self.connection).list_nodes(to_dictionary=True)
         all_connections = []
@@ -81,7 +85,7 @@ class UserConnections():
         else:
             nodes = nodes if isinstance(nodes, list) else [nodes]
 
-        msg = "Error fetching chunk of active user connections."
+        msg = 'Error fetching chunk of active user connections.'
         for node in nodes:
             all_connections.extend(
                 helper.fetch_objects_async(self.connection, monitors.get_user_connections,
@@ -157,7 +161,7 @@ class UserConnections():
                 connection_ids = [conn['id'] for conn in all_connections]
                 return self.__disconnect_by_connection_id(connection_ids)
             elif config.verbose:
-                print("No active user connections")
+                logger.info('No active user connections.')
 
     def disconnect_all_users(self, force: bool = False) -> Union[List[dict], None]:
         """Disconnect all user connections.
@@ -200,7 +204,7 @@ class UserConnections():
                 return self._prepare_disconnect_by_id_message(
                     statuses=res.json()['deleteUserConnectionsStatus'])
             else:
-                err_msg = f"Error disconnecting user sessions: {connection_ids}."
+                err_msg = f'Error disconnecting user sessions: {connection_ids}.'
                 return helper.response_handler(response=res, msg=err_msg, throw_error=False)
         else:
             # TODO: This can probably be made more elegant and potentially
@@ -229,10 +233,14 @@ class UserConnections():
 
         if config.verbose:
             if succeeded:
-                print("User connections with ids below were successfully disconnected:\n\t"
-                      + ',\n\t'.join(succeeded))
+                logger.info(
+                    'User connections with ids below were successfully disconnected:\n\t'
+                    + ',\n\t'.join(succeeded)
+                )
             if failed:
-                print("User connections with ids below were not disconnected:\n\t"
-                      + ',\n\t'.join(failed))
+                logger.warning(
+                    'User connections with ids below were not disconnected:\n\t'
+                    + ',\n\t'.join(failed)
+                )
 
         return statuses

@@ -15,7 +15,7 @@ member1 = ContactGroupMember(
     id='59CCFDF44EAA434CF3B2059143278064',
     enabled=True,
 )
-new_cg = ContactGroup(
+new_cg = ContactGroup.create(
     connection=conn,
     name='Tmp Contact Group',
     linked_user=User(conn, username='mstr'),

@@ -1,4 +1,5 @@
-from typing import List, TYPE_CHECKING, Union, Optional
+import logging
+from typing import List, Optional, TYPE_CHECKING, Union
 
 from mstrio import config
 from mstrio.api import monitors
@@ -7,6 +8,8 @@ from mstrio.utils.helper import camel_to_snake, exception_handler, fetch_objects
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
+
+logger = logging.getLogger(__name__)
 
 
 def list_cube_caches(
@@ -249,7 +252,7 @@ class CubeCache:
             response = monitors.delete_cube_cache(connection, id, False)
             if response.status_code == 204:
                 if config.verbose:
-                    print(f"Successfully deleted cube cache with ID: {id}.")
+                    logger.info(f"Successfully deleted cube cache with ID: '{id}'.")
                 return True
             else:
                 return False

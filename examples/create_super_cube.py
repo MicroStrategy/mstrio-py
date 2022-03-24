@@ -15,9 +15,10 @@ Its basic goal is to present what can be done with this module and to ease
 its usage.
 """
 
-from mstrio.connection import Connection
-from mstrio.project_objects import SuperCube
 import pandas as pd
+
+from mstrio.connection import Connection
+from mstrio.project_objects.datasets import SuperCube
 
 # create connection
 base_url = "https://<>/MicroStrategyLibrary/api"
@@ -47,7 +48,7 @@ ds.add_table(name="Sales", data_frame=sales_df, update_policy="replace")
 ds.create()
 
 # When using `SuperCube.add_table()`, Pandas data types are mapped to
-# MicroStrategy data types. By default numeric data is modeled as MSTR metrics
+# MicroStrategy data types. By default, numeric data is modeled as MSTR metrics
 # and non-numeric as attributes. You can set manually which columns treat as
 # attributes and which as metrics.
 ds.add_table(name="Stores", data_frame=stores_df, update_policy="add", to_attribute=["store_id"])
@@ -57,7 +58,7 @@ ds.add_table(name="Sales", data_frame=sales_df, update_policy="add", to_attribut
 
 # It is possible to update previously created super cubes what looks really
 # similar to creation. You can use different update policies which are explained
-# in the description of this script at the top. By default `update()`
+# in the description of this script at the top. By default, `update()`
 # is publishing data automatically, if you don't want to publish data,
 # you have to set argument 'auto_publish` to False. It is also possible to set
 # chunksize for the update.
@@ -67,7 +68,7 @@ ds.add_table(name="Stores", data_frame=stores_df, update_policy="update")
 ds.add_table(name="Sales", data_frame=sales_df, update_policy="upsert")
 ds.update()
 
-# finally it is possible to certify an existing super cube
+# Finally, it is possible to certify an existing super cube
 ds.certify()
 
 # Limitations

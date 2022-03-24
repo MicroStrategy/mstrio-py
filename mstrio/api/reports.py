@@ -102,7 +102,7 @@ def report_instance_id(connection, report_id, instance_id, offset=0, limit=5000)
 def report_instance_id_coroutine(future_session: "FuturesSession", connection, report_id,
                                  instance_id, offset=0, limit=5000):
     """Get the future of a previously created instance for a specific report
-    asynchroneously, using the in-memory instance created by report_instance().
+    asynchronously, using the in-memory instance created by report_instance().
 
     Returns:
         Complete Future object.

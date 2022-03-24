@@ -1,8 +1,8 @@
-from typing import TYPE_CHECKING, Union, List
+from typing import List, TYPE_CHECKING, Union
 
-from mstrio.project_objects.document import list_documents, Document
-from mstrio.project_objects.dossier import list_dossiers
 from mstrio.api import library
+from mstrio.project_objects.document import Document, list_documents
+from mstrio.project_objects.dossier import list_dossiers
 from mstrio.utils.helper import exception_handler
 
 if TYPE_CHECKING:

@@ -99,7 +99,7 @@ def get_search_results(connection: "Connection", search_id: str, project_id: Opt
     Args:
         connection(object): MicroStrategy connection object returned by
             `connection.Connection()`.
-        search_id(string): Search ID (identifies the results fo a previous
+        search_id(string): Search ID (identifies the results for a previous
             search stored in I-Server memory)
         project_id(string, optional): Project ID
         offset(integer, optional): Starting point within the collection of
@@ -134,7 +134,7 @@ def get_search_results_async(future_session: "FuturesSession", connection: "Conn
             Server asynchronously
         connection(object): MicroStrategy connection object returned by
             `connection.Connection()`.
-        search_id(string): Search ID (identifies the results fo a previous
+        search_id(string): Search ID (identifies the results for a previous
             search stored in I-Server memory)
         project_id(string, optional): Project ID
         offset(integer, optional): Starting point within the collection of
@@ -165,7 +165,7 @@ def get_search_results_tree_format(connection: "Connection", search_id: str,
     Args:
         connection(object): MicroStrategy connection object returned by
             `connection.Connection()`.
-        search_id(string): Search ID (identifies the results fo a previous
+        search_id(string): Search ID (identifies the results for a previous
             search stored in I-Server memory)
         project_id(string, optional): Project ID
         offset(integer, optional): Starting point within the collection of

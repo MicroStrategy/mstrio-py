@@ -1,4 +1,5 @@
 import functools
+
 from requests_futures.sessions import FuturesSession
 
 

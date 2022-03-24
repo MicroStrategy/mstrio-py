@@ -7,18 +7,18 @@ ease its usage.
 """
 
 from mstrio.connection import Connection
-from mstrio.distribution_services import (Subscription, EmailSubscription, Content,
-                                          SubscriptionManager, CacheUpdateSubscription, CacheType,
-                                          list_subscriptions)
-from mstrio.distribution_services import Schedule, list_schedules
-from mstrio.distribution_services.subscription.cache_update_subscription import CacheUpdateSubscription
+from mstrio.distribution_services import (
+    CacheType, CacheUpdateSubscription, Content, EmailSubscription, list_schedules,
+    list_subscriptions, Schedule, Subscription, SubscriptionManager
+)
+
 
 base_url = "https://<>/MicroStrategyLibrary/api"
 username = "some_username"
 password = "some_password"
 conn = Connection(base_url, username, password, login_mode=1)
 
-# create manager for subscriptions on a chosen project
+# Initialize manager for subscriptions on a chosen project
 sub_mngr = SubscriptionManager(connection=conn, project_name='MicroStrategy Tutorial')
 # get all subscriptions from the given project (it is possible in two ways)
 all_subs = list_subscriptions(connection=conn, project_name='MicroStrategy Tutorial')
@@ -61,19 +61,25 @@ for s in sub_mngr.list_subscriptions(to_dictionary=False):
 EmailSubscription.create(
     connection=conn, name="New Email Subscription for a Report",
     project_name="MicroStrategy Tutorial",
-    contents=Content(id='ABC123ABC123ABC123ABC123ABC12345', type=Content.Type.REPORT,
-                     personalization=Content.Properties(format_type='EXCEL')),
+    contents=Content(
+        id='ABC123ABC123ABC123ABC123ABC12345',
+        type=Content.Type.REPORT,
+        personalization=Content.Properties(format_type='EXCEL')
+    ),
     schedules=['ABC123ABC123ABC123ABC123ABC12345'],
-    recipients=['ABC123ABC123ABC123ABC123ABC12345'])
+    recipients=['ABC123ABC123ABC123ABC123ABC12345'],
+    email_subject="Report Subscription")
 
 # create a cache update subscription
-cache_update_sub = CacheUpdateSubscription(
+cache_update_sub = CacheUpdateSubscription.create(
     connection=conn, project_name='"MicroStrategy Tutorial',
-    name=f'Cache Update Subscription for a Report', contents=Content(
-        type=Content.Type.REPORT,
+    name='Cache Update Subscription for a Report',
+    contents=Content(
         id='ABC123ABC123ABC123ABC123ABC12345',
+        type=Content.Type.REPORT,
         personalization=Content.Properties(format_type=Content.Properties.FormatType.EXCEL),
-    ), schedules=['ABC123ABC123ABC123ABC123ABC12345'], delivery_expiration_date='2025-12-31',
+    ),
+    schedules=['ABC123ABC123ABC123ABC123ABC12345'], delivery_expiration_date='2025-12-31',
     send_now=True, recipients=['ABC123ABC123ABC123ABC123ABC12345'],
     cache_cache_type=CacheType.RESERVED)
 
@@ -89,8 +95,8 @@ cache_update_subs = [
 
 # get list of schedules (you can filter them by for example name, id or
 # description)
-all_schdls = list_schedules(conn)
+all_schedules = list_schedules(conn)
 
 # get a single schedule by its id or name and then its properties
-schdl = Schedule(connection=conn, name='Some shedule which runs daily')
-schdl.list_properties()
+schedule = Schedule(connection=conn, name='Some schedule which runs daily')
+schedule.list_properties()

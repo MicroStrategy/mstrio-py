@@ -1,10 +1,9 @@
 from typing import List, Union
 
 from mstrio.connection import Connection
-from mstrio.object_management.search_operations import (SearchPattern, SearchResultsFormat,
-                                                        full_search)
+from mstrio.object_management import full_search, SearchPattern, SearchResultsFormat
+from mstrio.project_objects import Report
 from mstrio.types import ObjectTypes
-from mstrio.project_objects.report import Report
 
 
 def list_dependents_example():
@@ -29,7 +28,7 @@ def list_dependents_example():
                                     pattern=SearchPattern.CONTAINS,
                                     results_format=SearchResultsFormat.LIST, to_dictionary=False)
 
-    # It is also posible to list dependencies of a metric
+    # It is also possible to list dependencies of a metric
     metric_dependencies = full_search(connection, project_id, used_by_object_id=metric_id,
                                       used_by_object_type=ObjectTypes.METRIC,
                                       results_format=SearchResultsFormat.TREE)

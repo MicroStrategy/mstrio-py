@@ -1,8 +1,8 @@
-from mstrio.project_objects.datasets.cube_cache import CubeCache, list_cube_caches
-from mstrio.connection import Connection
-
 from datetime import datetime, timezone
 from typing import List, Union
+
+from mstrio.connection import Connection
+from mstrio.project_objects import CubeCache, list_cube_caches
 
 
 def _get_datetime(date):
@@ -24,7 +24,7 @@ def delete_inactive_caches(connection: Connection, days_diff: str = 30,
         days_diff (int, optional): number of days to determine whether to delete
             cache when its `hit_count` equals 0. Default value is 30.
         nodes (list of strings or string, optional): names of nodes from which
-            caches will be deleted. By default it equals `None` and in that
+            caches will be deleted. By default, it equals `None` and in that
             case all nodes' names are loaded from the cluster.
 
     Return:

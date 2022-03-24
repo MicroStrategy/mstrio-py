@@ -1,9 +1,9 @@
 from enum import auto
 from typing import List, Optional
 
+from mstrio.distribution_services.subscription.common import RefreshPolicy
 from mstrio.utils.enum_helper import AutoName, AutoUpperName
 from mstrio.utils.helper import Dictable
-from mstrio.distribution_services.subscription.common import RefreshPolicy
 
 
 class Content(Dictable):
@@ -307,7 +307,7 @@ class Content(Dictable):
         _FROM_DICT_MAP = {
             "dataset_refresh_policy": RefreshPolicy,
             "tables": lambda tables: [
-                Content.RefreshCondition.TableRefreshInfo.from_dict(t)  # noqa
+                Content.RefreshCondition.TableRefreshInfo.from_dict(t)
                 for t in tables
             ],
             "filters": lambda filters: [

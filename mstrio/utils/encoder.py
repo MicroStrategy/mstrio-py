@@ -1,7 +1,7 @@
 from base64 import b64encode
 
 
-class Encoder(object):
+class Encoder:
     """Internal method for converting a Pandas DataFrame to MicroStrategy
     compliant base64 encoded JSON.
 

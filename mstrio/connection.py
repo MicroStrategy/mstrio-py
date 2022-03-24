@@ -1,8 +1,9 @@
 from base64 import b64encode
+from datetime import datetime
 from getpass import getpass
+import logging
 import os
 from typing import Optional
-from datetime import datetime
 
 from packaging import version
 import requests
@@ -13,6 +14,8 @@ from requests.cookies import RequestsCookieJar
 from mstrio import config
 from mstrio.api import authentication, exceptions, hooks, misc, projects
 from mstrio.utils import helper, sessions
+
+logger = logging.getLogger(__name__)
 
 
 def get_connection(workstation_data: dict, project_name: Optional[str] = None,
@@ -37,7 +40,7 @@ def get_connection(workstation_data: dict, project_name: Optional[str] = None,
     """
 
     try:
-        print('Creating connection from Workstation Data object...', flush=True)
+        logger.info('Creating connection from Workstation Data object...')
         # get base url from Workstation Data object
         base_url = workstation_data['defaultEnvironment']['url']
         # get headers from Workstation Data object
@@ -53,8 +56,7 @@ def get_connection(workstation_data: dict, project_name: Optional[str] = None,
             jar.set(cookie_values['name'], cookie_values['value'], domain=cookie_values['domain'],
                     path=cookie_values['path'])
     except Exception as e:
-        print('Some error occurred while preparing data to get identity token:')
-        print(e)
+        logger.error(f'Some error occurred while preparing data to get identity token: \n{e}')
         return None
 
     # get identity token
@@ -64,7 +66,7 @@ def get_connection(workstation_data: dict, project_name: Optional[str] = None,
         return Connection(base_url, identity_token=r.headers['X-MSTR-IdentityToken'],
                           project_id=project_id, project_name=project_name)
     else:
-        print('HTTP %i - %s, Message %s' % (r.status_code, r.reason, r.text), flush=True)
+        logger.error(f'HTTP {r.status_code} - {r.reason}, Message {r.text}')
         return None
 
 
@@ -93,8 +95,8 @@ class Connection:
     Attributes:
         base_url: URL of the MicroStrategy REST API server.
         username: Username.
-        project_name: Name of the connected MicroStrategy Applicaiton.
-        project_id: Id of the connected MicroStrategy Applicaiton.
+        project_name: Name of the connected MicroStrategy Project.
+        project_id: Id of the connected MicroStrategy Project.
         login_mode: Authentication mode. Standard = 1 (default) or LDAP = 16.
         ssl_verify: If True (default), verifies the server's SSL certificates
             with each request.
@@ -179,12 +181,16 @@ class Connection:
 
             self.select_project(project_id, project_name)
         else:
-            print("""This version of mstrio is only supported on MicroStrategy 11.1.0400 or higher.
-                     \rCurrent Intelligence Server version: {}
-                     \rCurrent MicroStrategy Web version: {}
-                     """.format(self.iserver_version, self.web_version))
-            helper.exception_handler(msg="MicroStrategy Version not supported.",
-                                     exception_type=exceptions.VersionException)
+            msg = (
+                f'This version of mstrio is only supported on MicroStrategy 11.1.0400 or higher.\n'
+                f'Current Intelligence Server version: {self.iserver_version}\n'
+                f'Current MicroStrategy Web version: {self.web_version}'
+            )
+            logger.warning(msg)
+            helper.exception_handler(
+                msg='MicroStrategy Version not supported.',
+                exception_type=exceptions.VersionException
+            )
 
     def connect(self) -> None:
         """Authenticates the user and creates a new connection with the
@@ -197,7 +203,7 @@ class Connection:
         if response and response.ok:
             self._reset_timeout()
             if config.verbose:
-                print("Connection to MicroStrategy Intelligence Server was renewed.")
+                logger.info('Connection to MicroStrategy Intelligence Server was renewed.')
         else:
             response = self._login()
             self._reset_timeout()
@@ -205,7 +211,9 @@ class Connection:
             self.timeout = self._get_session_timeout()
 
             if config.verbose:
-                print("Connection to MicroStrategy Intelligence Server has been established.")
+                logger.info(
+                    'Connection to MicroStrategy Intelligence Server has been established.'
+                )
 
     renew = connect
 
@@ -218,7 +226,9 @@ class Connection:
             self.token = response.headers['X-MSTR-AuthToken']
             self.timeout = self._get_session_timeout()
             if config.verbose:
-                print("Connection with MicroStrategy Intelligence Server has been delegated.")
+                logger.info(
+                    'Connection with MicroStrategy Intelligence Server has been delegated.'
+                )
         else:
             print("Could not share existing connection session, please input credentials:")
             self.__prompt_credentials()
@@ -243,7 +253,7 @@ class Connection:
         self.token = None
 
         if config.verbose:
-            print("Connection to MicroStrategy Intelligence Server has been closed")
+            logger.info('Connection to MicroStrategy Intelligence Server has been closed.')
 
     def status(self) -> bool:
         """Checks if the session is still alive.
@@ -254,10 +264,10 @@ class Connection:
         status = self._status()
 
         if status.status_code == 200:
-            print("Connection to MicroStrategy Intelligence Server is active.")
+            logger.info('Connection to MicroStrategy Intelligence Server is active.')
             return True
         else:
-            print("Connection to MicroStrategy Intelligence Server is not active.")
+            logger.info('Connection to MicroStrategy Intelligence Server is not active.')
             return False
 
     def select_project(self, project_id: Optional[str] = None,
@@ -280,12 +290,12 @@ class Connection:
             self.project_id = None
             self.project_name = None
             if config.verbose:
-                print("No project selected.")
+                logger.info('No project selected.')
             return None
 
         if project_id and project_name:
-            tmp_msg = ("Both `project_id` and `project_name` arguments provided. "
-                       "Selecting project based on `project_id`.")
+            tmp_msg = ('Both `project_id` and `project_name` arguments provided. '
+                       'Selecting project based on `project_id`.')
             helper.exception_handler(msg=tmp_msg, exception_type=Warning)
 
         _projects = projects.get_projects(connection=self).json()
@@ -365,7 +375,7 @@ class Connection:
 
     def _get_authorization(self) -> str:
         self.__prompt_credentials()
-        credentials = "{}:{}".format(self.username, self.__password).encode('utf-8')
+        credentials = f"{self.username}:{self.__password}".encode()
         encoded_credential = b64encode(credentials)
         auth = "Basic " + str(encoded_credential, 'utf-8')
         return auth

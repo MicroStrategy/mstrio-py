@@ -1,13 +1,16 @@
+import logging
 from typing import List, TYPE_CHECKING, Union
 
 from mstrio import config
 from mstrio.api import datasources, objects
 from mstrio.users_and_groups.user import User
 from mstrio.utils import helper
-from mstrio.utils.entity import DeleteMixin, CopyMixin, Entity, ObjectTypes
+from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, ObjectTypes
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
+
+logger = logging.getLogger(__name__)
 
 
 def list_datasource_logins(connection: "Connection", to_dictionary: bool = False,
@@ -138,8 +141,10 @@ class DatasourceLogin(Entity, CopyMixin, DeleteMixin):
         body = helper.delete_none_values(body)
         response = datasources.create_datasource_login(connection, body).json()
         if config.verbose:
-            print("Successfully created datasource login named: '{}' with ID: '{}'".format(
-                response.get('name'), response.get('id')))
+            logger.info(
+                f"Successfully created datasource login named: '{response.get('name')}' "
+                f"with ID: '{response.get('id')}'"
+            )
         return cls.from_dict(source=response, connection=connection)
 
     @classmethod

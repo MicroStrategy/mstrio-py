@@ -1,9 +1,8 @@
 from mstrio.connection import Connection
-from mstrio.server.job_monitor import (Job, JobStatus, JobType, kill_all_jobs,
-                                       kill_jobs, list_jobs, ObjectType,
-                                       PUName)
-from mstrio.server.project import Project
-from mstrio.users_and_groups.user import User
+from mstrio.server import (
+    Job, JobStatus, JobType, kill_all_jobs, kill_jobs, list_jobs, ObjectType, Project, PUName
+)
+from mstrio.users_and_groups import User
 
 
 def job_monitors_workflow(conn: "Connection") -> None:
@@ -18,11 +17,11 @@ def job_monitors_workflow(conn: "Connection") -> None:
     print(jobs)
 
     if jobs:
-        # instanstiate an existing job using constructor
+        # instantiate an existing job using constructor
         job = Job(conn, id=jobs[0].id)  # example job ID
         # get properties for the first job on the list
         props = job.list_properties()
-        print('Propertties of a given job')
+        print('Properties of a given job')
         print(props)
         # kill the job
         job.kill()
@@ -37,7 +36,7 @@ def job_monitors_workflow(conn: "Connection") -> None:
     # project and object type
     jobs = list_jobs(conn, status=JobStatus.LOADING_PROMPT, project=project,
                      object_type=ObjectType.CUBE)
-    print("All jobs filtered by 'LOADINIG_PROMPT' status,"
+    print("All jobs filtered by 'LOADING_PROMPT' status,"
           "project and 'CUBE' type")
     print(jobs)
 
@@ -57,7 +56,7 @@ def job_monitors_workflow(conn: "Connection") -> None:
         result = kill_jobs(conn, slow_jobs)
         # kill_jobs return Success, PartialSuccess or MSTRException,
         # you can check which jobs were killed and which were not,
-        # and why in case of PartialScucess
+        # and why in case of PartialSuccess
         print("killed jobs")
         print(result.succeeded)
         print("not killed jobs")

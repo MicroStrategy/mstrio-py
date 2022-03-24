@@ -1,8 +1,8 @@
 from typing import Dict, List, Optional, TYPE_CHECKING, Union
 
-from mstrio.access_and_security.security_filter import (LogicOperator, PredicateElementList,
-                                                        PredicateFilter, PredicateForm,
-                                                        PredicateJointElementList)
+from mstrio.access_and_security.security_filter import (
+    LogicOperator, PredicateElementList, PredicateFilter, PredicateForm, PredicateJointElementList
+)
 from mstrio.utils.helper import Any, Dictable
 
 if TYPE_CHECKING:

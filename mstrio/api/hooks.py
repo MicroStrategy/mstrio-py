@@ -1,12 +1,15 @@
 from json.decoder import JSONDecodeError
+import logging
 import os
 
 from mstrio.utils.helper import exception_handler
 
+logger = logging.getLogger(__name__)
+
 
 def print_url(response, *args, **kwargs):
     """Response hook to print url for debugging."""
-    print(response.url)
+    logger.debug(response.url)
 
 
 def save_response(response, *args, **kwargs):

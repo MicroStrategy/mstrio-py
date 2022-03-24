@@ -1,5 +1,6 @@
-from tqdm.auto import tqdm
 from typing import Optional, Union
+
+from tqdm.auto import tqdm
 
 
 class ProgressBarMixin:

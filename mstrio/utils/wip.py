@@ -1,20 +1,24 @@
 from enum import auto, Enum
 import functools
 from itertools import filterfalse
+import logging
 import sys
 from textwrap import dedent
 from typing import Optional, Union
-from warnings import warn
 
 from packaging.version import Version
 
 from .. import __version__, config
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO, format='%(message)s', stream=sys.stderr)  # NOSONAR
 
 current_version = Version(__version__)
 
 
 class WipLevels(Enum):
     SILENT = auto()
+    PREVIEW = auto()
     INFO = auto()
     WARNING = auto()
     ERROR = auto()
@@ -26,11 +30,12 @@ def _wiplevel_error(level):
 
 # TODO: Discuss exact strings with UX.
 message_templates = {
-    WipLevels.INFO:
-        "This {}functionality is a work-in-progress. It may change in future updates.",
-    WipLevels.WARNING:
-        ("This {}functionality is a work-in-progress. Use it only if you understand"
-         " the underlying code. It may change in future updates."),
+    WipLevels.PREVIEW: ("In a current version, {}is available as "
+                        "a Functionality Preview. It is subject to change until it is released "
+                        "as Generally Available."),
+    WipLevels.INFO: "This {}functionality is a work-in-progress. It may change in future updates.",
+    WipLevels.WARNING: ("This {}functionality is a work-in-progress. Use it only if you understand"
+                        " the underlying code. It may change in future updates."),
     WipLevels.ERROR:
         ("This {}functionality is a work-in-progress. It has been deemed unsafe to use"
          " and is currently blocked."),
@@ -53,8 +58,8 @@ def _get_message_template(level: WipLevels = WipLevels.WARNING):
         return message_templates[WipLevels.INFO]
 
 
-def _construct_message(name: Optional[str] = None,
-                       target_release: Optional[Union[Version, str]] = None,
+def _construct_message(name: Optional[str] = None, target_release: Optional[Union[Version,
+                                                                                  str]] = None,
                        level: WipLevels = WipLevels.WARNING):
     template = _get_message_template(level)
     if name is None:
@@ -74,10 +79,10 @@ def _emit(name: Optional[str] = None, target_release: Optional[Union[Version, st
     if message is None:
         message = _construct_message(name, target_release, level)
 
-    if level == WipLevels.INFO:
-        print(message, file=sys.stderr)
+    if level == WipLevels.INFO or level == WipLevels.PREVIEW:
+        logger.info(message)
     elif level == WipLevels.WARNING:
-        warn(message)
+        logger.warning(message)
     elif level == WipLevels.ERROR:
         raise NotImplementedError(message)
     else:
@@ -85,8 +90,8 @@ def _emit(name: Optional[str] = None, target_release: Optional[Union[Version, st
 
 
 def wip(target_release: Optional[Union[Version, str]] = None, level: WipLevels = WipLevels.WARNING,
-        message: Optional[str] = None, prefix_doc: Union[bool, str] = True,
-        mark_attr: bool = True):
+        message: Optional[str] = None, prefix_doc: Union[bool,
+                                                         str] = True, mark_attr: bool = True):
     """Work-In-Progress wrapper
 
     Note:
@@ -100,6 +105,7 @@ def wip(target_release: Optional[Union[Version, str]] = None, level: WipLevels =
         level: The severity level of the warning emitted when the functionality
             is loaded or used.
             SILENT: no warning will be emitted
+            PREVIEW: a warning will be dispatched
             INFO: a disclaimer will be printed to stderr
             WARNING: a warning will be dispatched
             ERROR: an error will be raised

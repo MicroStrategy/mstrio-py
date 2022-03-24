@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Optional
+from typing import Optional, TYPE_CHECKING
 
 from mstrio.utils.error_handlers import ErrorHandler
 

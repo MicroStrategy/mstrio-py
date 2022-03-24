@@ -1,11 +1,12 @@
-from typing import Optional
 import json
+from typing import Optional
 
 from mstrio.connection import Connection
 from mstrio.server.project import Project
-from mstrio.utils.datasources import (alter_conn_list_resp, alter_conn_resp,
-                                      alter_instance_list_resp, alter_instance_resp,
-                                      alter_patch_req_body)
+from mstrio.utils.datasources import (
+    alter_conn_list_resp, alter_conn_resp, alter_instance_list_resp, alter_instance_resp,
+    alter_patch_req_body
+)
 from mstrio.utils.error_handlers import ErrorHandler
 from mstrio.utils.helper import exception_handler, response_handler
 
@@ -166,7 +167,7 @@ def get_datasource_instances(connection, ids=None, database_type=None, project=N
             warning_msg = ("get_datasource_instances() warning: filtering by Project "
                            "is not yet supported on this version of the I-Server. "
                            "Returning all values.")
-            exception_handler(warning_msg, Warning, 0)
+            exception_handler(warning_msg, Warning)
             return get_datasource_instances(connection=connection, ids=ids,
                                             database_type=database_type, error_msg=error_msg)
         if error_msg is None:

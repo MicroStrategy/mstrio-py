@@ -1,4 +1,5 @@
 from enum import Enum, IntEnum
+import logging
 import time
 from typing import List, Optional, Union
 
@@ -11,6 +12,9 @@ from mstrio.connection import Connection
 from mstrio.utils.entity import Entity, ObjectTypes
 import mstrio.utils.helper as helper
 from mstrio.utils.settings.base_settings import BaseSettings
+
+
+logger = logging.getLogger(__name__)
 
 
 class ProjectStatus(IntEnum):
@@ -82,8 +86,9 @@ def compare_project_settings(projects: List["Project"], show_diff_only: bool = F
         if df.empty and config.verbose:
             project_names = list(to_be_compared.keys())
             project_names.remove(base)
-            print((f"There is no difference in settings between project '{base}' and "
-                   f"remaining projects: '{project_names}'"))
+            msg = (f"There is no difference in settings between project '{base}' and "
+                   f"remaining projects: '{project_names}'")
+            logger.info(msg)
     return df
 
 
@@ -146,7 +151,7 @@ class Project(Entity):
                     id = project_loaded_list[0]['id']
                 except IndexError:
                     helper.exception_handler(
-                        "There is no project with the given name: '{}'".format(name),
+                        f"There is no project with the given name: '{name}'",
                         exception_type=ValueError)
 
         super().__init__(connection=connection, object_id=id, name=name)
@@ -168,11 +173,11 @@ class Project(Entity):
         user_input = 'N'
         if not force:
             user_input = input(
-                "Are you sure you want to create new project '{}'? [Y/N]: ".format(name))
+                f"Are you sure you want to create new project '{name}'? [Y/N]: ")
 
         if force or user_input == 'Y':
             # Create new project
-            with tqdm(desc="Please wait while Project '{}' is being created.".format(name),
+            with tqdm(desc=f"Please wait while Project '{name}' is being created.",
                       bar_format='{desc}', leave=False, disable=config.verbose):
                 projects.create_project(connection, {"name": name, "description": description})
                 http_status, i_server_status = 500, 'ERR001'
@@ -183,7 +188,7 @@ class Project(Entity):
                     i_server_status = response.json().get('code')
                     id_ = response.json().get('id')
             if config.verbose:
-                print("Project '{}' successfully created.".format(name))
+                logger.info(f"Project '{name}' successfully created.")
             return cls(connection, name=name, id=id_)
         else:
             return None
@@ -298,8 +303,9 @@ class Project(Entity):
                 if tmp[0]['projects'][0]['status'] != mode.value:
                     self.fetch('nodes')
                 if config.verbose:
-                    print("Project '{}' changed status to '{}' on node '{}'.".format(
-                        self.id, mode, node))
+                    logger.info(
+                        f"Project '{self.id}' changed status to '{mode}' on node '{node}'."
+                    )
 
         if not isinstance(mode, IdleMode):
             # Previously `mode` was just a string with possible values
@@ -340,7 +346,7 @@ class Project(Entity):
                 if tmp[0]['projects'][0]['status'] != 'loaded':
                     self.fetch('nodes')
                 if config.verbose:
-                    print("Project '{}' resumed on node '{}'.".format(self.id, node))
+                    logger.info(f"Project '{self.id}' resumed on node '{node}'.")
 
         self.__change_project_state(func=resume_project, on_nodes=on_nodes)
 
@@ -369,7 +375,7 @@ class Project(Entity):
                 if tmp[0]['projects'][0]['status'] != 'loaded':
                     self.fetch('nodes')
                 if config.verbose:
-                    print("Project '{}' loaded on node '{}'.".format(self.id, node))
+                    logger.info(f"Project '{self.id}' loaded on node '{node}'.")
 
         self.__change_project_state(func=load_project, on_nodes=on_nodes)
 
@@ -402,9 +408,9 @@ class Project(Entity):
                 if tmp[0]['projects'][0]['status'] != 'unloaded':
                     self.fetch('nodes')
                 if config.verbose:
-                    print("Project '{}' unloaded on node '{}'.".format(self.id, node))
+                    logger.info(f"Project '{self.id}' unloaded on node '{node}'.")
             if response.status_code == 500 and config.verbose:  # handle whitelisted
-                print("Project '{}' already unloaded on node '{}'.".format(self.id, node))
+                logger.warning(f"Project '{self.id}' already unloaded on node '{node}'.")
 
         self.__change_project_state(func=unload_project, on_nodes=on_nodes)
 
@@ -465,14 +471,14 @@ class Project(Entity):
         return loaded
 
     def _register(self, on_nodes: Union[list]) -> None:
-        path = "/projects/{}/nodes".format(self.id)
+        path = f"/projects/{self.id}/nodes"
         body = {"operationList": [{"op": "replace", "path": path, "value": on_nodes}]}
         projects.update_projects_on_startup(self.connection, body)
         if config.verbose:
             if on_nodes:
-                print("Project will load on startup of: {}".format(on_nodes))
+                logger.info(f'Project will load on startup of: {on_nodes}')
             else:
-                print("Project will not load on startup")
+                logger.warning('Project will not load on startup.')
 
     @property
     def load_on_startup(self):
@@ -573,7 +579,7 @@ class ProjectSettings(BaseSettings):
             project_id: Project ID
         """
         self._check_params(project_id)
-        super(ProjectSettings, self).fetch()
+        super().fetch()
 
     def update(self, project_id: Optional[str] = None) -> None:
         """Update the current project settings on I-Server using this
@@ -587,10 +593,10 @@ class ProjectSettings(BaseSettings):
         response = projects.update_project_settings(self._connection, self._project_id, set_dict)
         if config.verbose:
             if response.status_code == 200:
-                print("Project settings updated.")
+                logger.info('Project settings updated.')
             elif response.status_code == 207:
                 partial_succ = response.json()
-                print("Project settings partially successful.\n", partial_succ)
+                logging.info(f'Project settings partially successful.\n{partial_succ}')
 
     def _fetch(self) -> dict:
         response = projects.get_project_settings(self._connection, self._project_id,

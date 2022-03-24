@@ -1,17 +1,20 @@
 from collections import defaultdict
-from typing import Union, List, Optional, TYPE_CHECKING
 from enum import auto
+import logging
+from typing import List, Optional, TYPE_CHECKING, Union
 
 from mstrio import config
-from mstrio.api import transmitters, objects
+from mstrio.api import objects, transmitters
 from mstrio.types import ObjectTypes
 from mstrio.users_and_groups import User
-from mstrio.utils.entity import Entity, DeleteMixin
+from mstrio.utils.entity import DeleteMixin, Entity
 from mstrio.utils.enum_helper import AutoName, get_enum_val
 from mstrio.utils.helper import Dictable, fetch_objects
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
+
+logger = logging.getLogger(__name__)
 
 
 class RecipientFieldType(AutoName):
@@ -213,8 +216,10 @@ class Transmitter(Entity, DeleteMixin):
 
         res = transmitters.create_transmitter(connection, body).json()
         if config.verbose:
-            print("Successfully created transmitter named: '{}' with ID: '{}'".format(
-                res.get('name'), res.get('id')))
+            logger.info(
+                f"Successfully created transmitter named: '{res.get('name')}' "
+                f"with ID: '{res.get('id')}'"
+            )
         return cls.from_dict(res, connection)
 
     def alter(self, name: Optional[str] = None, description: Optional[str] = None,

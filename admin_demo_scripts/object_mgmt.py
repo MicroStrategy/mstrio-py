@@ -1,9 +1,8 @@
 from mstrio.connection import Connection
-from mstrio.object_management import (Folder, full_search, get_search_results,
-                                      list_folders, Object, quick_search,
-                                      quick_search_from_object, SearchPattern,
-                                      SearchObject, SearchResultsFormat,
-                                      start_full_search)
+from mstrio.object_management import (
+    Folder, full_search, get_search_results, list_folders, Object, quick_search,
+    quick_search_from_object, SearchObject, SearchPattern, SearchResultsFormat, start_full_search
+)
 from mstrio.types import ObjectSubTypes, ObjectTypes
 from mstrio.utils.entity import Rights
 

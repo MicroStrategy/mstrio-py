@@ -1,21 +1,20 @@
-import sys
 from enum import Enum
-from typing import Union, List, TYPE_CHECKING
+import sys
+from typing import List, TYPE_CHECKING, Union
 
-from mstrio.access_and_security.security_role import SecurityRole  # noqa: F401
 from mstrio.access_and_security.security_filter import SecurityFilter  # noqa: F401
-from mstrio.project_objects import Document, Report  # noqa: F401
-from mstrio.project_objects.datasets import OlapCube, SuperCube  # noqa: F401
-from mstrio.users_and_groups import User, UserGroup  # noqa: F401
-from mstrio.server import Project  # noqa: F401
+from mstrio.access_and_security.security_role import SecurityRole  # noqa: F401
+from mstrio.datasources import DatasourceConnection  # noqa: F401
+from mstrio.datasources import DatasourceInstance, DatasourceLogin  # noqa: F401
 from mstrio.distribution_services.schedule import Schedule  # noqa: F401
-from mstrio.datasources import DatasourceInstance, DatasourceLogin,\
-    DatasourceConnection  # noqa: F401
 from mstrio.object_management.folder import Folder  # noqa: F401
 from mstrio.object_management.object import Object
 from mstrio.object_management.search_operations import SearchObject  # noqa: F401
-
-from mstrio.types import ObjectTypes, ObjectSubTypes
+from mstrio.project_objects import Document, Report  # noqa: F401
+from mstrio.project_objects.datasets import OlapCube, SuperCube  # noqa: F401
+from mstrio.server import Project  # noqa: F401
+from mstrio.types import ObjectSubTypes, ObjectTypes
+from mstrio.users_and_groups import User, UserGroup  # noqa: F401
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection

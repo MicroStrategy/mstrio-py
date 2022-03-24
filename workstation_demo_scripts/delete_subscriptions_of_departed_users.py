@@ -2,10 +2,10 @@
 For which project message about successful (or not) deletion will be printed.
 """
 
-from mstrio.users_and_groups import list_users
 from mstrio.api.projects import get_projects
-from mstrio.distribution_services.subscription.subscription_manager import SubscriptionManager
 from mstrio.connection import Connection, get_connection
+from mstrio.distribution_services import SubscriptionManager
+from mstrio.users_and_groups import list_users
 
 
 def delete_subscriptions_of_departed_users(connection: "Connection") -> None:

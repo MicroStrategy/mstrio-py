@@ -1,9 +1,9 @@
 """List names and IDs of empty user groups."""
 
-from mstrio.users_and_groups import UserGroup, list_user_groups
-from mstrio.connection import Connection, get_connection
-
 from typing import List
+
+from mstrio.connection import Connection, get_connection
+from mstrio.users_and_groups import list_user_groups, UserGroup
 
 
 def list_empty_user_groups(connection: "Connection") -> List["UserGroup"]:

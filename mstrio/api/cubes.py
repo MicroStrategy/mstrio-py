@@ -1,11 +1,13 @@
-from packaging import version
 from typing import TYPE_CHECKING
+
+from packaging import version
 
 from mstrio.utils.error_handlers import ErrorHandler
 
 if TYPE_CHECKING:
-    from mstrio.connection import Connection
     from requests_futures.sessions import FuturesSession
+
+    from mstrio.connection import Connection
 
 CUBE_FIELDS = '-data.metricValues.extras,-data.metricValues.formatted'
 

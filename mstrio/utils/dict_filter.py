@@ -1,9 +1,13 @@
 from enum import Enum
+import logging
 from typing import Any, Callable, Dict, Iterable, List, TYPE_CHECKING, TypeVar, Union
 
 if TYPE_CHECKING:
     from mstrio.utils.entity import EntityBase
+
     SupportedExpression = Union[list, str, dict, int, float, bool, EntityBase, Enum]
+
+logger = logging.getLogger(__name__)
 
 SupportedExpression = Union[list, str, dict, int, float, bool, Enum]
 KT = TypeVar("KT")
@@ -26,13 +30,14 @@ def check_valid_param(dict_object: Dict[KT, VT], params: Iterable) -> None:
     """Check if filter parameters can be used with given dict."""
     # all keys from dict that are supported for filtering
     allowed = list(
-        filter(lambda el: not isinstance(dict_object[el], (list, tuple, set)), dict_object.keys()))
+        filter(lambda el: not isinstance(dict_object[el], (list, tuple, set)), dict_object.keys())
+    )
 
     # check filter param is in the allowed
     for param in params:
         if param not in allowed:
-            raise KeyError((f"The filter parameter '{param}' is not valid. "
-                            f"Please filter by one of: {allowed}"))
+            raise KeyError(f"The filter parameter '{param}' is not valid. "
+                           f"Please filter by one of: {allowed}")
 
 
 def parse_filter_expression(param: str, expression: SupportedExpression) -> tuple:
@@ -76,8 +81,8 @@ def parse_filter_expression(param: str, expression: SupportedExpression) -> tupl
         op = ENTITY_COMPARE
         filter_value = expression
     else:
-        raise TypeError((f"'{param}' filter value must be either a string, "
-                         "bool, int, float dict or list"))
+        raise TypeError(f"'{param}' filter value must be either a string, "
+                        "bool, int, float dict or list")
     return (op, filter_value)
 
 
@@ -117,7 +122,7 @@ def make_dict_filter(param: str, op: str, filter_value: Any) -> Callable:
                     # cast filter_value to int, float, str as in dict
                     return value_type(filter_value)
             except ValueError as e:
-                print("'{}' filter value is incorrect.".format(param))
+                logger.error(f"'{param}' filter value is incorrect.")
                 raise e
 
     def my_filter(dict_object: Dict[KT, VT]) -> bool:

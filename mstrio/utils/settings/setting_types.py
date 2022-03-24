@@ -19,7 +19,7 @@ class SettingValueFactory():
         return setting_value_types[setting_type](config)
 
 
-class SettingValue(object):
+class SettingValue:
     """Base Settings Value class.
 
     It represents single setting configuration.
@@ -64,10 +64,17 @@ class SettingValue(object):
 
 class EnumSetting(SettingValue):
     """Representation of an Enum setting type."""
+    # initially empty options that require additional action
+    # to be available (e.g. creating a TimeZone object)
+    _DYNAMICALLY_ADDED_OPTIONS = {'defaultTimezone': str}
 
     def __init__(self, config: dict):
         super().__init__(config)
-        self.type = list if self.multi_select else type(self.options[0]['value'])
+        config_name = config.get('name')
+        if config_name in self._DYNAMICALLY_ADDED_OPTIONS:
+            self.type = self._DYNAMICALLY_ADDED_OPTIONS[config_name]
+        else:
+            self.type = list if self.multi_select else type(self.options[0]['value'])
 
     def _validate_value(self, value, exception=True):
         options = helper.extract_all_dict_values(self.options)
@@ -149,7 +156,7 @@ class EmailSetting(SettingValue):
                                            valid_example='name@mail.com')
 
 
-class DeprecatedSetting(object):
+class DeprecatedSetting:
     """Representation of a Deprecated setting type."""
 
     def __init__(self, config: dict):

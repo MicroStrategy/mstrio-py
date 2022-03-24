@@ -1,3 +1,5 @@
+import logging
+import sys
 import warnings
 
 from pandas import options
@@ -25,3 +27,17 @@ warnings.formatwarning = custom_formatwarning
 warnings.filterwarnings(action=print_warnings, module=module_path)
 warnings.filterwarnings(action=print_warnings, category=DeprecationWarning, module=module_path)
 warnings.filterwarnings(action='default', category=UserWarning, module=module_path)
+
+
+logging_level = logging.DEBUG if debug else logging.INFO
+logger_stream_handler = logging.StreamHandler(stream=sys.stdout)
+
+# warns issued by the warnings module will be redirected to the logging.warning
+logging.captureWarnings(True)
+
+logger = logging.getLogger()
+warnings_logger = logging.getLogger("py.warnings")
+
+logger.addHandler(logger_stream_handler)
+logger.setLevel(logging_level)
+warnings_logger.addHandler(logger_stream_handler)

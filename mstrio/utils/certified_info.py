@@ -2,8 +2,8 @@ from typing import Optional
 
 from mstrio.connection import Connection
 from mstrio.users_and_groups.user import User
-from mstrio.utils.helper import Dictable
 from mstrio.utils.entity import auto_match_args_entity
+from mstrio.utils.helper import Dictable
 
 
 class CertifiedInfo(Dictable):

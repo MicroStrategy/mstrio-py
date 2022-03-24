@@ -1,3 +1,8 @@
+import logging
+
+logger = logging.getLogger(__name__)
+
+
 def _get_mstrio_py_versioning():
     """Method displaying current mstrio-py versioning, with details.
 
@@ -19,7 +24,7 @@ def _get_mstrio_py_versioning():
     try:
         from mstrio import __version__, __dev_version__
     except ImportError:
-        print("Error importing versions values: check mstrio-py package instalation.")
+        logger.error('Error importing versions values: check mstrio-py package instalation.')
 
     __version__ = __version__ if "__version__" in locals() else None
     __dev_version__ = __dev_version__ if "__dev_version__" in locals() else None

@@ -1,15 +1,18 @@
+import logging
+from typing import Callable, List, Optional, TYPE_CHECKING, Union
+
 from mstrio import config
 from mstrio.api import folders
 from mstrio.object_management import PredefinedFolders
 from mstrio.types import ObjectTypes
 from mstrio.users_and_groups import User
-from mstrio.utils.entity import Entity, DeleteMixin, CopyMixin
+from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity
 from mstrio.utils.helper import fetch_objects_async, get_default_args_from_func
-
-from typing import TYPE_CHECKING, Optional, List, Callable, Union
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
+
+logger = logging.getLogger(__name__)
 
 
 def list_folders(connection: "Connection", project_id: Optional[str] = None,
@@ -188,8 +191,10 @@ class Folder(Entity, DeleteMixin, CopyMixin):
         connection._validate_project_selected()
         response = folders.create_folder(connection, name, parent, description).json()
         if config.verbose:
-            print("Successfully created folder named: '{}' with ID: '{}'".format(
-                response.get('name'), response.get('id')))
+            logger.info(
+                f"Successfully created folder named: '{response.get('name')}' "
+                f"with ID: '{response.get('id')}'"
+            )
         return cls.from_dict(source=response, connection=connection)
 
     def alter(self, name: Optional[str] = None, description: Optional[str] = None) -> None:

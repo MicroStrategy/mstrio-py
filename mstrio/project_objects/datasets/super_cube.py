@@ -1,3 +1,4 @@
+import logging
 import time
 from typing import List, Optional, Union
 
@@ -7,14 +8,16 @@ from tqdm.auto import tqdm
 
 from mstrio import config
 from mstrio.api import datasets
-from mstrio.object_management.search_operations import full_search, SearchPattern
 from mstrio.connection import Connection
+from mstrio.object_management.search_operations import full_search, SearchPattern
 from mstrio.utils import helper
 from mstrio.utils.encoder import Encoder
 from mstrio.utils.entity import CertifyMixin, ObjectSubTypes
 from mstrio.utils.model import Model
 
 from .cube import _Cube
+
+logger = logging.getLogger(__name__)
 
 
 def list_super_cubes(connection: Connection, name_begins: Optional[str] = None,
@@ -28,7 +31,7 @@ def list_super_cubes(connection: Connection, name_begins: Optional[str] = None,
     Wildcards available for 'name_begins':
         ? - any character
         * - 0 or more of any characters
-        e.g name_begins = ?onny wil return Sonny and Tonny
+        e.g. name_begins = ?onny will return Sonny and Tonny
 
     Args:
         connection: MicroStrategy connection object returned by
@@ -124,7 +127,7 @@ class SuperCube(_Cube, CertifyMixin):
             self.__check_param_str(name, msg="Super cube name should be a string.")
             self.__check_param_len(
                 name,
-                msg="Super cube name should be <= {} characters.".format(self.__MAX_DESC_LEN),
+                msg=f"Super cube name should be <= {self.__MAX_DESC_LEN} characters.",
                 max_length=self.__MAX_DESC_LEN)
 
         if description is not None:
@@ -194,14 +197,14 @@ class SuperCube(_Cube, CertifyMixin):
         table = {"table_name": name, "data_frame": data_frame, "update_policy": update_policy}
 
         if to_attribute is not None:
-            if any((col for col in to_attribute if col not in data_frame.columns)):
+            if any(col for col in to_attribute if col not in data_frame.columns):
                 raise ValueError(
                     "Column name(s) in `to_attribute` were not found in `DataFrame.columns`.")
             else:
                 table["to_attribute"] = to_attribute
 
         if to_metric is not None:
-            if any((col for col in to_metric if col not in data_frame.columns)):
+            if any(col for col in to_metric if col not in data_frame.columns):
                 raise ValueError(
                     "Column name(s) in `to_metric` were not found in `DataFrame.columns`.")
             else:
@@ -245,10 +248,10 @@ class SuperCube(_Cube, CertifyMixin):
         # makes request to create the super cube
         response = datasets.create_multitable_dataset(connection=self._connection,
                                                       body=self.__model)
-        self._set_object(**response.json())
+        self._set_object_attributes(**response.json())
 
         if config.verbose:
-            print("Created super cube '{}' with ID: '{}'.".format(*[self.name, self._id]))
+            logger.info("Created super cube '{}' with ID: '{}'.".format(*[self.name, self._id]))
 
         if auto_upload:
             self.update(chunksize=chunksize, auto_publish=auto_publish)
@@ -290,7 +293,7 @@ class SuperCube(_Cube, CertifyMixin):
 
             pbar = tqdm(chunks, total=it_total, disable=(not self._progress_bar))
             for index, chunk in enumerate(pbar):
-                pbar.set_description("Uploading {}/{}".format(ix + 1, len(self._tables)))
+                pbar.set_description(f"Uploading {ix + 1}/{len(self._tables)}")
 
                 # base64 encode the data
                 encoder = Encoder(data_frame=chunk, dataset_type='multi')
@@ -380,7 +383,7 @@ class SuperCube(_Cube, CertifyMixin):
                 # clear instance_id to force new instance creation
                 self.instance_id = None
                 if config.verbose:
-                    print(f"Super cube '{self.name}' published successfully.")
+                    logger.info(f"Super cube '{self.name}' published successfully.")
                 return True
 
     def publish_status(self):
@@ -411,7 +414,7 @@ class SuperCube(_Cube, CertifyMixin):
         response = datasets.publish_status(connection=connection, id=id, session_id=session_id)
 
         helper.response_handler(response=response,
-                                msg="Publication status for super cube with ID: '{}':".format(id),
+                                msg=f"Publication status for super cube with ID: '{id}':",
                                 throw_error=False)
 
     def __build_model(self):

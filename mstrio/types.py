@@ -13,6 +13,7 @@ class ObjectTypes(Enum):
     FUNCTION = 11
     ATTRIBUTE = 12
     FACT = 13
+    DIMENSION = 14
     TABLE = 15
     SHORTCUT_TYPE = 18
     MONITOR = 20

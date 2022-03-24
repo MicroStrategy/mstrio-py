@@ -94,7 +94,7 @@ class Filter:
         self.metr_selected = []
 
     def __clear_attr_elem(self):
-        """Removes all previously chosen attribue elements from the filter."""
+        """Removes all previously chosen attribute elements from the filter."""
         self.attr_elem_selected = []
 
     def _requested_objects(self):
