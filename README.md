@@ -18,57 +18,61 @@ With mstrio-py for **system administration**, it’s easy to minimize costs by a
 
 <!--ts-->
 
-- [Main Features](#main-features)
-- [Documentation](#documentation)
-- [Usage Remarks](#usage-remarks)
-- [Installation](#installation)
-  - [Prerequisites](#prerequisites)
-    - [mstrio-py](#mstrio-py)
-    - [MicroStrategy for Jupyter](#microstrategy-for-jupyter)
-  - [Install the `mstrio-py` Package](#install-the-mstrio-py-package)
-  - [Enable the Jupyter Notebook extension](#enable-the-jupyter-notebook-extension)
-- [Versioning & Changelog](#versioning--changelog)
-- [Deprecating Features](#deprecating-features)
-- [More Resources](#more-resources)
-- [Other](#other)
+- [Main Features<a id="main-features"></a>](#main-features)
+- [Documentation<a id="documentation"></a>](#documentation)
+- [Usage Remarks<a id="usage-remarks"></a>](#usage-remarks)
+  - [General](#general)
+  - [GUI](#gui)
+  - [Backend](#backend)
+- [Installation<a id="installation"></a>](#installation)
+  - [Prerequisites<a id="prerequisites"></a>](#prerequisites)
+    - [mstrio-py<a id="mstrio-py"></a>](#mstrio-py)
+    - [MicroStrategy for Jupyter<a id="microstrategy-for-jupyter"></a>](#microstrategy-for-jupyter)
+  - [Install the `mstrio-py` Package<a id="install-the-mstrio-py-package"></a>](#install-the-mstrio-py-package)
+  - [Enable the Jupyter Notebook extension<a id="enable-the-jupyter-notebook-extension"></a>](#enable-the-jupyter-notebook-extension)
+- [Versioning & Changelog<a id="versioning--changelog"></a>](#versioning--changelog)
+- [Deprecating Features<a id="deprecating-features"></a>](#deprecating-features)
+- [More Resources<a id="more-resources"></a>](#more-resources)
+- [Other<a id="other"></a>](#other)
 <!--te-->
 
 # Main Features<a id="main-features"></a>
 
 Main features of **mstrio-py** allows to access MicroStrategy data:
 
-- Connect to your MicroStrategy environment using **Connection** class (see [examples][example_conn])
+- Connect to your MicroStrategy environment using **Connection** class (see [code_snippets][code_snippet_conn])
 
   **Note**: to log into Library and use mstrio-py user needs to have _UseLibrary_ privilege.
 
-- Import and filter data from a **OlapCube**, **SuperCube** or **Report** into a Pandas DataFrame (see [examples][example_import])
-- Export data into MicroStrategy by creating or updating **SuperCube** (see [examples][example_export])
+- Import and filter data from a **OlapCube**, **SuperCube** or **Report** into a Pandas DataFrame (see [code_snippets][code_snippet_import])
+- Export data into MicroStrategy by creating or updating **SuperCube** (see [code_snippets][code_snippet_export])
 
 Since version **11.3.0.1**, **mstrio-py** includes also administration modules:
 
-- **Project** management module (see [examples][example_project])
-- **Server** management module (see [examples][example_server])
-- **User** and **Usergroup** management modules (see [examples][example_user])
-- **Schedules** management module (see [examples][example_schedules])
-- **Subscription** management modules including **Email Subscription** and **Cache Update Subscription** (see [examples][example_subs])
-- **Document** and **Dossiers** in **User Library** modules (see [examples][example_library])
+- **Project** management module (see [code_snippets][code_snippet_project])
+- **Server** management module (see [code_snippets][code_snippet_server])
+- **User** and **Usergroup** management modules (see [code_snippets][code_snippet_user])
+- **Schedules** management module (see [code_snippets][code_snippet_schedules])
+- **Subscription** management modules including **Email Subscription** and **Cache Update Subscription** (see [code_snippets][code_snippet_subs])
+- **Document** and **Dossiers** in **User Library** modules (see [code_snippets][code_snippet_library])
 - **User Connections** management module
 - **Privilege** and **Security Role** management modules
-- **Cube Cache** management modules (see [examples][example_cache])
-- **Intelligent Cube** management modules (see [examples][example_olap])
-- **Security filter** module (see [examples][example_security_filter])
-- **Datasources** subpackage for database management (see [examples][example_datasource])
-- **Job Monitor** module for job monitoring (see [examples][example_job_monitor])
-- **Object management** module (see [examples][example_object_mgmt])
-- **Contact** module (see [examples][example_contact])
-- **Contact Group** module (see [examples][example_contact_group])
-- **Device** module (see [examples][example_device])
-- **Transmitter** module (see [examples][example_transmitter])
-- **Event** module (see [examples][example_events])
-- **Migration** module (see [examples][example_migration]) - **NOTE**: available as a Functionality Preview.
+- **Cube Cache** management modules (see [code_snippets][code_snippet_cache])
+- **Intelligent Cube** management modules (see [code_snippets][code_snippet_olap])
+- **Security filter** module (see [code_snippets][code_snippet_security_filter])
+- **Datasources** subpackage for database management (see [code_snippets][code_snippet_datasource])
+- **Job Monitor** module for job monitoring (see [code_snippets][code_snippet_job_monitor])
+- **Object management** module (see [code_snippets][code_snippet_object_mgmt])
+- **Contact** module (see [code_snippets][code_snippet_contact])
+- **Contact Group** module (see [code_snippets][code_snippet_contact_group])
+- **Device** module (see [code_snippets][code_snippet_device])
+- **Transmitter** module (see [code_snippets][code_snippet_transmitter])
+- **Event** module (see [code_snippets][code_snippet_events])
+- **Migration** module (see [code_snippets][code_snippet_migration]) - **NOTE**: available as a Functionality Preview.
 It is subject to change until it is released as Generally Available.
-- **Schema Management** module (see [examples][example_schema_mgmt])
-- **User Hierarchy** module (see [examples][example_user_hierarchy])
+- **Schema Management** module (see [code_snippets][code_snippet_schema_mgmt])
+- **User Hierarchy** module (see [code_snippets][code_snippet_user_hierarchy])
+- **Attribute** module (see [code_snippets][code_snippet_attribute])
 
 # Documentation<a id="documentation"></a>
 
@@ -125,6 +129,9 @@ Error getting cube metadata information. I-Server Error ERR001, (ServiceManager:
 - [CORS enabled on MicroStrategy Library server][cors_manual]
 - [Cookies sent by MicroStrategy Library server have 'SameSite' parameter set to 'None'][same_site_manual]
 
+**Note**: MicroStrategy for Jupyter is accessible only to users with assigned Microstrategy privileges:
+`Use Application Jupyter` and `Use Library Web`. For more details, please refer to Microstrategy licensing.
+
 ## Install the `mstrio-py` Package<a id="install-the-mstrio-py-package"></a>
 
 **Note**: it is NOT recommended to install mstrio-py in an Anaconda environment.
@@ -147,7 +154,7 @@ jupyter nbextension enable connector-jupyter --py --sys-prefix
 
 # Versioning & Changelog<a id="versioning--changelog"></a>
 
-Current version: **11.3.5.101** (25 March 2022). Check out [**Changelog**][release_notes] to see what's new.
+Current version: **11.3.5.102** (22 April 2022). Check out [**Changelog**][release_notes] to see what's new.
 
 mstrio-py is constantly developed to support newest MicroStrategy REST APIs. Functionalities may be added to mstrio on monthly basis. It is **recommended** to always install the newest version of mstrio-py, as it will be most stable and still maintain backwards compatibility with various MicroStrategy installations, dating back to 11.1.4.
 
@@ -201,26 +208,27 @@ When features (modules, parameters, attributes, methods etc.) are marked for dep
 [release_notes]: https://github.com/MicroStrategy/mstrio-py/blob/master/NEWS.md
 [logo]: https://github.com/MicroStrategy/mstrio-py/blob/master/mstr-logo.png?raw=true
 [deprecation]: https://github.com/MicroStrategy/mstrio-py/blob/master/deprecation.png?raw=true
-[example_conn]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/connect.py
-[example_contact]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/contacts.py
-[example_contact_group]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/contact_group_mgmt.py
-[example_device]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/device_mgmt.py
-[example_import]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/cube_report.py
-[example_export]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/create_super_cube.py
-[example_project]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/project_mgmt.py
-[example_server]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/server_mgmt.py
-[example_user]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/user_mgmt.py
-[example_schedules]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/schedules.py
-[example_subs]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/subscription_mgmt.py
-[example_library]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/user_library.py
-[example_cache]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/cube_cache.py
-[example_olap]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/intelligent_cube.py
-[example_job_monitor]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/job_monitor.py
-[example_object_mgmt]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/object_mgmt.py
-[example_security_filter]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/security_filters.py
-[example_datasource]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/datasource_mgmt.py
-[example_transmitter]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/transmitter_mgmt.py
-[example_events]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/events.py
-[example_migration]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/migration.py
-[example_schema_mgmt]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/schema_mgmt.py
-[example_user_hierarchy]: https://github.com/MicroStrategy/mstrio-py/blob/master/examples/user_hierarchy_mgmt.py
+[code_snippet_attribute]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/attribute.py
+[code_snippet_conn]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/connect.py
+[code_snippet_contact]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/contacts.py
+[code_snippet_contact_group]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/contact_group_mgmt.py
+[code_snippet_device]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/device_mgmt.py
+[code_snippet_import]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/cube_report.py
+[code_snippet_export]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/create_super_cube.py
+[code_snippet_project]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/project_mgmt.py
+[code_snippet_server]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/server_mgmt.py
+[code_snippet_user]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/user_mgmt.py
+[code_snippet_schedules]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/schedules.py
+[code_snippet_subs]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/subscription_mgmt.py
+[code_snippet_library]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/user_library.py
+[code_snippet_cache]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/cube_cache.py
+[code_snippet_olap]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/intelligent_cube.py
+[code_snippet_job_monitor]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/job_monitor.py
+[code_snippet_object_mgmt]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/object_mgmt.py
+[code_snippet_security_filter]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/security_filters.py
+[code_snippet_datasource]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/datasource_mgmt.py
+[code_snippet_transmitter]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/transmitter_mgmt.py
+[code_snippet_events]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/events.py
+[code_snippet_migration]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/migration.py
+[code_snippet_schema_mgmt]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/schema_mgmt.py
+[code_snippet_user_hierarchy]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/user_hierarchy_mgmt.py

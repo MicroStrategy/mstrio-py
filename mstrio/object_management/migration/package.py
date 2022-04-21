@@ -18,7 +18,7 @@ module_wip(globals(), level=WipLevels.PREVIEW)
 
 logger = logging.getLogger(__name__)
 
-TIMEOUT = 10
+TIMEOUT = 60
 TIMEOUT_INCREMENT = 0.25
 
 
@@ -33,6 +33,7 @@ class PackageSettings(Dictable):
         acl_on_new_objects(Optional[AclOnNewObjects]):
             ACL setting on new objects
     """
+    _DELETE_NONE_VALUES_RECURSION = True
 
     class UpdateSchema(AutoName):
         """They allow you to configure the package to automatically perform
@@ -152,6 +153,7 @@ class PackageContentInfo(Dictable):
         explicit_included(Optional[bool]): whether explicitly included or not
         level(Optional[Level]): level of object
     """
+    _DELETE_NONE_VALUES_RECURSION = True
 
     class Action(AutoName):
         """The default action used for objects which don't have actions
@@ -215,6 +217,7 @@ class PackageContentInfo(Dictable):
         Therefore, despite `Owner` being a `User`, `connection` param here is
         optional. If `connection` is specified, `User` constructor will be used
         """
+        _DELETE_NONE_VALUES_RECURSION = True
 
         @classmethod
         def from_dict(cls, source: Dict[str, Any], connection: Optional["Connection"] = None):
@@ -260,6 +263,7 @@ class PackageConfig(Dictable):
         content(PackageContentInfo, List[PackageContentInfo]): content details
             of package
     """
+    _DELETE_NONE_VALUES_RECURSION = True
 
     class PackageUpdateType(AutoName):
         """ Package update type:
@@ -299,6 +303,7 @@ class Package(EntityBase, DeleteMixin):
         settings(PackageSettings): settings details of package
         content(PackageContentInfo): content details of package
     """
+    _DELETE_NONE_VALUES_RECURSION = True
 
     _API_GETTERS = {("id", "status", "settings", "content"): migration.get_package_holder}
     _API_DELETE = staticmethod(migration.delete_package_holder)
@@ -339,7 +344,7 @@ class Package(EntityBase, DeleteMixin):
 
     def update_config(self, package_config: PackageConfig):
         body = package_config.to_dict()
-        body = helper.delete_none_values(body)
+        body = helper.delete_none_values(body, recursion=True)
         body = helper.snake_to_camel(body)
         migration.update_package_holder(self.connection, body, self.id).json()
 
@@ -365,15 +370,12 @@ class Package(EntityBase, DeleteMixin):
         self.status = response.get('status')
         if config.verbose and not progress_bar:
             logger.info(
-                f"Uploaded package binary to package holder with ID: '{response.get('id')}'"
-            )
+                f"Uploaded package binary to package holder with ID: '{response.get('id')}'")
 
     def download_package_binary(self, progress_bar: bool = False) -> bytes:
         response = migration.download_package(self.connection, self.id)
         if config.verbose and not progress_bar:
-            logger.info(
-                f"Downloaded binary of a package with ID: '{self.id}'"
-            )
+            logger.info(f"Downloaded binary of a package with ID: '{self.id}'")
         return response.content
 
 
@@ -387,6 +389,7 @@ class PackageImport(EntityBase, DeleteMixin):
         undo_package_created(bool): if the undo package have been created
         progress(int): progress of package import process
     """
+    _DELETE_NONE_VALUES_RECURSION = True
 
     _API_GETTERS = {("id", "status", "undo_package_created", "progress"): migration.get_import}
     _API_DELETE = staticmethod(migration.delete_import)

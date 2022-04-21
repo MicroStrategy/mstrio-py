@@ -40,4 +40,3 @@ warnings_logger = logging.getLogger("py.warnings")
 
 logger.addHandler(logger_stream_handler)
 logger.setLevel(logging_level)
-warnings_logger.addHandler(logger_stream_handler)

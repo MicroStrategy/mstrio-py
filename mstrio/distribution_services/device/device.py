@@ -85,6 +85,7 @@ class Device(Entity, DeleteMixin):
         acg: Access rights (See EnumDSSXMLAccessRightFlags for possible values)
         acl: Object access control list
     """
+    _DELETE_NONE_VALUES_RECURSION = True
     _OBJECT_TYPE = ObjectTypes.SUBSCRIPTION_DEVICE
     _DEVICE_TYPE_MAP = {
         "android": AndroidDeviceProperties,
@@ -180,7 +181,7 @@ class Device(Entity, DeleteMixin):
                 device_type: device_properties
             }
         }
-        body = delete_none_values(body)
+        body = delete_none_values(body, recursion=True)
         response = devices.create_device(connection, body).json()
         if config.verbose:
             logger.info(

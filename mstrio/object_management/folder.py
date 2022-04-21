@@ -147,7 +147,7 @@ class Folder(Entity, DeleteMixin, CopyMixin):
             for document and report)
         contents: contents of folder
     """
-
+    _DELETE_NONE_VALUES_RECURSION = True
     _FROM_DICT_MAP = {'owner': User.from_dict}
 
     _API_DELETE: Callable = staticmethod(folders.delete_folder)

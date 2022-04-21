@@ -1,12 +1,18 @@
 from dataclasses import dataclass
 from enum import auto
-from typing import Optional
+from typing import List, Optional, TYPE_CHECKING, Union
 
 from mstrio.utils.enum_helper import AutoName
-from mstrio.utils.helper import Dictable
+from mstrio.utils.helper import Dictable, exception_handler
+
+if TYPE_CHECKING:
+    from mstrio.modeling.schema import UserHierarchy
+    from mstrio.modeling.schema.attribute import Attribute
+    from mstrio.modeling.schema.helpers import SchemaObjectReference
+    from mstrio.connection import Connection
 
 
-class SubType(AutoName):
+class ObjectSubType(AutoName):
     """String literal used to identify the type of a metadata object.
     Some MicroStrategy APIs make a distinction between an object's type
     and subtype because in some cases (e.g. the different kinds of reports)
@@ -84,6 +90,7 @@ class SubType(AutoName):
     RESOLUTION = auto()
     ATTRIBUTE_FORM_SYSTEM = auto()
     ATTRIBUTE_FORM_NORMAL = auto()
+    ATTRIBUTE_FORM_CUSTOM = auto()
     SCHEMA = auto()
     FORMAT = auto()
     CATALOG = auto()
@@ -181,13 +188,13 @@ class SubType(AutoName):
     SUBSCRIPTION_INSTANCE = auto()
 
 
-@dataclass
-class SchemaObjectReference(Dictable):
+@dataclass(eq=False)
+class SchemaObjectReference(Dictable):  # noqa
     """Information about an object referenced within the specification
     of another object. An object reference typically contains only enough
     fields to uniquely identify the referenced objects.
 
-    Arguments:
+    Attributes:
         object_id: object's id, a globally unique identifier used to
             distinguish between metadata objects within the same project
         sub_type:  string literal used to identify the type of a metadata object
@@ -195,11 +202,189 @@ class SchemaObjectReference(Dictable):
         is_embedded: if true indicates that the target object of this reference
             is embedded within this object, bool
     """
-    _FROM_DICT_MAP = {'sub_type': SubType}
-    sub_type: SubType
-    object_id: str
+    _DELETE_NONE_VALUES_RECURSION = False
+
+    _FROM_DICT_MAP = {'sub_type': ObjectSubType}
+
+    sub_type: ObjectSubType
+    object_id: Optional[str] = None
     name: Optional[str] = None
-    is_embedded: bool = False
+    is_embedded: Optional[bool] = None
 
     def __eq__(self, other):
-        return self.sub_type == other.sub_type and self.object_id == other.object_id
+        if not isinstance(other, SchemaObjectReference):
+            return False
+
+        return self.object_id == other.object_id and self.sub_type == other.sub_type
+
+    def __hash__(self):
+        return hash(self.object_id)
+
+    @classmethod
+    def create_from(cls, schema_object: Union["Attribute", "UserHierarchy"],
+                    is_embedded: bool = None) -> "SchemaObjectReference":
+        """Converts a schema object into a schema object reference
+
+            Args:
+                schema_object: a schema object
+                is_embeded: a boolean indicating whether the schema object
+                    is embedded or not
+
+            Returns:
+                SchemaObjectReference of the given schema object
+        """
+        reference_body = {
+            "object_id": schema_object.id,
+            "name": schema_object.name,
+            "sub_type": schema_object.sub_type,
+            "is_embeded": is_embedded
+        }
+        return cls.from_dict(reference_body)
+
+    def to_object(self, connection: "Connection") -> Union["Attribute", "UserHierarchy"]:
+        """Converts a schema object reference into a schema object.
+
+            Args:
+                connection: a connection object required to fetch
+                    the schema object
+        """
+        if self.sub_type == ObjectSubType.ATTRIBUTE:
+            from mstrio.modeling.schema.attribute import Attribute
+            return Attribute(connection, id=self.object_id)
+        else:
+            raise NotImplementedError(f"{self.sub_type} object sub type is not supported yet.")
+
+
+class DataType(Dictable):
+    """Representation in the object model for a data-type that could be used
+    for a SQL column.
+
+    Attributes:
+        type: gross data type of an actual or proposed column in a database.
+        precision: for relevant data types, the length of the representation
+        scale: for relevant data types, the fixed position used
+        in the representation
+    """
+
+    _DELETE_NONE_VALUES_RECURSION = False
+
+    class Type(AutoName):
+        """String literal used to identify the gross data type of an actual
+        or proposed column in a database."""
+        UNKNOWN = auto()
+        RESERVED = auto()
+        INTEGER = auto()
+        UNSIGNED = auto()
+        NUMERIC = auto()
+        DECIMAL = auto()
+        REAL = auto()
+        FLOAT = auto()
+        CHAR = auto()
+        FIXED_LENGTH_STRING = auto()
+        VARIABLE_LENGTH_STRING = auto()
+        BINARY = auto()
+        VAR_BIN = auto()
+        LONGVARBIN = auto()
+        DATE = auto()
+        TIME = auto()
+        TIME_STAMP = auto()
+        N_CHAR = auto()
+        N_VAR_CHAR = auto()
+        SHORT = auto()
+        LONG = auto()
+        MB_CHAR = auto()
+        BOOL = auto()
+        PATTERN = auto()
+        N_PATTERN = auto()
+        CELL_FORMAT_DATA = auto()
+        MISSING = auto()
+        UTF8_CHAR = auto()
+        INT64 = auto()
+        GUID = auto()
+        DOUBLE_DOUBLE = auto()
+
+    def __init__(self, type: Type, precision: str, scale: str) -> None:
+        self.type = type
+        self.precision = precision
+        self.scale = scale
+
+
+class FormReference(Dictable):
+    """	The reference that identifies a form object within the context of a
+        given attribute. When writing back an attribute, either id or name is
+        needed to identify a form, and if both are provided, id will take
+        the higher priority.
+
+        Attributes:
+            id: id of the form
+            name: name of the form
+    """
+
+    _DELETE_NONE_VALUES_RECURSION = False
+
+    def __init__(self, id: str = None, name: str = None) -> None:
+        if id is None and name is None:
+            exception_handler("Provide either `id` or `name` of a form object.", AttributeError)
+        self.id = id
+        self.name = name
+
+
+class AttributeDisplays(Dictable):
+    """The collections of report displays and browse displays of the attribute.
+
+    Attributes:
+        report_displays: list of an AttributeSorts for report displays
+        browse_displays: list of an AttributeSorts for browse displays
+    """
+
+    _DELETE_NONE_VALUES_RECURSION = False
+
+    _FROM_DICT_MAP = {
+        "report_displays": (lambda source, connection:
+                            [FormReference.from_dict(content, connection) for content in source]),
+        "browse_displays": (lambda source, connection:
+                            [FormReference.from_dict(content, connection) for content in source]),
+    }
+
+    def __init__(self, report_displays: List[FormReference],
+                 browse_displays: List[FormReference]) -> None:
+        self.report_displays = report_displays
+        self.browse_displays = browse_displays
+
+
+class AttributeSort(Dictable):
+    """An individual sort element in an AttributeSorts list.
+
+    Attributes:
+        form: A form reference
+        ascending: whether the sort is in ascending or descending order
+    """
+    _DELETE_NONE_VALUES_RECURSION = False
+
+    _FROM_DICT_MAP = {"form": FormReference.from_dict}
+
+    def __init__(self, form: FormReference, ascending: bool = False) -> None:
+        self.form = form
+        self.ascending = ascending
+
+
+class AttributeSorts(Dictable):
+    """The collections of report sorts and browse sorts of the attribute.
+
+    Attributes:
+        report_sorts: list of an AttributeSorts for report sorts
+        browse_sorts: list of an AttributeSorts for browse sorts
+    """
+    _DELETE_NONE_VALUES_RECURSION = False
+
+    _FROM_DICT_MAP = {
+        "report_sorts": (lambda source, connection:
+                         [AttributeSort.from_dict(content, connection) for content in source]),
+        "browse_sorts": (lambda source, connection:
+                         [AttributeSort.from_dict(content, connection) for content in source]),
+    }
+
+    def __init__(self, report_sorts: List[AttributeSort],
+                 browse_sorts: List[AttributeSort]) -> None:
+        self.report_sorts = report_sorts
+        self.browse_sorts = browse_sorts

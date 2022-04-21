@@ -62,7 +62,7 @@ class EmailTransmitterProperties(Dictable):
         notification_email_address: email address for notification, default is
             `None`
     """
-
+    _DELETE_NONE_VALUES_RECURSION = True
     _FROM_DICT_MAP = {'recipient_field_type': RecipientFieldType}
 
     def __init__(self, sender_display_name: str, sender_email_address: str,
@@ -119,6 +119,7 @@ class Transmitter(Entity, DeleteMixin):
             (available only when `delivery_type` equals
             `TransmitterDeliveryType.EMAIL`)
     """
+    _DELETE_NONE_VALUES_RECURSION = True
     _OBJECT_TYPE = ObjectTypes.SUBSCRIPTION_TRANSMITTER
     _FROM_DICT_MAP = {
         **Entity._FROM_DICT_MAP, 'owner': User.from_dict,

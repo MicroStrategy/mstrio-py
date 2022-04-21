@@ -2,12 +2,11 @@ from enum import Enum, IntFlag
 from typing import Any, Dict, List, Optional, TYPE_CHECKING, TypeVar, Union
 
 import pandas as pd
-from requests import HTTPError
 
 from mstrio.api import objects
 from mstrio.connection import Connection
 from mstrio.types import ObjectTypes
-from mstrio.utils.helper import Dictable, exception_handler, filter_obj_list
+from mstrio.utils.helper import Dictable, exception_handler, filter_obj_list, IServerError
 
 if TYPE_CHECKING:
     from mstrio.server import Project
@@ -66,6 +65,8 @@ T = TypeVar("T")
 
 
 class ACE(Dictable):
+
+    _DELETE_NONE_VALUES_RECURSION = True
 
     _FROM_DICT_MAP = {
         'rights': Rights,
@@ -362,14 +363,14 @@ class TrusteeACLMixin:
                            rights=AggregatedRights.ALL.value, ids=to_objects,
                            object_type=object_type, project=project, denied=(not denied),
                            propagate_to_children=propagate_to_children, verbose=False)
-        except HTTPError:
+        except IServerError:
             pass
         try:
             _modify_rights(connection=self.connection, trustee_id=self.id, op='REMOVE',
                            rights=AggregatedRights.ALL.value, ids=to_objects,
                            object_type=object_type, project=project, denied=denied,
                            propagate_to_children=propagate_to_children, verbose=False)
-        except HTTPError:
+        except IServerError:
             pass
 
         if not permission == Permissions.DEFAULT_ALL:
@@ -433,7 +434,7 @@ class TrusteeACLMixin:
                                rights=right_value, ids=to_objects, object_type=object_type,
                                project=project, denied=(not denied),
                                propagate_to_children=propagate_to_children, verbose=False)
-            except HTTPError:
+            except IServerError:
                 pass
 
             op = 'REMOVE' if default else 'ADD'
@@ -443,7 +444,7 @@ class TrusteeACLMixin:
                                rights=right_value, ids=to_objects, object_type=object_type,
                                project=project, denied=denied,
                                propagate_to_children=propagate_to_children, verbose=verbose)
-            except HTTPError:
+            except IServerError:
                 pass
 
         rights_dict = {

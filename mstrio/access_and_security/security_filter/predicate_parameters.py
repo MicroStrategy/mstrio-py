@@ -21,6 +21,7 @@ class ParameterType(AutoName):
 class ParameterBase(Dictable):
 
     TYPE = None
+    _DELETE_NONE_VALUES_RECURSION = True
 
     def __init__(self):
         self.parameter_type = self.TYPE
@@ -38,6 +39,7 @@ class ConstantType(AutoName):
 class ConstantParameter(ParameterBase):
 
     TYPE = ParameterType.CONSTANT
+    _DELETE_NONE_VALUES_RECURSION = True
 
     def __init__(self, type: Union["ConstantType", str], value: str):
         """Constant parameter for predicate.
@@ -60,6 +62,7 @@ class ConstantParameter(ParameterBase):
 class ObjectReferenceParameter(ParameterBase):
 
     TYPE = ParameterType.OBJECT_REFERENCE
+    _DELETE_NONE_VALUES_RECURSION = True
 
     def __init__(self, target: "ObjectReference"):
         super().__init__()
@@ -71,6 +74,7 @@ class ObjectReferenceParameter(ParameterBase):
 class ExpressionParameter(ParameterBase):
 
     TYPE = ParameterType.OBJECT_REFERENCE
+    _DELETE_NONE_VALUES_RECURSION = True
 
     def __init__(self, expression: dict):
         super().__init__()
@@ -80,6 +84,7 @@ class ExpressionParameter(ParameterBase):
 class PromptParameter(ParameterBase):
 
     TYPE = ParameterType.PROMPT
+    _DELETE_NONE_VALUES_RECURSION = True
 
     def __init__(self, prompt: "ObjectReference"):
         super().__init__()
@@ -91,6 +96,7 @@ class PromptParameter(ParameterBase):
 class DynamicDateTimeParameter(ParameterBase):
 
     TYPE = ParameterType.DYNAMIC_DATE_TIME
+    _DELETE_NONE_VALUES_RECURSION = True
 
     def __init__(self, dynamic_date_time: dict):
         super().__init__()
@@ -101,6 +107,7 @@ class DynamicDateTimeParameter(ParameterBase):
 class ConstantArrayParameter(ParameterBase):
 
     TYPE = ParameterType.ARRAY
+    _DELETE_NONE_VALUES_RECURSION = True
 
     def __init__(self, type: Union["ConstantType", str], values: List[str]):
         super().__init__()

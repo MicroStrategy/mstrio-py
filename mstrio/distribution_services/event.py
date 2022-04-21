@@ -44,6 +44,7 @@ class Event(Entity, DeleteMixin):
         id: Event ID
         description: Event descriptions
     """
+    _DELETE_NONE_VALUES_RECURSION = True
     _PATCH_PATH_TYPES = {'name': str, 'description': str}
     _OBJECT_TYPE = ObjectTypes.SCHEDULE_EVENT
     _API_GETTERS = {
@@ -106,7 +107,7 @@ class Event(Entity, DeleteMixin):
         body = helper.delete_none_values({
             "name": name,
             "description": description,
-        })
+        }, recursion=True)
         response = events.create_event(connection, body)
         return cls.from_dict(response.json(), connection)
 
@@ -120,7 +121,7 @@ class Event(Entity, DeleteMixin):
         args = helper.delete_none_values({
             "name": name,
             "description": description,
-        })
+        }, recursion=True)
         self._alter_properties(**args)
         if config.verbose:
             logger.info(f"Updated subscription '{self.name}' with ID: {self.id}.")

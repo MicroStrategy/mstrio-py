@@ -104,6 +104,7 @@ class Report(Entity, CertifyMixin, DeleteMixin):
         'certified_info': CertifiedInfo.from_dict,
     }
     _SIZE_LIMIT = 10000000  # this sets desired chunk size in bytes
+    _DELETE_NONE_VALUES_RECURSION = True
 
     def __init__(self, connection: Connection, id: str, instance_id: Optional[str] = None,
                  parallel: bool = True, progress_bar: bool = True):

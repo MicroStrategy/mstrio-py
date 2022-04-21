@@ -42,13 +42,13 @@ with open('README.md') as f:
     long_description = f.read()
 
 requirements = [
-    'notebook>=6.4.5',  # Jupyter Notebook - ver required by WS
+    'notebook>=6.4.10',  # Jupyter Notebook - ver required for SEC
     'ipython>=8.1.1, <9',  # dep of dep - higher ver required for SEC
     'requests>=2.27, <2.28',
     'urllib3>=1.26.0',  # dep of dep (but ver 1.25.x is incompatible)
     'requests_futures>=1.0.0, <1.1',
     'pandas>=1.1.5, <=1.5',
-    'numpy>=1.22.2, <1.23',
+    'numpy>=1.22.3, <1.23',
     'tqdm>=4.41, <4.70',
     'packaging>=21.3, <22',
     'dictdiffer>=0.8.1, <0.10',
@@ -57,17 +57,12 @@ requirements = [
 ]
 
 # Add dependencies for connector-jupyter if connector-jupyter folder is added
-# Else add workstation_demo_scripts folder
 if find_in_file('graft connector-jupyter', MANIFEST_FILE):
     requirements.extend([
         'lxml>=4.7.1',  # dep of dep but prev vers are considered vulnerable
         'jupyter_contrib_nbextensions>=0.5.1, <0.6',
         'ipywidgets>=7.5.1, <8'
     ])
-elif find_in_file('prune connector-jupyter', MANIFEST_FILE):
-    with open(MANIFEST_FILE, "a+") as f:
-        f.write('graft workstation_demo_scripts')
-
 setup(
     name=__title__,
     python_requires='>=3.9',

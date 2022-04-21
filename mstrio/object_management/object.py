@@ -77,6 +77,7 @@ class Object(Entity, ACLMixin, CertifyMixin, CopyMixin, DeleteMixin):
         project_id: project ID
         target_info: target information, only applicable to Shortcut objects
     """
+    _DELETE_NONE_VALUES_RECURSION = True
     _FROM_DICT_MAP = {
         **Entity._FROM_DICT_MAP,
         'certified_info': CertifiedInfo.from_dict,

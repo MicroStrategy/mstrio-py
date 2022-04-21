@@ -320,26 +320,32 @@ class Connection:
         self.project_name = tmp_projects[0]['name']
         self._session.headers['X-MSTR-ProjectID'] = self.project_id
 
+    @sessions.log_request(logger)
     @sessions.renew_session
     def get(self, url, **kwargs):
         return self._session.get(url, **kwargs)
 
+    @sessions.log_request(logger)
     @sessions.renew_session
     def post(self, url, **kwargs):
         return self._session.post(url, **kwargs)
 
+    @sessions.log_request(logger)
     @sessions.renew_session
     def put(self, url, **kwargs):
         return self._session.put(url, **kwargs)
 
+    @sessions.log_request(logger)
     @sessions.renew_session
     def patch(self, url, **kwargs):
         return self._session.patch(url, **kwargs)
 
+    @sessions.log_request(logger)
     @sessions.renew_session
     def delete(self, url, **kwargs):
         return self._session.delete(url, **kwargs)
 
+    @sessions.log_request(logger)
     @sessions.renew_session
     def head(self, url, **kwargs):
         return self._session.head(url, **kwargs)

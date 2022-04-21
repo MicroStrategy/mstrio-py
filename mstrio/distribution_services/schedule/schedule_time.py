@@ -67,6 +67,7 @@ class ScheduleTime(Dictable):
 
     class Execution(Dictable):
         """Object representation of the execution information of the schedule"""
+        _DELETE_NONE_VALUES_RECURSION = True
         _FROM_DICT_MAP = {
             'execution_pattern': ScheduleEnums.ExecutionPattern,
         }
@@ -120,6 +121,7 @@ class ScheduleTime(Dictable):
     class Daily(Dictable):
         """Object representation of daily recurrence information of the schedule
         """
+        _DELETE_NONE_VALUES_RECURSION = True
         _FROM_DICT_MAP = {'daily_pattern': ScheduleEnums.DailyPattern}
 
         def __init__(self,
@@ -146,6 +148,7 @@ class ScheduleTime(Dictable):
     class Weekly(Dictable):
         """Object representation of weekly recurrence information of the
         schedule"""
+        _DELETE_NONE_VALUES_RECURSION = True
         _FROM_DICT_MAP = {'days_of_week': [ScheduleEnums.DaysOfWeek]}
 
         def __init__(self,
@@ -177,6 +180,7 @@ class ScheduleTime(Dictable):
     class Monthly(Dictable):
         """Object representation of monthly recurrence information of the
         schedule"""
+        _DELETE_NONE_VALUES_RECURSION = True
         _FROM_DICT_MAP = {
             'monthly_pattern': ScheduleEnums.MonthlyPattern,
             'week_offset': ScheduleEnums.WeekOffset,
@@ -246,6 +250,7 @@ class ScheduleTime(Dictable):
     class Yearly(Dictable):
         """Object representation of yearly recurrence information of the
         schedule"""
+        _DELETE_NONE_VALUES_RECURSION = True
         _FROM_DICT_MAP = {
             'yearly_pattern': ScheduleEnums.YearlyPattern,
             'week_offset': ScheduleEnums.WeekOffset,
@@ -295,6 +300,7 @@ class ScheduleTime(Dictable):
                     day_of_week, ScheduleEnums.DaysOfWeek
                 ) else ScheduleEnums.DaysOfWeek(day_of_week)
 
+    _DELETE_NONE_VALUES_RECURSION = True
     _FROM_DICT_MAP = {
         'recurrence_pattern': ScheduleEnums.RecurrencePattern,
         'days_of_week': ScheduleEnums.DaysOfWeek,

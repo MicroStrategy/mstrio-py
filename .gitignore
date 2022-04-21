@@ -32,6 +32,8 @@ wheels/
 Untitled*
 *.vscode*
 MANIFEST
+.pre-commit*
+validation_scripts
 
 # PyInstaller
 #  Usually these files are written by a python script from a template

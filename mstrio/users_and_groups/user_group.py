@@ -104,6 +104,7 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin):
         ('name', 'description', 'memberships', 'security_roles', 'members', 'privileges'):
             (usergroups.update_user_group_info, 'patch')
     }
+    _DELETE_NONE_VALUES_RECURSION = True
 
     def __init__(self, connection: Connection, name: Optional[str] = None,
                  id: Optional[str] = None) -> None:

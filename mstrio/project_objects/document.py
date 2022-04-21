@@ -90,6 +90,7 @@ class Document(Entity, VldbMixin, DeleteMixin):
         **Entity._FROM_DICT_MAP, 'owner': User.from_dict,
         'certified_info': CertifiedInfo.from_dict
     }
+    _DELETE_NONE_VALUES_RECURSION = True
 
     def __init__(self, connection: Connection, name: Optional[str] = None,
                  id: Optional[str] = None):

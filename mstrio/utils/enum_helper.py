@@ -8,6 +8,10 @@ class AutoName(Enum):
     def _generate_next_value_(name, start, count, last_values):
         return name.lower()
 
+    @classmethod
+    def has_value(cls, value):
+        return value in set(item.value for item in cls)
+
 
 class AutoUpperName(Enum):
 
