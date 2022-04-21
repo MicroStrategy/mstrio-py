@@ -83,6 +83,7 @@ def list_dossiers_across_projects(connection: Connection, name: Optional[str] = 
 
 
 class Dossier(Document):
+    _DELETE_NONE_VALUES_RECURSION = True
 
     @classmethod
     def _list_all(cls, connection: Connection, name: Optional[str] = None,

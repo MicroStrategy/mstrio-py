@@ -111,6 +111,7 @@ class DatasourceInstance(Entity, CopyMixin, DeleteMixin):
         acl: Object access control list
     """
 
+    _DELETE_NONE_VALUES_RECURSION = True
     _OBJECT_TYPE = ObjectTypes.DBROLE
     _FROM_DICT_MAP = {
         **Entity._FROM_DICT_MAP, 'dbms': Dbms.from_dict,
@@ -268,7 +269,7 @@ class DatasourceInstance(Entity, CopyMixin, DeleteMixin):
                 "id": dbms_id
             }
         }
-        body = helper.delete_none_values(body)
+        body = helper.delete_none_values(body, recursion=True)
         response = datasources.create_datasource_instance(connection, body).json()
         if config.verbose:
             logger.info(

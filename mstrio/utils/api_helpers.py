@@ -23,10 +23,11 @@ def unpack_information(func):
                     "destinationFolderId": kwargs['body'].pop('destinationFolderId', None),
                     "versionId": kwargs['body'].pop('versionId', None),
                     "path": kwargs['body'].pop('path', None),
+                    "acl": kwargs['body'].pop('acl', None),
                     "primaryLocale": kwargs['body'].pop('primaryLocale', None),
                 }
             }
-            info = delete_none_values(info)
+            info = delete_none_values(info, recursion=True)
             if info['information']:
                 kwargs['body'].update(info)
 
@@ -43,6 +44,7 @@ def unpack_information(func):
 
 
 def changeset_decorator(func):
+
     @wraps(func)
     def changeset_inner(*args, **kwargs):
         connection = args[0] if args and isinstance(args[0], Connection) else kwargs["connection"]
@@ -55,4 +57,5 @@ def changeset_decorator(func):
         finally:
             delete_changeset(connection=connection, id=changeset_id)
         return resp
+
     return changeset_inner

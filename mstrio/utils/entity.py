@@ -319,6 +319,8 @@ class EntityBase(helper.Dictable):
                         self._FROM_DICT_MAP[key][0](source=v, connection=self.connection)
                         for v in val
                     ]
+            elif val == {}:
+                return None
             else:
                 val = self._FROM_DICT_MAP[key](source=val, connection=self.connection)
 
@@ -336,14 +338,15 @@ class EntityBase(helper.Dictable):
         # determine which attributes should be private
         properties = {
             elem[0]
-            for elem in inspect.getmembers(self.__class__, lambda x: isinstance(x, property))}
+            for elem in inspect.getmembers(self.__class__, lambda x: isinstance(x, property))
+        }
 
         for key, val in object_info.items():  # type: ignore
-            # if self is a composite, create component instance
-            val = self.__compose_val(key, val)
-
             # update _AVAILABLE_ATTRIBUTES map
             self._AVAILABLE_ATTRIBUTES.update({key: type(val)})
+
+            # if self is a composite, create component instance
+            val = self.__compose_val(key, val)
 
             # check if attr is read-only and if yes return '_' version of it
             if key in properties:
@@ -359,7 +362,6 @@ class EntityBase(helper.Dictable):
             dict: A dictionary which keys are object's attribute names, and
                 which values are object's attribute values.
         """
-
         if hasattr(self, "_API_GETTERS"):  # fetch attributes not loaded on init
             attr = [
                 attr for attr in self._API_GETTERS.keys() if isinstance(attr, str)  # type: ignore
@@ -497,30 +499,18 @@ class EntityBase(helper.Dictable):
             msg = ("The file extension is different than '.csv', please note that using a "
                    "different extension might disrupt opening the file correctly.")
             helper.exception_handler(msg, exception_type=Warning)
-        if isinstance(objects, cls):
-            properties_dict = objects.list_properties()
+
+        if not isinstance(objects, list):
+            objects = [objects]
+        for obj in objects:
+            if not isinstance(obj, cls):
+                helper.exception_handler((f"Object '{obj}' of type '{type(obj)}' is not supported."
+                                          f"Objects should be of type {cls.__name__} or "
+                                          f"list of {cls.__name__}."), exception_type=TypeError)
             if properties:
-                list_of_objects.append(
-                    {key: value for key, value in properties_dict.items() if key in properties})
+                list_of_objects.append({key: getattr(obj, key) for key in properties})
             else:
-                list_of_objects.append(properties_dict)
-        elif isinstance(objects, list):
-            if not properties:
-                properties = objects[0].list_properties().keys()
-            for obj in objects:
-                if isinstance(obj, cls):
-                    list_of_objects.append({
-                        key: value
-                        for key, value in obj.list_properties().items()
-                        if key in properties
-                    })
-                else:
-                    helper.exception_handler(
-                        f"Object '{obj}' of type '{type(obj)}' is not supported.",
-                        exception_type=Warning)
-        else:
-            raise TypeError(f"Objects should be of type {cls.__name__} or "
-                            f"list of {cls.__name__}.")
+                list_of_objects.append(obj.list_properties())
 
         with open(file, 'w') as f:
             fieldnames = list_of_objects[0].keys()

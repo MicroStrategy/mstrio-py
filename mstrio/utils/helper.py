@@ -1,13 +1,13 @@
-from datetime import datetime
-from enum import Enum
-from functools import reduce, wraps
 import inspect
-from json.decoder import JSONDecodeError
 import logging
 import os
 import re
-from typing import Any, Callable, Dict, List, Optional, Tuple, TYPE_CHECKING, TypeVar, Union
 import warnings
+from datetime import datetime
+from enum import Enum
+from functools import reduce, wraps
+from json.decoder import JSONDecodeError
+from typing import Any, Callable, Dict, List, Optional, Tuple, TYPE_CHECKING, TypeVar, Union
 
 import pandas as pd
 import stringcase
@@ -155,6 +155,12 @@ def exception_handler(msg, exception_type=Exception, stack_lvl=2):
         warnings.warn(msg, exception_type, stacklevel=stack_lvl)
 
 
+class IServerError(IOError):
+    def __init__(self, message, http_code):
+        super().__init__(message)
+        self.http_code = http_code
+
+
 def response_handler(response, msg, throw_error=True, verbose=True, whitelist=None):
     """Generic error message handler for transactions against I-Server.
 
@@ -172,6 +178,9 @@ def response_handler(response, msg, throw_error=True, verbose=True, whitelist=No
         whitelist = []
 
     try:
+        logger.debug(f"{response} url = '{response.url}'")
+        logger.debug(f"headers = {response.headers}")
+        logger.debug(f"content = {response.text}")
         res = response.json()
 
         if res.get('errors') is not None:
@@ -208,8 +217,13 @@ def response_handler(response, msg, throw_error=True, verbose=True, whitelist=No
                     f'Ticket ID: {ticket_id}'
                 )
             if throw_error:
-                response.raise_for_status()
+                raise IServerError(
+                    message=f"{server_msg}; code: '{server_code}', ticket_id: '{ticket_id}'",
+                    http_code=response.status_code
+                )
     except JSONDecodeError:
+        logger.debug(f"Response body: {response.text}")
+
         if verbose:
             logger.error(
                 f'{msg}\n'
@@ -396,6 +410,9 @@ def auto_match_args(func: Callable, param_dict: dict, exclude: Optional[list] = 
     Handles default parameters. Extracts value from Enums. Returns matched
     arguments as dict.
 
+    Note: don't use it for alter purposes as, changing parameter value
+        back to default currently doesn't work (Rework line 413?)
+
     Args:
         function: function for which args will be matched
         param_dict: dict to use for matching the function args
@@ -515,18 +532,27 @@ def extract_all_dict_values(list_of_dicts: List[Dict]) -> List[Any]:
     return all_options
 
 
-def delete_none_values(source: dict) -> dict:
+def delete_none_values(source: dict, *, whitelist_attributes: Optional[list] = None,
+                       recursion: bool) -> dict:
     """Delete keys with None values from dictionary.
 
     Args:
         source (dict): dict object from which none values will be deleted
+        whitelist_attributes (list): keyword-only argument containing name
+            of attribute, which should be left alone even if they contain
+            none values
+        recursion (bool): flag that turns recursion on or off
     """
+    whitelist = whitelist_attributes or []
+
     new_dict = {}
     for key, value in source.items():
-        if isinstance(value, dict):
-            new_dict[key] = delete_none_values(value)
-        elif value not in [[], {}, None]:
+        if recursion and isinstance(value, dict):
+            new_dict[key] = delete_none_values(value, whitelist_attributes=whitelist,
+                                               recursion=recursion)
+        elif value not in [[], {}, None] or key in whitelist:
             new_dict[key] = value
+
     return new_dict
 
 
@@ -717,6 +743,37 @@ def rgetattr(obj, attr, *default):
     return reduce(_getattr, [obj] + attr.split('.'))
 
 
+def filter_params_for_func(func: Callable, params: dict, exclude: Optional[list] = None) -> dict:
+    """Filter dict of parameters and return only those that are parameters
+    of a `func`.
+    Mainly used in `EntityBase.alter()`, before calling
+    `EntityBase._alter_properties()` as shown in `Example`.
+
+    Args:
+        func: a function that the params are going to be fit for
+        params: a dict with parameters that will be filtered
+        exclude: set `exclude` parameter to exclude specific param-value pairs
+    Returns:
+        a dict with parameters of `func` that exist in `params` dict
+    Example:
+        params = filter_params_for_func(self.alter, locals())
+        self._alter_properties(**params)
+    """
+    args = get_args_from_func(func)
+    defaults_dict = get_default_args_from_func(func)
+    exclude = exclude or []
+    properties = {}
+
+    for arg in args:
+        if arg in exclude:
+            continue
+        elif params.get(arg, None) is not None:
+            properties.update({arg: params.get(arg)})
+        elif defaults_dict.get(arg, None) is not None:
+            properties.update({arg: defaults_dict.get(arg)})
+    return properties
+
+
 T = TypeVar("T")
 
 
@@ -745,6 +802,10 @@ class Dictable:
     converting an object to a dictionary, and creating an object from a
     dictionary."""
     _FROM_DICT_MAP: Dict[str, Callable] = {}  # map attributes to Enums and components
+    # list of attribute name, which are allowed to have none values
+    # in dict returned by .to_dict()
+    _ALLOW_NONE_ATTRIBUTES: List[str] = []
+    _DELETE_NONE_VALUES_RECURSION: bool  # enable or disable recursion in delete_none_values
 
     @classmethod
     def _unpack_objects(cls, key, val, camel_case=True):
@@ -770,11 +831,17 @@ class Dictable:
             elif isinstance(cls._FROM_DICT_MAP[key], type(Dictable)):
                 return cls._FROM_DICT_MAP[key].from_dict(val)
             elif isinstance(cls._FROM_DICT_MAP[key], list):
-                if (all(isinstance(v, type(Enum)) for v in cls._FROM_DICT_MAP[key])
-                        and val is not None):
+                if isinstance(cls._FROM_DICT_MAP[key][0], list):
+                    # for: List[List[handling_cls]]
+                    handling_cls = cls._FROM_DICT_MAP[key][0][0]
+                    return [[handling_cls.from_dict(item) for item in v] for v in val]
+                elif (all(isinstance(v, type(Enum)) for v in cls._FROM_DICT_MAP[key])
+                      and val is not None):
                     return [cls._FROM_DICT_MAP[key][0](v) for v in val]
                 elif all([isinstance(v, type(Dictable)) for v in cls._FROM_DICT_MAP[key]]):
                     return [cls._FROM_DICT_MAP[key][0].from_dict(v) for v in val]
+                elif callable(cls._FROM_DICT_MAP[key][0]):
+                    return [cls._FROM_DICT_MAP[key][0](v, connection) for v in val]
             else:
                 return cls._FROM_DICT_MAP[key](val, connection)
 
@@ -790,6 +857,8 @@ class Dictable:
         Args:
             camel_case (bool, optional): Set to True if attribute names should
                 be converted from snake case to camel case. Defaults to True.
+            allow_none(List[str], optional): list of keys whichs should not
+                be deleted if empty
 
         Returns:
             dict: A dictionary representation of object's attributes and values.
@@ -812,7 +881,8 @@ class Dictable:
             if key not in hidden_keys
         }
 
-        result = delete_none_values(result)
+        result = delete_none_values(result, whitelist_attributes=self._ALLOW_NONE_ATTRIBUTES,
+                                    recursion=self._DELETE_NONE_VALUES_RECURSION)
         result = {key: result[key] for key in sorted(result, key=sort_object_properties)}
         return snake_to_camel(result) if camel_case else result
 

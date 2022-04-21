@@ -106,6 +106,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
         acg: Access rights (See EnumDSSXMLAccessRightFlags for possible values)
         acl: Object access control list
     """
+    _DELETE_NONE_VALUES_RECURSION = True
 
     _PATCH_PATH_TYPES = {
         "name": str,
@@ -248,7 +249,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
             "databaseAuthLogin": database_auth_login,
             "memberships": memberships
         }
-        body = helper.delete_none_values(body)
+        body = helper.delete_none_values(body, recursion=True)
         response = users.create_user(connection, body, username).json()
         if config.verbose:
             logger.info(

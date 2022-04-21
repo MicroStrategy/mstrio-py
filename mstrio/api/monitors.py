@@ -363,7 +363,7 @@ def alter_cube_cache_status(connection: "Connection", id: str, active: bool = No
     if loaded is not None:
         loaded = 'loaded' if loaded else 'unloaded'
     body = {'state': {'active': active, 'loadedState': loaded}}
-    body = delete_none_values(body)
+    body = delete_none_values(body, recursion=True)
 
     return connection.patch(url=f'{connection.base_url}/api/monitors/caches/cubes/{id}',
                             headers={'Prefer': 'respond-async'}, json=body)

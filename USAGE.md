@@ -212,8 +212,8 @@ Updating Datasets that were **not** created using the MicroStrategy REST API is 
 
 ## Using mstrio as a MicroStrategy Intelligence Server administration tool
 
-- Project management module (see [examples](https://github.com/MicroStrategy/mstrio-py/blob/master/examples/project_mgmt.py))
-- Server management module (see [examples](https://github.com/MicroStrategy/mstrio-py/blob/master/examples/server_mgmt.py))
-- User and Usergroup management modules (see [examples](https://github.com/MicroStrategy/mstrio-py/blob/master/examples/user_mgmt.py))
-- Subscription and Schedules management modules (see [examples](https://github.com/MicroStrategy/mstrio-py/blob/master/examples/subscription_mgmt.py))
-- Document and Dossiers in User Library modules (see [examples](https://github.com/MicroStrategy/mstrio-py/blob/master/examples/user_library.py))
+- Project management module (see [code_snippets](https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/project_mgmt.py))
+- Server management module (see [code_snippets](https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/server_mgmt.py))
+- User and Usergroup management modules (see [code_snippets](https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/user_mgmt.py))
+- Subscription and Schedules management modules (see [code_snippets](https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/subscription_mgmt.py))
+- Document and Dossiers in User Library modules (see [code_snippets](https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/user_library.py))

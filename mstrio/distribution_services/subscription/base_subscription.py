@@ -41,7 +41,7 @@ class Subscription(EntityBase):
         connection: The MicroStrategy connection object
         project_id: The ID of the project the Subscription belongs to
     """
-
+    _DELETE_NONE_VALUES_RECURSION = True
     _API_GETTERS = {
         ("id", "name", "editable", "date_created", "date_modified", "owner", "schedules",
          "contents", "recipients", "delivery"): subscriptions.get_subscription
@@ -274,7 +274,7 @@ class Subscription(EntityBase):
             "delivery": delivery,
         }
 
-        body = helper.delete_none_values(body)
+        body = helper.delete_none_values(body, recursion=True)
 
         response = subscriptions.update_subscription(self.connection, self.id, self.project_id,
                                                      body)
@@ -772,7 +772,7 @@ class Subscription(EntityBase):
             "delivery": delivery
         }
 
-        body = helper.delete_none_values(body)
+        body = helper.delete_none_values(body, recursion=True)
         response = subscriptions.create_subscription(connection, project_id, body)
         if config.verbose:
             unpacked_response = response.json()

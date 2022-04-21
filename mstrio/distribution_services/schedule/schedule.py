@@ -67,6 +67,7 @@ class Schedule(Entity, DeleteMixin):
         TIME_BASED = auto()
         NONE = None
 
+    _DELETE_NONE_VALUES_RECURSION = True
     _OBJECT_TYPE = ObjectTypes.SCHEDULE_TRIGGER
 
     _API_GETTERS: dict = {
@@ -344,7 +345,7 @@ class Schedule(Entity, DeleteMixin):
             'stop_date': stop_date,
             execution_details['type']: execution_details['content']
         }
-        body = helper.delete_none_values(body)
+        body = helper.delete_none_values(body, recursion=True)
         body = helper.snake_to_camel(body)
         # Response is already unpacked in wrapper
         response = schedules.create_schedule(connection, body)

@@ -122,6 +122,7 @@ class Project(Entity):
     }
     _FROM_DICT_MAP = {**Entity._FROM_DICT_MAP, 'status': ProjectStatus}
     _STATUS_PATH = "/status"
+    _DELETE_NONE_VALUES_RECURSION = True
 
     def __init__(self, connection: Connection, name: Optional[str] = None,
                  id: Optional[str] = None) -> None:

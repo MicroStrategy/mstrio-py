@@ -95,6 +95,7 @@ class SuperCube(_Cube, CertifyMixin):
     _OBJECT_SUBTYPE = ObjectSubTypes.SUPER_CUBE.value
     __VALID_POLICY = ['add', 'update', 'replace', 'upsert']
     __MAX_DESC_LEN = 250
+    _DELETE_NONE_VALUES_RECURSION = True
 
     def __init__(self, connection: Connection, id: Optional[str] = None,
                  name: Optional[str] = None, description: Optional[str] = None,

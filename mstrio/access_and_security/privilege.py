@@ -22,6 +22,7 @@ class Privilege(EntityBase):
         is_project_level_privilege: specify if privilege is compatible with
             server configuration level or project level
     """
+    _DELETE_NONE_VALUES_RECURSION = True
 
     def __init__(self, connection: Connection, name: Optional[str] = None,
                  id: Optional[str] = None) -> None:
@@ -234,6 +235,7 @@ class PrivilegeList:
     Attributes:
         connection: A MicroStrategy connection object
     """
+    _DELETE_NONE_VALUES_RECURSION = True
 
     def __init__(self, connection: Connection):
         """Initialize PrivilegeList object.

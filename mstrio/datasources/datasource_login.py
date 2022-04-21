@@ -60,6 +60,7 @@ class DatasourceLogin(Entity, CopyMixin, DeleteMixin):
         acg: Access rights (See EnumDSSXMLAccessRightFlags for possible values)
         acl: Object access control list
     """
+    _DELETE_NONE_VALUES_RECURSION = True
     _OBJECT_TYPE = ObjectTypes.DBLOGIN
     _FROM_DICT_MAP = {**Entity._FROM_DICT_MAP, 'owner': User.from_dict}
     _API_GETTERS = {
@@ -138,7 +139,7 @@ class DatasourceLogin(Entity, CopyMixin, DeleteMixin):
             "username": username,
             "password": password
         }
-        body = helper.delete_none_values(body)
+        body = helper.delete_none_values(body, recursion=True)
         response = datasources.create_datasource_login(connection, body).json()
         if config.verbose:
             logger.info(

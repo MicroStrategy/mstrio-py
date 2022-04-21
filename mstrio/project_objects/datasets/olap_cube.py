@@ -80,6 +80,7 @@ class OlapCube(_Cube):
         table_definition
     """
     _OBJECT_SUBTYPE = ObjectSubTypes.OLAP_CUBE.value
+    _DELETE_NONE_VALUES_RECURSION = True
 
     def __init__(self, connection: Connection, id: str, name: Optional[str] = None,
                  instance_id: Optional[str] = None, parallel: bool = True,

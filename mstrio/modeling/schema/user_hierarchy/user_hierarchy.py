@@ -28,8 +28,7 @@ class UserHierarchySubType(AutoName):
     DIMENSION_USER_HIERARCHY = auto()
 
 
-def list_user_hierarchies(connection: "Connection", to_dictionary: bool = False,
-                          limit: int = None,
+def list_user_hierarchies(connection: "Connection", to_dictionary: bool = False, limit: int = None,
                           **filters) -> Union[List["UserHierarchy"], List[dict]]:
     """Get list of UserHierarchy objects or dicts. Optionally filter the
     user hierarchies by specifying filters.
@@ -68,6 +67,8 @@ class HierarchyAttribute(Dictable):
         limit: the element display limit when element_display_option
             is limited_elements
     """
+    _DELETE_NONE_VALUES_RECURSION = True
+
     _FROM_DICT_MAP = {
         'element_display_option': ElementDisplayOption,
         'filters': [SchemaObjectReference.from_dict]
@@ -75,18 +76,17 @@ class HierarchyAttribute(Dictable):
 
     def __init__(self, object_id: str, entry_point: bool, name: str,
                  element_display_option: Union[ElementDisplayOption, str],
-                 filters: Union[List[SchemaObjectReference], List[dict]] = None,
-                 limit: Optional[int] = None):
+                 filters: Union[List[SchemaObjectReference],
+                                List[dict]] = None, limit: Optional[int] = None):
         self.object_id = object_id
         self.entry_point = entry_point
         self.name = name
         self.element_display_option = element_display_option if isinstance(
-            element_display_option, ElementDisplayOption
-        ) else ElementDisplayOption(element_display_option)
+            element_display_option,
+            ElementDisplayOption) else ElementDisplayOption(element_display_option)
         self.filters = [
             SchemaObjectReference.from_dict(obj_ref)
-            if not isinstance(obj_ref, SchemaObjectReference) else object_id
-            for obj_ref in filters
+            if not isinstance(obj_ref, SchemaObjectReference) else object_id for obj_ref in filters
         ] if filters else None
         self.limit = limit
 
@@ -110,6 +110,8 @@ class HierarchyRelationship(Dictable):
             child in a current hierarchy relationship,
             SchemaObjectReference object
     """
+    _DELETE_NONE_VALUES_RECURSION = True
+
     _FROM_DICT_MAP = {
         'parent': SchemaObjectReference.from_dict,
         'child': SchemaObjectReference.from_dict
@@ -118,11 +120,9 @@ class HierarchyRelationship(Dictable):
     def __init__(self, parent: Union[SchemaObjectReference, dict],
                  child: Union[SchemaObjectReference, dict]):
         self.parent = parent if isinstance(
-            parent, SchemaObjectReference
-        ) else SchemaObjectReference.from_dict(parent)
+            parent, SchemaObjectReference) else SchemaObjectReference.from_dict(parent)
         self.child = child if isinstance(
-            child, SchemaObjectReference
-        ) else SchemaObjectReference.from_dict(child)
+            child, SchemaObjectReference) else SchemaObjectReference.from_dict(child)
 
     def __eq__(self, other):
         if isinstance(self, dict):
@@ -169,17 +169,18 @@ class UserHierarchy(Entity, DeleteMixin):
         destination_folder_id: a globally unique identifier used to distinguish
             between metadata objects within the same project
     """
+    _DELETE_NONE_VALUES_RECURSION = True
+
     _OBJECT_TYPE = ObjectTypes.DIMENSION
     _FROM_DICT_MAP = {
-        **Entity._FROM_DICT_MAP,
-        'owner': User.from_dict,
+        **Entity._FROM_DICT_MAP, 'owner': User.from_dict,
         'sub_type': UserHierarchySubType,
         'attributes': [HierarchyAttribute.from_dict],
         'relationships': [HierarchyRelationship.from_dict]
     }
     _API_GETTERS = {
-        ('type', 'subtype', 'ext_type', 'date_created', 'date_modified', 'version',
-         'owner', 'ancestors', 'acg', 'acl'): objects.get_object_info,
+        ('type', 'subtype', 'ext_type', 'date_created', 'date_modified', 'version', 'owner',
+         'ancestors', 'acg', 'acl'): objects.get_object_info,
         ('id', 'name', 'description', 'sub_type', 'date_created', 'date_modified', 'path',
          'version_id', 'use_as_drill_hierarchy', 'is_embedded', 'primary_locale', 'attributes',
          'relationships', 'destination_folder_id'): user_hierarchies.get_user_hierarchy
@@ -218,11 +219,8 @@ class UserHierarchy(Entity, DeleteMixin):
             raise ValueError("Please specify either 'name' or 'id' parameter in the constructor.")
 
         if id is None:
-            objects_info = self._list_user_hierarchies(
-                connection=connection,
-                name=name,
-                to_dictionary=True
-            )
+            objects_info = self._list_user_hierarchies(connection=connection, name=name,
+                                                       to_dictionary=True)
 
             if objects_info:
                 object_info, object_info["connection"] = objects_info[0], connection
@@ -235,27 +233,24 @@ class UserHierarchy(Entity, DeleteMixin):
     def _init_variables(self, **kwargs) -> None:
         super()._init_variables(**kwargs)
         self.sub_type = UserHierarchySubType(
-            kwargs.get('subType')
-        ) if kwargs.get('subType') else None
+            kwargs.get('subType')) if kwargs.get('subType') else None
         self.primary_locale = kwargs.get('primaryLocale')
         self.is_embedded = kwargs.get('isEmbedded')
         self.destination_folder_id = kwargs.get('destinationFolderId')
         self.use_as_drill_hierarchy = kwargs.get('useAsDrillHierarchy')
         self.attributes = [
-            HierarchyAttribute.from_dict(source=attr)
-            for attr in kwargs.get("attributes")
+            HierarchyAttribute.from_dict(source=attr) for attr in kwargs.get("attributes")
         ] if kwargs.get('attributes') else None
         self.relationships = [
-            HierarchyRelationship.from_dict(source=rel)
-            for rel in kwargs.get("relationships")
+            HierarchyRelationship.from_dict(source=rel) for rel in kwargs.get("relationships")
         ] if kwargs.get('attributes') else None
         self._path = kwargs.get('path')
         self._version_id = kwargs.get('versionId')
 
     @classmethod
-    def create(cls, connection: "Connection", name: str,
-               sub_type: Union[str, UserHierarchySubType], destination_folder_id: str,
-               attributes: Union[List[HierarchyAttribute], List[dict]],
+    def create(cls, connection: "Connection", name: str, sub_type: Union[str,
+                                                                         UserHierarchySubType],
+               destination_folder_id: str, attributes: Union[List[HierarchyAttribute], List[dict]],
                use_as_drill_hierarchy: bool = True, description: str = None,
                is_embedded: bool = False, primary_locale: str = None,
                relationships: Union[List[HierarchyRelationship], List[dict]] = None):
@@ -285,8 +280,7 @@ class UserHierarchy(Entity, DeleteMixin):
             UserHierarchy object
         """
         attributes = [
-            attr.to_dict() if isinstance(attr, HierarchyAttribute) else attr
-            for attr in attributes
+            attr.to_dict() if isinstance(attr, HierarchyAttribute) else attr for attr in attributes
         ]
         relationships = [
             rel.to_dict() if isinstance(rel, HierarchyRelationship) else rel
@@ -306,19 +300,17 @@ class UserHierarchy(Entity, DeleteMixin):
             "attributes": attributes,
             "relationships": relationships
         }
-        body = delete_none_values(body)
+        body = delete_none_values(body, recursion=True)
         response = user_hierarchies.create_user_hierarchy(connection, body).json()
         if config.verbose:
-            logger.info(
-                f"Successfully created user hierarchy named: '{response['name']}' "
-                f"with ID: '{response['id']}'"
-            )
+            logger.info(f"Successfully created user hierarchy named: '{response['name']}' "
+                        f"with ID: '{response['id']}'")
         return cls.from_dict(source=response, connection=connection)
 
     def alter(self, name: str = None, sub_type: Union[str, UserHierarchySubType] = None,
               attributes: Union[List[HierarchyAttribute], List[dict], None] = None,
               use_as_drill_hierarchy: Optional[bool] = None, description: Optional[str] = None,
-              is_embedded: Optional[bool] = False, destination_folder_id: Optional[str] = None,
+              is_embedded: bool = False, destination_folder_id: Optional[str] = None,
               relationships: Union[List[HierarchyRelationship], List[dict], None] = None):
         """Alter the user hierarchies properties.
 
@@ -387,12 +379,8 @@ class UserHierarchy(Entity, DeleteMixin):
         relationships = [rel.to_dict() for rel in self.relationships if rel != relationship]
         body = self.to_dict()
         body['relationships'] = relationships
-        response = user_hierarchies.update_user_hierarchy(
-            connection=self.connection,
-            id=self.id,
-            changeset_id=None,
-            body=body
-        )
+        response = user_hierarchies.update_user_hierarchy(connection=self.connection, id=self.id,
+                                                          changeset_id=None, body=body)
         if response.ok:
             response = response.json()
             self._set_object_attributes(**response)

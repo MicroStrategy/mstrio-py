@@ -1,5 +1,6 @@
 graft connector-jupyter
-graft examples
+graft code_snippets
+graft workflows
 prune tests
 include version.txt
 include requirements.txt

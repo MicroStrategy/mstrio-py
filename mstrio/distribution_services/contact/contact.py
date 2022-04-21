@@ -47,7 +47,7 @@ class ContactAddress(Dictable):
         connection: instance of Connection, optional,
             is required if device is string
     """
-
+    _DELETE_NONE_VALUES_RECURSION = True
     _FROM_DICT_MAP = {'delivery_type': ContactDeliveryType, 'device': Device.from_dict}
 
     def __init__(self, name: str, physical_address: str,
@@ -148,6 +148,7 @@ class Contact(EntityBase, DeleteMixin):
         connection: instance of Connection class, represents connection
                     to MicroStrategy Intelligence Server
     """
+    _DELETE_NONE_VALUES_RECURSION = True
     _FROM_DICT_MAP = {
         **EntityBase._FROM_DICT_MAP,
         'linked_user': User.from_dict,
@@ -252,7 +253,7 @@ class Contact(EntityBase, DeleteMixin):
                 for address in contact_addresses
             ],
         }
-        body = delete_none_values(body)
+        body = delete_none_values(body, recursion=True)
         response = contacts.create_contact(connection, body).json()
 
         if config.verbose:

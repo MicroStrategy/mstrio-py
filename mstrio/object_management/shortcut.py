@@ -15,6 +15,7 @@ class ShortcutInfoFlags(IntFlag):
 
 
 class Shortcut(Entity):
+    _DELETE_NONE_VALUES_RECURSION = True
     _OBJECT_TYPE = ObjectTypes.SHORTCUT_TYPE
     _API_GETTERS = {
         ('name', 'id', 'project_id', 'owned_by_current_user', 'target', 'encode_html_content',

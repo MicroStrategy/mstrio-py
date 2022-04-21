@@ -57,8 +57,8 @@ class DriverType(AutoName):
 
 class ExecutionMode(AutoName):
     RESERVED = auto()
-    ASYNCH_CONNECTION = auto()
-    ASYNCH_STATEMENT = auto()
+    ASYNC_CONNECTION = auto()
+    ASYNC_STATEMENT = auto()
     SYNCHRONOUS = auto()
 
 
@@ -109,6 +109,7 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
             [EnumDSSXMLAccessRightFlags].
         acl: Object access control list
     """
+    _DELETE_NONE_VALUES_RECURSION = True
     _OBJECT_TYPE = ObjectTypes.DBCONNECTION
     _FROM_DICT_MAP = {
         **Entity._FROM_DICT_MAP,
@@ -361,7 +362,7 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
             "driverType": get_enum_val(driver_type, DriverType),
             "oauthParameter": oauth_parameter
         }
-        body = helper.delete_none_values(body)
+        body = helper.delete_none_values(body, recursion=True)
         response = datasources.create_datasource_connection(connection, body).json()
         if config.verbose:
             logger.info(

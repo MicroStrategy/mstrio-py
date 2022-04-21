@@ -74,6 +74,7 @@ class SecurityFilter(Entity, DeleteMixin):
     _OBJECT_TYPE = ObjectTypes.SECURITY_FILTER
     _OBJECT_SUBTYPE = ObjectSubTypes.MD_SECURITY_FILTER.value
     _SIZE_LIMIT = 10000000  # this sets desired chunk size in bytes
+    _DELETE_NONE_VALUES_RECURSION = True
 
     def __init__(self, connection: "Connection", id: str, name: Optional[str] = None):
         """Initialize security filter object by its identifier.
@@ -183,7 +184,7 @@ class SecurityFilter(Entity, DeleteMixin):
             "qualification": qualification,
             "topLevel": top_level,
             "bottomLevel": bottom_level
-        })
+        }, recursion=True)
 
     @staticmethod
     def __create_update_helper(func, connection: "Connection",

@@ -1,5 +1,27 @@
 # Changelog
 
+## 11.3.5.102 - 2022/04/22
+
+### Major changes
+
+- added `Attribute` class in `mstrio.modeling.schema.attribute` subpackage
+  to allow attribute management
+- added `AttributeForm` class in `mstrio.modeling.schema.attribute_form` subpackage
+  to allow attribute form management
+- added `list_attributes` to allow listing of attributes
+- added `list_functions` in `mstrio.modeling.expression` subpackage
+  to allow listing of functions
+- added `fact_expression`, `expression`, `expression_nodes`, `parameters` and
+  `dynamic_date_time` modules in `mstrio.modeling.expression` subpackage to allow
+  management of fact expressions
+
+### Minor changes
+
+- Changed `ExecutionMode` elements from `ASYNCH_CONNECTION` to `ASYNC_CONNECTION` and from `ASYNCH_STATEMENT` to `ASYNC_STATEMENT`
+- refactored `examples` into `code_snippets` folder, with changes to make them more
+easily usable in MicroStrategy Workstation
+- renamed folder `workstation_demos` into `workflows`
+
 ## 11.3.5.101 - 2022/03/25
 
 ### Major changes

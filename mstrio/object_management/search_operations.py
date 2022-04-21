@@ -43,6 +43,7 @@ class SearchObject(Entity):
         acg: Access rights (See EnumDSSXMLAccessRightFlags for possible values)
         acl: Object access control list
     """
+    _DELETE_NONE_VALUES_RECURSION = True
     _OBJECT_TYPE = ObjectTypes.SEARCH
     _FROM_DICT_MAP = {**Entity._FROM_DICT_MAP, 'owner': User.from_dict}
 

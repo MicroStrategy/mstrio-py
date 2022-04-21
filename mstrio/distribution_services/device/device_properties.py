@@ -94,6 +94,7 @@ class FileSystem(Dictable):
             default: False
         append_to_file: Whether to append to the file, default: False
     """
+    _DELETE_NONE_VALUES_RECURSION = True
     def __init__(self, create_folder: bool = True, filename_append_time_stamp: bool = True,
                  override_filename: bool = False, append_to_file: bool = False):
         self.create_folder = create_folder
@@ -110,6 +111,7 @@ class ConnectionParameters(Dictable):
         seconds_between_retries: Time between retries (Seconds), default: 3
         delivery_timeout_seconds: Delivery Timeout (Seconds), default: 10
     """
+    _DELETE_NONE_VALUES_RECURSION = True
     def __init__(self, retries_count: int = 5, seconds_between_retries: int = 3,
                  delivery_timeout_seconds: int = 10):
         self.retries_count = retries_count
@@ -144,6 +146,7 @@ class EmailMimeSettings(Dictable):
             default: False
         css_inline_style: Whether to use inline style CSS, default: False
     """
+    _DELETE_NONE_VALUES_RECURSION = True
     _FROM_DICT_MAP = {
         "plain_text_html_body_encoding": EmailEncoding,
         "text_attachment_encoding": EmailEncoding,
@@ -187,6 +190,8 @@ class EmailSmartHostSettings(Dictable):
         smart_host_username: Smart Host Username
         smart_host_password: Smart Host Password
     """
+    _DELETE_NONE_VALUES_RECURSION = True
+
     def __init__(self, server: Optional[str] = None, port: Optional[int] = None,
                  always_use_smart_host: bool = False, smart_host_username: Optional[str] = None,
                  smart_host_password: bool = False):
@@ -205,6 +210,7 @@ class EmailDeviceProperties(Dictable):
         mime_settings: MIME settings for MIME email format
         smart_host_settings: smart host settings
     """
+    _DELETE_NONE_VALUES_RECURSION = True
     _FROM_DICT_MAP = {
         "format": EmailFormat,
         "mime_settings": EmailMimeSettings.from_dict,
@@ -236,6 +242,7 @@ class FtpServerSettings(Dictable):
         user_name: FTP Account Username
         password: FTP Account Password
     """
+    _DELETE_NONE_VALUES_RECURSION = True
     _FROM_DICT_MAP = {
         "protocol": FtpProtocol,
     }
@@ -262,6 +269,7 @@ class FtpDeviceProperties(Dictable):
         server_settings: FTP Server Settings, FtpServerSettings class
         file_system: File System Options, FileSystem class
     """
+    _DELETE_NONE_VALUES_RECURSION = True
     _FROM_DICT_MAP = {
         "server_settings": FtpServerSettings.from_dict,
         "file_system": FileSystem.from_dict,
@@ -287,6 +295,8 @@ class IOSDeviceProperties(Dictable):
             default: 'feedback.push.apple.com'
         feedback_service_port: Feedback Service Port number, default: 2195
     """
+    _DELETE_NONE_VALUES_RECURSION = True
+
     def __init__(self, app_id: str = '', server: Optional[str] = None, port: Optional[int] = None,
                  provider_certificate: Optional[str] = None,
                  feedback_service_server: Optional[str] = None,
@@ -315,6 +325,8 @@ class AndroidDeviceProperties(Dictable):
             name/IP address
         proxy_port: Firebase cloud messaging proxy service Port number
     """
+    _DELETE_NONE_VALUES_RECURSION = True
+
     def __init__(self, package_name: str, server: Optional[str] = None, port: Optional[int] = None,
                  auth_key: Optional[str] = None, collapse_key: Optional[str] = None,
                  delay_with_idle: bool = False, notification_active_hours: Optional[int] = None,
@@ -342,6 +354,7 @@ class FileLocation(Dictable):
         use_backup_location: Whether to use backup location, default: False
         backup_file_path: Backup File Location
     """
+    _DELETE_NONE_VALUES_RECURSION = True
     def __init__(self, file_path: str, append_user_path: bool = False,
                  use_backup_location: bool = False, backup_file_path: Optional[str] = None):
         self.file_path = file_path
@@ -360,6 +373,7 @@ class FileProperties(Dictable):
         file_encoding: File Encoding, FileEncoding enum
         unix_access_rights: UNIX access rights
     """
+    _DELETE_NONE_VALUES_RECURSION = True
     _FROM_DICT_MAP = {
         "file_encoding": FileEncoding,
     }
@@ -385,6 +399,7 @@ class UnixWindowsSharity(Dictable):
         server_password: IServer Password used for Sharity
         server_mount_root: IServer Mount root folder path for Sharity
     """
+    _DELETE_NONE_VALUES_RECURSION = True
     def __init__(self, sharity_enabled: bool = False, server_username: Optional[str] = None,
                  server_password: Optional[str] = None, server_mount_root: Optional[str] = None):
         self.sharity_enabled = sharity_enabled
@@ -405,6 +420,7 @@ class FileDeviceProperties(Dictable):
         unix_windows_sharity: Unix to Windows Sharity settings,
             UnixWindowsSharity class
     """
+    _DELETE_NONE_VALUES_RECURSION = True
     _FROM_DICT_MAP = {
         "file_location": FileLocation.from_dict,
         "file_system": FileSystem.from_dict,
@@ -440,6 +456,8 @@ class PrinterLocation(Dictable):
         user_defined_location: Whether to allow user defined location,
             default: False
     """
+    _DELETE_NONE_VALUES_RECURSION = True
+
     def __init__(self, location: Optional[str] = None, user_defined_location: bool = False):
         self.location = location
         self.user_defined_location = user_defined_location
@@ -457,6 +475,7 @@ class PrinterPdfSettings(Dictable):
             priority when another application is using Adobe and IServer is
             trying to print PDF documents, PdfApplicationPriority enum
     """
+    _DELETE_NONE_VALUES_RECURSION = True
     _FROM_DICT_MAP = {
         "odd_even_pages": PdfOddEvenPages,
         "application_priority": PdfApplicationPriority,
@@ -488,6 +507,7 @@ class PrinterProperties(Dictable):
         paper_source: Paper Source, PrinterPaperSource class
         paper_size: Paper Size, PrinterPaperSize class
     """
+    _DELETE_NONE_VALUES_RECURSION = True
     _FROM_DICT_MAP = {
         "pdf_setting": PrinterPdfSettings.from_dict,
         "paper_source": PrinterPaperSource,
@@ -518,6 +538,7 @@ class BackupPrinterProperties(Dictable):
         backup_printer_location: Backup Printer Location
         backup_file_location: Backup File Location
     """
+    _DELETE_NONE_VALUES_RECURSION = True
     _FROM_DICT_MAP = {
         "backup_location_type": PrinterBackupLocationType,
     }
@@ -544,6 +565,7 @@ class PrinterDeviceProperties(Dictable):
             BackupPrinterProperties class
         temp_file_location: Temp File Location during print execution
     """
+    _DELETE_NONE_VALUES_RECURSION = True
     _FROM_DICT_MAP = {
         "printer_location": PrinterLocation.from_dict,
         "printer_properties": PrinterProperties.from_dict,

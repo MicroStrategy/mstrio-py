@@ -33,7 +33,7 @@ class ContactGroupMember(Dictable):
         description: member's description, optional
         enabled: specifies if a member is enabled
     """
-
+    _DELETE_NONE_VALUES_RECURSION = True
     _FROM_DICT_MAP = {"type": ContactGroupMemberType}
 
     def __init__(self, name: str, type: Union[str,
@@ -114,6 +114,7 @@ class ContactGroup(EntityBase, DeleteMixin):
         connection: instance of Connection class, represents connection
                     to MicroStrategy Intelligence Server
     """
+    _DELETE_NONE_VALUES_RECURSION = True
     _FROM_DICT_MAP = {
         **EntityBase._FROM_DICT_MAP,
         'linked_user': User.from_dict,
