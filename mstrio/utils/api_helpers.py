@@ -1,9 +1,13 @@
 from functools import wraps
 from json import dumps
+from typing import List, Optional
 
 from mstrio.api.changesets import commit_changeset_changes, create_changeset, delete_changeset
 from mstrio.connection import Connection
-from mstrio.utils.helper import delete_none_values
+from mstrio.utils.helper import (
+    auto_match_args, delete_none_values, get_parallel_number, response_handler
+)
+from mstrio.utils.sessions import FuturesSessionWithRenewal
 
 
 def unpack_information(func):
@@ -59,3 +63,43 @@ def changeset_decorator(func):
         return resp
 
     return changeset_inner
+
+
+def async_get(async_wrapper: callable, connection: Connection, ids: List[str],
+              error_msg: Optional[str] = None, **kwargs) -> List[dict]:
+    """Asynchronously get results of single object GET requests. GET requests
+    requires to have future session param to be used with this function. Threads
+    number is set automatically.
+
+    Args:
+        async_wrapper: callable async REST API wrapper function
+        connection: Connection object
+        ids: list of objects ids to be retrieved
+        error_msg: optional error message
+        kwargs: additional async wrapper arguments to be passed
+
+    Returns:
+        List of responses as a list of dicts
+
+    Examples:
+        >>> async_get(tables.get_table_async, connection, ['112233','223344'])
+    """
+    project_id = kwargs.get('project_id') or connection.project_id
+    kwargs['project_id'] = project_id
+    threads = get_parallel_number(len(ids))
+    all_objects = []
+    with FuturesSessionWithRenewal(connection=connection, max_workers=threads) as session:
+        # Extract parameters of the api wrapper and set them using kwargs
+        param_value_dict = auto_match_args(async_wrapper, kwargs,
+                                           exclude=['connection', 'session', 'error_msg', 'id'])
+        futures = [
+            async_wrapper(session=session, connection=connection, id=id, **param_value_dict)
+            for id in ids
+        ]
+        for f in futures:
+            response = f.result()
+            if not response.ok:
+                response_handler(response, error_msg, throw_error=False)
+            all_objects.append(response.json())
+
+    return all_objects

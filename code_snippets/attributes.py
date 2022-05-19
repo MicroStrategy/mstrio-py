@@ -10,6 +10,7 @@ from mstrio.modeling.schema import (Attribute, AttributeDisplays, AttributeForm,
                                     SchemaObjectReference)
 from mstrio.modeling.expression import (Expression, Token, ColumnReference, Constant, Operator,
                                         FactExpression, Variant, VariantType, Function)
+from workflows.get_all_columns_in_table import list_table_columns
 
 # Following variables are defining basic attributes
 PROJECT_NAME = '<Project_name>'  # Insert name of project here
@@ -24,6 +25,10 @@ ATTRIBUTE_FORM_DESCRIPTION = '<Attribute_desc>'  # Insert altered attribute form
 FOLDER_ID = '<Folder_ID>'  # Insert folder ID here
 
 conn = get_connection(workstationData, PROJECT_NAME)
+
+# Function list_table_columns() might be useful to get table columns information
+# needed to create/alter an Attribute
+table_columns = list_table_columns(conn)
 
 # Example attribute data.
 # Parts of this dictionary will be used in the later parts of this demo script
@@ -134,8 +139,7 @@ attr = Attribute(connection=conn, name=ATTRIBUTE_NAME)
 attr = Attribute(conn, name=ATTRIBUTE_NAME, show_expression_as=ExpressionFormat.TREE)
 
 # Get an attribute with expression represented as tokens
-attr = Attribute(conn, id=ATTRIBUTE_ID,
-                 show_expression_as=ExpressionFormat.TOKENS)
+attr = Attribute(conn, id=ATTRIBUTE_ID, show_expression_as=ExpressionFormat.TOKENS)
 
 # Listing properties
 properies = attr.list_properties()
@@ -152,7 +156,8 @@ attr = Attribute.create(
     displays=ATTRIBUTE_DATA['displays'],
     attribute_lookup_table=ATTRIBUTE_DATA['attribute_lookup_table'],
 )
-attr = Attribute.create(connection=conn, **ATTRIBUTE_DATA, show_expression_as=ExpressionFormat.TREE)
+attr = Attribute.create(connection=conn, **ATTRIBUTE_DATA,
+                        show_expression_as=ExpressionFormat.TREE)
 
 # Create an attribute and get it with expression represented as tokens
 attr = Attribute.create(conn, **ATTRIBUTE_DATA, show_expression_as=ExpressionFormat.TOKENS)
@@ -253,7 +258,8 @@ attr.add_form(form=attribute_form)
 # Attribute object, not from the server
 attr_form = attr.get_form(name=ATTRIBUTE_FORM_NAME)
 # Alter form
-attr.alter_form(form_id=attr_form.id, name=ATTRIBUTE_FORM_ALTERED_NAME, description=ATTRIBUTE_FORM_DESCRIPTION)
+attr.alter_form(form_id=attr_form.id, name=ATTRIBUTE_FORM_ALTERED_NAME,
+                description=ATTRIBUTE_FORM_DESCRIPTION)
 attr.alter_form(form_id=attr_form.id, name=ATTRIBUTE_FORM_ALTERED_NAME)
 
 # Removing form with specified id
@@ -300,11 +306,10 @@ fact_expression = FactExpression(
 
 # create a fact expression with expression specified as tree
 fact_expression = FactExpression(
-    expression=Expression(
-        tree=ColumnReference(
-            column_name='DAY_DATE',
-            object_id='<Object_ID>',
-        ),),
+    expression=Expression(tree=ColumnReference(
+        column_name='DAY_DATE',
+        object_id='<Object_ID>',
+    ),),
     tables=[
         SchemaObjectReference(
             name='LU_DAY',

@@ -73,6 +73,7 @@ It is subject to change until it is released as Generally Available.
 - **Schema Management** module (see [code_snippets][code_snippet_schema_mgmt])
 - **User Hierarchy** module (see [code_snippets][code_snippet_user_hierarchy])
 - **Attribute** module (see [code_snippets][code_snippet_attribute])
+- **Fact** module (see [code_snippets][code_snippet_fact])
 
 # Documentation<a id="documentation"></a>
 
@@ -154,7 +155,7 @@ jupyter nbextension enable connector-jupyter --py --sys-prefix
 
 # Versioning & Changelog<a id="versioning--changelog"></a>
 
-Current version: **11.3.5.102** (22 April 2022). Check out [**Changelog**][release_notes] to see what's new.
+Current version: **11.3.5.103** (20 May 2022). Check out [**Changelog**][release_notes] to see what's new.
 
 mstrio-py is constantly developed to support newest MicroStrategy REST APIs. Functionalities may be added to mstrio on monthly basis. It is **recommended** to always install the newest version of mstrio-py, as it will be most stable and still maintain backwards compatibility with various MicroStrategy installations, dating back to 11.1.4.
 
@@ -232,3 +233,4 @@ When features (modules, parameters, attributes, methods etc.) are marked for dep
 [code_snippet_migration]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/migration.py
 [code_snippet_schema_mgmt]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/schema_mgmt.py
 [code_snippet_user_hierarchy]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/user_hierarchy_mgmt.py
+[code_snippet_fact]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/fact.py
