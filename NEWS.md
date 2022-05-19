@@ -1,5 +1,13 @@
 # Changelog
 
+## 11.3.5.103 - 2022/05/20
+
+### Major changes
+
+- added `Fact` class in `mstrio.modeling.schema.fact` subpackage to allow fact
+  management
+- added `list_facts` to allow listing of facts
+
 ## 11.3.5.102 - 2022/04/22
 
 ### Major changes

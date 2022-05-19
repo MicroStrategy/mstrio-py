@@ -168,4 +168,10 @@ define(['./globals'], ({ GLOBAL_CONSTANTS }) => class Utilities {
       element.style[key] = styles[key];
     });
   }
+
+  static removeElementsByClass(className) {
+    [...document.getElementsByClassName(className)].forEach(
+      (element) => element.remove(),
+    );
+  }
 });

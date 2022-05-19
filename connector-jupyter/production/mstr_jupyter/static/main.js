@@ -477,7 +477,8 @@ define(['./jupyter-cell', './jupyter-kernel', './python-code', './utilities', '.
   window.addEventListener('message', messageListener);
 
   const buildMstr = () => { // main function applying connection to UI
-    const { createElement } = Utilities;
+    const { createElement, removeElementsByClass } = Utilities;
+    removeElementsByClass('modal cmd-palette'); // remove element that causes css error
 
     return $(
       createElement('div', { // container
