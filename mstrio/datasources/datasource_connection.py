@@ -108,8 +108,12 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
         acg: Object access rights. It a bit vector where bits are defined at
             [EnumDSSXMLAccessRightFlags].
         acl: Object access control list
+        iam: List of projects to which the fence is applied.
+        resource: The url of configured Web API for OAuth authentication usage.
+        scope: List of delegated permissions that the app is requesting.
+        enable_sso: Specifies whether to use Single Sign-On.
     """
-    _DELETE_NONE_VALUES_RECURSION = True
+    _DELETE_NONE_VALUES_RECURSION = False
     _OBJECT_TYPE = ObjectTypes.DBCONNECTION
     _FROM_DICT_MAP = {
         **Entity._FROM_DICT_MAP,
@@ -128,8 +132,8 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
          'max_query_exe_time', 'max_connection_attempt_time', 'connection_lifetime',
          'connection_idle_timeout', 'char_encoding_windows', 'char_encoding_unix', 'table_prefix',
          'connection_string', 'parameterized_queries', 'extended_fetch', 'driver_type',
-         'datasource_login', 'database_type', 'database_version', 'oauth_parameter',
-         'acg'): datasources.get_datasource_connection
+         'datasource_login', 'database_type', 'database_version', 'oauth_parameter', 'acg', 'iam',
+         'resource', 'scope', 'enable_sso'): datasources.get_datasource_connection
     }
     _API_PATCH: dict = {
         ('abbreviation'): (objects.update_object, 'partial_put'),
@@ -137,7 +141,7 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
          "max_connection_attempt_time", "connection_lifetime", "connection_idle_timeout",
          "char_encoding_windows", "char_encoding_unix", "table_prefix", "connection_string",
          "parameterized_queries", "extended_fetch", "driver_type", "database_type",
-         "database_version", "datasource_login"): (
+         "database_version", "datasource_login", 'iam', 'resource', 'scope', 'enable_sso'): (
             datasources.update_datasource_connection,
             'patch',
         )
@@ -160,7 +164,11 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
         "driver_type": str,
         "database_type": str,
         "database_version": str,
-        "datasource_login": dict
+        "datasource_login": dict,
+        "iam": dict,
+        "resource": str,
+        "scope": str,
+        "enable_sso": bool
     }
 
     def __init__(self, connection: "Connection", name: Optional[str] = None,
@@ -212,6 +220,10 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
         self.database_type = kwargs.get("database_type")
         self.database_version = kwargs.get("database_version")
         self._oauth_parameter = kwargs.get("oauth_parameter")
+        self.iam = kwargs.get("iam")
+        self.resource = kwargs.get("resource")
+        self.scope = kwargs.get("scope")
+        self.enable_sso = kwargs.get("enable_sso")
 
     def alter(self, name: Optional[str] = None, description: Optional[str] = None,
               execution_mode: Union[str, ExecutionMode] = None,
@@ -221,12 +233,14 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
               connection_lifetime: Optional[int] = None,
               connection_idle_timeout: Optional[int] = None,
               char_encoding_windows: Union[str, CharEncoding] = None,
-              char_encoding_unix: Union[str,
-                                        CharEncoding] = None, table_prefix: Optional[str] = None,
-              connection_string: Optional[str] = None, parameterized_queries: bool = None,
-              extended_fetch: bool = None, driver_type: Union[str, DriverType] = None,
-              database_type: Optional[str] = None, database_version: Optional[str] = None,
-              datasource_login: Union[str, DatasourceLogin, None] = None) -> None:
+              char_encoding_unix: Union[str, CharEncoding] = None,
+              table_prefix: Optional[str] = None, connection_string: Optional[str] = None,
+              parameterized_queries: Optional[bool] = None, extended_fetch: Optional[bool] = None,
+              driver_type: Union[str, DriverType] = None, database_type: Optional[str] = None,
+              database_version: Optional[str] = None, datasource_login: Union[str, DatasourceLogin,
+                                                                              None] = None,
+              iam: Optional[dict] = None, resource: Optional[str] = None,
+              scope: Optional[str] = None, enable_sso: Optional[bool] = None) -> None:
         """Alter the datasource connection properties.
 
         Args:
@@ -261,6 +275,11 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
             driver_type: ENUM Drivers used for database connection.
             database_type: Database type
             database_version: Database version
+            iam: List of projects to which the fence is applied.
+            resource: The url of configured Web API for OAuth authentication
+                usage.
+            scope: List of delegated permissions that the app is requesting.
+            enable_sso: Specifies whether to use Single Sign-On.
         """
         datasource_login = {
             'id': get_objects_id(datasource_login, DatasourceLogin)
@@ -285,13 +304,15 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
                connection_lifetime: Optional[int] = None,
                connection_idle_timeout: Optional[int] = None,
                char_encoding_windows: Union[str, CharEncoding] = None,
-               char_encoding_unix: Union[str, CharEncoding] = None,
-               table_prefix: Optional[str] = None, connection_string: Optional[str] = None,
-               parameterized_queries: Optional[bool] = None, extended_fetch: Optional[bool] = None,
-               datasource_login: Union[DatasourceLogin, str,
-                                       None] = None, database_type: Optional[str] = None,
-               database_version: Optional[str] = None, driver_type: Union[str, DriverType] = None,
-               oauth_parameter: Optional[str] = None) -> "DatasourceConnection":
+               char_encoding_unix: Union[str,
+                                         CharEncoding] = None, table_prefix: Optional[str] = None,
+               connection_string: Optional[str] = None, parameterized_queries: bool = False,
+               extended_fetch: bool = False, datasource_login: Union[DatasourceLogin, str,
+                                                                     None] = None,
+               database_type: Optional[str] = None, database_version: Optional[str] = None,
+               driver_type: Union[str, DriverType] = None, oauth_parameter: Optional[str] = None,
+               iam: Optional[dict] = None, resource: Optional[str] = None,
+               scope: Optional[str] = None, enable_sso: bool = False) -> "DatasourceConnection":
         """Create a new datasource connection on the I-Server.
 
         Args:
@@ -330,6 +351,11 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
             datasource_login: `DatasourceLogin` object or ID
             database_type: Database type
             database_version: Database version
+            iam: List of projects to which the fence is applied.
+            resource: The url of configured Web API for OAuth authentication
+                usage.
+            scope: List of delegated permissions that the app is requesting.
+            enable_sso: Specifies whether to use Single Sign-On.
 
         Returns:
             DatasourceConnection object.
@@ -360,15 +386,18 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
                 "version": database_version
             },
             "driverType": get_enum_val(driver_type, DriverType),
-            "oauthParameter": oauth_parameter
+            "oauthParameter": oauth_parameter,
+            "iam": iam,
+            "resource": resource,
+            "scope": scope,
+            "enable_sso": enable_sso
         }
         body = helper.delete_none_values(body, recursion=True)
         response = datasources.create_datasource_connection(connection, body).json()
         if config.verbose:
             logger.info(
                 f"Successfully created datasource connection named: '{response.get('name')}' "
-                f"with ID: '{response.get('id')}'"
-            )
+                f"with ID: '{response.get('id')}'")
         return cls.from_dict(source=response, connection=connection)
 
     def test_connection(self) -> bool:

@@ -6,8 +6,9 @@ ease its usage.
 """
 
 from mstrio.modeling.schema import (ElementDisplayOption, HierarchyAttribute,
-                                    HierarchyRelationship, SchemaObjectReference, ObjectSubType,
-                                    UserHierarchy, UserHierarchySubType, list_user_hierarchies)
+                                    HierarchyRelationship, SchemaManagement, SchemaObjectReference,
+                                    SchemaUpdateType, ObjectSubType, UserHierarchy,
+                                    UserHierarchySubType, list_user_hierarchies)
 
 from mstrio.connection import get_connection
 
@@ -75,6 +76,11 @@ new_user_hierarchy = UserHierarchy.create(
     relationships=[relationship],
     destination_folder_id=FOLDER_ID,
 )
+
+# Any changes to a schema objects must be followed by schema_reload
+# in order to use them in reports, dossiers and so on
+schema_manager = SchemaManagement(connection=conn, project_id=conn.project_id)
+task = schema_manager.reload(update_types=[SchemaUpdateType.LOGICAL_SIZE])
 
 # alter a user hierarchy, change it's name, description
 # and subtype

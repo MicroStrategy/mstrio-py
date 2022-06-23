@@ -5,14 +5,14 @@ from mstrio import config
 from mstrio.api import facts, objects
 from mstrio.connection import Connection
 from mstrio.modeling.expression import FactExpression
-from mstrio.modeling.schema.helpers import DataType, ObjectSubType, SchemaObjectReference
 from mstrio.modeling.schema.attribute import ExpressionFormat
+from mstrio.modeling.schema.helpers import DataType, ObjectSubType, SchemaObjectReference
+from mstrio.object_management import search_operations
 from mstrio.object_management.folder import Folder
 from mstrio.object_management.search_enums import SearchPattern
-from mstrio.object_management import search_operations
 from mstrio.types import ObjectTypes
 from mstrio.users_and_groups import User
-from mstrio.utils.entity import DeleteMixin, Entity
+from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, MoveMixin
 from mstrio.utils.enum_helper import get_enum_val
 from mstrio.utils.helper import Dictable, filter_params_for_func
 
@@ -25,6 +25,7 @@ def list_facts(
     to_dictionary: bool = False,
     limit: Optional[int] = None,
     project_id: Optional[str] = None,
+    search_pattern: Union[SearchPattern, int] = SearchPattern.CONTAINS,
     show_expression_as: Union[ExpressionFormat, str] = ExpressionFormat.TREE,
     **filters,
 ) -> Union[List["Fact"], List[dict]]:
@@ -37,16 +38,19 @@ def list_facts(
     Args:
         connection (object): MicroStrategy connection object returned by
             `connection.Connection()`
-        name (optional, str): Optional parameter used to limit search result to
-            facts that begins with the given name.
+        name (optional, str): value the search pattern is set to, which
+            will be applied to the names of facts being searched
         to_dictionary (optional, bool): If `True` returns dictionaries, by
             default (`False`) returns `Fact` objects.
         limit (optional, int): limit the number of elements returned. If `None`
             (default), all objects are returned.
         project_id (str, optional): Project ID
+        search_pattern (SearchPattern enum or int, optional): pattern to search
+            for, such as Begin With or Exactly. Possible values are available in
+            ENUM mstrio.browsing.SearchPattern. Default value is CONTAINS (4).
         show_expression_as (optional, enum or str): specify how expressions
             should be presented.
-            Avalable values:
+            Available values:
                 - `ExpressionFormat.TREE` or `tree` (default)
                 - `ExpressionFormat.TOKENS or `tokens`
         **filters: Available filter parameters: ['id', 'name', 'description',
@@ -60,10 +64,15 @@ def list_facts(
     if project_id is None:
         connection._validate_project_selected()
         project_id = connection.project_id
-    objects = search_operations.full_search(connection, object_types=ObjectTypes.FACT,
-                                            project=project_id, name=name,
-                                            pattern=SearchPattern.BEGIN_WITH, limit=limit,
-                                            **filters)
+    objects = search_operations.full_search(
+        connection,
+        object_types=ObjectTypes.FACT,
+        project=project_id,
+        name=name,
+        pattern=search_pattern,
+        limit=limit,
+        **filters,
+    )
     if to_dictionary:
         return objects
     else:
@@ -77,7 +86,7 @@ def list_facts(
         ]
 
 
-class Fact(Entity, DeleteMixin):
+class Fact(Entity, DeleteMixin, CopyMixin, MoveMixin):
     """Python representation for Microstrategy `Fact` object.
 
     Attributes:
@@ -128,7 +137,8 @@ class Fact(Entity, DeleteMixin):
     }
     _API_PATCH = {
         ('data_type', 'expressions'): (facts.update_fact, 'partial_put'),
-        ('name', 'description'): (objects.update_object, 'partial_put')
+        ('name', 'description'): (objects.update_object, 'partial_put'),
+        ('folder_id'): (objects.update_object, 'partial_put')
     }
 
     _FROM_DICT_MAP = {
@@ -160,32 +170,21 @@ class Fact(Entity, DeleteMixin):
                 the required data.
             show_expression_as (optional, enum or str): specify how expressions
                 should be presented.
-                Avalable values:
+                Available values:
                 - `ExpressionFormat.TREE` or `tree` (default)
                 - `ExpressionFormat.TOKENS or `tokens`
 
         Raises:
-            AttributeError: if both `id` and `name` are not provided, if there
-                are multiple facts with given `name` or if project is not
-                selected in provided `connection`
-            ValueError: if Fact with given `name` doesn't exist.
+            ValueError: if both `id` and `name` are not provided, if there
+                are multiple facts with given `name`, if project is not
+                selected in provided `connection` or if Fact with given `name`
+                doesn't exist.
         """
         connection._validate_project_selected()
         if id is None:
-            if name is None:
-                raise AttributeError(
-                    "Please specify either 'name' or 'id' parameter in the constructor.")
-            facts = list_facts(connection=connection, name=name, to_dictionary=True)
-            if facts:
-                if len(facts) > 1:
-                    raise AttributeError(
-                        "There are multiple facts with this name. Please initialize with id.")
-                id = facts[0]['id']
-            else:
-                raise ValueError(f"There is no Fact with given name: '{name}'")
-        elif name and id:
-            raise AttributeError(
-                "Please specify either 'name' or 'id' parameter in the constructor.")
+            fact = super()._find_object_with_name(connection=connection, name=name,
+                                                  listing_function=list_facts)
+            id = fact['id']
         super().__init__(connection=connection, object_id=id, name=name,
                          show_expression_as=show_expression_as)
 
@@ -250,7 +249,7 @@ class Fact(Entity, DeleteMixin):
                 object. Default value is `False`.
             show_expression_as (optional, enum or str): specify how
                 expressions should be presented
-                Avalable values:
+                Available values:
                 - `ExpressionFormat.TREE` or `tree` (default)
                 - `ExpressionFormat.TOKENS` or `tokens`
 
@@ -320,7 +319,7 @@ class Fact(Entity, DeleteMixin):
         if expression:
             expression_id = expression.id if isinstance(expression, FactExpression) else expression
             expressions = [expr for expr in expressions if expr.id == expression_id]
-        tables_list = set([tab for expr in expressions for tab in expr.tables])
+        tables_list = {tab for expr in expressions for tab in expr.tables}
         return list(tables_list)
 
     def add_expression(self, expression: Union[FactExpression, dict]) -> None:

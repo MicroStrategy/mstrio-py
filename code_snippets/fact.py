@@ -11,7 +11,7 @@ from mstrio.modeling.expression.fact_expression import FactExpression
 from mstrio.modeling.schema.fact import Fact, list_facts
 from mstrio.modeling.schema.attribute.attribute import ExpressionFormat
 from mstrio.modeling.schema.helpers import DataType, ObjectSubType
-from mstrio.modeling.schema import SchemaObjectReference
+from mstrio.modeling.schema import SchemaManagement, SchemaObjectReference, SchemaUpdateType
 from workflows.get_all_columns_in_table import list_table_columns
 
 # Following variables are defining basic facts
@@ -55,10 +55,6 @@ FACT_DATA = {
     }]
 }
 
-# Function `list_table_columns()` might be useful to get table columns
-# information needed to create/alter a fact
-table_columns = list_table_columns(conn)
-
 # fact expression data with expression specified as tree
 FACT_EXP_DATA = FactExpression(
     expression=Expression(tree=ColumnReference(
@@ -94,6 +90,11 @@ list_of_facts_as_tokens = list_facts(connection=conn, show_expression_as=Express
 test_fact = Fact.create(connection=conn, name=FACT_DATA['name'],
                         destination_folder=FACT_DATA['destination_folder'],
                         expressions=FACT_DATA['expressions'], data_type=FACT_DATA['data_type'])
+
+# Any changes to a schema objects must be followed by schema_reload
+# in order to use them in reports, dossiers and so on
+schema_manager = SchemaManagement(connection=conn, project_id=conn.project_id)
+task = schema_manager.reload(update_types=[SchemaUpdateType.LOGICAL_SIZE])
 
 # Add new expression to the fact
 test_fact.add_expression(FACT_EXP_DATA)

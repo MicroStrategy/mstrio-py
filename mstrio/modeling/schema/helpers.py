@@ -6,10 +6,9 @@ from mstrio.utils.enum_helper import AutoName
 from mstrio.utils.helper import Dictable, exception_handler
 
 if TYPE_CHECKING:
+    from mstrio.connection import Connection
     from mstrio.modeling.schema import UserHierarchy
     from mstrio.modeling.schema.attribute import Attribute
-    from mstrio.modeling.schema.helpers import SchemaObjectReference
-    from mstrio.connection import Connection
 
 
 class ObjectSubType(AutoName):
@@ -186,6 +185,24 @@ class ObjectSubType(AutoName):
     SUBSCRIPTION_ADDRESS = auto()
     SUBSCRIPTION_CONTACT = auto()
     SUBSCRIPTION_INSTANCE = auto()
+
+
+class TableColumnMergeOption(AutoName):
+    REUSE_ANY = auto()
+    REUSE_COMPATIBLE_DATA_TYPE = auto()
+    REUSE_MATCHED_DATA_TYPE = auto()
+
+
+class TablePrefixOption(AutoName):
+    ADD_DEFAULT_PREFIX = auto()
+    ADD_NAMESPACE = auto()
+
+
+class PhysicalTableType(AutoName):
+    NORMAL = auto()
+    WAREHOUSE_PARTITION = auto()
+    SQL = auto()
+    RESERVED = auto()
 
 
 @dataclass(eq=False)
@@ -388,3 +405,37 @@ class AttributeSorts(Dictable):
                  browse_sorts: List[AttributeSort]) -> None:
         self.report_sorts = report_sorts
         self.browse_sorts = browse_sorts
+
+
+@dataclass
+class TableColumn(Dictable):
+    """An object representation of a physical column that might
+       appear in some data source. In addition to representing physical
+       columns, we also use this object to represent columns that do not
+       actually appear in any data source but which the engine should
+       create if it needs to make a column to contain data for some higher
+       level construct (e.g. a fact, an attribute form etc.)."""
+    _DELETE_NONE_VALUES_RECURSION = False
+    _FROM_DICT_MAP = {
+        "data_type": DataType,
+        "sub_type": ObjectSubType
+    }
+    data_type: DataType
+    column_name: Optional[str] = None  # When retrieved as part of a logical tab
+    name: Optional[str] = None  # When retrieved from datasources API
+    id: Optional[str] = None
+    sub_type: Optional[ObjectSubType] = None
+    date_created: Optional[str] = None
+    date_modified: Optional[str] = None
+    version_id: Optional[str] = None
+    primary_locale: Optional[str] = None
+
+    @classmethod
+    def from_dict(cls, source, connection, to_snake_case=True) -> 'TableColumn':
+        source = source.copy()
+
+        if information := source.get('information', None):
+            source.update(information)
+            source['id'] = source.pop('objectId')
+
+        return super().from_dict(source, connection, to_snake_case)

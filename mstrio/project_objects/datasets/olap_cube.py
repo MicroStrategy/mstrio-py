@@ -7,18 +7,25 @@ from mstrio.api import cubes
 from mstrio.connection import Connection
 from mstrio.object_management.search_operations import full_search, SearchPattern
 from mstrio.utils.entity import ObjectSubTypes, ObjectTypes
-from mstrio.utils.helper import exception_handler
+from mstrio.utils.helper import deprecation_warning, exception_handler
 
 from .cube import _Cube, load_cube
 
 logger = logging.getLogger(__name__)
 
 
-def list_olap_cubes(connection: Connection, name_begins: Optional[str] = None,
-                    to_dictionary: bool = False, limit: Optional[int] = None,
-                    **filters) -> Union[List["OlapCube"], List[dict]]:
+def list_olap_cubes(
+        connection: Connection,
+        name: Optional[str] = None,
+        name_begins: Optional[str] = None,
+        search_pattern: Union[SearchPattern, int] = SearchPattern.CONTAINS,
+        project_id: Optional[str] = None,
+        to_dictionary: bool = False,
+        limit: Optional[int] = None,
+        **filters,
+) -> Union[List["OlapCube"], List[dict]]:
     """Get list of OlapCube objects or dicts with them. Optionally filter cubes
-    by specifying 'name_begins'.
+    by specifying 'name'.
 
     Optionally use `to_dictionary` to choose output format.
 
@@ -30,8 +37,14 @@ def list_olap_cubes(connection: Connection, name_begins: Optional[str] = None,
     Args:
         connection: MicroStrategy connection object returned by
             `connection.Connection()`
-        name_begins (string, optional): characters that the cube name must begin
-            with
+        name (string, optional): value the search pattern is set to, which
+            will be applied to the names of olap cubes being searched
+        name_begins (string, optional): deprecated. Use `name` instead.
+        search_pattern (SearchPattern enum or int, optional): pattern to search
+            for, such as Begin With or Contains. Possible values are available
+            in ENUM mstrio.browsing.SearchPattern.
+            Default value is BEGIN WITH (4).
+        project_id (str, optional): Project ID
         to_dictionary (bool, optional): If True returns dict, by default (False)
             returns OlapCube objects
         limit (integer, optional): limit the number of elements returned. If
@@ -43,14 +56,29 @@ def list_olap_cubes(connection: Connection, name_begins: Optional[str] = None,
     Returns:
         list with OlapCubes or list of dictionaries
     """
-    connection._validate_project_selected()
-    objects_ = full_search(connection, object_types=ObjectSubTypes.OLAP_CUBE,
-                           project=connection.project_id, name=name_begins,
-                           pattern=SearchPattern.BEGIN_WITH, limit=limit, **filters)
+    if project_id is None:
+        connection._validate_project_selected()
+        project_id = connection.project_id
+    if name_begins:
+        deprecation_warning(
+            "`name_begins`",
+            "`name`",
+            "11.3.7.101",  # NOSONAR
+            False
+        )
+        name, search_pattern = name_begins, SearchPattern.BEGIN_WITH
+    objects_ = full_search(
+        connection,
+        object_types=ObjectSubTypes.OLAP_CUBE,
+        project=project_id,
+        name=name,
+        pattern=search_pattern,
+        limit=limit,
+        **filters,
+    )
     if to_dictionary:
         return objects_
-    else:
-        return [OlapCube.from_dict(obj_, connection) for obj_ in objects_]
+    return [OlapCube.from_dict(obj_, connection) for obj_ in objects_]
 
 
 class OlapCube(_Cube):
@@ -80,7 +108,7 @@ class OlapCube(_Cube):
         table_definition
     """
     _OBJECT_SUBTYPE = ObjectSubTypes.OLAP_CUBE.value
-    _DELETE_NONE_VALUES_RECURSION = True
+    _DELETE_NONE_VALUES_RECURSION = False
 
     def __init__(self, connection: Connection, id: str, name: Optional[str] = None,
                  instance_id: Optional[str] = None, parallel: bool = True,

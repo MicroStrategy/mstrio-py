@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional, TypeVar, Union
 
 from mstrio.api import browsing, objects
 from mstrio.connection import Connection
-from mstrio.utils.entity import Entity, ObjectTypes
+from mstrio.utils.entity import CopyMixin, Entity, MoveMixin, ObjectTypes
 from mstrio.utils.enum_helper import get_enum_val
 from mstrio.utils.helper import fetch_objects
 
@@ -14,8 +14,8 @@ class ShortcutInfoFlags(IntFlag):
     DssDossierShortcutInfoDefault = 0b00
 
 
-class Shortcut(Entity):
-    _DELETE_NONE_VALUES_RECURSION = True
+class Shortcut(Entity, CopyMixin, MoveMixin):
+    _DELETE_NONE_VALUES_RECURSION = False
     _OBJECT_TYPE = ObjectTypes.SHORTCUT_TYPE
     _API_GETTERS = {
         ('name', 'id', 'project_id', 'owned_by_current_user', 'target', 'encode_html_content',
@@ -30,6 +30,7 @@ class Shortcut(Entity):
         **Entity._FROM_DICT_MAP,
         'shortcut_info_flag': ShortcutInfoFlags,
     }
+    _API_PATCH: dict = {**Entity._API_PATCH, ('folder_id'): (objects.update_object, 'partial_put')}
 
     def __init__(
             self, connection: Connection, id: str, project_id: str,

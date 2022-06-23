@@ -94,6 +94,18 @@ Object(conn, ObjectTypes.REPORT_DEFINITION, OBJECT_ID).decertify()
 # get object properties as a dictionary
 object.to_dict()
 
+# create copy of the object in the same folder with the default name
+new_object = object.create_copy()
+
+# create copy of the object in the same folder with provided name
+new_object = object.create_copy(OBJECT_NAME)
+
+# create copy of the object in another folder with provided name
+new_object = object.create_copy(OBJECT_NAME, FOLDER_ID)
+
+# move the object to another folder
+object.move(FOLDER_ID)
+
 # Delete objects of a given types (in this case `REPORT` and 'DOCUMENT)
 # and given ids. When argument `force` is set to `False` (default value), then
 # deletion must be approved.

@@ -48,7 +48,7 @@ class Qualification(Dictable):
             token) or to parts of the text that the user has not edited
             (a `parsed` token).
     """
-    _DELETE_NONE_VALUES_RECURSION = True
+    _DELETE_NONE_VALUES_RECURSION = False
 
     def __init__(self, tree: Union["LogicOperator", "PredicateBase"], text: Optional[str] = None,
                  tokens: Optional[List[dict]] = None):

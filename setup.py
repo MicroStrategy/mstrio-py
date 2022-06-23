@@ -65,7 +65,7 @@ if find_in_file('graft connector-jupyter', MANIFEST_FILE):
     ])
 setup(
     name=__title__,
-    python_requires='>=3.9',
+    python_requires='>=3.10',
     version=dist_version,
     license=__license__,
     description=__description__,
@@ -82,8 +82,10 @@ setup(
     },
     install_requires=requirements,
     extras_require={
-        'dev': ['flake8', 'mypy', 'yapf', 'nose', 'coverage', 'pytest', 'pytest-cov',
-                'isort', 'pre-commit'],  # noqa
+        'dev': [
+            'flake8', 'mypy', 'yapf', 'nose', 'coverage', 'pytest', 'pytest-cov', 'isort',
+            'pre-commit'
+        ],  # noqa
     },
     packages=find_packages(),
     include_package_data=True,
@@ -93,7 +95,6 @@ setup(
         'Programming Language :: JavaScript',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
         'Programming Language :: Python :: 3 :: Only',
         'Intended Audience :: Developers',

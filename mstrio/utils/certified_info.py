@@ -20,7 +20,7 @@ class CertifiedInfo(Dictable):
         certifier: information about the entity certifying
             the object, User object
     """
-    _DELETE_NONE_VALUES_RECURSION = True
+    _DELETE_NONE_VALUES_RECURSION = False
 
     def __init__(self, connection: Connection, certified: bool,
                  date_certified: Optional[str] = None, certifier: Optional[dict] = None):

@@ -1,22 +1,28 @@
 from typing import List, Optional, TYPE_CHECKING, Union
 
 from mstrio.api import objects
-from mstrio.object_management.search_operations import full_search, SearchDomain
+from mstrio.object_management.search_operations import full_search, SearchDomain, SearchPattern
 from mstrio.types import ObjectTypes
 from mstrio.users_and_groups.user import User
 from mstrio.utils.acl import ACLMixin
 from mstrio.utils.certified_info import CertifiedInfo
-from mstrio.utils.entity import CertifyMixin, CopyMixin, DeleteMixin, Entity
+from mstrio.utils.entity import CertifyMixin, CopyMixin, DeleteMixin, Entity, MoveMixin
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
 
 
-def list_objects(connection: "Connection", object_type: ObjectTypes,
-                 project_id: Optional[str] = None, domain: Union[SearchDomain,
-                                                                 int] = SearchDomain.CONFIGURATION,
-                 to_dictionary: bool = False, limit: int = None,
-                 **filters) -> Union[List["Object"], List[dict]]:
+def list_objects(
+        connection: "Connection",
+        object_type: ObjectTypes,
+        name: Optional[str] = None,
+        project_id: Optional[str] = None,
+        domain: Union[SearchDomain, int] = SearchDomain.CONFIGURATION,
+        search_pattern: Union[SearchPattern, int] = SearchPattern.CONTAINS,
+        to_dictionary: bool = False,
+        limit: int = None,
+        **filters,
+) -> Union[List["Object"], List[dict]]:
     """Get list of objects or dicts. Optionally filter the
     objects by specifying filters.
 
@@ -25,10 +31,15 @@ def list_objects(connection: "Connection", object_type: ObjectTypes,
             `connection.Connection()`
         object_type: Object type. Possible values can
             be found in EnumDSSXMLObjectTypes
+        name (string, optional): value the search pattern is set to, which
+            will be applied to the names of objects being searched
         project_id: ID of the project for which the objects are to be listed
         domain: domain where the search will be performed,
             such as Local or Project, possible values
             are defined in EnumDSSXMLSearchDomain
+        search_pattern (SearchPattern enum or int, optional): pattern to search
+            for, such as Begin With or Exactly. Possible values are available in
+            ENUM mstrio.browsing.SearchPattern. Default value is CONTAINS (4).
         to_dictionary: If True returns dict, by default (False) returns Objects.
         limit: limit the number of elements returned. If `None` (default), all
             objects are returned.
@@ -41,15 +52,17 @@ def list_objects(connection: "Connection", object_type: ObjectTypes,
     return Object._list_objects(
         connection=connection,
         object_type=object_type,
+        name=name,
         project_id=project_id,
         domain=domain,
+        pattern=search_pattern,
         to_dictionary=to_dictionary,
         limit=limit,
         **filters,
     )
 
 
-class Object(Entity, ACLMixin, CertifyMixin, CopyMixin, DeleteMixin):
+class Object(Entity, ACLMixin, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin):
     """Class representing a general type object using attributes common for
      all available objects.
 
@@ -77,7 +90,7 @@ class Object(Entity, ACLMixin, CertifyMixin, CopyMixin, DeleteMixin):
         project_id: project ID
         target_info: target information, only applicable to Shortcut objects
     """
-    _DELETE_NONE_VALUES_RECURSION = True
+    _DELETE_NONE_VALUES_RECURSION = False
     _FROM_DICT_MAP = {
         **Entity._FROM_DICT_MAP,
         'certified_info': CertifiedInfo.from_dict,
@@ -89,6 +102,7 @@ class Object(Entity, ACLMixin, CertifyMixin, CopyMixin, DeleteMixin):
          'certified_info', 'acl', 'comments', 'project_id', 'hidden',
          'target_info'): objects.get_object_info
     }
+    _API_PATCH: dict = {**Entity._API_PATCH, ('folder_id'): (objects.update_object, 'partial_put')}
 
     def __init__(self, connection: "Connection", type: ObjectTypes, id: str):
         """Initialize object by ID.
@@ -131,15 +145,25 @@ class Object(Entity, ACLMixin, CertifyMixin, CopyMixin, DeleteMixin):
         self._alter_properties(**properties)
 
     @classmethod
-    def _list_objects(cls, connection: "Connection", object_type: ObjectTypes,
-                      project_id: Optional[str] = None, to_dictionary: bool = False,
-                      domain: Union[int, SearchDomain] = SearchDomain.CONFIGURATION,
-                      limit: Optional[int] = None, **filters) -> Union[List["Object"], List[dict]]:
+    def _list_objects(
+            cls,
+            connection: "Connection",
+            object_type: ObjectTypes,
+            name: Optional[str] = None,
+            project_id: Optional[str] = None,
+            to_dictionary: bool = False,
+            domain: Union[int, SearchDomain] = SearchDomain.CONFIGURATION,
+            pattern: Union[int, SearchPattern] = SearchPattern.CONTAINS,
+            limit: Optional[int] = None,
+            **filters,
+    ) -> Union[List["Object"], List[dict]]:
         objects = full_search(
             connection,
             object_types=object_type,
+            name=name,
             project=project_id,
             domain=domain,
+            pattern=pattern,
             limit=limit,
             **filters,
         )

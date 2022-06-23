@@ -3,6 +3,7 @@ from typing import Optional
 
 from mstrio.connection import Connection
 from mstrio.server.project import Project
+from mstrio.utils.api_helpers import FuturesSessionWithRenewal
 from mstrio.utils.datasources import (
     alter_conn_list_resp, alter_conn_resp, alter_instance_list_resp, alter_instance_resp,
     alter_patch_req_body
@@ -129,6 +130,52 @@ def create_datasource_instance(connection, body, error_msg=None):
     return response
 
 
+@ErrorHandler(err_msg='Error getting the namespaces for datasource with ID: {id}.')
+def get_datasource_namespaces(connection: "Connection", id: str, project_id: Optional[str] = None,
+                              refresh: Optional[bool] = None, fields: Optional[str] = None,
+                              timeout: float = 3.03, error_msg: Optional[str] = None):
+    """Get namespaces for a specific datasource.
+
+    Args:
+        connection: MicroStrategy REST API connection object
+        id (str): Database ID
+        project_id (str, optional): Project ID
+        refresh (bool, optional): Force refresh
+        fields (str, optional): A whitelist of top-level fields separated by
+            commas. Allow the client to selectively retrieve fields in the
+            response.
+        error_msg (str, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object. Expected status is 200.
+    """
+    if project_id is None:
+        connection._validate_project_selected()
+        project_id = connection.project_id
+
+    return connection.get(url=f"{connection.base_url}/api/datasources/{id}/catalog/namespaces",
+                          headers={
+                              'X-MSTR-ProjectID': project_id,
+                          }, params={
+                              'refresh': refresh,
+                              'fields': fields,
+                          }, timeout=timeout)
+
+
+@ErrorHandler("Error retrieving namespace with id: {id}")
+def get_datasource_namespaces_async(session: FuturesSessionWithRenewal, connection: "Connection",
+                                    id: str, project_id: Optional[str] = None,
+                                    refresh: Optional[bool] = None, fields: Optional[str] = None,
+                                    timeout: float = 3.03, error_msg: Optional[str] = None):
+    return session.get(url=f"{connection.base_url}/api/datasources/{id}/catalog/namespaces",
+                       headers={
+                           'X-MSTR-ProjectID': project_id,
+                       }, params={
+                           'refresh': refresh,
+                           'fields': fields,
+                       }, timeout=timeout)
+
+
 def get_datasource_instances(connection, ids=None, database_type=None, project=None,
                              error_msg=None):
     """Get information for all database sources.
@@ -155,10 +202,7 @@ def get_datasource_instances(connection, ids=None, database_type=None, project=N
         database_type = None if database_type is None else database_type.join(",")
         ids = None if ids is None else ids.join(",")
         url = f"{connection.base_url}/api/datasources"
-        response = connection.get(url=url, params={
-            'id': ids,
-            'database.type': database_type
-        })
+        response = connection.get(url=url, params={'id': ids, 'database.type': database_type})
     if not response.ok:
         res = response.json()
         if project_provided and res.get("message") == "HTTP 404 Not Found":
@@ -481,3 +525,11 @@ def update_datasource_login(connection: Connection, id: str, body,
     """
     url = f"{connection.base_url}/api/datasources/logins/{id}"
     return connection.patch(url=url, json=body)
+
+
+@ErrorHandler(err_msg="Error getting table columns for table: {table_id}")
+def get_table_columns(connection: Connection, datasource_id: str, namespace_id: str, table_id: str,
+                      error_msg: Optional[str] = None):
+    url = (f"{connection.base_url}/api/datasources/{datasource_id}/catalog/namespaces/"
+           f"{namespace_id}/tables/{table_id}")
+    return connection.get(url, headers={"X-MSTR-ProjectID": connection.project_id})

@@ -15,6 +15,7 @@ from mstrio.project_objects.datasets import OlapCube, SuperCube  # noqa: F401
 from mstrio.server import Project  # noqa: F401
 from mstrio.types import ObjectSubTypes, ObjectTypes
 from mstrio.users_and_groups import User, UserGroup  # noqa: F401
+from mstrio.modeling.filter import Filter  # noqa: F401
 from mstrio.modeling.schema import Attribute  # noqa: F401
 
 if TYPE_CHECKING:
@@ -34,9 +35,11 @@ class TypeObjectMapping(Enum):
     SecurityFilter = ObjectTypes.SECURITY_FILTER  # noqa: F811
     SearchObject = ObjectTypes.SEARCH  # noqa: F811
     Attribute = ObjectTypes.ATTRIBUTE  # noqa: F811
+    Filter = ObjectTypes.FILTER  # noqa: F811
 
 
 class SubTypeObjectMapping(Enum):
+    Filter = ObjectSubTypes.FILTER  # noqa: F811
     OlapCube = ObjectSubTypes.OLAP_CUBE  # noqa: F811
     SuperCube = ObjectSubTypes.SUPER_CUBE  # noqa: F811
     User = ObjectSubTypes.USER  # noqa: F811

@@ -1,7 +1,7 @@
 import logging
 from typing import List, Optional, TYPE_CHECKING, Union
 
-from mstrio.api import browsing
+from mstrio.api import browsing, objects
 from mstrio.connection import Connection
 from mstrio.object_management.search_enums import (
     CertifiedStatus, SearchDomain, SearchPattern, SearchResultsFormat
@@ -9,7 +9,7 @@ from mstrio.object_management.search_enums import (
 from mstrio.server.project import Project
 from mstrio.types import ObjectSubTypes, ObjectTypes
 from mstrio.users_and_groups import User
-from mstrio.utils.entity import Entity, EntityBase
+from mstrio.utils.entity import CopyMixin, Entity, EntityBase, MoveMixin
 from mstrio.utils.helper import (
     exception_handler, fetch_objects_async, get_args_from_func, get_enum_val, get_objects_id,
     merge_id_and_type
@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class SearchObject(Entity):
+class SearchObject(Entity, CopyMixin, MoveMixin):
     """Search object describing criteria that specify a search for objects.
 
     Attributes:
@@ -43,9 +43,10 @@ class SearchObject(Entity):
         acg: Access rights (See EnumDSSXMLAccessRightFlags for possible values)
         acl: Object access control list
     """
-    _DELETE_NONE_VALUES_RECURSION = True
+    _DELETE_NONE_VALUES_RECURSION = False
     _OBJECT_TYPE = ObjectTypes.SEARCH
     _FROM_DICT_MAP = {**Entity._FROM_DICT_MAP, 'owner': User.from_dict}
+    _API_PATCH: dict = {**Entity._API_PATCH, ('folder_id'): (objects.update_object, 'partial_put')}
 
     def __init__(self, connection: "Connection", id: str) -> None:
         """Initialize SearchObject object and synchronize with server.

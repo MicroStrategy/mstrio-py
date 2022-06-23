@@ -13,6 +13,7 @@ class SettingValueFactory():
             'boolean': BoolSetting,
             'time': TimeSetting,
             'email': EmailSetting,
+            'object': ObjectSetting,
             None: DeprecatedSetting
         }
         setting_type = config.get('type')
@@ -154,6 +155,15 @@ class EmailSetting(SettingValue):
         return helper.validate_param_value(self.name, value, self.type, special_values=[''],
                                            regex=regex, exception=exception,
                                            valid_example='name@mail.com')
+
+
+class ObjectSetting(SettingValue):
+    """Representation of an Object setting type."""
+
+    def __init__(self, config: dict):
+        super().__init__(config)
+        self.type = str
+        self.object_type = config.get('object_type')
 
 
 class DeprecatedSetting:

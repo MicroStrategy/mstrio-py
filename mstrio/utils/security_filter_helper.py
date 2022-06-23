@@ -71,7 +71,7 @@ class ParserToken(Dictable):
             the context of an object (say `City@DESC`) then provide information
             about the attribute form.
     """
-    _DELETE_NONE_VALUES_RECURSION = True
+    _DELETE_NONE_VALUES_RECURSION = False
 
     def __init__(self, value: str, type: Optional[Union[TokenTextType, str]] = None,
                  level: Optional[Union[TokenLevel, str]] = None,

@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 class PredicateBase(Dictable):
 
     TYPE = None
-    _DELETE_NONE_VALUES_RECURSION = True
+    _DELETE_NONE_VALUES_RECURSION = False
 
     def _create_predicate_tree(self, **kwargs):
         return None
@@ -63,7 +63,7 @@ class PredicateFormFunction(AutoName):
 class PredicateForm(PredicateBase):
     # Attribute Form Predicate
     TYPE = 'predicate_form_qualification'
-    _DELETE_NONE_VALUES_RECURSION = True
+    _DELETE_NONE_VALUES_RECURSION = False
 
     def _create_predicate_tree(self, **kwargs):
         self.function = kwargs.get("function")
@@ -187,7 +187,7 @@ class PredicateElementListFunction(Enum):
 class PredicateElementList(PredicateBase):
     # Element List Predicate
     TYPE = 'predicate_element_list'
-    _DELETE_NONE_VALUES_RECURSION = True
+    _DELETE_NONE_VALUES_RECURSION = False
 
     def _create_predicate_tree(self, **kwargs):
         self.function = kwargs.get("function")
@@ -267,7 +267,7 @@ class PredicateElementList(PredicateBase):
 class PredicateFilter(PredicateBase):
     # Filter Qualification Predicate
     TYPE = 'predicate_filter_qualification'
-    _DELETE_NONE_VALUES_RECURSION = True
+    _DELETE_NONE_VALUES_RECURSION = False
 
     def _create_predicate_tree(self, **kwargs):
         self.filter = kwargs.get("filter")
@@ -326,7 +326,7 @@ class PredicateFilter(PredicateBase):
 class PredicateJointElementList(PredicateBase):
     # Joint Element List Predicate
     TYPE = 'predicate_joint_element_list'
-    _DELETE_NONE_VALUES_RECURSION = True
+    _DELETE_NONE_VALUES_RECURSION = False
 
     def _create_predicate_tree(self, **kwargs):
         self.level = kwargs.get("level")
@@ -403,7 +403,7 @@ class LogicFunction(AutoName):
 class LogicOperator(Dictable):
 
     TYPE = "operator"
-    _DELETE_NONE_VALUES_RECURSION = True
+    _DELETE_NONE_VALUES_RECURSION = False
 
     def __init__(self, function: "LogicFunction", children: Union["LogicOperator",
                                                                   "PredicateBase"]):

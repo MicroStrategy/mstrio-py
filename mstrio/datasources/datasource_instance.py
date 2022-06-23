@@ -4,7 +4,7 @@ from typing import List, Optional, TYPE_CHECKING, Union
 
 from mstrio import config
 from mstrio.api import datasources, objects
-from mstrio.datasources import DatasourceConnection, Dbms
+from mstrio.datasources import DatasourceConnection, Dbms, list_datasource_connections
 from mstrio.users_and_groups.user import User
 from mstrio.utils import helper
 from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, ObjectTypes
@@ -78,6 +78,40 @@ def list_datasource_instances(connection: "Connection", to_dictionary: bool = Fa
     )
 
 
+def list_connected_datasource_instances(
+        connection: "Connection",
+        to_dictionary: bool = False) -> Union[list["DatasourceInstance"], list[dict]]:
+    """List all datasource instances for which there is an associated
+    Database Login and are connected to a project mapped to a Connection object.
+
+    Args:
+        connection (Connection): MicroStrategy connection object returned by
+            `connection.Connection()`
+        to_dictionary (bool, optional): If True returns a list of dictionaries
+            representing datasource instances
+
+    Returns:
+        Union[list["DatasourceInstance"], list[dict]]: A list of connected
+            datasource instances.
+    """
+    all_datasource_instances = list_datasource_instances(connection, to_dictionary=True)
+    datasource_connections_ids = [
+        ds_connection.get('id')
+        for ds_connection in list_datasource_connections(connection, to_dictionary=True)
+    ]
+    connected_datasource_instances = [
+        ds_instance for ds_instance in all_datasource_instances
+        if ds_instance.get('datasource_connection').get('id') in datasource_connections_ids
+    ]
+
+    if to_dictionary:
+        return connected_datasource_instances
+    return [
+        DatasourceInstance.from_dict(source=ds_instance, connection=connection)
+        for ds_instance in connected_datasource_instances
+    ]
+
+
 class DatasourceType(AutoName):
     RESERVED = auto()
     NORMAL = auto()
@@ -111,7 +145,7 @@ class DatasourceInstance(Entity, CopyMixin, DeleteMixin):
         acl: Object access control list
     """
 
-    _DELETE_NONE_VALUES_RECURSION = True
+    _DELETE_NONE_VALUES_RECURSION = False
     _OBJECT_TYPE = ObjectTypes.DBROLE
     _FROM_DICT_MAP = {
         **Entity._FROM_DICT_MAP, 'dbms': Dbms.from_dict,
@@ -274,8 +308,7 @@ class DatasourceInstance(Entity, CopyMixin, DeleteMixin):
         if config.verbose:
             logger.info(
                 f"Successfully created datasource instance named: '{response.get('name')}' "
-                f"with ID: '{response.get('id')}'"
-            )
+                f"with ID: '{response.get('id')}'")
         return cls.from_dict(source=response, connection=connection)
 
     def alter(self, name: Optional[str] = None, description: Optional[str] = None,

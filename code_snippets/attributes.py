@@ -7,7 +7,7 @@ from mstrio.connection import Connection, get_connection
 from mstrio.modeling.schema import (Attribute, AttributeDisplays, AttributeForm, AttributeSort,
                                     AttributeSorts, DataType, ExpressionFormat, FormReference,
                                     list_attributes, ObjectSubType, Relationship,
-                                    SchemaObjectReference)
+                                    SchemaManagement, SchemaObjectReference, SchemaUpdateType)
 from mstrio.modeling.expression import (Expression, Token, ColumnReference, Constant, Operator,
                                         FactExpression, Variant, VariantType, Function)
 from workflows.get_all_columns_in_table import list_table_columns
@@ -161,6 +161,11 @@ attr = Attribute.create(connection=conn, **ATTRIBUTE_DATA,
 
 # Create an attribute and get it with expression represented as tokens
 attr = Attribute.create(conn, **ATTRIBUTE_DATA, show_expression_as=ExpressionFormat.TOKENS)
+
+# Any changes to a schema objects must be followed by schema_reload
+# in order to use them in reports, dossiers and so on
+schema_manager = SchemaManagement(connection=conn, project_id=conn.project_id)
+task = schema_manager.reload(update_types=[SchemaUpdateType.LOGICAL_SIZE])
 
 # Alter attributes
 attr.alter(name=ATTRIBUTE_NEW_NAME, description=ATTRIBUTE_DESCRIPTION)

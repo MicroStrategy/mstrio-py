@@ -1,5 +1,26 @@
 # Changelog
 
+## 11.3.6.101 - 2022/06/24
+
+### Major changes
+
+- added `LogicalTable`, `PhysicalTable` and `WarehouseTable` classes in
+  `mstrio.modeling.schema.tables` module to allow table management.
+- added `list_logical_tables()`, `list_physical_tables()` and
+  `list_datasource_warehouse_tables()`, `list_namespaces()` to allow
+  for listing of and searching the project for specific tables.
+
+### Minor changes
+
+- added `search_pattern` and `project_id` parameters in object listing functions
+- added `move` methods to `Folder`, `Object`, `SecurityFilter`, `Attribute`, `Fact`, `UserHierarchy`, `Report`, `Shortcut`, `SearchObject`, `Document` and `Dossier` to allow moving objects between folders
+- added `create_copy` method to `SecurityFilter`, `Attribute`, `Fact`, `UserHierarchy`, `Report`, `Shortcut`, `SearchObject`, `Document` and `Dossier`
+
+### Deprecated
+
+- `name_begins` parameter is deprecated in functions listing cubes and reports
+   in favour of `name` parameter
+
 ## 11.3.5.103 - 2022/05/20
 
 ### Major changes
@@ -233,7 +254,7 @@ easily usable in MicroStrategy Workstation
 
 ### Bug fixes
 
-- fixed custom cell colapsing at re-run at certain conditions
+- fixed custom cell collapsing at re-run at certain conditions
 - fixed wrong object type for `Entity.__init__()` method
 - fixed `KeyError:'body'` when executing `update_properties` on an object
 - fixed `TypeError: unhashable type:'dict'` after accessing `attr_elements` of
@@ -278,7 +299,7 @@ easily usable in MicroStrategy Workstation
   `application_objects` subpackage
 - `date_modified` and `id` replace parameters/attributes `cube_id` and
   `last_modified` in new `SuperCube` and `OlapCube` classes
-- `project_id` and `project_name` parameters/attributes are deprecated accross
+- `project_id` and `project_name` parameters/attributes are deprecated across
   the package in favor of `application_id` and `application_name`
 
 ## 11.3.0.2 - 2021/01/11

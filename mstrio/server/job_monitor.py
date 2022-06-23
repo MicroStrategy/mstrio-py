@@ -496,7 +496,7 @@ class Job(EntityBase):
         template_name: Name of the template for the job
         step_statistics: Step statistics for the job
     """
-    _DELETE_NONE_VALUES_RECURSION = True
+    _DELETE_NONE_VALUES_RECURSION = False
 
     _FROM_DICT_MAP = {
         'creation_time': DatetimeFormats.FULLDATETIME,

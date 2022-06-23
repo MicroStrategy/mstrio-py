@@ -33,7 +33,7 @@ class ObjectInformation(Dictable):
         primary (string): the primary locale of the object, in the IETF BCP 47
             language tag format, such as "en-US".
     """
-    _DELETE_NONE_VALUES_RECURSION = True
+    _DELETE_NONE_VALUES_RECURSION = False
 
     def __init__(self, object_id: Optional[str] = None, sub_type: Optional[str] = None,
                  name: Optional[str] = None, is_embedded: Optional[bool] = None,
@@ -70,7 +70,7 @@ class ObjectReference(Dictable):
         object is itself embedded, then it means that the target object is
         embedded in the same container as this object.
     """
-    _DELETE_NONE_VALUES_RECURSION = True
+    _DELETE_NONE_VALUES_RECURSION = False
 
     def __init__(self, object_id: str, sub_type: str, name: Optional[str] = None,
                  is_embedded: Optional[bool] = None):
@@ -82,7 +82,7 @@ class ObjectReference(Dictable):
 
 class _ObjectReferenceWithType(ObjectReference):
     SUB_TYPE = ""
-    _DELETE_NONE_VALUES_RECURSION = True
+    _DELETE_NONE_VALUES_RECURSION = False
 
     def __init__(self, object_id: str, name: Optional[str] = None,
                  is_embedded: Optional[bool] = None):
@@ -90,25 +90,25 @@ class _ObjectReferenceWithType(ObjectReference):
 
 
 class AttributeRef(_ObjectReferenceWithType):
-    _DELETE_NONE_VALUES_RECURSION = True
+    _DELETE_NONE_VALUES_RECURSION = False
 
     SUB_TYPE = "attribute"
 
 
 class AttributeFormSystemRef(_ObjectReferenceWithType):
-    _DELETE_NONE_VALUES_RECURSION = True
+    _DELETE_NONE_VALUES_RECURSION = False
 
     SUB_TYPE = "attribute_form_system"
 
 
 class AttributeFormNormalRef(_ObjectReferenceWithType):
-    _DELETE_NONE_VALUES_RECURSION = True
+    _DELETE_NONE_VALUES_RECURSION = False
 
     SUB_TYPE = "attribute_form_normal"
 
 
 class AttributeElement(Dictable):
-    _DELETE_NONE_VALUES_RECURSION = True
+    _DELETE_NONE_VALUES_RECURSION = False
 
     def __init__(self, element_id: str, display: str, attribute: Optional[AttributeRef] = None):
         self.element_id = element_id
@@ -117,12 +117,12 @@ class AttributeElement(Dictable):
 
 
 class ElementPromptRef(_ObjectReferenceWithType):
-    _DELETE_NONE_VALUES_RECURSION = True
+    _DELETE_NONE_VALUES_RECURSION = False
 
     SUB_TYPE = "prompt"
 
 
 class FilterRef(_ObjectReferenceWithType):
-    _DELETE_NONE_VALUES_RECURSION = True
+    _DELETE_NONE_VALUES_RECURSION = False
 
     SUB_TYPE = "filter"

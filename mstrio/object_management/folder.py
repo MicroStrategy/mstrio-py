@@ -2,11 +2,11 @@ import logging
 from typing import Callable, List, Optional, TYPE_CHECKING, Union
 
 from mstrio import config
-from mstrio.api import folders
+from mstrio.api import folders, objects
 from mstrio.object_management import PredefinedFolders
 from mstrio.types import ObjectTypes
 from mstrio.users_and_groups import User
-from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity
+from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, MoveMixin
 from mstrio.utils.helper import fetch_objects_async, get_default_args_from_func
 
 if TYPE_CHECKING:
@@ -118,7 +118,7 @@ def get_predefined_folder_contents(connection: "Connection", folder_type: Predef
         return map_objects_list(connection, objects)
 
 
-class Folder(Entity, DeleteMixin, CopyMixin):
+class Folder(Entity, CopyMixin, MoveMixin, DeleteMixin):
     """Object representation of MicroStrategy Folder object.
 
     Attributes:
@@ -147,10 +147,11 @@ class Folder(Entity, DeleteMixin, CopyMixin):
             for document and report)
         contents: contents of folder
     """
-    _DELETE_NONE_VALUES_RECURSION = True
+    _DELETE_NONE_VALUES_RECURSION = False
     _FROM_DICT_MAP = {'owner': User.from_dict}
 
     _API_DELETE: Callable = staticmethod(folders.delete_folder)
+    _API_PATCH: dict = {**Entity._API_PATCH, ('folder_id'): (objects.update_object, 'partial_put')}
 
     _OBJECT_TYPE = ObjectTypes.FOLDER
     _SIZE_LIMIT = 10000000  # this sets desired chunk size in bytes

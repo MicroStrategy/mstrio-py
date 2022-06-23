@@ -11,7 +11,6 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, TYPE_CHECKING, Ty
 
 import pandas as pd
 import stringcase
-
 from mstrio import __version__ as mstrio_version
 from mstrio import config
 from mstrio.api.exceptions import MstrTimeoutError, PromptedContentError, VersionException
@@ -25,7 +24,6 @@ if TYPE_CHECKING:
     from mstrio.connection import Connection
     from mstrio.project_objects.datasets import OlapCube, SuperCube
     from mstrio.types import ObjectTypes
-
 
 logger = logging.getLogger(__name__)
 
@@ -797,6 +795,33 @@ def choose_cube(connection: "Connection", cube_dict: dict) -> Union["OlapCube", 
         return SuperCube.from_dict(cube_dict, connection)
 
 
+def get_valid_project_id(connection: "Connection", project_id: Optional[str] = None,
+                         project_name: Optional[str] = None, with_fallback: bool = False):
+    from mstrio.server import Project
+    # Search for a project by its name if id was not specified, but name was
+    if not project_id:
+        try:
+            project_id = Project(connection=connection, name=project_name).id
+        except ValueError:
+            # If project with a given name was not found, try to use a
+            # project specified during initialisation of `connection` obj.
+            if with_fallback:
+                project_id = fallback_to_conn_project_id(connection)
+            else:
+                exception_handler(msg="Project could not be determined.",
+                                  exception_type=ValueError)
+    return project_id
+
+
+def fallback_to_conn_project_id(connection: "Connection") -> Optional[str]:
+    try:
+        connection._validate_project_selected()
+        return connection.project_id
+    except AttributeError:
+        exception_handler(msg="Project could not be determined.",
+                          exception_type=ValueError)
+
+
 class Dictable:
     """The fundamental class in mstrio-py package. Includes support for
     converting an object to a dictionary, and creating an object from a
@@ -857,8 +882,6 @@ class Dictable:
         Args:
             camel_case (bool, optional): Set to True if attribute names should
                 be converted from snake case to camel case. Defaults to True.
-            allow_none(List[str], optional): list of keys whichs should not
-                be deleted if empty
 
         Returns:
             dict: A dictionary representation of object's attributes and values.
@@ -919,6 +942,14 @@ class Dictable:
         obj = cls(**args)  # type: ignore
         return obj
 
+    @classmethod
+    def bulk_from_dict(cls: T, source_list: list[dict[str, Any]],
+                       connection: Optional["Connection"] = None, to_snake_case: bool = True) -> T:
+        return [
+            cls.from_dict(source=source, connection=connection, to_snake_case=to_snake_case)
+            for source in source_list
+        ]
+
     def __repr__(self) -> str:
         from mstrio.utils.entity import auto_match_args_entity
         param_dict = auto_match_args_entity(
@@ -928,9 +959,5 @@ class Dictable:
             include_defaults=False,
         )
         formatted_params = ', '.join(
-            (
-                f'{param}={repr(value)}' for param, value
-                in param_dict.items()
-            )
-        )
+            (f'{param}={repr(value)}' for param, value in param_dict.items()))
         return f'{self.__class__.__name__}({formatted_params})'

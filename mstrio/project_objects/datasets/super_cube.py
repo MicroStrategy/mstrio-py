@@ -13,6 +13,7 @@ from mstrio.object_management.search_operations import full_search, SearchPatter
 from mstrio.utils import helper
 from mstrio.utils.encoder import Encoder
 from mstrio.utils.entity import CertifyMixin, ObjectSubTypes
+from mstrio.utils.helper import deprecation_warning
 from mstrio.utils.model import Model
 
 from .cube import _Cube
@@ -20,11 +21,18 @@ from .cube import _Cube
 logger = logging.getLogger(__name__)
 
 
-def list_super_cubes(connection: Connection, name_begins: Optional[str] = None,
-                     to_dictionary: bool = False, limit: Optional[int] = None,
-                     **filters) -> Union[List["SuperCube"], List[dict]]:
+def list_super_cubes(
+        connection: Connection,
+        name: Optional[str] = None,
+        name_begins: Optional[str] = None,
+        search_pattern: Union[SearchPattern, int] = SearchPattern.CONTAINS,
+        project_id: Optional[str] = None,
+        to_dictionary: bool = False,
+        limit: Optional[int] = None,
+        **filters,
+) -> Union[List["SuperCube"], List[dict]]:
     """Get list of SuperCube objects or dicts with them.
-    Optionally filter cubes by specifying 'name_begins'.
+    Optionally filter cubes by specifying 'name'.
 
     Optionally use `to_dictionary` to choose output format.
 
@@ -36,8 +44,14 @@ def list_super_cubes(connection: Connection, name_begins: Optional[str] = None,
     Args:
         connection: MicroStrategy connection object returned by
             `connection.Connection()`
-        name_begins (string, optional): characters that the cube name must begin
-            with
+        name (string, optional): value the search pattern is set to, which
+            will be applied to the names of super cubes being searched
+        name_begins (string, optional): deprecated. Use `name` instead.
+        search_pattern (SearchPattern enum or int, optional): pattern to search
+            for, such as Begin With or Contains. Possible values are available
+            in ENUM mstrio.browsing.SearchPattern.
+            Default value is BEGIN WITH (4).
+        project_id (string, optional): Project ID
         to_dictionary (bool, optional): If True returns dict, by default (False)
             returns SuperCube objects
         limit (integer, optional): limit the number of elements returned. If
@@ -49,14 +63,29 @@ def list_super_cubes(connection: Connection, name_begins: Optional[str] = None,
     Returns:
         list with SuperCubes or list of dictionaries
     """
-    connection._validate_project_selected()
-    objects_ = full_search(connection, object_types=ObjectSubTypes.SUPER_CUBE,
-                           project=connection.project_id, name=name_begins,
-                           pattern=SearchPattern.BEGIN_WITH, limit=limit, **filters)
+    if project_id is None:
+        connection._validate_project_selected()
+        project_id = connection.project_id
+    if name_begins:
+        deprecation_warning(
+            "`name_begins`",
+            "`name`",
+            "11.3.7.101",  # NOSONAR
+            False
+        )
+        name, search_pattern = name_begins, SearchPattern.BEGIN_WITH
+    objects_ = full_search(
+        connection,
+        object_types=ObjectSubTypes.SUPER_CUBE,
+        project=project_id,
+        name=name,
+        pattern=search_pattern,
+        limit=limit,
+        **filters,
+    )
     if to_dictionary:
         return objects_
-    else:
-        return [SuperCube.from_dict(obj_, connection) for obj_ in objects_]
+    return [SuperCube.from_dict(obj_, connection) for obj_ in objects_]
 
 
 class SuperCube(_Cube, CertifyMixin):
@@ -95,7 +124,7 @@ class SuperCube(_Cube, CertifyMixin):
     _OBJECT_SUBTYPE = ObjectSubTypes.SUPER_CUBE.value
     __VALID_POLICY = ['add', 'update', 'replace', 'upsert']
     __MAX_DESC_LEN = 250
-    _DELETE_NONE_VALUES_RECURSION = True
+    _DELETE_NONE_VALUES_RECURSION = False
 
     def __init__(self, connection: Connection, id: Optional[str] = None,
                  name: Optional[str] = None, description: Optional[str] = None,
