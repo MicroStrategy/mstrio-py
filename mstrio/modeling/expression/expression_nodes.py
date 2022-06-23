@@ -1,3 +1,4 @@
+from dataclasses import dataclass, field
 from enum import auto
 from typing import List, Optional, Type, TYPE_CHECKING
 
@@ -9,27 +10,6 @@ from .dynamic_date_time import DynamicDateTimeStructure
 from .enums import Function, IsIndependent, NodeType
 from .expression import Expression, ExpressionNode
 from .parameters import AttributeElement, FunctionProperty, PredicateParameter, Variant
-
-# Add support for keyword-only dataclasses, to enable inheritance of parent
-# dataclasses that have attributes with default values
-# Keyword-only dataclasses has been added only in python 3.10
-# The conditional import below adds support for the same functionality
-# for Python 3.9.
-# TODO: to be removed when minimal supported version of python is 3.10 or later
-import sys
-
-if sys.version_info >= (3, 10):
-    from dataclasses import dataclass, field
-else:
-    from functools import partial
-    import attrs
-
-    dataclass = partial(attrs.define, slots=False)
-
-    def rename_default_factory(default_factory):
-        return attrs.field(factory=default_factory)
-
-    field = rename_default_factory
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
@@ -45,7 +25,7 @@ class PredicateNode(ExpressionNode):
             printable characters can be used as a predicate.
         predicate_text: Text representation of a predicate
     """
-    predicate_id: str
+    predicate_id: Optional[str] = None
     predicate_text: Optional[str] = None
 
     def to_dict(self, camel_case: bool = True) -> dict:

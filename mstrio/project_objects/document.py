@@ -2,13 +2,13 @@ from typing import List, Optional, Union
 
 from pandas import DataFrame
 
-from mstrio.api import documents, library
+from mstrio.api import documents, library, objects
 from mstrio.connection import Connection
 from mstrio.server.environment import Environment
 from mstrio.users_and_groups import list_users, User, UserGroup, UserOrGroup
 from mstrio.utils import helper
 from mstrio.utils.certified_info import CertifiedInfo
-from mstrio.utils.entity import DeleteMixin, Entity, ObjectTypes, VldbMixin
+from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, MoveMixin, ObjectTypes, VldbMixin
 
 
 def list_documents(connection: Connection, name: Optional[str] = None, to_dictionary: bool = False,
@@ -84,13 +84,14 @@ def list_documents_across_projects(connection: Connection, name: Optional[str] =
     return output
 
 
-class Document(Entity, VldbMixin, DeleteMixin):
+class Document(Entity, VldbMixin, CopyMixin, MoveMixin, DeleteMixin):
     _OBJECT_TYPE = ObjectTypes.DOCUMENT_DEFINITION
     _FROM_DICT_MAP = {
         **Entity._FROM_DICT_MAP, 'owner': User.from_dict,
         'certified_info': CertifiedInfo.from_dict
     }
-    _DELETE_NONE_VALUES_RECURSION = True
+    _API_PATCH: dict = {**Entity._API_PATCH, ('folder_id'): (objects.update_object, 'partial_put')}
+    _DELETE_NONE_VALUES_RECURSION = False
 
     def __init__(self, connection: Connection, name: Optional[str] = None,
                  id: Optional[str] = None):
@@ -102,17 +103,10 @@ class Document(Entity, VldbMixin, DeleteMixin):
             name: name of Document
             id: ID of Document
         """
-        if id is None and name is None:
-            raise ValueError("Please specify either 'name' or 'id' parameter in the constructor.")
         if id is None:
-            documents = self._list_all(connection=connection, to_dictionary=True, name=name)
-            if documents:
-                id = documents[0]['id']
-            else:
-                msg = (f"There is no {self.__class__.__name__} associated with the given "
-                       f"name: '{name}'")
-                raise ValueError(msg)
-
+            document = super()._find_object_with_name(connection=connection, name=name,
+                                                      listing_function=Document._list_all)
+            id = document['id']
         super().__init__(connection=connection, object_id=id, name=name)
 
     def _init_variables(self, **kwargs) -> None:

@@ -18,22 +18,22 @@ With mstrio-py for **system administration**, it’s easy to minimize costs by a
 
 <!--ts-->
 
-- [Main Features<a id="main-features"></a>](#main-features)
-- [Documentation<a id="documentation"></a>](#documentation)
-- [Usage Remarks<a id="usage-remarks"></a>](#usage-remarks)
+- [Main Features](#main-features)
+- [Documentation](#documentation)
+- [Usage Remarks](#usage-remarks)
   - [General](#general)
   - [GUI](#gui)
   - [Backend](#backend)
-- [Installation<a id="installation"></a>](#installation)
-  - [Prerequisites<a id="prerequisites"></a>](#prerequisites)
-    - [mstrio-py<a id="mstrio-py"></a>](#mstrio-py)
-    - [MicroStrategy for Jupyter<a id="microstrategy-for-jupyter"></a>](#microstrategy-for-jupyter)
-  - [Install the `mstrio-py` Package<a id="install-the-mstrio-py-package"></a>](#install-the-mstrio-py-package)
-  - [Enable the Jupyter Notebook extension<a id="enable-the-jupyter-notebook-extension"></a>](#enable-the-jupyter-notebook-extension)
-- [Versioning & Changelog<a id="versioning--changelog"></a>](#versioning--changelog)
-- [Deprecating Features<a id="deprecating-features"></a>](#deprecating-features)
-- [More Resources<a id="more-resources"></a>](#more-resources)
-- [Other<a id="other"></a>](#other)
+- [Installation](#installation)
+  - [Prerequisites](#prerequisites)
+    - [mstrio-py](#mstrio-py)
+    - [MicroStrategy for Jupyter](#microstrategy-for-jupyter)
+  - [Install the `mstrio-py` Package](#install-the-mstrio-py-package)
+  - [Enable the Jupyter Notebook extension](#enable-the-jupyter-notebook-extension)
+- [Versioning & Changelog](#versioning--changelog)
+- [Deprecating Features](#deprecating-features)
+- [More Resources](#more-resources)
+- [Other](#other)
 <!--te-->
 
 # Main Features<a id="main-features"></a>
@@ -56,7 +56,7 @@ Since version **11.3.0.1**, **mstrio-py** includes also administration modules:
 - **Subscription** management modules including **Email Subscription** and **Cache Update Subscription** (see [code_snippets][code_snippet_subs])
 - **Document** and **Dossiers** in **User Library** modules (see [code_snippets][code_snippet_library])
 - **User Connections** management module
-- **Privilege** and **Security Role** management modules
+- **Privilege** and **Security Role** management modules (see [code_snippets][code_snippet_privilege])
 - **Cube Cache** management modules (see [code_snippets][code_snippet_cache])
 - **Intelligent Cube** management modules (see [code_snippets][code_snippet_olap])
 - **Security filter** module (see [code_snippets][code_snippet_security_filter])
@@ -74,6 +74,7 @@ It is subject to change until it is released as Generally Available.
 - **User Hierarchy** module (see [code_snippets][code_snippet_user_hierarchy])
 - **Attribute** module (see [code_snippets][code_snippet_attribute])
 - **Fact** module (see [code_snippets][code_snippet_fact])
+- **Tables** module (see [code_snippets][code_snippet_table_mgmt])
 
 # Documentation<a id="documentation"></a>
 
@@ -81,16 +82,16 @@ Detailed information about **mstrio-py** package can be found in [**official doc
 
 # Usage Remarks<a id="usage-remarks"></a>
 
-## General
+## General<a id="general"></a>
 
 - **Chrome** is the only supported web browser. `mstrio-py` should work properly in **Safari**, **Opera** or **Edge** but we cannot guarantee a seamless experience.
 - It is recommended NOT to use Anaconda environment. Please see **Installation** section below for details.
 
-## GUI
+## GUI<a id="gui"></a>
 
 - GUI `Import -> Prepare Data` filters out all "**_Row Count - ..._**" columns even if they are an integral part of a Dataset. Starting column's name with "_Row Count_" is not advised.
 
-## Backend
+## Backend<a id="backend"></a>
 
 - Currently it is not possible to use `mstrio-py` package to update cubes created via Web. Unfortunately it is not possible to use any REST API endpoint to check whether cube was created
 via Web or via REST API to provide some warning. In case of seeing one of the following error
@@ -122,7 +123,7 @@ Error getting cube metadata information. I-Server Error ERR001, (ServiceManager:
 
 ### mstrio-py<a id="mstrio-py"></a>
 
-- Python 3.9+
+- Python 3.10+
 - MicroStrategy 2019 Update 4 (11.1.4)+
 
 ### MicroStrategy for Jupyter<a id="microstrategy-for-jupyter"></a>
@@ -155,7 +156,7 @@ jupyter nbextension enable connector-jupyter --py --sys-prefix
 
 # Versioning & Changelog<a id="versioning--changelog"></a>
 
-Current version: **11.3.5.103** (20 May 2022). Check out [**Changelog**][release_notes] to see what's new.
+Current version: **11.3.6.101** (24 June 2022). Check out [**Changelog**][release_notes] to see what's new.
 
 mstrio-py is constantly developed to support newest MicroStrategy REST APIs. Functionalities may be added to mstrio on monthly basis. It is **recommended** to always install the newest version of mstrio-py, as it will be most stable and still maintain backwards compatibility with various MicroStrategy installations, dating back to 11.1.4.
 
@@ -209,7 +210,7 @@ When features (modules, parameters, attributes, methods etc.) are marked for dep
 [release_notes]: https://github.com/MicroStrategy/mstrio-py/blob/master/NEWS.md
 [logo]: https://github.com/MicroStrategy/mstrio-py/blob/master/mstr-logo.png?raw=true
 [deprecation]: https://github.com/MicroStrategy/mstrio-py/blob/master/deprecation.png?raw=true
-[code_snippet_attribute]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/attribute.py
+[code_snippet_attribute]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/attributes.py
 [code_snippet_conn]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/connect.py
 [code_snippet_contact]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/contacts.py
 [code_snippet_contact_group]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/contact_group_mgmt.py
@@ -234,3 +235,6 @@ When features (modules, parameters, attributes, methods etc.) are marked for dep
 [code_snippet_schema_mgmt]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/schema_mgmt.py
 [code_snippet_user_hierarchy]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/user_hierarchy_mgmt.py
 [code_snippet_fact]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/fact.py
+[code_snippet_table_mgmt]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/table_mgmt.py
+[code_snippet_filter]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/filter.py
+[code_snippet_privilege]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/security_roles_and_privileges.py

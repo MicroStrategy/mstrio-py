@@ -7,7 +7,7 @@ from mstrio.api import objects, user_hierarchies
 from mstrio.modeling.schema.helpers import SchemaObjectReference
 from mstrio.types import ObjectTypes
 from mstrio.users_and_groups import User
-from mstrio.utils.entity import DeleteMixin, Entity
+from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, MoveMixin
 from mstrio.utils.enum_helper import AutoName
 from mstrio.utils.helper import delete_none_values, Dictable, fetch_objects, get_enum_val
 
@@ -67,7 +67,7 @@ class HierarchyAttribute(Dictable):
         limit: the element display limit when element_display_option
             is limited_elements
     """
-    _DELETE_NONE_VALUES_RECURSION = True
+    _DELETE_NONE_VALUES_RECURSION = False
 
     _FROM_DICT_MAP = {
         'element_display_option': ElementDisplayOption,
@@ -110,7 +110,7 @@ class HierarchyRelationship(Dictable):
             child in a current hierarchy relationship,
             SchemaObjectReference object
     """
-    _DELETE_NONE_VALUES_RECURSION = True
+    _DELETE_NONE_VALUES_RECURSION = False
 
     _FROM_DICT_MAP = {
         'parent': SchemaObjectReference.from_dict,
@@ -132,7 +132,7 @@ class HierarchyRelationship(Dictable):
         return self.parent == other.parent and self.child == other.child
 
 
-class UserHierarchy(Entity, DeleteMixin):
+class UserHierarchy(Entity, CopyMixin, MoveMixin, DeleteMixin):
     """A unique abstraction of hierarchies above the System Hierarchy,
     which can contain an arbitrary number of attributes and paths between
     them. These User Hierarchies allow users to browse through the data
@@ -169,7 +169,7 @@ class UserHierarchy(Entity, DeleteMixin):
         destination_folder_id: a globally unique identifier used to distinguish
             between metadata objects within the same project
     """
-    _DELETE_NONE_VALUES_RECURSION = True
+    _DELETE_NONE_VALUES_RECURSION = False
 
     _OBJECT_TYPE = ObjectTypes.DIMENSION
     _FROM_DICT_MAP = {
@@ -187,7 +187,8 @@ class UserHierarchy(Entity, DeleteMixin):
     }
     _API_PATCH: dict = {
         ('name', 'description', 'relationships', 'use_as_drill_hierarchy', 'destination_folder_id',
-         'sub_type', 'is_embedded', 'attributes'): (user_hierarchies.update_user_hierarchy, "put")
+         'sub_type', 'is_embedded', 'attributes'): (user_hierarchies.update_user_hierarchy, "put"),
+        ('folder_id'): (objects.update_object, 'partial_put')
     }
     _API_DELETE = staticmethod(user_hierarchies.delete_user_hierarchy)
     _PATCH_PATH_TYPES = {
@@ -215,29 +216,22 @@ class UserHierarchy(Entity, DeleteMixin):
         Args:
 
         """
-        if id is None and name is None:
-            raise ValueError("Please specify either 'name' or 'id' parameter in the constructor.")
-
         if id is None:
-            objects_info = self._list_user_hierarchies(connection=connection, name=name,
-                                                       to_dictionary=True)
-
-            if objects_info:
-                object_info, object_info["connection"] = objects_info[0], connection
-                self._init_variables(**object_info)
-            else:
-                raise ValueError(f"There is no User Hierarchy: '{name}'")
+            object_info, object_info["connection"] = super()._find_object_with_name(
+                connection=connection, name=name,
+                listing_function=list_user_hierarchies), connection
+            self._init_variables(**object_info)
         else:
             super().__init__(connection, id)
 
     def _init_variables(self, **kwargs) -> None:
         super()._init_variables(**kwargs)
         self.sub_type = UserHierarchySubType(
-            kwargs.get('subType')) if kwargs.get('subType') else None
-        self.primary_locale = kwargs.get('primaryLocale')
-        self.is_embedded = kwargs.get('isEmbedded')
-        self.destination_folder_id = kwargs.get('destinationFolderId')
-        self.use_as_drill_hierarchy = kwargs.get('useAsDrillHierarchy')
+            kwargs.get('sub_type')) if kwargs.get('sub_type') else None
+        self.primary_locale = kwargs.get('primary_locale')
+        self.is_embedded = kwargs.get('is_embedded')
+        self.destination_folder_id = kwargs.get('destination_folder_id')
+        self.use_as_drill_hierarchy = kwargs.get('use_as_drill_hierarchy')
         self.attributes = [
             HierarchyAttribute.from_dict(source=attr) for attr in kwargs.get("attributes")
         ] if kwargs.get('attributes') else None
@@ -245,7 +239,7 @@ class UserHierarchy(Entity, DeleteMixin):
             HierarchyRelationship.from_dict(source=rel) for rel in kwargs.get("relationships")
         ] if kwargs.get('attributes') else None
         self._path = kwargs.get('path')
-        self._version_id = kwargs.get('versionId')
+        self._version_id = kwargs.get('version_id')
 
     @classmethod
     def create(cls, connection: "Connection", name: str, sub_type: Union[str,

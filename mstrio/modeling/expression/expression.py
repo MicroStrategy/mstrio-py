@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from enum import auto
 from typing import List, Optional, Type, TYPE_CHECKING, Union
 
@@ -12,23 +13,6 @@ from .enums import DependenceType, DimtyType, ExpressionType, NodeType
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
-
-# Add support for keyword-only dataclasses, to enable inheritance of parent
-# dataclasses that have attributes with default values
-# Keyword-only dataclasses has been added only in python 3.10
-# The conditional import below adds support for the same functionality
-# for Python 3.9.
-# TODO: to be removed when minimal supported version of python is 3.10 or later
-import sys
-
-if sys.version_info >= (3, 10):
-    from dataclasses import dataclass
-else:
-    from functools import partial
-
-    from attrs import define
-
-    dataclass = partial(define, slots=False)
 
 
 @dataclass(kw_only=True)
@@ -111,6 +95,7 @@ class Token(Dictable):
         KEYWORD = auto()
         OTHER = auto()
         ELEMENTS = auto()
+        DATE_TIME = auto()
 
     class Level(AutoName):
         """Enumeration constant describing the amount of processing performed
@@ -202,29 +187,19 @@ class Expression(Dictable):
     tokens: Optional[List[Token]] = None
     tree: Optional[ExpressionNode] = None
 
-    def to_dict(self, camel_case: bool = True) -> dict:
-        if self.tree and self.tokens:
-            raise ValueError("Expression can have either tree or tokens."
-                             "Providing both is not allowed.")
-
-        return super().to_dict(camel_case)
-
-    @classmethod
-    def from_dict(cls, source: dict, connection: Optional['Connection'] = None,
-                  to_snake_case: bool = True) -> 'Expression':
-        result = super().from_dict(source, connection, to_snake_case)
-        if not result.tree and not result.tokens:
-            raise AttributeError("Attribute: tree or tokens is required for Expressions.")
-
-        return result
-
     def __repr__(self):
         return f"Expression(text='{self.text}')"
 
 
-def list_functions(connection: 'Connection', name: Optional[str] = None,
-                   to_dictionary: bool = False, limit: Optional[int] = None,
-                   **filters) -> Union[List['SchemaObjectReference'], List[dict]]:
+def list_functions(
+    connection: 'Connection',
+    name: Optional[str] = None,
+    to_dictionary: bool = False,
+    search_pattern: Union[SearchPattern, int] = SearchPattern.CONTAINS,
+    project_id: Optional[str] = None,
+    limit: Optional[int] = None,
+    **filters,
+) -> Union[List['SchemaObjectReference'], List[dict]]:
     """Get list of SchemaObjectReference objects or dicts representing
     functions. Optionally filter functions by specifying 'name'.
 
@@ -243,10 +218,15 @@ def list_functions(connection: 'Connection', name: Optional[str] = None,
     Args:
         connection: MicroStrategy connection object returned by
             `connection.Connection()`
-        name (string, optional): characters that the function name must
-            begin with
+        name (string, optional): value the search pattern is set to, which
+            will be applied to the names of functions being searched
         to_dictionary (bool, optional): If True returns dict, by default (False)
             returns SchemaObjectReference objects
+        search_pattern (SearchPattern enum or int, optional): pattern to
+            search for, such as Begin With or Exactly. Possible values are
+            available in ENUM mstrio.browsing.SearchPattern.
+            Default value is CONTAINS (4).
+        project_id (string, optional): Project ID
         limit (integer, optional): limit the number of elements returned. If
             None all object are returned.
         **filters: Available filter parameters:
@@ -262,12 +242,15 @@ def list_functions(connection: 'Connection', name: Optional[str] = None,
     Returns:
         list with SchemaObjectReference objects or list of dictionaries
     """
+    if project_id is None:
+        connection._validate_project_selected()
+        project_id = connection.project_id
     objects = search_operations.full_search(
         connection,
         object_types=ObjectTypes.FUNCTION,
-        project=connection.project_id,
+        project=project_id,
         name=name,
-        pattern=SearchPattern.BEGIN_WITH,
+        pattern=search_pattern,
         limit=limit,
         **filters,
     )

@@ -9,7 +9,7 @@ from .content import Content
 
 class EmailSubscription(Subscription):
     """Class representation of MicroStrategy Email Subscription object."""
-    _DELETE_NONE_VALUES_RECURSION = True
+    _DELETE_NONE_VALUES_RECURSION = False
 
     def __init__(self, connection: Connection, subscription_id: Optional[str] = None,
                  project_id: Optional[str] = None, project_name: Optional[str] = None):

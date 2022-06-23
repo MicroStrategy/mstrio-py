@@ -54,7 +54,7 @@ def list_datasource_mappings(
 
 
 class Locale(Entity):
-    _DELETE_NONE_VALUES_RECURSION = True
+    _DELETE_NONE_VALUES_RECURSION = False
     _OBJECT_TYPE = ObjectTypes.LOCALE
     _API_GETTERS = {
         ('name', 'id'): objects.get_object_info,
@@ -95,7 +95,7 @@ class DatasourceMap(EntityBase):
         login: The mapped Datasource Login
         locale: The Map's locale
     """
-    _DELETE_NONE_VALUES_RECURSION = True
+    _DELETE_NONE_VALUES_RECURSION = False
     _API_GETTERS: Dict[Union[str, tuple], Callable] = {
         ('id', 'projectId', 'connection', 'datasource', 'user', 'login',
          'locale'): datasources.get_datasource_mapping,

@@ -17,8 +17,10 @@ from mstrio.users_and_groups.user import User
 from mstrio.utils.certified_info import CertifiedInfo
 from mstrio.utils.entity import DeleteMixin, Entity, VldbMixin
 from mstrio.utils.filter import Filter
-from mstrio.utils.helper import choose_cube, exception_handler, fallback_on_timeout
-import mstrio.utils.helper as helper
+from mstrio.utils.helper import (
+    choose_cube, deprecation_warning, exception_handler, fallback_on_timeout, get_parallel_number,
+    response_handler, sort_object_properties
+)
 from mstrio.utils.parser import Parser
 from mstrio.utils.sessions import FuturesSessionWithRenewal
 
@@ -81,11 +83,18 @@ class CubeStates(Enum):
         return output
 
 
-def list_all_cubes(connection: Connection, name_begins: Optional[str] = None,
-                   to_dictionary: bool = False, limit: Optional[int] = None,
-                   **filters) -> Union[List[Union["OlapCube", "SuperCube"]], List[dict]]:
+def list_all_cubes(
+        connection: Connection,
+        name: Optional[str] = None,
+        name_begins: Optional[str] = None,
+        search_pattern: Union[SearchPattern, int] = SearchPattern.CONTAINS,
+        project_id: Optional[str] = None,
+        to_dictionary: bool = False,
+        limit: Optional[int] = None,
+        **filters,
+) -> Union[List[Union["OlapCube", "SuperCube"]], List[dict]]:
     """Get list of Cube objects (OlapCube or SuperCube) or dicts with them.
-    Optionally filter cubes by specifying 'name_begins'.
+    Optionally filter cubes by specifying 'name'.
 
     Optionally use `to_dictionary` to choose output format.
 
@@ -97,8 +106,14 @@ def list_all_cubes(connection: Connection, name_begins: Optional[str] = None,
     Args:
         connection: MicroStrategy connection object returned by
             `connection.Connection()`
-        name_begins (string, optional): characters that the cube name must begin
-            with
+        name (string, optional): value the search pattern is set to, which
+            will be applied to the names of cubes being searched
+        name_begins (string, optional): deprecated. Use `name` instead.
+        search_pattern (SearchPattern enum or int, optional): pattern to search
+            for, such as Begin With or Contains. Possible values are available
+            in ENUM mstrio.browsing.SearchPattern.
+            Default value is BEGIN WITH (4).
+        project_id (string, optional): Project ID
         to_dictionary (bool, optional): If True returns dict, by default (False)
             returns SuperCube/OlapCube objects
         limit (integer, optional): limit the number of elements returned. If
@@ -110,10 +125,26 @@ def list_all_cubes(connection: Connection, name_begins: Optional[str] = None,
     Returns:
         list with OlapCubes and SuperCubes or list of dictionaries
     """
-    connection._validate_project_selected()
-    objects_ = full_search(connection, project=connection.project_id, name=name_begins,
-                           object_types=[ObjectSubTypes.OLAP_CUBE, ObjectSubTypes.SUPER_CUBE],
-                           pattern=SearchPattern.BEGIN_WITH, limit=limit, **filters)
+    if project_id is None:
+        connection._validate_project_selected()
+        project_id = connection.project_id
+    if name_begins:
+        deprecation_warning(
+            "`name_begins`",
+            "`name`",
+            "11.3.7.101",  # NOSONAR
+            False
+        )
+        name, search_pattern = name_begins, SearchPattern.BEGIN_WITH
+    objects_ = full_search(
+        connection,
+        project=project_id,
+        name=name,
+        object_types=[ObjectSubTypes.OLAP_CUBE, ObjectSubTypes.SUPER_CUBE],
+        pattern=search_pattern,
+        limit=limit,
+        **filters,
+    )
     if to_dictionary:
         return objects_
     else:
@@ -221,7 +252,7 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
         'certified_info': CertifiedInfo.from_dict
     }
     _SIZE_LIMIT = 10000000  # this sets desired chunk size in bytes
-    _DELETE_NONE_VALUES_RECURSION = True
+    _DELETE_NONE_VALUES_RECURSION = False
 
     def __init__(self, connection: Connection, id: str, name: Optional[str] = None,
                  instance_id: Optional[str] = None, parallel: bool = True,
@@ -364,7 +395,7 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
                 ((paging['total'] - self._initial_limit) % limit != 0)
 
             if self._parallel and it_total > 1:
-                threads = helper.get_parallel_number(it_total)
+                threads = get_parallel_number(it_total)
                 with FuturesSessionWithRenewal(connection=self._connection,
                                                max_workers=threads) as session:
                     fetch_pbar = tqdm(desc="Downloading", total=it_total + 1,
@@ -374,7 +405,7 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
                     for i, f in enumerate(future, start=1):
                         response = f.result()
                         if not response.ok:
-                            helper.response_handler(response, "Error getting cube contents.")
+                            response_handler(response, "Error getting cube contents.")
                         fetch_pbar.update()
                         fetch_pbar.set_postfix(
                             rows=str(min(self._initial_limit + i * limit, paging['total'])))
@@ -535,7 +566,7 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
             "metrics": self.metrics,
         }
         return {
-            key: attributes[key] for key in sorted(attributes, key=helper.sort_object_properties)
+            key: attributes[key] for key in sorted(attributes, key=sort_object_properties)
         }
 
     def _get_info(self) -> None:
@@ -660,7 +691,7 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
 
         attr_elements = []
         if self.attributes:
-            threads = helper.get_parallel_number(len(self.attributes))
+            threads = get_parallel_number(len(self.attributes))
             with FuturesSessionWithRenewal(connection=self._connection,
                                            max_workers=threads) as session:
                 # Fetch first chunk of attribute elements.
@@ -671,8 +702,9 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
                     attr = self.attributes[i]
                     response = future.result()
                     if not response.ok:
-                        helper.response_handler(
-                            response, "Error getting attribute " + attr["name"] + " elements")
+                        response_handler(
+                            response, f"Error getting attribute {attr['name']} elements"
+                        )
                     elements = response.json()
                     # Get total number of rows from headers.
                     total = int(response.headers['x-mstr-total-count'])
@@ -824,7 +856,7 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
     @property
     def dataframe(self) -> DataFrame:
         if self._dataframe is None:
-            helper.exception_handler(
+            exception_handler(
                 msg="Dataframe not loaded. Retrieve with Report.to_dataframe().",
                 exception_type=Warning)
         return self._dataframe
@@ -832,7 +864,7 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
     @property
     def dataframes(self):
         if len(self._dataframes) == 0:
-            helper.exception_handler(
+            exception_handler(
                 msg="Dataframe not loaded. Retrieve with Report.to_dataframe().",
                 exception_type=Warning)
         return self._dataframes

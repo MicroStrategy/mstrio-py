@@ -1,3 +1,4 @@
+from concurrent.futures import as_completed
 from functools import wraps
 from json import dumps
 from typing import List, Optional
@@ -11,7 +12,6 @@ from mstrio.utils.sessions import FuturesSessionWithRenewal
 
 
 def unpack_information(func):
-
     @wraps(func)
     def unpack_information_inner(*args, **kwargs):
         if kwargs.get('body'):
@@ -27,7 +27,6 @@ def unpack_information(func):
                     "destinationFolderId": kwargs['body'].pop('destinationFolderId', None),
                     "versionId": kwargs['body'].pop('versionId', None),
                     "path": kwargs['body'].pop('path', None),
-                    "acl": kwargs['body'].pop('acl', None),
                     "primaryLocale": kwargs['body'].pop('primaryLocale', None),
                 }
             }
@@ -41,14 +40,49 @@ def unpack_information(func):
         if response_json.get('information'):
             response_json.update(response_json.pop('information'))
             response_json['id'] = response_json.pop('objectId', None)
-            resp.encoding, resp._content = 'utf-8', dumps(response_json).encode('utf-8')
+        if response_json.get('tables'):
+            response_json = unpack_tables(response_json)
+        if isinstance(response_json, dict) and response_json.get('subType') == 'logical_table':
+            response_json = unpack_table(response_json)
+        resp.encoding, resp._content = 'utf-8', dumps(response_json).encode('utf-8')
         return resp
 
     return unpack_information_inner
 
 
-def changeset_decorator(func):
+def unpack_table(response_json):
+    copy = response_json.copy()
 
+    def __update(objects):
+        try:
+            [obj.update(obj.pop('information', None)) for obj in objects]
+            [obj.update({'id': obj.pop('objectId', None)}) for obj in objects]
+        except TypeError:
+            # NoneType object is not iterable. Because there are different ways
+            # to retrieve a table, sometimes it is already unpacked and don't
+            # have attributes / facts. This depends on what getter was used.
+            pass
+
+    __update(copy.get('attributes'))
+    __update(copy.get('facts'))
+
+    return copy
+
+
+def unpack_tables(response_json):
+    copy = response_json.get('tables').copy()
+    for table in copy:
+        PHYSICAL_TABLE_FIELD_SET = table.get('physicalTable') and len(
+            table.keys()) == 1  # if retrieved with tables.get_tables(...,fields='physicalTable')
+        if PHYSICAL_TABLE_FIELD_SET:
+            table.update(table.pop('physicalTable'))
+        if table.get('information'):
+            table.update(table.pop('information'))
+            table['id'] = table.pop('objectId', None)
+    return copy
+
+
+def changeset_decorator(func):
     @wraps(func)
     def changeset_inner(*args, **kwargs):
         connection = args[0] if args and isinstance(args[0], Connection) else kwargs["connection"]
@@ -96,7 +130,7 @@ def async_get(async_wrapper: callable, connection: Connection, ids: List[str],
             async_wrapper(session=session, connection=connection, id=id, **param_value_dict)
             for id in ids
         ]
-        for f in futures:
+        for f in as_completed(futures):
             response = f.result()
             if not response.ok:
                 response_handler(response, error_msg, throw_error=False)

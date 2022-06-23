@@ -56,7 +56,7 @@ class AttributeForm(Entity):  # noqa
             multilingual. Any key form of the attribute is not allowed to be
             set as multilingual.
     """
-    _DELETE_NONE_VALUES_RECURSION = True
+    _DELETE_NONE_VALUES_RECURSION = False
 
     class FormType(AutoName):
         """Enumeration constants used to specify a type of this form."""

@@ -33,7 +33,7 @@ class PackageSettings(Dictable):
         acl_on_new_objects(Optional[AclOnNewObjects]):
             ACL setting on new objects
     """
-    _DELETE_NONE_VALUES_RECURSION = True
+    _DELETE_NONE_VALUES_RECURSION = False
 
     class UpdateSchema(AutoName):
         """They allow you to configure the package to automatically perform
@@ -153,7 +153,7 @@ class PackageContentInfo(Dictable):
         explicit_included(Optional[bool]): whether explicitly included or not
         level(Optional[Level]): level of object
     """
-    _DELETE_NONE_VALUES_RECURSION = True
+    _DELETE_NONE_VALUES_RECURSION = False
 
     class Action(AutoName):
         """The default action used for objects which don't have actions
@@ -217,7 +217,7 @@ class PackageContentInfo(Dictable):
         Therefore, despite `Owner` being a `User`, `connection` param here is
         optional. If `connection` is specified, `User` constructor will be used
         """
-        _DELETE_NONE_VALUES_RECURSION = True
+        _DELETE_NONE_VALUES_RECURSION = False
 
         @classmethod
         def from_dict(cls, source: Dict[str, Any], connection: Optional["Connection"] = None):
@@ -263,7 +263,7 @@ class PackageConfig(Dictable):
         content(PackageContentInfo, List[PackageContentInfo]): content details
             of package
     """
-    _DELETE_NONE_VALUES_RECURSION = True
+    _DELETE_NONE_VALUES_RECURSION = False
 
     class PackageUpdateType(AutoName):
         """ Package update type:
@@ -303,7 +303,7 @@ class Package(EntityBase, DeleteMixin):
         settings(PackageSettings): settings details of package
         content(PackageContentInfo): content details of package
     """
-    _DELETE_NONE_VALUES_RECURSION = True
+    _DELETE_NONE_VALUES_RECURSION = False
 
     _API_GETTERS = {("id", "status", "settings", "content"): migration.get_package_holder}
     _API_DELETE = staticmethod(migration.delete_package_holder)
@@ -389,7 +389,7 @@ class PackageImport(EntityBase, DeleteMixin):
         undo_package_created(bool): if the undo package have been created
         progress(int): progress of package import process
     """
-    _DELETE_NONE_VALUES_RECURSION = True
+    _DELETE_NONE_VALUES_RECURSION = False
 
     _API_GETTERS = {("id", "status", "undo_package_created", "progress"): migration.get_import}
     _API_DELETE = staticmethod(migration.delete_import)

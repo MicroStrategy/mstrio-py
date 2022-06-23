@@ -9,13 +9,15 @@ from mstrio.api import attributes, hierarchies, objects, tables
 from mstrio.connection import Connection
 from mstrio.modeling.expression import Expression, FactExpression
 from mstrio.modeling.schema.attribute import AttributeForm, Relationship
-from mstrio.modeling.schema.helpers import (AttributeDisplays, AttributeSorts, DataType,
-                                            FormReference, ObjectSubType, SchemaObjectReference)
+from mstrio.modeling.schema.helpers import (
+    AttributeDisplays, AttributeSorts, DataType, FormReference, ObjectSubType,
+    SchemaObjectReference
+)
 from mstrio.object_management import search_operations
 from mstrio.object_management.folder import Folder
 from mstrio.object_management.search_enums import SearchPattern
 from mstrio.types import ObjectSubTypes, ObjectTypes
-from mstrio.utils.entity import DeleteMixin, Entity
+from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, MoveMixin
 from mstrio.utils.enum_helper import AutoName, get_enum_val
 from mstrio.utils.helper import delete_none_values, filter_params_for_func
 
@@ -37,11 +39,17 @@ class ExpressionFormat(AutoName):
     TOKENS = auto()
 
 
-def list_attributes(connection: Connection, name: Optional[str] = None,
-                    attribute_subtype: Optional[ObjectSubTypes] = None,
-                    to_dictionary: bool = False, limit: Optional[int] = None,
-                    show_expression_as: Union[ExpressionFormat, str] = ExpressionFormat.TREE,
-                    **filters) -> Union[List["Attribute"], List[dict]]:
+def list_attributes(
+    connection: Connection,
+    name: Optional[str] = None,
+    attribute_subtype: Optional[ObjectSubTypes] = None,
+    to_dictionary: bool = False,
+    limit: Optional[int] = None,
+    search_pattern: Union[SearchPattern, int] = SearchPattern.CONTAINS,
+    project_id: Optional[str] = None,
+    show_expression_as: Union[ExpressionFormat, str] = ExpressionFormat.TREE,
+    **filters,
+) -> Union[List["Attribute"], List[dict]]:
     """Get list of Attribute objects or dicts with them.
     Optionally filter attributes by specifying 'name', 'attribute_subtype'.
 
@@ -55,8 +63,8 @@ def list_attributes(connection: Connection, name: Optional[str] = None,
     Args:
         connection: MicroStrategy connection object returned by
             `connection.Connection()`
-        name (string, optional): characters that the attribute name must
-            begin with
+        name (string, optional): value the search pattern is set to, which
+            will be applied to the names of attributes being searched
         attribute_subtype (ObjectSubTypes): one of attribute subtypes:
             attribute, attribute_abstract, attribute_recursive, attribute_role,
             attribute_transformation
@@ -64,6 +72,10 @@ def list_attributes(connection: Connection, name: Optional[str] = None,
             returns Attribute objects
         limit (integer, optional): limit the number of elements returned. If
             None all object are returned.
+        project_id (str, optional): Project ID
+        search_pattern (SearchPattern enum or int, optional): pattern to search
+            for, such as Begin With or Exactly. Possible values are available in
+            ENUM mstrio.browsing.SearchPattern. Default value is CONTAINS (4).
         show_expression_as (ExpressionFormat, str): specify how expressions
             should be presented
             Available values:
@@ -82,12 +94,20 @@ def list_attributes(connection: Connection, name: Optional[str] = None,
     Returns:
         list with Attribute objects or list of dictionaries
     """
+    if project_id is None:
+        connection._validate_project_selected()
+        project_id = connection.project_id
     if attribute_subtype is None:
         attribute_subtype = ObjectTypes.ATTRIBUTE
-    objects_ = search_operations.full_search(connection, object_types=attribute_subtype,
-                                             project=connection.project_id, name=name,
-                                             pattern=SearchPattern.BEGIN_WITH, limit=limit,
-                                             **filters)
+    objects_ = search_operations.full_search(
+        connection,
+        object_types=attribute_subtype,
+        project=project_id,
+        name=name,
+        pattern=search_pattern,
+        limit=limit,
+        **filters,
+    )
     if to_dictionary:
         return objects_
     else:
@@ -100,7 +120,7 @@ def list_attributes(connection: Connection, name: Optional[str] = None,
         ]
 
 
-class Attribute(Entity, DeleteMixin):  # noqa
+class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
     """Python representation of MicroStrategy Attribute object.
 
     Attributes:
@@ -135,7 +155,7 @@ class Attribute(Entity, DeleteMixin):  # noqa
         acl: object access control list
         version_id: the version number this object is currently carrying
         """
-    _DELETE_NONE_VALUES_RECURSION = True
+    _DELETE_NONE_VALUES_RECURSION = False
 
     _OBJECT_TYPE = ObjectTypes.ATTRIBUTE
     _API_GETTERS = {
@@ -150,7 +170,8 @@ class Attribute(Entity, DeleteMixin):  # noqa
         ('id', 'sub_type', 'name', 'is_embedded', 'description', 'destination_folder_id', 'forms',
          'attribute_lookup_table', 'key_form', 'displays', 'sorts'):
             (attributes.update_attribute, 'partial_put'),  # noqa
-        ('relationships'): (hierarchies.update_attribute_relationships, 'partial_put')
+        ('relationships'): (hierarchies.update_attribute_relationships, 'partial_put'),
+        ('folder_id'): (objects.update_object, 'partial_put')
     }
     _FROM_DICT_MAP = {
         **Entity._FROM_DICT_MAP,
@@ -323,30 +344,19 @@ class Attribute(Entity, DeleteMixin):  # noqa
 
                 Available values:
                 - `ExpressionFormat.TREE` or `tree` (default)
-                - `ExpressionFormat.TOKENS or `tokens`
+                - `ExpressionFormat.TOKENS` or `tokens`
         Note:
             Parameter `name` is not used when fetching. If only `name` parameter
             is provided, `id` will be found automatically if such object exists.
 
         Raises:
-            AttributeError: if both `id` and `name` are not provided.
-            ValueError: if Attribute with the given `name` doesn't exist.
+            ValueError: if both `id` and `name` are not provided or
+            if Attribute with the given `name` doesn't exist.
         """
         if id is None:
-            if name is None:
-                raise AttributeError(
-                    "Please specify either 'name' or 'id' parameter in the constructor.")
-            attributes = list_attributes(connection=connection, name=name, to_dictionary=True)
-            if attributes:
-                if len(attributes) > 1:
-                    raise AttributeError(
-                        "There are multiple attributes with this name. Please initialize with id.")
-                id = attributes[0]['id']
-            else:
-                raise ValueError(f"There is no Attribute with the given name: '{name}'")
-        elif name and id:
-            raise AttributeError(
-                "Please specify either 'name' or 'id' parameter in the constructor.")
+            attribute = super()._find_object_with_name(connection=connection, name=name,
+                                                       listing_function=list_attributes)
+            id = attribute['id']
         super().__init__(connection=connection, object_id=id, name=name,
                          show_expression_as=show_expression_as)
 
@@ -562,11 +572,16 @@ class Attribute(Entity, DeleteMixin):  # noqa
             table = tables.get_table(self.connection, tab.object_id,
                                      project_id=self.connection.project_id)
             attribute_references = table.json()['attributes']
-            candidates = [
-                SchemaObjectReference.from_dict(attr['information'])
-                for attr in attribute_references
-                if attr['information']['objectId'] != self.id
-            ]
+
+            candidates = []
+            for attr in attribute_references:
+                attr_copy = attr.copy()
+                if attr_copy.get('id'):
+                    attr_copy.update({'objectId': attr_copy.pop('id')})
+                if attr_copy.get('information'):
+                    attr_copy.update(attr_copy.pop('information'))
+                if attr_copy.get('objectId') != self.id:
+                    candidates.append(SchemaObjectReference.from_dict(attr_copy))
             if candidates:
                 result[tab.name] = candidates
 

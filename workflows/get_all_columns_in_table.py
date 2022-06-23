@@ -40,7 +40,7 @@ def list_table_columns(connection: Connection, table: Optional[Union[SchemaObjec
         ]
 
     if table:
-        table_id = table if isinstance(table, str) else table.id
+        table_id = table if isinstance(table, str) else table.object_id
         table_res = tables.get_table(connection, table_id, project_id=connection.project_id).json()
         return {table_res['information']['name']: unpack(table_res)}
     else:

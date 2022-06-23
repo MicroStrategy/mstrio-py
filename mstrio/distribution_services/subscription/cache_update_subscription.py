@@ -11,7 +11,7 @@ from .delivery import CacheType, Delivery, LibraryCacheTypes, ShortcutCacheForma
 class CacheUpdateSubscription(Subscription):
     """Class representation of MicroStrategy Cache Update Subscription
     object."""
-    _DELETE_NONE_VALUES_RECURSION = True
+    _DELETE_NONE_VALUES_RECURSION = False
 
     def __init__(self, connection: Connection, subscription_id: str = None, project_id: str = None,
                  project_name: str = None):

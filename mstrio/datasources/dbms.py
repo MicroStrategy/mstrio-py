@@ -43,7 +43,7 @@ class Dbms(EntityBase):
         type: Database management system (DBMS) type.
         version: Database management system (DBMS) version.
     """
-    _DELETE_NONE_VALUES_RECURSION = True
+    _DELETE_NONE_VALUES_RECURSION = False
     _OBJECT_TYPE = ObjectTypes.NONE
     _FROM_DICT_MAP = {}  # map attributes to Enums and Composites
     _DBMS_CACHE = set()

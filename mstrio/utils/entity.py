@@ -21,6 +21,7 @@ from mstrio.utils.dependence_mixin import DependenceMixin
 from mstrio.utils.time_helper import bulk_str_to_datetime, DatetimeFormats, map_str_to_datetime
 
 if TYPE_CHECKING:
+    from mstrio.object_management import Folder
     from mstrio.server import Project
 
 logger = logging.getLogger(__name__)
@@ -1010,6 +1011,66 @@ class CopyMixin:
         response = objects.copy_object(self.connection, id=self.id, name=name, folder_id=folder_id,
                                        object_type=self._OBJECT_TYPE.value, project_id=project)
         return self.from_dict(source=response.json(), connection=self.connection)
+
+
+class MoveMixin:
+    """MoveMixin class adds moving objects functionality.
+    Must be mixedin with Entity or its subclasses.
+    """
+
+    def move(self: Entity, folder: Union["Folder", str]):
+        """Move the object to a folder on the I-Server.
+
+        Args:
+            folder: Destination folder, specified either by id
+                or the Folder object.
+        """
+        from mstrio.object_management.folder import Folder
+
+        folder = folder.id if isinstance(folder, Folder) else folder
+        self._alter_properties(folder_id=folder)
+
+    def _find_object_with_name(self, connection: Connection, name: Optional[str] = None,
+                               listing_function: callable = None) -> Dict:
+        """Find objects with given name if no id is given.
+
+        Args:
+            connection: A MicroStrategy connection object
+            name: name of the object. Defaults to None.
+            object_type: type of an object that is searched.
+            listing_function: function called to list all the objects
+                with given name
+
+        Returns:
+            Dict: object properties in a dictionary.
+
+        Raises:
+            ValueError: if both `id` and `name` are not provided,
+                if there is more than 1 object with the given `name` or
+                if object with the given `name` doesn't exist.
+        """
+        if name is None:
+            raise ValueError("Please specify either 'name' or 'id' parameter in the constructor.")
+        objects = listing_function(connection=connection, name=name)
+        if objects:
+            number_of_objects = len(objects)
+            if 1 < number_of_objects <= 5:
+                error_string = f"There are {number_of_objects} {self.__class__.__name__} objects"\
+                    " with this name. Please initialize with id.\n"
+                for object in objects:
+                    error_string += 'Folder path: '
+                    for d in object.ancestors:
+                        error_string += d['name'] + '/'
+                    error_string += f' {self.__class__.__name__} id: {object.id} - '\
+                        f'{self.__class__.__name__} name: {object.name}\n'
+                raise ValueError(error_string)
+            if number_of_objects > 5:
+                raise ValueError(f"There are {number_of_objects} {self.__class__.__name__}"
+                                 " objects with this name. Please initialize with id.")
+            return objects[0].to_dict()
+        else:
+            raise ValueError(
+                f"There is no {self.__class__.__name__} with the given name: '{name}'")
 
 
 class DeleteMixin:

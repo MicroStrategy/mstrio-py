@@ -3,22 +3,31 @@ from typing import List, Optional, TYPE_CHECKING, Union
 from mstrio.access_and_security.security_filter import (
     AttributeRef, ObjectInformation, Qualification
 )
-from mstrio.api import changesets, security_filters
+from mstrio.api import changesets, objects, security_filters
 from mstrio.api.security_filters import ShowExpressionAs, UpdateOperator
-from mstrio.object_management import full_search
+from mstrio.object_management import full_search, SearchPattern
 from mstrio.users_and_groups import User, UserGroup
 from mstrio.utils import helper
-from mstrio.utils.entity import DeleteMixin, Entity, ObjectSubTypes, ObjectTypes
+from mstrio.utils.entity import (
+    CopyMixin, DeleteMixin, Entity, MoveMixin, ObjectSubTypes, ObjectTypes
+)
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
     from mstrio.users_and_groups import UserOrGroup
 
 
-def list_security_filters(connection: "Connection", to_dictionary: bool = False,
-                          limit: Optional[int] = None, user: Optional[Union[str, "User"]] = None,
-                          user_group: Optional[Union[str, "UserGroup"]] = None,
-                          **filters) -> Union[List["SecurityFilter"], List[dict]]:
+def list_security_filters(
+        connection: "Connection",
+        to_dictionary: bool = False,
+        name: Optional[str] = None,
+        search_pattern: Union[SearchPattern, int] = SearchPattern.CONTAINS,
+        limit: Optional[int] = None,
+        project_id: Optional[str] = None,
+        user: Optional[Union[str, "User"]] = None,
+        user_group: Optional[Union[str, "UserGroup"]] = None,
+        **filters,
+) -> Union[List["SecurityFilter"], List[dict]]:
     """Get list of security filter objects or security filter dicts for the
     project specified in the connection object. It can be filtered by user or
     user group.
@@ -31,8 +40,14 @@ def list_security_filters(connection: "Connection", to_dictionary: bool = False,
             `connection.Connection()`
         to_dictionary: If True returns dict, by default (False) returns
             `SecurityFilter` objects.
+        name (string, optional): value the search pattern is set to, which
+            will be applied to the names of security filters being searched
+        search_pattern (SearchPattern enum or int, optional): pattern to search
+            for, such as Begin With or Exactly. Possible values are available in
+            ENUM mstrio.browsing.SearchPattern. Default value is CONTAINS (4).
         limit: limit the number of elements returned. If `None` (default), all
             objects are returned.
+        project_id (string, optional): Project ID
         user (str or object, optional): Id of user or `User` object used to
             filter security filters
         user_group (str or object, optional): Id of user group or `UserGroup`
@@ -44,7 +59,9 @@ def list_security_filters(connection: "Connection", to_dictionary: bool = False,
     Returns:
         list of security filter objects or list of security filter dicts.
     """
-    connection._validate_project_selected()
+    if project_id is None:
+        connection._validate_project_selected()
+        project_id = connection.project_id
     if user and user_group:
         helper.exception_handler(
             "You cannot filter by both `user` and `user_group` at the same time.")
@@ -52,29 +69,40 @@ def list_security_filters(connection: "Connection", to_dictionary: bool = False,
     if user:
         user = User(connection, id=user) if isinstance(user, str) else user
         # filter security filters by user for project specified in `connection`
-        objects_ = user.list_security_filters(connection.project_id,
-                                              to_dictionary=True).get(connection.project_name, [])
+        objects_ = user.list_security_filters(
+            project_id, to_dictionary=True
+        ).get(connection.project_name, [])
     elif user_group:
-        user_group = UserGroup(connection, id=user_group) if isinstance(user_group,
-                                                                        str) else user_group
+        user_group = UserGroup(
+            connection, id=user_group
+        ) if isinstance(user_group, str) else user_group
         # filter security filters by the user group for project specified in
         # `connection`
-        objects_ = user_group.list_security_filters(connection.project_id, to_dictionary=True).get(
-            connection.project_name, [])
+        objects_ = user_group.list_security_filters(
+            project_id, to_dictionary=True
+        ).get(connection.project_name, [])
     else:
-        objects_ = full_search(connection, object_types=ObjectTypes.SECURITY_FILTER,
-                               project=connection.project_id, limit=limit, **filters)
+        objects_ = full_search(
+            connection,
+            name=name,
+            object_types=ObjectTypes.SECURITY_FILTER,
+            pattern=search_pattern,
+            project=project_id,
+            limit=limit,
+            **filters,
+        )
     if to_dictionary:
         return objects_
     return [SecurityFilter.from_dict(obj_, connection) for obj_ in objects_]
 
 
-class SecurityFilter(Entity, DeleteMixin):
+class SecurityFilter(Entity, CopyMixin, MoveMixin, DeleteMixin):
 
     _OBJECT_TYPE = ObjectTypes.SECURITY_FILTER
     _OBJECT_SUBTYPE = ObjectSubTypes.MD_SECURITY_FILTER.value
     _SIZE_LIMIT = 10000000  # this sets desired chunk size in bytes
-    _DELETE_NONE_VALUES_RECURSION = True
+    _API_PATCH: dict = {**Entity._API_PATCH, ('folder_id'): (objects.update_object, 'partial_put')}
+    _DELETE_NONE_VALUES_RECURSION = False
 
     def __init__(self, connection: "Connection", id: str, name: Optional[str] = None):
         """Initialize security filter object by its identifier.

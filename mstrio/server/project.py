@@ -1,18 +1,16 @@
-from enum import Enum, IntEnum
 import logging
 import time
+from enum import Enum, IntEnum
 from typing import List, Optional, Union
 
-from pandas import DataFrame, Series
-from tqdm import tqdm
-
+import mstrio.utils.helper as helper
 from mstrio import config
 from mstrio.api import monitors, projects
 from mstrio.connection import Connection
 from mstrio.utils.entity import Entity, ObjectTypes
-import mstrio.utils.helper as helper
 from mstrio.utils.settings.base_settings import BaseSettings
-
+from pandas import DataFrame, Series
+from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
 
@@ -122,7 +120,7 @@ class Project(Entity):
     }
     _FROM_DICT_MAP = {**Entity._FROM_DICT_MAP, 'status': ProjectStatus}
     _STATUS_PATH = "/status"
-    _DELETE_NONE_VALUES_RECURSION = True
+    _DELETE_NONE_VALUES_RECURSION = False
 
     def __init__(self, connection: Connection, name: Optional[str] = None,
                  id: Optional[str] = None) -> None:
@@ -139,7 +137,9 @@ class Project(Entity):
         # initialize either by ID or Project Name
         if id is None and name is None:
             helper.exception_handler(
-                "Please specify either 'name' or 'id' parameter in the constructor.")
+                "Please specify either 'name' or 'id' parameter in the constructor.",
+                exception_type=ValueError
+            )
 
         if id is None:
             project_list = Project._list_project_ids(connection, name=name)

@@ -200,8 +200,8 @@ def update_custom_env():
     const { name, datasetType, datasetId, body: { attributes, metrics, filters }, instanceId } = this.dataframeDetails;
 
     const variableName = `${/\d/gi.test(name[0]) ? 'var_' : ''}${name
-        .replace(/ /gi, '_')
-        .replace(/[^A-Za-z0-9_]/gi, '') // NOSONAR
+      .replace(/ /gi, '_')
+      .replace(/[^A-Za-z0-9_]/gi, '') // NOSONAR
       }`;
 
     const method = datasetType && datasetType.toLowerCase() === 'report' ? 'Report' : 'load_cube';
@@ -217,7 +217,7 @@ def update_custom_env():
   metrics = ${JSON.stringify(metrics)},
   attr_elements = ${filtersConverted}
 `;
-    const applyFiltersCode = forEndUser || !instanceId ? `${variableName}.apply_filters(${applyFiltersContent})` : '';
+    const applyFiltersCode = `${variableName}.apply_filters(${applyFiltersContent})`;
 
     return (`
 ${connectionCode}

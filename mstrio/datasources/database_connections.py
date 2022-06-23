@@ -18,7 +18,6 @@ class DatabaseConnections:
     Attributes:
         connection: A MicroStrategy connection object
     """
-    _DELETE_NONE_VALUES_RECURSION = True
 
     def __init__(self, connection: Connection):
         """Initialize the `DatabaseConnections` object.

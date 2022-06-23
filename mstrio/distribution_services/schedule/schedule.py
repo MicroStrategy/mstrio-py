@@ -67,7 +67,7 @@ class Schedule(Entity, DeleteMixin):
         TIME_BASED = auto()
         NONE = None
 
-    _DELETE_NONE_VALUES_RECURSION = True
+    _DELETE_NONE_VALUES_RECURSION = False
     _OBJECT_TYPE = ObjectTypes.SCHEDULE_TRIGGER
 
     _API_GETTERS: dict = {
