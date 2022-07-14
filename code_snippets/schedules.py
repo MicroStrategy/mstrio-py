@@ -6,8 +6,9 @@ Its basic goal is to present what can be done with this module and to
 ease its usage.
 """
 
-from mstrio.distribution_services import (list_schedules, list_subscriptions, Schedule,
-                                          ScheduleEnums, ScheduleTime, Subscription)
+from mstrio.distribution_services import (
+    list_schedules, list_subscriptions, Schedule, ScheduleEnums, ScheduleTime, Subscription
+)
 from mstrio.distribution_services import Event, list_events
 from mstrio.connection import get_connection
 from mstrio.utils.wip import module_wip, WipLevels
@@ -35,8 +36,11 @@ SCHEDULE_DESCRIPTION = '<Description_of_schedule>'
 SCHEDULE_TIME = ScheduleTime.from_details(
     recurrence_pattern=ScheduleEnums.RecurrencePattern.MONTHLY,
     monthly_pattern=ScheduleEnums.MonthlyPattern.DAYS_OF_MONTH,
-    days_of_month=['1', '3', '10', '28'], repeat_interval=2,
-    execution_pattern=ScheduleEnums.ExecutionPattern.ONCE, execution_time=SCHEDULE_EXECUTE_TIME)
+    days_of_month=['1', '3', '10', '28'],
+    repeat_interval=2,
+    execution_pattern=ScheduleEnums.ExecutionPattern.ONCE,
+    execution_time=SCHEDULE_EXECUTE_TIME
+)
 # see distribution_services/schedule/schedule_time.py for RecurrencePattern,
 # MonthlyPattern and ExecutionPattern values
 
@@ -46,8 +50,9 @@ conn = get_connection(workstationData, project_name=PROJECT_NAME)
 all_schedules = list_schedules(connection=conn)
 
 # get all event based schedules
-event_based_schedules = list_schedules(connection=conn,
-                                       schedule_type=Schedule.ScheduleType.EVENT_BASED.value)
+event_based_schedules = list_schedules(
+    connection=conn, schedule_type=Schedule.ScheduleType.EVENT_BASED.value
+)
 # see distribution_services/device/schedule.py for ScheduleType values
 
 # get all expired Schedules
@@ -93,9 +98,14 @@ new_schedule = Schedule.create(
 
 # create event based schedule
 event = Event(connection=conn, name=SCHEDULE_EVENT_NAME)
-new_schedule = Schedule.create(connection=conn, name=SCHEDULE_NAME,
-                               schedule_type=Schedule.ScheduleType.EVENT_BASED, event_id=event.id,
-                               start_date=SCHEDULE_START_DATE, stop_date=SCHEDULE_STOP_DATE)
+new_schedule = Schedule.create(
+    connection=conn,
+    name=SCHEDULE_NAME,
+    schedule_type=Schedule.ScheduleType.EVENT_BASED,
+    event_id=event.id,
+    start_date=SCHEDULE_START_DATE,
+    stop_date=SCHEDULE_STOP_DATE
+)
 # see distribution_services/device/schedule.py for ScheduleType values
 
 # delete schedule

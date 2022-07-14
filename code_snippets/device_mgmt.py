@@ -5,10 +5,26 @@ ease its usage.
 """
 
 from mstrio.distribution_services import (
-    BackupPrinterProperties, ConnectionParameters, Device, DeviceType, EmailDeviceProperties,
-    EmailFormat, EmailSmartHostSettings, FileDeviceProperties, FileLocation, FileProperties,
-    FileSystem, IOSDeviceProperties, list_devices, PrinterDeviceProperties, PrinterLocation,
-    PrinterProperties, PrinterPdfSettings, Transmitter, UnixWindowsSharity)
+    BackupPrinterProperties,
+    ConnectionParameters,
+    Device,
+    DeviceType,
+    EmailDeviceProperties,
+    EmailFormat,
+    EmailSmartHostSettings,
+    FileDeviceProperties,
+    FileLocation,
+    FileProperties,
+    FileSystem,
+    IOSDeviceProperties,
+    list_devices,
+    PrinterDeviceProperties,
+    PrinterLocation,
+    PrinterProperties,
+    PrinterPdfSettings,
+    Transmitter,
+    UnixWindowsSharity
+)
 from mstrio.connection import get_connection
 
 PROJECT_NAME = '<Project_name>'  # Project to connect to

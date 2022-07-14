@@ -39,8 +39,10 @@ class Encoder:
 
         # Sets the proper orientation
         if dataset_type not in self.__table_type_orient_map.keys():
-            raise ValueError("Table type should be one of "
-                             + '%s' % ', '.join(map(str, self.__table_type_orient_map)))
+            raise ValueError(
+                "Table type should be one of "
+                + '%s' % ', '.join(map(str, self.__table_type_orient_map))
+            )
         else:
             self.__orientation = self.__table_type_orient_map[dataset_type]
 
@@ -49,6 +51,7 @@ class Encoder:
         """Encode data in base 64."""
         self.__b64_data = b64encode(
             self.__data_frame.to_json(orient=self.__orientation,
-                                      date_format='iso').encode('utf-8')).decode('utf-8')
+                                      date_format='iso').encode('utf-8')
+        ).decode('utf-8')
         # return base 64 encoded data to calling environment
         return self.__b64_data

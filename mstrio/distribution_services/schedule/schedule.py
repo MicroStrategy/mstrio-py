@@ -13,13 +13,15 @@ from mstrio.utils import helper
 from mstrio.utils.entity import DeleteMixin, Entity, ObjectTypes
 from mstrio.utils.enum_helper import AutoName, get_enum_val
 from mstrio.utils.time_helper import DatetimeFormats, map_datetime_to_str, map_str_to_datetime
-
+from mstrio.utils.version_helper import method_version_handler
 
 logger = logging.getLogger(__name__)
 
 
-def list_schedules(connection: Connection, to_dictionary: bool = False, limit: int = None,
-                   **filters) -> Union[List["Schedule"], List[dict]]:
+@method_version_handler('11.3.0000')
+def list_schedules(
+    connection: Connection, to_dictionary: bool = False, limit: int = None, **filters
+) -> Union[List["Schedule"], List[dict]]:
     """List schedule objects or schedule dictionaries. Optionally filter list.
 
     Args:
@@ -38,8 +40,13 @@ def list_schedules(connection: Connection, to_dictionary: bool = False, limit: i
         Union[List["Schedule"], List[dict]]: [description]
     """
 
-    objects = helper.fetch_objects(connection=connection, api=schedules.list_schedules,
-                                   limit=limit, filters=filters, dict_unpack_value='schedules')
+    objects = helper.fetch_objects(
+        connection=connection,
+        api=schedules.list_schedules,
+        limit=limit,
+        filters=filters,
+        dict_unpack_value='schedules'
+    )
 
     if to_dictionary:
         return objects
@@ -71,11 +78,34 @@ class Schedule(Entity, DeleteMixin):
     _OBJECT_TYPE = ObjectTypes.SCHEDULE_TRIGGER
 
     _API_GETTERS: dict = {
-        ('id', 'name', 'description', 'expired', 'schedule_type', 'schedule_next_delivery',
-         'start_date', 'stop_date', 'time', 'event'): schedules.get_schedule,
-        ('abbreviation', 'type', 'subtype', 'ext_type', 'date_created', 'date_modified', 'version',
-         'owner', 'icon_path', 'view_media', 'ancestors', 'certified_info', 'acg',
-         'acl'): objects.get_object_info
+        (
+            'id',
+            'name',
+            'description',
+            'expired',
+            'schedule_type',
+            'schedule_next_delivery',
+            'start_date',
+            'stop_date',
+            'time',
+            'event'
+        ): schedules.get_schedule,
+        (
+            'abbreviation',
+            'type',
+            'subtype',
+            'ext_type',
+            'date_created',
+            'date_modified',
+            'version',
+            'owner',
+            'icon_path',
+            'view_media',
+            'ancestors',
+            'certified_info',
+            'acg',
+            'acl'
+        ): objects.get_object_info
     }
 
     _FROM_DICT_MAP = {
@@ -90,8 +120,8 @@ class Schedule(Entity, DeleteMixin):
     }
     _API_PATCH: dict = {
         ('abbreviation'): (objects.update_object, 'partial_put'),
-        ('name', 'description', 'schedule_type', 'start_date', 'stop_date', 'time', 'event'):
-            (schedules.update_schedule, 'put')
+        ('name', 'description', 'schedule_type', 'start_date', 'stop_date', 'time',
+         'event'): (schedules.update_schedule, 'put')
     }
 
     _PATCH_PATH_TYPES = {
@@ -105,6 +135,7 @@ class Schedule(Entity, DeleteMixin):
         'event': dict,
     }
 
+    @method_version_handler('11.3.0000')
     def __init__(self, connection: Connection, id: str = None, name: str = None) -> None:
         """Initialize the Schedule object, populates it with I-Server data.
         Specify either `id` or `name`. When `id` is provided (not `None`),
@@ -123,7 +154,8 @@ class Schedule(Entity, DeleteMixin):
 
         if id is None and name is None:
             raise AttributeError(
-                "Please specify either 'name' or 'id' parameter in the constructor.")
+                "Please specify either 'name' or 'id' parameter in the constructor."
+            )
         if id is None:
             objects_info = list_schedules(connection=connection, name=name, to_dictionary=True)
             if objects_info:
@@ -134,6 +166,7 @@ class Schedule(Entity, DeleteMixin):
         else:
             super().__init__(connection, id, name=name)
 
+    @method_version_handler('11.3.0000')
     def _init_variables(self, **kwargs):
         """
         Add Schedule attributes to _AVAILABLE_ATTRIBUTES map.
@@ -147,17 +180,21 @@ class Schedule(Entity, DeleteMixin):
         """
         super()._init_variables(**kwargs)
         self.schedule_type = self.ScheduleType(kwargs.get('schedule_type'))
-        self.time = ScheduleTime.from_dict(kwargs.get('time')) if (
-            self.schedule_type == self.ScheduleType.TIME_BASED and kwargs.get('time')) else None
+        self.time = ScheduleTime.from_dict(
+            kwargs.get('time')
+        ) if (self.schedule_type == self.ScheduleType.TIME_BASED and kwargs.get('time')) else None
         self.event = Event.from_dict(kwargs.get('event'), connection=self._connection) if (
-            self.schedule_type == self.ScheduleType.EVENT_BASED and kwargs.get('event')) else None
+            self.schedule_type == self.ScheduleType.EVENT_BASED and kwargs.get('event')
+        ) else None
         self._expired = kwargs.get('expired')
-        self._schedule_next_delivery = map_str_to_datetime("schedule_next_delivery",
-                                                           kwargs.get("schedule_next_delivery"),
-                                                           self._FROM_DICT_MAP)
-        self.start_date = map_str_to_datetime("start_date", kwargs.get("start_date"),
-                                              self._FROM_DICT_MAP)
+        self._schedule_next_delivery = map_str_to_datetime(
+            "schedule_next_delivery", kwargs.get("schedule_next_delivery"), self._FROM_DICT_MAP
+        )
+        self.start_date = map_str_to_datetime(
+            "start_date", kwargs.get("start_date"), self._FROM_DICT_MAP
+        )
 
+    @method_version_handler('11.3.0000')
     def enable(self, stop_date: Union[str, datetime]) -> bool:
         """Enables schedule and sets stop date
 
@@ -168,7 +205,8 @@ class Schedule(Entity, DeleteMixin):
             Returns `True` if enabled properly, else `False`.
         """
         self._alter_properties(
-            stop_date=map_str_to_datetime('stop_date', stop_date, self._FROM_DICT_MAP))
+            stop_date=map_str_to_datetime('stop_date', stop_date, self._FROM_DICT_MAP)
+        )
 
         if config.verbose and not self.expired:
             logger.info(
@@ -180,6 +218,7 @@ class Schedule(Entity, DeleteMixin):
             logger.info(f'Schedule \'{self.name}\' with ID {self.id} has NOT been enabled.')
             return False
 
+    @method_version_handler('11.3.0000')
     def disable(self, stop_date: Union[str, datetime] = None) -> bool:
         """ Disable the schedule. Optional `stop_date` sets the date when
             the schedule should be disabled.
@@ -192,8 +231,10 @@ class Schedule(Entity, DeleteMixin):
             is already expired, as it can take up to one day.
             If operation failed, return `False`.
         """
-        stop_date = (datetime.now(timezone.utc) if stop_date is None else map_str_to_datetime(
-            'stop_date', stop_date, self._FROM_DICT_MAP))
+        stop_date = (
+            datetime.now(timezone.utc) if stop_date is None else
+            map_str_to_datetime('stop_date', stop_date, self._FROM_DICT_MAP)
+        )
         self._alter_properties(stop_date=stop_date)
 
         if config.verbose and self.expired:
@@ -210,6 +251,7 @@ class Schedule(Entity, DeleteMixin):
             logger.info(f"Schedule '{self.name}' with ID '{self.id}' has NOT been disabled.")
             return False
 
+    @method_version_handler('11.3.0000')
     def list_properties(self):
         """List all properties of the object."""
         attributes = {key: self.__dict__[key] for key in self.__dict__ if not key.startswith('_')}
@@ -234,27 +276,40 @@ class Schedule(Entity, DeleteMixin):
         }
 
         return {
-            key: attributes[key] for key in sorted(attributes, key=helper.sort_object_properties)
+            key: attributes[key]
+            for key in sorted(attributes, key=helper.sort_object_properties)
         }
 
     @classmethod
-    def create(cls, connection: Connection, name: str, schedule_type: Union[ScheduleType, str],
-               start_date: Union[str, datetime], description: Optional[str] = None,
-               stop_date: Optional[Union[str, datetime]] = None, event_id: Optional[str] = None,
-               time: Optional[ScheduleTime] = None,
-               recurrence_pattern: Optional[Union[ScheduleEnums.RecurrencePattern, str]] = None,
-               execution_pattern: Optional[Union[ScheduleEnums.ExecutionPattern, str]] = None,
-               execution_time: Optional[str] = None, start_time: Optional[str] = None,
-               stop_time: Optional[str] = None, execution_repeat_interval: Optional[int] = None,
-               daily_pattern: Optional[Union[ScheduleEnums.DailyPattern, str]] = None,
-               repeat_interval: Optional[int] = None,
-               days_of_week: Optional[Union[List[ScheduleEnums.DaysOfWeek], List[str]]] = None,
-               day: Optional[int] = None, month: Optional[int] = None,
-               week_offset: Optional[Union[ScheduleEnums.WeekOffset, str]] = None,
-               day_of_week: Optional[Union[ScheduleEnums.DaysOfWeek, str]] = None,
-               weekday_off_set: Optional[str] = None, days_of_month: Optional[List[str]] = None,
-               monthly_pattern: Optional[Union[ScheduleEnums.MonthlyPattern, str]] = None,
-               yearly_pattern: Optional[Union[ScheduleEnums.YearlyPattern, str]] = None):
+    @method_version_handler('11.3.0000')
+    def create(
+        cls,
+        connection: Connection,
+        name: str,
+        schedule_type: Union[ScheduleType, str],
+        start_date: Union[str, datetime],
+        description: Optional[str] = None,
+        stop_date: Optional[Union[str, datetime]] = None,
+        event_id: Optional[str] = None,
+        time: Optional[ScheduleTime] = None,
+        recurrence_pattern: Optional[Union[ScheduleEnums.RecurrencePattern, str]] = None,
+        execution_pattern: Optional[Union[ScheduleEnums.ExecutionPattern, str]] = None,
+        execution_time: Optional[str] = None,
+        start_time: Optional[str] = None,
+        stop_time: Optional[str] = None,
+        execution_repeat_interval: Optional[int] = None,
+        daily_pattern: Optional[Union[ScheduleEnums.DailyPattern, str]] = None,
+        repeat_interval: Optional[int] = None,
+        days_of_week: Optional[Union[List[ScheduleEnums.DaysOfWeek], List[str]]] = None,
+        day: Optional[int] = None,
+        month: Optional[int] = None,
+        week_offset: Optional[Union[ScheduleEnums.WeekOffset, str]] = None,
+        day_of_week: Optional[Union[ScheduleEnums.DaysOfWeek, str]] = None,
+        weekday_off_set: Optional[str] = None,
+        days_of_month: Optional[List[str]] = None,
+        monthly_pattern: Optional[Union[ScheduleEnums.MonthlyPattern, str]] = None,
+        yearly_pattern: Optional[Union[ScheduleEnums.YearlyPattern, str]] = None
+    ):
         """Create a Schedule using provided parameters as data.
 
         Args:
@@ -317,9 +372,20 @@ class Schedule(Entity, DeleteMixin):
             Schedule object with provided parameters.
         """
         time_kwargs = {
-            key: val for key, val in locals().items() if val is not None and key not in [
-                'event_id', 'connection', 'description', 'name', 'schedule_type', 'start_date',
-                'stop_date', 'time', 'self', 'cls'
+            key: val
+            for key,
+            val in locals().items()
+            if val is not None and key not in [
+                'event_id',
+                'connection',
+                'description',
+                'name',
+                'schedule_type',
+                'start_date',
+                'stop_date',
+                'time',
+                'self',
+                'cls'
             ]
         }
         # Event based or Time based logic
@@ -331,10 +397,12 @@ class Schedule(Entity, DeleteMixin):
             execution_details = {'type': 'time', 'content': time.to_dict()}
 
         # Datetime dates to string format conversion
-        start_date = map_datetime_to_str(name='start_date', date=start_date,
-                                         string_to_date_map=cls._FROM_DICT_MAP)
-        stop_date = map_datetime_to_str(name='stop_date', date=stop_date,
-                                        string_to_date_map=cls._FROM_DICT_MAP)
+        start_date = map_datetime_to_str(
+            name='start_date', date=start_date, string_to_date_map=cls._FROM_DICT_MAP
+        )
+        stop_date = map_datetime_to_str(
+            name='stop_date', date=stop_date, string_to_date_map=cls._FROM_DICT_MAP
+        )
 
         # Create body and send request
         body = {
@@ -354,19 +422,34 @@ class Schedule(Entity, DeleteMixin):
             logger.info(f"Created schedule '{name}' with ID: {response['id']}")
         return Schedule.from_dict(source=response, connection=connection)
 
-    def alter(self, name: str = None, description: str = None,
-              start_date: Union[str, datetime] = None, stop_date: Union[str, datetime] = None,
-              event: Event = None, event_id: str = None, time: ScheduleTime = None,
-              recurrence_pattern: ScheduleEnums.RecurrencePattern = None,
-              execution_pattern: ScheduleEnums.ExecutionPattern = None, execution_time: str = None,
-              start_time: str = None, stop_time: str = None, execution_repeat_interval: int = None,
-              daily_pattern: ScheduleEnums.DailyPattern = None, repeat_interval: int = None,
-              days_of_week: List[ScheduleEnums.DaysOfWeek] = None, day: int = None,
-              month: int = None, week_offset: ScheduleEnums.WeekOffset = None,
-              day_of_week: ScheduleEnums.DaysOfWeek = None, weekday_offset: str = None,
-              days_of_month: List[str] = None,
-              monthly_pattern: ScheduleEnums.MonthlyPattern = None,
-              yearly_pattern: ScheduleEnums.YearlyPattern = None) -> None:
+    @method_version_handler('11.3.0000')
+    def alter(
+        self,
+        name: str = None,
+        description: str = None,
+        start_date: Union[str, datetime] = None,
+        stop_date: Union[str, datetime] = None,
+        event: Event = None,
+        event_id: str = None,
+        time: ScheduleTime = None,
+        recurrence_pattern: ScheduleEnums.RecurrencePattern = None,
+        execution_pattern: ScheduleEnums.ExecutionPattern = None,
+        execution_time: str = None,
+        start_time: str = None,
+        stop_time: str = None,
+        execution_repeat_interval: int = None,
+        daily_pattern: ScheduleEnums.DailyPattern = None,
+        repeat_interval: int = None,
+        days_of_week: List[ScheduleEnums.DaysOfWeek] = None,
+        day: int = None,
+        month: int = None,
+        week_offset: ScheduleEnums.WeekOffset = None,
+        day_of_week: ScheduleEnums.DaysOfWeek = None,
+        weekday_offset: str = None,
+        days_of_month: List[str] = None,
+        monthly_pattern: ScheduleEnums.MonthlyPattern = None,
+        yearly_pattern: ScheduleEnums.YearlyPattern = None
+    ) -> None:
         """Alter Schedule properties.
 
         Args:
@@ -444,11 +527,25 @@ class Schedule(Entity, DeleteMixin):
             properties['event'] = Event(connection=self._connection, id=event_id)
         elif self.schedule_type == self.ScheduleType.TIME_BASED:
             properties['schedule_type'] = self.ScheduleType.TIME_BASED
-            self.time.update_properties(recurrence_pattern, execution_pattern, execution_time,
-                                        start_time, stop_time, execution_repeat_interval,
-                                        daily_pattern, repeat_interval, days_of_week, day, month,
-                                        week_offset, day_of_week, weekday_offset, days_of_month,
-                                        monthly_pattern, yearly_pattern)
+            self.time.update_properties(
+                recurrence_pattern,
+                execution_pattern,
+                execution_time,
+                start_time,
+                stop_time,
+                execution_repeat_interval,
+                daily_pattern,
+                repeat_interval,
+                days_of_week,
+                day,
+                month,
+                week_offset,
+                day_of_week,
+                weekday_offset,
+                days_of_month,
+                monthly_pattern,
+                yearly_pattern
+            )
             properties['time'] = self.time
 
         if name:
@@ -456,11 +553,13 @@ class Schedule(Entity, DeleteMixin):
         if description:
             properties['description'] = description
         if start_date:
-            properties['start_date'] = map_str_to_datetime('start_date', start_date,
-                                                           self._FROM_DICT_MAP)
+            properties['start_date'] = map_str_to_datetime(
+                'start_date', start_date, self._FROM_DICT_MAP
+            )
         if stop_date:
-            properties['stop_date'] = map_str_to_datetime('stop_date', stop_date,
-                                                          self._FROM_DICT_MAP)
+            properties['stop_date'] = map_str_to_datetime(
+                'stop_date', stop_date, self._FROM_DICT_MAP
+            )
 
         self._alter_properties(**properties)
 
@@ -469,6 +568,7 @@ class Schedule(Entity, DeleteMixin):
         elif self.schedule_type == self.ScheduleType.TIME_BASED and 'event' in self.__dir__():
             delattr(self, 'event')
 
+    @method_version_handler('11.3.0000')
     def delete(self) -> bool:
         """Delete the schedule.
 
@@ -484,7 +584,8 @@ class Schedule(Entity, DeleteMixin):
             "Deleting such a schedule will remove the subscription as well. "
             "This action cannot be undone. "
             f"Are you sure you want to delete the schedule '{self.name}'"
-            f" with ID: {self.id}?[Y/N]: ")
+            f" with ID: {self.id}?[Y/N]: "
+        )
         self._delete_success_msg = (f"Deleted schedule '{self.name}' with ID: {self.id}.")
 
         return super().delete(force=force)

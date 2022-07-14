@@ -21,8 +21,7 @@ def dataset_definition(connection, id, fields=None, whitelist=None):
     """
     connection._validate_project_selected()
     return connection.get(
-        url=f'{connection.base_url}/api/datasets/{id}',
-        params={'fields': fields}
+        url=f'{connection.base_url}/api/datasets/{id}', params={'fields': fields}
     )
 
 
@@ -41,10 +40,7 @@ def create_dataset(connection, body):
         HTTP response object returned by the MicroStrategy REST server.
     """
     connection._validate_project_selected()
-    return connection.post(
-        url=f'{connection.base_url}/api/datasets',
-        json=body
-    )
+    return connection.post(url=f'{connection.base_url}/api/datasets', json=body)
 
 
 @ErrorHandler(err_msg='Error updating dataset with ID {id}')
@@ -124,8 +120,7 @@ def upload_session(connection, id, body):
     """
     connection._validate_project_selected()
     return connection.post(
-        url=f'{connection.base_url}/api/datasets/{id}/uploadSessions',
-        json=body
+        url=f'{connection.base_url}/api/datasets/{id}/uploadSessions', json=body
     )
 
 
@@ -148,13 +143,13 @@ def upload(connection, id, session_id, body, throw_error=False):
     """
     connection._validate_project_selected()
     return connection.put(
-        url=f'{connection.base_url}/api/datasets/{id}/uploadSessions/{session_id}',
-        json=body
+        url=f'{connection.base_url}/api/datasets/{id}/uploadSessions/{session_id}', json=body
     )
 
 
 @ErrorHandler(
-    err_msg='Error publishing uploaded data for dataset with ID {id} Cancelling publication.')
+    err_msg='Error publishing uploaded data for dataset with ID {id} Cancelling publication.'
+)
 def publish(connection, id, session_id, throw_error=False):
     """Publish a multi-table dataset.
 

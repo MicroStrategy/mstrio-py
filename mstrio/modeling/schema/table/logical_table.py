@@ -21,20 +21,33 @@ from mstrio.users_and_groups import User
 from mstrio.utils.entity import DeleteMixin, Entity
 from mstrio.utils.enum_helper import get_enum, get_enum_val
 from mstrio.utils.helper import (
-    delete_none_values, exception_handler, fetch_objects, get_valid_project_id
+    delete_none_values,
+    exception_handler,
+    fetch_objects,
+    get_args_from_func,
+    get_default_args_from_func,
+    get_valid_project_id
 )
+from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
 NO_PROJECT_ERR_MSG = "You must specify or select a project."
 
 logging.getLogger(__name__)
 
 
-def list_logical_tables(connection: Connection, to_dictionary: bool = False,
-                        table_type: Optional[PhysicalTableType] = None, name: Optional[str] = None,
-                        folder_id: Optional[str] = None, folder_name: Optional[str] = None,
-                        project_id: Optional[str] = None, project_name: Optional[str] = None,
-                        filters: Optional[dict] = None, limit: Optional[int] = None
-                        ) -> list["LogicalTable"] | list[dict]:
+@method_version_handler('11.3.0100')
+def list_logical_tables(
+    connection: Connection,
+    to_dictionary: bool = False,
+    table_type: Optional[PhysicalTableType] = None,
+    name: Optional[str] = None,
+    folder_id: Optional[str] = None,
+    folder_name: Optional[str] = None,
+    project_id: Optional[str] = None,
+    project_name: Optional[str] = None,
+    filters: Optional[dict] = None,
+    limit: Optional[int] = None
+) -> list["LogicalTable"] | list[dict]:
     """List all logical tables in a project mapped to a specified connection.
        Optionally, you can filter by physical table type.
 
@@ -62,11 +75,16 @@ def list_logical_tables(connection: Connection, to_dictionary: bool = False,
             or dictionaries representing logical tables.
     """
     if any([name, folder_id, folder_name, project_id, project_name]):
-        return _full_search_logical_tables(connection=connection, to_dictionary=to_dictionary,
-                                           name=name,
-                                           folder_id=folder_id, folder_name=folder_name,
-                                           project_id=project_id, project_name=project_name,
-                                           limit=limit)
+        return _full_search_logical_tables(
+            connection=connection,
+            to_dictionary=to_dictionary,
+            name=name,
+            folder_id=folder_id,
+            folder_name=folder_name,
+            project_id=project_id,
+            project_name=project_name,
+            limit=limit
+        )
     else:
         if table_type:
             logical_tables = fetch_objects(
@@ -100,17 +118,29 @@ def list_logical_tables(connection: Connection, to_dictionary: bool = False,
             )
 
         return logical_tables if to_dictionary else LogicalTable.bulk_from_dict(
-            source_list=logical_tables, connection=connection)
+            source_list=logical_tables, connection=connection
+        )
 
 
 def _full_search_logical_tables(
-        connection: Connection, name: Optional[str] = None,
-        folder_id: Optional[str] = None, folder_name: Optional[str] = None,
-        project_id: Optional[str] = None,
-        project_name: Optional[str] = None, limit: Optional[int] = None,
-        to_dictionary: bool = False) -> Union[list[Type["LogicalTable"]], list[dict]]:
+    connection: Connection,
+    name: Optional[str] = None,
+    folder_id: Optional[str] = None,
+    folder_name: Optional[str] = None,
+    project_id: Optional[str] = None,
+    project_name: Optional[str] = None,
+    limit: Optional[int] = None,
+    to_dictionary: bool = False
+) -> Union[list[Type["LogicalTable"]], list[dict]]:
     """Searches for a logical table in a specified project. You can narrow the
        search result by folder's id or name.
+
+    Specify either `project_id` or `project_name`.
+    When `project_id` is provided (not `None`), `project_name` is omitted.
+
+    Note:
+        When `project_id` is `None` and `project_name` is `None`,
+        then its value is overwritten by `project_id` from `connection` object.
 
     Args:
         connection (Connection): Object representation of MSTR Connection.
@@ -144,16 +174,24 @@ def _full_search_logical_tables(
                                        project_name='MicroStrategy Tutorial',
                                        folder_name='My Answers')
     """
-    project_id = get_valid_project_id(connection=connection, project_id=project_id,
-                                      project_name=project_name,
-                                      with_fallback=False if project_name else True)
+    project_id = get_valid_project_id(
+        connection=connection,
+        project_id=project_id,
+        project_name=project_name,
+        with_fallback=False if project_name else True,
+    )
 
     if folder_name and not folder_id:
-        folders = full_search(connection=connection, project=project_id,
-                              object_types=ObjectTypes.FOLDER, limit=limit)
+        folders = full_search(
+            connection=connection,
+            project=project_id,
+            object_types=ObjectTypes.FOLDER,
+            limit=limit
+        )
         folder = next(filter(lambda _folder: _folder.get("name") == folder_name, folders), None)
         folder_id = folder["id"] if folder else exception_handler(
-            'Folder with a given name was not found.', exception_type=ValueError)
+            'Folder with a given name was not found.', exception_type=ValueError
+        )
 
     logical_tables = full_search(
         connection=connection,
@@ -162,10 +200,13 @@ def _full_search_logical_tables(
         object_types=ObjectTypes.TABLE,
         root=folder_id,
     )
-    return (logical_tables if to_dictionary else LogicalTable.bulk_from_dict(
-        source_list=logical_tables, connection=connection))
+    return (
+        logical_tables if to_dictionary else
+        LogicalTable.bulk_from_dict(source_list=logical_tables, connection=connection)
+    )
 
 
+@method_version_handler('11.3.0100')
 def list_changeset_tables(
     connection: Connection,
     project_id: Optional[str] = None,
@@ -178,9 +219,12 @@ def list_changeset_tables(
     if not changeset_id:
         exception_handler(msg="You must specify changeset ID.", exception_type=ValueError)
 
-    project_id = get_valid_project_id(connection=connection, project_id=project_id,
-                                      project_name=project_name,
-                                      with_fallback=False if project_name else True)
+    project_id = get_valid_project_id(
+        connection=connection,
+        project_id=project_id,
+        project_name=project_name,
+        with_fallback=False if project_name else True
+    )
 
     tables_list = fetch_objects(
         connection=connection,
@@ -195,6 +239,7 @@ def list_changeset_tables(
     return LogicalTable.bulk_from_dict(source_list=tables_list, connection=connection)
 
 
+@class_version_handler('11.3.0100')
 class LogicalTable(Entity, DeleteMixin):
     """An object representation of a logical table, referred to as Table in
     Command Manager. A logical table describes the higher-level data model
@@ -367,6 +412,13 @@ class LogicalTable(Entity, DeleteMixin):
             either `project_id` or `project_name` if Connection object provided
             as `connection` is not mapped to a project.
 
+        Specify either `project_id` or `project_name`.
+        When `project_id` is provided (not `None`), `project_name` is omitted.
+
+        Note:
+            When `project_id` is `None` and `project_name` is `None`, then
+            its value is overwritten by `project_id` from `connection` object.
+
         Args:
             connection (Connection): Object representation of MSTR Connection.
             id (Optional[str], optional): ID of a table. Defaults to None.
@@ -389,9 +441,12 @@ class LogicalTable(Entity, DeleteMixin):
             >>> LogicalTable(connection, name='lu_day_of_week')
         """
 
-        project_id = get_valid_project_id(connection=connection, project_id=project_id,
-                                          project_name=project_name,
-                                          with_fallback=False if project_name else True)
+        project_id = get_valid_project_id(
+            connection=connection,
+            project_id=project_id,
+            project_name=project_name,
+            with_fallback=False if project_name else True
+        )
 
         if not id and not name:
             exception_handler(
@@ -417,8 +472,10 @@ class LogicalTable(Entity, DeleteMixin):
         super()._init_variables(**kwargs)
 
         attributes = kwargs.get("attributes")
-        self.attributes = (Attribute.bulk_from_dict(
-            source_list=attributes, connection=self.connection) if attributes else None)
+        self.attributes = (
+            Attribute.bulk_from_dict(source_list=attributes, connection=self.connection)
+            if attributes else None
+        )
 
         ancestors = kwargs.get("ancestors")
         self.folder_id = ancestors[-1].get("id") if ancestors else None
@@ -427,34 +484,43 @@ class LogicalTable(Entity, DeleteMixin):
         facts = kwargs.get("facts")
         if facts:
             [f.update(f.pop("information")) for f in facts]
-        self.facts = (Fact.bulk_from_dict(source_list=facts, connection=self.connection)
-                      if facts else None)
+        self.facts = (
+            Fact.bulk_from_dict(source_list=facts, connection=self.connection) if facts else None
+        )
         self.is_logical_size_locked = kwargs.get("is_logical_size_locked")
         self.is_part_of_partition = kwargs.get("is_part_of_partition")
         self.is_true_key = kwargs.get("is_true_key")
         self.logical_size = kwargs.get("logical_size")
 
         physical_table = kwargs.get("physical_table")
-        self.physical_table = (PhysicalTable.from_dict(
-            source=physical_table, connection=self.connection) if physical_table else None)
+        self.physical_table = (
+            PhysicalTable.from_dict(source=physical_table, connection=self.connection)
+            if physical_table else None
+        )
 
         primary_data_source = kwargs.get("primary_data_source")
-        self.primary_data_source = (SchemaObjectReference.from_dict(
-            source=primary_data_source) if primary_data_source else None)
+        self.primary_data_source = (
+            SchemaObjectReference.from_dict(source=primary_data_source)
+            if primary_data_source else None
+        )
         self.primary_locale = kwargs.get("primary_locale")
 
         secondary_data_sources = kwargs.get("secondary_data_sources")
         self.secondary_data_sources = (
             SchemaObjectReference.bulk_from_dict(
-                source_list=secondary_data_sources, connection=self.connection)
-            if secondary_data_sources else None)
+                source_list=secondary_data_sources, connection=self.connection
+            ) if secondary_data_sources else None
+        )
 
         sub_type = kwargs.get("sub_type")
         self._sub_type = ObjectSubType(sub_type) if sub_type else None
 
         table_key = kwargs.get("table_key")
-        self.table_key = (SchemaObjectReference.bulk_from_dict(
-            source_list=table_key, connection=self.connection) if table_key else None)
+        self.table_key = (
+            SchemaObjectReference.bulk_from_dict(
+                source_list=table_key, connection=self.connection
+            ) if table_key else None
+        )
         self._version = kwargs.get("version_id")
 
     @classmethod
@@ -582,28 +648,35 @@ class LogicalTable(Entity, DeleteMixin):
                 sql_statement,
                 columns,
         ]):
-            msg = ("You can either pass the `physical table` object or specify parameters related "
-                   "to the physical table, not both.")
+            msg = (
+                "You can either pass the `physical table` object or specify parameters related "
+                "to the physical table, not both."
+            )
             exception_handler(msg, exception_type=ValueError)
 
-        physical_table = (PhysicalTable(connection=connection, id=physical_table.get("id"))
-                          if isinstance(physical_table, dict) else physical_table)
+        physical_table = (
+            PhysicalTable(connection=connection, id=physical_table.get("id"))
+            if isinstance(physical_table, dict) else physical_table
+        )
 
-        if get_enum_val(getattr(physical_table, "table_type",
-                                physical_table_type)) == get_enum_val(
-                                    PhysicalTableType.WAREHOUSE_PARTITION):
+        if get_enum_val(getattr(physical_table, "table_type", physical_table_type)
+                        ) == get_enum_val(PhysicalTableType.WAREHOUSE_PARTITION):
             exception_handler(
                 msg="Warehouse Partition tables are not supported.",
                 exception_type=TypeError,
             )
 
         if (physical_table_name and physical_table_namespace) and sql_statement:
-            msg = ("Specify either a `physical_table_name` and `physical_table_namespace`"
-                   " or `sql_statement`")
+            msg = (
+                "Specify either a `physical_table_name` and `physical_table_namespace`"
+                " or `sql_statement`"
+            )
             exception_handler(msg, exception_type=ValueError)
 
-        primary_data_source = (primary_data_source.to_dict() if isinstance(
-            primary_data_source, SchemaObjectReference) else primary_data_source)
+        primary_data_source = (
+            primary_data_source.to_dict()
+            if isinstance(primary_data_source, SchemaObjectReference) else primary_data_source
+        )
 
         physical_table = {
             "type": get_enum_val(
@@ -623,8 +696,8 @@ class LogicalTable(Entity, DeleteMixin):
                 "name": table_name,
                 "description": table_description,
                 "subType": get_enum_val(sub_type, ObjectSubType),
-                "destinationFolderId": destination_folder.id if isinstance(
-                    destination_folder, Folder) else destination_folder,
+                "destinationFolderId": destination_folder.id
+                if isinstance(destination_folder, Folder) else destination_folder,
                 "isEmbedded": is_embedded,
             },
             "logicalSize": logical_size,
@@ -645,8 +718,10 @@ class LogicalTable(Entity, DeleteMixin):
         ).json()
 
         if config.verbose:
-            logging.info(f"Successfully created table named: '{response['name']}' "
-                         f"with ID: '{response['id']}'")
+            logging.info(
+                f"Successfully created table named: '{response['name']}' "
+                f"with ID: '{response['id']}'"
+            )
         return cls.from_dict(source=response, connection=connection)
 
     @classmethod
@@ -669,8 +744,10 @@ class LogicalTable(Entity, DeleteMixin):
 
         response = tables_api.post_table(connection=connection, data=body).json()
         if config.verbose:
-            logging.info(f"Successfully created table alias named: '{response['name']}' "
-                         f"with ID: '{response['id']}'")
+            logging.info(
+                f"Successfully created table alias named: '{response['name']}' "
+                f"with ID: '{response['id']}'"
+            )
 
         return cls.from_dict(source=response, connection=connection)
 
@@ -758,8 +835,8 @@ class LogicalTable(Entity, DeleteMixin):
         """
         self.__validate_physical_table_type()
         func = self.alter
-        args = func.__code__.co_varnames[:func.__code__.co_argcount]
-        defaults = func.__defaults__  # type: ignore
+        args = get_args_from_func(func)
+        defaults = get_default_args_from_func(func)
         default_dict = dict(zip(args[-len(defaults):], defaults)) if defaults else {}
         local = locals()
         properties = {}
@@ -770,35 +847,44 @@ class LogicalTable(Entity, DeleteMixin):
         physical_table_type = self.physical_table.table_type
         if physical_table_type == PhysicalTableType.NORMAL and (sql_statement or columns):
             exception_handler(
-                msg=("You cannot change `sql_statement` nor `columns` attributes when a logical"
-                     " table depends upon a normal physical table."),
+                msg=(
+                    "You cannot change `sql_statement` nor `columns` attributes when a logical"
+                    " table depends upon a normal physical table."
+                ),
                 exception_type=TypeError,
             )
         elif physical_table_type == PhysicalTableType.SQL and (physical_table_prefix
                                                                or physical_table_name):
             exception_handler(
-                msg=("You cannot change `physical_table_name` nor `physical_table_prefix` when"
-                     "a logical table depends upon a freeform sql physical table."),
+                msg=(
+                    "You cannot change `physical_table_name` nor `physical_table_prefix` when"
+                    "a logical table depends upon a freeform sql physical table."
+                ),
                 exception_type=TypeError,
             )
 
-        physical_table = ({
-            "information": {
-                "name": properties.pop("physical_table_object_name")
+        physical_table = (
+            {
+                "information": {
+                    "name": properties.pop("physical_table_object_name")
+                }
+            } if properties.get("physical_table_object_name") else {}
+        )
+        physical_table.update(
+            {
+                "table_prefix": properties.pop("physical_table_prefix", None),
+                "table_name": properties.pop("physical_table_name", None),
+                "sql_statement": properties.pop("sql_statement", None),
+                "columns": properties.pop("columns", None),
             }
-        } if properties.get("physical_table_object_name") else {})
-        physical_table.update({
-            "table_prefix": properties.pop("physical_table_prefix", None),
-            "table_name": properties.pop("physical_table_name", None),
-            "sql_statement": properties.pop("sql_statement", None),
-            "columns": properties.pop("columns", None),
-        })
+        )
         properties["physical_table"] = delete_none_values(physical_table, recursion=True)
 
         self._alter_properties(**properties)
 
-    def update_physical_table_structure(self,
-                                        col_merge_option: TableColumnMergeOption | str) -> None:
+    def update_physical_table_structure(
+        self, col_merge_option: TableColumnMergeOption | str
+    ) -> None:
         """Updates a structure of a physical table upon which the logical table
            depends.
 
@@ -833,7 +919,8 @@ class LogicalTable(Entity, DeleteMixin):
                 f"Successfully modified a structure of a physical table '{data.get('tableName')}' "
                 f"with ID: '{data.get('information').get('objectId')}' "
                 f"in a '{data.get('namespace')}' namespace "
-                f"with a '{data.get('tablePrefix')}' table prefix.")
+                f"with a '{data.get('tablePrefix')}' table prefix."
+            )
 
     @classmethod
     def update_physical_table_structure_for_all_tables(
@@ -875,6 +962,14 @@ class LogicalTable(Entity, DeleteMixin):
         return True
 
     def list_columns(self, to_dictionary: bool = False):
+        """Lists columns of the table in a dictionary or objects form
+
+        Args:
+        to_dictionary (bool): specifies whether to list the columns as
+            dictionaries or objects. Defaults to False
+
+        Returns:
+            A list of columns as dictionaries or objects, depending on input"""
         if to_dictionary:
             return [column.to_dict() for column in self.physical_table.columns]
         return self.physical_table.columns

@@ -12,6 +12,7 @@ from mstrio.utils.sessions import FuturesSessionWithRenewal
 
 
 def unpack_information(func):
+
     @wraps(func)
     def unpack_information_inner(*args, **kwargs):
         if kwargs.get('body'):
@@ -73,7 +74,8 @@ def unpack_tables(response_json):
     copy = response_json.get('tables').copy()
     for table in copy:
         PHYSICAL_TABLE_FIELD_SET = table.get('physicalTable') and len(
-            table.keys()) == 1  # if retrieved with tables.get_tables(...,fields='physicalTable')
+            table.keys()
+        ) == 1  # if retrieved with tables.get_tables(...,fields='physicalTable')
         if PHYSICAL_TABLE_FIELD_SET:
             table.update(table.pop('physicalTable'))
         if table.get('information'):
@@ -83,6 +85,7 @@ def unpack_tables(response_json):
 
 
 def changeset_decorator(func):
+
     @wraps(func)
     def changeset_inner(*args, **kwargs):
         connection = args[0] if args and isinstance(args[0], Connection) else kwargs["connection"]
@@ -99,8 +102,13 @@ def changeset_decorator(func):
     return changeset_inner
 
 
-def async_get(async_wrapper: callable, connection: Connection, ids: List[str],
-              error_msg: Optional[str] = None, **kwargs) -> List[dict]:
+def async_get(
+    async_wrapper: callable,
+    connection: Connection,
+    ids: List[str],
+    error_msg: Optional[str] = None,
+    **kwargs
+) -> List[dict]:
     """Asynchronously get results of single object GET requests. GET requests
     requires to have future session param to be used with this function. Threads
     number is set automatically.
@@ -124,8 +132,9 @@ def async_get(async_wrapper: callable, connection: Connection, ids: List[str],
     all_objects = []
     with FuturesSessionWithRenewal(connection=connection, max_workers=threads) as session:
         # Extract parameters of the api wrapper and set them using kwargs
-        param_value_dict = auto_match_args(async_wrapper, kwargs,
-                                           exclude=['connection', 'session', 'error_msg', 'id'])
+        param_value_dict = auto_match_args(
+            async_wrapper, kwargs, exclude=['connection', 'session', 'error_msg', 'id']
+        )
         futures = [
             async_wrapper(session=session, connection=connection, id=id, **param_value_dict)
             for id in ids

@@ -30,25 +30,32 @@ def _wiplevel_error(level):
 
 # TODO: Discuss exact strings with UX.
 message_templates = {
-    WipLevels.PREVIEW: ("In a current version, {}is available as "
-                        "a Functionality Preview. It is subject to change until it is released "
-                        "as Generally Available."),
+    WipLevels.PREVIEW: (
+        "In a current version, {}is available as "
+        "a Functionality Preview. It is subject to change until it is released "
+        "as Generally Available."
+    ),
     WipLevels.INFO: "This {}functionality is a work-in-progress. It may change in future updates.",
-    WipLevels.WARNING: ("This {}functionality is a work-in-progress. Use it only if you understand"
-                        " the underlying code. It may change in future updates."),
-    WipLevels.ERROR:
-        ("This {}functionality is a work-in-progress. It has been deemed unsafe to use"
-         " and is currently blocked."),
+    WipLevels.WARNING: (
+        "This {}functionality is a work-in-progress. Use it only if you understand"
+        " the underlying code. It may change in future updates."
+    ),
+    WipLevels.ERROR: (
+        "This {}functionality is a work-in-progress. It has been deemed unsafe to use"
+        " and is currently blocked."
+    ),
 }
 release_info_template = " It is currently scheduled for {} release."
-docstring_prefix_template = dedent("""\
+docstring_prefix_template = dedent(
+    """\
     ------------------ WORK IN PROGRESS ------------------
 
     {}
 
     ------------------------------------------------------
 
-""")
+"""
+)
 
 
 def _get_message_template(level: WipLevels = WipLevels.WARNING):
@@ -58,9 +65,11 @@ def _get_message_template(level: WipLevels = WipLevels.WARNING):
         return message_templates[WipLevels.INFO]
 
 
-def _construct_message(name: Optional[str] = None, target_release: Optional[Union[Version,
-                                                                                  str]] = None,
-                       level: WipLevels = WipLevels.WARNING):
+def _construct_message(
+    name: Optional[str] = None,
+    target_release: Optional[Union[Version, str]] = None,
+    level: WipLevels = WipLevels.WARNING
+):
     template = _get_message_template(level)
     if name is None:
         message = template.format("")
@@ -71,8 +80,12 @@ def _construct_message(name: Optional[str] = None, target_release: Optional[Unio
     return message
 
 
-def _emit(name: Optional[str] = None, target_release: Optional[Union[Version, str]] = None,
-          level: WipLevels = WipLevels.WARNING, message: Optional[str] = None):
+def _emit(
+    name: Optional[str] = None,
+    target_release: Optional[Union[Version, str]] = None,
+    level: WipLevels = WipLevels.WARNING,
+    message: Optional[str] = None
+):
     if level == WipLevels.SILENT or not config.wip_warnings_enabled:
         return None
 
@@ -89,9 +102,13 @@ def _emit(name: Optional[str] = None, target_release: Optional[Union[Version, st
         _wiplevel_error(level)
 
 
-def wip(target_release: Optional[Union[Version, str]] = None, level: WipLevels = WipLevels.WARNING,
-        message: Optional[str] = None, prefix_doc: Union[bool,
-                                                         str] = True, mark_attr: bool = True):
+def wip(
+    target_release: Optional[Union[Version, str]] = None,
+    level: WipLevels = WipLevels.WARNING,
+    message: Optional[str] = None,
+    prefix_doc: Union[bool, str] = True,
+    mark_attr: bool = True
+):
     """Work-In-Progress wrapper
 
     Note:
@@ -119,8 +136,10 @@ def wip(target_release: Optional[Union[Version, str]] = None, level: WipLevels =
         if not isinstance(target_release, Version):
             target_release = Version(target_release)
         if target_release <= current_version:
-            raise ValueError("WIP wrapper called with target_release equal to"
-                             " or lower than current release.")
+            raise ValueError(
+                "WIP wrapper called with target_release equal to"
+                " or lower than current release."
+            )
     if level not in WipLevels:
         _wiplevel_error(level)
 
@@ -150,9 +169,14 @@ def wip(target_release: Optional[Union[Version, str]] = None, level: WipLevels =
     return wrap_func
 
 
-def module_wip(module_globals: dict, target_release: Optional[Union[Version, str]] = None,
-               level: WipLevels = WipLevels.WARNING, message: Optional[str] = None,
-               prefix_doc: Union[bool, str] = True, mark_attr: bool = True):
+def module_wip(
+    module_globals: dict,
+    target_release: Optional[Union[Version, str]] = None,
+    level: WipLevels = WipLevels.WARNING,
+    message: Optional[str] = None,
+    prefix_doc: Union[bool, str] = True,
+    mark_attr: bool = True
+):
     """Emit the WIP warning/error/info when the module is loaded."""
     if mark_attr:
         module_globals["_wip"] = True

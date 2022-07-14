@@ -73,11 +73,23 @@ class DependenceMixin:
         if project is None:
             raise AttributeError("Project not selected. Select project using `project` parameter.")
 
-        return full_search(connection=self.connection, project=project, uses_object_id=self.id,
-                           uses_object_type=self._OBJECT_TYPE, name=name, pattern=pattern,
-                           domain=domain, object_types=object_types, uses_recursive=uses_recursive,
-                           root=root, limit=limit, offset=offset, results_format=results_format,
-                           to_dictionary=to_dictionary, **filters)
+        return full_search(
+            connection=self.connection,
+            project=project,
+            uses_object_id=self.id,
+            uses_object_type=self._OBJECT_TYPE,
+            name=name,
+            pattern=pattern,
+            domain=domain,
+            object_types=object_types,
+            uses_recursive=uses_recursive,
+            root=root,
+            limit=limit,
+            offset=offset,
+            results_format=results_format,
+            to_dictionary=to_dictionary,
+            **filters
+        )
 
     def list_dependencies(
         self: 'Entity',
@@ -138,9 +150,20 @@ class DependenceMixin:
         if project is None:
             raise AttributeError("Project not selected. Select project using `project` parameter.")
 
-        return full_search(connection=self.connection, project=project, pattern=pattern,
-                           domain=domain, used_by_object_id=self.id,
-                           used_by_object_type=self._OBJECT_TYPE, results_format=results_format,
-                           used_by_recursive=used_by_recursive, name=name,
-                           object_types=object_types, root=root, limit=limit, offset=offset,
-                           to_dictionary=to_dictionary, **filters)
+        return full_search(
+            connection=self.connection,
+            project=project,
+            pattern=pattern,
+            domain=domain,
+            used_by_object_id=self.id,
+            used_by_object_type=self._OBJECT_TYPE,
+            results_format=results_format,
+            used_by_recursive=used_by_recursive,
+            name=name,
+            object_types=object_types,
+            root=root,
+            limit=limit,
+            offset=offset,
+            to_dictionary=to_dictionary,
+            **filters
+        )

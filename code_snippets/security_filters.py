@@ -7,8 +7,16 @@ ease its usage.
 """
 
 from mstrio.access_and_security.security_filter import (
-    AttributeFormSystemRef, AttributeRef, ConstantParameter, ConstantType, list_security_filters,
-    LogicFunction, LogicOperator, PredicateForm, PredicateFormFunction, Qualification,
+    AttributeFormSystemRef,
+    AttributeRef,
+    ConstantParameter,
+    ConstantType,
+    list_security_filters,
+    LogicFunction,
+    LogicOperator,
+    PredicateForm,
+    PredicateFormFunction,
+    Qualification,
     SecurityFilter
 )
 from mstrio.object_management import full_search
@@ -24,18 +32,21 @@ SECURITY_FILTER_NAME = '<sec_filter_name>'
 SECURITY_FILTER_NAME_NEW = '<new_sec_filter_name>'
 SECURITY_FILTER_NAME_2 = '<sec_filter_name_2>'
 SECURITY_FILTER_DESCRIPTION = '<sec_filter_description>'
-QUALIFICATION = Qualification(tree=PredicateForm(
-    # see access_and_security/security_filter/predicates.py
-    # for PredicateFormFunction values
-    function=PredicateFormFunction.GREATER,
-    # see access_and_security/security_filter/predicate_parameters.py
-    # for ConstantType values
-    parameters=[ConstantParameter(ConstantType.DOUBLE, '<value>')],
-    # insert object id and its attribute name to which you want to refer to
-    attribute=AttributeRef('<object_id>', '<attribute_name>'),
-    # insert object id and its attribute form system name
-    # to which you want to refer to
-    form=AttributeFormSystemRef('<object_id>', '<attribute_form_system_name>')))
+QUALIFICATION = Qualification(
+    tree=PredicateForm(
+        # see access_and_security/security_filter/predicates.py
+        # for PredicateFormFunction values
+        function=PredicateFormFunction.GREATER,
+        # see access_and_security/security_filter/predicate_parameters.py
+        # for ConstantType values
+        parameters=[ConstantParameter(ConstantType.DOUBLE, '<value>')],
+        # insert object id and its attribute name to which you want to refer to
+        attribute=AttributeRef('<object_id>', '<attribute_name>'),
+        # insert object id and its attribute form system name
+        # to which you want to refer to
+        form=AttributeFormSystemRef('<object_id>', '<attribute_form_system_name>')
+    )
+)
 CUSTOMER_ATTRIBUTE_ID = '<object_with_attribute_id>'  # id of an object that uses the attribute
 PROJECT_ID = '<project_id>'  # project in which a security filter will be searched for
 FOLDER_ID = '<folder_id>'  # folder in which new security filter will be created
@@ -55,8 +66,9 @@ PREDICATE_FORM_PARAM = ConstantParameter(ConstantType.STRING, '<value>')
 PREDICATE_FORM_ATTRIBUTE = AttributeRef('<object_id>', '<attribute_name>')
 # insert object id and its attribute form system name
 # to which you want to refer to
-PREDICATE_FORM_ATTRIBUTE_FORM = AttributeFormSystemRef('<object_id>',
-                                                       '<attribute_form_system_name>')
+PREDICATE_FORM_ATTRIBUTE_FORM = AttributeFormSystemRef(
+    '<object_id>', '<attribute_form_system_name>'
+)
 # insert data locale used to select value of the form
 PREDICATE_FORM_DATA_LOCALE = '<locale>'
 
@@ -70,8 +82,9 @@ PREDICATE_FORM_PARAM_2 = ConstantParameter(ConstantType.STRING, '<value>')
 PREDICATE_FORM_ATTRIBUTE_2 = AttributeRef('<object_id>', '<attribute_name>')
 # insert object id and its attribute form system name
 # to which you want to refer to
-PREDICATE_FORM_ATTRIBUTE_FORM_2 = AttributeFormSystemRef('<object_id>',
-                                                         '<attribute_form_system_name>')
+PREDICATE_FORM_ATTRIBUTE_FORM_2 = AttributeFormSystemRef(
+    '<object_id>', '<attribute_form_system_name>'
+)
 # insert data locale used to select value of the form
 PREDICATE_FORM_DATA_LOCALE_2 = '<locale>'
 

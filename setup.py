@@ -42,7 +42,7 @@ with open('README.md') as f:
     long_description = f.read()
 
 requirements = [
-    'notebook>=6.4.10',  # Jupyter Notebook - ver required for SEC
+    'notebook>=6.4.12',  # Jupyter Notebook - ver required for SEC
     'ipython>=8.1.1, <9',  # dep of dep - higher ver required for SEC
     'requests>=2.27, <2.28',
     'urllib3>=1.26.0',  # dep of dep (but ver 1.25.x is incompatible)

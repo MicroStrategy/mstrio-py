@@ -8,9 +8,12 @@ from mstrio.connection import Connection, get_connection
 from mstrio.users_and_groups import User, UserGroup
 
 
-def list_security_roles_per_user(connection: "Connection", user_group_name: str = None,
-                                 user_group_id: str = None,
-                                 include_user_groups: bool = False) -> List[dict]:
+def list_security_roles_per_user(
+    connection: "Connection",
+    user_group_name: str = None,
+    user_group_id: str = None,
+    include_user_groups: bool = False
+) -> List[dict]:
     """List security roles for every user in a user group.
     It is possible to provide either name or id of user group.
 

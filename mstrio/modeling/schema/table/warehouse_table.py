@@ -10,13 +10,19 @@ from mstrio.modeling.schema import ObjectSubType, SchemaObjectReference
 from mstrio.modeling.schema.helpers import TableColumn, TableColumnMergeOption
 from mstrio.modeling.schema.table.logical_table import list_logical_tables, LogicalTable
 from mstrio.utils.helper import Dictable, fetch_objects
+from mstrio.utils.version_helper import method_version_handler
 
 logging.getLogger().setLevel(logging.INFO)
 
 
+@method_version_handler('11.3.0100')
 def list_datasource_warehouse_tables(
-        connection: Connection, datasource_id: str, namespace_id: str, name: str = None,
-        to_dictionary: bool = False, limit: Optional[int] = None
+    connection: Connection,
+    datasource_id: str,
+    namespace_id: str,
+    name: str = None,
+    to_dictionary: bool = False,
+    limit: Optional[int] = None
 ) -> list[Type["WarehouseTable"]] | list[dict]:
     """Lists available warehouse tables in a specified datasource within a
        specified namespace.
@@ -57,8 +63,7 @@ def list_datasource_warehouse_tables(
         table.update({
             "datasource": {
                 "id": datasource_id
-            },
-            "namespace_id": namespace_id
+            }, "namespace_id": namespace_id
         }) for table in tables
     ]
     if to_dictionary:
@@ -138,8 +143,9 @@ class WarehouseTable(Dictable):
         lt = LogicalTable.create(
             connection=self.connection,
             table_name=logical_table_name,
-            primary_data_source=SchemaObjectReference(object_id=self.datasource.id,
-                                                      sub_type=ObjectSubType.LOGICAL_TABLE),
+            primary_data_source=SchemaObjectReference(
+                object_id=self.datasource.id, sub_type=ObjectSubType.LOGICAL_TABLE
+            ),
             column_merge_option=col_merge_option,
             physical_table_prefix=prefix,
             physical_table_name=self.name,
@@ -216,8 +222,10 @@ class WarehouseTable(Dictable):
         """
         if self._columns and not refresh:
             return self._columns
-        datasource_id = (self.datasource.id if isinstance(self.datasource, DatasourceInstance) else
-                         self.datasource.get("id"))
+        datasource_id = (
+            self.datasource.id
+            if isinstance(self.datasource, DatasourceInstance) else self.datasource.get("id")
+        )
         columns = fetch_objects(
             connection=self.connection,
             api=datasources.get_table_columns,
@@ -232,8 +240,9 @@ class WarehouseTable(Dictable):
         if to_dictionary:
             return columns
 
-        column_objects = TableColumn.bulk_from_dict(source_list=columns,
-                                                    connection=self.connection)
+        column_objects = TableColumn.bulk_from_dict(
+            source_list=columns, connection=self.connection
+        )
         if refresh:
             self._columns = column_objects
         return column_objects

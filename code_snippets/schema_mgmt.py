@@ -34,7 +34,8 @@ lock_st = schema_mgmt.get_lock_status()
 # When schema is reloaded asynchronously then task is returned.
 # Available values for SchemaLockType enum are in modeling/schema/schema_management.py
 task = schema_mgmt.reload(
-    update_types=[SchemaUpdateType.CLEAR_ELEMENT_CACHE, SchemaUpdateType.ENTRY_LEVEL])
+    update_types=[SchemaUpdateType.CLEAR_ELEMENT_CACHE, SchemaUpdateType.ENTRY_LEVEL]
+)
 
 # get list of tasks which are stored within schema management object (tasks
 # are saved when `reload` is performed asyncronously)

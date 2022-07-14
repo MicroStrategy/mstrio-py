@@ -29,8 +29,7 @@ def get_privileges(connection, id, privilege_level=None, project_id=None, error_
         url=f'{connection.base_url}/api/usergroups/{id}/privileges',
         headers={'X-MSTR-ProjectID': None},
         params={
-            'privilege.level': privilege_level,
-            'projectId': project_id
+            'privilege.level': privilege_level, 'projectId': project_id
         },
     )
 
@@ -79,9 +78,7 @@ def get_members(connection, id, include_access=False, offset=0, limit=-1, error_
         url=f'{connection.base_url}/api/usergroups/{id}/members',
         headers={'X-MSTR-ProjectID': None},
         params={
-            'includeAccess': include_access,
-            'offset': offset,
-            'limit': limit
+            'includeAccess': include_access, 'offset': offset, 'limit': limit
         },
     )
 
@@ -125,8 +122,7 @@ def get_top_level(connection, error_msg=None):
     """
 
     return connection.get(
-        url=f'{connection.base_url}/api/usergroups/topLevel',
-        headers={'X-MSTR-ProjectID': None}
+        url=f'{connection.base_url}/api/usergroups/topLevel', headers={'X-MSTR-ProjectID': None}
     )
 
 
@@ -165,8 +161,7 @@ def delete_user_group(connection, id, error_msg=None):
     """
 
     return connection.delete(
-        url=f'{connection.base_url}/api/usergroups/{id}',
-        headers={'X-MSTR-ProjectID': None}
+        url=f'{connection.base_url}/api/usergroups/{id}', headers={'X-MSTR-ProjectID': None}
     )
 
 
@@ -184,14 +179,14 @@ def replace_user_group_info(connection, id, error_msg=None):
     """
 
     return connection.put(
-        url=f'{connection.base_url}/api/usergroups/{id}',
-        headers={'X-MSTR-ProjectID': None}
+        url=f'{connection.base_url}/api/usergroups/{id}', headers={'X-MSTR-ProjectID': None}
     )
 
 
 @ErrorHandler(err_msg='Error getting information for a set of user groups.')
-def get_info_all_user_groups(connection, name_begins, offset=0, limit=1000, fields=None,
-                             error_msg=None):
+def get_info_all_user_groups(
+    connection, name_begins, offset=0, limit=1000, fields=None, error_msg=None
+):
     """Get information for a specific set of user groups or all user groups.
     You can refine the set of user groups that are returned with a query
     parameter that specifies the characters that the user group name must begin
@@ -228,16 +223,14 @@ def get_info_all_user_groups(connection, name_begins, offset=0, limit=1000, fiel
         f'{connection.base_url}/api/usergroups/',
         headers={'X-MSTR-ProjectID': None},
         params={
-            'nameBegins': name_begins,
-            'offset': offset,
-            'limit': limit,
-            'fields': fields
+            'nameBegins': name_begins, 'offset': offset, 'limit': limit, 'fields': fields
         },
     )
 
 
-def get_info_all_user_groups_async(future_session: "FuturesSession", connection, name_begins,
-                                   offset=0, limit=-1, fields=None):
+def get_info_all_user_groups_async(
+    future_session: "FuturesSession", connection, name_begins, offset=0, limit=-1, fields=None
+):
     """Get information for a set of users asynchronously.
 
     Args:
@@ -289,10 +282,7 @@ def create_user_group(connection, body):
     Returns:
         Complete HTTP response object
     """
-    return connection.post(
-        url=f'{connection.base_url}/api/usergroups/',
-        json=body
-    )
+    return connection.post(url=f'{connection.base_url}/api/usergroups/', json=body)
 
 
 @ErrorHandler(err_msg='Error getting user group information for a group with ID {id}')
@@ -309,8 +299,7 @@ def get_user_group_info(connection, id, error_msg=None):
     """
 
     return connection.get(
-        url=f'{connection.base_url}/api/usergroups/{id}',
-        headers={'X-MSTR-ProjectID': None}
+        url=f'{connection.base_url}/api/usergroups/{id}', headers={'X-MSTR-ProjectID': None}
     )
 
 
@@ -336,9 +325,14 @@ def get_security_roles(connection, id, project_id=None, error_msg=None):
 
 
 @ErrorHandler(err_msg='Error getting security filters for user with ID {id}.')
-def get_security_filters(connection: "Connection", id: str,
-                         projects: Optional[Union[str, List[str]]] = None, offset: int = 0,
-                         limit: int = -1, error_msg: Optional[str] = None):
+def get_security_filters(
+    connection: "Connection",
+    id: str,
+    projects: Optional[Union[str, List[str]]] = None,
+    offset: int = 0,
+    limit: int = -1,
+    error_msg: Optional[str] = None
+):
     """Get each project level security filter and its corresponding inherited
     security filters for the user group with given ID.
 
@@ -359,6 +353,7 @@ def get_security_filters(connection: "Connection", id: str,
     """
     url = f"{connection.base_url}/api/usergroups/{id}/securityFilters"
     projects = (
-        ','.join(projects if isinstance(projects, list) else [projects])) if projects else projects
+        ','.join(projects if isinstance(projects, list) else [projects])
+    ) if projects else projects
     params = {'projects.id': projects, 'offset': offset, 'limit': limit}
     return connection.get(url=url, params=params)

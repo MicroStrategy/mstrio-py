@@ -11,9 +11,14 @@ It is subject to change until it is released as Generally Available.
 
 from mstrio.access_and_security.privilege import Privilege
 from mstrio.connection import Connection
-from mstrio.object_management.migration import (bulk_full_migration, bulk_migrate_package,
-                                                Migration, PackageConfig, PackageContentInfo,
-                                                PackageSettings)
+from mstrio.object_management.migration import (
+    bulk_full_migration,
+    bulk_migrate_package,
+    Migration,
+    PackageConfig,
+    PackageContentInfo,
+    PackageSettings
+)
 from mstrio.types import ObjectTypes
 from mstrio.users_and_groups.user import User
 
@@ -37,10 +42,12 @@ CUSTOM_PACKAGE_PATH = 'path/to/other_import_package.mmp'
 UNDO_PACKAGE_PATH = 'path/to/undo_package.mmp'
 
 # Create connections to both source and target environments
-source_conn = Connection(SOURCE_BASE_URL, SOURCE_USERNAME, SOURCE_PASSWORD,
-                         project_name=PROJECT_NAME, login_mode=1)
-target_conn = Connection(TARGET_BASE_URL, TARGET_USERNAME, TARGET_PASSWORD,
-                         project_name=PROJECT_NAME, login_mode=1)
+source_conn = Connection(
+    SOURCE_BASE_URL, SOURCE_USERNAME, SOURCE_PASSWORD, project_name=PROJECT_NAME, login_mode=1
+)
+target_conn = Connection(
+    TARGET_BASE_URL, TARGET_USERNAME, TARGET_PASSWORD, project_name=PROJECT_NAME, login_mode=1
+)
 
 # Make sure the current user have the following privileges:
 #   'Create package', id: 295
@@ -76,10 +83,12 @@ package_content_info2 = PackageContentInfo(
     include_dependents=True,
 )
 
-package_config = PackageConfig(PackageConfig.PackageUpdateType.PROJECT, package_settings,
-                               package_content_info)
-package_config2 = PackageConfig(PackageConfig.PackageUpdateType.PROJECT, package_settings,
-                                package_content_info2)
+package_config = PackageConfig(
+    PackageConfig.PackageUpdateType.PROJECT, package_settings, package_content_info
+)
+package_config2 = PackageConfig(
+    PackageConfig.PackageUpdateType.PROJECT, package_settings, package_content_info2
+)
 
 # Create Migrations objects that can use all the functionalities
 mig = Migration(
@@ -151,8 +160,9 @@ bulk_migrate_package([mig, mig3])
 mig.undo_migration()
 
 # or run `migrate_package()` with path to the custom undo package
-Migration(save_path=SAVE_PATH, target_connection=target_conn,
-          custom_package_path=UNDO_PACKAGE_PATH).migrate_package()
+Migration(
+    save_path=SAVE_PATH, target_connection=target_conn, custom_package_path=UNDO_PACKAGE_PATH
+).migrate_package()
 
 # Status of the migration can be checked by checking the `status` property
 status = mig.status

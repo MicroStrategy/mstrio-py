@@ -52,8 +52,9 @@ class SettingValue:
 
     def _validate_value(self, value, exception=True):
         options = helper.extract_all_dict_values(self.options)
-        return helper.validate_param_value(self.name, value, self.type, special_values=options,
-                                           exception=exception)
+        return helper.validate_param_value(
+            self.name, value, self.type, special_values=options, exception=exception
+        )
 
     def _get_value(self):
         return self.value
@@ -81,8 +82,9 @@ class EnumSetting(SettingValue):
         options = helper.extract_all_dict_values(self.options)
         if self.type == list:
             options.append('')
-        return helper.validate_param_value(self.name, value, self.type, special_values=options,
-                                           exception=exception)
+        return helper.validate_param_value(
+            self.name, value, self.type, special_values=options, exception=exception
+        )
 
     def _get_value(self):
         option_name = [
@@ -115,8 +117,15 @@ class NumberSetting(SettingValue):
 
     def _validate_value(self, value, exception=True):
         options = helper.extract_all_dict_values(self.options)
-        return helper.validate_param_value(self.name, value, self.type, self.max_value,
-                                           self.min_value, options, exception=exception)
+        return helper.validate_param_value(
+            self.name,
+            value,
+            self.type,
+            self.max_value,
+            self.min_value,
+            options,
+            exception=exception
+        )
 
 
 class StringSetting(SettingValue):
@@ -139,8 +148,9 @@ class TimeSetting(SettingValue):
 
     def _validate_value(self, value, exception=True):
         regex = r"^[1-2][0-9](:[0-5][0-9]){1,2}$"
-        return helper.validate_param_value(self.name, value, str, regex=regex, exception=exception,
-                                           valid_example='23:45')
+        return helper.validate_param_value(
+            self.name, value, str, regex=regex, exception=exception, valid_example='23:45'
+        )
 
 
 class EmailSetting(SettingValue):
@@ -152,9 +162,15 @@ class EmailSetting(SettingValue):
 
     def _validate_value(self, value, exception=True):
         regex = r"[^@]+@[^@]+\.[^@]+"
-        return helper.validate_param_value(self.name, value, self.type, special_values=[''],
-                                           regex=regex, exception=exception,
-                                           valid_example='name@mail.com')
+        return helper.validate_param_value(
+            self.name,
+            value,
+            self.type,
+            special_values=[''],
+            regex=regex,
+            exception=exception,
+            valid_example='name@mail.com'
+        )
 
 
 class ObjectSetting(SettingValue):

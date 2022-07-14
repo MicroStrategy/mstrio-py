@@ -8,8 +8,13 @@ if TYPE_CHECKING:
 
 
 @ErrorHandler(err_msg='Error while creating the folder.')
-def create_folder(connection: Connection, name: str, parent_id: str,
-                  description: Optional[str] = None, project_id: Optional[str] = None):
+def create_folder(
+    connection: Connection,
+    name: str,
+    parent_id: str,
+    description: Optional[str] = None,
+    project_id: Optional[str] = None
+):
     """Create a folder.
 
     Note:
@@ -54,14 +59,18 @@ def delete_folder(connection: Connection, id: str, project_id: Optional[str] = N
     """
     project_id = project_id if project_id is not None else connection.project_id
     return connection.delete(
-        url=f"{connection.base_url}/api/folders/{id}",
-        headers={'X-MSTR-ProjectID': project_id}
+        url=f"{connection.base_url}/api/folders/{id}", headers={'X-MSTR-ProjectID': project_id}
     )
 
 
 @ErrorHandler(err_msg='Error while listing folders.')
-def list_folders(connection: Connection, project_id: Optional[str] = None, offset: int = 0,
-                 limit: int = 5000, error_msg: Optional[str] = None):
+def list_folders(
+    connection: Connection,
+    project_id: Optional[str] = None,
+    offset: int = 0,
+    limit: int = 5000,
+    error_msg: Optional[str] = None
+):
     """Get a list of folders.
 
     Args:
@@ -80,14 +89,18 @@ def list_folders(connection: Connection, project_id: Optional[str] = None, offse
         url=f"{connection.base_url}/api/folders",
         headers={'X-MSTR-ProjectID': project_id},
         params={
-            'offset': offset,
-            'limit': limit
+            'offset': offset, 'limit': limit
         }
     )
 
 
-def list_folders_async(future_session: "FuturesSession", connection: Connection,
-                       project_id: Optional[str] = None, offset: int = 0, limit: int = 5000):
+def list_folders_async(
+    future_session: "FuturesSession",
+    connection: Connection,
+    project_id: Optional[str] = None,
+    offset: int = 0,
+    limit: int = 5000
+):
     """Get a list of folders asynchronously.
 
     Args:
@@ -111,8 +124,14 @@ def list_folders_async(future_session: "FuturesSession", connection: Connection,
 
 
 @ErrorHandler(err_msg='Error while getting contents of a folder with ID: {id}.')
-def get_folder_contents(connection: Connection, id: str, project_id: Optional[str] = None,
-                        offset: int = 0, limit: int = 5000, error_msg: Optional[str] = None):
+def get_folder_contents(
+    connection: Connection,
+    id: str,
+    project_id: Optional[str] = None,
+    offset: int = 0,
+    limit: int = 5000,
+    error_msg: Optional[str] = None
+):
     """Get contents of a folder.
 
     Args:
@@ -131,17 +150,21 @@ def get_folder_contents(connection: Connection, id: str, project_id: Optional[st
     project_id = project_id if project_id is not None else connection.project_id
     return connection.get(
         url=f"{connection.base_url}/api/folders/{id}",
-        headers={'X-MSTR-ProjectID': connection.project_id},
+        headers={'X-MSTR-ProjectID': project_id},
         params={
-            'offset': offset,
-            'limit': limit
+            'offset': offset, 'limit': limit
         }
     )
 
 
-def get_folder_contents_async(future_session: "FuturesSession", connection: Connection, id: str,
-                              project_id: Optional[str] = None, offset: int = 0,
-                              limit: int = 5000):
+def get_folder_contents_async(
+    future_session: "FuturesSession",
+    connection: Connection,
+    id: str,
+    project_id: Optional[str] = None,
+    offset: int = 0,
+    limit: int = 5000
+):
     """Get contents of a folder asynchronously.
 
     Args:
@@ -167,9 +190,14 @@ def get_folder_contents_async(future_session: "FuturesSession", connection: Conn
 
 
 @ErrorHandler(err_msg='Error while getting contents of a pre-defined folder.')
-def get_predefined_folder_contents(connection: Connection, folder_type: int,
-                                   project_id: Optional[str] = None, offset: int = 0,
-                                   limit: int = 5000, error_msg: Optional[str] = None):
+def get_predefined_folder_contents(
+    connection: Connection,
+    folder_type: int,
+    project_id: Optional[str] = None,
+    offset: int = 0,
+    limit: int = 5000,
+    error_msg: Optional[str] = None
+):
     """Get contents of a pre-defined folder.
 
     Args:
@@ -185,22 +213,23 @@ def get_predefined_folder_contents(connection: Connection, folder_type: int,
     Returns:
         Complete HTTP response object.
     """
-    if project_id is None:
-        connection._validate_project_selected()
-        project_id = connection.project_id
-
     return connection.get(
         url=f"{connection.base_url}/api/folders/preDefined/{folder_type}",
-        headers={'X-MSTR-ProjectID': project_id}, params={
-            'offset': offset,
-            'limit': limit
+        headers={'X-MSTR-ProjectID': project_id},
+        params={
+            'offset': offset, 'limit': limit
         }
     )
 
 
-def get_predefined_folder_contents_async(future_session: "FuturesSession", connection: Connection,
-                                         folder_type: int, project_id: Optional[str] = None,
-                                         offset: int = 0, limit: int = 5000):
+def get_predefined_folder_contents_async(
+    future_session: "FuturesSession",
+    connection: Connection,
+    folder_type: int,
+    project_id: Optional[str] = None,
+    offset: int = 0,
+    limit: int = 5000
+):
     """Get contents of a pre-defined folder.
 
     Args:
@@ -218,10 +247,6 @@ def get_predefined_folder_contents_async(future_session: "FuturesSession", conne
     Returns:
         Complete Future object.
     """
-    if project_id is None:
-        connection._validate_project_selected()
-        project_id = connection.project_id
-
     url = f"{connection.base_url}/api/folders/preDefined/{folder_type}"
     headers = {'X-MSTR-ProjectID': project_id}
     params = {'offset': offset, 'limit': limit}
@@ -239,10 +264,6 @@ def get_my_personal_objects_contents(connection: Connection, project_id: Optiona
     Returns:
          Complete HTTP response object.
     """
-    if project_id is None:
-        connection._validate_project_selected()
-        project_id = connection.project_id
-
     return connection.get(
         url=f"{connection.base_url}/api/folders/myPersonalObjects",
         headers={'X-MSTR-ProjectID': project_id}

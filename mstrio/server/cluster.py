@@ -11,6 +11,7 @@ from mstrio.api import administration, monitors, registrations
 from mstrio.connection import Connection
 from mstrio.utils.enum_helper import AutoName, AutoUpperName
 from mstrio.utils.helper import exception_handler, filter_list_of_dicts, validate_param_value
+from mstrio.utils.version_helper import method_version_handler
 
 from .node import Node
 
@@ -50,9 +51,13 @@ class Cluster:
         """
         self.connection = connection
 
-    def list_nodes(self, project: Optional[Union[str, "Project"]] = None,
-                   node: Optional[Union[str, Node]] = None,
-                   to_dictionary: bool = False) -> Union[List[Node], List[dict]]:
+    @method_version_handler('11.2.0000')
+    def list_nodes(
+        self,
+        project: Optional[Union[str, "Project"]] = None,
+        node: Optional[Union[str, Node]] = None,
+        to_dictionary: bool = False
+    ) -> Union[List[Node], List[dict]]:
         """Return a list of nodes and their properties within the cluster.
 
         Optionally filter by `project_id` or `node_name`.
@@ -94,8 +99,10 @@ class Cluster:
             try:
                 group_by = GroupBy(group_by)
             except ValueError:
-                raise ValueError("When listing services it is possible to group them only by "
-                                 "`nodes` or `services`. See the GroupBy enum.")
+                raise ValueError(
+                    "When listing services it is possible to group them only by "
+                    "`nodes` or `services`. See the GroupBy enum."
+                )
         if group_by == GroupBy.NODES:
             return registrations.get_nodes(connection=self.connection).json()
         else:  # GroupBy.SERVICES
@@ -126,7 +133,8 @@ class Cluster:
             if node['services']:
                 node_service = pd.DataFrame(node['services'])[['id', 'status']]
                 node_service['status'] = node_service['status'].map(
-                    lambda x: 'Running' if x == "PASSING" else 'Stopped')
+                    lambda x: 'Running' if x == "PASSING" else 'Stopped'
+                )
                 tp = service_type.join(
                     node_service.set_index('id'),
                     on='name',
@@ -164,13 +172,14 @@ class Cluster:
             Pandas DataFrame or Styler object if styled is True.
         """
         services = self.list_services(group_by=GroupBy.SERVICES)
-        services_topology = [{
-            "service": s['service'],
-            "nodes": [{
-                "node": n['node'],
-                "status": n['status']
-            } for n in s['nodes']]
-        } for s in services]
+        services_topology = [
+            {
+                "service": s['service'],
+                "nodes": [{
+                    "node": n['node'], "status": n['status']
+                } for n in s['nodes']]
+            } for s in services
+        ]
 
         tmp = []
         for s in services_topology:
@@ -179,8 +188,9 @@ class Cluster:
                 tmp.append(n)
 
         tmp_df = pd.DataFrame(tmp)[['service', 'node', 'status']]
-        tmp_df['status'] = tmp_df['status'].map(lambda x: 'Running'
-                                                if x == "PASSING" else 'Stopped')
+        tmp_df['status'] = tmp_df['status'].map(
+            lambda x: 'Running' if x == "PASSING" else 'Stopped'
+        )
         tmp_df = tmp_df.set_index('service', append=True).swaplevel(0, 1)
 
         if styled:
@@ -188,6 +198,7 @@ class Cluster:
         else:
             return tmp_df
 
+    @method_version_handler('11.2.0000')
     def add_node(self, node: Union[str, Node]) -> None:
         """Add server (node) to the cluster.
 
@@ -199,6 +210,7 @@ class Cluster:
         if config.verbose:
             logger.info(f'{name} added to cluster.')
 
+    @method_version_handler('11.2.0000')
     def remove_node(self, node: Union[str, Node]) -> None:
         """Remove server (node) from the cluster.
 
@@ -220,8 +232,7 @@ class Cluster:
         name = node.name if isinstance(node, Node) else node
         body = {"defaultHostname": name}
         res = administration.update_iserver_configuration_settings(
-            connection=self.connection,
-            body=body
+            connection=self.connection, body=body
         )
         if res.ok and config.verbose:
             logger.info(f'Primary node of the cluster was set to {name}.')
@@ -235,7 +246,8 @@ class Cluster:
         if not hasattr(self, '_metadata'):
             self._metadata = registrations.get_services_metadata(connection=self.connection).json()
         service_id_map = {
-            service['typeId']: service['name'] for service in self._metadata['serviceTypes']
+            service['typeId']: service['name']
+            for service in self._metadata['serviceTypes']
         }
         available_services = list(service_id_map.values())
 
@@ -244,7 +256,9 @@ class Cluster:
             if service:
                 service = service[0]
                 dependencies_set = {
-                    name for id, name in service_id_map.items() if id in service['dependsOn']
+                    name
+                    for id, name in service_id_map.items()
+                    if id in service['dependsOn']
                 }
 
                 if dependencies_set:
@@ -254,13 +268,20 @@ class Cluster:
                 else:
                     return {}
             else:
-                raise ValueError(f"Service {service_name} is incorrect. Please choose one of: "
-                                 f"{available_services}")
+                raise ValueError(
+                    f"Service {service_name} is incorrect. Please choose one of: "
+                    f"{available_services}"
+                )
 
         return list(get_dependencies_recursively(service))
 
-    def start(self, service: str, nodes: List[str], login: Optional[str] = None,
-              passwd: Optional[str] = None):
+    def start(
+        self,
+        service: str,
+        nodes: List[str],
+        login: Optional[str] = None,
+        passwd: Optional[str] = None
+    ):
         """Start up a service on selected nodes.
 
         Args:
@@ -275,8 +296,14 @@ class Cluster:
         """
         self._control_service(ServiceAction.START, service, nodes, login, passwd)
 
-    def stop(self, service: str, nodes: List[str], login: Optional[str] = None,
-             passwd: Optional[str] = None, force: bool = False):
+    def stop(
+        self,
+        service: str,
+        nodes: List[str],
+        login: Optional[str] = None,
+        passwd: Optional[str] = None,
+        force: bool = False
+    ):
         """Stop a service on selected nodes. Provided service and node names
         are checked for correctness.
 
@@ -293,9 +320,15 @@ class Cluster:
         """
         self._control_service(ServiceAction.STOP, service, nodes, login, passwd, force)
 
-    def _control_service(self, action: ServiceAction, service: str, nodes: List[str],
-                         login: Optional[str] = None, passwd: Optional[str] = None,
-                         force: bool = False):
+    def _control_service(
+        self,
+        action: ServiceAction,
+        service: str,
+        nodes: List[str],
+        login: Optional[str] = None,
+        passwd: Optional[str] = None,
+        force: bool = False
+    ):
         # validate inputs
         self._check_nodes(nodes)
         service_list = self.list_services(group_by=GroupBy.SERVICES)
@@ -356,8 +389,13 @@ class Cluster:
         response = administration.get_iserver_node_settings(self.connection, node_name)
         return response.json()
 
-    def update_node_settings(self, node: Union[str, Node], load_balance_factor: int,
-                             initial_pool_size: int, max_pool_size: int) -> None:
+    def update_node_settings(
+        self,
+        node: Union[str, Node],
+        load_balance_factor: int,
+        initial_pool_size: int,
+        max_pool_size: int
+    ) -> None:
         """Update I-Server configuration settings for a given server node
         within a cluster.
 
@@ -413,8 +451,9 @@ class Cluster:
         env = Environment(connection=self.connection)
         return env.list_projects(to_dictionary=to_dictionary, limit=limit, **filters)
 
-    def load_project(self, project: Union[str, "Project"],
-                     on_nodes: Optional[Union[str, List[str]]] = None) -> None:
+    def load_project(
+        self, project: Union[str, "Project"], on_nodes: Optional[Union[str, List[str]]] = None
+    ) -> None:
         """Request to load the project onto the chosen cluster nodes. If
         nodes are not specified, the project will be loaded on all nodes.
 
@@ -429,8 +468,9 @@ class Cluster:
         project = Project._list_projects(self.connection, name=project_name)[0]
         project.load(on_nodes=on_nodes)
 
-    def unload_project(self, project: Union[str, "Project"],
-                       on_nodes: Optional[Union[str, List[str]]] = None) -> None:
+    def unload_project(
+        self, project: Union[str, "Project"], on_nodes: Optional[Union[str, List[str]]] = None
+    ) -> None:
         """Request to unload the project from the chosen cluster nodes. If
         nodes are not specified, the project will be unloaded on all nodes.
         The unload action cannot be performed until all jobs and connections
@@ -447,8 +487,9 @@ class Cluster:
         project = Project._list_projects(self.connection, name=project_name)[0]
         project.unload(on_nodes=on_nodes)
 
-    def _show_start_stop_msg(self, service_name: str, wrong: List[str], good: List[str],
-                             action: ServiceAction):
+    def _show_start_stop_msg(
+        self, service_name: str, wrong: List[str], good: List[str], action: ServiceAction
+    ):
         """Prepare message to show after action of stopping or starting a
         service with the information on which node the actions were good (done
         correctly) and on which were wrong (response status was not ok).
@@ -492,7 +533,8 @@ class Cluster:
         if dependencies:
             exception_handler(
                 f"Service {service_name} depends on services {dependencies} to run correctly.",
-                Warning)
+                Warning
+            )
 
     def _check_nodes(self, node_names: Iterable[str]) -> None:
         """Checks if the names of the given nodes are within names of existing
@@ -510,15 +552,17 @@ class Cluster:
         for node_name in node_names:
             if node_name not in all_node_names:
                 raise ValueError(
-                    f"Node '{node_name}' is incorrect. Please choose one of: {all_node_names}")
+                    f"Node '{node_name}' is incorrect. Please choose one of: {all_node_names}"
+                )
             elif node_name not in active_nodes:
                 raise ValueError(f"Node '{node_name}' is stopped. Try starting it first.")
             else:
                 continue
 
     @staticmethod
-    def _check_service_running(service_name: str, service_list: List[Dict],
-                               node_name: Optional[str] = None) -> bool:
+    def _check_service_running(
+        service_name: str, service_list: List[Dict], node_name: Optional[str] = None
+    ) -> bool:
         """Return True if service is running on any node available.
 
         If `node_name` is provided, the service status will be given for
@@ -541,15 +585,18 @@ class Cluster:
         node_info = filter_list_of_dicts(nodes_info, node=node_name)
 
         if not node_info:
-            exception_handler(f"Service {service_name} is not available on {node_name}",
-                              exception_type=Warning)
+            exception_handler(
+                f"Service {service_name} is not available on {node_name}", exception_type=Warning
+            )
             return None
         else:
             node_info = node_info[0]
 
         if node_info.get('serviceControl') is False:
-            exception_handler(f"Service {service_name} cannot be controlled on {node_name}",
-                              exception_type=Warning)
+            exception_handler(
+                f"Service {service_name} cannot be controlled on {node_name}",
+                exception_type=Warning
+            )
             return None
         else:
             return node_info

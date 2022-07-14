@@ -7,8 +7,15 @@ ease its usage.
 """
 
 from mstrio.distribution_services import (
-    CacheType, CacheUpdateSubscription, Content, EmailSubscription, list_schedules,
-    list_subscriptions, Schedule, Subscription, SubscriptionManager
+    CacheType,
+    CacheUpdateSubscription,
+    Content,
+    EmailSubscription,
+    list_schedules,
+    list_subscriptions,
+    Schedule,
+    Subscription,
+    SubscriptionManager
 )
 
 from mstrio.connection import get_connection
@@ -47,22 +54,18 @@ sub_mngr.delete([SUBSCRIPTION_ID, SUBSCRIPTION_ID_2], force=True)
 
 # list available recipients of the subscription for the given content (default
 # delivery type is an email)
-sub_mngr.available_recipients(content_id=CONTENT_ID,
-                              content_type=CONTENT_TYPE)
+sub_mngr.available_recipients(content_id=CONTENT_ID, content_type=CONTENT_TYPE)
 
 # get a single subscription
-sub = Subscription(connection=conn, subscription_id=SUBSCRIPTION_ID,
-                   project_id=PROJECT_ID)
+sub = Subscription(connection=conn, subscription_id=SUBSCRIPTION_ID, project_id=PROJECT_ID)
 # list all recipients of the given subscription and all available for this
 # subscription
 sub.recipients
 sub.available_recipients()
 
 # add/remove recipient(s) with given id(s)
-sub.add_recipient(
-    recipients=[RECIPIENT_ID, RECIPIENT_ID_2])
-sub.remove_recipient(
-    recipients=[RECIPIENT_ID, RECIPIENT_ID_2])
+sub.add_recipient(recipients=[RECIPIENT_ID, RECIPIENT_ID_2])
+sub.remove_recipient(recipients=[RECIPIENT_ID, RECIPIENT_ID_2])
 
 # execute a given subscription
 sub.execute()
@@ -81,12 +84,14 @@ EmailSubscription.create(
     project_name=PROJECT_NAME,
     contents=Content(
         id=CONTENT_ID,
-        type=Content.Type.REPORT,  # see distribution_services/subscription/content.py for available options
+        type=Content.Type
+        .REPORT,  # see distribution_services/subscription/content.py for available options
         personalization=Content.Properties(format_type=FORMAT_TYPE)
     ),
     schedules=[SCHEDULE_ID],
     recipients=[RECIPIENT_ID],
-    email_subject=EMAIL_SUBJECT)
+    email_subject=EMAIL_SUBJECT
+)
 
 # create a cache update subscription
 cache_update_sub = CacheUpdateSubscription.create(
@@ -95,18 +100,19 @@ cache_update_sub = CacheUpdateSubscription.create(
     name=CACHE_SUBSCRIPTION_NAME,
     contents=Content(
         id=CONTENT_ID,
-        type=Content.Type.REPORT,  # see distribution_services/subscription/content.py for available options
+        type=Content.Type
+        .REPORT,  # see distribution_services/subscription/content.py for available options
         personalization=Content.Properties(format_type=Content.Properties.FormatType.EXCEL),
     ),
     schedules=[SCHEDULE_ID],
     delivery_expiration_date=DELIVERY_EXPIRATION_DATE,
     send_now=True,
     recipients=[RECIPIENT_ID],
-    cache_cache_type=CacheType.RESERVED)  # see distribution_services/subscription/delivery.py for available options
+    cache_cache_type=CacheType.RESERVED
+)  # see distribution_services/subscription/delivery.py for available options
 
 # change name and owner of cache update subscription
-cache_update_sub.alter(name=f"<{cache_update_sub.name}_(Altered)>",
-                       owner_id=OWNER_ID)
+cache_update_sub.alter(name=f"<{cache_update_sub.name}_(Altered)>", owner_id=OWNER_ID)
 
 # list all cache update subscriptions
 cache_update_subs = [

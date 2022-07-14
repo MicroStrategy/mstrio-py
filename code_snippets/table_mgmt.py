@@ -11,8 +11,13 @@ from mstrio.modeling.schema.helpers import (
     ObjectSubType, PhysicalTableType, SchemaObjectReference, TableColumn, TableColumnMergeOption
 )
 from mstrio.modeling.schema.table import (
-    list_datasource_warehouse_tables, list_logical_tables, list_namespaces,
-    list_physical_tables, list_tables_prefixes, LogicalTable, PhysicalTable,
+    list_datasource_warehouse_tables,
+    list_logical_tables,
+    list_namespaces,
+    list_physical_tables,
+    list_tables_prefixes,
+    LogicalTable,
+    PhysicalTable,
 )
 
 PROJECT_ID = "<project_id>"  # Project ID to connect to
@@ -46,8 +51,7 @@ DATASOURCE_NAME = "<datasource_name>"
 
 # 2. Get a datasource by name
 datasource = [
-    datasource
-    for datasource in list_connected_datasource_instances(connection=conn)
+    datasource for datasource in list_connected_datasource_instances(connection=conn)
     if datasource.name == DATASOURCE_NAME
 ][0]
 print(datasource)
@@ -62,8 +66,7 @@ NAMESPACE_NAME = "<namespace_name>"
 
 # 4. Get a namespace by name for a specific datasource
 namespace = [
-    namespace
-    for namespace in list_namespaces(connection=conn, id=DATASOURCE_ID)
+    namespace for namespace in list_namespaces(connection=conn, id=DATASOURCE_ID)
     if namespace.get("name") == NAMESPACE_NAME
 ][0]
 print(namespace)
@@ -80,7 +83,9 @@ WAREHOUSE_TABLE_NAME = "<warehouse_table_name>"  # Insert name of the Table here
 # Get a Warehouse Tables with the name WAREHOUSE_TABLE_NAME
 # from the specified DATASOURCE_ID and NAMESPACE_ID
 lu_item_table = list_datasource_warehouse_tables(
-    connection=conn, datasource_id=DATASOURCE_ID, namespace_id=NAMESPACE_ID,
+    connection=conn,
+    datasource_id=DATASOURCE_ID,
+    namespace_id=NAMESPACE_ID,
     name=WAREHOUSE_TABLE_NAME
 )[0]
 
@@ -96,7 +101,9 @@ print(lu_item_table.list_dependent_logical_tables())
 NEW_LOGICAL_TABLE_NAME = "<new_logical_table_name>"  # Insert name of the logical table
 
 lu_item_table = list_datasource_warehouse_tables(
-    connection=conn, datasource_id=DATASOURCE_ID, namespace_id=NAMESPACE_ID,
+    connection=conn,
+    datasource_id=DATASOURCE_ID,
+    namespace_id=NAMESPACE_ID,
     name=WAREHOUSE_TABLE_NAME
 )[0]
 
@@ -144,9 +151,7 @@ LOGICAL_TABLE_DESCRIPTION = (
 lu_item_table.delete_from_project(force=True)
 
 # List all logical tables based on physical tables of type normal
-normal_tables = list_logical_tables(
-    connection=conn, table_type=PhysicalTableType.NORMAL
-)
+normal_tables = list_logical_tables(connection=conn, table_type=PhysicalTableType.NORMAL)
 print(normal_tables)
 
 # Define a variable, which can be later used in a script
@@ -214,21 +219,13 @@ sql_table.alter(physical_table_object_name=PHYSICAL_TABLE_NAME_ALTERED)
 
 # Update structure of physical table of type normal
 normal_table.update_physical_table_structure(TableColumnMergeOption.REUSE_ANY)
-normal_table.update_physical_table_structure(
-    TableColumnMergeOption.REUSE_COMPATIBLE_DATA_TYPE
-)
-normal_table.update_physical_table_structure(
-    TableColumnMergeOption.REUSE_MATCHED_DATA_TYPE
-)
+normal_table.update_physical_table_structure(TableColumnMergeOption.REUSE_COMPATIBLE_DATA_TYPE)
+normal_table.update_physical_table_structure(TableColumnMergeOption.REUSE_MATCHED_DATA_TYPE)
 
 # Update structure of physical table of type SQL
 sql_table.update_physical_table_structure(TableColumnMergeOption.REUSE_ANY)
-sql_table.update_physical_table_structure(
-    TableColumnMergeOption.REUSE_COMPATIBLE_DATA_TYPE
-)
-sql_table.update_physical_table_structure(
-    TableColumnMergeOption.REUSE_MATCHED_DATA_TYPE
-)
+sql_table.update_physical_table_structure(TableColumnMergeOption.REUSE_COMPATIBLE_DATA_TYPE)
+sql_table.update_physical_table_structure(TableColumnMergeOption.REUSE_MATCHED_DATA_TYPE)
 
 # Delete a physical table.
 physical_table.delete(force=True)

@@ -1,5 +1,17 @@
 # Changelog
 
+## 11.3.6.102 - 2022/07/15
+
+### Major changes
+- added `Filter` class in `mstrio.modeling.filter` subpackage to allow filter
+  management
+- added `list_filters` to allow listing of filters
+- turned off certificate verification when using `get_connection`
+
+### Minor changes
+
+- added possibility for passing `project_name` instead of `project_id` in the functions that were allowing only `project_id` before.
+
 ## 11.3.6.101 - 2022/06/24
 
 ### Major changes

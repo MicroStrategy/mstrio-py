@@ -79,8 +79,9 @@ class BaseSettings(metaclass=ABCMeta):
         Returns:
             Dataframe with values of current settings and settings from files.
         """
-        current = DataFrame.from_dict(self.list_properties(show_names=True), orient='index',
-                                      columns=['value']).reset_index()
+        current = DataFrame.from_dict(
+            self.list_properties(show_names=True), orient='index', columns=['value']
+        ).reset_index()
         base = 'current value'
         current.columns = ['setting', base]
         for proj in files:
@@ -178,12 +179,21 @@ class BaseSettings(metaclass=ABCMeta):
     @property
     def setting_types(self) -> DataFrame:
         df = DataFrame.from_dict(self._CONFIG, orient='index')
-        df.drop(['name', 'read_only', 'reboot_rule', 'deprecated'], axis='columns', inplace=True,
-                errors='ignore')
+        df.drop(
+            ['name', 'read_only', 'reboot_rule', 'deprecated'],
+            axis='columns',
+            inplace=True,
+            errors='ignore'
+        )
         return df
 
-    def _validate_settings(self, settings: Optional[dict] = None, bad_setting=Warning,
-                           bad_type=Warning, bulk_error=True) -> None:
+    def _validate_settings(
+        self,
+        settings: Optional[dict] = None,
+        bad_setting=Warning,
+        bad_type=Warning,
+        bulk_error=True
+    ) -> None:
         """Validate setting-value pairs and raise AttributeError or TypeError
         if invalid. If `bad_setting` or `bad_type` is of type Exception, then
         Exception is raised as soon as the first invalid pair is found. If they
@@ -211,8 +221,10 @@ class BaseSettings(metaclass=ABCMeta):
         if bulk_error and bad_settings_keys:
             helper.exception_handler(
                 "Invalid settings: {}".format(
-                    [item[0] + ': ' + str(item[1]) for item in bad_settings_keys]),
-                exception_type=ValueError)
+                    [item[0] + ': ' + str(item[1]) for item in bad_settings_keys]
+                ),
+                exception_type=ValueError
+            )
 
     def _prepare_settings_push(self) -> dict:
 

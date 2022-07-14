@@ -8,8 +8,10 @@ from mstrio.users_and_groups.user import User
 from mstrio.users_and_groups.user_group import UserGroup
 from mstrio.utils import helper
 from mstrio.utils.entity import EntityBase
+from mstrio.utils.version_helper import class_version_handler
 
 
+@class_version_handler('11.2.0100')
 class Privilege(EntityBase):
     """Object representation of MicroStrategy Privilege object.
 
@@ -24,8 +26,9 @@ class Privilege(EntityBase):
     """
     _DELETE_NONE_VALUES_RECURSION = False
 
-    def __init__(self, connection: Connection, name: Optional[str] = None,
-                 id: Optional[str] = None) -> None:
+    def __init__(
+        self, connection: Connection, name: Optional[str] = None, id: Optional[str] = None
+    ) -> None:
         """Initialize Privilege object by passing `name` or `id`. When `id` is
         provided (not `None`), `name` is omitted. To explore all available
         privileges use the `list_privileges()` method.
@@ -39,28 +42,32 @@ class Privilege(EntityBase):
         if name is None and id is None:
             helper.exception_handler(
                 "Please specify either 'name' or 'id' parameter in the constructor.",
-                exception_type=ValueError)
+                exception_type=ValueError
+            )
 
         if name is None or (name and id):
-            privileges = Privilege.list_privileges(connection=connection, to_dictionary=True,
-                                                   id=str(id))
+            privileges = Privilege.list_privileges(
+                connection=connection, to_dictionary=True, id=str(id)
+            )
             if privileges:
                 [privilege] = privileges
                 self._set_object_attributes(**privilege)
             else:
                 helper.exception_handler(
-                    f"There is no Privilege with the given id: '{id}'",
-                    exception_type=ValueError)
+                    f"There is no Privilege with the given id: '{id}'", exception_type=ValueError
+                )
         if id is None:
-            privileges = Privilege.list_privileges(connection=connection, to_dictionary=True,
-                                                   name=name)
+            privileges = Privilege.list_privileges(
+                connection=connection, to_dictionary=True, name=name
+            )
             if privileges:
                 [privilege] = privileges
                 self._set_object_attributes(**privilege)
             else:
                 helper.exception_handler(
                     f"There is no Privilege with the given name: '{name}'",
-                    exception_type=ValueError)
+                    exception_type=ValueError
+                )
         super().__init__(connection, self.id, name=self.name)
 
     def _init_variables(self, **kwargs) -> None:
@@ -69,9 +76,13 @@ class Privilege(EntityBase):
         self._categories = kwargs.get("categories")
 
     @classmethod
-    def list_privileges(cls, connection: Connection, to_dictionary: bool = False,
-                        to_dataframe: bool = False,
-                        **filters) -> Union[List["Privilege"], List[dict], DataFrame]:
+    def list_privileges(
+        cls,
+        connection: Connection,
+        to_dictionary: bool = False,
+        to_dataframe: bool = False,
+        **filters
+    ) -> Union[List["Privilege"], List[dict], DataFrame]:
         """Get list of privilege objects or privilege dicts. Filter the
         privileges by specifying the `filters` keyword arguments.
 
@@ -95,9 +106,11 @@ class Privilege(EntityBase):
         if to_dictionary and to_dataframe:
             helper.exception_handler(
                 "Please select either `to_dictionary=True` or `to_dataframe=True`, but not both.",
-                ValueError)
-        objects = helper.fetch_objects(connection=connection, api=security.get_privileges,
-                                       limit=None, filters=filters)
+                ValueError
+            )
+        objects = helper.fetch_objects(
+            connection=connection, api=security.get_privileges, limit=None, filters=filters
+        )
         if to_dictionary:
             return objects
         elif to_dataframe:
@@ -171,8 +184,8 @@ class Privilege(EntityBase):
 
     @staticmethod
     def _validate_privileges(
-        connection: Connection, privileges: Union[Union["Privilege", int, str],
-                                                  List[Union["Privilege", int, str]]]
+        connection: Connection,
+        privileges: Union[Union["Privilege", int, str], List[Union["Privilege", int, str]]]
     ) -> List[dict]:
         """This function validates if the privilege ID/Name/Object is valid and
         returns the IDs.
@@ -208,11 +221,15 @@ class Privilege(EntityBase):
                 privilege_name = privilege.name
                 validated.append({'id': privilege_id, 'name': privilege_name})
             else:
-                docs_url = ("https://lw.microstrategy.com/msdz/msdl/GARelease_Current/docs/"
-                            + "ReferenceFiles/reference/com/microstrategy/webapi/"
-                            + "EnumDSSXMLPrivilegeTypes.html")
-                msg = (f"'{privilege}' is not a valid privilege. Possible values can be found in "
-                       "EnumDSSXMLPrivilegeTypes: \n" + docs_url)
+                docs_url = (
+                    "https://lw.microstrategy.com/msdz/msdl/GARelease_Current/docs/"
+                    + "ReferenceFiles/reference/com/microstrategy/webapi/"
+                    + "EnumDSSXMLPrivilegeTypes.html"
+                )
+                msg = (
+                    f"'{privilege}' is not a valid privilege. Possible values can be found in "
+                    "EnumDSSXMLPrivilegeTypes: \n" + docs_url
+                )
                 helper.exception_handler(msg, exception_type=ValueError)
         return validated
 

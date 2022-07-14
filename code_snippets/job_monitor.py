@@ -10,8 +10,9 @@ Note: Some functionality is missing when working with 11.3.2 I-Server
     attributes values.
 """
 
-from mstrio.server import (Job, JobStatus, JobType, kill_all_jobs, kill_jobs, list_jobs,
-                           ObjectType, PUName)
+from mstrio.server import (
+    Job, JobStatus, JobType, kill_all_jobs, kill_jobs, list_jobs, ObjectType, PUName
+)
 from mstrio.server import Project
 from mstrio.users_and_groups import User
 
@@ -52,8 +53,9 @@ list_jobs(conn, status=JobStatus.LOADING_PROMPT, project=project, object_type=Ob
 # see server/job_monitor.py for JobStatus and ObjectType values
 
 # get a list of `Job` objects filtered by job type and job owner
-list_jobs(conn, type=JobType.INTERACTIVE,
-          user=john)  # see server/job_monitor.py for JobType values
+list_jobs(
+    conn, type=JobType.INTERACTIVE, user=john
+)  # see server/job_monitor.py for JobType values
 
 # get a list of `Job` objects filtered by elapsed time and memory usage
 # NOTE: memory_usage filter works for 11.3.3+ I-Server versions

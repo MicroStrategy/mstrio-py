@@ -75,6 +75,7 @@ It is subject to change until it is released as Generally Available.
 - **Attribute** module (see [code_snippets][code_snippet_attribute])
 - **Fact** module (see [code_snippets][code_snippet_fact])
 - **Tables** module (see [code_snippets][code_snippet_table_mgmt])
+- **Filter** module (see [code_snippets][code_snippet_filter])
 
 # Documentation<a id="documentation"></a>
 
@@ -156,7 +157,7 @@ jupyter nbextension enable connector-jupyter --py --sys-prefix
 
 # Versioning & Changelog<a id="versioning--changelog"></a>
 
-Current version: **11.3.6.101** (24 June 2022). Check out [**Changelog**][release_notes] to see what's new.
+Current version: **11.3.6.102** (15 July 2022). Check out [**Changelog**][release_notes] to see what's new.
 
 mstrio-py is constantly developed to support newest MicroStrategy REST APIs. Functionalities may be added to mstrio on monthly basis. It is **recommended** to always install the newest version of mstrio-py, as it will be most stable and still maintain backwards compatibility with various MicroStrategy installations, dating back to 11.1.4.
 

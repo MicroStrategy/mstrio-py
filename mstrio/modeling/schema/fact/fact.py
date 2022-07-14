@@ -4,8 +4,7 @@ from typing import List, Optional, Union
 from mstrio import config
 from mstrio.api import facts, objects
 from mstrio.connection import Connection
-from mstrio.modeling.expression import FactExpression
-from mstrio.modeling.schema.attribute import ExpressionFormat
+from mstrio.modeling.expression import ExpressionFormat, FactExpression
 from mstrio.modeling.schema.helpers import DataType, ObjectSubType, SchemaObjectReference
 from mstrio.object_management import search_operations
 from mstrio.object_management.folder import Folder
@@ -14,26 +13,32 @@ from mstrio.types import ObjectTypes
 from mstrio.users_and_groups import User
 from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, MoveMixin
 from mstrio.utils.enum_helper import get_enum_val
-from mstrio.utils.helper import Dictable, filter_params_for_func
+from mstrio.utils.helper import Dictable, filter_params_for_func, get_valid_project_id
+from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
 logger = logging.getLogger(__name__)
 
 
+@method_version_handler('11.3.0100')
 def list_facts(
     connection: Connection,
     name: Optional[str] = None,
     to_dictionary: bool = False,
     limit: Optional[int] = None,
     project_id: Optional[str] = None,
+    project_name: Optional[str] = None,
     search_pattern: Union[SearchPattern, int] = SearchPattern.CONTAINS,
     show_expression_as: Union[ExpressionFormat, str] = ExpressionFormat.TREE,
     **filters,
 ) -> Union[List["Fact"], List[dict]]:
     """Get list of Fact objects or dicts with them.
 
+    Specify either `project_id` or `project_name`.
+    When `project_id` is provided (not `None`), `project_name` is omitted.
+
     Note:
-        If argument `project_id` is not passed then `project_id` is taken from
-        `Connection` object.
+        When `project_id` is `None` and `project_name` is `None`,
+        then its value is overwritten by `project_id` from `connection` object.
 
     Args:
         connection (object): MicroStrategy connection object returned by
@@ -45,6 +50,7 @@ def list_facts(
         limit (optional, int): limit the number of elements returned. If `None`
             (default), all objects are returned.
         project_id (str, optional): Project ID
+        project_name (str, optional): Project name
         search_pattern (SearchPattern enum or int, optional): pattern to search
             for, such as Begin With or Exactly. Possible values are available in
             ENUM mstrio.browsing.SearchPattern. Default value is CONTAINS (4).
@@ -60,10 +66,13 @@ def list_facts(
     Returns:
         list of fact objects or list of fact dictionaries.
     """
+    project_id = get_valid_project_id(
+        connection=connection,
+        project_id=project_id,
+        project_name=project_name,
+        with_fallback=False if project_name else True,
+    )
 
-    if project_id is None:
-        connection._validate_project_selected()
-        project_id = connection.project_id
     objects = search_operations.full_search(
         connection,
         object_types=ObjectTypes.FACT,
@@ -77,7 +86,8 @@ def list_facts(
         return objects
     else:
         show_expression_as = show_expression_as if isinstance(
-            show_expression_as, ExpressionFormat) else ExpressionFormat(show_expression_as)
+            show_expression_as, ExpressionFormat
+        ) else ExpressionFormat(show_expression_as)
         return [
             Fact.from_dict({
                 'show_expression_as': show_expression_as,
@@ -86,7 +96,8 @@ def list_facts(
         ]
 
 
-class Fact(Entity, DeleteMixin, CopyMixin, MoveMixin):
+@class_version_handler('11.3.0100')
+class Fact(Entity, CopyMixin, DeleteMixin, MoveMixin):
     """Python representation for Microstrategy `Fact` object.
 
     Attributes:
@@ -129,11 +140,34 @@ class Fact(Entity, DeleteMixin, CopyMixin, MoveMixin):
     _OBJECT_TYPE = ObjectTypes.FACT
     _DELETE_NONE_VALUES_RECURSION = False
     _API_GETTERS = {
-        ('id', 'sub_type', 'name', 'is_embedded', 'description', 'destination_folder_id', 'path',
-         'data_type', 'expressions', 'entry_level'): facts.read_fact,
-        ('abbreviation', 'type', 'ext_type', 'date_created', 'date_modified', 'version', 'owner',
-         'icon_path', 'view_media', 'ancestors', 'certified_info', 'acg', 'acl',
-         'target_info'): objects.get_object_info
+        (
+            'id',
+            'sub_type',
+            'name',
+            'is_embedded',
+            'description',
+            'destination_folder_id',
+            'path',
+            'data_type',
+            'expressions',
+            'entry_level'
+        ): facts.read_fact,
+        (
+            'abbreviation',
+            'type',
+            'ext_type',
+            'date_created',
+            'date_modified',
+            'version',
+            'owner',
+            'icon_path',
+            'view_media',
+            'ancestors',
+            'certified_info',
+            'acg',
+            'acl',
+            'target_info'
+        ): objects.get_object_info
     }
     _API_PATCH = {
         ('data_type', 'expressions'): (facts.update_fact, 'partial_put'),
@@ -145,16 +179,24 @@ class Fact(Entity, DeleteMixin, CopyMixin, MoveMixin):
         **Entity._FROM_DICT_MAP,
         'owner': User.from_dict,
         'data_type': DataType.from_dict,
-        'expressions': (lambda source, connection:
-                        [FactExpression.from_dict(content, connection) for content in source]),
-        'entry_level':
-            (lambda source, connection:
-             [SchemaObjectReference.from_dict(content, connection) for content in source]),
+        'expressions': (
+            lambda source,
+            connection: [FactExpression.from_dict(content, connection) for content in source]
+        ),
+        'entry_level': (
+            lambda source,
+            connection:
+            [SchemaObjectReference.from_dict(content, connection) for content in source]
+        ),
     }
 
-    def __init__(self, connection: Connection, id: Optional[str] = None,
-                 name: Optional[str] = None,
-                 show_expression_as: Union[ExpressionFormat, str] = ExpressionFormat.TREE) -> None:
+    def __init__(
+        self,
+        connection: Connection,
+        id: Optional[str] = None,
+        name: Optional[str] = None,
+        show_expression_as: Union[ExpressionFormat, str] = ExpressionFormat.TREE
+    ) -> None:
         """Initialize a new instance of Fact class.
 
         Note:
@@ -182,11 +224,13 @@ class Fact(Entity, DeleteMixin, CopyMixin, MoveMixin):
         """
         connection._validate_project_selected()
         if id is None:
-            fact = super()._find_object_with_name(connection=connection, name=name,
-                                                  listing_function=list_facts)
+            fact = super()._find_object_with_name(
+                connection=connection, name=name, listing_function=list_facts
+            )
             id = fact['id']
-        super().__init__(connection=connection, object_id=id, name=name,
-                         show_expression_as=show_expression_as)
+        super().__init__(
+            connection=connection, object_id=id, name=name, show_expression_as=show_expression_as
+        )
 
     def _init_variables(self, **kwargs) -> None:
         """Initialize all properties when creating `Fact` object from
@@ -211,7 +255,8 @@ class Fact(Entity, DeleteMixin, CopyMixin, MoveMixin):
         self._version_id = kwargs.get('version_id')
         show_expression_as = kwargs.get('show_expression_as', 'tree')
         self._show_expression_as = show_expression_as if isinstance(
-            show_expression_as, ExpressionFormat) else ExpressionFormat(show_expression_as)
+            show_expression_as, ExpressionFormat
+        ) else ExpressionFormat(show_expression_as)
 
     @classmethod
     def create(
@@ -264,16 +309,18 @@ class Fact(Entity, DeleteMixin, CopyMixin, MoveMixin):
                 "subType": ObjectSubType.FACT.value,
                 "isEmbedded": is_embedded,
                 "description": description,
-                "destinationFolderId": destination_folder.id if isinstance(
-                    destination_folder, Folder) else destination_folder,
+                "destinationFolderId": destination_folder.id
+                if isinstance(destination_folder, Folder) else destination_folder,
             },
             "dataType": data_type.to_dict() if isinstance(data_type, DataType) else data_type,
             "expressions": [(e.to_dict() if isinstance(e, Dictable) else e) for e in expressions],
             "entryLevel": []
         }
         response = facts.create_fact(
-            connection=connection, body=body,
-            show_expression_as=get_enum_val(show_expression_as, ExpressionFormat)).json()
+            connection=connection,
+            body=body,
+            show_expression_as=get_enum_val(show_expression_as, ExpressionFormat)
+        ).json()
         if config.verbose:
             logger.info(f"Successfully created fact named: '{name}' with ID: '{response['id']}'.")
 
@@ -303,8 +350,8 @@ class Fact(Entity, DeleteMixin, CopyMixin, MoveMixin):
         self._alter_properties(**properties)
 
     def get_tables(
-            self, expression: Optional[Union[FactExpression,
-                                             str]] = None) -> List[SchemaObjectReference]:
+        self, expression: Optional[Union[FactExpression, str]] = None
+    ) -> List[SchemaObjectReference]:
         """ Get list of all tables in given fact expression. If expression
         argument is not specified, list all tables for fact.
 

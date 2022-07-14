@@ -67,8 +67,9 @@ def get_cube_status(connection: "Connection", id: str):
 
 
 @ErrorHandler(err_msg='Error creating a new cube instance with ID {cube_id}.')
-def cube_instance(connection: "Connection", cube_id: str, body: dict = {}, offset: int = 0,
-                  limit: int = 5000):
+def cube_instance(
+    connection: "Connection", cube_id: str, body: dict = {}, offset: int = 0, limit: int = 5000
+):
     """Create a new instance of a specific cube. This in-memory instance can be
     used by other requests.
 
@@ -100,8 +101,9 @@ def cube_instance(connection: "Connection", cube_id: str, body: dict = {}, offse
 
 
 @ErrorHandler(err_msg='Error getting cube {cube_id} contents.')
-def cube_instance_id(connection: "Connection", cube_id: str, instance_id: str, offset: int = 0,
-                     limit: int = 5000):
+def cube_instance_id(
+    connection: "Connection", cube_id: str, instance_id: str, offset: int = 0, limit: int = 5000
+):
     """Get the results of a previously created instance for a specific cube,
     using the in-memory instance created by cube_instance().
 
@@ -133,8 +135,14 @@ def cube_instance_id(connection: "Connection", cube_id: str, instance_id: str, o
     )
 
 
-def cube_instance_id_coroutine(future_session: "FuturesSession", connection: "Connection",
-                               cube_id: str, instance_id: str, offset: int = 0, limit: int = 5000):
+def cube_instance_id_coroutine(
+    future_session: "FuturesSession",
+    connection: "Connection",
+    cube_id: str,
+    instance_id: str,
+    offset: int = 0,
+    limit: int = 5000
+):
     """Get the future of a previously created instance for a specific cube
     asynchronously, using the in-memory instance created by cube_instance().
 
@@ -151,8 +159,13 @@ def cube_instance_id_coroutine(future_session: "FuturesSession", connection: "Co
 
 
 @ErrorHandler(err_msg='Error getting attribute {attribute_id} elements within cube {cube_id}')
-def cube_single_attribute_elements(connection: "Connection", cube_id: str, attribute_id: str,
-                                   offset: int = 0, limit: int = 200000):
+def cube_single_attribute_elements(
+    connection: "Connection",
+    cube_id: str,
+    attribute_id: str,
+    offset: int = 0,
+    limit: int = 200000
+):
     """Get elements of a specific attribute of a specific cube.
 
     Args:
@@ -168,16 +181,19 @@ def cube_single_attribute_elements(connection: "Connection", cube_id: str, attri
     return connection.get(
         url=f'{connection.base_url}/api/cubes/{cube_id}/attributes/{attribute_id}/elements',
         params={
-            'offset': offset,
-            'limit': limit
+            'offset': offset, 'limit': limit
         },
     )
 
 
-def cube_single_attribute_elements_coroutine(future_session: "FuturesSession",
-                                             connection: "Connection", cube_id: str,
-                                             attribute_id: str, offset: int = 0,
-                                             limit: int = 200000):
+def cube_single_attribute_elements_coroutine(
+    future_session: "FuturesSession",
+    connection: "Connection",
+    cube_id: str,
+    attribute_id: str,
+    offset: int = 0,
+    limit: int = 200000
+):
     """Get elements of a specific attribute of a specific cube.
 
     Returns:
@@ -199,7 +215,7 @@ def publish(connection: "Connection", cube_id: str):
         Complete HTTP response object.
     """
 
-    return connection.post(url=f'{connection.base_url}/api/cubes/{cube_id}')
+    return connection.post(url=f'{connection.base_url}/api/v2/cubes/{cube_id}')
 
 
 @ErrorHandler(err_msg='Error getting cube {cube_id} status.')
@@ -223,8 +239,14 @@ def status(connection: "Connection", cube_id: str, throw_error: bool = True):
 
 
 @ErrorHandler(err_msg='Error creating cube {name} definition.')
-def create(connection: "Connection", name: str, folder_id: str, overwrite: bool = None,
-           description: str = None, definition: dict = None):
+def create(
+    connection: "Connection",
+    name: str,
+    folder_id: str,
+    overwrite: bool = None,
+    description: str = None,
+    definition: dict = None
+):
     """
     Create an intelligent cube.
     POST /api/v2/cubes
@@ -240,11 +262,7 @@ def create(connection: "Connection", name: str, folder_id: str, overwrite: bool 
     }
     params = {'X-MSTR-ProjectID': connection.project_id}
 
-    return connection.post(
-        url=f'{connection.base_url}/api/v2/cubes',
-        json=body,
-        params=params
-    )
+    return connection.post(url=f'{connection.base_url}/api/v2/cubes', json=body, params=params)
 
 
 @ErrorHandler(err_msg='Error updating cube {cube_id} definition.')
@@ -259,9 +277,7 @@ def update(connection: "Connection", cube_id: str, definition: dict = None):
     params = {'X-MSTR-ProjectID': connection.project_id}
 
     return connection.put(
-        url=f"{connection.base_url}/api/v2/cubes/{cube_id}",
-        json=body,
-        params=params
+        url=f"{connection.base_url}/api/v2/cubes/{cube_id}", json=body, params=params
     )
 
 

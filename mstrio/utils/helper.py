@@ -1,16 +1,17 @@
-import inspect
-import logging
-import os
-import re
-import warnings
 from datetime import datetime
 from enum import Enum
 from functools import reduce, wraps
+import inspect
 from json.decoder import JSONDecodeError
+import logging
+import os
+import re
 from typing import Any, Callable, Dict, List, Optional, Tuple, TYPE_CHECKING, TypeVar, Union
+import warnings
 
 import pandas as pd
 import stringcase
+
 from mstrio import __version__ as mstrio_version
 from mstrio import config
 from mstrio.api.exceptions import MstrTimeoutError, PromptedContentError, VersionException
@@ -28,8 +29,13 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def deprecation_warning(deprecated: str, new: str, version: str, module: bool = True,
-                        change_compatible_immediately=True):
+def deprecation_warning(
+    deprecated: str,
+    new: str,
+    version: str,
+    module: bool = True,
+    change_compatible_immediately=True
+):
     """This function is used to provide a user with a warning, that a given
     functionality is now deprecated, and won't be supported from a given
     version.
@@ -49,10 +55,13 @@ def deprecation_warning(deprecated: str, new: str, version: str, module: bool = 
     if change_compatible_immediately:
         msg = (
             f"{deprecated}{module} is deprecated and will not be supported starting from mstrio-py"
-            f"{version}. Please use {new} instead.")
+            f"{version}. Please use {new} instead."
+        )
     else:
-        msg = (f"From version {version} {deprecated}{module} will be removed and replaced with "
-               f"{new}")
+        msg = (
+            f"From version {version} {deprecated}{module} will be removed and replaced with "
+            f"{new}"
+        )
     warnings.warn(DeprecationWarning(msg))
 
 
@@ -64,8 +73,10 @@ def url_check(url):
     api_index = url.find('/api')
 
     if match is None:
-        msg = ("Please check the validity of the base_url parameter. Typically of the form "
-               "'https://<<MSTR Domain>>/MicroStrategyLibrary/'")
+        msg = (
+            "Please check the validity of the base_url parameter. Typically of the form "
+            "'https://<<MSTR Domain>>/MicroStrategyLibrary/'"
+        )
         raise ValueError(msg)
     if api_index != -1:
         url = url[:api_index]
@@ -89,7 +100,8 @@ def get_default_args_from_func(func: Callable[[Any], Any]):
     signature = inspect.signature(func)
     return {
         k: v.default
-        for k, v in signature.parameters.items()
+        for k,
+        v in signature.parameters.items()
         if v.default is not inspect.Parameter.empty
     }
 
@@ -101,8 +113,9 @@ def camel_to_snake(response: Union[dict, list]) -> Union[dict, List[dict]]:
     def convert_dict(source):
         return {
             stringcase.snakecase(key):
-                value if not isinstance(value, dict) else convert_dict(value)
-            for key, value in source.items()
+            value if not isinstance(value, dict) else convert_dict(value)
+            for key,
+            value in source.items()
         }
 
     if type(response) == list:
@@ -120,8 +133,9 @@ def snake_to_camel(response: Union[dict, list]) -> Union[dict, List[dict]]:
     def convert_dict(source):
         return {
             stringcase.camelcase(key):
-                value if not isinstance(value, dict) else convert_dict(value)
-            for key, value in source.items()
+            value if not isinstance(value, dict) else convert_dict(value)
+            for key,
+            value in source.items()
         }
 
     if type(response) == list:
@@ -154,6 +168,7 @@ def exception_handler(msg, exception_type=Exception, stack_lvl=2):
 
 
 class IServerError(IOError):
+
     def __init__(self, message, http_code):
         super().__init__(message)
         self.http_code = http_code
@@ -197,17 +212,20 @@ def response_handler(response, msg, throw_error=True, verbose=True, whitelist=No
                  and server_msg == 'HTTP 404 Not Found')
                     or (server_code == 'ERR001' and response.status_code == 405
                         and server_msg == 'HTTP 405 Method Not Allowed')):
-                msg = ("This REST API functionality is not yet supported on this version of "
-                       f"the I-Server: {version_cut(config.iserver_version)}. Please upgrade "
-                       "the I-Server version or downgrade the mstrio-py package (current "
-                       f"version: {version_cut(mstrio_version)}) in order for the versions to "
-                       "match.")
+                msg = (
+                    "This REST API functionality is not yet supported on this version of "
+                    f"the I-Server: {version_cut(config.iserver_version)}. Please upgrade "
+                    "the I-Server version or downgrade the mstrio-py package (current "
+                    f"version: {version_cut(mstrio_version)}) in order for the versions to "
+                    "match."
+                )
                 exception_handler(msg, exception_type=VersionException)
             elif iserver_code == -2147206497:  # MSI_REQUEST_TIMEOUT on server-side
                 raise MstrTimeoutError(res)
             elif iserver_code == -2147468903:
                 raise PromptedContentError(
-                    'Prompted content subscription creation is not supported.')
+                    'Prompted content subscription creation is not supported.'
+                )
             if verbose:
                 logger.error(
                     f'{msg}\n'
@@ -278,8 +296,11 @@ def get_parallel_number(total_chunks):
     return threads
 
 
-def _prepare_objects(objects: Union[dict, List[dict]], filters: Optional[dict] = None,
-                     dict_unpack_value: Optional[str] = None):
+def _prepare_objects(
+    objects: Union[dict, List[dict]],
+    filters: Optional[dict] = None,
+    dict_unpack_value: Optional[str] = None
+):
     if type(objects) is dict and dict_unpack_value:
         objects = objects[dict_unpack_value]
     objects = camel_to_snake(objects)
@@ -288,10 +309,17 @@ def _prepare_objects(objects: Union[dict, List[dict]], filters: Optional[dict] =
     return objects
 
 
-def fetch_objects_async(connection: "Connection", api: Callable, async_api: Callable,
-                        limit: Optional[int], chunk_size: int, filters: dict,
-                        error_msg: Optional[str] = None, dict_unpack_value: Optional[str] = None,
-                        **kwargs) -> list:
+def fetch_objects_async(
+    connection: "Connection",
+    api: Callable,
+    async_api: Callable,
+    limit: Optional[int],
+    chunk_size: int,
+    filters: dict,
+    error_msg: Optional[str] = None,
+    dict_unpack_value: Optional[str] = None,
+    **kwargs
+) -> list:
     """Get all objects asynchronously. Optionally filter the objects using
     `filters` parameter. Works only for endpoints with `limit` and `offset`
     query parameter (pagination).
@@ -322,8 +350,13 @@ def fetch_objects_async(connection: "Connection", api: Callable, async_api: Call
         for arg in args
         if arg not in ['connection', 'limit', 'offset', 'error_msg']
     }
-    response = api(connection=connection, offset=offset, limit=chunk_size, error_msg=error_msg,
-                   **param_value_dict)
+    response = api(
+        connection=connection,
+        offset=offset,
+        limit=chunk_size,
+        error_msg=error_msg,
+        **param_value_dict
+    )
     objects = _prepare_objects(response.json(), filters, dict_unpack_value)
     all_objects.extend(objects)
     current_count = offset + chunk_size
@@ -336,12 +369,18 @@ def fetch_objects_async(connection: "Connection", api: Callable, async_api: Call
         with FuturesSessionWithRenewal(connection=connection, max_workers=threads) as session:
             # Extract parameters of the api wrapper and set them using kwargs
             param_value_dict = auto_match_args(
-                api, kwargs,
-                exclude=['connection', 'limit', 'offset', 'future_session', 'error_msg'])
+                api,
+                kwargs,
+                exclude=['connection', 'limit', 'offset', 'future_session', 'error_msg']
+            )
             futures = [
-                async_api(future_session=session, connection=connection, offset=offset,
-                          limit=chunk_size, **param_value_dict)
-                for offset in range(current_count, total_objects, chunk_size)
+                async_api(
+                    future_session=session,
+                    connection=connection,
+                    offset=offset,
+                    limit=chunk_size,
+                    **param_value_dict
+                ) for offset in range(current_count, total_objects, chunk_size)
             ]
 
         for f in futures:
@@ -353,9 +392,15 @@ def fetch_objects_async(connection: "Connection", api: Callable, async_api: Call
     return all_objects
 
 
-def fetch_objects(connection: "Connection", api: Callable, limit: Optional[int], filters: dict,
-                  error_msg: Optional[str] = None, dict_unpack_value: Optional[str] = None,
-                  **kwargs) -> list:
+def fetch_objects(
+    connection: "Connection",
+    api: Callable,
+    limit: Optional[int],
+    filters: dict,
+    error_msg: Optional[str] = None,
+    dict_unpack_value: Optional[str] = None,
+    **kwargs
+) -> list:
     """Fetch and prepare objects. Optionally filter the objects by using the
     filters parameter. This function only supports endpoints without pagination.
 
@@ -401,8 +446,12 @@ def sort_object_properties(source: dict) -> int:
     return preffered_order.get(source, 50)
 
 
-def auto_match_args(func: Callable, param_dict: dict, exclude: Optional[list] = None,
-                    include_defaults: bool = True) -> dict:
+def auto_match_args(
+    func: Callable,
+    param_dict: dict,
+    exclude: Optional[list] = None,
+    include_defaults: bool = True
+) -> dict:
     """Automatically match dict data to function arguments.
 
     Handles default parameters. Extracts value from Enums. Returns matched
@@ -463,8 +512,17 @@ def dict_compare(d1, d2):
     return added, removed, modified, same
 
 
-def __validate_single_param_value(value, param_name, data_type, max_val, min_val, regex,
-                                  valid_example, inv_val, special_values=None):
+def __validate_single_param_value(
+    value,
+    param_name,
+    data_type,
+    max_val,
+    min_val,
+    regex,
+    valid_example,
+    inv_val,
+    special_values=None
+):
     special_values = special_values or []
     if value in special_values:
         return True
@@ -490,9 +548,17 @@ def __validate_single_param_value(value, param_name, data_type, max_val, min_val
     return True
 
 
-def validate_param_value(param_name, param_val, data_type, max_val=None, min_val=None,
-                         special_values=None, regex=None, exception=True,
-                         valid_example=None) -> bool:
+def validate_param_value(
+    param_name,
+    param_val,
+    data_type,
+    max_val=None,
+    min_val=None,
+    special_values=None,
+    regex=None,
+    exception=True,
+    valid_example=None
+) -> bool:
     """Validate param data type and optionally max, min special values.
 
     Raise:
@@ -512,14 +578,33 @@ def validate_param_value(param_name, param_val, data_type, max_val=None, min_val
         exception_handler(msg, inv_type)
         return False
     if type(param_val) == list:
-        return all([
-            __validate_single_param_value(value, param_name, data_type, max_val, min_val, regex,
-                                          valid_example, inv_val, special_values)
-            for value in param_val
-        ])
+        return all(
+            [
+                __validate_single_param_value(
+                    value,
+                    param_name,
+                    data_type,
+                    max_val,
+                    min_val,
+                    regex,
+                    valid_example,
+                    inv_val,
+                    special_values
+                ) for value in param_val
+            ]
+        )
 
-    return __validate_single_param_value(param_val, param_name, data_type, max_val, min_val, regex,
-                                         valid_example, inv_val, special_values)
+    return __validate_single_param_value(
+        param_val,
+        param_name,
+        data_type,
+        max_val,
+        min_val,
+        regex,
+        valid_example,
+        inv_val,
+        special_values
+    )
 
 
 def extract_all_dict_values(list_of_dicts: List[Dict]) -> List[Any]:
@@ -530,8 +615,9 @@ def extract_all_dict_values(list_of_dicts: List[Dict]) -> List[Any]:
     return all_options
 
 
-def delete_none_values(source: dict, *, whitelist_attributes: Optional[list] = None,
-                       recursion: bool) -> dict:
+def delete_none_values(
+    source: dict, *, whitelist_attributes: Optional[list] = None, recursion: bool
+) -> dict:
     """Delete keys with None values from dictionary.
 
     Args:
@@ -546,8 +632,9 @@ def delete_none_values(source: dict, *, whitelist_attributes: Optional[list] = N
     new_dict = {}
     for key, value in source.items():
         if recursion and isinstance(value, dict):
-            new_dict[key] = delete_none_values(value, whitelist_attributes=whitelist,
-                                               recursion=recursion)
+            new_dict[key] = delete_none_values(
+                value, whitelist_attributes=whitelist, recursion=recursion
+            )
         elif value not in [[], {}, None] or key in whitelist:
             new_dict[key] = value
 
@@ -562,8 +649,13 @@ def get_objects_id(obj, obj_class):
     return None
 
 
-def list_folders(connection, name: Optional[str] = None, to_dataframe: bool = False,
-                 limit: Optional[int] = None, **filters) -> Union[List[dict], pd.DataFrame]:
+def list_folders(
+    connection,
+    name: Optional[str] = None,
+    to_dataframe: bool = False,
+    limit: Optional[int] = None,
+    **filters
+) -> Union[List[dict], pd.DataFrame]:
     """List folders.
 
     Args:
@@ -588,14 +680,25 @@ def list_folders(connection, name: Optional[str] = None, to_dataframe: bool = Fa
     FOLDER_TYPE = 8
 
     msg = "Error while creating an instance for searching objects"
-    res_e = objects.create_search_objects_instance(connection=connection, name=name,
-                                                   pattern=DSS_XML_SEARCH_TYPE_EXACTLY,
-                                                   object_type=FOLDER_TYPE, error_msg=msg)
+    res_e = objects.create_search_objects_instance(
+        connection=connection,
+        name=name,
+        pattern=DSS_XML_SEARCH_TYPE_EXACTLY,
+        object_type=FOLDER_TYPE,
+        error_msg=msg
+    )
     search_id = res_e.json()['id']
     msg = "Error while retrieving folders from the environment."
-    fldrs = fetch_objects_async(connection, api=objects.get_objects,
-                                async_api=objects.get_objects_async, limit=limit, chunk_size=1000,
-                                error_msg=msg, filters=filters, search_id=search_id)
+    fldrs = fetch_objects_async(
+        connection,
+        api=objects.get_objects,
+        async_api=objects.get_objects_async,
+        limit=limit,
+        chunk_size=1000,
+        error_msg=msg,
+        filters=filters,
+        search_id=search_id
+    )
 
     if to_dataframe:
         return pd.DataFrame(fldrs)
@@ -603,9 +706,14 @@ def list_folders(connection, name: Optional[str] = None, to_dataframe: bool = Fa
         return fldrs
 
 
-def create_folder(connection, folder_name: str, folder_description: Optional[str] = None,
-                  parent_name: Optional[str] = None, parent_id: Optional[str] = None,
-                  error_msg=None):
+def create_folder(
+    connection,
+    folder_name: str,
+    folder_description: Optional[str] = None,
+    parent_name: Optional[str] = None,
+    parent_id: Optional[str] = None,
+    error_msg=None
+):
     """Create a folder.
 
     Args:
@@ -643,12 +751,17 @@ def create_folder(connection, folder_name: str, folder_description: Optional[str
             msg += "or multiple folders with the same name exists."
             exception_handler(msg)
         parent_id = fldrs[0]['id']
-    return folders.create_folder(connection=connection, name=folder_name, parent_id=parent_id,
-                                 description=folder_description)
+    return folders.create_folder(
+        connection=connection,
+        name=folder_name,
+        parent_id=parent_id,
+        description=folder_description
+    )
 
 
-def delete_folder(connection, id: Optional[str] = None, name: Optional[str] = None,
-                  error_msg=None):
+def delete_folder(
+    connection, id: Optional[str] = None, name: Optional[str] = None, error_msg=None
+):
     """Delete a folder.
 
     Args:
@@ -683,18 +796,23 @@ def delete_folder(connection, id: Optional[str] = None, name: Optional[str] = No
             exception_handler(msg)
         id = fldrs[0]['id']
     FOLDER_TYPE = 8
-    return objects.delete_object(connection=connection, id=id, object_type=FOLDER_TYPE,
-                                 error_msg=error_msg)
+    return objects.delete_object(
+        connection=connection, id=id, object_type=FOLDER_TYPE, error_msg=error_msg
+    )
 
 
-def merge_id_and_type(object_id: str, object_type: Union["ObjectTypes", "ObjectSubTypes", int],
-                      error_msg: Optional[str] = None) -> str:
+def merge_id_and_type(
+    object_id: str,
+    object_type: Union["ObjectTypes", "ObjectSubTypes", int],
+    error_msg: Optional[str] = None
+) -> str:
     if not object_id or not object_type:
-        exception_handler(msg=error_msg or "Please provide both `id` and `type`.",
-                          exception_type=AttributeError)
+        exception_handler(
+            msg=error_msg or "Please provide both `id` and `type`.", exception_type=AttributeError
+        )
     object_id = get_objects_id(object_id, type(object_id))
-    object_type = get_enum_val(object_type, type(object_type)) if isinstance(object_type,
-                                                                             Enum) else object_type
+    object_type = get_enum_val(object_type, type(object_type)
+                               ) if isinstance(object_type, Enum) else object_type
     return f'{object_id};{object_type}'
 
 
@@ -795,21 +913,48 @@ def choose_cube(connection: "Connection", cube_dict: dict) -> Union["OlapCube", 
         return SuperCube.from_dict(cube_dict, connection)
 
 
-def get_valid_project_id(connection: "Connection", project_id: Optional[str] = None,
-                         project_name: Optional[str] = None, with_fallback: bool = False):
+def get_valid_project_id(
+    connection: "Connection",
+    project_id: Optional[str] = None,
+    project_name: Optional[str] = None,
+    with_fallback: bool = False
+):
+    """Check if the project name exists and return the project ID.
+
+    Args:
+        connection(object): MicroStrategy connection object
+        project_id: Project ID
+        project_name: Project name
+        with_fallback: Specify if the project should be taken from `connection`
+        object if `project_id` is not specified and the project failed to be
+        found based on `project_name`
+    """
     from mstrio.server import Project
+
     # Search for a project by its name if id was not specified, but name was
     if not project_id:
-        try:
-            project_id = Project(connection=connection, name=project_name).id
-        except ValueError:
-            # If project with a given name was not found, try to use a
-            # project specified during initialisation of `connection` obj.
+        project_loaded_list = Project._list_loaded_projects(
+            connection, to_dictionary=True, name=project_name
+        ) if project_name else []
+        if project_loaded_list:
+            project_id = project_loaded_list[0]['id']
+        else:
+            if project_name:
+                msg = (
+                    f"There is no project with the given name: '{project_name}'"
+                    f" or the project is not loaded."
+                )
+            else:
+                msg = "`project_id` and `project_name` were not provided. "
             if with_fallback:
+                logger.info(msg + "Project from `connection` object is used instead.")
                 project_id = fallback_to_conn_project_id(connection)
             else:
-                exception_handler(msg="Project could not be determined.",
-                                  exception_type=ValueError)
+                exception_handler(
+                    msg + "Please specify valid `project_id` or `project_name`",
+                    exception_type=ValueError
+                )
+
     return project_id
 
 
@@ -818,8 +963,24 @@ def fallback_to_conn_project_id(connection: "Connection") -> Optional[str]:
         connection._validate_project_selected()
         return connection.project_id
     except AttributeError:
-        exception_handler(msg="Project could not be determined.",
-                          exception_type=ValueError)
+        exception_handler(msg="Project could not be determined.", exception_type=ValueError)
+
+
+def get_valid_project_name(connection: "Connection", project_id: str):
+    """Returns project name of given project based on its ID.
+
+    Args:
+        connection(object): MicroStrategy connection object
+        project_id: Project ID
+    """
+    from mstrio.server import Project
+
+    project_loaded_list = Project._list_loaded_projects(
+        connection, to_dictionary=True, id=project_id
+    )
+    project_name = project_loaded_list[0]['name']
+
+    return project_name
 
 
 class Dictable:
@@ -894,24 +1055,33 @@ class Dictable:
         cleaned_dict = self.__dict__.copy()
         properties = {
             elem[0]
-            for elem in inspect.getmembers(self.__class__, lambda x: isinstance(x, property))}
+            for elem in inspect.getmembers(self.__class__, lambda x: isinstance(x, property))
+        }
         for prop in properties:
             to_be_deleted = '_' + prop
             cleaned_dict[prop] = cleaned_dict.pop(to_be_deleted, None)
         result = {
             key: self._unpack_objects(key, val, camel_case)
-            for key, val in cleaned_dict.items()
+            for key,
+            val in cleaned_dict.items()
             if key not in hidden_keys
         }
 
-        result = delete_none_values(result, whitelist_attributes=self._ALLOW_NONE_ATTRIBUTES,
-                                    recursion=self._DELETE_NONE_VALUES_RECURSION)
+        result = delete_none_values(
+            result,
+            whitelist_attributes=self._ALLOW_NONE_ATTRIBUTES,
+            recursion=self._DELETE_NONE_VALUES_RECURSION
+        )
         result = {key: result[key] for key in sorted(result, key=sort_object_properties)}
         return snake_to_camel(result) if camel_case else result
 
     @classmethod
-    def from_dict(cls: T, source: Dict[str, Any], connection: Optional["Connection"] = None,
-                  to_snake_case: bool = True) -> T:
+    def from_dict(
+        cls: T,
+        source: Dict[str, Any],
+        connection: Optional["Connection"] = None,
+        to_snake_case: bool = True
+    ) -> T:
         """Creates an object from a dictionary. The dictionary's keys in camel
         case are changed to object's attribute names (by default in snake case)
         and dict values are composed to their proper data types such as Enums,
@@ -936,15 +1106,39 @@ class Dictable:
 
         args = {
             key: cls._dict_to_obj(connection, val, key)
-            for key, val in object_source.items()
+            for key,
+            val in object_source.items()
             if key in cls.__init__.__code__.co_varnames
         }
         obj = cls(**args)  # type: ignore
         return obj
 
     @classmethod
-    def bulk_from_dict(cls: T, source_list: list[dict[str, Any]],
-                       connection: Optional["Connection"] = None, to_snake_case: bool = True) -> T:
+    def bulk_from_dict(
+        cls: T,
+        source_list: list[dict[str, Any]],
+        connection: Optional["Connection"] = None,
+        to_snake_case: bool = True
+    ) -> T:
+        """Creates multiple objects from a list of dictionaries. For each
+        dictionary provided the keys in camel case are changed to object's
+        attribute names (by default in snake case) and dict values are composed
+        to their proper data types such as Enums, list of Enums etc. as
+        specified in the object's _FROM_DICT_MAP.
+
+        Args:
+            cls (T): Class (type) of the objects that should be created.
+            source_list (List[Dict[str, Any]]): A list of dictionaries from
+                which the objects will be constructed.
+            connection (Connection, optional): A MSTR Connection object.
+                Defaults to None.
+            to_snake_case (bool, optional): Set to True if attribute names
+                should be converted from camel case to snake case. Defaults to
+                True.
+
+        Returns:
+            T: A list of objects of type T.
+        """
         return [
             cls.from_dict(source=source, connection=connection, to_snake_case=to_snake_case)
             for source in source_list
@@ -959,5 +1153,6 @@ class Dictable:
             include_defaults=False,
         )
         formatted_params = ', '.join(
-            (f'{param}={repr(value)}' for param, value in param_dict.items()))
+            (f'{param}={repr(value)}' for param, value in param_dict.items())
+        )
         return f'{self.__class__.__name__}({formatted_params})'

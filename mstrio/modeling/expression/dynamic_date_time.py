@@ -55,6 +55,14 @@ class VersatileDate(Dictable):
 
     @staticmethod
     def dispatch(source, connection: Optional['Connection'] = None) -> Type['VersatileDate']:
+        """Returns an appropriate VersatileDate type object from the
+            provided source
+
+        Args:
+            source: object that specifies the VersatileDate object that
+                will be returned
+            connection (optional): MicroStrategy connection object returned
+            by `connection.Connection()`"""
         mode = DateMode(source.get('mode'))
         if mode == DateMode.DYNAMIC:
             cls = DynamicVersatileDate
@@ -227,13 +235,15 @@ class DynamicVersatileDate(VersatileDate):
         attr_name = snakecase(self.adjustment.__class__.__name__)
         result[attr_name] = result.pop('adjustment')
 
-        result = delete_none_values(result, recursion=False,
-                                    whitelist_attributes=self._ALLOW_NONE_ATTRIBUTES)
+        result = delete_none_values(
+            result, recursion=False, whitelist_attributes=self._ALLOW_NONE_ATTRIBUTES
+        )
         return snake_to_camel(result) if camel_case else result
 
     @classmethod
-    def from_dict(cls, source: dict, connection: Optional['Connection'] = None,
-                  to_snake_case=True) -> 'DynamicVersatileDate':
+    def from_dict(
+        cls, source: dict, connection: Optional['Connection'] = None, to_snake_case=True
+    ) -> 'DynamicVersatileDate':
         try:
             key, value = next(
                 (key, value) for key, value in source.items() if key.startswith('adjustment'))

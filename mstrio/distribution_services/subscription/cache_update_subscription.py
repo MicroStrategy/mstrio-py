@@ -13,13 +13,17 @@ class CacheUpdateSubscription(Subscription):
     object."""
     _DELETE_NONE_VALUES_RECURSION = False
 
-    def __init__(self, connection: Connection, subscription_id: str = None, project_id: str = None,
-                 project_name: str = None):
+    def __init__(
+        self,
+        connection: Connection,
+        subscription_id: str = None,
+        project_id: str = None,
+        project_name: str = None
+    ):
         """Initialize CacheUpdateSubscription object, populates it with
         I-Server data if subscription_id is passed.
         Specify either `project_id` or `project_name`.
-        When `project_id` is provided (not `None`), `project_name` is
-        omitted.
+        When `project_id` is provided (not `None`), `project_name` is omitted.
 
         Args:
             connection: MicroStrategy connection object returned
@@ -181,15 +185,24 @@ class CacheUpdateSubscription(Subscription):
             delivery_personal_notification_address_id: Notification details
         """
         return super().alter(
-            name=name, allow_delivery_changes=allow_delivery_changes,
+            name=name,
+            allow_delivery_changes=allow_delivery_changes,
             allow_personalization_changes=allow_personalization_changes,
-            allow_unsubscribe=allow_unsubscribe, send_now=send_now, owner_id=owner_id,
-            schedules=schedules, contents=contents, recipients=recipients, delivery=delivery,
-            custom_msg=custom_msg, delivery_expiration_date=delivery_expiration_date,
-            contact_security=contact_security, cache_cache_type=cache_cache_type,
+            allow_unsubscribe=allow_unsubscribe,
+            send_now=send_now,
+            owner_id=owner_id,
+            schedules=schedules,
+            contents=contents,
+            recipients=recipients,
+            delivery=delivery,
+            custom_msg=custom_msg,
+            delivery_expiration_date=delivery_expiration_date,
+            contact_security=contact_security,
+            cache_cache_type=cache_cache_type,
             cache_shortcut_cache_format=cache_shortcut_cache_format,
             cache_library_cache_types=cache_library_cache_types,
             cache_reuse_dataset_cache=cache_reuse_dataset_cache,
             cache_is_all_library_users=cache_is_all_library_users,
             delivery_notification_enabled=delivery_notification_enabled,
-            delivery_personal_notification_address_id=delivery_personal_notification_address_id)
+            delivery_personal_notification_address_id=delivery_personal_notification_address_id
+        )

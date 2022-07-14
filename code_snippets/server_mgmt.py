@@ -49,8 +49,9 @@ clstr.default_node
 clstr.set_primary_node(node=NODE_NAME)
 
 # update node settings or reset them to default values
-clstr.update_node_settings(node=NODE_NAME, load_balance_factor=99,
-                           initial_pool_size=511, max_pool_size=1023)
+clstr.update_node_settings(
+    node=NODE_NAME, load_balance_factor=99, initial_pool_size=511, max_pool_size=1023
+)
 clstr.reset_node_settings(node=NODE_NAME)
 
 # stop/start service on selected nodes (error will be thrown in case of wrong
@@ -72,10 +73,8 @@ project.unload()
 
 # via Cluster can we also specify on which node(s) project will be loaded
 # or unloaded
-clstr.load_project(project=PROJECT_NAME,
-                   on_nodes=[NODE_NAME, NODE_NAME_2])
-clstr.unload_project(project=PROJECT_NAME,
-                     on_nodes=[NODE_NAME, NODE_NAME_2])
+clstr.load_project(project=PROJECT_NAME, on_nodes=[NODE_NAME, NODE_NAME_2])
+clstr.unload_project(project=PROJECT_NAME, on_nodes=[NODE_NAME, NODE_NAME_2])
 
 # get settings of a server as a dataframe
 server_settings_df = env.server_settings.to_dataframe

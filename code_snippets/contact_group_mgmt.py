@@ -9,27 +9,24 @@ ease its usage.
 # and they can be also represented as dictionaries). User linked to the contact
 # group can be passed as a `User` object or just its ID.
 
-from mstrio.distribution_services import (
-    ContactGroup, ContactGroupMember, ContactGroupMemberType
-)
+from mstrio.distribution_services import (ContactGroup, ContactGroupMember, ContactGroupMemberType)
 from mstrio.users_and_groups import User
 from mstrio.connection import get_connection
 from production.mstrio.distribution_services.contact.contact import Contact
 from production.mstrio.distribution_services.contact_group.contact_group import list_contact_groups
 
-PROJECT_NAME = '<Project_name>' # Insert project name here
-MEMBER_NAME = '<Username>' # here insert member name
-MEMBER_ID = '<Member_ID>'# Insert member ID
-USER_NAME = '<Username>' # name of user to link to the contact group
-CONTACT_GROUP_NAME = '<Contact_group_name>' # Name of contact group
-CONTACT_GROUP_DESCRIPTION = '<Contact_group_desc>' # Description of newly created contact group
-CONTACT_GROUP_ID = '<Contact_group_ID>' # Insert your contact group ID here
-CONTACT_GROUP_NEW_NAME = '<Contact_group_name>' # Insert new name of contact group
-CONTACT_GROUP_NEW_DESCRIPTION = '<Contact_group_desc>' # Insert new description of contact group
-OTHER_USER_NAME = '<Username>' # Insert new user for contact group
-CONTACT_NAME = '<Contact_name>' # Insert contact name here
-OTHER_CONTACT_GROUP_NAME = '<Contact_group_name>' # Insert name of another contact group here
-
+PROJECT_NAME = '<Project_name>'  # Insert project name here
+MEMBER_NAME = '<Username>'  # here insert member name
+MEMBER_ID = '<Member_ID>'  # Insert member ID
+USER_NAME = '<Username>'  # name of user to link to the contact group
+CONTACT_GROUP_NAME = '<Contact_group_name>'  # Name of contact group
+CONTACT_GROUP_DESCRIPTION = '<Contact_group_desc>'  # Description of newly created contact group
+CONTACT_GROUP_ID = '<Contact_group_ID>'  # Insert your contact group ID here
+CONTACT_GROUP_NEW_NAME = '<Contact_group_name>'  # Insert new name of contact group
+CONTACT_GROUP_NEW_DESCRIPTION = '<Contact_group_desc>'  # Insert new description of contact group
+OTHER_USER_NAME = '<Username>'  # Insert new user for contact group
+CONTACT_NAME = '<Contact_name>'  # Insert contact name here
+OTHER_CONTACT_GROUP_NAME = '<Contact_group_name>'  # Insert name of another contact group here
 
 conn = get_connection(workstationData, project_name=PROJECT_NAME)
 
@@ -55,14 +52,12 @@ contact_groups = list_contact_groups(conn)
 cg = ContactGroup(conn, id=CONTACT_GROUP_ID)
 cg_by_name = ContactGroup(conn, name=CONTACT_GROUP_NAME)
 
-
 # get properties of contact group
 cg_name = cg.name
 cg_description = cg.description
 cg_lined_user = cg.linked_user
 cg_members = cg.members
 cg_enabled = cg.enabled
-
 
 # alter contact group
 cg.alter(

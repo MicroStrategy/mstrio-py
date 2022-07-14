@@ -55,8 +55,9 @@ def get_transmitter(connection: "Connection", id: str, error_msg: Optional[str] 
 
 
 @ErrorHandler(err_msg='Error updating Transmitter with ID {id}')
-def update_transmitter(connection: "Connection", id: str, body: dict,
-                       error_msg: Optional[str] = None):
+def update_transmitter(
+    connection: "Connection", id: str, body: dict, error_msg: Optional[str] = None
+):
     """Update a transmitter.
 
     Args:

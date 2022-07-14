@@ -7,11 +7,12 @@ from mstrio.connection import Connection
 from mstrio.server.cluster import Cluster
 from mstrio.utils import helper
 from mstrio.utils.sessions import FuturesSessionWithRenewal
-
+from mstrio.utils.version_helper import class_version_handler
 
 logger = logging.getLogger(__name__)
 
 
+@class_version_handler('11.2.0000')
 class DatabaseConnections:
     """Browse and manage database connections on the environment.
 
@@ -28,8 +29,9 @@ class DatabaseConnections:
         """
         self.connection = connection
 
-    def list_connections(self, nodes: Union[str, List[str]] = None, limit: Optional[int] = None,
-                         **filters) -> List[Dict[str, Any]]:
+    def list_connections(
+        self, nodes: Union[str, List[str]] = None, limit: Optional[int] = None, **filters
+    ) -> List[Dict[str, Any]]:
         """Get all active database connections. Optionally filter the
          connections by specifying the `filters` keyword arguments.
 
@@ -46,11 +48,14 @@ class DatabaseConnections:
             nodes = [n['name'] for n in all_nodes if n['status'] == 'running']
 
         nodes_names = ",".join(nodes) if isinstance(nodes, list) else nodes
-        all_databases = helper.fetch_objects(connection=self.connection,
-                                             api=monitors.get_database_connections,
-                                             nodes_names=nodes_names,
-                                             dict_unpack_value="dbConnectionInstances",
-                                             limit=limit, filters=filters)
+        all_databases = helper.fetch_objects(
+            connection=self.connection,
+            api=monitors.get_database_connections,
+            nodes_names=nodes_names,
+            dict_unpack_value="dbConnectionInstances",
+            limit=limit,
+            filters=filters
+        )
         return all_databases
 
     def disconnect_database(self, connection_id: str, force: bool = False) -> bool:
@@ -65,8 +70,10 @@ class DatabaseConnections:
         """
         user_input = 'N'
         if not force:
-            user_input = input(f"Are you sure you want to disconnect database connection "
-                               f"'with ID:{connection_id}? [Y/N]: ")
+            user_input = input(
+                f"Are you sure you want to disconnect database connection "
+                f"'with ID:{connection_id}? [Y/N]: "
+            )
         if force or user_input == 'Y':
             response = monitors.delete_database_connection(self.connection, connection_id)
             if response.status_code == 204 and config.verbose:
@@ -92,7 +99,8 @@ class DatabaseConnections:
         user_input = 'N'
         if not force:
             user_input = input(
-                "Are you sure you want to disconnect all database connections? [Y/N]: ")
+                "Are you sure you want to disconnect all database connections? [Y/N]: "
+            )
             if user_input != "Y":
                 return None
             else:
@@ -102,16 +110,18 @@ class DatabaseConnections:
         threads = helper.get_parallel_number(len(connections))
         with FuturesSessionWithRenewal(connection=self.connection, max_workers=threads) as session:
 
-            futures = [monitors.delete_database_connection_async(session, self.connection,
-                                                                 conn["id"])
-                       for conn in connections]
+            futures = [
+                monitors.delete_database_connection_async(session, self.connection, conn["id"])
+                for conn in connections
+            ]
             statuses: List[Dict[str, Union[str, int]]] = []
             for f in futures:
                 response = f.result()
-                statuses.append({
-                    'id': response.url.rsplit("/").pop(-1),
-                    'status': response.status_code
-                })
+                statuses.append(
+                    {
+                        'id': response.url.rsplit("/").pop(-1), 'status': response.status_code
+                    }
+                )
         return self._prepare_disconnect_by_id_message(statuses=statuses)
 
     @staticmethod

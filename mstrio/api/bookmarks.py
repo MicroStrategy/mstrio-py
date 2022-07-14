@@ -104,8 +104,9 @@ def update_bookmark(connection, bookmark_id, body, error_msg=None):
 
 
 @ErrorHandler(err_msg='Error adding bookmark {bookmark_name}')
-def add_bookmark(connection, bookmark_name, instance_id, shortcut_id,
-                 error_msg=None):  # shortcut needs to be created to add a bookmark!
+def add_bookmark(
+    connection, bookmark_name, instance_id, shortcut_id, error_msg=None
+):  # shortcut needs to be created to add a bookmark!
     """Update a bookmark.
 
     Args:

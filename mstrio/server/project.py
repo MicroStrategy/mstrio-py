@@ -1,16 +1,18 @@
+from enum import Enum, IntEnum
 import logging
 import time
-from enum import Enum, IntEnum
 from typing import List, Optional, Union
 
-import mstrio.utils.helper as helper
+from pandas import DataFrame, Series
+from tqdm import tqdm
+
 from mstrio import config
 from mstrio.api import monitors, projects
 from mstrio.connection import Connection
 from mstrio.utils.entity import Entity, ObjectTypes
+import mstrio.utils.helper as helper
 from mstrio.utils.settings.base_settings import BaseSettings
-from pandas import DataFrame, Series
-from tqdm import tqdm
+from mstrio.utils.version_helper import method_version_handler
 
 logger = logging.getLogger(__name__)
 
@@ -84,8 +86,10 @@ def compare_project_settings(projects: List["Project"], show_diff_only: bool = F
         if df.empty and config.verbose:
             project_names = list(to_be_compared.keys())
             project_names.remove(base)
-            msg = (f"There is no difference in settings between project '{base}' and "
-                   f"remaining projects: '{project_names}'")
+            msg = (
+                f"There is no difference in settings between project '{base}' and "
+                f"remaining projects: '{project_names}'"
+            )
             logger.info(msg)
     return df
 
@@ -122,8 +126,9 @@ class Project(Entity):
     _STATUS_PATH = "/status"
     _DELETE_NONE_VALUES_RECURSION = False
 
-    def __init__(self, connection: Connection, name: Optional[str] = None,
-                 id: Optional[str] = None) -> None:
+    def __init__(
+        self, connection: Connection, name: Optional[str] = None, id: Optional[str] = None
+    ) -> None:
         """Initialize Project object by passing `name` or `id`. When `id` is
         provided (not `None`), `name` is omitted.
 
@@ -145,22 +150,26 @@ class Project(Entity):
             project_list = Project._list_project_ids(connection, name=name)
             if project_list:
                 id = project_list[0]
-            elif project_list == []:
-                project_loaded_list = Project._list_loaded_projects(connection, to_dictionary=True,
-                                                                    name=name)
-                try:
-                    id = project_loaded_list[0]['id']
-                except IndexError:
-                    helper.exception_handler(
-                        f"There is no project with the given name: '{name}'",
-                        exception_type=ValueError)
+            else:
+                helper.exception_handler(
+                    f"There is no project with the given name: '{name}'",
+                    exception_type=ValueError
+                )
 
-        super().__init__(connection=connection, object_id=id, name=name)
-
-        if not self.is_loaded():
-            helper.exception_handler(("Some projects are either unloaded or idled. Change "
-                                      "status using the 'load()' or 'resume()' method to use "
-                                      "all functionality."), exception_type=UserWarning)
+        try:
+            super().__init__(connection=connection, object_id=id, name=name)
+        except helper.IServerError as e:
+            if not self.is_loaded():
+                helper.exception_handler(
+                    (
+                        "Some projects are either unloaded or idled. Change "
+                        "status using the 'load()' or 'resume()' method to use "
+                        "all functionality."
+                    ),
+                    exception_type=UserWarning
+                )
+            else:
+                raise e
 
     def _init_variables(self, **kwargs) -> None:
         super()._init_variables(**kwargs)
@@ -169,17 +178,23 @@ class Project(Entity):
         self._nodes = kwargs.get("nodes")
 
     @classmethod
-    def _create(cls, connection: Connection, name: str, description: Optional[str] = None,
-                force: bool = False) -> Optional["Project"]:
+    def _create(
+        cls,
+        connection: Connection,
+        name: str,
+        description: Optional[str] = None,
+        force: bool = False
+    ) -> Optional["Project"]:
         user_input = 'N'
         if not force:
-            user_input = input(
-                f"Are you sure you want to create new project '{name}'? [Y/N]: ")
+            user_input = input(f"Are you sure you want to create new project '{name}'? [Y/N]: ")
 
         if force or user_input == 'Y':
             # Create new project
             with tqdm(desc=f"Please wait while Project '{name}' is being created.",
-                      bar_format='{desc}', leave=False, disable=config.verbose):
+                      bar_format='{desc}',
+                      leave=False,
+                      disable=config.verbose):
                 projects.create_project(connection, {"name": name, "description": description})
                 http_status, i_server_status = 500, 'ERR001'
                 while http_status == 500 and i_server_status == 'ERR001':
@@ -195,14 +210,25 @@ class Project(Entity):
             return None
 
     @classmethod
-    def _list_projects(cls, connection: Connection, to_dictionary: bool = False,
-                       limit: Optional[int] = None,
-                       **filters) -> Union[List["Project"], List[dict]]:
+    @method_version_handler('11.2.0000')
+    def _list_projects(
+        cls,
+        connection: Connection,
+        to_dictionary: bool = False,
+        limit: Optional[int] = None,
+        **filters
+    ) -> Union[List["Project"], List[dict]]:
         msg = "Error getting information for a set of Projects."
-        objects = helper.fetch_objects_async(connection, monitors.get_projects,
-                                             monitors.get_projects_async,
-                                             dict_unpack_value='projects', limit=limit,
-                                             chunk_size=50, error_msg=msg, filters=filters)
+        objects = helper.fetch_objects_async(
+            connection,
+            monitors.get_projects,
+            monitors.get_projects_async,
+            dict_unpack_value='projects',
+            limit=limit,
+            chunk_size=50,
+            error_msg=msg,
+            filters=filters
+        )
         if to_dictionary:
             return objects
         else:
@@ -212,9 +238,11 @@ class Project(Entity):
             unloaded = [project for project in projects if project.id not in projects_loaded_ids]
 
             if unloaded:
-                msg = (f"Projects {[project.name for project in unloaded]} are either unloaded or "
-                       "idled. Change status using the 'load()' or 'resume()' method to use all "
-                       "functionality.")
+                msg = (
+                    f"Projects {[project.name for project in unloaded]} are either unloaded or "
+                    "idled. Change status using the 'load()' or 'resume()' method to use all "
+                    "functionality."
+                )
                 helper.exception_handler(msg, exception_type=UserWarning)
             return projects
 
@@ -252,8 +280,8 @@ class Project(Entity):
             description: new description of the project.
         """
         func = self.alter
-        args = func.__code__.co_varnames[:func.__code__.co_argcount]
-        defaults = func.__defaults__  # type: ignore
+        args = helper.get_default_args_from_func(func)
+        defaults = helper.get_default_args_from_func(func)
         default_dict = dict(zip(args[-len(defaults):], defaults)) if defaults else {}
         local = locals()
         properties = {}
@@ -275,10 +303,15 @@ class Project(Entity):
         else:
             helper.exception_handler(
                 "'on_nodes' argument needs to be of type: [list[str], str, NoneType]",
-                exception_type=TypeError)
+                exception_type=TypeError
+            )
 
-    def idle(self, on_nodes: Optional[Union[str, List[str]]] = None,
-             mode: Union[IdleMode, str] = IdleMode.REQUEST) -> None:
+    @method_version_handler('11.2.0000')
+    def idle(
+        self,
+        on_nodes: Optional[Union[str, List[str]]] = None,
+        mode: Union[IdleMode, str] = IdleMode.REQUEST
+    ) -> None:
         """Request to idle a specific cluster node. Idle project with mode
         options.
 
@@ -290,11 +323,11 @@ class Project(Entity):
 
         def idle_project(node: str, mode: IdleMode):
             body = {
-                "operationList": [{
-                    "op": "replace",
-                    "path": self._STATUS_PATH,
-                    "value": mode.value
-                }]
+                "operationList": [
+                    {
+                        "op": "replace", "path": self._STATUS_PATH, "value": mode.value
+                    }
+                ]
             }
             response = monitors.update_node_properties(self.connection, node, self.id, body)
             if response.status_code == 202:
@@ -318,10 +351,12 @@ class Project(Entity):
                 mode = IdleMode[mode]
             else:
                 helper.exception_handler(
-                    "Unsupported mode, please provide a valid `IdleMode` value.", KeyError)
+                    "Unsupported mode, please provide a valid `IdleMode` value.", KeyError
+                )
 
         self.__change_project_state(func=idle_project, on_nodes=on_nodes, mode=mode)
 
+    @method_version_handler('11.2.0000')
     def resume(self, on_nodes: Optional[Union[str, List[str]]] = None) -> None:
         """Request to resume the project on the chosen cluster nodes. If
         nodes are not specified, the project will be loaded on all nodes.
@@ -334,9 +369,7 @@ class Project(Entity):
         def resume_project(node):
             body = {
                 "operationList": [{
-                    "op": "replace",
-                    "path": self._STATUS_PATH,
-                    "value": "loaded"
+                    "op": "replace", "path": self._STATUS_PATH, "value": "loaded"
                 }]
             }
             response = monitors.update_node_properties(self.connection, node, self.id, body)
@@ -351,6 +384,7 @@ class Project(Entity):
 
         self.__change_project_state(func=resume_project, on_nodes=on_nodes)
 
+    @method_version_handler('11.2.0000')
     def load(self, on_nodes: Optional[Union[str, List[str]]] = None) -> None:
         """Request to load the project onto the chosen cluster nodes. If
         nodes are not specified, the project will be loaded on all nodes.
@@ -363,9 +397,7 @@ class Project(Entity):
         def load_project(node):
             body = {
                 "operationList": [{
-                    "op": "replace",
-                    "path": self._STATUS_PATH,
-                    "value": "loaded"
+                    "op": "replace", "path": self._STATUS_PATH, "value": "loaded"
                 }]
             }
             response = monitors.update_node_properties(self.connection, node, self.id, body)
@@ -380,6 +412,7 @@ class Project(Entity):
 
         self.__change_project_state(func=load_project, on_nodes=on_nodes)
 
+    @method_version_handler('11.2.0000')
     def unload(self, on_nodes: Optional[Union[str, List[str]]] = None) -> None:
         """Request to unload the project from the chosen cluster nodes. If
         nodes are not specified, the project will be unloaded on all nodes.
@@ -394,14 +427,15 @@ class Project(Entity):
 
         def unload_project(node):
             body = {
-                "operationList": [{
-                    "op": "replace",
-                    "path": self._STATUS_PATH,
-                    "value": "unloaded"
-                }]
+                "operationList": [
+                    {
+                        "op": "replace", "path": self._STATUS_PATH, "value": "unloaded"
+                    }
+                ]
             }
-            response = monitors.update_node_properties(self.connection, node, self.id, body,
-                                                       whitelist=[('ERR001', 500)])
+            response = monitors.update_node_properties(
+                self.connection, node, self.id, body, whitelist=[('ERR001', 500)]
+            )
             if response.status_code == 202:
                 tmp = helper.filter_list_of_dicts(self.nodes, name=node)
                 tmp[0]['projects'] = [response.json()['project']]
@@ -415,6 +449,7 @@ class Project(Entity):
 
         self.__change_project_state(func=unload_project, on_nodes=on_nodes)
 
+    @method_version_handler('11.3.0000')
     def register(self, on_nodes: Optional[Union[str, list]] = None) -> None:
         """Register project on nodes.
 
@@ -431,6 +466,7 @@ class Project(Entity):
             value = list(set(self.load_on_startup) | set(on_nodes))
         self._register(on_nodes=value)
 
+    @method_version_handler('11.3.0000')
     def unregister(self, on_nodes: Optional[Union[str, list]] = None) -> None:
         """Unregister project on nodes.
 
@@ -460,8 +496,9 @@ class Project(Entity):
         loaded = False
         self.fetch('nodes')
         if not isinstance(self.nodes, list):
-            helper.exception_handler("Could not retrieve current project status.",
-                                     exception_type=ConnectionError)
+            helper.exception_handler(
+                "Could not retrieve current project status.", exception_type=ConnectionError
+            )
         for node in self.nodes:
             projects = node.get('projects')
             if projects:
@@ -600,12 +637,15 @@ class ProjectSettings(BaseSettings):
                 logging.info(f'Project settings partially successful.\n{partial_succ}')
 
     def _fetch(self) -> dict:
-        response = projects.get_project_settings(self._connection, self._project_id,
-                                                 whitelist=[('ERR001', 404)])
+        response = projects.get_project_settings(
+            self._connection, self._project_id, whitelist=[('ERR001', 404)]
+        )
         settings = response.json() if response.ok else {}
         if not response.ok:
-            msg = ("Settings could not be fetched. It may be because the project is not "
-                   "loaded in the Intelligence Server or the project is idle.")
+            msg = (
+                "Settings could not be fetched. It may be because the project is not "
+                "loaded in the Intelligence Server or the project is idle."
+            )
             helper.exception_handler(msg, Warning)
         return self._prepare_settings_fetch(settings)
 

@@ -36,8 +36,9 @@ def delete_subscriptions_of_departed_users(connection: "Connection") -> None:
             if sub_manager.delete(subscriptions=subs, force=True):
                 print("All " + msg + " were deleted.", flush=True)
             else:
-                print("Not all " + msg + " were deleted or there was no subscriptions.",
-                      flush=True)
+                print(
+                    "Not all " + msg + " were deleted or there was no subscriptions.", flush=True
+                )
 
 
 # connect to environment without providing user credentials

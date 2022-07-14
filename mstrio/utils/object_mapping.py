@@ -50,8 +50,9 @@ def __str_to_class(classname):
     return getattr(sys.modules[__name__], classname)
 
 
-def map_to_object(object_type: Union[int, ObjectTypes], subtype: Union[int,
-                                                                       ObjectSubTypes] = None):
+def map_to_object(
+    object_type: Union[int, ObjectTypes], subtype: Union[int, ObjectSubTypes] = None
+):
     if not isinstance(object_type, ObjectTypes):
         try:
             object_type = ObjectTypes(object_type)
@@ -76,7 +77,7 @@ def map_to_object(object_type: Union[int, ObjectTypes], subtype: Union[int,
 
 def map_objects_list(connection: "Connection", objects_list: List):
     return [
-        map_to_object(obj.get('type'), obj.get('subtype')).from_dict(source=obj,
-                                                                     connection=connection)
+        map_to_object(obj.get('type'),
+                      obj.get('subtype')).from_dict(source=obj, connection=connection)
         for obj in objects_list
     ]

@@ -6,8 +6,15 @@ from mstrio.utils.helper import _prepare_objects, auto_match_args, response_hand
 from mstrio.utils.sessions import FuturesSessionWithRenewal
 
 
-def all_nodes_async(connection, async_api: Callable, filters: dict, error_msg: str,
-                    unpack_value: Optional[str] = None, limit: Optional[int] = None, **kwargs):
+def all_nodes_async(
+    connection,
+    async_api: Callable,
+    filters: dict,
+    error_msg: str,
+    unpack_value: Optional[str] = None,
+    limit: Optional[int] = None,
+    **kwargs
+):
     """Return list of objects fetched async using wrappers in monitors.py
     """
 
@@ -29,11 +36,12 @@ def all_nodes_async(connection, async_api: Callable, filters: dict, error_msg: s
         param_value_dict = auto_match_args(
             async_api,
             kwargs,
-            exclude=['connection', 'limit', 'offset', 'future_session', 'error_msg', 'node_name'])
+            exclude=['connection', 'limit', 'offset', 'future_session', 'error_msg', 'node_name']
+        )
         futures = [
-            async_api(future_session=session, connection=connection, node_name=n,
-                      **param_value_dict)
-            for n in node_names
+            async_api(
+                future_session=session, connection=connection, node_name=n, **param_value_dict
+            ) for n in node_names
         ]
         objects = []
         for f in futures:

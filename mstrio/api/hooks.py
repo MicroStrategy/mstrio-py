@@ -43,5 +43,6 @@ def save_response(response, *args, **kwargs):
             try:
                 json.dump(response.json(), f)
             except JSONDecodeError:
-                exception_handler("Could not decode response. Skipping creating JSON file.",
-                                  Warning)
+                exception_handler(
+                    "Could not decode response. Skipping creating JSON file.", Warning
+                )

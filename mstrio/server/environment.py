@@ -6,8 +6,10 @@ from mstrio.api import monitors
 from mstrio.server.project import compare_project_settings, Project
 from mstrio.server.server import ServerSettings
 import mstrio.utils.helper as helper
+from mstrio.utils.version_helper import class_version_handler
 
 
+@class_version_handler('11.3.0000')
 class Environment:
     """Browse and manage Projects on the environment. List loaded
     projects, nodes (servers) and compare project settings on the
@@ -101,8 +103,9 @@ class Environment:
             **filters,
         )
 
-    def list_nodes(self, project: Optional[Union[str, "Project"]] = None,
-                   node_name: Optional[str] = None) -> List[dict]:
+    def list_nodes(
+        self, project: Optional[Union[str, "Project"]] = None, node_name: Optional[str] = None
+    ) -> List[dict]:
         """Return a list of I-Server nodes and their properties. Optionally
         filter by `project` or `node_name`.
 
@@ -114,8 +117,9 @@ class Environment:
         response = monitors.get_node_info(self.connection, project_id, node_name).json()
         return response['nodes']
 
-    def is_loaded(self, project_id: Optional[str] = None,
-                  project_name: Optional[str] = None) -> bool:
+    def is_loaded(
+        self, project_id: Optional[str] = None, project_name: Optional[str] = None
+    ) -> bool:
         """Check if project is loaded, by passing project ID or name,
         returns True or False.
 
@@ -125,7 +129,8 @@ class Environment:
         """
         if project_id is None and project_name is None:
             helper.exception_handler(
-                "Please specify either 'project_name' or 'project_id' argument.")
+                "Please specify either 'project_name' or 'project_id' argument."
+            )
         if project_id is None:
             project_list = Project._list_project_ids(self.connection, name=project_name)
             if project_list:
@@ -143,8 +148,9 @@ class Environment:
                 break
         return loaded
 
-    def compare_settings(self, projects: Union[List[str], List["Project"]] = None,
-                         show_diff_only: bool = False) -> DataFrame:
+    def compare_settings(
+        self, projects: Union[List[str], List["Project"]] = None, show_diff_only: bool = False
+    ) -> DataFrame:
         """Compare project' settings to the first project in the
         provided list.
 
@@ -159,10 +165,12 @@ class Environment:
         Returns:
             Dataframe with values of selected project' settings.
         """
+
         def not_exist_warning(wrong_name):
             helper.exception_handler(
                 f"Project '{wrong_name}' does not exist and will be skipped.",
-                exception_type=Warning)
+                exception_type=Warning
+            )
 
         if projects:
             just_objects = [project for project in projects if isinstance(project, Project)]
@@ -174,8 +182,10 @@ class Environment:
         all_projects = self.list_projects()
         if type(projects) == list:
             if len(projects) < 2:
-                helper.exception_handler("Provide more than one project object or name in list",
-                                         exception_type=TypeError)
+                helper.exception_handler(
+                    "Provide more than one project object or name in list",
+                    exception_type=TypeError
+                )
 
             # extract project names from either project object or strings
             project_names = [
@@ -198,6 +208,7 @@ class Environment:
         else:
             helper.exception_handler(
                 "The 'projects' parameter needs to be a list of len > 1 or None.",
-                exception_type=TypeError)
+                exception_type=TypeError
+            )
 
         return compare_project_settings(projects, show_diff_only)

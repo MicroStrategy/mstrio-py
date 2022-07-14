@@ -42,22 +42,19 @@ PERMISSION = '<permission_type>'  # type of permission to set;
 conn = get_connection(workstationData, project_name=PROJECT_NAME)
 
 # create multiple users
-users_array = [{
-    'username': USERNAME_1,
-    'fullName': FULLNAME_1
-}, {
-    'username': USERNAME_2,
-    'fullName': FULLNAME_2
-}, {
-    'username': USERNAME_3,
-    'fullName': FULLNAME_3
-}, {
-    'username': USERNAME_4,
-    'fullName': FULLNAME_4
-}, {
-    'username': USERNAME_5,
-    'fullName': FULLNAME_5
-}]
+users_array = [
+    {
+        'username': USERNAME_1, 'fullName': FULLNAME_1
+    }, {
+        'username': USERNAME_2, 'fullName': FULLNAME_2
+    }, {
+        'username': USERNAME_3, 'fullName': FULLNAME_3
+    }, {
+        'username': USERNAME_4, 'fullName': FULLNAME_4
+    }, {
+        'username': USERNAME_5, 'fullName': FULLNAME_5
+    }
+]
 for u in users_array:
     User.create(connection=conn, username=u['username'], full_name=u['fullName'])
 
@@ -90,22 +87,22 @@ user_group_.add_users(users=[user_.id])
 user_.set_custom_permissions(
     to_objects=[OBJECT_ID],
     object_type=OBJECT_TYPE,
-    execute='<permission>',  # Available values for permissions are 'grant', 'deny', 'default' or None
+    execute=
+    '<permission>',  # Available values for permissions are 'grant', 'deny', 'default' or None
     use='<permission>',
     control='<permission>',
     delete='<permission>',
     write='<permission>',
     read='<permission>',
-    browse='<permission>')
+    browse='<permission>'
+)
 
 # set permission of the user group for given objects
-user_group_.set_permission(permission=PERMISSION,
-                           to_objects=[OBJECT_ID], object_type=OBJECT_TYPE)
+user_group_.set_permission(permission=PERMISSION, to_objects=[OBJECT_ID], object_type=OBJECT_TYPE)
 
 # delete a user and a user group
 user_.delete()
 user_group_.delete()
-
 
 # Addresses
 user_john = User(connection=conn, name=FULLNAME_6)

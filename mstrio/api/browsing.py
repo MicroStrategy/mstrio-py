@@ -12,14 +12,22 @@ if TYPE_CHECKING:
 
 
 @ErrorHandler(err_msg='Error searching metadata.')
-def store_search_instance(connection: "Connection", project_id: Optional[str] = None,
-                          name: Optional[str] = None, pattern: Optional[int] = None,
-                          domain: Optional[int] = None, root: Optional[str] = None,
-                          object_types: Optional[List[int]] = None,
-                          uses_object: Optional[str] = None, uses_recursive: bool = False,
-                          uses_one_of: Optional[bool] = None, used_by_object: Optional[str] = None,
-                          used_by_recursive: Optional[bool] = None,
-                          used_by_one_of: Optional[bool] = None, error_msg: Optional[str] = None):
+def store_search_instance(
+    connection: "Connection",
+    project_id: Optional[str] = None,
+    name: Optional[str] = None,
+    pattern: Optional[int] = None,
+    domain: Optional[int] = None,
+    root: Optional[str] = None,
+    object_types: Optional[List[int]] = None,
+    uses_object: Optional[str] = None,
+    uses_recursive: bool = False,
+    uses_one_of: Optional[bool] = None,
+    used_by_object: Optional[str] = None,
+    used_by_recursive: Optional[bool] = None,
+    used_by_one_of: Optional[bool] = None,
+    error_msg: Optional[str] = None
+):
     """
     Search the metadata and store an instance of search results.
 
@@ -75,7 +83,8 @@ def store_search_instance(connection: "Connection", project_id: Optional[str] = 
     """
     return connection.post(
         url=f"{connection.base_url}/api/metadataSearches/results",
-        headers={'X-MSTR-ProjectID': project_id}, params={
+        headers={'X-MSTR-ProjectID': project_id},
+        params={
             'name': name,
             'pattern': pattern,
             'domain': domain,
@@ -87,12 +96,19 @@ def store_search_instance(connection: "Connection", project_id: Optional[str] = 
             'usedByRecursive': used_by_recursive,
             'usesOneOf': uses_one_of,
             'usedByOneOf': used_by_one_of
-        })
+        }
+    )
 
 
 @ErrorHandler(err_msg='Error getting search result for search with ID {search_id}')
-def get_search_results(connection: "Connection", search_id: str, project_id: Optional[str] = None,
-                       offset: int = 0, limit: int = -1, error_msg: Optional[str] = None):
+def get_search_results(
+    connection: "Connection",
+    search_id: str,
+    project_id: Optional[str] = None,
+    offset: int = 0,
+    limit: int = -1,
+    error_msg: Optional[str] = None
+):
     """
     Get search results in a list format.
 
@@ -117,16 +133,19 @@ def get_search_results(connection: "Connection", search_id: str, project_id: Opt
         url=f"{connection.base_url}/api/metadataSearches/results",
         headers={'X-MSTR-ProjectID': project_id},
         params={
-            'searchId': search_id,
-            'offset': offset,
-            'limit': limit
+            'searchId': search_id, 'offset': offset, 'limit': limit
         }
     )
 
 
-def get_search_results_async(future_session: "FuturesSession", connection: "Connection",
-                             search_id: str, project_id: Optional[str] = None, offset: int = 0,
-                             limit: int = -1):
+def get_search_results_async(
+    future_session: "FuturesSession",
+    connection: "Connection",
+    search_id: str,
+    project_id: Optional[str] = None,
+    offset: int = 0,
+    limit: int = -1
+):
     """Get search results in a list format asynchronously.
 
     Args:
@@ -156,9 +175,14 @@ def get_search_results_async(future_session: "FuturesSession", connection: "Conn
 
 
 @ErrorHandler(err_msg='Error getting search result in atree format for search with ID {search_id}')
-def get_search_results_tree_format(connection: "Connection", search_id: str,
-                                   project_id: Optional[str] = None, offset: int = 0,
-                                   limit: int = -1, error_msg: Optional[str] = None):
+def get_search_results_tree_format(
+    connection: "Connection",
+    search_id: str,
+    project_id: Optional[str] = None,
+    offset: int = 0,
+    limit: int = -1,
+    error_msg: Optional[str] = None
+):
     """
     Get search results in a tree format.
 
@@ -183,25 +207,31 @@ def get_search_results_tree_format(connection: "Connection", search_id: str,
         url=f"{connection.base_url}/api/metadataSearches/results/tree",
         headers={'X-MSTR-ProjectID': project_id},
         params={
-            'searchId': search_id,
-            'offset': offset,
-            'limit': limit
+            'searchId': search_id, 'offset': offset, 'limit': limit
         },
     )
 
 
 @ErrorHandler(err_msg='Error getting quick search result.')
-def get_quick_search_result(connection, project_id: Optional[str] = None,
-                            name: Optional[str] = None, root: Optional[str] = None,
-                            object_types: Optional["TypeOrSubtype"] = None,
-                            pattern: Optional[Union["SearchPattern", int]] = None,
-                            certified_status: Optional["CertifiedStatus"] = None,
-                            offset: Optional[int] = None, limit: Optional[int] = None,
-                            hidden: Optional[bool] = None, get_ancestors: Optional[bool] = None,
-                            cross_cluster: Optional[bool] = None, error_msg: Optional[str] = None):
+def get_quick_search_result(
+    connection,
+    project_id: Optional[str] = None,
+    name: Optional[str] = None,
+    root: Optional[str] = None,
+    object_types: Optional["TypeOrSubtype"] = None,
+    pattern: Optional[Union["SearchPattern", int]] = None,
+    certified_status: Optional["CertifiedStatus"] = None,
+    offset: Optional[int] = None,
+    limit: Optional[int] = None,
+    hidden: Optional[bool] = None,
+    get_ancestors: Optional[bool] = None,
+    cross_cluster: Optional[bool] = None,
+    error_msg: Optional[str] = None
+):
     return connection.get(
         url=f"{connection.base_url}/api/searches/results",
-        headers={'X-MSTR-ProjectID': project_id}, params={
+        headers={'X-MSTR-ProjectID': project_id},
+        params={
             'name': name,
             'type': object_types,
             'pattern': pattern,
@@ -212,31 +242,44 @@ def get_quick_search_result(connection, project_id: Optional[str] = None,
             'certifiedStatus': certified_status,
             'result.hidden': hidden,
             'isCrossCluster': cross_cluster
-        })
+        }
+    )
 
 
 @ErrorHandler(
-    err_msg='Error getting quick search result from search object with ID {search_object_id}')
+    err_msg='Error getting quick search result from search object with ID {search_object_id}'
+)
 def get_quick_search_result_from_object(
-        connection: "Connection", project_id: str, search_object_id: str,
-        subtypes: Optional[Union["ObjectSubTypes", List["ObjectSubTypes"], int,
-                                 List[int]]] = None, include_ancestors: Optional[bool] = None,
-        include_acl: Optional[bool] = None, limit: Optional[int] = None,
-        offset: Optional[int] = None, error_msg: Optional[str] = None):
+    connection: "Connection",
+    project_id: str,
+    search_object_id: str,
+    subtypes: Optional[Union["ObjectSubTypes", List["ObjectSubTypes"], int, List[int]]] = None,
+    include_ancestors: Optional[bool] = None,
+    include_acl: Optional[bool] = None,
+    limit: Optional[int] = None,
+    offset: Optional[int] = None,
+    error_msg: Optional[str] = None
+):
     return connection.get(
         url=f"{connection.base_url}/api/searchObjects/{search_object_id}/results",
-        headers={'X-MSTR-ProjectID': project_id}, params={
+        headers={'X-MSTR-ProjectID': project_id},
+        params={
             'includeAncestors': include_ancestors,
             'includeAcl': include_acl,
             'result.subtypes': subtypes,
             'offset': offset,
             'limit': limit
-        })
+        }
+    )
 
 
 @ErrorHandler(err_msg='Error getting specified shortcuts.')
-def get_shortcuts(connection: "Connection", body: dict, shortcut_info_flag: int = 0,
-                  error_msg: Optional[str] = None):
+def get_shortcuts(
+    connection: "Connection",
+    body: dict,
+    shortcut_info_flag: int = 0,
+    error_msg: Optional[str] = None
+):
     """Retrieve information about specific published shortcuts
     in specific projects.
 
@@ -260,16 +303,23 @@ def get_shortcuts(connection: "Connection", body: dict, shortcut_info_flag: int 
     """
 
     return connection.post(
-        url=(f'{connection.base_url}/api/searches/library/shortcuts'
-             f'?shortcutInfoFlag={shortcut_info_flag}'),
+        url=(
+            f'{connection.base_url}/api/searches/library/shortcuts'
+            f'?shortcutInfoFlag={shortcut_info_flag}'
+        ),
         headers={'X-MSTR-ProjectID': None},
         json=body,
     )
 
 
 @ErrorHandler(err_msg='Error getting shortcut with id {id}.')
-def get_shortcut(connection: "Connection", id: str, project_id: str, shortcut_info_flag: int = 2,
-                 error_msg: Optional[str] = None):
+def get_shortcut(
+    connection: "Connection",
+    id: str,
+    project_id: str,
+    shortcut_info_flag: int = 2,
+    error_msg: Optional[str] = None
+):
     """Get information about specific published shortcut in specific project.
 
     Args:
@@ -283,14 +333,18 @@ def get_shortcut(connection: "Connection", id: str, project_id: str, shortcut_in
     Returns:
         Complete HTTP response object.
     """
+    if project_id is None:
+        connection._validate_project_selected()
+        project_id = connection.project_id
 
     response = connection.post(
-        url=(f'{connection.base_url}/api/searches/library/shortcuts'
-             f'?shortcutInfoFlag={shortcut_info_flag}'),
+        url=(
+            f'{connection.base_url}/api/searches/library/shortcuts'
+            f'?shortcutInfoFlag={shortcut_info_flag}'
+        ),
         headers={'X-MSTR-ProjectID': None},
         json=[{
-            "projectId": project_id,
-            "shortcutIds": [id]
+            "projectId": project_id, "shortcutIds": [id]
         }],
     )
 
@@ -303,9 +357,13 @@ def get_shortcut(connection: "Connection", id: str, project_id: str, shortcut_in
 
 
 @ErrorHandler(err_msg="Error getting search suggestions.")
-def get_search_suggestions(connection: "Connection", project_id: Optional[str] = None,
-                           key: Optional[str] = None, count: int = -1,
-                           is_cross_cluster: bool = None):
+def get_search_suggestions(
+    connection: "Connection",
+    project_id: Optional[str] = None,
+    key: Optional[str] = None,
+    count: int = -1,
+    is_cross_cluster: bool = None
+):
     """Store results of the Search engine to return search suggestions.
 
     Args:
@@ -322,6 +380,9 @@ def get_search_suggestions(connection: "Connection", project_id: Optional[str] =
     """
 
     return connection.get(
-        url=(f'{connection.base_url}/api/searches/suggestions'
-             f'?key={key}?count={count}?isCrossCluster={str(is_cross_cluster).lower()}'),
-        headers={'X-MSTR-ProjectID': project_id})
+        url=(
+            f'{connection.base_url}/api/searches/suggestions'
+            f'?key={key}?count={count}?isCrossCluster={str(is_cross_cluster).lower()}'
+        ),
+        headers={'X-MSTR-ProjectID': project_id}
+    )

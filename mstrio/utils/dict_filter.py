@@ -36,8 +36,10 @@ def check_valid_param(dict_object: Dict[KT, VT], params: Iterable) -> None:
     # check filter param is in the allowed
     for param in params:
         if param not in allowed:
-            raise KeyError(f"The filter parameter '{param}' is not valid. "
-                           f"Please filter by one of: {allowed}")
+            raise KeyError(
+                f"The filter parameter '{param}' is not valid. "
+                f"Please filter by one of: {allowed}"
+            )
 
 
 def parse_filter_expression(param: str, expression: SupportedExpression) -> tuple:
@@ -81,8 +83,10 @@ def parse_filter_expression(param: str, expression: SupportedExpression) -> tupl
         op = ENTITY_COMPARE
         filter_value = expression
     else:
-        raise TypeError(f"'{param}' filter value must be either a string, "
-                        "bool, int, float dict or list")
+        raise TypeError(
+            f"'{param}' filter value must be either a string, "
+            "bool, int, float dict or list"
+        )
     return (op, filter_value)
 
 
@@ -157,8 +161,9 @@ def make_dict_filter(param: str, op: str, filter_value: Any) -> Callable:
     return my_filter
 
 
-def filter_list_of_dicts(list_of_dicts: List[Dict[KT, VT]],
-                         **filters: Dict[str, SupportedExpression]) -> List[Dict[KT, VT]]:
+def filter_list_of_dicts(
+    list_of_dicts: List[Dict[KT, VT]], **filters: Dict[str, SupportedExpression]
+) -> List[Dict[KT, VT]]:
     """Filter a list of dicts by providing one or more key-value pair filters.
 
     Args:

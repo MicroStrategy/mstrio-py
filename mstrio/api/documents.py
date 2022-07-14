@@ -7,8 +7,16 @@ if TYPE_CHECKING:
 
 
 @ErrorHandler(err_msg='Error getting available dossiers.')
-def get_dossiers(connection, search_term, certified_status, search_pattern='EXACTLY', offset=0,
-                 limit=-1, fields=None, error_msg=None):
+def get_dossiers(
+    connection,
+    search_term,
+    certified_status,
+    search_pattern='EXACTLY',
+    offset=0,
+    limit=-1,
+    fields=None,
+    error_msg=None
+):
     """Get the list of available dossiers.
 
     Args:
@@ -31,8 +39,17 @@ def get_dossiers(connection, search_term, certified_status, search_pattern='EXAC
     )
 
 
-def get_dossiers_async(future_session: "FuturesSession", connection, search_term, certified_status,
-                       search_pattern='EXACTLY', offset=0, limit=-1, fields=None, error_msg=None):
+def get_dossiers_async(
+    future_session: "FuturesSession",
+    connection,
+    search_term,
+    certified_status,
+    search_pattern='EXACTLY',
+    offset=0,
+    limit=-1,
+    fields=None,
+    error_msg=None
+):
     """Get the list of available dossiers asynchronously.
 
     Args:
@@ -55,8 +72,16 @@ def get_dossiers_async(future_session: "FuturesSession", connection, search_term
 
 
 @ErrorHandler(err_msg='Error getting available documents.')
-def get_documents(connection, search_term, certified_status, search_pattern='EXACTLY', offset=0,
-                  limit=-1, fields=None, error_msg=None):
+def get_documents(
+    connection,
+    search_term,
+    certified_status,
+    search_pattern='EXACTLY',
+    offset=0,
+    limit=-1,
+    fields=None,
+    error_msg=None
+):
     """Get the list of available documents.
 
     Args:
@@ -79,9 +104,17 @@ def get_documents(connection, search_term, certified_status, search_pattern='EXA
     )
 
 
-def get_documents_async(future_session: "FuturesSession", connection, search_term,
-                        certified_status, search_pattern='EXACTLY', offset=0, limit=-1,
-                        fields=None, error_msg=None):
+def get_documents_async(
+    future_session: "FuturesSession",
+    connection,
+    search_term,
+    certified_status,
+    search_pattern='EXACTLY',
+    offset=0,
+    limit=-1,
+    fields=None,
+    error_msg=None
+):
     """Get the list of available documents asynchronously.
 
     Args:
@@ -139,8 +172,9 @@ def get_prompts_for_instance(connection, document_id, instance_id, error_msg=Non
 
 
 @ErrorHandler(err_msg='Error getting attribute element for prompt {prompt_identifier}')
-def get_attribute_element_for_prompt(connection, document_id, instance_id, prompt_identifier,
-                                     error_msg=None):
+def get_attribute_element_for_prompt(
+    connection, document_id, instance_id, prompt_identifier, error_msg=None
+):
     """Get available attribute element for document/dossier's attribute element
     prompt.
 
@@ -177,8 +211,9 @@ def get_available_object(connection, document_id, instance_id, prompt_identifier
 
 
 @ErrorHandler(err_msg='Error exporting visualization for document {document_id} to PDF file.')
-def export_visualization_to_pdf(connection, document_id, instance_id, node_key, body,
-                                error_msg=None):
+def export_visualization_to_pdf(
+    connection, document_id, instance_id, node_key, body, error_msg=None
+):
     """Export a single visualization from a specific document instance to a PDF
     file.
 
@@ -197,8 +232,9 @@ def export_visualization_to_pdf(connection, document_id, instance_id, node_key, 
 
 
 @ErrorHandler(err_msg='Error exporting visualization for document {document_id} to CSV file.')
-def export_visualization_to_csv(connection, document_id, instance_id, node_key, body,
-                                error_msg=None):
+def export_visualization_to_csv(
+    connection, document_id, instance_id, node_key, body, error_msg=None
+):
     """Export a single visualization from a specific document instance to a CSV
     file.
 
@@ -513,8 +549,9 @@ def get_dossier_hierarchy_from_instance(connection, dossier_id, instance_id, err
 
 
 @ErrorHandler(err_msg='Error getting definition and results for dossier {dossier_id}')
-def get_definition_and_results_of_visualization(connection, dossier_id, instance_id, chapter_key,
-                                                visualization_key, error_msg=None):
+def get_definition_and_results_of_visualization(
+    connection, dossier_id, instance_id, chapter_key, visualization_key, error_msg=None
+):
     """Get the definition and data result of a grid/graph visualization in a
     specific dossier in a specific project.
 

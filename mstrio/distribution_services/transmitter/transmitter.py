@@ -9,7 +9,10 @@ from mstrio.types import ObjectTypes
 from mstrio.users_and_groups import User
 from mstrio.utils.entity import DeleteMixin, Entity
 from mstrio.utils.enum_helper import AutoName, get_enum_val
-from mstrio.utils.helper import Dictable, fetch_objects
+from mstrio.utils.helper import (
+    Dictable, fetch_objects, get_args_from_func, get_default_args_from_func
+)
+from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
@@ -65,13 +68,21 @@ class EmailTransmitterProperties(Dictable):
     _DELETE_NONE_VALUES_RECURSION = False
     _FROM_DICT_MAP = {'recipient_field_type': RecipientFieldType}
 
-    def __init__(self, sender_display_name: str, sender_email_address: str,
-                 reply_to_display_name: str, reply_to_email_address: str,
-                 recipient_field_type: RecipientFieldType = RecipientFieldType.TO,
-                 save_message_to_file: bool = False, send_message_to_file: bool = False,
-                 send_message_via_smtp: bool = False, save_file_path: Optional[str] = None,
-                 notify_on_success: bool = False, notify_on_failure: bool = False,
-                 notification_email_address: Optional[str] = None):
+    def __init__(
+        self,
+        sender_display_name: str,
+        sender_email_address: str,
+        reply_to_display_name: str,
+        reply_to_email_address: str,
+        recipient_field_type: RecipientFieldType = RecipientFieldType.TO,
+        save_message_to_file: bool = False,
+        send_message_to_file: bool = False,
+        send_message_via_smtp: bool = False,
+        save_file_path: Optional[str] = None,
+        notify_on_success: bool = False,
+        notify_on_failure: bool = False,
+        notification_email_address: Optional[str] = None
+    ):
         self.sender_display_name = sender_display_name
         self.sender_email_address = sender_email_address
         self.reply_to_display_name = reply_to_display_name
@@ -86,9 +97,10 @@ class EmailTransmitterProperties(Dictable):
         self.notification_email_address = notification_email_address
 
 
-def list_transmitters(connection: "Connection", to_dictionary: bool = False,
-                      limit: Optional[int] = None,
-                      **filters) -> Union[List["Transmitter"], List[dict]]:
+@method_version_handler('11.3.0100')
+def list_transmitters(
+    connection: "Connection", to_dictionary: bool = False, limit: Optional[int] = None, **filters
+) -> Union[List["Transmitter"], List[dict]]:
     """Get all transmitters as list of Transmitter objects or
     dictionaries.
 
@@ -103,10 +115,12 @@ def list_transmitters(connection: "Connection", to_dictionary: bool = False,
         **filters: Available filter parameters: ['id', 'name', 'description',
             'delivery_type']
     """
-    return Transmitter._list_transmitters(connection=connection, to_dictionary=to_dictionary,
-                                          limit=limit, **filters)
+    return Transmitter._list_transmitters(
+        connection=connection, to_dictionary=to_dictionary, limit=limit, **filters
+    )
 
 
+@class_version_handler('11.3.0100')
 class Transmitter(Entity, DeleteMixin):
     """Object representation of MicroStrategy Transmitter object
 
@@ -122,26 +136,40 @@ class Transmitter(Entity, DeleteMixin):
     _DELETE_NONE_VALUES_RECURSION = False
     _OBJECT_TYPE = ObjectTypes.SUBSCRIPTION_TRANSMITTER
     _FROM_DICT_MAP = {
-        **Entity._FROM_DICT_MAP, 'owner': User.from_dict,
+        **Entity._FROM_DICT_MAP,
+        'owner': User.from_dict,
         'delivery_type': TransmitterDeliveryType,
         'email_transmitter_properties': EmailTransmitterProperties.from_dict
     }
     _API_GETTERS = {
-        ('abbreviation', 'type', 'subtype', 'ext_type', 'date_created', 'date_modified', 'version',
-         'owner', 'icon_path', 'view_media', 'ancestors', 'certified_info',
-         'acl'): objects.get_object_info,
+        (
+            'abbreviation',
+            'type',
+            'subtype',
+            'ext_type',
+            'date_created',
+            'date_modified',
+            'version',
+            'owner',
+            'icon_path',
+            'view_media',
+            'ancestors',
+            'certified_info',
+            'acl'
+        ): objects.get_object_info,
         ('id', 'name', 'description', 'delivery_type',
          'email_transmitter_properties'): transmitters.get_transmitter
     }
     _API_DELETE = staticmethod(transmitters.delete_transmitter)
     _API_PATCH: dict = {
-        ("name", "description", "email_transmitter_properties"):
-            (transmitters.update_transmitter, "put")
+        ("name", "description",
+         "email_transmitter_properties"): (transmitters.update_transmitter, "put")
     }
     _PATCH_PATH_TYPES = {"name": str, "description": str, "email_transmitter_properties": dict}
 
-    def __init__(self, connection: "Connection", id: Optional[str] = None,
-                 name: Optional[str] = None):
+    def __init__(
+        self, connection: "Connection", id: Optional[str] = None, name: Optional[str] = None
+    ):
         """Initialize Transmitter object.
 
         Note:
@@ -177,16 +205,19 @@ class Transmitter(Entity, DeleteMixin):
 
     def _init_variables(self, **kwargs) -> None:
         super()._init_variables(**kwargs)
-        self._delivery_type = TransmitterDeliveryType(
-            kwargs["delivery_type"]) if kwargs.get("delivery_type") else None
+        self._delivery_type = TransmitterDeliveryType(kwargs["delivery_type"]
+                                                      ) if kwargs.get("delivery_type") else None
         self.email_transmitter_properties = EmailTransmitterProperties.from_dict(
-            kwargs["email_transmitter_properties"]) if kwargs.get(
-                "email_transmitter_properties") else None
+            kwargs["email_transmitter_properties"]
+        ) if kwargs.get("email_transmitter_properties") else None
 
     @classmethod
     def create(
-        cls, connection: "Connection", name: str,
-        delivery_type: Union[str, TransmitterDeliveryType], description: Optional[str] = None,
+        cls,
+        connection: "Connection",
+        name: str,
+        delivery_type: Union[str, TransmitterDeliveryType],
+        description: Optional[str] = None,
         email_transmitter_properties: Optional[Union[dict, EmailTransmitterProperties]] = None
     ) -> "Transmitter":
         """Create transmitter.
@@ -206,8 +237,8 @@ class Transmitter(Entity, DeleteMixin):
         """
         delivery_type = get_enum_val(delivery_type, TransmitterDeliveryType)
         email_transmitter_properties = email_transmitter_properties.to_dict() if isinstance(
-            email_transmitter_properties,
-            EmailTransmitterProperties) else email_transmitter_properties
+            email_transmitter_properties, EmailTransmitterProperties
+        ) else email_transmitter_properties
         body = {
             'name': name,
             'description': description,
@@ -223,9 +254,12 @@ class Transmitter(Entity, DeleteMixin):
             )
         return cls.from_dict(res, connection)
 
-    def alter(self, name: Optional[str] = None, description: Optional[str] = None,
-              email_transmitter_properties: Optional[Union[dict,
-                                                           EmailTransmitterProperties]] = None):
+    def alter(
+        self,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        email_transmitter_properties: Optional[Union[dict, EmailTransmitterProperties]] = None
+    ):
         """Alter transmitter properties.
 
         Args:
@@ -236,11 +270,11 @@ class Transmitter(Entity, DeleteMixin):
                 altering those properties is possible
         """
         email_transmitter_properties = email_transmitter_properties.to_dict() if isinstance(
-            email_transmitter_properties,
-            EmailTransmitterProperties) else email_transmitter_properties
+            email_transmitter_properties, EmailTransmitterProperties
+        ) else email_transmitter_properties
         func = self.alter
-        args = func.__code__.co_varnames[:func.__code__.co_argcount]
-        defaults = func.__defaults__  # type: ignore
+        args = get_args_from_func(func)
+        defaults = get_default_args_from_func(func)
         defaults_dict = dict(zip(args[-len(defaults):], defaults)) if defaults else {}
         local = locals()
         properties = defaultdict(dict)
@@ -250,9 +284,13 @@ class Transmitter(Entity, DeleteMixin):
         self._alter_properties(**properties)
 
     @classmethod
-    def _list_transmitters(cls, connection: "Connection", to_dictionary: bool = False,
-                           limit: Optional[int] = None,
-                           **filters) -> Union[List["Transmitter"], List[dict]]:
+    def _list_transmitters(
+        cls,
+        connection: "Connection",
+        to_dictionary: bool = False,
+        limit: Optional[int] = None,
+        **filters
+    ) -> Union[List["Transmitter"], List[dict]]:
         """Helper method for listing transmitters."""
         objects = fetch_objects(
             connection=connection,

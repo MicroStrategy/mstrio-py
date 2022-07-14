@@ -47,7 +47,8 @@ class Parser:
             # extract attribute values into numpy 2D array if attributes exist in the response  # noqa
             if self._attribute_names:
                 self._mapped_attributes = np.vstack(
-                    (self._mapped_attributes, self.__map_attributes(response=response)))
+                    (self._mapped_attributes, self.__map_attributes(response=response))
+                )
 
             # extract metric values if metrics exist in the response
             if self._metric_col_names:
@@ -56,8 +57,9 @@ class Parser:
     def __to_dataframe(self):
 
         # create attribute data frame, then re-map integer array with corresponding attribute element values  # noqa
-        attribute_df = pd.DataFrame(data=self._mapped_attributes,
-                                    columns=self._attribute_col_names)
+        attribute_df = pd.DataFrame(
+            data=self._mapped_attributes, columns=self._attribute_col_names
+        )
 
         # create metric values data frame
         metric_df = pd.DataFrame(data=self._metric_values_raw, columns=self._metric_col_names)
@@ -72,7 +74,8 @@ class Parser:
 
         # create attribute form name to attribute form index mapping
         vfunc = np.vectorize(
-            lambda attribute_indexes, columns: label_map[columns][attribute_indexes])
+            lambda attribute_indexes, columns: label_map[columns][attribute_indexes]
+        )
 
         return vfunc(row_index_array, range(columns))
 
@@ -113,8 +116,10 @@ class Parser:
                     final_list.extend(np.array(attr).reshape(col, row).transpose().tolist())
                 return final_list
             except IndexError:
-                msg = ("Missing attribute elements, please check if attribute elements IDs are "
-                       "valid and if they exist in report.")
+                msg = (
+                    "Missing attribute elements, please check if attribute elements IDs are "
+                    "valid and if they exist in report."
+                )
                 exception_handler(msg, IndexError)
 
         replicate_form_values(form_values_rows)
@@ -126,10 +131,10 @@ class Parser:
         # extracts the attribute element row index from the headers
         return [
             list(
-                chain.from_iterable([[r
-                                      for _ in f]
-                                     for r, f in zip(row, self._attribute_elem_form_names)]))
-            for row in response["data"]["headers"]["rows"]
+                chain.from_iterable(
+                    [[r for _ in f] for r, f in zip(row, self._attribute_elem_form_names)]
+                )
+            ) for row in response["data"]["headers"]["rows"]
         ]
 
     def __extract_paging_info(self, response):

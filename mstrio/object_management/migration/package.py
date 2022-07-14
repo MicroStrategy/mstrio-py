@@ -125,10 +125,13 @@ class PackageSettings(Dictable):
         'acl_on_new_objects': [AclOnNewObjects]
     }
 
-    def __init__(self, default_action: DefaultAction = DefaultAction.USE_EXISTING,
-                 update_schema: Optional[UpdateSchema] = None,
-                 acl_on_replacing_objects: Optional[AclOnReplacingObjects] = None,
-                 acl_on_new_objects: Optional[AclOnNewObjects] = None):
+    def __init__(
+        self,
+        default_action: DefaultAction = DefaultAction.USE_EXISTING,
+        update_schema: Optional[UpdateSchema] = None,
+        acl_on_replacing_objects: Optional[AclOnReplacingObjects] = None,
+        acl_on_new_objects: Optional[AclOnNewObjects] = None
+    ):
         self.default_action = default_action
         self.update_schema = update_schema if isinstance(update_schema, list) else [update_schema]
         self.acl_on_replacing_objects = acl_on_replacing_objects
@@ -229,15 +232,26 @@ class PackageContentInfo(Dictable):
             else:
                 self._id = id
 
+        def _init_variables(self, **kwargs) -> None:
+            self._connection = kwargs.get("connection")
+            self._id = kwargs.get("id")
+
     _FROM_DICT_MAP = {'type': ObjectTypes, 'action': Action, 'level': Level, 'owner': Owner}
 
-    def __init__(self, id: str, action: Union[Action, str] = Action.USE_EXISTING,
-                 name: Optional[str] = None, version: Optional[str] = None,
-                 type: Optional[ObjectTypes] = None, owner: Optional[Owner] = None,
-                 date_created: Optional[str] = None, date_modified: Optional[str] = None,
-                 include_dependents: Optional[bool] = None,
-                 explicit_included: Optional[bool] = None, level: Optional[Union[Level,
-                                                                                 str]] = None):
+    def __init__(
+        self,
+        id: str,
+        action: Union[Action, str] = Action.USE_EXISTING,
+        name: Optional[str] = None,
+        version: Optional[str] = None,
+        type: Optional[ObjectTypes] = None,
+        owner: Optional[Owner] = None,
+        date_created: Optional[str] = None,
+        date_modified: Optional[str] = None,
+        include_dependents: Optional[bool] = None,
+        explicit_included: Optional[bool] = None,
+        level: Optional[Union[Level, str]] = None
+    ):
         self.id = id
         self.name = name
         self.version = version
@@ -281,13 +295,15 @@ class PackageConfig(Dictable):
         CONFIGURATION = auto()
 
     _FROM_DICT_MAP = {
-        'type': PackageUpdateType,
-        'settings': PackageSettings,
-        'content': [PackageContentInfo]
+        'type': PackageUpdateType, 'settings': PackageSettings, 'content': [PackageContentInfo]
     }
 
-    def __init__(self, type: PackageUpdateType, settings: PackageSettings,
-                 content: Union[List[PackageContentInfo], PackageContentInfo]):
+    def __init__(
+        self,
+        type: PackageUpdateType,
+        settings: PackageSettings,
+        content: Union[List[PackageContentInfo], PackageContentInfo]
+    ):
         self.type = type
         self.settings = settings
         self.content = [content] if not isinstance(content, list) else content
@@ -322,8 +338,10 @@ class Package(EntityBase, DeleteMixin):
             id: ID of package import process
         """
         if id is None:
-            exception_handler("Please provide actual value for id argument, other than None.",
-                              exception_type=ValueError)
+            exception_handler(
+                "Please provide actual value for id argument, other than None.",
+                exception_type=ValueError
+            )
 
         super().__init__(connection, id)
 
@@ -337,12 +355,29 @@ class Package(EntityBase, DeleteMixin):
 
     @classmethod
     def create(cls, connection: Connection, progress_bar: bool = False):
+        """Create a Package object.
+
+        Args:
+            connection: MicroStrategy connection object returned by
+                `connection.Connection()`
+            progress_bar: boolean value that decides whether a progress bar will
+                be displayed. defaults to False
+
+        Returns:
+            A Package object."""
         response = migration.create_package_holder(connection).json()
         if config.verbose and not progress_bar:
             logger.info(f"Created package with ID: '{response.get('id')}'")
         return cls.from_dict(source=response, connection=connection)
 
     def update_config(self, package_config: PackageConfig):
+        """Updates the config for the Package.
+
+        Args:
+            package_config: new configuration to be updated for the Package
+
+        Returns:
+            A boolean value of whether the update was successful."""
         body = package_config.to_dict()
         body = helper.delete_none_values(body, recursion=True)
         body = helper.snake_to_camel(body)
@@ -366,13 +401,28 @@ class Package(EntityBase, DeleteMixin):
         return True
 
     def upload_package_binary(self, package_binary: bytes, progress_bar: bool = False):
+        """Uploads a binary of a package.
+
+        Args:
+            package_binary: binary of the package to be uploaded
+            progress_bar: boolean value that decides whether a progress bar will
+                be displayed. defaults to False"""
         response = migration.upload_package(self.connection, self.id, package_binary).json()
         self.status = response.get('status')
         if config.verbose and not progress_bar:
             logger.info(
-                f"Uploaded package binary to package holder with ID: '{response.get('id')}'")
+                f"Uploaded package binary to package holder with ID: '{response.get('id')}'"
+            )
 
     def download_package_binary(self, progress_bar: bool = False) -> bytes:
+        """Downloads a binary of a package.
+
+        Args:
+            progress_bar: boolean value that decides whether a progress bar will
+                be displayed. defaults to False
+
+        Returns:
+            Contents of the downloaded binary of the package."""
         response = migration.download_package(self.connection, self.id)
         if config.verbose and not progress_bar:
             logger.info(f"Downloaded binary of a package with ID: '{self.id}'")
@@ -404,8 +454,10 @@ class PackageImport(EntityBase, DeleteMixin):
             id: ID of package import process
         """
         if id is None:
-            exception_handler("Please provide actual value for id argument, other than None.",
-                              exception_type=ValueError)
+            exception_handler(
+                "Please provide actual value for id argument, other than None.",
+                exception_type=ValueError
+            )
 
         super().__init__(connection, id)
 
@@ -416,8 +468,22 @@ class PackageImport(EntityBase, DeleteMixin):
         self.progress = kwargs.get("progress")
 
     @classmethod
-    def create(cls, connection: Connection, package_id: str, generate_undo: bool,
-               progress_bar=False):
+    def create(
+        cls, connection: Connection, package_id: str, generate_undo: bool, progress_bar=False
+    ):
+        """Create a package import process.
+
+        Args:
+            connection: MicroStrategy connection object returned by
+                `connection.Connection()`.
+            package_id: ID of the package that is to be imported
+            generate_undo: boolean value that specifies whether an undo package
+                has to also be created
+            progress_bar: boolean value that decides whether a progress bar will
+                be displayed. defaults to False
+
+        Returns:
+            A PackageImport object."""
         response = migration.create_import(connection, package_id,
                                            generate_undo=generate_undo).json()
 
@@ -439,6 +505,15 @@ class PackageImport(EntityBase, DeleteMixin):
         return cls.from_dict(source=response, connection=connection)
 
     def download_undo_binary(self, progress_bar=False):
+        """Download undo package binary for this import process.
+
+        Args:
+        progress_bar: boolean value that decides whether a progress bar will
+            be displayed. defaults to False
+
+        Returns:
+            Contents of the Response object containing all of the information
+        returned by the server."""
         total_time = 0
         # Wait until update ready
         while True:

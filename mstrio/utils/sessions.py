@@ -30,7 +30,9 @@ def renew_session(func):
 
 
 def log_request(logger):
+
     def decorator(func):
+
         @functools.wraps(func)
         def wrapper(self, url, *args, **kwargs):
             if logger.isEnabledFor(logging.DEBUG):
@@ -39,6 +41,7 @@ def log_request(logger):
                 logger.debug("headers additional = %s", kwargs.get('headers'))
                 logger.debug("body = %s", kwargs.get('json'))
             return func(self, url, *args, **kwargs)
+
         return wrapper
 
     return decorator

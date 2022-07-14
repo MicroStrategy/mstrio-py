@@ -4,12 +4,33 @@ with real values. Its basic goal is to present what can be done with
 this module and to ease its usage.
 """
 from mstrio.connection import Connection, get_connection
-from mstrio.modeling.schema import (Attribute, AttributeDisplays, AttributeForm, AttributeSort,
-                                    AttributeSorts, DataType, ExpressionFormat, FormReference,
-                                    list_attributes, ObjectSubType, Relationship,
-                                    SchemaManagement, SchemaObjectReference, SchemaUpdateType)
-from mstrio.modeling.expression import (Expression, Token, ColumnReference, Constant, Operator,
-                                        FactExpression, Variant, VariantType, Function)
+from mstrio.modeling.schema import (
+    Attribute,
+    AttributeDisplays,
+    AttributeForm,
+    AttributeSort,
+    AttributeSorts,
+    DataType,
+    FormReference,
+    list_attributes,
+    ObjectSubType,
+    Relationship,
+    SchemaManagement,
+    SchemaObjectReference,
+    SchemaUpdateType
+)
+from mstrio.modeling.expression import (
+    Expression,
+    ExpressionFormat,
+    Token,
+    ColumnReference,
+    Constant,
+    Operator,
+    FactExpression,
+    Variant,
+    VariantType,
+    Function
+)
 from workflows.get_all_columns_in_table import list_table_columns
 
 # Following variables are defining basic attributes
@@ -54,7 +75,8 @@ ATTRIBUTE_DATA = {
                         tree=ColumnReference(
                             column_name='day_date',
                             object_id='<Object_ID>',
-                        ),),
+                        ),
+                    ),
                     tables=[
                         SchemaObjectReference(
                             name='DAY_CTR_SLS',
@@ -92,7 +114,8 @@ ATTRIBUTE_DATA = {
                         tree=ColumnReference(
                             column_name='tot_cost',
                             object_id='<Object_ID>',
-                        ),),
+                        ),
+                    ),
                     tables=[
                         SchemaObjectReference(
                             name='DAY_CTR_SLS',
@@ -156,8 +179,9 @@ attr = Attribute.create(
     displays=ATTRIBUTE_DATA['displays'],
     attribute_lookup_table=ATTRIBUTE_DATA['attribute_lookup_table'],
 )
-attr = Attribute.create(connection=conn, **ATTRIBUTE_DATA,
-                        show_expression_as=ExpressionFormat.TREE)
+attr = Attribute.create(
+    connection=conn, **ATTRIBUTE_DATA, show_expression_as=ExpressionFormat.TREE
+)
 
 # Create an attribute and get it with expression represented as tokens
 attr = Attribute.create(conn, **ATTRIBUTE_DATA, show_expression_as=ExpressionFormat.TOKENS)
@@ -175,18 +199,21 @@ displays = attr.displays
 sorts = attr.sorts
 
 # Alter displays and sorts
-attr.alter(displays=AttributeDisplays(
-    report_displays=[FormReference(
-        name='ID'), FormReference(name='COST')],
-    browse_displays=[FormReference(name='ID')],
-))
-attr.alter(sorts=AttributeSorts(
-    report_sorts=[
-        AttributeSort(FormReference(name='ID'), ascending=True),
-        AttributeSort(FormReference(name='COST'))
-    ],
-    browse_sorts=[AttributeSort(FormReference(name='COST'))],
-))
+attr.alter(
+    displays=AttributeDisplays(
+        report_displays=[FormReference(name='ID'), FormReference(name='COST')],
+        browse_displays=[FormReference(name='ID')],
+    )
+)
+attr.alter(
+    sorts=AttributeSorts(
+        report_sorts=[
+            AttributeSort(FormReference(name='ID'), ascending=True),
+            AttributeSort(FormReference(name='COST'))
+        ],
+        browse_sorts=[AttributeSort(FormReference(name='COST'))],
+    )
+)
 
 # *Relationship management
 # Listing relationship candidates
@@ -208,12 +235,16 @@ relationship_child_1: SchemaObjectReference = candidate_attrs[1]
 relationship_parent: SchemaObjectReference = candidate_attrs[2]
 relationship_child_table: SchemaObjectReference = choosen_table
 
-attr_item.add_child(relationship_child,
-                    relationship_type=Relationship.RelationshipType.ONE_TO_MANY,
-                    table=relationship_child_table)
-attr_item.add_child(joint_child=[relationship_child, relationship_child_1],
-                    relationship_type=Relationship.RelationshipType.MANY_TO_MANY,
-                    table=relationship_child_table)
+attr_item.add_child(
+    relationship_child,
+    relationship_type=Relationship.RelationshipType.ONE_TO_MANY,
+    table=relationship_child_table
+)
+attr_item.add_child(
+    joint_child=[relationship_child, relationship_child_1],
+    relationship_type=Relationship.RelationshipType.MANY_TO_MANY,
+    table=relationship_child_table
+)
 attr_item.add_parent(relationship_parent, table=choosen_table)
 
 # Remove child and parent
@@ -240,7 +271,8 @@ attribute_form = AttributeForm.local_create(
                 tree=ColumnReference(
                     column_name='tot_unit_sales',
                     object_id='<Object_ID>',
-                ),),
+                ),
+            ),
             tables=[
                 SchemaObjectReference(
                     name='DAY_CTR_SLS',
@@ -263,8 +295,9 @@ attr.add_form(form=attribute_form)
 # Attribute object, not from the server
 attr_form = attr.get_form(name=ATTRIBUTE_FORM_NAME)
 # Alter form
-attr.alter_form(form_id=attr_form.id, name=ATTRIBUTE_FORM_ALTERED_NAME,
-                description=ATTRIBUTE_FORM_DESCRIPTION)
+attr.alter_form(
+    form_id=attr_form.id, name=ATTRIBUTE_FORM_ALTERED_NAME, description=ATTRIBUTE_FORM_DESCRIPTION
+)
 attr.alter_form(form_id=attr_form.id, name=ATTRIBUTE_FORM_ALTERED_NAME)
 
 # Removing form with specified id
@@ -294,7 +327,8 @@ fact_expression = FactExpression(
                 level=Token.Level.RESOLVED,
                 state=Token.State.INITIAL,
             ),
-        ],),
+        ],
+    ),
     tables=[
         SchemaObjectReference(
             name='table 1 name',
@@ -311,10 +345,12 @@ fact_expression = FactExpression(
 
 # create a fact expression with expression specified as tree
 fact_expression = FactExpression(
-    expression=Expression(tree=ColumnReference(
-        column_name='DAY_DATE',
-        object_id='<Object_ID>',
-    ),),
+    expression=Expression(
+        tree=ColumnReference(
+            column_name='DAY_DATE',
+            object_id='<Object_ID>',
+        ),
+    ),
     tables=[
         SchemaObjectReference(
             name='LU_DAY',
@@ -339,7 +375,8 @@ new_expression = Expression(
             ),
             Constant(variant=Variant(VariantType.INT32, '1')),
         ],
-    ),)
+    ),
+)
 
 attr_form = attr.get_form(name=ATTRIBUTE_FORM_ALTERED_NAME)
 
@@ -347,8 +384,9 @@ attr_form = attr.get_form(name=ATTRIBUTE_FORM_ALTERED_NAME)
 fact_expression, *_ = [f for f in attr_form.expressions if f.expression.text == 'DAY_DATE']
 
 # Alter the fact expression
-attr.alter_fact_expression(form_id=attr_form.id, fact_expression_id=fact_expression.id,
-                           expression=new_expression)
+attr.alter_fact_expression(
+    form_id=attr_form.id, fact_expression_id=fact_expression.id, expression=new_expression
+)
 
 # Remove the fact expression from the the attribute form
 attr_form = attr.get_form(name=ATTRIBUTE_FORM_ALTERED_NAME)

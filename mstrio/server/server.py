@@ -9,6 +9,7 @@ from mstrio.connection import Connection
 import mstrio.utils.helper as helper
 from mstrio.utils.settings.base_settings import BaseSettings
 from mstrio.utils.settings.setting_types import SettingValue
+from mstrio.utils.version_helper import method_version_handler
 
 logger = logging.getLogger(__name__)
 
@@ -49,19 +50,23 @@ class ServerSettings(BaseSettings):
         """
         # fix conversion map due to changes in REST Layer
         if version.parse(connection.iserver_version) >= version.parse("11.3.0000"):
-            self._CONVERSION_MAP.update({
-                'workSetMaxMemoryConsumption': 'B',
-                'catalogMaxMemoryConsumption': 'B',
-            })
+            self._CONVERSION_MAP.update(
+                {
+                    'workSetMaxMemoryConsumption': 'B',
+                    'catalogMaxMemoryConsumption': 'B',
+                }
+            )
         super(BaseSettings, self).__setattr__('_connection', connection)
         self._configure_settings()
         self.fetch()
 
+    @method_version_handler('11.3.0000')
     def fetch(self) -> None:
         """Fetch current I-Server settings and update this `ServerSettings`
         object."""
         super().fetch()
 
+    @method_version_handler('11.3.0000')
     def update(self) -> None:
         """Update the current I-Server settings using this `ServerSettings`
         object."""
@@ -76,6 +81,7 @@ class ServerSettings(BaseSettings):
         settings = administration.get_iserver_settings(self._connection).json()
         return self._prepare_settings_fetch(settings)
 
+    @method_version_handler('11.3.0000')
     def _get_config(self):
         if not ServerSettings._CONFIG:
             response = administration.get_iserver_settings_config(self._connection)

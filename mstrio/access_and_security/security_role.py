@@ -8,6 +8,7 @@ from mstrio.api import objects, security
 from mstrio.connection import Connection
 from mstrio.utils import helper
 from mstrio.utils.entity import DeleteMixin, Entity, ObjectTypes
+from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
 if TYPE_CHECKING:
     from mstrio.access_and_security.privilege import Privilege
@@ -17,8 +18,14 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def list_security_roles(connection: Connection, to_dictionary: bool = False,
-                        to_dataframe: bool = False, limit: Optional[int] = None, **filters):
+@method_version_handler('11.2.0000')
+def list_security_roles(
+    connection: Connection,
+    to_dictionary: bool = False,
+    to_dataframe: bool = False,
+    limit: Optional[int] = None,
+    **filters
+):
     """Get all Security Roles stored on the server.
 
     Optionally use `to_dictionary` or `to_dataframe` to choose output format.
@@ -38,10 +45,12 @@ def list_security_roles(connection: Connection, to_dictionary: bool = False,
     Returns:
             List of security roles.
     """
-    return SecurityRole._list_security_roles(connection, to_dictionary=to_dictionary,
-                                             to_dataframe=to_dataframe, limit=limit, **filters)
+    return SecurityRole._list_security_roles(
+        connection, to_dictionary=to_dictionary, to_dataframe=to_dataframe, limit=limit, **filters
+    )
 
 
+@class_version_handler('11.2.0000')
 class SecurityRole(Entity, DeleteMixin):
     """A security role is a set of privileges that can be assigned to users and
     reused from project to project. Security roles enable you to assign a
@@ -70,16 +79,30 @@ class SecurityRole(Entity, DeleteMixin):
     _OBJECT_TYPE = ObjectTypes.SECURITY_ROLE
     _PATCH_PATH_TYPES = {"name": str, "description": str}
     _API_GETTERS = {
-        ('id', 'name', 'description', 'type', 'subtype', 'date_created', 'date_modified',
-         'version', 'owner', 'privileges', 'projects', 'acg', 'acl'): security.get_security_role
+        (
+            'id',
+            'name',
+            'description',
+            'type',
+            'subtype',
+            'date_created',
+            'date_modified',
+            'version',
+            'owner',
+            'privileges',
+            'projects',
+            'acg',
+            'acl'
+        ): security.get_security_role
     }
     _API_PATCH: dict = {
         ('abbreviation'): (objects.update_object, 'partial_put'),
         ('name', 'description'): (security.update_security_role, 'patch')
     }
 
-    def __init__(self, connection: Connection, name: Optional[str] = None,
-                 id: Optional[str] = None):
+    def __init__(
+        self, connection: Connection, name: Optional[str] = None, id: Optional[str] = None
+    ):
         """Initialize Security Role object by passing name or id.
 
         Args:
@@ -91,7 +114,8 @@ class SecurityRole(Entity, DeleteMixin):
         # initialize either by ID or name
         if id is None and name is None:
             helper.exception_handler(
-                "Please specify either 'name' or 'id' parameter in the constructor.", ValueError)
+                "Please specify either 'name' or 'id' parameter in the constructor.", ValueError
+            )
 
         if id is None:
             security_roles = SecurityRole._list_security_role_ids(connection=connection, name=name)
@@ -100,7 +124,8 @@ class SecurityRole(Entity, DeleteMixin):
             else:
                 helper.exception_handler(
                     f"There is no Security Role associated with the given name: '{name}'",
-                    exception_type=ValueError)
+                    exception_type=ValueError
+                )
         super().__init__(connection=connection, object_id=id, name=name)
 
     def _init_variables(self, **kwargs) -> None:
@@ -109,9 +134,13 @@ class SecurityRole(Entity, DeleteMixin):
         self._privileges = kwargs.get("privileges")
 
     @classmethod
-    def create(cls, connection: Connection, name: str,
-               privileges: Union[Union["Privilege", int, str],
-                                 List[Union["Privilege", int, str]]], description: str = ""):
+    def create(
+        cls,
+        connection: Connection,
+        name: str,
+        privileges: Union[Union["Privilege", int, str], List[Union["Privilege", int, str]]],
+        description: str = ""
+    ):
         """Create a new Security Role.
 
         Args:
@@ -129,8 +158,8 @@ class SecurityRole(Entity, DeleteMixin):
         # get all project level privileges
         from mstrio.access_and_security.privilege import Privilege
         project_level = [
-            priv['id'] for priv in Privilege.list_privileges(connection, to_dictionary=True,
-                                                             is_project_level_privilege='True')
+            priv['id'] for priv in Privilege
+            .list_privileges(connection, to_dictionary=True, is_project_level_privilege='True')
         ]
 
         # validate and filter passed privileges
@@ -143,23 +172,31 @@ class SecurityRole(Entity, DeleteMixin):
         response = security.create_security_role(connection, body)
         if response.ok:
             if server_level:
-                msg = ("Privileges {} are server-level and will be omitted. Only project-level "
-                       "privileges can be granted by this method.").format(sorted(server_level))
+                msg = (
+                    "Privileges {} are server-level and will be omitted. Only project-level "
+                    "privileges can be granted by this method."
+                ).format(sorted(server_level))
                 helper.exception_handler(msg, exception_type=Warning)
             return cls(connection=connection, id=response.json()['id'])
 
     @classmethod
     def _list_security_roles(
-            cls, connection: Connection, to_dictionary: bool = False, to_dataframe: bool = False,
-            limit: Optional[int] = None,
-            **filters) -> Union[List["SecurityRole"], List[Dict[str, Any]], DataFrame]:
+        cls,
+        connection: Connection,
+        to_dictionary: bool = False,
+        to_dataframe: bool = False,
+        limit: Optional[int] = None,
+        **filters
+    ) -> Union[List["SecurityRole"], List[Dict[str, Any]], DataFrame]:
         if to_dictionary and to_dataframe:
             helper.exception_handler(
                 "Please select either to_dictionary=True or to_dataframe=True, but not both.",
-                ValueError)
+                ValueError
+            )
 
-        objects = helper.fetch_objects(connection=connection, api=security.get_security_roles,
-                                       limit=limit, filters=filters)
+        objects = helper.fetch_objects(
+            connection=connection, api=security.get_security_roles, limit=limit, filters=filters
+        )
         if to_dictionary:
             return objects
         elif to_dataframe:
@@ -169,8 +206,9 @@ class SecurityRole(Entity, DeleteMixin):
 
     @classmethod
     def _list_security_role_ids(cls, connection: Connection, **filters) -> List[str]:
-        sr_dicts = SecurityRole._list_security_roles(connection, to_dictionary=True,
-                                                     **dict(filters))
+        sr_dicts = SecurityRole._list_security_roles(
+            connection, to_dictionary=True, **dict(filters)
+        )
         return [role.get('id') for role in sr_dicts]  # type: ignore
 
     def alter(self, name: Optional[str] = None, description: Optional[str] = None):
@@ -181,8 +219,8 @@ class SecurityRole(Entity, DeleteMixin):
             description: new description of the Security Role
         """
         func = self.alter
-        args = func.__code__.co_varnames[:func.__code__.co_argcount]
-        defaults = func.__defaults__  # type: ignore
+        args = helper.get_args_from_func(func)
+        defaults = helper.get_default_args_from_func(func)
         default_dict = dict(zip(args[-len(defaults):], defaults)) if defaults else {}
         local = locals()
         properties = {}
@@ -209,8 +247,9 @@ class SecurityRole(Entity, DeleteMixin):
                     members.append(member)
         return members
 
-    def grant_to(self, members: Union["UserOrGroup", List["UserOrGroup"]],
-                 project: Union["Project", str]) -> None:
+    def grant_to(
+        self, members: Union["UserOrGroup", List["UserOrGroup"]], project: Union["Project", str]
+    ) -> None:
         """Assign users/user groups to a Security Role.
 
         Args:
@@ -227,17 +266,18 @@ class SecurityRole(Entity, DeleteMixin):
             project_id = project.id
             project_name = project.name
         elif isinstance(project, str):
-            project_list = Project._list_projects(connection=self.connection, to_dictionary=True,
-                                                  name=project)
+            project_list = Project._list_projects(
+                connection=self.connection, to_dictionary=True, name=project
+            )
             if project_list:
                 project_id = project_list[0]['id']
                 project_name = project_list[0]['name']
             else:
-                helper.exception_handler(f"Project name '{project}' does not exist.",
-                                         ValueError)
+                helper.exception_handler(f"Project name '{project}' does not exist.", ValueError)
         else:
-            helper.exception_handler("`project` parameter must be of type str or Project.",
-                                     TypeError)
+            helper.exception_handler(
+                "`project` parameter must be of type str or Project.", TypeError
+            )
 
         # create list of objects from strings/objects/lists
         members_list = members if isinstance(members, list) else [members]
@@ -260,8 +300,9 @@ class SecurityRole(Entity, DeleteMixin):
             if failed:
                 logger.warning(f"Security Role '{self.name}' already has member(s) {failed}")
 
-    def revoke_from(self, members: Union["UserOrGroup", List["UserOrGroup"]],
-                    project: Union["Project", str]) -> None:
+    def revoke_from(
+        self, members: Union["UserOrGroup", List["UserOrGroup"]], project: Union["Project", str]
+    ) -> None:
         """Remove users/user groups from a Security Role.
 
         Args:
@@ -278,16 +319,18 @@ class SecurityRole(Entity, DeleteMixin):
             project_id = project.id
             project_name = project.name
         elif isinstance(project, str):
-            project_list = Project._list_projects(connection=self.connection, to_dictionary=True,
-                                                  name=project)
+            project_list = Project._list_projects(
+                connection=self.connection, to_dictionary=True, name=project
+            )
             if project_list:
                 project_id = project_list[0]['id']
                 project_name = project_list[0]['name']
             else:
                 helper.exception_handler(f"Project name '{project}' does not exist.")
         else:
-            helper.exception_handler("Project parameter must be of type str or Project.",
-                                     TypeError)
+            helper.exception_handler(
+                "Project parameter must be of type str or Project.", TypeError
+            )
 
         # create list of objects from strings/objects/lists
         members_list = members if isinstance(members, list) else [members]
@@ -312,8 +355,8 @@ class SecurityRole(Entity, DeleteMixin):
             logger.warning(f"Security Role '{self.name}' does not have member(s) {failed}")
 
     def grant_privilege(
-        self, privilege: Union[Union["Privilege", int, str], List[Union["Privilege", int,
-                                                                        str]]]) -> None:
+        self, privilege: Union[Union["Privilege", int, str], List[Union["Privilege", int, str]]]
+    ) -> None:
         """Grant new project-level privileges to the Security Role.
 
         Args:
@@ -322,8 +365,9 @@ class SecurityRole(Entity, DeleteMixin):
         # get all project level privileges
         from mstrio.access_and_security.privilege import Privilege
         project_level = [
-            priv['id'] for priv in Privilege.list_privileges(self.connection, to_dictionary=True,
-                                                             is_project_level_privilege='True')
+            priv['id'] for priv in Privilege.list_privileges(
+                self.connection, to_dictionary=True, is_project_level_privilege='True'
+            )
         ]
 
         # validate and filter passed privileges
@@ -338,8 +382,10 @@ class SecurityRole(Entity, DeleteMixin):
         failed = list(set(existing_ids).intersection(set(privilege_ids)))
 
         if server_level:
-            msg = ("Privileges {} are server-level and will be omitted. Only project-level "
-                   "privileges can be granted by this method.").format(sorted(server_level))
+            msg = (
+                "Privileges {} are server-level and will be omitted. Only project-level "
+                "privileges can be granted by this method."
+            ).format(sorted(server_level))
             helper.exception_handler(msg, exception_type=Warning)
 
         self._update_nested_properties(
@@ -355,8 +401,8 @@ class SecurityRole(Entity, DeleteMixin):
             logger.warning(f"Security Role '{self.name}' already has privilege(s) {failed}")
 
     def revoke_privilege(
-        self, privilege: Union[Union["Privilege", int, str], List[Union["Privilege", int,
-                                                                        str]]]) -> None:
+        self, privilege: Union[Union["Privilege", int, str], List[Union["Privilege", int, str]]]
+    ) -> None:
         """Revoke project-level privileges from the Security Role.
 
         Args:
@@ -365,8 +411,9 @@ class SecurityRole(Entity, DeleteMixin):
         # get all project level privileges
         from mstrio.access_and_security.privilege import Privilege
         project_level = [
-            priv['id'] for priv in Privilege.list_privileges(self.connection, to_dictionary=True,
-                                                             is_project_level_privilege='True')
+            priv['id'] for priv in Privilege.list_privileges(
+                self.connection, to_dictionary=True, is_project_level_privilege='True'
+            )
         ]
 
         # validate and filter passed privileges
@@ -381,8 +428,10 @@ class SecurityRole(Entity, DeleteMixin):
         failed = list(set(privilege_ids) - set(succeeded))
 
         if server_level:
-            msg = ("Privilege(s) {} are server-level and will be omitted. Only project-level "
-                   "privileges can be granted by this method.").format(sorted(server_level))
+            msg = (
+                "Privilege(s) {} are server-level and will be omitted. Only project-level "
+                "privileges can be granted by this method."
+            ).format(sorted(server_level))
             helper.exception_handler(msg, exception_type=Warning)
 
         self._update_nested_properties(objects=privileges, path="privileges", op="removeElement")
@@ -403,12 +452,14 @@ class SecurityRole(Entity, DeleteMixin):
         if not force:
             user_input = input(
                 "Are you sure you want to revoke all privileges from Security Role '{}'? [Y/N]: "
-                .format(self.name))
+                .format(self.name)
+            )
         if force or user_input == 'Y':
             from mstrio.access_and_security.privilege import Privilege
             project_level = [
                 priv['id'] for priv in Privilege.list_privileges(
-                    self.connection, to_dictionary=True, is_project_level_privilege='True')
+                    self.connection, to_dictionary=True, is_project_level_privilege='True'
+                )
             ]
             existing_ids = [obj['id'] for obj in self.privileges]
             to_revoke = list(set(project_level).intersection(set(existing_ids)))
@@ -438,9 +489,7 @@ class SecurityRole(Entity, DeleteMixin):
     def _update_nested_properties(self, objects, path: str, op: str) -> None:
         body = {
             "operationList": [{
-                "op": op,
-                "path": f'/{path}',
-                "value": objects
+                "op": op, "path": f'/{path}', "value": objects
             }],
         }
 

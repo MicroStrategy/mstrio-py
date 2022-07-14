@@ -2,7 +2,8 @@ from mstrio.utils.error_handlers import ErrorHandler
 
 
 @ErrorHandler(
-    err_msg='Error obtaining the list of registered nodes from the MicroStrategy deployment.')
+    err_msg='Error obtaining the list of registered nodes from the MicroStrategy deployment.'
+)
 def get_nodes(connection, error_msg=None):
     """Obtain the list of registered nodes from the MicroStrategy deployment.
 
@@ -16,7 +17,8 @@ def get_nodes(connection, error_msg=None):
 
 @ErrorHandler(
     err_msg='Error obtaining the list of registered services available from '
-            'the MicroStrategy deployment')
+    'the MicroStrategy deployment'
+)
 def get_services(connection, error_msg=None):
     """Obtain the list of registered services available from the MicroStrategy
     deployment.
@@ -31,7 +33,8 @@ def get_services(connection, error_msg=None):
 
 @ErrorHandler(
     err_msg='Error obtaining the metadata information for the registered services'
-            ' available from the MicroStrategy deployment.')
+    ' available from the MicroStrategy deployment.'
+)
 def get_services_metadata(connection, error_msg=None):
     """Obtain the metadata information for the registered services available
     from the MicroStrategy deployment.
@@ -44,8 +47,9 @@ def get_services_metadata(connection, error_msg=None):
     return connection.get(url=f'{connection.base_url}/api/registrations/services/metadata')
 
 
-def start_stop_service(connection, login, password, name, id, address, action="START",
-                       error_msg=None):
+def start_stop_service(
+    connection, login, password, name, id, address, action="START", error_msg=None
+):
     """Start or stop registered service.
 
     Args:

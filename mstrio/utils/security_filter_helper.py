@@ -73,21 +73,22 @@ class ParserToken(Dictable):
     """
     _DELETE_NONE_VALUES_RECURSION = False
 
-    def __init__(self, value: str, type: Optional[Union[TokenTextType, str]] = None,
-                 level: Optional[Union[TokenLevel, str]] = None,
-                 state: Optional[Union[TokenState, str]] = None,
-                 target: Optional[ObjectInformation] = None,
-                 attribute_form: Optional[ObjectReference] = None):
+    def __init__(
+        self,
+        value: str,
+        type: Optional[Union[TokenTextType, str]] = None,
+        level: Optional[Union[TokenLevel, str]] = None,
+        state: Optional[Union[TokenState, str]] = None,
+        target: Optional[ObjectInformation] = None,
+        attribute_form: Optional[ObjectReference] = None
+    ):
         self.value = value
-        self.type = type if isinstance(
-            type, (TokenTextType, get_type(None))
-        ) else TokenTextType(type)
-        self.level = level if isinstance(
-            level, (TokenLevel, get_type(None))
-        ) else TokenLevel(level)
-        self.state = state if isinstance(
-            state, (TokenState, get_type(None))
-        ) else TokenState(state)
+        self.type = type if isinstance(type,
+                                       (TokenTextType, get_type(None))) else TokenTextType(type)
+        self.level = level if isinstance(level,
+                                         (TokenLevel, get_type(None))) else TokenLevel(level)
+        self.state = state if isinstance(state,
+                                         (TokenState, get_type(None))) else TokenState(state)
         self.target = target
         self.attribute_form = attribute_form
 

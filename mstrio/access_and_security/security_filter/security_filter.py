@@ -11,22 +11,25 @@ from mstrio.utils import helper
 from mstrio.utils.entity import (
     CopyMixin, DeleteMixin, Entity, MoveMixin, ObjectSubTypes, ObjectTypes
 )
+from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
     from mstrio.users_and_groups import UserOrGroup
 
 
+@method_version_handler('11.3.0200')
 def list_security_filters(
-        connection: "Connection",
-        to_dictionary: bool = False,
-        name: Optional[str] = None,
-        search_pattern: Union[SearchPattern, int] = SearchPattern.CONTAINS,
-        limit: Optional[int] = None,
-        project_id: Optional[str] = None,
-        user: Optional[Union[str, "User"]] = None,
-        user_group: Optional[Union[str, "UserGroup"]] = None,
-        **filters,
+    connection: "Connection",
+    to_dictionary: bool = False,
+    name: Optional[str] = None,
+    search_pattern: Union[SearchPattern, int] = SearchPattern.CONTAINS,
+    limit: Optional[int] = None,
+    project_id: Optional[str] = None,
+    project_name: Optional[str] = None,
+    user: Optional[Union[str, "User"]] = None,
+    user_group: Optional[Union[str, "UserGroup"]] = None,
+    **filters,
 ) -> Union[List["SecurityFilter"], List[dict]]:
     """Get list of security filter objects or security filter dicts for the
     project specified in the connection object. It can be filtered by user or
@@ -34,6 +37,13 @@ def list_security_filters(
 
     Note: It is not possible to provide both `user` and `user_group` parameter.
         When both arguments are provided error is raised.
+
+    Specify either `project_id` or `project_name`.
+    When `project_id` is provided (not `None`), `project_name` is omitted.
+
+    Note:
+        When `project_id` is `None` and `project_name` is `None`,
+        then its value is overwritten by `project_id` from `connection` object.
 
     Args:
         connection: MicroStrategy connection object returned by
@@ -48,6 +58,7 @@ def list_security_filters(
         limit: limit the number of elements returned. If `None` (default), all
             objects are returned.
         project_id (string, optional): Project ID
+        project_name (string, optional): Project name
         user (str or object, optional): Id of user or `User` object used to
             filter security filters
         user_group (str or object, optional): Id of user group or `UserGroup`
@@ -59,28 +70,34 @@ def list_security_filters(
     Returns:
         list of security filter objects or list of security filter dicts.
     """
-    if project_id is None:
-        connection._validate_project_selected()
-        project_id = connection.project_id
+    project_id = helper.get_valid_project_id(
+        connection=connection,
+        project_id=project_id,
+        project_name=project_name,
+        with_fallback=False if project_name else True,
+    )
+    project_name = helper.get_valid_project_name(
+        connection=connection,
+        project_id=project_id,
+    )
+
     if user and user_group:
         helper.exception_handler(
-            "You cannot filter by both `user` and `user_group` at the same time.")
+            "You cannot filter by both `user` and `user_group` at the same time."
+        )
 
     if user:
         user = User(connection, id=user) if isinstance(user, str) else user
-        # filter security filters by user for project specified in `connection`
-        objects_ = user.list_security_filters(
-            project_id, to_dictionary=True
-        ).get(connection.project_name, [])
+        # Filter security filters by user for project defined by
+        # `project_name` - assigned based on valid `project_id`
+        objects_ = user.list_security_filters(project_id, to_dictionary=True).get(project_name, [])
     elif user_group:
-        user_group = UserGroup(
-            connection, id=user_group
-        ) if isinstance(user_group, str) else user_group
-        # filter security filters by the user group for project specified in
-        # `connection`
-        objects_ = user_group.list_security_filters(
-            project_id, to_dictionary=True
-        ).get(connection.project_name, [])
+        user_group = UserGroup(connection,
+                               id=user_group) if isinstance(user_group, str) else user_group
+        # filter security filters by the user group for project defined by
+        # `project_name` - assigned based on valid `project_id`
+        objects_ = user_group.list_security_filters(project_id,
+                                                    to_dictionary=True).get(project_name, [])
     else:
         objects_ = full_search(
             connection,
@@ -96,6 +113,7 @@ def list_security_filters(
     return [SecurityFilter.from_dict(obj_, connection) for obj_ in objects_]
 
 
+@class_version_handler('11.3.0100')
 class SecurityFilter(Entity, CopyMixin, MoveMixin, DeleteMixin):
 
     _OBJECT_TYPE = ObjectTypes.SECURITY_FILTER
@@ -124,8 +142,11 @@ class SecurityFilter(Entity, CopyMixin, MoveMixin, DeleteMixin):
     def _get_definition(self):
         """Get the definition of security filter."""
         res = security_filters.read_security_filter(
-            self.connection, self.id, self.connection.project_id,
-            show_expression_as=ShowExpressionAs.TREE.value).json()
+            self.connection,
+            self.id,
+            self.connection.project_id,
+            show_expression_as=ShowExpressionAs.TREE.value
+        ).json()
         self._information = ObjectInformation.from_dict(res['information'])
         self._qualification = Qualification.from_dict(res['qualification'])
         self._top_level = [AttributeRef.from_dict(level) for level in res.get('topLevel', [])]
@@ -158,10 +179,12 @@ class SecurityFilter(Entity, CopyMixin, MoveMixin, DeleteMixin):
         # `bottom_level` can be lazily fetched
         information = kwargs.get("information")
         self._information = None if information is None else ObjectInformation.from_dict(
-            information)
+            information
+        )
         qualification = kwargs.get("qualification")
         self._qualification = None if qualification is None else Qualification.from_dict(
-            qualification)
+            qualification
+        )
         top_level = kwargs.get("top_level")
         self._top_level = None if top_level is None else [
             AttributeRef.from_dict(level) for level in top_level
@@ -176,8 +199,12 @@ class SecurityFilter(Entity, CopyMixin, MoveMixin, DeleteMixin):
         self._members = kwargs.get("members")
         self.__members_retrieved = self._members is not None
 
-    def fetch(self, attr: Optional[str] = None, fetch_definition: bool = True,
-              fetch_members: bool = True) -> None:
+    def fetch(
+        self,
+        attr: Optional[str] = None,
+        fetch_definition: bool = True,
+        fetch_members: bool = True
+    ) -> None:
         """Fetch the latest security filter state from the I-Server.
         Additionally fetch its definition and members.
 
@@ -201,29 +228,48 @@ class SecurityFilter(Entity, CopyMixin, MoveMixin, DeleteMixin):
             self._get_members()
 
     @staticmethod
-    def __prepare_body(qualification: dict, id: str = None, name: str = None,
-                       folder_id: str = None, description: str = None, top_level: List[dict] = [],
-                       bottom_level: List[dict] = []) -> dict:
-        information = ObjectInformation(object_id=id, sub_type="md_security_filter", name=name,
-                                        description=description, destination_folder_id=folder_id)
+    def __prepare_body(
+        qualification: dict,
+        id: str = None,
+        name: str = None,
+        folder_id: str = None,
+        description: str = None,
+        top_level: List[dict] = [],
+        bottom_level: List[dict] = []
+    ) -> dict:
+        information = ObjectInformation(
+            object_id=id,
+            sub_type="md_security_filter",
+            name=name,
+            description=description,
+            destination_folder_id=folder_id
+        )
 
-        return helper.delete_none_values({
-            "information": information.to_dict(),
-            "qualification": qualification,
-            "topLevel": top_level,
-            "bottomLevel": bottom_level
-        }, recursion=True)
+        return helper.delete_none_values(
+            {
+                "information": information.to_dict(),
+                "qualification": qualification,
+                "topLevel": top_level,
+                "bottomLevel": bottom_level
+            },
+            recursion=True
+        )
 
     @staticmethod
-    def __create_update_helper(func, connection: "Connection",
-                               qualification: Union["Qualification", dict], name: str = None,
-                               description: str = None,
-                               top_level: Union[List[dict], List["AttributeRef"]] = [],
-                               bottom_level: Union[List[dict], List["AttributeRef"]] = [],
-                               id: str = None, folder_id: str = None):
+    def __create_update_helper(
+        func,
+        connection: "Connection",
+        qualification: Union["Qualification", dict],
+        name: str = None,
+        description: str = None,
+        top_level: Union[List[dict], List["AttributeRef"]] = [],
+        bottom_level: Union[List[dict], List["AttributeRef"]] = [],
+        id: str = None,
+        folder_id: str = None
+    ):
         changeset_id = changesets.create_changeset(connection).json()['id']
-        qualification = qualification.to_dict() if isinstance(qualification,
-                                                              Qualification) else qualification
+        qualification = qualification.to_dict(
+        ) if isinstance(qualification, Qualification) else qualification
         top_level_dicts = []
         for level in top_level:
             if isinstance(level, AttributeRef):
@@ -238,13 +284,25 @@ class SecurityFilter(Entity, CopyMixin, MoveMixin, DeleteMixin):
                 bottom_level_dicts.append(level)
 
         res = func(
-            connection=connection, changeset_id=changeset_id, throw_error=False, id=id,
-            body=SecurityFilter.__prepare_body(qualification, id, name, folder_id, description,
-                                               top_level_dicts, bottom_level_dicts))
+            connection=connection,
+            changeset_id=changeset_id,
+            throw_error=False,
+            id=id,
+            body=SecurityFilter.__prepare_body(
+                qualification,
+                id,
+                name,
+                folder_id,
+                description,
+                top_level_dicts,
+                bottom_level_dicts
+            )
+        )
         # there might be a case when response below is correct but committing
         # changes is incorrect
-        res_commit = changesets.commit_changeset_changes(connection, changeset_id,
-                                                         throw_error=False)
+        res_commit = changesets.commit_changeset_changes(
+            connection, changeset_id, throw_error=False
+        )
 
         changesets.delete_changeset(connection, changeset_id)
         if not res_commit.ok:
@@ -252,10 +310,16 @@ class SecurityFilter(Entity, CopyMixin, MoveMixin, DeleteMixin):
         return res
 
     @classmethod
-    def create(cls, connection: "Connection", qualification: Union["Qualification", dict],
-               name: str, folder_id: str, description: str = None,
-               top_level: Union[List[dict], List["AttributeRef"]] = [],
-               bottom_level: Union[List[dict], List["AttributeRef"]] = []) -> "SecurityFilter":
+    def create(
+        cls,
+        connection: "Connection",
+        qualification: Union["Qualification", dict],
+        name: str,
+        folder_id: str,
+        description: str = None,
+        top_level: Union[List[dict], List["AttributeRef"]] = [],
+        bottom_level: Union[List[dict], List["AttributeRef"]] = []
+    ) -> "SecurityFilter":
         """Create a security filter by providing its qualification, name and
         id of folder in which it will be created. Optionally it is possible to
         set description, top level and bottom level of security filter.
@@ -275,25 +339,35 @@ class SecurityFilter(Entity, CopyMixin, MoveMixin, DeleteMixin):
             bottom_level (list of object or list of dicts): the bottom level
                 attribute list.
         """
-        res = SecurityFilter.__create_update_helper(security_filters.create_security_filter,
-                                                    connection, qualification, name, description,
-                                                    top_level, bottom_level, folder_id=folder_id)
+        res = SecurityFilter.__create_update_helper(
+            security_filters.create_security_filter,
+            connection,
+            qualification,
+            name,
+            description,
+            top_level,
+            bottom_level,
+            folder_id=folder_id
+        )
         if res.ok:
             res = res.json()
             return SecurityFilter.from_dict(
                 {
-                    "id": res['information']['objectId'],
-                    **res['information'],
-                    **res
-                }, connection)
+                    "id": res['information']['objectId'], **res['information'], **res
+                }, connection
+            )
         else:
             return None
 
-    def alter(self, qualification: Union["Qualification",
-                                         dict] = None, top_level: Union[List[dict],
-                                                                        List["AttributeRef"]] = [],
-              bottom_level: Union[List[dict], List["AttributeRef"]] = [], name: str = None,
-              description: str = None, folder_id: str = None):
+    def alter(
+        self,
+        qualification: Union["Qualification", dict] = None,
+        top_level: Union[List[dict], List["AttributeRef"]] = [],
+        bottom_level: Union[List[dict], List["AttributeRef"]] = [],
+        name: str = None,
+        description: str = None,
+        folder_id: str = None
+    ):
         """Alter the security filter object in the metadata. It is possible to
         change its qualification, top level, bottom level, name, description
         or destination folder.
@@ -316,16 +390,26 @@ class SecurityFilter(Entity, CopyMixin, MoveMixin, DeleteMixin):
         name = self.name if name is None else name
         description = self.description if description is None else description
         folder_id = self.information.destination_folder_id if folder_id is None else folder_id
-        res = self.__create_update_helper(security_filters.update_security_filter, self.connection,
-                                          qualification, name, description, top_level,
-                                          bottom_level, self.id, folder_id)
+        res = self.__create_update_helper(
+            security_filters.update_security_filter,
+            self.connection,
+            qualification,
+            name,
+            description,
+            top_level,
+            bottom_level,
+            self.id,
+            folder_id
+        )
         if res.ok:
             res = res.json()
             members = self._members
             members_retrieved = self.__members_retrieved
-            self._init_variables(**res.get('information'), id=res.get('information',
-                                                                      {}).get('objectId'),
-                                 connection=self.connection)
+            self._init_variables(
+                **res.get('information'),
+                id=res.get('information', {}).get('objectId'),
+                connection=self.connection
+            )
             self._members = members
             self.__members_retrieved = members_retrieved
             self._information = res.get('information')
@@ -337,8 +421,8 @@ class SecurityFilter(Entity, CopyMixin, MoveMixin, DeleteMixin):
 
     @staticmethod
     def __retrieve_ids_from_list(
-        objects: Union[str, "User", "UserGroup", List[Union[str, "User",
-                                                            "UserGroup"]]]) -> List[str]:
+        objects: Union[str, "User", "UserGroup", List[Union[str, "User", "UserGroup"]]]
+    ) -> List[str]:
         """Parsing a list which can contain at the same time User object(s),
         UserGroup object(s), id(s) to a list with id(s)."""
         objects = objects if isinstance(objects, list) else [objects]
@@ -347,14 +431,15 @@ class SecurityFilter(Entity, CopyMixin, MoveMixin, DeleteMixin):
             ids.append(obj if isinstance(obj, str) else obj.id)
         return ids
 
-    def __update_members(self, op: UpdateOperator,
-                         users_and_groups: Union["UserOrGroup", List["UserOrGroup"]] = []) -> bool:
+    def __update_members(
+        self, op: UpdateOperator, users_and_groups: Union["UserOrGroup", List["UserOrGroup"]] = []
+    ) -> bool:
         """Update members of security filter."""
         users_or_groups = self.__retrieve_ids_from_list(users_and_groups)
         body = {"operationList": [{"op": op.value, "path": "/members", "value": users_or_groups}]}
-        res = security_filters.update_security_filter_members(self.connection, self.id, body,
-                                                              self.connection.project_id,
-                                                              throw_error=False)
+        res = security_filters.update_security_filter_members(
+            self.connection, self.id, body, self.connection.project_id, throw_error=False
+        )
         if res.ok:
             self._get_members()
         return res.ok

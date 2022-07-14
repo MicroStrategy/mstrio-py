@@ -5,8 +5,10 @@ from mstrio.utils.error_handlers import ErrorHandler
 from mstrio.utils.time_helper import DatetimeFormats, override_datetime_format
 
 
-@override_datetime_format(DatetimeFormats.YMDHMS.value, DatetimeFormats.FULLDATETIME.value,
-                          ('dateCreated', 'dateModified'))
+@override_datetime_format(
+    DatetimeFormats.YMDHMS.value,
+    DatetimeFormats.FULLDATETIME.value, ('dateCreated', 'dateModified')
+)
 @ErrorHandler(err_msg='Error creating Device.')
 def create_device(connection: Connection, body: dict, error_msg: Optional[str] = None):
     """Create a new device.
@@ -23,8 +25,10 @@ def create_device(connection: Connection, body: dict, error_msg: Optional[str] =
     return connection.post(url=url, json=body)
 
 
-@override_datetime_format(DatetimeFormats.YMDHMS.value, DatetimeFormats.FULLDATETIME.value,
-                          ('dateCreated', 'dateModified'))
+@override_datetime_format(
+    DatetimeFormats.YMDHMS.value,
+    DatetimeFormats.FULLDATETIME.value, ('dateCreated', 'dateModified')
+)
 @ErrorHandler(err_msg='Error getting Device with ID {id}')
 def get_device(connection: Connection, id: str, error_msg: Optional[str] = None):
     """Get device by a specific id.
@@ -57,8 +61,10 @@ def delete_device(connection: Connection, id: str, error_msg: Optional[str] = No
     return connection.delete(url=url)
 
 
-@override_datetime_format(DatetimeFormats.YMDHMS.value, DatetimeFormats.FULLDATETIME.value,
-                          ('dateCreated', 'dateModified'))
+@override_datetime_format(
+    DatetimeFormats.YMDHMS.value,
+    DatetimeFormats.FULLDATETIME.value, ('dateCreated', 'dateModified')
+)
 @ErrorHandler(err_msg='Error updating Device with ID {id}')
 def update_device(connection: Connection, id: str, body: dict, error_msg: Optional[str] = None):
     """Update a device.
@@ -77,10 +83,17 @@ def update_device(connection: Connection, id: str, body: dict, error_msg: Option
 
 
 @ErrorHandler(err_msg="Error getting Devices.")
-@override_datetime_format(DatetimeFormats.YMDHMS.value, DatetimeFormats.FULLDATETIME.value,
-                          ('dateCreated', 'dateModified'), 'devices')
-def get_devices(connection: Connection, device_type: Optional[str] = None,
-                fields: Optional[str] = None, error_msg: Optional[str] = None):
+@override_datetime_format(
+    DatetimeFormats.YMDHMS.value,
+    DatetimeFormats.FULLDATETIME.value, ('dateCreated', 'dateModified'),
+    'devices'
+)
+def get_devices(
+    connection: Connection,
+    device_type: Optional[str] = None,
+    fields: Optional[str] = None,
+    error_msg: Optional[str] = None
+):
     """Get information for all devices.
 
     Args:

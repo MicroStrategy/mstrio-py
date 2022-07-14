@@ -30,16 +30,15 @@ def list_subscriptions(connection, project_id, fields=None, offset=0, limit=-1, 
     return connection.get(
         url=f'{connection.base_url}/api/subscriptions',
         params={
-            'offset': offset,
-            'limit': limit,
-            'fields': fields
+            'offset': offset, 'limit': limit, 'fields': fields
         },
         headers={'X-MSTR-ProjectID': project_id},
     )
 
 
-def list_subscriptions_async(future_session: "FuturesSession", connection, project_id, fields=None,
-                             offset=0, limit=-1):
+def list_subscriptions_async(
+    future_session: "FuturesSession", connection, project_id, fields=None, offset=0, limit=-1
+):
     """Get list of a subscriptions asynchronously.
 
     Args:
@@ -220,8 +219,9 @@ def create_subscription(connection, project_id, body, fields=None, error_msg=Non
     )
 
 
-def remove_subscription(connection, subscription_id, project_id, error_msg=None,
-                        exception_type=None):
+def remove_subscription(
+    connection, subscription_id, project_id, error_msg=None, exception_type=None
+):
     """Remove (Unsubscribe) the subscription using subscription id.
 
     Args:
@@ -250,8 +250,9 @@ def remove_subscription(connection, subscription_id, project_id, error_msg=None,
 
 
 @ErrorHandler(err_msg='Error updating subscription {subscription_id}')
-def update_subscription(connection, subscription_id, project_id, body, fields=None,
-                        error_msg=None):
+def update_subscription(
+    connection, subscription_id, project_id, body, fields=None, error_msg=None
+):
     """Updates a subscription.
 
     Args:
@@ -275,8 +276,9 @@ def update_subscription(connection, subscription_id, project_id, body, fields=No
 
 
 @ErrorHandler(err_msg='Error getting recipients list.')
-def available_recipients(connection, project_id, body, delivery_type, offset=0, limit=-1,
-                         fields=None, error_msg=None):
+def available_recipients(
+    connection, project_id, body, delivery_type, offset=0, limit=-1, fields=None, error_msg=None
+):
     """Get a list of available recipients in shared list, for a given content
     and delivery type, within a given project.
 
@@ -310,10 +312,7 @@ def available_recipients(connection, project_id, body, delivery_type, offset=0, 
     return connection.post(
         url=f'{connection.base_url}/api/subscriptions/recipients/results',
         params={
-            'fields': fields,
-            'deliveryType': delivery_type,
-            'offset': offset,
-            'limit': limit
+            'fields': fields, 'deliveryType': delivery_type, 'offset': offset, 'limit': limit
         },
         headers={'X-MSTR-ProjectID': project_id},
         json=body,
@@ -321,8 +320,9 @@ def available_recipients(connection, project_id, body, delivery_type, offset=0, 
 
 
 @ErrorHandler(err_msg='Error getting available bursting attributes list.')
-def bursting_attributes(connection, project_id, content_id, content_type, fields=None,
-                        error_msg=None):
+def bursting_attributes(
+    connection, project_id, content_id, content_type, fields=None, error_msg=None
+):
     """Get a list of available attributes for bursting feature, for a given
     content, within a given project. This endpoint returns the name, ID, and
     other information about available attributes.
@@ -343,9 +343,7 @@ def bursting_attributes(connection, project_id, content_id, content_type, fields
     return connection.get(
         url=f'{connection.base_url}/api/subscriptions/bursting',
         params={
-            'fields': fields,
-            'contentId': content_id,
-            'contentType': content_type
+            'fields': fields, 'contentId': content_id, 'contentType': content_type
         },
         headers={'X-MSTR-ProjectID': project_id},
     )

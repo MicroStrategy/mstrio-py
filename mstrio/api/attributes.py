@@ -8,10 +8,15 @@ from mstrio.utils.error_handlers import ErrorHandler
 @changeset_decorator
 @unpack_information
 @ErrorHandler(err_msg='Error creating an attribute')
-def create_attribute(connection: Connection, changeset_id: str, body: dict,
-                     show_expression_as: Optional[List[str]] = None,
-                     show_potential_tables: Optional[str] = None,
-                     show_fields: Optional[str] = None, fields: Optional[str] = None):
+def create_attribute(
+    connection: Connection,
+    changeset_id: str,
+    body: dict,
+    show_expression_as: Optional[List[str]] = None,
+    show_potential_tables: Optional[str] = None,
+    show_fields: Optional[str] = None,
+    fields: Optional[str] = None
+):
     """Create a new attribute in the changeset,
     based on the definition provided in request body.
 
@@ -42,20 +47,28 @@ def create_attribute(connection: Connection, changeset_id: str, body: dict,
     """
     return connection.post(
         url=f'{connection.base_url}/api/model/attributes',
-        headers={'X-MSTR-MS-Changeset': changeset_id}, params={
+        headers={'X-MSTR-MS-Changeset': changeset_id},
+        params={
             'showExpressionAs': show_expression_as,
             'showPotentialTables': show_potential_tables,
             'showFields': show_fields,
             'fields': fields
-        }, json=body)
+        },
+        json=body
+    )
 
 
 @unpack_information
 @ErrorHandler(err_msg='Error getting attribute with ID: {id}')
-def get_attribute(connection: Connection, id: str, changeset_id: Optional[str] = None,
-                  show_expression_as: Optional[List[str]] = None,
-                  show_potential_tables: Optional[str] = None, show_fields: Optional[str] = None,
-                  fields: Optional[str] = None):
+def get_attribute(
+    connection: Connection,
+    id: str,
+    changeset_id: Optional[str] = None,
+    show_expression_as: Optional[List[str]] = None,
+    show_potential_tables: Optional[str] = None,
+    show_fields: Optional[str] = None,
+    fields: Optional[str] = None
+):
     """Get definition of a single attribute by id
 
     Args:
@@ -83,24 +96,33 @@ def get_attribute(connection: Connection, id: str, changeset_id: Optional[str] =
     Return:
         HTTP response object. Expected status: 200
     """
+    connection._validate_project_selected()
     return connection.get(
         url=f'{connection.base_url}/api/model/attributes/{id}',
-        headers={'X-MSTR-MS-Changeset': changeset_id}, params={
+        headers={'X-MSTR-MS-Changeset': changeset_id},
+        params={
             'showExpressionAs': show_expression_as,
             'showPotentialTables': show_potential_tables,
             'showFields': show_fields,
             'fields': fields
-        })
+        }
+    )
 
 
 @changeset_decorator
 @unpack_information
 @ErrorHandler(err_msg='Error updating attribute with ID: {id}')
-def update_attribute(connection: Connection, id: str, changeset_id: str, body: dict,
-                     show_expression_as: Optional[List[str]] = None,
-                     show_potential_tables: Optional[str] = None,
-                     show_fields: Optional[str] = None, fields: Optional[str] = None,
-                     remove_invalid_fields: Optional[str] = None):
+def update_attribute(
+    connection: Connection,
+    id: str,
+    changeset_id: str,
+    body: dict,
+    show_expression_as: Optional[List[str]] = None,
+    show_potential_tables: Optional[str] = None,
+    show_fields: Optional[str] = None,
+    fields: Optional[str] = None,
+    remove_invalid_fields: Optional[str] = None
+):
     """Update a specific attribute in the changeset
     This endpoint replaces the attribute's top-level fields
     with the new definition provided in the request body.
@@ -135,10 +157,13 @@ def update_attribute(connection: Connection, id: str, changeset_id: str, body: d
     """
     return connection.patch(
         url=f'{connection.base_url}/api/model/attributes/{id}',
-        headers={'X-MSTR-MS-Changeset': changeset_id}, params={
+        headers={'X-MSTR-MS-Changeset': changeset_id},
+        params={
             'showExpressionAs': show_expression_as,
             'showPotentialTables': show_potential_tables,
             'showFields': show_fields,
             'fields': fields,
             'removeInvalidFields': remove_invalid_fields
-        }, json=body)
+        },
+        json=body
+    )

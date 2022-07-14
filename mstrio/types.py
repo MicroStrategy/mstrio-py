@@ -121,5 +121,7 @@ class ExtendedType(Enum):
         return self.value
 
 
-TypeOrSubtype = Union[int, ObjectTypes, ObjectSubTypes, List[Union[int, ObjectTypes,
-                                                                   ObjectSubTypes]]]
+TypeOrSubtype = Union[int,
+                      ObjectTypes,
+                      ObjectSubTypes,
+                      List[Union[int, ObjectTypes, ObjectSubTypes]]]

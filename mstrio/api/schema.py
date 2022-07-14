@@ -15,8 +15,12 @@ def read_lock_status(connection: "Connection", project_id: Optional[str] = None)
 
 
 @ErrorHandler(err_msg="Error placing the lock of type `{lock_type}` on the schema.")
-def lock_schema(connection: "Connection", lock_type: str, project_id: Optional[str] = None,
-                throw_error: bool = True):
+def lock_schema(
+    connection: "Connection",
+    lock_type: str,
+    project_id: Optional[str] = None,
+    throw_error: bool = True
+):
     """Places a lock on the schema."""
     project_id = project_id if project_id is not None else connection.project_id
     return connection.post(
@@ -27,8 +31,12 @@ def lock_schema(connection: "Connection", lock_type: str, project_id: Optional[s
 
 
 @ErrorHandler(err_msg='Error unlocking the schema.')
-def unlock_schema(connection: "Connection", lock_type: Optional[str] = None,
-                  project_id: Optional[str] = None, throw_error: bool = True):
+def unlock_schema(
+    connection: "Connection",
+    lock_type: Optional[str] = None,
+    project_id: Optional[str] = None,
+    throw_error: bool = True
+):
     """Unlocks the schema."""
     project_id = project_id if project_id is not None else connection.project_id
     return connection.delete(
@@ -39,8 +47,12 @@ def unlock_schema(connection: "Connection", lock_type: Optional[str] = None,
 
 
 @ErrorHandler(err_msg='Error reloading the schema.')
-def reload_schema(connection: "Connection", project_id: Optional[str] = None,
-                  update_types: Optional[List[str]] = None, prefer_async: bool = False):
+def reload_schema(
+    connection: "Connection",
+    project_id: Optional[str] = None,
+    update_types: Optional[List[str]] = None,
+    prefer_async: bool = False
+):
     """Reloads (updates) the schema."""
     project_id = project_id if project_id is not None else connection.project_id
     update_types = update_types if update_types else []

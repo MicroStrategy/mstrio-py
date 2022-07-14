@@ -34,16 +34,21 @@ class Relationship(Dictable):
         'relationship_type': RelationshipType
     }
 
-    def __init__(self, relationship_type: RelationshipType,
-                 relationship_table: SchemaObjectReference, parent: SchemaObjectReference,
-                 child: Optional[SchemaObjectReference] = None,
-                 joint_child: Optional[List[SchemaObjectReference]] = None) -> None:
+    def __init__(
+        self,
+        relationship_type: RelationshipType,
+        relationship_table: SchemaObjectReference,
+        parent: SchemaObjectReference,
+        child: Optional[SchemaObjectReference] = None,
+        joint_child: Optional[List[SchemaObjectReference]] = None
+    ) -> None:
         self.relationship_type = relationship_type
         self.relationship_table = relationship_table
         self.parent = parent
         if (child and joint_child) or (child is None and joint_child is None):
             raise AttributeError(
-                "Please specify either 'child' or 'joint_child' parameter in the constructor.")
+                "Please specify either 'child' or 'joint_child' parameter in the constructor."
+            )
         elif child:
             self.child = child
         elif joint_child:

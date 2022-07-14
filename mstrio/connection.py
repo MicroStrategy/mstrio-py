@@ -10,6 +10,7 @@ import requests
 from requests import Session
 from requests.adapters import HTTPAdapter, Retry
 from requests.cookies import RequestsCookieJar
+from urllib3.exceptions import InsecureRequestWarning
 
 from mstrio import config
 from mstrio.api import authentication, exceptions, hooks, misc, projects
@@ -18,8 +19,12 @@ from mstrio.utils import helper, sessions
 logger = logging.getLogger(__name__)
 
 
-def get_connection(workstation_data: dict, project_name: Optional[str] = None,
-                   project_id: Optional[str] = None) -> Optional["Connection"]:
+def get_connection(
+    workstation_data: dict,
+    project_name: Optional[str] = None,
+    project_id: Optional[str] = None,
+    ssl_verify: bool = False
+) -> Optional["Connection"]:
     """Connect to environment without providing user's credentials.
 
     It is possible to provide `project_id` or `project_name` to select
@@ -28,6 +33,13 @@ def get_connection(workstation_data: dict, project_name: Optional[str] = None,
     `project_name` are provided, `project_name` is ignored.
     Project can be also selected later by calling method
     `select_project` on Connection object.
+
+    Note:
+        `ssl_verify` is set to False by default just for the `get_connection`
+         function as it is designed for usage inside Workstation.
+         When `ssl_verify` is set to False, warning about missing certificate
+         verification (InsecureRequestWarning) is disabled.
+
     Args:
         workstation_data (object): object which is stored in a 'workstationData'
             variable within Workstation
@@ -35,9 +47,14 @@ def get_connection(workstation_data: dict, project_name: Optional[str] = None,
             to select
         project_id (str, optional): id of project (aka project)
             to select
+        ssl_verify (bool, optional): If False (default), does not verify the
+            server's SSL certificates
+
     Returns:
         connection to I-Server or None is case of some error
     """
+    if not ssl_verify:
+        requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
 
     try:
         logger.info('Creating connection from Workstation Data object...')
@@ -53,18 +70,29 @@ def get_connection(workstation_data: dict, project_name: Optional[str] = None,
         for c in cookies:
             cookie_values = {'domain': '', 'path': '/'}
             cookie_values.update(c)
-            jar.set(cookie_values['name'], cookie_values['value'], domain=cookie_values['domain'],
-                    path=cookie_values['path'])
+            jar.set(
+                cookie_values['name'],
+                cookie_values['value'],
+                domain=cookie_values['domain'],
+                path=cookie_values['path']
+            )
     except Exception as e:
         logger.error(f'Some error occurred while preparing data to get identity token: \n{e}')
         return None
 
     # get identity token
-    r = requests.post(base_url + 'api/auth/identityToken', headers=headers, cookies=jar)
+    r = requests.post(
+        base_url + 'api/auth/identityToken', headers=headers, cookies=jar, verify=ssl_verify
+    )
     if r.ok:
         # create connection to I-Server
-        return Connection(base_url, identity_token=r.headers['X-MSTR-IdentityToken'],
-                          project_id=project_id, project_name=project_name)
+        return Connection(
+            base_url,
+            identity_token=r.headers['X-MSTR-IdentityToken'],
+            project_id=project_id,
+            project_name=project_name,
+            ssl_verify=ssl_verify
+        )
     else:
         logger.error(f'HTTP {r.status_code} - {r.reason}, Message {r.text}')
         return None
@@ -109,11 +137,20 @@ class Connection:
         timeout: time after the server's session expires, in seconds
     """
 
-    def __init__(self, base_url: str, username: Optional[str] = None,
-                 password: Optional[str] = None, project_name: Optional[str] = None,
-                 project_id: Optional[str] = None, login_mode: int = 1, ssl_verify: bool = True,
-                 certificate_path: Optional[str] = None, proxies: Optional[dict] = None,
-                 identity_token: Optional[str] = None, verbose: bool = True):
+    def __init__(
+        self,
+        base_url: str,
+        username: Optional[str] = None,
+        password: Optional[str] = None,
+        project_name: Optional[str] = None,
+        project_id: Optional[str] = None,
+        login_mode: int = 1,
+        ssl_verify: bool = True,
+        certificate_path: Optional[str] = None,
+        proxies: Optional[dict] = None,
+        identity_token: Optional[str] = None,
+        verbose: bool = True
+    ):
         """Establish a connection with MicroStrategy REST API.
 
         You can establish connection by either providing set of values
@@ -270,8 +307,9 @@ class Connection:
             logger.info('Connection to MicroStrategy Intelligence Server is not active.')
             return False
 
-    def select_project(self, project_id: Optional[str] = None,
-                       project_name: Optional[str] = None) -> None:
+    def select_project(
+        self, project_id: Optional[str] = None, project_name: Optional[str] = None
+    ) -> None:
         """Select project for the given connection based on project_id or
         project_name.
 
@@ -294,8 +332,10 @@ class Connection:
             return None
 
         if project_id and project_name:
-            tmp_msg = ('Both `project_id` and `project_name` arguments provided. '
-                       'Selecting project based on `project_id`.')
+            tmp_msg = (
+                'Both `project_id` and `project_name` arguments provided. '
+                'Selecting project based on `project_id`.'
+            )
             helper.exception_handler(msg=tmp_msg, exception_type=Warning)
 
         _projects = projects.get_projects(connection=self).json()
@@ -304,16 +344,20 @@ class Connection:
             tmp_projects = helper.filter_list_of_dicts(_projects, id=project_id)
             if not tmp_projects:
                 self.project_id, self.project_name = None, None
-                tmp_msg = (f"Error connecting to project with id: {project_id}. "
-                           "Project with given id does not exist or user has no access.")
+                tmp_msg = (
+                    f"Error connecting to project with id: {project_id}. "
+                    "Project with given id does not exist or user has no access."
+                )
                 raise ValueError(tmp_msg)
         elif project_name:
             # Find which project ID matches the project name provided
             tmp_projects = helper.filter_list_of_dicts(_projects, name=project_name)
             if not tmp_projects:
                 self.project_id, self.project_name = None, None
-                tmp_msg = (f"Error connecting to project with name: {project_name}. "
-                           "Project with given name does not exist or user has no access.")
+                tmp_msg = (
+                    f"Error connecting to project with name: {project_name}. "
+                    "Project with given name does not exist or user has no access."
+                )
                 raise ValueError(tmp_msg)
 
         self.project_id = tmp_projects[0]['id']
@@ -389,13 +433,13 @@ class Connection:
     def _validate_project_selected(self) -> None:
         if self.project_id is None:
             raise AttributeError(
-                "Project not selected. Select project using `select_project` method.")
+                "Project not selected. Select project using `select_project` method."
+            )
 
     def __prompt_credentials(self) -> None:
         self.username = self.username or input("Username: ")
         self.__password = self.__password or getpass("Password: ")
-        self.login_mode = self.login_mode or input(
-            "Login mode (1 - Standard, 16 - LDAP): ")
+        self.login_mode = self.login_mode or input("Login mode (1 - Standard, 16 - LDAP): ")
 
     def __check_version(self) -> bool:
         """Checks version of I-Server and MicroStrategy Web and store these
@@ -407,7 +451,8 @@ class Connection:
                 iserver_version = json_response["iServerVersion"][:9]
             except KeyError:
                 raise exceptions.IServerException(
-                    "I-Server is currently unavailable. Please contact your administrator.")
+                    "I-Server is currently unavailable. Please contact your administrator."
+                )
             web_version = json_response.get("webVersion")
             web_version = web_version[:9] if web_version else None
             return iserver_version, web_version
@@ -415,8 +460,15 @@ class Connection:
         self._iserver_version, self._web_version = get_server_status()
         return version.parse(self.iserver_version) >= version.parse("11.1.0400")
 
-    def __configure_session(self, verify, certificate_path, proxies, existing_session=None,
-                            retries=2, backoff_factor=0.3):
+    def __configure_session(
+        self,
+        verify,
+        certificate_path,
+        proxies,
+        existing_session=None,
+        retries=2,
+        backoff_factor=0.3
+    ):
         """Creates a shared requests.Session() object with configuration from
         the initialization. Additional parameters change how the HTTPAdapter is
         configured.
