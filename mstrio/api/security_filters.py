@@ -19,8 +19,9 @@ class UpdateOperator(Enum):
 
 
 @ErrorHandler(err_msg='Error getting members of security filter with ID {id}')
-def get_security_filter_members(connection: "Connection", id: str, project_id: str = None,
-                                error_msg: str = None):
+def get_security_filter_members(
+    connection: "Connection", id: str, project_id: str = None, error_msg: str = None
+):
     """Get the users and user groups that the specified security filter is
     applied to."""
     if project_id is None:
@@ -33,9 +34,14 @@ def get_security_filter_members(connection: "Connection", id: str, project_id: s
 
 
 @ErrorHandler(err_msg='Error updating members of security filter with ID {id}')
-def update_security_filter_members(connection: "Connection", id: str, body: dict,
-                                   project_id: str = None, error_msg: str = None,
-                                   throw_error: bool = True):
+def update_security_filter_members(
+    connection: "Connection",
+    id: str,
+    body: dict,
+    project_id: str = None,
+    error_msg: str = None,
+    throw_error: bool = True
+):
     """Update members information for a specific security filter."""
     if project_id is None:
         connection._validate_project_selected()
@@ -48,9 +54,16 @@ def update_security_filter_members(connection: "Connection", id: str, body: dict
 
 
 @ErrorHandler(err_msg='Error creating new security filter.')
-def create_security_filter(connection: "Connection", changeset_id: str, body: dict,
-                           show_filter_tokens: bool = False, show_expression_as: str = None,
-                           error_msg: str = None, throw_error: bool = True, **kwargs):
+def create_security_filter(
+    connection: "Connection",
+    changeset_id: str,
+    body: dict,
+    show_filter_tokens: bool = False,
+    show_expression_as: str = None,
+    error_msg: str = None,
+    throw_error: bool = True,
+    **kwargs
+):
     """Create a security filter."""
     return connection.post(
         url=f"{connection.base_url}/api/model/securityFilters",
@@ -64,16 +77,25 @@ def create_security_filter(connection: "Connection", changeset_id: str, body: di
 
 
 @ErrorHandler(err_msg='Error getting security filter {id} definition.')
-def read_security_filter(connection: "Connection", id: str, project_id: str = None,
-                         changeset_id: str = None, show_expression_as: str = None,
-                         show_fields: str = None, show_filter_tokens: bool = False,
-                         error_msg: str = None):
+def read_security_filter(
+    connection: "Connection",
+    id: str,
+    project_id: str = None,
+    changeset_id: str = None,
+    show_expression_as: str = None,
+    show_fields: str = None,
+    show_filter_tokens: bool = False,
+    error_msg: str = None
+):
     """Read security filter."""
+    if project_id is None:
+        connection._validate_project_selected()
+        project_id = connection.project_id
+
     return connection.get(
         url=f"{connection.base_url}/api/model/securityFilters/{id}",
         headers={
-            'X-MSTR-ProjectID': project_id,
-            'X-MSTR-MS-Changeset': changeset_id
+            'X-MSTR-ProjectID': project_id, 'X-MSTR-MS-Changeset': changeset_id
         },
         params={
             'showExpressionAs': show_expression_as,
@@ -84,10 +106,17 @@ def read_security_filter(connection: "Connection", id: str, project_id: str = No
 
 
 @ErrorHandler(err_msg='Error updating security filter with ID {id}')
-def update_security_filter(connection: "Connection", id: str, changeset_id: str, body: dict,
-                           show_expression_as: str = None, show_fields: str = None,
-                           show_filter_tokens: bool = False, error_msg: str = None,
-                           throw_error: bool = True):
+def update_security_filter(
+    connection: "Connection",
+    id: str,
+    changeset_id: str,
+    body: dict,
+    show_expression_as: str = None,
+    show_fields: str = None,
+    show_filter_tokens: bool = False,
+    error_msg: str = None,
+    throw_error: bool = True
+):
     """Update security filter."""
     return connection.put(
         url=f"{connection.base_url}/api/model/securityFilters/{id}",

@@ -13,8 +13,9 @@ def _get_datetime(date):
     return datetime.strptime(date, '%Y-%m-%dT%H:%M:%S.000%z')
 
 
-def delete_inactive_caches(connection: "Connection", days_diff: str = 30,
-                           nodes: Union[str, List[str]] = None) -> List["CubeCache"]:
+def delete_inactive_caches(
+    connection: "Connection", days_diff: str = 30, nodes: Union[str, List[str]] = None
+) -> List["CubeCache"]:
     """Delete inactive caches which have `hit_count` equals 0 and their
     `last_time_updated` was earlier than `days_diff` before.
 

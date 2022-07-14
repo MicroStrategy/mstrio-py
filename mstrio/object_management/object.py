@@ -7,24 +7,31 @@ from mstrio.users_and_groups.user import User
 from mstrio.utils.acl import ACLMixin
 from mstrio.utils.certified_info import CertifiedInfo
 from mstrio.utils.entity import CertifyMixin, CopyMixin, DeleteMixin, Entity, MoveMixin
+from mstrio.utils.helper import (
+    get_args_from_func, get_default_args_from_func, get_valid_project_id
+)
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
 
 
 def list_objects(
-        connection: "Connection",
-        object_type: ObjectTypes,
-        name: Optional[str] = None,
-        project_id: Optional[str] = None,
-        domain: Union[SearchDomain, int] = SearchDomain.CONFIGURATION,
-        search_pattern: Union[SearchPattern, int] = SearchPattern.CONTAINS,
-        to_dictionary: bool = False,
-        limit: int = None,
-        **filters,
+    connection: "Connection",
+    object_type: ObjectTypes,
+    name: Optional[str] = None,
+    project_id: Optional[str] = None,
+    project_name: Optional[str] = None,
+    domain: Union[SearchDomain, int] = SearchDomain.CONFIGURATION,
+    search_pattern: Union[SearchPattern, int] = SearchPattern.CONTAINS,
+    to_dictionary: bool = False,
+    limit: int = None,
+    **filters,
 ) -> Union[List["Object"], List[dict]]:
     """Get list of objects or dicts. Optionally filter the
     objects by specifying filters.
+
+    Specify either `project_id` or `project_name`.
+    When `project_id` is provided (not `None`), `project_name` is omitted.
 
     Args:
         connection: MicroStrategy connection object returned by
@@ -34,6 +41,7 @@ def list_objects(
         name (string, optional): value the search pattern is set to, which
             will be applied to the names of objects being searched
         project_id: ID of the project for which the objects are to be listed
+        project_name: project name
         domain: domain where the search will be performed,
             such as Local or Project, possible values
             are defined in EnumDSSXMLSearchDomain
@@ -49,6 +57,15 @@ def list_objects(
     Examples:
         >>> list_objects(connection, object_type=ObjectTypes.USER)
     """
+    # Project is validated only if project was specified in arguments -
+    # otherwise fetch is performed from a non-project area.
+    if project_id or project_name:
+        project_id = get_valid_project_id(
+            connection=connection,
+            project_id=project_id,
+            project_name=project_name,
+        )
+
     return Object._list_objects(
         connection=connection,
         object_type=object_type,
@@ -97,10 +114,29 @@ class Object(Entity, ACLMixin, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin):
         'owner': User.from_dict,
     }
     _API_GETTERS = {
-        ('id', 'name', 'description', 'date_created', 'date_modified', 'acg', 'abbreviation',
-         'type', 'subtype', 'ext_type', 'version', 'owner', 'icon_path', 'view_media', 'ancestors',
-         'certified_info', 'acl', 'comments', 'project_id', 'hidden',
-         'target_info'): objects.get_object_info
+        (
+            'id',
+            'name',
+            'description',
+            'date_created',
+            'date_modified',
+            'acg',
+            'abbreviation',
+            'type',
+            'subtype',
+            'ext_type',
+            'version',
+            'owner',
+            'icon_path',
+            'view_media',
+            'ancestors',
+            'certified_info',
+            'acl',
+            'comments',
+            'project_id',
+            'hidden',
+            'target_info'
+        ): objects.get_object_info
     }
     _API_PATCH: dict = {**Entity._API_PATCH, ('folder_id'): (objects.update_object, 'partial_put')}
 
@@ -118,14 +154,19 @@ class Object(Entity, ACLMixin, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin):
 
     def _init_variables(self, **kwargs) -> None:
         self._OBJECT_TYPE = ObjectTypes(kwargs.get("type")) if ObjectTypes.contains(
-            kwargs.get("type")) else ObjectTypes.NONE
+            kwargs.get("type")
+        ) else ObjectTypes.NONE
         super()._init_variables(**kwargs)
 
     def __str__(self):
         return f"Object named: '{self.name}' with ID: '{self.id}'"
 
-    def alter(self, name: Optional[str] = None, description: Optional[str] = None,
-              abbreviation: Optional[str] = None) -> None:
+    def alter(
+        self,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        abbreviation: Optional[str] = None
+    ) -> None:
         """Alter the object properties.
 
         Args:
@@ -134,8 +175,8 @@ class Object(Entity, ACLMixin, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin):
             abbreviation: abbreviation
         """
         func = self.alter
-        args = func.__code__.co_varnames[:func.__code__.co_argcount]
-        defaults = func.__defaults__  # type: ignore
+        args = get_args_from_func(func)
+        defaults = get_default_args_from_func(func)
         default_dict = dict(zip(args[-len(defaults):], defaults)) if defaults else {}
         local = locals()
         properties = {}
@@ -146,16 +187,16 @@ class Object(Entity, ACLMixin, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin):
 
     @classmethod
     def _list_objects(
-            cls,
-            connection: "Connection",
-            object_type: ObjectTypes,
-            name: Optional[str] = None,
-            project_id: Optional[str] = None,
-            to_dictionary: bool = False,
-            domain: Union[int, SearchDomain] = SearchDomain.CONFIGURATION,
-            pattern: Union[int, SearchPattern] = SearchPattern.CONTAINS,
-            limit: Optional[int] = None,
-            **filters,
+        cls,
+        connection: "Connection",
+        object_type: ObjectTypes,
+        name: Optional[str] = None,
+        project_id: Optional[str] = None,
+        to_dictionary: bool = False,
+        domain: Union[int, SearchDomain] = SearchDomain.CONFIGURATION,
+        pattern: Union[int, SearchPattern] = SearchPattern.CONTAINS,
+        limit: Optional[int] = None,
+        **filters,
     ) -> Union[List["Object"], List[dict]]:
         objects = full_search(
             connection,

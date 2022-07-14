@@ -78,8 +78,8 @@ class ErrorHandler:
 
 
 def bulk_operation_response_handler(
-        response: Response,
-        unpack_value: str = None) -> Union[PartialSuccess, Success, MstrException]:
+    response: Response, unpack_value: str = None
+) -> Union[PartialSuccess, Success, MstrException]:
     """Handle partial success and other statuses from bulk operation."""
     response_body = response.json()
     if response.ok and unpack_value:

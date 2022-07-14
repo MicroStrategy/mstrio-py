@@ -35,12 +35,21 @@ class ObjectInformation(Dictable):
     """
     _DELETE_NONE_VALUES_RECURSION = False
 
-    def __init__(self, object_id: Optional[str] = None, sub_type: Optional[str] = None,
-                 name: Optional[str] = None, is_embedded: Optional[bool] = None,
-                 description: Optional[str] = None, date_created: Optional[str] = None,
-                 date_modified: Optional[str] = None, destination_folder_id: Optional[str] = None,
-                 version_id: Optional[str] = None, path: Optional[str] = None,
-                 acl: Optional[dict] = None, primary_locale: Optional[str] = None):
+    def __init__(
+        self,
+        object_id: Optional[str] = None,
+        sub_type: Optional[str] = None,
+        name: Optional[str] = None,
+        is_embedded: Optional[bool] = None,
+        description: Optional[str] = None,
+        date_created: Optional[str] = None,
+        date_modified: Optional[str] = None,
+        destination_folder_id: Optional[str] = None,
+        version_id: Optional[str] = None,
+        path: Optional[str] = None,
+        acl: Optional[dict] = None,
+        primary_locale: Optional[str] = None
+    ):
         self.object_id = object_id
         self.sub_type = sub_type
         self.name = name
@@ -72,8 +81,13 @@ class ObjectReference(Dictable):
     """
     _DELETE_NONE_VALUES_RECURSION = False
 
-    def __init__(self, object_id: str, sub_type: str, name: Optional[str] = None,
-                 is_embedded: Optional[bool] = None):
+    def __init__(
+        self,
+        object_id: str,
+        sub_type: str,
+        name: Optional[str] = None,
+        is_embedded: Optional[bool] = None
+    ):
         self.object_id = object_id
         self.sub_type = sub_type
         self.name = name
@@ -84,8 +98,9 @@ class _ObjectReferenceWithType(ObjectReference):
     SUB_TYPE = ""
     _DELETE_NONE_VALUES_RECURSION = False
 
-    def __init__(self, object_id: str, name: Optional[str] = None,
-                 is_embedded: Optional[bool] = None):
+    def __init__(
+        self, object_id: str, name: Optional[str] = None, is_embedded: Optional[bool] = None
+    ):
         super().__init__(object_id, self.SUB_TYPE, name, is_embedded)
 
 

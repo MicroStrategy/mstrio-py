@@ -34,8 +34,14 @@ OlapCube.available_attributes(conn)
 # create new OLAP Cube
 attributes = [ATTRIBUTE]
 metrics = [METRIC]
-new_olap_cube = OlapCube.create(conn, name=CUBE_NAME, description=CUBE_DESCRIPTION,
-                                folder_id=CUBE_FOLDER_ID, attributes=attributes, metrics=metrics)
+new_olap_cube = OlapCube.create(
+    conn,
+    name=CUBE_NAME,
+    description=CUBE_DESCRIPTION,
+    folder_id=CUBE_FOLDER_ID,
+    attributes=attributes,
+    metrics=metrics
+)
 
 # Update attributes and metrics of a newly created OLAP Cube. When cube is not
 # published yet, then it is possible to add/remove metrics or attributes.

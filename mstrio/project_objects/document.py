@@ -11,8 +11,14 @@ from mstrio.utils.certified_info import CertifiedInfo
 from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, MoveMixin, ObjectTypes, VldbMixin
 
 
-def list_documents(connection: Connection, name: Optional[str] = None, to_dictionary: bool = False,
-                   to_dataframe: bool = False, limit: Optional[int] = None, **filters):
+def list_documents(
+    connection: Connection,
+    name: Optional[str] = None,
+    to_dictionary: bool = False,
+    to_dataframe: bool = False,
+    limit: Optional[int] = None,
+    **filters
+):
     """Get all Documents available in the project specified within the
     `connection` object.
 
@@ -38,16 +44,29 @@ def list_documents(connection: Connection, name: Optional[str] = None, to_dictio
     """
     # TODO: consider adding Connection.project_selected attr/method
     if connection.project_id is None:
-        raise ValueError("Please log into a specific project to load documents within it. "
-                         "To load all documents across the whole environment use "
-                         f"{list_documents_across_projects.__name__} function.")
-    return Document._list_all(connection, to_dictionary=to_dictionary, name=name, limit=limit,
-                              to_dataframe=to_dataframe, **filters)
+        raise ValueError(
+            "Please log into a specific project to load documents within it. "
+            "To load all documents across the whole environment use "
+            f"{list_documents_across_projects.__name__} function."
+        )
+    return Document._list_all(
+        connection,
+        to_dictionary=to_dictionary,
+        name=name,
+        limit=limit,
+        to_dataframe=to_dataframe,
+        **filters
+    )
 
 
-def list_documents_across_projects(connection: Connection, name: Optional[str] = None,
-                                   to_dictionary: bool = False, to_dataframe: bool = False,
-                                   limit: Optional[int] = None, **filters):
+def list_documents_across_projects(
+    connection: Connection,
+    name: Optional[str] = None,
+    to_dictionary: bool = False,
+    to_dataframe: bool = False,
+    limit: Optional[int] = None,
+    **filters
+):
     """Get all Documents stored on the server.
 
     Optionally use `to_dictionary` or `to_dataframe` to choose output format.
@@ -77,8 +96,15 @@ def list_documents_across_projects(connection: Connection, name: Optional[str] =
     for project in projects:
         connection.select_project(project_id=project.id)
         output.extend(
-            Document._list_all(connection, to_dictionary=to_dictionary, name=name, limit=limit,
-                               to_dataframe=to_dataframe, **filters))
+            Document._list_all(
+                connection,
+                to_dictionary=to_dictionary,
+                name=name,
+                limit=limit,
+                to_dataframe=to_dataframe,
+                **filters
+            )
+        )
         output = list(set(output))
     connection.select_project(project_id=project_id_before)
     return output
@@ -87,14 +113,16 @@ def list_documents_across_projects(connection: Connection, name: Optional[str] =
 class Document(Entity, VldbMixin, CopyMixin, MoveMixin, DeleteMixin):
     _OBJECT_TYPE = ObjectTypes.DOCUMENT_DEFINITION
     _FROM_DICT_MAP = {
-        **Entity._FROM_DICT_MAP, 'owner': User.from_dict,
+        **Entity._FROM_DICT_MAP,
+        'owner': User.from_dict,
         'certified_info': CertifiedInfo.from_dict
     }
     _API_PATCH: dict = {**Entity._API_PATCH, ('folder_id'): (objects.update_object, 'partial_put')}
     _DELETE_NONE_VALUES_RECURSION = False
 
-    def __init__(self, connection: Connection, name: Optional[str] = None,
-                 id: Optional[str] = None):
+    def __init__(
+        self, connection: Connection, name: Optional[str] = None, id: Optional[str] = None
+    ):
         """Initialize Document object by passing name or id.
 
         Args:
@@ -104,8 +132,9 @@ class Document(Entity, VldbMixin, CopyMixin, MoveMixin, DeleteMixin):
             id: ID of Document
         """
         if id is None:
-            document = super()._find_object_with_name(connection=connection, name=name,
-                                                      listing_function=Document._list_all)
+            document = super()._find_object_with_name(
+                connection=connection, name=name, listing_function=Document._list_all
+            )
             id = document['id']
         super().__init__(connection=connection, object_id=id, name=name)
 
@@ -180,10 +209,12 @@ class Document(Entity, VldbMixin, CopyMixin, MoveMixin, DeleteMixin):
                 recipients = [user["id"] for user in users]
             elif any([not isinstance(el, str) for el in recipients]):
                 raise ValueError(
-                    'Please provide either list User and UserGroup elements or str elements.')
+                    'Please provide either list User and UserGroup elements or str elements.'
+                )
             for user_id in recipients:
-                library.unpublish_document_for_user(self.connection, document_id=self.id,
-                                                    user_id=user_id)
+                library.unpublish_document_for_user(
+                    self.connection, document_id=self.id, user_id=user_id
+                )
 
     def share_to(self, users: Union[UserOrGroup, List[UserOrGroup]]):
         """Shares the document to the listed users' libraries.
@@ -196,20 +227,32 @@ class Document(Entity, VldbMixin, CopyMixin, MoveMixin, DeleteMixin):
         self.publish(users)
 
     @classmethod
-    def _list_all(cls, connection: Connection, name: Optional[str] = None,
-                  to_dictionary: bool = False, to_dataframe: bool = False,
-                  limit: Optional[int] = None,
-                  **filters) -> Union[List["Document"], List[dict], DataFrame]:
+    def _list_all(
+        cls,
+        connection: Connection,
+        name: Optional[str] = None,
+        to_dictionary: bool = False,
+        to_dataframe: bool = False,
+        limit: Optional[int] = None,
+        **filters
+    ) -> Union[List["Document"], List[dict], DataFrame]:
         msg = "Error retrieving documents from the environment."
         if to_dictionary and to_dataframe:
             helper.exception_handler(
                 "Please select either `to_dictionary=True` or `to_dataframe=True`, but not both.",
-                ValueError)
-        objects = helper.fetch_objects_async(connection, api=documents.get_documents,
-                                             async_api=documents.get_documents_async,
-                                             dict_unpack_value='result', limit=limit,
-                                             chunk_size=1000, error_msg=msg, filters=filters,
-                                             search_term=name)
+                ValueError
+            )
+        objects = helper.fetch_objects_async(
+            connection,
+            api=documents.get_documents,
+            async_api=documents.get_documents_async,
+            dict_unpack_value='result',
+            limit=limit,
+            chunk_size=1000,
+            error_msg=msg,
+            filters=filters,
+            search_term=name
+        )
         if to_dictionary:
             return objects
         elif to_dataframe:
@@ -227,8 +270,9 @@ class Document(Entity, VldbMixin, CopyMixin, MoveMixin, DeleteMixin):
     def instance_id(self):
         if self._instance_id == '':
             body = {"resolveOnly": True, "persistViewState": True}
-            response = documents.create_new_document_instance(connection=self.connection,
-                                                              document_id=self.id, body=body)
+            response = documents.create_new_document_instance(
+                connection=self.connection, document_id=self.id, body=body
+            )
             self._instance_id = response.json()['mid']
         return self._instance_id
 
@@ -237,8 +281,9 @@ class Document(Entity, VldbMixin, CopyMixin, MoveMixin, DeleteMixin):
         response = library.get_document(connection=self.connection,
                                         id=self.id).json()['recipients']
         if response:
-            self._recipients = list_users(connection=self.connection,
-                                          id=[r['id'] for r in response])
+            self._recipients = list_users(
+                connection=self.connection, id=[r['id'] for r in response]
+            )
         else:
             self._recipients = []
         return self._recipients

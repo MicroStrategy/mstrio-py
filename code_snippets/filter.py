@@ -10,7 +10,6 @@ from mstrio.modeling import (
     ExpressionFormat, Filter, list_filters, SchemaManagement, SchemaUpdateType
 )
 
-
 # Following variables are defining basic filters
 PROJECT_NAME = "<Project_name>"  # Insert name of project here
 SEARCH_NAME = "<Search_name>"  # Insert part of the filter name to be searched for
@@ -34,7 +33,9 @@ FILTER_QUALIFICATION_AS_TREE = {
             "parameters": [
                 {
                     "parameterType": "constant",
-                    "constant": {"type": "int64", "value": "1"},
+                    "constant": {
+                        "type": "int64", "value": "1"
+                    },
                 }
             ],
             "levelType": "none",
@@ -71,7 +72,9 @@ FILTER_QUALIFICATION_AS_TOKENS = {
             "value": ">",
             "type": "character",
         },
-        {"level": "resolved", "state": "initial", "value": "1", "type": "unknown"},
+        {
+            "level": "resolved", "state": "initial", "value": "1", "type": "unknown"
+        },
         {
             "level": "resolved",
             "state": "initial",
@@ -85,15 +88,11 @@ FILTER_QUALIFICATION_AS_TOKENS = {
 # Get list of filters, with examples of different conditions
 list_of_all_filters = list_filters(connection=conn)
 list_of_limited_filters = list_filters(connection=conn, limit=10)
-list_of_limited_filters_to_dict = list_filters(
-    connection=conn, limit=10, to_dictionary=True
-)
+list_of_limited_filters_to_dict = list_filters(connection=conn, limit=10, to_dictionary=True)
 list_of_filters_by_name = list_filters(connection=conn, name=SEARCH_NAME)
 
 # list of filters with expressions represented as tree
-list_of_filters_as_trees = list_filters(
-    connection=conn, show_expression_as=ExpressionFormat.TREE
-)
+list_of_filters_as_trees = list_filters(connection=conn, show_expression_as=ExpressionFormat.TREE)
 # list of filters with expressions represented as tokens
 list_of_filters_as_tokens = list_filters(
     connection=conn, show_expression_as=ExpressionFormat.TOKENS

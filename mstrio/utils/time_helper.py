@@ -72,8 +72,10 @@ def _adapt_date_to_format(date: str, format_str: str) -> Union[tuple, str]:
         localization = ''  # don't add localization if format is without time
     else:
         from mstrio.utils.helper import exception_handler
-        msg = (f"For given format of date ({format_str}) adapting date to such format is not"
-               "provided.")
+        msg = (
+            f"For given format of date ({format_str}) adapting date to such format is not"
+            "provided."
+        )
         exception_handler(msg, Warning)
         return (initial_date, format_str)
 
@@ -142,45 +144,53 @@ def _get_only_datetimeformat_map(string_to_date_map: dict) -> dict:
     }
 
 
-def _solve_prefix_and_convert_date(func, name: str, date: str, string_to_date_map: dict,
-                                   only_datetimefomat: bool = True):
+def _solve_prefix_and_convert_date(
+    func, name: str, date: str, string_to_date_map: dict, only_datetimefomat: bool = True
+):
     if only_datetimefomat:
         string_to_date_map = _get_only_datetimeformat_map(string_to_date_map)
     if f'_{name}' in string_to_date_map:
         date_format = string_to_date_map[f'_{name}'].value if isinstance(
-            string_to_date_map[f'_{name}'], DatetimeFormats) else string_to_date_map[f'_{name}']
+            string_to_date_map[f'_{name}'], DatetimeFormats
+        ) else string_to_date_map[f'_{name}']
         return func(date, date_format)
     elif name in string_to_date_map:
         date_format = string_to_date_map[name].value if isinstance(
-            string_to_date_map[name], DatetimeFormats) else string_to_date_map[name]
+            string_to_date_map[name], DatetimeFormats
+        ) else string_to_date_map[name]
         return func(date, date_format)
     return date
 
 
-def map_str_to_datetime(name: str, date: str, string_to_date_map: dict,
-                        only_datetimefomat: bool = True) -> datetime:
+def map_str_to_datetime(
+    name: str, date: str, string_to_date_map: dict, only_datetimefomat: bool = True
+) -> datetime:
     """Change date format to datetime, based on `string_to_date_map`
     conversion dict. All occurrences of `DATETIMEFORMAT` Enum in
     `string_to_date_map` are converted to corresponding string values.
     If name is not found in `string_to_date_map`, returns date without changes.
     """
-    return _solve_prefix_and_convert_date(str_to_datetime, name, date, string_to_date_map,
-                                          only_datetimefomat)
+    return _solve_prefix_and_convert_date(
+        str_to_datetime, name, date, string_to_date_map, only_datetimefomat
+    )
 
 
-def map_datetime_to_str(name: str, date: datetime, string_to_date_map: dict,
-                        only_datetimefomat: bool = True) -> str:
+def map_datetime_to_str(
+    name: str, date: datetime, string_to_date_map: dict, only_datetimefomat: bool = True
+) -> str:
     """Change date format to string, based on `string_to_date_map`
     conversion dict. All occurrences of `DATETIMEFORMAT` Enum in
     `string_to_date_map` are converted to corresponding string values.
     If name is not found in `string_to_date_map`, returns date without changes.
     """
-    return _solve_prefix_and_convert_date(datetime_to_str, name, date, string_to_date_map,
-                                          only_datetimefomat)
+    return _solve_prefix_and_convert_date(
+        datetime_to_str, name, date, string_to_date_map, only_datetimefomat
+    )
 
 
-def bulk_str_to_datetime(source: dict, string_to_date_map: dict,
-                         only_datetimefomat: bool = True) -> dict:
+def bulk_str_to_datetime(
+    source: dict, string_to_date_map: dict, only_datetimefomat: bool = True
+) -> dict:
     """Change all dates from `source` found in `string_to_date_map`
     to datetime format. If parameter is not found in `string_to_date_map`,
     it is returned without changes."""
@@ -189,8 +199,9 @@ def bulk_str_to_datetime(source: dict, string_to_date_map: dict,
     return source
 
 
-def bulk_datetime_to_str(source: dict, string_to_date_map: dict,
-                         only_datetimefomat: bool = True) -> dict:
+def bulk_datetime_to_str(
+    source: dict, string_to_date_map: dict, only_datetimefomat: bool = True
+) -> dict:
     """Change all dates from `source` found in `string_to_date_map`
     to string format. If parameter is not found in `string_to_date_map`,
     it is returned without changes."""
@@ -199,8 +210,9 @@ def bulk_datetime_to_str(source: dict, string_to_date_map: dict,
     return source
 
 
-def override_datetime_format(original_format: str, expected_format: str, fields: tuple,
-                             to_unpack=None):
+def override_datetime_format(
+    original_format: str, expected_format: str, fields: tuple, to_unpack=None
+):
     """A decorator designed to override the datetime format
     of some dates in responses from REST server as they can be
     a bit crazy sometimes (e.g. two different formats for one object)

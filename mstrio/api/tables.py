@@ -39,8 +39,7 @@ def get_table(
     return connection.get(
         url=f"{connection.base_url}/api/model/tables/{id}",
         headers={
-            "X-MSTR-ProjectID": project_id,
-            "X-MSTR-Changeset": changeset_id
+            "X-MSTR-ProjectID": project_id, "X-MSTR-Changeset": changeset_id
         },
         params={"fields": fields},
     )
@@ -82,13 +81,10 @@ def get_tables(
     return connection.get(
         url=f"{connection.base_url}/api/model/tables",
         headers={
-            "X-MSTR-ProjectID": project_id,
-            "X-MSTR-Changeset": changeset_id
+            "X-MSTR-ProjectID": project_id, "X-MSTR-Changeset": changeset_id
         },
         params={
-            "limit": limit,
-            "offset": offset,
-            "fields": fields
+            "limit": limit, "offset": offset, "fields": fields
         },
     )
 
@@ -133,8 +129,7 @@ def patch_table(
         headers={"X-MSTR-MS-Changeset": changeset_id},
         json=body,
         params={
-            "columnMergeOption": column_merge_option,
-            "fields": fields
+            "columnMergeOption": column_merge_option, "fields": fields
         },
     )
 
@@ -193,7 +188,7 @@ def post_table(
         json=data,
         params={
             "checkSecondaryDataSourceTable": "true"
-                                             if check_secondary_data_source_table else "false",
+            if check_secondary_data_source_table else "false",
             "columnMergeOption": column_merge_option,
             "tablePrefixOption": table_prefix_option,
             "fields": fields,
@@ -213,8 +208,10 @@ def get_available_warehouse_tables(
         connection._validate_project_selected(),
         project_id = connection.project_id
 
-    url = (f"{connection.base_url}/api/datasources/{datasource_id}/catalog/"
-           f"namespaces/{namespace_id}/tables")
+    url = (
+        f"{connection.base_url}/api/datasources/{datasource_id}/catalog/"
+        f"namespaces/{namespace_id}/tables"
+    )
     return connection.get(
         url,
         headers={
@@ -246,8 +243,7 @@ def get_table_async(
     return session.get(
         url=f"{connection.base_url}/api/model/tables/{id}",
         headers={
-            "X-MSTR-MS-Changeset": changeset_id,
-            "X-MSTR-ProjectID": project_id
+            "X-MSTR-MS-Changeset": changeset_id, "X-MSTR-ProjectID": project_id
         },
         params={"fields": fields},
     )
@@ -261,9 +257,9 @@ def get_available_warehouse_tables_async(
     error_msg: Optional[str] = None,
 ):
     return session.get(
-        (f"{connection.base_url}/api/datasources/{datasource_id}/catalog/namespaces/{namespace_id}"
-         "/tables"),
+        f"{connection.base_url}/api/datasources/{datasource_id}/catalog/namespaces/{namespace_id}"
+        "/tables",
         headers={
             "X-MSTR-ProjectID": connection.project_id,
-        },
+        }
     )

@@ -2,9 +2,19 @@ from enum import auto, Enum
 from typing import Dict, List, Optional, TYPE_CHECKING, Union
 
 from mstrio.access_and_security.security_filter import (
-    AttributeElement, AttributeFormNormalRef, AttributeFormSystemRef, AttributeRef,
-    ConstantArrayParameter, ConstantParameter, DynamicDateTimeParameter, ElementPromptRef,
-    ExpressionParameter, FilterRef, ObjectReferenceParameter, ParameterType, PromptParameter
+    AttributeElement,
+    AttributeFormNormalRef,
+    AttributeFormSystemRef,
+    AttributeRef,
+    ConstantArrayParameter,
+    ConstantParameter,
+    DynamicDateTimeParameter,
+    ElementPromptRef,
+    ExpressionParameter,
+    FilterRef,
+    ObjectReferenceParameter,
+    ParameterType,
+    PromptParameter
 )
 from mstrio.utils.enum_helper import AutoName
 from mstrio.utils.helper import Any, camel_to_snake, delete_none_values, Dictable, snake_to_camel
@@ -26,11 +36,14 @@ class PredicateBase(Dictable):
         return {}
 
     def to_dict(self, camel_case=True):
-        result = delete_none_values({
-            "type": self.type,
-            "predicate_id": self.predicate_id,
-            "predicate_tree": self._predicate_tree_to_dict(camel_case)
-        }, recursion=True)
+        result = delete_none_values(
+            {
+                "type": self.type,
+                "predicate_id": self.predicate_id,
+                "predicate_tree": self._predicate_tree_to_dict(camel_case)
+            },
+            recursion=True
+        )
         return snake_to_camel(result) if camel_case else result
 
     def __init__(self, predicate_id: Optional[str] = None, **kwargs):
@@ -96,19 +109,15 @@ class PredicateForm(PredicateBase):
             if parameter_type == ParameterType.CONSTANT.value:
                 parameters.append(ConstantParameter.from_dict(parameter, connection))
             elif parameter_type == ParameterType.OBJECT_REFERENCE.value:
-                parameters.append(
-                    ObjectReferenceParameter.from_dict(parameter, connection))
+                parameters.append(ObjectReferenceParameter.from_dict(parameter, connection))
             elif parameter_type == ParameterType.EXPRESSION.value:
-                parameters.append(
-                    ExpressionParameter.from_dict(parameter, connection))
+                parameters.append(ExpressionParameter.from_dict(parameter, connection))
             elif parameter_type == ParameterType.PROMPT.value:
                 parameters.append(PromptParameter.from_dict(parameter, connection))
             elif parameter_type == ParameterType.DYNAMIC_DATE_TIME.value:
-                parameters.append(
-                    DynamicDateTimeParameter.from_dict(parameter, connection))
+                parameters.append(DynamicDateTimeParameter.from_dict(parameter, connection))
             elif parameter_type == ParameterType.ARRAY.value:
-                parameters.append(
-                    ConstantArrayParameter.from_dict(parameter, connection))
+                parameters.append(ConstantArrayParameter.from_dict(parameter, connection))
 
         attribute = AttributeRef.from_dict(source.get("attribute"), connection)
         form = source.get("form", {})
@@ -123,10 +132,15 @@ class PredicateForm(PredicateBase):
 
         return PredicateForm(function, parameters, attribute, form, data_locale, predicate_id)
 
-    def __init__(self, function: "PredicateFormFunction", parameters: List["ParameterBase"],
-                 attribute: "AttributeRef", form: Union["AttributeFormSystemRef",
-                                                        "AttributeFormNormalRef"],
-                 data_locale: Optional[str] = None, predicate_id: Optional[str] = None):
+    def __init__(
+        self,
+        function: "PredicateFormFunction",
+        parameters: List["ParameterBase"],
+        attribute: "AttributeRef",
+        form: Union["AttributeFormSystemRef", "AttributeFormNormalRef"],
+        data_locale: Optional[str] = None,
+        predicate_id: Optional[str] = None
+    ):
         """Specialized expression node that contains an attribute form
         qualification predicate.
 
@@ -175,8 +189,14 @@ class PredicateForm(PredicateBase):
             >>>     )
             >>> )
         """
-        super().__init__(predicate_id, function=function, parameters=parameters,
-                         attribute=attribute, form=form, data_locale=data_locale)
+        super().__init__(
+            predicate_id,
+            function=function,
+            parameters=parameters,
+            attribute=attribute,
+            form=form,
+            data_locale=data_locale
+        )
 
 
 class PredicateElementListFunction(Enum):
@@ -216,19 +236,21 @@ class PredicateElementList(PredicateBase):
         function = PredicateElementListFunction(source.get("function"))
         attribute = AttributeRef.from_dict(source.get("attribute"), connection)
         elements = [
-            AttributeElement.from_dict(elem, connection)
-            for elem in source.get("elements")
+            AttributeElement.from_dict(elem, connection) for elem in source.get("elements")
         ]
         elements_prompt = None if source.get("elements_prompt") is None else [
-            ElementPromptRef.from_dict(elem, connection)
-            for elem in source.get("elements_prompt")
+            ElementPromptRef.from_dict(elem, connection) for elem in source.get("elements_prompt")
         ]
         return PredicateElementList(function, attribute, elements, elements_prompt, predicate_id)
 
-    def __init__(self, function: "PredicateElementListFunction", attribute: "AttributeRef",
-                 elements: List["AttributeElement"],
-                 elements_prompt: Optional[List["ElementPromptRef"]] = None,
-                 predicate_id: Optional[str] = None):
+    def __init__(
+        self,
+        function: "PredicateElementListFunction",
+        attribute: "AttributeRef",
+        elements: List["AttributeElement"],
+        elements_prompt: Optional[List["ElementPromptRef"]] = None,
+        predicate_id: Optional[str] = None
+    ):
         """Specialized expression node that contains an element list predicate.
 
         This qualification selects elements of a specified attribute by either
@@ -260,8 +282,13 @@ class PredicateElementList(PredicateBase):
             >>>     ]
             >>> )
         """
-        super().__init__(predicate_id, function=function, attribute=attribute, elements=elements,
-                         elements_prompt=elements_prompt)
+        super().__init__(
+            predicate_id,
+            function=function,
+            attribute=attribute,
+            elements=elements,
+            elements_prompt=elements_prompt
+        )
 
 
 class PredicateFilter(PredicateBase):
@@ -291,8 +318,12 @@ class PredicateFilter(PredicateBase):
 
         return PredicateFilter(filter, is_independent, predicate_id)
 
-    def __init__(self, filter: "FilterRef", is_independent: Optional[bool] = True,
-                 predicate_id: Optional[str] = None):
+    def __init__(
+        self,
+        filter: "FilterRef",
+        is_independent: Optional[bool] = True,
+        predicate_id: Optional[str] = None
+    ):
         """Specialized expression node that contains a filter qualification
         predicate.
 
@@ -346,17 +377,21 @@ class PredicateJointElementList(PredicateBase):
         predicate_id = source.get("predicate_id")
 
         source = source.get('predicate_tree')
-        level = [
-            AttributeRef.from_dict(obj, connection) for obj in source.get("level")
+        level = [AttributeRef.from_dict(obj, connection) for obj in source.get("level")]
+        tuples = [
+            [AttributeElement.from_dict(elem, connection)
+             for elem in obj]
+            for obj in source.get("tuples", [])
         ]
-        tuples = [[AttributeElement.from_dict(elem, connection)
-                   for elem in obj]
-                  for obj in source.get("tuples", [])]
 
         return PredicateJointElementList(predicate_id, level, tuples)
 
-    def __init__(self, level: List["AttributeRef"], tuples: List[List["AttributeElement"]],
-                 predicate_id: Optional[str] = None):
+    def __init__(
+        self,
+        level: List["AttributeRef"],
+        tuples: List[List["AttributeElement"]],
+        predicate_id: Optional[str] = None
+    ):
         """Specialized expression node that contains a joint element list
         predicate.
 
@@ -405,18 +440,22 @@ class LogicOperator(Dictable):
     TYPE = "operator"
     _DELETE_NONE_VALUES_RECURSION = False
 
-    def __init__(self, function: "LogicFunction", children: Union["LogicOperator",
-                                                                  "PredicateBase"]):
+    def __init__(
+        self, function: "LogicFunction", children: Union["LogicOperator", "PredicateBase"]
+    ):
         self.type = "operator"
         self.function = function
         self.children = children
 
     def to_dict(self, camel_case=True):
-        result = delete_none_values({
-            "type": self.type,
-            "function": self.function.value,
-            "children": [child.to_dict(camel_case) for child in self.children]
-        }, recursion=True)
+        result = delete_none_values(
+            {
+                "type": self.type,
+                "function": self.function.value,
+                "children": [child.to_dict(camel_case) for child in self.children]
+            },
+            recursion=True
+        )
         return snake_to_camel(result) if camel_case else result
 
     @classmethod
@@ -429,8 +468,7 @@ class LogicOperator(Dictable):
             if child_type == "predicate_form_qualification":
                 children.append(PredicateForm.from_dict(child, connection))
             elif child_type == "predicate_joint_element_list":
-                children.append(
-                    PredicateJointElementList.from_dict(child, connection))
+                children.append(PredicateJointElementList.from_dict(child, connection))
             elif child_type == "predicate_filter_qualification":
                 children.append(PredicateFilter.from_dict(child, connection))
             elif child_type == "predicate_element_list":

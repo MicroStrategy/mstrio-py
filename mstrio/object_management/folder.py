@@ -1,5 +1,5 @@
 import logging
-from typing import Callable, List, Optional, TYPE_CHECKING, Union
+from typing import List, Optional, TYPE_CHECKING, Union
 
 from mstrio import config
 from mstrio.api import folders, objects
@@ -7,7 +7,9 @@ from mstrio.object_management import PredefinedFolders
 from mstrio.types import ObjectTypes
 from mstrio.users_and_groups import User
 from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, MoveMixin
-from mstrio.utils.helper import fetch_objects_async, get_default_args_from_func
+from mstrio.utils.helper import (
+    fetch_objects_async, get_default_args_from_func, get_valid_project_id
+)
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
@@ -15,15 +17,23 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def list_folders(connection: "Connection", project_id: Optional[str] = None,
-                 to_dictionary: bool = False, limit: Optional[int] = None,
-                 **filters) -> Union[List["Folder"], List[dict]]:
+def list_folders(
+    connection: "Connection",
+    project_id: Optional[str] = None,
+    project_name: Optional[str] = None,
+    to_dictionary: bool = False,
+    limit: Optional[int] = None,
+    **filters
+) -> Union[List["Folder"], List[dict]]:
     """Get a list of folders - either all folders in a specific project or all
     folders that are outside of projects, called configuration-level folders.
     The list of configuration-level folders includes folders such as users, user
     groups, databases, etc. which are not project-specific. If you pass
-    a `project_id`, you get folders in that project; if not, then you get
-    configuration-level folders.
+    a `project_id` or `project_name`, you get folders in that project;
+    if not, then you get configuration-level folders.
+
+    Specify either `project_id` or `project_name`.
+    When `project_id` is provided (not `None`), `project_name` is omitted.
 
     Note:
         Id of project is not taken directly from `Connection` object, so you
@@ -32,7 +42,8 @@ def list_folders(connection: "Connection", project_id: Optional[str] = None,
     Args:
         connection (object): MicroStrategy connection object returned by
             `connection.Connection()`
-        project_id (string): project ID
+        project_id (string, optional): project ID
+        project_name (string, optional): project name
         to_dictionary (bool, optional): If True returns dicts, by default
             (False) returns objects.
         limit (int): limit the number of elements returned. If `None` (default),
@@ -43,9 +54,23 @@ def list_folders(connection: "Connection", project_id: Optional[str] = None,
     Returns:
         list of `Folder` objects or list of dictionaries
     """
-    objects = fetch_objects_async(connection, folders.list_folders, folders.list_folders_async,
-                                  limit=limit, chunk_size=1000, project_id=project_id,
-                                  filters=filters)
+    # Project is validated only if project was specified in arguments -
+    # otherwise fetch is performed from a non-project area.
+    if project_id or project_name:
+        project_id = get_valid_project_id(
+            connection=connection,
+            project_id=project_id,
+            project_name=project_name,
+        )
+    objects = fetch_objects_async(
+        connection,
+        folders.list_folders,
+        folders.list_folders_async,
+        limit=limit,
+        chunk_size=1000,
+        project_id=project_id,
+        filters=filters
+    )
 
     if to_dictionary:
         return objects
@@ -54,24 +79,39 @@ def list_folders(connection: "Connection", project_id: Optional[str] = None,
         return map_objects_list(connection, objects)
 
 
-def get_my_personal_objects_contents(connection: "Connection", project_id: Optional[str] = None,
-                                     to_dictionary: bool = False) -> List:
+def get_my_personal_objects_contents(
+    connection: "Connection",
+    project_id: Optional[str] = None,
+    project_name: Optional[str] = None,
+    to_dictionary: bool = False,
+) -> List:
     """Get contents of `My Personal Objects` folder in a specific project.
 
+    Specify either `project_id` or `project_name`.
+    When `project_id` is provided (not `None`), `project_name` is omitted.
+
     Note:
-        When `project_id` is `None`, then its value is overwritten by
-        `project_id` from `connection` object.
+        When `project_id` is `None` and `project_name` is `None`,
+        then its value is overwritten by `project_id` from `connection` object.
 
     Args:
         connection (object): MicroStrategy connection object returned by
             `connection.Connection()`
         project_id (string, optional): project ID
+        project_name (string, optional): project name
         to_dictionary (bool, optional): If True returns dicts, by default
             (False) returns objects.
 
     Returns:
         list of objects or list of dictionaries
     """
+    project_id = get_valid_project_id(
+        connection=connection,
+        project_id=project_id,
+        project_name=project_name,
+        with_fallback=False if project_name else True,
+    )
+
     objects = folders.get_my_personal_objects_contents(connection, project_id).json()
     if to_dictionary:
         return objects
@@ -80,11 +120,24 @@ def get_my_personal_objects_contents(connection: "Connection", project_id: Optio
         return map_objects_list(connection, objects)
 
 
-def get_predefined_folder_contents(connection: "Connection", folder_type: PredefinedFolders,
-                                   project_id: Optional[str] = None, to_dictionary: bool = False,
-                                   limit: Optional[int] = None, **filters) -> List:
+def get_predefined_folder_contents(
+    connection: "Connection",
+    folder_type: PredefinedFolders,
+    project_id: Optional[str] = None,
+    project_name: Optional[str] = None,
+    to_dictionary: bool = False,
+    limit: Optional[int] = None,
+    **filters
+) -> List:
     """Get contents of a pre-defined MicroStrategy folder in a specific project.
     Available values for `folder_type` are stored in enum `PredefinedFolders`.
+
+    Specify either `project_id` or `project_name`.
+    When `project_id` is provided (not `None`), `project_name` is omitted.
+
+    Note:
+        When `project_id` is `None` and `project_name` is `None`,
+        then its value is overwritten by `project_id` from `connection` object.
 
     Note:
         When `project_id` is `None`, then its value is overwritten by
@@ -96,6 +149,7 @@ def get_predefined_folder_contents(connection: "Connection", folder_type: Predef
         folder_type (enum): pre-defined folder type. Available values are
             stored in enum `PredefinedFolders`.
         project_id (string, optional): project ID
+        project_name (string, optional): project name
         to_dictionary (bool, optional): If True returns dicts, by default
             (False) returns objects.
         limit (int): limit the number of elements returned. If `None` (default),
@@ -106,10 +160,24 @@ def get_predefined_folder_contents(connection: "Connection", folder_type: Predef
     Returns:
         list of objects or list of dictionaries
     """
-    objects = fetch_objects_async(connection, folders.get_predefined_folder_contents,
-                                  folders.get_predefined_folder_contents_async, limit=limit,
-                                  chunk_size=1000, folder_type=folder_type.value,
-                                  project_id=project_id, filters=filters)
+
+    project_id = get_valid_project_id(
+        connection=connection,
+        project_id=project_id,
+        project_name=project_name,
+        with_fallback=False if project_name else True,
+    )
+
+    objects = fetch_objects_async(
+        connection,
+        folders.get_predefined_folder_contents,
+        folders.get_predefined_folder_contents_async,
+        limit=limit,
+        chunk_size=1000,
+        folder_type=folder_type.value,
+        project_id=project_id,
+        filters=filters
+    )
 
     if to_dictionary:
         return objects
@@ -150,7 +218,6 @@ class Folder(Entity, CopyMixin, MoveMixin, DeleteMixin):
     _DELETE_NONE_VALUES_RECURSION = False
     _FROM_DICT_MAP = {'owner': User.from_dict}
 
-    _API_DELETE: Callable = staticmethod(folders.delete_folder)
     _API_PATCH: dict = {**Entity._API_PATCH, ('folder_id'): (objects.update_object, 'partial_put')}
 
     _OBJECT_TYPE = ObjectTypes.FOLDER
@@ -173,8 +240,9 @@ class Folder(Entity, CopyMixin, MoveMixin, DeleteMixin):
         super().__init__(connection, id, name=name)
 
     @classmethod
-    def create(cls, connection: "Connection", name: str, parent: str,
-               description: Optional[str] = None) -> "Folder":
+    def create(
+        cls, connection: "Connection", name: str, parent: str, description: Optional[str] = None
+    ) -> "Folder":
         """Create a new folder in a folder selected within connection object
         by providing its name, id of parent folder and optionally description.
 
@@ -228,9 +296,15 @@ class Folder(Entity, CopyMixin, MoveMixin, DeleteMixin):
             Contents as Python objects (when `to_dictionary` is `False` (default
             value)) or contents as dictionaries otherwise.
         """
-        objects = fetch_objects_async(self.connection, folders.get_folder_contents,
-                                      folders.get_folder_contents_async, limit=None,
-                                      chunk_size=1000, id=self.id, filters=filters)
+        objects = fetch_objects_async(
+            self.connection,
+            folders.get_folder_contents,
+            folders.get_folder_contents_async,
+            limit=None,
+            chunk_size=1000,
+            id=self.id,
+            filters=filters
+        )
 
         if to_dictionary:
             return objects

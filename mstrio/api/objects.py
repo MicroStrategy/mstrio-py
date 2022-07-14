@@ -1,17 +1,22 @@
+import logging
 from typing import TYPE_CHECKING
 
+from mstrio.types import ObjectTypes
 from mstrio.utils.error_handlers import ErrorHandler
 
 if TYPE_CHECKING:
     from requests_futures.sessions import FuturesSession
 
+logger = logging.getLogger(__name__)
+
 
 @ErrorHandler(err_msg='Error getting information for the object with ID {id}')
-def get_object_info(connection, id, object_type, project_id=None, error_msg=None,
-                    whitelist=[('ERR001 ', 500)]):
+def get_object_info(
+    connection, id, object_type, project_id=None, error_msg=None, whitelist=[('ERR001 ', 500)]
+):
     """Get information for a specific object in a specific project; if you do
-    not specify a project ID, you get information for the object in all
-    projects.
+    not specify a project ID, you get information for the object just in the
+    non-project area.
 
     You identify the object with the object ID and object type. You specify
     the object type as a query parameter; possible values for object type are
@@ -30,13 +35,15 @@ def get_object_info(connection, id, object_type, project_id=None, error_msg=None
     Returns:
         HTTP response object returned by the MicroStrategy REST server.
     """
-
-    if object_type == 32:
+    if object_type == ObjectTypes.PROJECT.value:
         headers = {'X-MSTR-ProjectID': None}
     elif project_id:
         headers = {'X-MSTR-ProjectID': project_id}
     else:
         headers = {'X-MSTR-ProjectID': connection.project_id}
+
+    if not project_id and not connection.project_id:
+        logger.info('Project was not selected. Search is performed for the non-project area')
 
     return connection.get(
         url=f'{connection.base_url}/api/objects/{id}',
@@ -84,8 +91,9 @@ def delete_object(connection, id, object_type, project_id=None, error_msg=None):
 
 
 @ErrorHandler(err_msg='Error updating object with ID {id}')
-def update_object(connection, id, body, object_type, project_id=None,
-                  error_msg=None, verbose=True):
+def update_object(
+    connection, id, body, object_type, project_id=None, error_msg=None, verbose=True
+):
     """Get information for a specific object in a specific project; if you do
     not specify a project ID, you get information for the object in all
     projects.
@@ -265,8 +273,9 @@ def set_vldb_settings(connection, id, object_type, name, body, project_id=None, 
 
 
 @ErrorHandler(err_msg='Error getting objects.')
-def create_search_objects_instance(connection, name=None, pattern=4, domain=2, root=None,
-                                   object_type=None, error_msg=None):
+def create_search_objects_instance(
+    connection, name=None, pattern=4, domain=2, root=None, object_type=None, error_msg=None
+):
     """Create a search instance.
 
     Args:
@@ -290,11 +299,7 @@ def create_search_objects_instance(connection, name=None, pattern=4, domain=2, r
         url=f"{connection.base_url}/api/objects",
         headers={'X-MSTR-ProjectID': connection.project_id},
         params={
-            'name': name,
-            'pattern': pattern,
-            'domain': domain,
-            'root': root,
-            'type': object_type
+            'name': name, 'pattern': pattern, 'domain': domain, 'root': root, 'type': object_type
         },
     )
 
@@ -326,16 +331,20 @@ def get_objects(connection, search_id, offset=0, limit=-1, get_tree=False, error
         url=f"{connection.base_url}/api/objects",
         headers={'X-MSTR-ProjectID': connection.project_id},
         params={
-            'searchId': search_id,
-            'offset': offset,
-            'limit': limit,
-            'getTree': get_tree
+            'searchId': search_id, 'offset': offset, 'limit': limit, 'getTree': get_tree
         },
     )
 
 
-def get_objects_async(future_session: "FuturesSession", connection, search_id, offset=0, limit=-1,
-                      get_tree=False, error_msg=None):
+def get_objects_async(
+    future_session: "FuturesSession",
+    connection,
+    search_id,
+    offset=0,
+    limit=-1,
+    get_tree=False,
+    error_msg=None
+):
     """Get list of objects from metadata asynchronously.
 
     Args:
@@ -387,7 +396,6 @@ def toggle_certification(connection, id, object_type=3, certify=True):
     return connection.put(
         url=url,
         headers={
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
+            'Content-Type': 'application/json', 'Accept': 'application/json'
         },
     )

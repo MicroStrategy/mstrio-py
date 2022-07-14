@@ -40,8 +40,9 @@ class PredicateNode(ExpressionNode):
         return snake_to_camel(result) if camel_case else result
 
     @classmethod
-    def from_dict(cls, source: dict, connection: Optional['Connection'] = None,
-                  to_snake_case: bool = True) -> Type['PredicateNode']:
+    def from_dict(
+        cls, source: dict, connection: Optional['Connection'] = None, to_snake_case: bool = True
+    ) -> Type['PredicateNode']:
         data = camel_to_snake(source) if to_snake_case else source.copy()
         # get a dict under predicate_tree attribute to unpack it
         predicate_tree = data.pop('predicate_tree')
@@ -204,8 +205,9 @@ class MetricPredicate(PredicateNode):
             }
         }
 
-        return delete_none_values(result, recursion=True,
-                                  whitelist_attributes=self._ALLOW_NONE_ATTRIBUTES)
+        return delete_none_values(
+            result, recursion=True, whitelist_attributes=self._ALLOW_NONE_ATTRIBUTES
+        )
 
 
 @dataclass(kw_only=True)
@@ -402,7 +404,7 @@ class ElementListPredicate(PredicateNode):
                 'attribute': self.attribute.to_dict() if self.attribute else None,
                 'elements': [item.to_dict() for item in self.elements] if self.elements else None,
                 'elements_prompt': self.elements_prompt.to_dict()
-                                   if self.elements_prompt else None,  # noqa
+                if self.elements_prompt else None,  # noqa
                 'function': self.function.value,
             }
         }
@@ -497,8 +499,9 @@ class AttributeFormPredicate(PredicateNode):
             }
         }
 
-        return delete_none_values(result, recursion=True,
-                                  whitelist_attributes=self._ALLOW_NONE_ATTRIBUTES)
+        return delete_none_values(
+            result, recursion=True, whitelist_attributes=self._ALLOW_NONE_ATTRIBUTES
+        )
 
 
 @dataclass(kw_only=True)
@@ -952,8 +955,9 @@ class ExpressionRelationship(ExpressionNode):
         return result if camel_case else camel_to_snake(result)
 
     @classmethod
-    def from_dict(cls, source: dict, connection: 'Connection' = None,
-                  to_snake_case: bool = True) -> 'ExpressionRelationship':
+    def from_dict(
+        cls, source: dict, connection: 'Connection' = None, to_snake_case: bool = True
+    ) -> 'ExpressionRelationship':
         data = source.get('relationship')
         return super().from_dict(data, connection, to_snake_case)
 
@@ -1029,12 +1033,14 @@ class BandingSizePredicate(BandingPredicate):
 
     def _get_node_data(self):
         result = self._get_banding_common_data()
-        result['predicate_tree'].update({
-            'start': self.start.to_dict(),
-            'stop': self.stop.to_dict(),
-            'size': self.size.to_dict(),
-            'band_names': self.band_names,
-        })
+        result['predicate_tree'].update(
+            {
+                'start': self.start.to_dict(),
+                'stop': self.stop.to_dict(),
+                'size': self.size.to_dict(),
+                'band_names': self.band_names,
+            }
+        )
 
         return result
 
@@ -1068,12 +1074,14 @@ class BandingCountPredicate(BandingPredicate):
 
     def _get_node_data(self):
         result = self._get_banding_common_data()
-        result['predicate_tree'].update({
-            'start': self.start.to_dict(),
-            'stop': self.stop.to_dict(),
-            'count': self.count.to_dict(),
-            'band_names': self.band_names,
-        })
+        result['predicate_tree'].update(
+            {
+                'start': self.start.to_dict(),
+                'stop': self.stop.to_dict(),
+                'count': self.count.to_dict(),
+                'band_names': self.band_names,
+            }
+        )
 
         return result
 

@@ -27,11 +27,11 @@ def delete_addresses_from_departed_users(connection: "Connection") -> List[dict]
             for address in user_.addresses:
                 user_.remove_address(id=address['id'])
 
-                removed_addresses.append({
-                    'user_id': user_.id,
-                    'username': user_.username,
-                    'address': address
-                })
+                removed_addresses.append(
+                    {
+                        'user_id': user_.id, 'username': user_.username, 'address': address
+                    }
+                )
     return removed_addresses
 
 

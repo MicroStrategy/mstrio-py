@@ -5,7 +5,10 @@ from mstrio.connection import Connection
 from mstrio.server.project import Project
 from mstrio.utils.api_helpers import FuturesSessionWithRenewal
 from mstrio.utils.datasources import (
-    alter_conn_list_resp, alter_conn_resp, alter_instance_list_resp, alter_instance_resp,
+    alter_conn_list_resp,
+    alter_conn_resp,
+    alter_instance_list_resp,
+    alter_instance_resp,
     alter_patch_req_body
 )
 from mstrio.utils.error_handlers import ErrorHandler
@@ -94,10 +97,12 @@ def update_datasource_instance(connection, id, body, error_msg=None):
     url = f"{connection.base_url}/api/datasources/{id}"
     for op_dict in body["operationList"]:
         op_dict = alter_patch_req_body(op_dict, "/datasourceConnection", "/databaseConnectionId")
-        op_dict = alter_patch_req_body(op_dict, "/primaryDatasource",
-                                       "/databasePrimaryDatasourceId")
-        op_dict = alter_patch_req_body(op_dict, "/dataMartDatasource",
-                                       "/databaseDataMartDatasourceId")
+        op_dict = alter_patch_req_body(
+            op_dict, "/primaryDatasource", "/databasePrimaryDatasourceId"
+        )
+        op_dict = alter_patch_req_body(
+            op_dict, "/dataMartDatasource", "/databaseDataMartDatasourceId"
+        )
         alter_patch_req_body(op_dict, "/dbms", "/dbmsId")
     response = connection.patch(url=url, json=body)
     if not response.ok:
@@ -131,9 +136,15 @@ def create_datasource_instance(connection, body, error_msg=None):
 
 
 @ErrorHandler(err_msg='Error getting the namespaces for datasource with ID: {id}.')
-def get_datasource_namespaces(connection: "Connection", id: str, project_id: Optional[str] = None,
-                              refresh: Optional[bool] = None, fields: Optional[str] = None,
-                              timeout: float = 3.03, error_msg: Optional[str] = None):
+def get_datasource_namespaces(
+    connection: "Connection",
+    id: str,
+    project_id: Optional[str] = None,
+    refresh: Optional[bool] = None,
+    fields: Optional[str] = None,
+    timeout: float = 3.03,
+    error_msg: Optional[str] = None
+):
     """Get namespaces for a specific datasource.
 
     Args:
@@ -153,31 +164,46 @@ def get_datasource_namespaces(connection: "Connection", id: str, project_id: Opt
         connection._validate_project_selected()
         project_id = connection.project_id
 
-    return connection.get(url=f"{connection.base_url}/api/datasources/{id}/catalog/namespaces",
-                          headers={
-                              'X-MSTR-ProjectID': project_id,
-                          }, params={
-                              'refresh': refresh,
-                              'fields': fields,
-                          }, timeout=timeout)
+    return connection.get(
+        url=f"{connection.base_url}/api/datasources/{id}/catalog/namespaces",
+        headers={
+            'X-MSTR-ProjectID': project_id,
+        },
+        params={
+            'refresh': refresh,
+            'fields': fields,
+        },
+        timeout=timeout
+    )
 
 
 @ErrorHandler("Error retrieving namespace with id: {id}")
-def get_datasource_namespaces_async(session: FuturesSessionWithRenewal, connection: "Connection",
-                                    id: str, project_id: Optional[str] = None,
-                                    refresh: Optional[bool] = None, fields: Optional[str] = None,
-                                    timeout: float = 3.03, error_msg: Optional[str] = None):
-    return session.get(url=f"{connection.base_url}/api/datasources/{id}/catalog/namespaces",
-                       headers={
-                           'X-MSTR-ProjectID': project_id,
-                       }, params={
-                           'refresh': refresh,
-                           'fields': fields,
-                       }, timeout=timeout)
+def get_datasource_namespaces_async(
+    session: FuturesSessionWithRenewal,
+    connection: "Connection",
+    id: str,
+    project_id: Optional[str] = None,
+    refresh: Optional[bool] = None,
+    fields: Optional[str] = None,
+    timeout: float = 3.03,
+    error_msg: Optional[str] = None
+):
+    return session.get(
+        url=f"{connection.base_url}/api/datasources/{id}/catalog/namespaces",
+        headers={
+            'X-MSTR-ProjectID': project_id,
+        },
+        params={
+            'refresh': refresh,
+            'fields': fields,
+        },
+        timeout=timeout
+    )
 
 
-def get_datasource_instances(connection, ids=None, database_type=None, project=None,
-                             error_msg=None):
+def get_datasource_instances(
+    connection, ids=None, database_type=None, project=None, error_msg=None
+):
     """Get information for all database sources.
 
     Args:
@@ -208,12 +234,15 @@ def get_datasource_instances(connection, ids=None, database_type=None, project=N
         if project_provided and res.get("message") == "HTTP 404 Not Found":
             # aka project based endpoint not supported
             # try without filtering
-            warning_msg = ("get_datasource_instances() warning: filtering by Project "
-                           "is not yet supported on this version of the I-Server. "
-                           "Returning all values.")
+            warning_msg = (
+                "get_datasource_instances() warning: filtering by Project "
+                "is not yet supported on this version of the I-Server. "
+                "Returning all values."
+            )
             exception_handler(warning_msg, Warning)
-            return get_datasource_instances(connection=connection, ids=ids,
-                                            database_type=database_type, error_msg=error_msg)
+            return get_datasource_instances(
+                connection=connection, ids=ids, database_type=database_type, error_msg=error_msg
+            )
         if error_msg is None:
             if project_provided \
                     and res.get('code') == "ERR006" \
@@ -349,8 +378,12 @@ def test_datasource_connection(connection, body, error_msg=None):
 
 
 @ErrorHandler(err_msg='Error fetching Datasource mappings.')
-def get_datasource_mappings(connection: Connection, default_connection_map: Optional[bool] = False,
-                            project_id: Optional[str] = None, error_msg: Optional[str] = None):
+def get_datasource_mappings(
+    connection: Connection,
+    default_connection_map: Optional[bool] = False,
+    project_id: Optional[str] = None,
+    error_msg: Optional[str] = None
+):
     """Get information for all datasource connection mappings.
 
     Args:
@@ -368,18 +401,22 @@ def get_datasource_mappings(connection: Connection, default_connection_map: Opti
     url = f"{connection.base_url}/api/datasources/mappings"
     return connection.get(
         url=url, params={
-            "defaultConnectionMap": default_connection_map,
-            "projectId": project_id
-        })
+            "defaultConnectionMap": default_connection_map, "projectId": project_id
+        }
+    )
 
 
 # This is a 'fake' get single resource endpoint. Only listing all mappings
 # is available on REST API.
 # TODO Change to normal get, when it will be available on REST.
 @ErrorHandler(err_msg='Error fetching Datasource mapping with ID {id}.')
-def get_datasource_mapping(connection: Connection, id=str,
-                           default_connection_map: Optional[bool] = False,
-                           project_id: Optional[str] = None, error_msg: Optional[str] = None):
+def get_datasource_mapping(
+    connection: Connection,
+    id=str,
+    default_connection_map: Optional[bool] = False,
+    project_id: Optional[str] = None,
+    error_msg: Optional[str] = None
+):
     """Get information about specific datasource_mapping.
 
     Args:
@@ -398,9 +435,9 @@ def get_datasource_mapping(connection: Connection, id=str,
     url = f"{connection.base_url}/api/datasources/mappings"
     response = connection.get(
         url=url, params={
-            "defaultConnectionMap": default_connection_map,
-            "projectId": project_id
-        })
+            "defaultConnectionMap": default_connection_map, "projectId": project_id
+        }
+    )
 
     # Faking get single resource endpoint. Only 'list all' available on REST
     if response.ok:
@@ -510,8 +547,9 @@ def delete_datasource_login(connection: Connection, id: str, error_msg: Optional
 
 
 @ErrorHandler(err_msg='Error updating Datasource login with ID {id}')
-def update_datasource_login(connection: Connection, id: str, body,
-                            error_msg: Optional[str] = None):
+def update_datasource_login(
+    connection: Connection, id: str, body, error_msg: Optional[str] = None
+):
     """Update a datasource login.
 
     Args:
@@ -528,8 +566,15 @@ def update_datasource_login(connection: Connection, id: str, body,
 
 
 @ErrorHandler(err_msg="Error getting table columns for table: {table_id}")
-def get_table_columns(connection: Connection, datasource_id: str, namespace_id: str, table_id: str,
-                      error_msg: Optional[str] = None):
-    url = (f"{connection.base_url}/api/datasources/{datasource_id}/catalog/namespaces/"
-           f"{namespace_id}/tables/{table_id}")
+def get_table_columns(
+    connection: Connection,
+    datasource_id: str,
+    namespace_id: str,
+    table_id: str,
+    error_msg: Optional[str] = None
+):
+    url = (
+        f"{connection.base_url}/api/datasources/{datasource_id}/catalog/namespaces/"
+        f"{namespace_id}/tables/{table_id}"
+    )
     return connection.get(url, headers={"X-MSTR-ProjectID": connection.project_id})

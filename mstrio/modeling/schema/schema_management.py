@@ -6,8 +6,9 @@ from mstrio.api import schema
 from mstrio.connection import Connection
 from mstrio.utils.entity import auto_match_args_entity
 from mstrio.utils.enum_helper import AutoName, get_enum, get_enum_val
-from mstrio.utils.helper import Dictable, exception_handler
+from mstrio.utils.helper import Dictable, exception_handler, get_valid_project_id
 from mstrio.utils.time_helper import DatetimeFormats, map_str_to_datetime
+from mstrio.utils.version_helper import class_version_handler
 
 logger = logging.getLogger(__name__)
 
@@ -41,9 +42,15 @@ class SchemaLockStatus(Dictable):
         'date_created': DatetimeFormats.YMDHMS,
     }
 
-    def __init__(self, lock_type: Union['SchemaLockType', str], date_created: Optional[str] = None,
-                 comment: Optional[str] = None, machine_name: Optional[str] = None,
-                 owner_name: Optional[str] = None, owner_id: Optional[str] = None):
+    def __init__(
+        self,
+        lock_type: Union['SchemaLockType', str],
+        date_created: Optional[str] = None,
+        comment: Optional[str] = None,
+        machine_name: Optional[str] = None,
+        owner_name: Optional[str] = None,
+        owner_id: Optional[str] = None
+    ):
         """Initialize schema lock status. When schema is unlocked, only its
         `lock_type` is provided.
 
@@ -160,9 +167,12 @@ class SchemaTask(Dictable):
         self.errors = errors
 
     def __repr__(self) -> str:
-        param_dict = auto_match_args_entity(self.__init__, self,
-                                            exclude=['self', 'start_time', 'end_time',
-                                                     'errors'], include_defaults=False)
+        param_dict = auto_match_args_entity(
+            self.__init__,
+            self,
+            exclude=['self', 'start_time', 'end_time', 'errors'],
+            include_defaults=False
+        )
 
         params = [f'{param}={repr(value)}' for param, value in param_dict.items()]
         formatted_params = ", ".join(params)
@@ -170,6 +180,7 @@ class SchemaTask(Dictable):
         return f"SchemaTask({formatted_params})"
 
 
+@class_version_handler('11.3.0000')
 class SchemaManagement:
     """Representation of schema management object.
 
@@ -177,42 +188,58 @@ class SchemaManagement:
         connection: instance of `Connection` object
         lock_type: type of lock which is placed on the schema
         project_id: ID of project on which schema is managed
+        project_name: Project name
         tasks: array with objects of type `SchemaTask`. It represents
             tasks which were created for the current object of
             `SchemaManagement`. They are created when schema is reloaded
             asynchronously.
     """
 
-    def __init__(self, connection: "Connection", project_id: Optional[str] = None):
+    def __init__(
+        self,
+        connection: "Connection",
+        project_id: Optional[str] = None,
+        project_name: Optional[str] = None,
+    ):
         """Initialize schema management object for the given project.
-        If `project_id` is not specified then, it is taken from `connection`
-        object.
+
+        Specify either `project_id` or `project_name`.
+        When `project_id` is provided (not `None`), `project_name` is omitted.
+
+        Note:
+            When `project_id` is `None` and `project_name` is `None`, then
+            its value is overwritten by `project_id` from `connection` object.
 
         Args:
             connection: MicroStrategy connection object returned by
                 `connection.Connection()`.
             project_id (optional, str): ID of project on which schema will be
                 managed.
+            project_name (optional, str): Project name
 
         Raises:
             `AttributeError` when `project_id` is not provided and project is
             not selected in the `connection` object.
         """
         self.connection = connection
-        if not project_id:
-            connection._validate_project_selected()
-            project_id = connection.project_id
-        self._project_id = project_id
+        self._project_id = get_valid_project_id(
+            connection=connection,
+            project_id=project_id,
+            project_name=project_name,
+            with_fallback=False if project_name else True,
+        )
         self._tasks = None
         self._lock_type = None
 
     def __repr__(self) -> str:
-        param_dict = auto_match_args_entity(self.__init__, self, exclude=['self'],
-                                            include_defaults=False)
+        param_dict = auto_match_args_entity(
+            self.__init__, self, exclude=['self'], include_defaults=False
+        )
         params = [
             f"{param}" if
             (param == "connection" and isinstance(value, Connection)) else f'{param}={repr(value)}'
-            for param, value in param_dict.items()
+            for param,
+            value in param_dict.items()
         ]
         formatted_params = ', '.join(params)
 
@@ -278,9 +305,12 @@ class SchemaManagement:
             return True
         return False
 
-    def reload(self, update_types: Optional[Union[List[Union[str, "SchemaUpdateType"]],
-                                                  Union[str, "SchemaUpdateType"]]] = None,
-               respond_async: bool = True) -> Optional["SchemaTask"]:
+    def reload(
+        self,
+        update_types: Optional[Union[List[Union[str, "SchemaUpdateType"]],
+                                     Union[str, "SchemaUpdateType"]]] = None,
+        respond_async: bool = True
+    ) -> Optional["SchemaTask"]:
         """Reload (update) the schema. This operation can be performed
         asynchronously. In that case the task is created and it is saved in
         property `tasks` to help tracking its status.
@@ -340,8 +370,10 @@ class SchemaManagement:
         try:
             task_id = self.tasks[task_index].id
         except IndexError:
-            msg = (f"Cannot get task with index {task_index} from the list of tasks for this "
-                   "schema management object. Check the list using property `tasks`.")
+            msg = (
+                f"Cannot get task with index {task_index} from the list of tasks for this "
+                "schema management object. Check the list using property `tasks`."
+            )
             exception_handler(msg, Warning)
             return
 

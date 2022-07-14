@@ -9,9 +9,14 @@ from mstrio.server.environment import Environment
 from mstrio.utils import helper
 
 
-def list_dossiers(connection: Connection, name: Optional[str] = None, to_dictionary: bool = False,
-                  to_dataframe: bool = False, limit: Optional[int] = None,
-                  **filters) -> List["Dossier"]:
+def list_dossiers(
+    connection: Connection,
+    name: Optional[str] = None,
+    to_dictionary: bool = False,
+    to_dataframe: bool = False,
+    limit: Optional[int] = None,
+    **filters
+) -> List["Dossier"]:
     """Get all Dossiers stored on the server.
 
     Optionally use `to_dictionary` or `to_dataframe` to choose output format.
@@ -35,17 +40,30 @@ def list_dossiers(connection: Connection, name: Optional[str] = None, to_diction
             List of dossiers.
     """
     if connection.project_id is None:
-        msg = ("Please log into a specific project to load dossiers within it. To load "
-               "all dossiers across the whole environment use "
-               f"{list_dossiers_across_projects.__name__} function")
+        msg = (
+            "Please log into a specific project to load dossiers within it. To load "
+            "all dossiers across the whole environment use "
+            f"{list_dossiers_across_projects.__name__} function"
+        )
         raise ValueError(msg)
-    return Dossier._list_all(connection, to_dictionary=to_dictionary, name=name, limit=limit,
-                             to_dataframe=to_dataframe, **filters)
+    return Dossier._list_all(
+        connection,
+        to_dictionary=to_dictionary,
+        name=name,
+        limit=limit,
+        to_dataframe=to_dataframe,
+        **filters
+    )
 
 
-def list_dossiers_across_projects(connection: Connection, name: Optional[str] = None,
-                                  to_dictionary: bool = False, to_dataframe: bool = False,
-                                  limit: Optional[int] = None, **filters) -> List["Dossier"]:
+def list_dossiers_across_projects(
+    connection: Connection,
+    name: Optional[str] = None,
+    to_dictionary: bool = False,
+    to_dataframe: bool = False,
+    limit: Optional[int] = None,
+    **filters
+) -> List["Dossier"]:
     """Get all Dossiers stored on the server.
 
     Optionally use `to_dictionary` or `to_dataframe` to choose output format.
@@ -75,8 +93,15 @@ def list_dossiers_across_projects(connection: Connection, name: Optional[str] = 
     for project in projects:
         connection.select_project(project_id=project.id)
         output.extend(
-            Dossier._list_all(connection, to_dictionary=to_dictionary, name=name, limit=limit,
-                              to_dataframe=to_dataframe, **filters))
+            Dossier._list_all(
+                connection,
+                to_dictionary=to_dictionary,
+                name=name,
+                limit=limit,
+                to_dataframe=to_dataframe,
+                **filters
+            )
+        )
         output = list(set(output))
     connection.select_project(project_id=project_id_before)
     return output
@@ -86,20 +111,32 @@ class Dossier(Document):
     _DELETE_NONE_VALUES_RECURSION = False
 
     @classmethod
-    def _list_all(cls, connection: Connection, name: Optional[str] = None,
-                  to_dictionary: bool = False, to_dataframe: bool = False,
-                  limit: Optional[int] = None,
-                  **filters) -> Union[List["Dossier"], List[dict], DataFrame]:
+    def _list_all(
+        cls,
+        connection: Connection,
+        name: Optional[str] = None,
+        to_dictionary: bool = False,
+        to_dataframe: bool = False,
+        limit: Optional[int] = None,
+        **filters
+    ) -> Union[List["Dossier"], List[dict], DataFrame]:
         msg = "Error retrieving documents from the environment."
         if to_dictionary and to_dataframe:
             helper.exception_handler(
                 "Please select either to_dictionary=True or to_dataframe=True, but not both.",
-                ValueError)
-        objects = helper.fetch_objects_async(connection, api=documents.get_dossiers,
-                                             async_api=documents.get_dossiers_async,
-                                             dict_unpack_value='result', limit=limit,
-                                             chunk_size=1000, error_msg=msg, filters=filters,
-                                             search_term=name)
+                ValueError
+            )
+        objects = helper.fetch_objects_async(
+            connection,
+            api=documents.get_dossiers,
+            async_api=documents.get_dossiers_async,
+            dict_unpack_value='result',
+            limit=limit,
+            chunk_size=1000,
+            error_msg=msg,
+            filters=filters,
+            search_term=name
+        )
         if to_dictionary:
             return objects
         elif to_dataframe:

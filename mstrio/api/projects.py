@@ -4,10 +4,16 @@ from mstrio.utils.helper import response_handler
 
 @ErrorHandler(
     err_msg='Selected project {name} does not exist or is not loaded.'
-            ' Please load the project or select a valid project '
-            'or create a new project using `create_new` method')
-def get_project(connection, name, error_msg=None, throw_error=True,
-                whitelist=[('ERR001', 500), ('ERR014', 403)]):
+    ' Please load the project or select a valid project '
+    'or create a new project using `create_new` method'
+)
+def get_project(
+    connection,
+    name,
+    error_msg=None,
+    throw_error=True,
+    whitelist=[('ERR001', 500), ('ERR014', 403)]
+):
     """Get a specific project that the authenticated user has access to.
 
     Args:
@@ -40,8 +46,7 @@ def get_projects(connection, error_msg=None, whitelist=None):
     """
 
     return connection.get(
-        url=f'{connection.base_url}/api/projects',
-        headers={'X-MSTR-ProjectID': None}
+        url=f'{connection.base_url}/api/projects', headers={'X-MSTR-ProjectID': None}
     )
 
 

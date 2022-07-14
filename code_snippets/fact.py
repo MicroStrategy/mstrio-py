@@ -5,11 +5,10 @@ its usage.
 """
 
 from mstrio.connection import Connection, get_connection
-from mstrio.modeling.expression.expression import Expression
-from mstrio.modeling.expression.expression_nodes import ColumnReference
-from mstrio.modeling.expression.fact_expression import FactExpression
+from mstrio.modeling.expression import (
+    ColumnReference, Expression, ExpressionFormat, FactExpression
+)
 from mstrio.modeling.schema.fact import Fact, list_facts
-from mstrio.modeling.schema.attribute.attribute import ExpressionFormat
 from mstrio.modeling.schema.helpers import DataType, ObjectSubType
 from mstrio.modeling.schema import SchemaManagement, SchemaObjectReference, SchemaUpdateType
 from workflows.get_all_columns_in_table import list_table_columns
@@ -33,26 +32,24 @@ FACT_DATA = {
     'sub_type': ObjectSubType.FACT,
     'destination_folder': FOLDER_ID,
     'data_type': {
-        'type': 'float',
-        'precision': 8,
-        'scale': -2147483648
+        'type': 'float', 'precision': 8, 'scale': -2147483648
     },
-    'expressions': [{
-        'expression': {
-            'tokens': [{
-                'value': 'TOT_DOLLAR_SALES + TOT_COST'
-            }]
-        },
-        'tables': [{
-            'objectId': '<Object_ID>',
-            'subType': 'logical_table',
-            'name': 'CITY_MNTH_SLS'
-        }, {
-            'objectId': '<Object_ID>',
-            'subType': 'logical_table',
-            'name': 'CUSTOMER_SLS'
-        }]
-    }]
+    'expressions': [
+        {
+            'expression': {
+                'tokens': [{
+                    'value': 'TOT_DOLLAR_SALES + TOT_COST'
+                }]
+            },
+            'tables': [
+                {
+                    'objectId': '<Object_ID>', 'subType': 'logical_table', 'name': 'CITY_MNTH_SLS'
+                }, {
+                    'objectId': '<Object_ID>', 'subType': 'logical_table', 'name': 'CUSTOMER_SLS'
+                }
+            ]
+        }
+    ]
 }
 
 # fact expression data with expression specified as tree
@@ -87,9 +84,13 @@ list_of_facts_as_trees = list_facts(connection=conn, show_expression_as=Expressi
 list_of_facts_as_tokens = list_facts(connection=conn, show_expression_as=ExpressionFormat.TOKENS)
 
 # create new fact
-test_fact = Fact.create(connection=conn, name=FACT_DATA['name'],
-                        destination_folder=FACT_DATA['destination_folder'],
-                        expressions=FACT_DATA['expressions'], data_type=FACT_DATA['data_type'])
+test_fact = Fact.create(
+    connection=conn,
+    name=FACT_DATA['name'],
+    destination_folder=FACT_DATA['destination_folder'],
+    expressions=FACT_DATA['expressions'],
+    data_type=FACT_DATA['data_type']
+)
 
 # Any changes to a schema objects must be followed by schema_reload
 # in order to use them in reports, dossiers and so on

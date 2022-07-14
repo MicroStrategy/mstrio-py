@@ -14,8 +14,9 @@ class Library:
     def __init__(self, connection):
         # TODO: consider adding Connection.project_selected attr/method
         if connection.project_id is None:
-            exception_handler("No project selected, library content will not be loaded.",
-                              exception_type=Warning)
+            exception_handler(
+                "No project selected, library content will not be loaded.", exception_type=Warning
+            )
         self.connection = connection
         ids = self.__get_library_ids()
         # TODO: consider adding Connection.project_selected attr/method

@@ -7,8 +7,9 @@ from mstrio.utils.error_handlers import ErrorHandler
 
 
 @ErrorHandler(err_msg='Error while creating the package holder')
-def create_package_holder(connection: Connection, project_id: Optional[str] = None,
-                          error_msg: Optional[str] = None) -> requests.Response:
+def create_package_holder(
+    connection: Connection, project_id: Optional[str] = None, error_msg: Optional[str] = None
+) -> requests.Response:
     """Create a new in-memory metadata package holder.
 
     Args:
@@ -23,15 +24,19 @@ def create_package_holder(connection: Connection, project_id: Optional[str] = No
     """
     project_id = project_id if project_id is not None else connection.project_id
     return connection.post(
-        url=f'{connection.base_url}/api/packages',
-        headers={'X-MSTR-ProjectID': project_id}
+        url=f'{connection.base_url}/api/packages', headers={'X-MSTR-ProjectID': project_id}
     )
 
 
 @ErrorHandler(err_msg='Error while updating the package holder with id: {id}')
-def update_package_holder(connection: Connection, body: dict, id: str,
-                          project_id: Optional[str] = None, prefer: str = "respond-async",
-                          error_msg: Optional[str] = None) -> requests.Response:
+def update_package_holder(
+    connection: Connection,
+    body: dict,
+    id: str,
+    project_id: Optional[str] = None,
+    prefer: str = "respond-async",
+    error_msg: Optional[str] = None
+) -> requests.Response:
     """Fill the content of the in-memory metadata package holder per supplied
     specification. Currently, it's only supported when the holder is empty.
 
@@ -54,16 +59,19 @@ def update_package_holder(connection: Connection, body: dict, id: str,
     return connection.put(
         url=f'{connection.base_url}/api/packages/{id}',
         headers={
-            'X-MSTR-ProjectID': project_id,
-            'Prefer': prefer
+            'X-MSTR-ProjectID': project_id, 'Prefer': prefer
         },
         json=body
     )
 
 
 @ErrorHandler(err_msg='Error while downloading the package with id: {id}')
-def download_package(connection: Connection, id: str, project_id: Optional[str] = None,
-                     error_msg: Optional[str] = None) -> requests.Response:
+def download_package(
+    connection: Connection,
+    id: str,
+    project_id: Optional[str] = None,
+    error_msg: Optional[str] = None
+) -> requests.Response:
     """Download a package binary.
 
     Args:
@@ -85,8 +93,13 @@ def download_package(connection: Connection, id: str, project_id: Optional[str] 
 
 
 @ErrorHandler(err_msg='Error while uploading the package with id: {id}')
-def upload_package(connection: Connection, id: str, file: bytes, project_id: Optional[str] = None,
-                   error_msg: Optional[str] = None) -> requests.Response:
+def upload_package(
+    connection: Connection,
+    id: str,
+    file: bytes,
+    project_id: Optional[str] = None,
+    error_msg: Optional[str] = None
+) -> requests.Response:
     """Upload package to sandbox directly.
 
     Args:
@@ -110,9 +123,13 @@ def upload_package(connection: Connection, id: str, file: bytes, project_id: Opt
 
 
 @ErrorHandler(err_msg='Error while getting the package holder with id: {id}')
-def get_package_holder(connection: Connection, id: str, project_id: Optional[str] = None,
-                       show_content: bool = True,
-                       error_msg: Optional[str] = None) -> requests.Response:
+def get_package_holder(
+    connection: Connection,
+    id: str,
+    project_id: Optional[str] = None,
+    show_content: bool = True,
+    error_msg: Optional[str] = None
+) -> requests.Response:
     """Get definition of a package, including package status and its detail
     content.
 
@@ -139,9 +156,13 @@ def get_package_holder(connection: Connection, id: str, project_id: Optional[str
 
 
 @ErrorHandler(err_msg='Error while deleting the package holder with id: {id}')
-def delete_package_holder(connection: Connection, id: str, project_id: Optional[str] = None,
-                          prefer: str = 'respond-async',
-                          error_msg: Optional[str] = None) -> requests.Response:
+def delete_package_holder(
+    connection: Connection,
+    id: str,
+    project_id: Optional[str] = None,
+    prefer: str = 'respond-async',
+    error_msg: Optional[str] = None
+) -> requests.Response:
     """Delete the in-memory metadata package holder, releasing associated
     Intelligence Server resources.
 
@@ -164,16 +185,19 @@ def delete_package_holder(connection: Connection, id: str, project_id: Optional[
     return connection.delete(
         url=f'{connection.base_url}/api/packages/{id}',
         headers={
-            'X-MSTR-ProjectID': project_id,
-            'Prefer': prefer
+            'X-MSTR-ProjectID': project_id, 'Prefer': prefer
         }
     )
 
 
 @ErrorHandler(err_msg='Error while creating the import for package holder with id: {id}')
-def create_import(connection: Connection, id: str, project_id: Optional[str] = None,
-                  generate_undo: bool = False,
-                  error_msg: Optional[str] = None) -> requests.Response:
+def create_import(
+    connection: Connection,
+    id: str,
+    project_id: Optional[str] = None,
+    generate_undo: bool = False,
+    error_msg: Optional[str] = None
+) -> requests.Response:
     """Create a package import process.
 
     Args:
@@ -198,19 +222,21 @@ def create_import(connection: Connection, id: str, project_id: Optional[str] = N
     return connection.post(
         url=f'{connection.base_url}/api/packages/imports',
         headers={
-            'X-MSTR-ProjectID': project_id,
-            'Prefer': prefer
+            'X-MSTR-ProjectID': project_id, 'Prefer': prefer
         },
         params={
-            'packageId': id,
-            'generateUndo': generate_undo
+            'packageId': id, 'generateUndo': generate_undo
         },
     )
 
 
 @ErrorHandler(err_msg='Error while getting the import with id: {id}')
-def get_import(connection: Connection, id: str, project_id: Optional[str] = None,
-               error_msg: Optional[str] = None) -> requests.Response:
+def get_import(
+    connection: Connection,
+    id: str,
+    project_id: Optional[str] = None,
+    error_msg: Optional[str] = None
+) -> requests.Response:
     """Get result of a package import process.
 
     Args:
@@ -232,8 +258,12 @@ def get_import(connection: Connection, id: str, project_id: Optional[str] = None
 
 
 @ErrorHandler(err_msg='Error while deleting the import with id: {id}')
-def delete_import(connection: Connection, id: str, project_id: Optional[str] = None,
-                  error_msg: Optional[str] = None) -> requests.Response:
+def delete_import(
+    connection: Connection,
+    id: str,
+    project_id: Optional[str] = None,
+    error_msg: Optional[str] = None
+) -> requests.Response:
     """Closes an existing import process previously created.
 
     Args:
@@ -254,15 +284,18 @@ def delete_import(connection: Connection, id: str, project_id: Optional[str] = N
     return connection.delete(
         url=f'{connection.base_url}/api/packages/imports/{id}',
         headers={
-            'X-MSTR-ProjectID': project_id,
-            'Prefer': prefer
+            'X-MSTR-ProjectID': project_id, 'Prefer': prefer
         }
     )
 
 
 @ErrorHandler(err_msg='Error while creating the undo for import with id: {id}')
-def create_undo(connection: Connection, id: str, project_id: Optional[str] = None,
-                error_msg: Optional[str] = None) -> requests.Response:
+def create_undo(
+    connection: Connection,
+    id: str,
+    project_id: Optional[str] = None,
+    error_msg: Optional[str] = None
+) -> requests.Response:
     """Download undo package binary for this import process.
 
     Args:

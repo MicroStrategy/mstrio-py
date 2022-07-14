@@ -9,7 +9,8 @@ from mstrio.users_and_groups.user import User
 from mstrio.utils import helper
 from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, ObjectTypes
 from mstrio.utils.enum_helper import AutoName, get_enum_val
-from mstrio.utils.helper import get_objects_id
+from mstrio.utils.helper import get_args_from_func, get_default_args_from_func, get_objects_id
+from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
@@ -18,11 +19,16 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def list_datasource_instances(connection: "Connection", to_dictionary: bool = False,
-                              limit: Optional[int] = None, ids: Optional[List[str]] = None,
-                              database_types: Optional[List[str]] = None,
-                              project: Optional[Union["Project", str]] = None,
-                              **filters) -> Union[List["DatasourceInstance"], List[dict]]:
+@method_version_handler('11.3.0000')
+def list_datasource_instances(
+    connection: "Connection",
+    to_dictionary: bool = False,
+    limit: Optional[int] = None,
+    ids: Optional[List[str]] = None,
+    database_types: Optional[List[str]] = None,
+    project: Optional[Union["Project", str]] = None,
+    **filters
+) -> Union[List["DatasourceInstance"], List[dict]]:
     """Get list of DatasourceInstance objects or dicts. Optionally filter the
     datasource instances by specifying filters.
 
@@ -79,8 +85,8 @@ def list_datasource_instances(connection: "Connection", to_dictionary: bool = Fa
 
 
 def list_connected_datasource_instances(
-        connection: "Connection",
-        to_dictionary: bool = False) -> Union[list["DatasourceInstance"], list[dict]]:
+    connection: "Connection", to_dictionary: bool = False
+) -> Union[list["DatasourceInstance"], list[dict]]:
     """List all datasource instances for which there is an associated
     Database Login and are connected to a project mapped to a Connection object.
 
@@ -119,6 +125,7 @@ class DatasourceType(AutoName):
     DATA_IMPORT_PRIMARY = auto()
 
 
+@class_version_handler('11.3.0000')
 class DatasourceInstance(Entity, CopyMixin, DeleteMixin):
     """Object representation of MicroStrategy DataSource Instance object.
 
@@ -148,24 +155,61 @@ class DatasourceInstance(Entity, CopyMixin, DeleteMixin):
     _DELETE_NONE_VALUES_RECURSION = False
     _OBJECT_TYPE = ObjectTypes.DBROLE
     _FROM_DICT_MAP = {
-        **Entity._FROM_DICT_MAP, 'dbms': Dbms.from_dict,
+        **Entity._FROM_DICT_MAP,
+        'dbms': Dbms.from_dict,
         'owner': User.from_dict,
         'datasource_type': DatasourceType,
         'datasource_connection': DatasourceConnection.from_dict
     }
     _API_GETTERS = {
-        ('abbreviation', 'type', 'subtype', 'ext_type', 'version', 'owner', 'icon_path',
-         'view_media', 'ancestors', 'certified_info', 'acl'): objects.get_object_info,
-        ('id', 'name', 'description', 'date_created', 'date_modified', 'datasource_type',
-         'table_prefix', 'odbc_version', 'intermediate_store_db_name', 'datasource_connection',
-         'database_type', 'database_version', 'primary_datasource', 'data_mart_datasource',
-         'intermediate_store_table_space_name', 'dbms', 'acg'): datasources.get_datasource_instance
+        (
+            'abbreviation',
+            'type',
+            'subtype',
+            'ext_type',
+            'version',
+            'owner',
+            'icon_path',
+            'view_media',
+            'ancestors',
+            'certified_info',
+            'acl'
+        ): objects.get_object_info,
+        (
+            'id',
+            'name',
+            'description',
+            'date_created',
+            'date_modified',
+            'datasource_type',
+            'table_prefix',
+            'odbc_version',
+            'intermediate_store_db_name',
+            'datasource_connection',
+            'database_type',
+            'database_version',
+            'primary_datasource',
+            'data_mart_datasource',
+            'intermediate_store_table_space_name',
+            'dbms',
+            'acg'
+        ): datasources.get_datasource_instance
     }
     _API_PATCH: dict = {
         ('abbreviation'): (objects.update_object, 'partial_put'),
-        ("name", "description", "datasource_type", "table_prefix", "intermediate_store_db_name",
-         "intermediate_store_table_space_name", "odbc_version", "datasource_connection",
-         "primary_datasource", "data_mart_datasource", "dbms"): (
+        (
+            "name",
+            "description",
+            "datasource_type",
+            "table_prefix",
+            "intermediate_store_db_name",
+            "intermediate_store_table_space_name",
+            "odbc_version",
+            "datasource_connection",
+            "primary_datasource",
+            "data_mart_datasource",
+            "dbms"
+        ): (
             datasources.update_datasource_instance,
             'patch',
         )
@@ -184,8 +228,9 @@ class DatasourceInstance(Entity, CopyMixin, DeleteMixin):
         "dbms": dict,
     }
 
-    def __init__(self, connection: "Connection", name: Optional[str] = None,
-                 id: Optional[str] = None) -> None:
+    def __init__(
+        self, connection: "Connection", name: Optional[str] = None, id: Optional[str] = None
+    ) -> None:
         """Initialize DatasourceInstance object by passing name or id.
 
         To explore all available DatasourceInstance objects use the
@@ -199,55 +244,63 @@ class DatasourceInstance(Entity, CopyMixin, DeleteMixin):
         """
         if id is None and name is None:
             helper.exception_handler(
-                "Please specify either 'id' or 'name' parameter in the constructor.")
+                "Please specify either 'id' or 'name' parameter in the constructor."
+            )
 
         if id is None:
             objects_info = DatasourceInstance._list_datasource_instances(
-                connection=connection, name=name, to_dictionary=True)
+                connection=connection, name=name, to_dictionary=True
+            )
             if objects_info:
                 object_info, object_info["connection"] = objects_info[0], connection
                 self._init_variables(**object_info)
             else:
-                helper.exception_handler(f"There is no Datasource Instance: '{name}'",
-                                         exception_type=ValueError)
+                helper.exception_handler(
+                    f"There is no Datasource Instance: '{name}'", exception_type=ValueError
+                )
         else:
             super().__init__(connection=connection, object_id=id)
 
     def _init_variables(self, **kwargs) -> None:
         super()._init_variables(**kwargs)
-        self.datasource_type = DatasourceType(
-            kwargs["datasource_type"]) if kwargs.get("datasource_type") else None
+        self.datasource_type = DatasourceType(kwargs["datasource_type"]
+                                              ) if kwargs.get("datasource_type") else None
         self.table_prefix = kwargs.get("table_prefix")
         self.intermediate_store_db_name = kwargs.get("intermediate_store_db_name")
         self.intermediate_store_table_space_name = kwargs.get(
-            "intermediate_store_table_space_name")
+            "intermediate_store_table_space_name"
+        )
         self.odbc_version = kwargs.get("odbc_version")
         self.datasource_connection = DatasourceConnection.from_dict(
-            kwargs.get("datasource_connection"),
-            self.connection) if kwargs.get("datasource_connection") else None
+            kwargs.get("datasource_connection"), self.connection
+        ) if kwargs.get("datasource_connection") else None
         self.database_type = kwargs.get("database_type")
         self.database_version = kwargs.get("database_version")
         self.primary_datasource = DatasourceInstance.from_dict(
-            kwargs.get("primary_datasource"),
-            self.connection) if kwargs.get("primary_datasource") else None
+            kwargs.get("primary_datasource"), self.connection
+        ) if kwargs.get("primary_datasource") else None
         self.data_mart_datasource = DatasourceInstance.from_dict(
-            kwargs.get("data_mart_datasource"),
-            self.connection) if kwargs.get("data_mart_datasource") else None
+            kwargs.get("data_mart_datasource"), self.connection
+        ) if kwargs.get("data_mart_datasource") else None
         self.dbms = Dbms.from_dict(kwargs.get("dbms"), self.connection)\
             if kwargs.get("dbms") else None
 
     @classmethod
     def create(
-        cls, connection: "Connection", name: str, dbms: Union[Dbms, str],
-        description: Optional[str] = None, datasource_type: Optional[Union[str,
-                                                                           DatasourceType]] = None,
-        table_prefix: Optional[str] = None, odbc_version: Optional[str] = None,
+        cls,
+        connection: "Connection",
+        name: str,
+        dbms: Union[Dbms, str],
+        description: Optional[str] = None,
+        datasource_type: Optional[Union[str, DatasourceType]] = None,
+        table_prefix: Optional[str] = None,
+        odbc_version: Optional[str] = None,
         intermediate_store_db_name: Optional[str] = None,
         intermediate_store_table_space_name: Optional[str] = None,
-        datasource_connection: Union[str, DatasourceConnection,
-                                     None] = None, database_type: str = None,
-        database_version: str = None, primary_datasource: Union[str, "DatasourceInstance",
-                                                                None] = None,
+        datasource_connection: Union[str, DatasourceConnection, None] = None,
+        database_type: str = None,
+        database_version: str = None,
+        primary_datasource: Union[str, "DatasourceInstance", None] = None,
         data_mart_datasource: Union[str, "DatasourceInstance", None] = None
     ) -> Optional["DatasourceInstance"]:
         """Create a new DatasourceInstance object on I-Server.
@@ -308,18 +361,24 @@ class DatasourceInstance(Entity, CopyMixin, DeleteMixin):
         if config.verbose:
             logger.info(
                 f"Successfully created datasource instance named: '{response.get('name')}' "
-                f"with ID: '{response.get('id')}'")
+                f"with ID: '{response.get('id')}'"
+            )
         return cls.from_dict(source=response, connection=connection)
 
-    def alter(self, name: Optional[str] = None, description: Optional[str] = None,
-              datasource_type: Optional[Union[str, DatasourceType]] = None,
-              table_prefix: Optional[str] = None, odbc_version: Optional[str] = None,
-              intermediate_store_db_name: Optional[str] = None,
-              intermediate_store_table_space_name: Optional[str] = None, dbms: Union[str, Dbms,
-                                                                                     None] = None,
-              datasource_connection: Union[str, DatasourceConnection, None] = None,
-              primary_datasource: Union[str, "DatasourceInstance", None] = None,
-              data_mart_datasource: Union[str, "DatasourceInstance", None] = None) -> None:
+    def alter(
+        self,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        datasource_type: Optional[Union[str, DatasourceType]] = None,
+        table_prefix: Optional[str] = None,
+        odbc_version: Optional[str] = None,
+        intermediate_store_db_name: Optional[str] = None,
+        intermediate_store_table_space_name: Optional[str] = None,
+        dbms: Union[str, Dbms, None] = None,
+        datasource_connection: Union[str, DatasourceConnection, None] = None,
+        primary_datasource: Union[str, "DatasourceInstance", None] = None,
+        data_mart_datasource: Union[str, "DatasourceInstance", None] = None
+    ) -> None:
         """Alter DatasourceInstance properties.
 
         Args:
@@ -349,8 +408,8 @@ class DatasourceInstance(Entity, CopyMixin, DeleteMixin):
             'id': get_objects_id(data_mart_datasource, self)
         } if data_mart_datasource else None
         func = self.alter
-        args = func.__code__.co_varnames[:func.__code__.co_argcount]
-        defaults = func.__defaults__  # type: ignore
+        args = get_args_from_func(func)
+        defaults = get_default_args_from_func(func)
         default_dict = dict(zip(args[-len(defaults):], defaults)) if defaults else {}
         local = locals()
         properties = {}
@@ -360,17 +419,26 @@ class DatasourceInstance(Entity, CopyMixin, DeleteMixin):
         self._alter_properties(**properties)
 
     @classmethod
-    def _list_datasource_instances(cls, connection: "Connection",
-                                   to_dictionary: Optional[bool] = False,
-                                   limit: Optional[int] = None, ids: Optional[list] = None,
-                                   database_types: Optional[list] = None,
-                                   project: Optional[Union["Project", str]] = None,
-                                   **filters) -> Union[List["DatasourceInstance"], List[dict]]:
-        objects = helper.fetch_objects(connection=connection,
-                                       api=datasources.get_datasource_instances,
-                                       dict_unpack_value="datasources", limit=limit,
-                                       filters=filters, ids=ids, database_types=database_types,
-                                       project=project)
+    def _list_datasource_instances(
+        cls,
+        connection: "Connection",
+        to_dictionary: Optional[bool] = False,
+        limit: Optional[int] = None,
+        ids: Optional[list] = None,
+        database_types: Optional[list] = None,
+        project: Optional[Union["Project", str]] = None,
+        **filters
+    ) -> Union[List["DatasourceInstance"], List[dict]]:
+        objects = helper.fetch_objects(
+            connection=connection,
+            api=datasources.get_datasource_instances,
+            dict_unpack_value="datasources",
+            limit=limit,
+            filters=filters,
+            ids=ids,
+            database_types=database_types,
+            project=project
+        )
         if to_dictionary:
             return objects
         else:
@@ -380,13 +448,21 @@ class DatasourceInstance(Entity, CopyMixin, DeleteMixin):
         super()._set_object_attributes(**kwargs)
         if kwargs.get("primary_datasource"):
             setattr(
-                self, 'primary_datasource',
-                DatasourceInstance(id=kwargs.get("primary_datasource").get("id"),
-                                   name=kwargs.get("primary_datasource").get("name"),
-                                   connection=self.connection))
+                self,
+                'primary_datasource',
+                DatasourceInstance(
+                    id=kwargs.get("primary_datasource").get("id"),
+                    name=kwargs.get("primary_datasource").get("name"),
+                    connection=self.connection
+                )
+            )
         if kwargs.get("data_mart_datasource"):
             setattr(
-                self, 'data_mart_datasource',
-                DatasourceInstance(id=kwargs.get("data_mart_datasource").get("id"),
-                                   name=kwargs.get("data_mart_datasource").get("name"),
-                                   connection=self.connection))
+                self,
+                'data_mart_datasource',
+                DatasourceInstance(
+                    id=kwargs.get("data_mart_datasource").get("id"),
+                    name=kwargs.get("data_mart_datasource").get("name"),
+                    connection=self.connection
+                )
+            )

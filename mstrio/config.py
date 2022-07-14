@@ -28,7 +28,6 @@ warnings.filterwarnings(action=print_warnings, module=module_path)
 warnings.filterwarnings(action=print_warnings, category=DeprecationWarning, module=module_path)
 warnings.filterwarnings(action='default', category=UserWarning, module=module_path)
 
-
 logging_level = logging.DEBUG if debug else logging.INFO
 logger_stream_handler = logging.StreamHandler(stream=sys.stdout)
 

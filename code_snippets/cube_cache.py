@@ -10,12 +10,11 @@ from mstrio.project_objects import (
 )
 from mstrio.connection import get_connection
 
-PROJECT_NAME = '<Project_name>' # Insert project name here
-CUBE_ID = '<cube_id>' # Insert name of cube on which you want to perform actions
-NODE_NAME = '<node_name>' # Insert name of node on which you want to perform actions
-DB_CONNECTION_ID = '<database_connection_id>' # insert ID of DB connection you want to include in your functions
-CUBE_CACHE_ID = '<cube_cache_id>' #Insert ID of cube cache that you want to perform your actions upon
-
+PROJECT_NAME = '<Project_name>'  # Insert project name here
+CUBE_ID = '<cube_id>'  # Insert name of cube on which you want to perform actions
+NODE_NAME = '<node_name>'  # Insert name of node on which you want to perform actions
+DB_CONNECTION_ID = '<database_connection_id>'  # insert ID of DB connection you want to include in your functions
+CUBE_CACHE_ID = '<cube_cache_id>'  #Insert ID of cube cache that you want to perform your actions upon
 
 conn = get_connection(workstationData, project_name=PROJECT_NAME)
 
@@ -31,8 +30,7 @@ list_cube_caches(connection=conn, nodes=NODE_NAME, loaded=True)
 # list all cache on a given node for given cube
 list_cube_caches(connection=conn, nodes=NODE_NAME, cube_id=CUBE_ID)
 # list all cache on a given node for given database connection
-list_cube_caches(connection=conn, nodes=NODE_NAME,
-                 db_connection_id=DB_CONNECTION_ID)
+list_cube_caches(connection=conn, nodes=NODE_NAME, db_connection_id=DB_CONNECTION_ID)
 
 # get a single cube cache by its id
 cube_cache_ = CubeCache(connection=conn, cache_id=CUBE_CACHE_ID)
@@ -72,5 +70,4 @@ delete_cube_caches(connection=conn, nodes=NODE_NAME, loaded=True, force=True)
 delete_cube_caches(connection=conn, nodes=NODE_NAME, cube_id=CUBE_ID, force=True)
 # delete all cube caches on a given node for a given database connection (the
 # same rule with `force` as above)
-delete_cube_caches(connection=conn, nodes=NODE_NAME,
-                   db_connection_id=DB_CONNECTION_ID, force=True)
+delete_cube_caches(connection=conn, nodes=NODE_NAME, db_connection_id=DB_CONNECTION_ID, force=True)

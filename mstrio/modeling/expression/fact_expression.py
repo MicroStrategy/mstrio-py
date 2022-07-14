@@ -68,15 +68,25 @@ class FactExpression(Dictable):
         return result
 
     @classmethod
-    def from_dict(cls, source: dict, connection: Optional['Connection'] = None,
-                  to_snake_case: bool = True) -> 'FactExpression':
+    def from_dict(
+        cls, source: dict, connection: Optional['Connection'] = None, to_snake_case: bool = True
+    ) -> 'FactExpression':
         data = source.copy()
         data['id'] = data.get('expressionId', None)
 
         return super().from_dict(data, connection, to_snake_case)
 
-    def local_alter(self, expression: Expression = None,
-                    tables: List[SchemaObjectReference] = None):
+    def local_alter(
+        self, expression: Expression = None, tables: List[SchemaObjectReference] = None
+    ):
+        """Locally alters the Fact Expression
+
+        Args:
+            expression: Expression object that will replace the current
+                Expression representing the calculations required for this fact
+            tables: array of schema object references that will replace the
+                current array with logical tables needed to represent
+                this fact"""
         if expression:
             self.expression = expression
 

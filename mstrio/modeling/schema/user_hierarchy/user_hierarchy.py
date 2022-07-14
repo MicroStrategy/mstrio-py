@@ -9,7 +9,15 @@ from mstrio.types import ObjectTypes
 from mstrio.users_and_groups import User
 from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, MoveMixin
 from mstrio.utils.enum_helper import AutoName
-from mstrio.utils.helper import delete_none_values, Dictable, fetch_objects, get_enum_val
+from mstrio.utils.helper import (
+    delete_none_values,
+    Dictable,
+    fetch_objects,
+    get_args_from_func,
+    get_default_args_from_func,
+    get_enum_val
+)
+from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
@@ -28,8 +36,10 @@ class UserHierarchySubType(AutoName):
     DIMENSION_USER_HIERARCHY = auto()
 
 
-def list_user_hierarchies(connection: "Connection", to_dictionary: bool = False, limit: int = None,
-                          **filters) -> Union[List["UserHierarchy"], List[dict]]:
+@method_version_handler('11.3.0200')
+def list_user_hierarchies(
+    connection: "Connection", to_dictionary: bool = False, limit: int = None, **filters
+) -> Union[List["UserHierarchy"], List[dict]]:
     """Get list of UserHierarchy objects or dicts. Optionally filter the
     user hierarchies by specifying filters.
 
@@ -74,16 +84,21 @@ class HierarchyAttribute(Dictable):
         'filters': [SchemaObjectReference.from_dict]
     }
 
-    def __init__(self, object_id: str, entry_point: bool, name: str,
-                 element_display_option: Union[ElementDisplayOption, str],
-                 filters: Union[List[SchemaObjectReference],
-                                List[dict]] = None, limit: Optional[int] = None):
+    def __init__(
+        self,
+        object_id: str,
+        entry_point: bool,
+        name: str,
+        element_display_option: Union[ElementDisplayOption, str],
+        filters: Union[List[SchemaObjectReference], List[dict]] = None,
+        limit: Optional[int] = None
+    ):
         self.object_id = object_id
         self.entry_point = entry_point
         self.name = name
         self.element_display_option = element_display_option if isinstance(
-            element_display_option,
-            ElementDisplayOption) else ElementDisplayOption(element_display_option)
+            element_display_option, ElementDisplayOption
+        ) else ElementDisplayOption(element_display_option)
         self.filters = [
             SchemaObjectReference.from_dict(obj_ref)
             if not isinstance(obj_ref, SchemaObjectReference) else object_id for obj_ref in filters
@@ -113,16 +128,18 @@ class HierarchyRelationship(Dictable):
     _DELETE_NONE_VALUES_RECURSION = False
 
     _FROM_DICT_MAP = {
-        'parent': SchemaObjectReference.from_dict,
-        'child': SchemaObjectReference.from_dict
+        'parent': SchemaObjectReference.from_dict, 'child': SchemaObjectReference.from_dict
     }
 
-    def __init__(self, parent: Union[SchemaObjectReference, dict],
-                 child: Union[SchemaObjectReference, dict]):
-        self.parent = parent if isinstance(
-            parent, SchemaObjectReference) else SchemaObjectReference.from_dict(parent)
-        self.child = child if isinstance(
-            child, SchemaObjectReference) else SchemaObjectReference.from_dict(child)
+    def __init__(
+        self,
+        parent: Union[SchemaObjectReference, dict],
+        child: Union[SchemaObjectReference, dict]
+    ):
+        self.parent = parent if isinstance(parent, SchemaObjectReference
+                                           ) else SchemaObjectReference.from_dict(parent)
+        self.child = child if isinstance(child, SchemaObjectReference
+                                         ) else SchemaObjectReference.from_dict(child)
 
     def __eq__(self, other):
         if isinstance(self, dict):
@@ -132,6 +149,7 @@ class HierarchyRelationship(Dictable):
         return self.parent == other.parent and self.child == other.child
 
 
+@class_version_handler('11.3.0200')
 class UserHierarchy(Entity, CopyMixin, MoveMixin, DeleteMixin):
     """A unique abstraction of hierarchies above the System Hierarchy,
     which can contain an arbitrary number of attributes and paths between
@@ -173,21 +191,53 @@ class UserHierarchy(Entity, CopyMixin, MoveMixin, DeleteMixin):
 
     _OBJECT_TYPE = ObjectTypes.DIMENSION
     _FROM_DICT_MAP = {
-        **Entity._FROM_DICT_MAP, 'owner': User.from_dict,
+        **Entity._FROM_DICT_MAP,
+        'owner': User.from_dict,
         'sub_type': UserHierarchySubType,
         'attributes': [HierarchyAttribute.from_dict],
         'relationships': [HierarchyRelationship.from_dict]
     }
     _API_GETTERS = {
-        ('type', 'subtype', 'ext_type', 'date_created', 'date_modified', 'version', 'owner',
-         'ancestors', 'acg', 'acl'): objects.get_object_info,
-        ('id', 'name', 'description', 'sub_type', 'date_created', 'date_modified', 'path',
-         'version_id', 'use_as_drill_hierarchy', 'is_embedded', 'primary_locale', 'attributes',
-         'relationships', 'destination_folder_id'): user_hierarchies.get_user_hierarchy
+        (
+            'type',
+            'subtype',
+            'ext_type',
+            'date_created',
+            'date_modified',
+            'version',
+            'owner',
+            'ancestors',
+            'acg',
+            'acl'
+        ): objects.get_object_info,
+        (
+            'id',
+            'name',
+            'description',
+            'sub_type',
+            'date_created',
+            'date_modified',
+            'path',
+            'version_id',
+            'use_as_drill_hierarchy',
+            'is_embedded',
+            'primary_locale',
+            'attributes',
+            'relationships',
+            'destination_folder_id'
+        ): user_hierarchies.get_user_hierarchy
     }
     _API_PATCH: dict = {
-        ('name', 'description', 'relationships', 'use_as_drill_hierarchy', 'destination_folder_id',
-         'sub_type', 'is_embedded', 'attributes'): (user_hierarchies.update_user_hierarchy, "put"),
+        (
+            'name',
+            'description',
+            'relationships',
+            'use_as_drill_hierarchy',
+            'destination_folder_id',
+            'sub_type',
+            'is_embedded',
+            'attributes'
+        ): (user_hierarchies.update_user_hierarchy, "put"),
         ('folder_id'): (objects.update_object, 'partial_put')
     }
     _API_DELETE = staticmethod(user_hierarchies.delete_user_hierarchy)
@@ -205,8 +255,9 @@ class UserHierarchy(Entity, CopyMixin, MoveMixin, DeleteMixin):
         "object_id": "id",
     }
 
-    def __init__(self, connection: "Connection", id: Optional[str] = None,
-                 name: Optional[str] = None):
+    def __init__(
+        self, connection: "Connection", id: Optional[str] = None, name: Optional[str] = None
+    ):
         """Initialize user hierarchy object by its identifier.
 
         Note:
@@ -226,8 +277,8 @@ class UserHierarchy(Entity, CopyMixin, MoveMixin, DeleteMixin):
 
     def _init_variables(self, **kwargs) -> None:
         super()._init_variables(**kwargs)
-        self.sub_type = UserHierarchySubType(
-            kwargs.get('sub_type')) if kwargs.get('sub_type') else None
+        self.sub_type = UserHierarchySubType(kwargs.get('sub_type')
+                                             ) if kwargs.get('sub_type') else None
         self.primary_locale = kwargs.get('primary_locale')
         self.is_embedded = kwargs.get('is_embedded')
         self.destination_folder_id = kwargs.get('destination_folder_id')
@@ -242,12 +293,19 @@ class UserHierarchy(Entity, CopyMixin, MoveMixin, DeleteMixin):
         self._version_id = kwargs.get('version_id')
 
     @classmethod
-    def create(cls, connection: "Connection", name: str, sub_type: Union[str,
-                                                                         UserHierarchySubType],
-               destination_folder_id: str, attributes: Union[List[HierarchyAttribute], List[dict]],
-               use_as_drill_hierarchy: bool = True, description: str = None,
-               is_embedded: bool = False, primary_locale: str = None,
-               relationships: Union[List[HierarchyRelationship], List[dict]] = None):
+    def create(
+        cls,
+        connection: "Connection",
+        name: str,
+        sub_type: Union[str, UserHierarchySubType],
+        destination_folder_id: str,
+        attributes: Union[List[HierarchyAttribute], List[dict]],
+        use_as_drill_hierarchy: bool = True,
+        description: str = None,
+        is_embedded: bool = False,
+        primary_locale: str = None,
+        relationships: Union[List[HierarchyRelationship], List[dict]] = None
+    ):
         """Create a new user hierarchy in a specific project.
 
         Args:
@@ -297,15 +355,23 @@ class UserHierarchy(Entity, CopyMixin, MoveMixin, DeleteMixin):
         body = delete_none_values(body, recursion=True)
         response = user_hierarchies.create_user_hierarchy(connection, body).json()
         if config.verbose:
-            logger.info(f"Successfully created user hierarchy named: '{response['name']}' "
-                        f"with ID: '{response['id']}'")
+            logger.info(
+                f"Successfully created user hierarchy named: '{response['name']}' "
+                f"with ID: '{response['id']}'"
+            )
         return cls.from_dict(source=response, connection=connection)
 
-    def alter(self, name: str = None, sub_type: Union[str, UserHierarchySubType] = None,
-              attributes: Union[List[HierarchyAttribute], List[dict], None] = None,
-              use_as_drill_hierarchy: Optional[bool] = None, description: Optional[str] = None,
-              is_embedded: bool = False, destination_folder_id: Optional[str] = None,
-              relationships: Union[List[HierarchyRelationship], List[dict], None] = None):
+    def alter(
+        self,
+        name: str = None,
+        sub_type: Union[str, UserHierarchySubType] = None,
+        attributes: Union[List[HierarchyAttribute], List[dict], None] = None,
+        use_as_drill_hierarchy: Optional[bool] = None,
+        description: Optional[str] = None,
+        is_embedded: bool = False,
+        destination_folder_id: Optional[str] = None,
+        relationships: Union[List[HierarchyRelationship], List[dict], None] = None
+    ):
         """Alter the user hierarchies properties.
 
         Args:
@@ -325,8 +391,8 @@ class UserHierarchy(Entity, CopyMixin, MoveMixin, DeleteMixin):
                 relationships stored in the system hierarchy
         """
         func = self.alter
-        args = func.__code__.co_varnames[:func.__code__.co_argcount]
-        defaults = func.__defaults__  # type: ignore
+        args = get_args_from_func(func)
+        defaults = get_default_args_from_func(func)
         default_dict = dict(zip(args[-len(defaults):], defaults)) if defaults else {}
         local = locals()
         properties = {}
@@ -373,16 +439,17 @@ class UserHierarchy(Entity, CopyMixin, MoveMixin, DeleteMixin):
         relationships = [rel.to_dict() for rel in self.relationships if rel != relationship]
         body = self.to_dict()
         body['relationships'] = relationships
-        response = user_hierarchies.update_user_hierarchy(connection=self.connection, id=self.id,
-                                                          changeset_id=None, body=body)
+        response = user_hierarchies.update_user_hierarchy(
+            connection=self.connection, id=self.id, changeset_id=None, body=body
+        )
         if response.ok:
             response = response.json()
             self._set_object_attributes(**response)
 
     @classmethod
-    def _list_user_hierarchies(cls, connection: "Connection", to_dictionary: bool = False,
-                               limit: int = None,
-                               **filters) -> Union[List["UserHierarchy"], List[dict]]:
+    def _list_user_hierarchies(
+        cls, connection: "Connection", to_dictionary: bool = False, limit: int = None, **filters
+    ) -> Union[List["UserHierarchy"], List[dict]]:
         objects = fetch_objects(
             connection=connection,
             api=user_hierarchies.get_user_hierarchies,

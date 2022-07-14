@@ -97,9 +97,7 @@ def identity_token(connection):
     Returns:
         Complete HTTP response object.
     """
-    return connection.post(
-        url=f'{connection.base_url}/api/auth/identityToken',
-    )
+    return connection.post(url=f'{connection.base_url}/api/auth/identityToken', )
 
 
 def validate_identity_token(connection, identity_token):
@@ -119,7 +117,8 @@ def validate_identity_token(connection, identity_token):
 
 
 @ErrorHandler(
-    err_msg='Error creating a new Web server session that shares an existing IServer session.')
+    err_msg='Error creating a new Web server session that shares an existing IServer session.'
+)
 def delegate(connection, identity_token, whitelist=None):
     """Returns authentication token and cookies from given X-MSTR-
     IdentityToken.
@@ -136,8 +135,7 @@ def delegate(connection, identity_token, whitelist=None):
         skip_expiration_check=True,
         url=f'{connection.base_url}/api/auth/delegate',
         json={
-            'loginMode': "-1",
-            'identityToken': identity_token
+            'loginMode': "-1", 'identityToken': identity_token
         },
     )
 

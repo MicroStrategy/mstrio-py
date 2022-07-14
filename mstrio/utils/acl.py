@@ -72,8 +72,17 @@ class ACE(Dictable):
         'rights': Rights,
     }
 
-    def __init__(self, deny: bool, entry_type: int, rights: Union[Rights, int], trustee_id: str,
-                 trustee_name: str, trustee_type: int, trustee_subtype: int, inheritable: bool):
+    def __init__(
+        self,
+        deny: bool,
+        entry_type: int,
+        rights: Union[Rights, int],
+        trustee_id: str,
+        trustee_name: str,
+        trustee_type: int,
+        trustee_subtype: int,
+        inheritable: bool
+    ):
         """Set ACL object.
 
         Args:
@@ -161,9 +170,14 @@ class ACLMixin:
         else:
             return acl
 
-    def acl_add(self: "Entity", rights: Union[int, Rights, AggregatedRights],
-                trustees: Union["UserOrGroup", List["UserOrGroup"]], denied: bool = False,
-                inheritable: bool = False, propagate_to_children: Optional[bool] = None) -> None:
+    def acl_add(
+        self: "Entity",
+        rights: Union[int, Rights, AggregatedRights],
+        trustees: Union["UserOrGroup", List["UserOrGroup"]],
+        denied: bool = False,
+        inheritable: bool = False,
+        propagate_to_children: Optional[bool] = None
+    ) -> None:
         """Add Access Control Element (ACE) to the object ACL.
 
         Note:
@@ -187,13 +201,23 @@ class ACLMixin:
             >>> obj.acl_add(rights=Rights.BROWSE | Rights.EXECUTE,
             >>>             trustees=user_obj, denied=True)
         """
-        self._update_acl(op="ADD", rights=rights, trustees=trustees, denied=denied,
-                         inheritable=inheritable, propagate_to_children=propagate_to_children)
+        self._update_acl(
+            op="ADD",
+            rights=rights,
+            trustees=trustees,
+            denied=denied,
+            inheritable=inheritable,
+            propagate_to_children=propagate_to_children
+        )
 
-    def acl_remove(self: "Entity", rights: Union[int, Rights, AggregatedRights],
-                   trustees: Union["UserOrGroup", List["UserOrGroup"]], denied: bool = False,
-                   inheritable: bool = False,
-                   propagate_to_children: Optional[bool] = None) -> None:
+    def acl_remove(
+        self: "Entity",
+        rights: Union[int, Rights, AggregatedRights],
+        trustees: Union["UserOrGroup", List["UserOrGroup"]],
+        denied: bool = False,
+        inheritable: bool = False,
+        propagate_to_children: Optional[bool] = None
+    ) -> None:
         """Remove Access Control Element (ACE) from the object ACL.
 
         Note:
@@ -217,12 +241,23 @@ class ACLMixin:
             >>> obj.acl_remove(rights=Rights.BROWSE | Rights.EXECUTE,
             >>>                trustees=user_obj, denied=True)
         """
-        self._update_acl(op="REMOVE", rights=rights, trustees=trustees, denied=denied,
-                         inheritable=inheritable, propagate_to_children=propagate_to_children)
+        self._update_acl(
+            op="REMOVE",
+            rights=rights,
+            trustees=trustees,
+            denied=denied,
+            inheritable=inheritable,
+            propagate_to_children=propagate_to_children
+        )
 
-    def acl_alter(self: "Entity", rights: Union[int, Rights, AggregatedRights],
-                  trustees: Union["UserOrGroup", List["UserOrGroup"]], denied: bool = False,
-                  inheritable: bool = False, propagate_to_children: Optional[bool] = None) -> None:
+    def acl_alter(
+        self: "Entity",
+        rights: Union[int, Rights, AggregatedRights],
+        trustees: Union["UserOrGroup", List["UserOrGroup"]],
+        denied: bool = False,
+        inheritable: bool = False,
+        propagate_to_children: Optional[bool] = None
+    ) -> None:
         """Alter an existing Access Control Element (ACE) of the object ACL.
 
         Note:
@@ -246,13 +281,24 @@ class ACLMixin:
             >>> obj.acl_alter(rights=Rights.BROWSE | Rights.EXECUTE,
             >>>               trustees=user_obj, denied=True)
         """
-        self._update_acl(op="REPLACE", rights=rights, trustees=trustees, denied=denied,
-                         inheritable=inheritable, propagate_to_children=propagate_to_children)
+        self._update_acl(
+            op="REPLACE",
+            rights=rights,
+            trustees=trustees,
+            denied=denied,
+            inheritable=inheritable,
+            propagate_to_children=propagate_to_children
+        )
 
-    def _update_acl(self: "Entity", op: str, rights: Union[int, Rights, AggregatedRights],
-                    trustees: Union["UserOrGroup", List["UserOrGroup"]],
-                    propagate_to_children: Optional[bool] = None, denied: bool = False,
-                    inheritable: bool = False) -> None:
+    def _update_acl(
+        self: "Entity",
+        op: str,
+        rights: Union[int, Rights, AggregatedRights],
+        trustees: Union["UserOrGroup", List["UserOrGroup"]],
+        propagate_to_children: Optional[bool] = None,
+        denied: bool = False,
+        inheritable: bool = False
+    ) -> None:
         """Updates the ACL for this object, performs operation defined by the
         `op` parameter on all objects from `trustees` list.
 
@@ -282,8 +328,10 @@ class ACLMixin:
         # convert Enums
         rights = rights.value if isinstance(rights, Enum) else rights
         if rights not in range(256) and rights not in range(536_870_912, 536_871_167):
-            msg = ("Wrong `rights` value, please provide value in range 0-255 or combination of "
-                   "Rights enums")
+            msg = (
+                "Wrong `rights` value, please provide value in range 0-255 or combination of "
+                "Rights enums"
+            )
             raise ValueError(msg)
         if not isinstance(trustees, list):
             trustees = [trustees]
@@ -304,8 +352,9 @@ class ACLMixin:
         if isinstance(propagate_to_children, bool) and self._OBJECT_TYPE is ObjectTypes.FOLDER:
             body["propagateACLToChildren"] = propagate_to_children
 
-        response = objects.update_object(connection=self.connection, id=self.id, body=body,
-                                         object_type=self._OBJECT_TYPE.value)
+        response = objects.update_object(
+            connection=self.connection, id=self.id, body=body, object_type=self._OBJECT_TYPE.value
+        )
         if response.ok:
             response = response.json()
             self._set_object_attributes(**response)
@@ -317,10 +366,14 @@ class TrusteeACLMixin:
     Objects currently supporting this Mixin are: (`User` and `UserGroup`).
     """
 
-    def set_permission(self, permission: Union[Permissions, str],
-                       to_objects: Union[str, List[str]], object_type: "ObjectTypes",
-                       project: Optional[Union[str, "Project"]] = None,
-                       propagate_to_children: Optional[bool] = None) -> None:
+    def set_permission(
+        self,
+        permission: Union[Permissions, str],
+        to_objects: Union[str, List[str]],
+        object_type: "ObjectTypes",
+        project: Optional[Union[str, "Project"]] = None,
+        propagate_to_children: Optional[bool] = None
+    ) -> None:
         """Set permission to perform actions on given object(s).
 
         Function is used to set permission of the trustee to perform given
@@ -350,42 +403,73 @@ class TrusteeACLMixin:
             try:
                 permission = Permissions(permission)
             except ValueError:
-                msg = ("Invalid `permission` value. Available values are: 'View', "
-                       "'Modify', 'Full Control', 'Denied All', 'Default All'. "
-                       "See: Permissions enum.")
+                msg = (
+                    "Invalid `permission` value. Available values are: 'View', "
+                    "'Modify', 'Full Control', 'Denied All', 'Default All'. "
+                    "See: Permissions enum."
+                )
                 exception_handler(msg)
         right_value = AGGREGATED_RIGHTS_MAP[permission].value
         denied = permission is Permissions.DENIED_ALL
 
         # those 2 tries are for clearing current rights (set to default values)
         try:
-            _modify_rights(connection=self.connection, trustee_id=self.id, op='REMOVE',
-                           rights=AggregatedRights.ALL.value, ids=to_objects,
-                           object_type=object_type, project=project, denied=(not denied),
-                           propagate_to_children=propagate_to_children, verbose=False)
+            _modify_rights(
+                connection=self.connection,
+                trustee_id=self.id,
+                op='REMOVE',
+                rights=AggregatedRights.ALL.value,
+                ids=to_objects,
+                object_type=object_type,
+                project=project,
+                denied=(not denied),
+                propagate_to_children=propagate_to_children,
+                verbose=False
+            )
         except IServerError:
             pass
         try:
-            _modify_rights(connection=self.connection, trustee_id=self.id, op='REMOVE',
-                           rights=AggregatedRights.ALL.value, ids=to_objects,
-                           object_type=object_type, project=project, denied=denied,
-                           propagate_to_children=propagate_to_children, verbose=False)
+            _modify_rights(
+                connection=self.connection,
+                trustee_id=self.id,
+                op='REMOVE',
+                rights=AggregatedRights.ALL.value,
+                ids=to_objects,
+                object_type=object_type,
+                project=project,
+                denied=denied,
+                propagate_to_children=propagate_to_children,
+                verbose=False
+            )
         except IServerError:
             pass
 
         if not permission == Permissions.DEFAULT_ALL:
-            _modify_rights(connection=self.connection, trustee_id=self.id, op='ADD',
-                           rights=right_value, ids=to_objects, object_type=object_type,
-                           project=project, denied=denied,
-                           propagate_to_children=propagate_to_children)
+            _modify_rights(
+                connection=self.connection,
+                trustee_id=self.id,
+                op='ADD',
+                rights=right_value,
+                ids=to_objects,
+                object_type=object_type,
+                project=project,
+                denied=denied,
+                propagate_to_children=propagate_to_children
+            )
 
-    def set_custom_permissions(self, to_objects: Union[str, List[str]],
-                               object_type: Union["ObjectTypes", int],
-                               project: Optional[Union[str, "Project"]] = None,
-                               execute: Optional[str] = None, use: Optional[str] = None,
-                               control: Optional[str] = None, delete: Optional[str] = None,
-                               write: Optional[str] = None, read: Optional[str] = None,
-                               browse: Optional[str] = None) -> None:
+    def set_custom_permissions(
+        self,
+        to_objects: Union[str, List[str]],
+        object_type: Union["ObjectTypes", int],
+        project: Optional[Union[str, "Project"]] = None,
+        execute: Optional[str] = None,
+        use: Optional[str] = None,
+        control: Optional[str] = None,
+        delete: Optional[str] = None,
+        write: Optional[str] = None,
+        read: Optional[str] = None,
+        browse: Optional[str] = None
+    ) -> None:
         """Set custom permissions to perform actions on given object(s).
 
         Function is used to set rights of the trustee to perform given actions
@@ -422,28 +506,50 @@ class TrusteeACLMixin:
             None
         """
 
-        def modify_custom_rights(connection, trustee_id: str, right: Union[Rights, List[Rights]],
-                                 to_objects: List[str], object_type: "ObjectTypes", denied: bool,
-                                 project: Optional[Union[str,
-                                                         "Project"]] = None, default: bool = False,
-                                 propagate_to_children: Optional[bool] = None) -> None:
+        def modify_custom_rights(
+            connection,
+            trustee_id: str,
+            right: Union[Rights, List[Rights]],
+            to_objects: List[str],
+            object_type: "ObjectTypes",
+            denied: bool,
+            project: Optional[Union[str, "Project"]] = None,
+            default: bool = False,
+            propagate_to_children: Optional[bool] = None
+        ) -> None:
 
             right_value = _get_custom_right_value(right)
             try:
-                _modify_rights(connection=connection, trustee_id=trustee_id, op='REMOVE',
-                               rights=right_value, ids=to_objects, object_type=object_type,
-                               project=project, denied=(not denied),
-                               propagate_to_children=propagate_to_children, verbose=False)
+                _modify_rights(
+                    connection=connection,
+                    trustee_id=trustee_id,
+                    op='REMOVE',
+                    rights=right_value,
+                    ids=to_objects,
+                    object_type=object_type,
+                    project=project,
+                    denied=(not denied),
+                    propagate_to_children=propagate_to_children,
+                    verbose=False
+                )
             except IServerError:
                 pass
 
             op = 'REMOVE' if default else 'ADD'
             verbose = not default
             try:
-                _modify_rights(connection=connection, trustee_id=trustee_id, op=op,
-                               rights=right_value, ids=to_objects, object_type=object_type,
-                               project=project, denied=denied,
-                               propagate_to_children=propagate_to_children, verbose=verbose)
+                _modify_rights(
+                    connection=connection,
+                    trustee_id=trustee_id,
+                    op=op,
+                    rights=right_value,
+                    ids=to_objects,
+                    object_type=object_type,
+                    project=project,
+                    denied=denied,
+                    propagate_to_children=propagate_to_children,
+                    verbose=verbose
+                )
             except IServerError:
                 pass
 
@@ -457,37 +563,69 @@ class TrusteeACLMixin:
             Rights.BROWSE: browse
         }
         if not set(rights_dict.values()).issubset({'grant', 'deny', 'default', None}):
-            msg = ("Invalid value of the right. Available values are 'grant', 'deny', "
-                   "'default' or None.")
+            msg = (
+                "Invalid value of the right. Available values are 'grant', 'deny', "
+                "'default' or None."
+            )
             raise ValueError(msg)
 
         grant_list = [right for right, value in rights_dict.items() if value == 'grant']
         deny_list = [right for right, value in rights_dict.items() if value == 'deny']
         default_list = [right for right, value in rights_dict.items() if value == 'default']
 
-        modify_custom_rights(connection=self.connection, trustee_id=self.id, right=grant_list,
-                             to_objects=to_objects, object_type=object_type, denied=False,
-                             project=project)
-        modify_custom_rights(connection=self.connection, trustee_id=self.id, right=deny_list,
-                             to_objects=to_objects, object_type=object_type, denied=True,
-                             project=project)
-        modify_custom_rights(connection=self.connection, trustee_id=self.id, right=default_list,
-                             to_objects=to_objects, object_type=object_type, denied=True,
-                             project=project, default=True)
+        modify_custom_rights(
+            connection=self.connection,
+            trustee_id=self.id,
+            right=grant_list,
+            to_objects=to_objects,
+            object_type=object_type,
+            denied=False,
+            project=project
+        )
+        modify_custom_rights(
+            connection=self.connection,
+            trustee_id=self.id,
+            right=deny_list,
+            to_objects=to_objects,
+            object_type=object_type,
+            denied=True,
+            project=project
+        )
+        modify_custom_rights(
+            connection=self.connection,
+            trustee_id=self.id,
+            right=default_list,
+            to_objects=to_objects,
+            object_type=object_type,
+            denied=True,
+            project=project,
+            default=True
+        )
 
 
-def _modify_rights(connection, trustee_id: str, op: str, rights: int, object_type: "ObjectTypes",
-                   ids: List[str], project: Optional[Union[str, "Project"]] = None,
-                   propagate_to_children: Optional[bool] = None, denied: Optional[bool] = None,
-                   inheritable: Optional[bool] = None, verbose: bool = True) -> None:
+def _modify_rights(
+    connection,
+    trustee_id: str,
+    op: str,
+    rights: int,
+    object_type: "ObjectTypes",
+    ids: List[str],
+    project: Optional[Union[str, "Project"]] = None,
+    propagate_to_children: Optional[bool] = None,
+    denied: Optional[bool] = None,
+    inheritable: Optional[bool] = None,
+    verbose: bool = True
+) -> None:
     if op not in ["ADD", "REMOVE", "REPLACE"]:
         raise ValueError("Wrong ACL operator passed. Please use ADD, REMOVE or REPLACE")
 
     # convert Enums
     rights = rights.value if isinstance(rights, Enum) else rights
     if rights not in range(256) and rights not in range(536_870_912, 536_871_168):
-        msg = ("Wrong `rights` value, please provide value in range 0-255 or combination of "
-               "Rights enums")
+        msg = (
+            "Wrong `rights` value, please provide value in range 0-255 or combination of "
+            "Rights enums"
+        )
         exception_handler(msg)
 
     if project:
@@ -497,8 +635,9 @@ def _modify_rights(connection, trustee_id: str, op: str, rights: int, object_typ
         ids = [ids]
     # TODO decide what to do about this code
     for id in ids:
-        response = objects.get_object_info(connection=connection, id=id,
-                                           object_type=object_type.value, project_id=project)
+        response = objects.get_object_info(
+            connection=connection, id=id, object_type=object_type.value, project_id=project
+        )
         if inheritable is None:
             tmp = [
                 ace['inheritable']
@@ -508,22 +647,29 @@ def _modify_rights(connection, trustee_id: str, op: str, rights: int, object_typ
             inheritable = False if not tmp else tmp[0]
 
         body = {
-            "acl": [{
-                "op": op,
-                "trustee": trustee_id,
-                "rights": rights,
-                "type": 1,  # EnumDSSXMLAccessEntryType
-                "denied": denied,
-                "inheritable": inheritable
-            }]
+            "acl": [
+                {
+                    "op": op,
+                    "trustee": trustee_id,
+                    "rights": rights,
+                    "type": 1,  # EnumDSSXMLAccessEntryType
+                    "denied": denied,
+                    "inheritable": inheritable
+                }
+            ]
         }
 
         if isinstance(propagate_to_children, bool):
             body["propagateACLToChildren"] = propagate_to_children
 
-        _ = objects.update_object(connection=connection, id=id, body=body,
-                                  object_type=object_type.value, project_id=project,
-                                  verbose=verbose)
+        _ = objects.update_object(
+            connection=connection,
+            id=id,
+            body=body,
+            object_type=object_type.value,
+            project_id=project,
+            verbose=verbose
+        )
 
 
 def _parse_acl_rights_bin_to_dict(rights_bin: int) -> Dict[Rights, bool]:
@@ -549,8 +695,10 @@ def _get_custom_right_value(right: Union[Rights, List[Rights]]) -> int:
             try:
                 r = Rights[r.upper()]
             except ValueError:
-                msg = (f"Invalid custom `right` value: {r}. Available values are: EXECUTE, USE, "
-                       "CONTROL, DELETE, WRITE, READ, BROWSE. See: the Rights enum.")
+                msg = (
+                    f"Invalid custom `right` value: {r}. Available values are: EXECUTE, USE, "
+                    "CONTROL, DELETE, WRITE, READ, BROWSE. See: the Rights enum."
+                )
                 raise ValueError(msg)
         right_value |= r.value
     return right_value

@@ -17,8 +17,9 @@ def list_schedules(connection, fields=None, error_msg=None):
         HTTP response object returned by the MicroStrategy REST server
     """
 
-    response = connection.get(url=f'{connection.base_url}/api/schedules',
-                              params={'fields': fields})
+    response = connection.get(
+        url=f'{connection.base_url}/api/schedules', params={'fields': fields}
+    )
     if response.ok:
         # Fix for incorrect 'eventId' (expecting 'id')
         event_based_in_list = False
@@ -49,8 +50,9 @@ def get_schedule(connection, id, fields=None, error_msg=None):
         HTTP response object returned by the MicroStrategy REST server
     """
 
-    response = connection.get(url=f'{connection.base_url}/api/schedules/{id}',
-                              params={'fields': fields})
+    response = connection.get(
+        url=f'{connection.base_url}/api/schedules/{id}', params={'fields': fields}
+    )
     if response.ok:
         # Fix for incorrect 'eventId' (expecting 'id')
         response_json = response.json()
@@ -81,8 +83,9 @@ def create_schedule(connection, body, fields=None, error_msg=None):
     if 'event' in body.keys():
         body['event']['eventId'] = body['event'].pop('id')
 
-    response = connection.post(url=f'{connection.base_url}/api/schedules', json=body,
-                               params={'fields': fields})
+    response = connection.post(
+        url=f'{connection.base_url}/api/schedules', json=body, params={'fields': fields}
+    )
     if response.ok:
         # Fix for incorrect 'eventId' (expecting 'id')
         response_json = response.json()
@@ -114,8 +117,9 @@ def update_schedule(connection, id, body, fields=None, error_msg=None):
     if 'event' in body.keys():
         body['event']['eventId'] = body['event'].pop('id')
 
-    response = connection.put(url=f'{connection.base_url}/api/schedules/{id}', json=body,
-                              params={'fields': fields})
+    response = connection.put(
+        url=f'{connection.base_url}/api/schedules/{id}', json=body, params={'fields': fields}
+    )
     if response.ok:
         # Fix for incorrect 'eventId' (expecting 'id')
         response_json = response.json()
@@ -140,5 +144,6 @@ def delete_schedule(connection, id, fields=None, error_msg=None):
     Returns:
         HTTP response object returned by the MicroStrategy REST server
     """
-    return connection.delete(url=f'{connection.base_url}/api/schedules/{id}',
-                             params={'fields': fields})
+    return connection.delete(
+        url=f'{connection.base_url}/api/schedules/{id}', params={'fields': fields}
+    )

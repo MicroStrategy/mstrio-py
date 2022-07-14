@@ -50,8 +50,12 @@ class Qualification(Dictable):
     """
     _DELETE_NONE_VALUES_RECURSION = False
 
-    def __init__(self, tree: Union["LogicOperator", "PredicateBase"], text: Optional[str] = None,
-                 tokens: Optional[List[dict]] = None):
+    def __init__(
+        self,
+        tree: Union["LogicOperator", "PredicateBase"],
+        text: Optional[str] = None,
+        tokens: Optional[List[dict]] = None
+    ):
         self.tree = tree
         self.text = text
         self.tokens = tokens

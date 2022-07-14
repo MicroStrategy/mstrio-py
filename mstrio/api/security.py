@@ -13,8 +13,7 @@ def get_privileges(connection, error_msg=None):
         Complete HTTP response object.
     """
     return connection.get(
-        url=f'{connection.base_url}/api/iserver/privileges',
-        headers={'X-MSTR-ProjectID': None}
+        url=f'{connection.base_url}/api/iserver/privileges', headers={'X-MSTR-ProjectID': None}
     )
 
 
@@ -91,8 +90,7 @@ def get_security_role(connection, id, error_msg=None):
         Complete HTTP response object.
     """
     return connection.get(
-        url=f'{connection.base_url}/api/securityRoles/{id}',
-        headers={'X-MSTR-ProjectID': None}
+        url=f'{connection.base_url}/api/securityRoles/{id}', headers={'X-MSTR-ProjectID': None}
     )
 
 
@@ -109,8 +107,7 @@ def delete_security_role(connection, id, error_msg=None):
         Complete HTTP response object.
     """
     return connection.delete(
-        url=f'{connection.base_url}/api/securityRoles/{id}',
-        headers={'X-MSTR-ProjectID': None}
+        url=f'{connection.base_url}/api/securityRoles/{id}', headers={'X-MSTR-ProjectID': None}
     )
 
 

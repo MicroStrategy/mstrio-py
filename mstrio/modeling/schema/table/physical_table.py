@@ -11,6 +11,7 @@ from mstrio.types import ObjectTypes
 from mstrio.users_and_groups import User
 from mstrio.utils.entity import Entity
 from mstrio.utils.helper import fetch_objects, get_valid_project_id
+from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
 if TYPE_CHECKING:
     from mstrio.modeling.schema.table.logical_table import LogicalTable
@@ -20,16 +21,24 @@ NO_PROJECT_ERR_MSG = "You must specify or select a project."
 logging.getLogger(__name__)
 
 
+@method_version_handler('11.3.0100')
 def list_physical_tables(
-        connection: Connection,
-        project_id: Optional[str] = None,
-        project_name: Optional[str] = None,
-        filters: Optional[dict] = None,
-        limit: Optional[int] = None,
-        to_dictionary: bool = False,
-        include_unassigned_tables: bool = False
+    connection: Connection,
+    project_id: Optional[str] = None,
+    project_name: Optional[str] = None,
+    filters: Optional[dict] = None,
+    limit: Optional[int] = None,
+    to_dictionary: bool = False,
+    include_unassigned_tables: bool = False
 ) -> Union[list["PhysicalTable"], list[dict]]:
     """List all physical tables in a project mapped to a specified connection.
+
+    Specify either `project_id` or `project_name`.
+    When `project_id` is provided (not `None`), `project_name` is omitted.
+
+    Note:
+        When `project_id` is `None` and `project_name` is `None`,
+        then its value is overwritten by `project_id` from `connection` object.
 
     Args:
         connection (Connection): Object representation of MSTR Connection.
@@ -50,10 +59,12 @@ def list_physical_tables(
         Union[list["PhysicalTable"], list[dict]]: A list of PhysicalTable
             objects or dictionaries representing physical tables.
     """
-    project_id = get_valid_project_id(connection=connection,
-                                      project_id=project_id,
-                                      project_name=project_name,
-                                      with_fallback=False if project_name else True)
+    project_id = get_valid_project_id(
+        connection=connection,
+        project_id=project_id,
+        project_name=project_name,
+        with_fallback=False if project_name else True
+    )
     if include_unassigned_tables:
         tables = full_search(
             connection=connection,
@@ -73,16 +84,27 @@ def list_physical_tables(
             fields="physicalTable",
         )
 
-    return (tables if to_dictionary else PhysicalTable.bulk_from_dict(source_list=tables,
-                                                                      connection=connection))
+    return (
+        tables if to_dictionary else
+        PhysicalTable.bulk_from_dict(source_list=tables, connection=connection)
+    )
 
 
+@method_version_handler('11.3.0100')
 def list_tables_prefixes(connection: Connection, project_id: Optional[str] = None):
-    physical_tables = list_physical_tables(connection, project_id=project_id,
-                                           to_dictionary=True)
+    """Returns the prefixes for the physical tables
+
+    Args:
+        connection: Object representation of MSTR Connection
+        project_id (Optional[str], optional): ID of a project. Defaults to None
+
+    Returns:
+        A dictionary of prefixes for all the physical tables"""
+    physical_tables = list_physical_tables(connection, project_id=project_id, to_dictionary=True)
     return {table.get("table_prefix") for table in physical_tables}
 
 
+@method_version_handler('11.3.0100')
 def list_namespaces(
     connection: "Connection",
     id: str,
@@ -121,6 +143,7 @@ def list_namespaces(
     return namespaces
 
 
+@class_version_handler('11.3.0100')
 class PhysicalTable(Entity):
     """An object representation of a metadata of physical table. A physical
         table describes the metadata of a warehouse table. It contains a set of
@@ -156,8 +179,14 @@ class PhysicalTable(Entity):
     }
     _REST_ATTR_MAP = {"object_id": "id"}
 
-    def __init__(self, connection: Connection, id: str, name: Optional[str] = None,
-                 project_id: Optional[str] = None, project_name: Optional[str] = None):
+    def __init__(
+        self,
+        connection: Connection,
+        id: str,
+        name: Optional[str] = None,
+        project_id: Optional[str] = None,
+        project_name: Optional[str] = None
+    ):
         """Initializes a PhysicalTable object. You have to provide ID of a
             physical table object. You can get this ID e.g. using
             `mstrio.project_object.schema.tables.list_physical_tables()`. It
@@ -167,6 +196,13 @@ class PhysicalTable(Entity):
             mapped to a connection object), it will fetch additional information
             Info: It's necessary to provide an ID of the table. If you only
                 provide the name of a table, it will not be initialized
+
+        Specify either `project_id` or `project_name`.
+        When `project_id` is provided (not `None`), `project_name` is omitted.
+
+        Note:
+            When `project_id` is `None` and `project_name` is `None`, then
+             its value is overwritten by `project_id` from `connection` object.
 
         Args:
             connection (Connection): Object representation of MSTR Connection.
@@ -180,9 +216,12 @@ class PhysicalTable(Entity):
         Examples:
             >>> PhysicalTable(connection, id='5DE0F8934CBD82437D6FA1AFF75F6C58')
         """
-        project_id = get_valid_project_id(connection=connection, project_id=project_id,
-                                          project_name=project_name,
-                                          with_fallback=False if project_name else True)
+        project_id = get_valid_project_id(
+            connection=connection,
+            project_id=project_id,
+            project_name=project_name,
+            with_fallback=False if project_name else True
+        )
 
         super().__init__(connection=connection, object_id=id)
         try:
@@ -201,16 +240,20 @@ class PhysicalTable(Entity):
         elif kwargs.get("information"):
             # available when fetched as a part of a logical table
             information = kwargs.pop("information")
-            kwargs.update({
-                "id": information.get("object_id"),
-                "table_type": kwargs.pop("type", None),
-                **information,
-            })
+            kwargs.update(
+                {
+                    "id": information.get("object_id"),
+                    "table_type": kwargs.pop("type", None),
+                    **information,
+                }
+            )
             super()._init_variables(**kwargs)
 
             columns = kwargs.get("columns")
-            self.columns = (TableColumn.bulk_from_dict(
-                source_list=columns, connection=self.connection) if columns else None)
+            self.columns = (
+                TableColumn.bulk_from_dict(source_list=columns, connection=self.connection)
+                if columns else None
+            )
             self.namespace = kwargs.get("namespace")
             self.primary_locale = kwargs.get("primary_locale")
 
@@ -238,7 +281,8 @@ class PhysicalTable(Entity):
             filter(
                 lambda logical_table: logical_table.physical_table.id == self.id,
                 logical_tables,
-            ))
+            )
+        )
 
     def delete(self, force: bool = False) -> None:
         """Searches for all logical table dependents based on provided physical

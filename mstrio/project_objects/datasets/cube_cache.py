@@ -5,6 +5,7 @@ from mstrio import config
 from mstrio.api import monitors
 from mstrio.server.cluster import Cluster
 from mstrio.utils.helper import camel_to_snake, exception_handler, fetch_objects_async
+from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
@@ -12,12 +13,17 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+@method_version_handler('11.3.0000')
 def list_cube_caches(
-        connection: "Connection", nodes: Optional[Union[List[str], str]] = None,
-        cube_id: Optional[str] = None, loaded: Optional[bool] = False,
-        db_connection_id: Optional[str] = None, project_ids: Optional[List[str]] = None,
-        to_dictionary: Optional[bool] = False,
-        limit: Optional[int] = None) -> Union[List["CubeCache"], List[dict]]:
+    connection: "Connection",
+    nodes: Optional[Union[List[str], str]] = None,
+    cube_id: Optional[str] = None,
+    loaded: Optional[bool] = False,
+    db_connection_id: Optional[str] = None,
+    project_ids: Optional[List[str]] = None,
+    to_dictionary: Optional[bool] = False,
+    limit: Optional[int] = None
+) -> Union[List["CubeCache"], List[dict]]:
     """List cube caches. You can filter them by cube (`cube_id`), database
     connection (`db_connection_id`) and projects (`project_ids`). You can also
     obtain only loaded caches (`loaded=True`).
@@ -59,11 +65,18 @@ def list_cube_caches(
     nodes = [nodes] if type(nodes) == str else nodes
     caches = []
     for node in nodes:
-        caches += fetch_objects_async(connection=connection, api=monitors.get_cube_caches,
-                                      async_api=monitors.get_cube_caches_async,
-                                      dict_unpack_value='cubeCaches', node=node, limit=limit,
-                                      project_ids=project_ids, chunk_size=1000, loaded=loaded,
-                                      filters={})
+        caches += fetch_objects_async(
+            connection=connection,
+            api=monitors.get_cube_caches,
+            async_api=monitors.get_cube_caches_async,
+            dict_unpack_value='cubeCaches',
+            node=node,
+            limit=limit,
+            project_ids=project_ids,
+            chunk_size=1000,
+            loaded=loaded,
+            filters={}
+        )
     if cube_id:
         caches = [cache for cache in caches if cache.get('source', {}).get('id', '') == cube_id]
     if db_connection_id:
@@ -77,9 +90,14 @@ def list_cube_caches(
         return CubeCache.from_dict(connection, caches)
 
 
-def delete_cube_caches(connection: "Connection", nodes: Union[List[str], str] = None,
-                       cube_id: str = None, db_connection_id: str = None, loaded: bool = False,
-                       force: bool = False) -> Union[dict, None]:
+def delete_cube_caches(
+    connection: "Connection",
+    nodes: Union[List[str], str] = None,
+    cube_id: str = None,
+    db_connection_id: str = None,
+    loaded: bool = False,
+    force: bool = False
+) -> Union[dict, None]:
     """Delete all cube caches on a given node.
 
     Optionally it is possible to specify for which cube or for which database
@@ -153,6 +171,7 @@ def delete_cube_cache(connection: "Connection", id: str, force: bool = False):
     return CubeCache._delete(connection, id, force)
 
 
+@class_version_handler('11.3.0000')
 class CubeCache:
     """
     Manage cube cache.
@@ -246,8 +265,10 @@ class CubeCache:
     def _delete(connection: "Connection", id: str, force: bool = False):
         user_input = 'N'
         if not force:
-            user_input = input(f"Are you sure you want to delete cube cache"
-                               f"with ID: '{id}'? [Y/N]: ") or 'N'
+            user_input = input(
+                f"Are you sure you want to delete cube cache"
+                f"with ID: '{id}'? [Y/N]: "
+            ) or 'N'
         if force or user_input == 'Y':
             response = monitors.delete_cube_cache(connection, id, False)
             if response.status_code == 204:

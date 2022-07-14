@@ -9,7 +9,8 @@ from mstrio.users_and_groups.user import User
 from mstrio.utils import helper
 from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, ObjectTypes
 from mstrio.utils.enum_helper import AutoName, get_enum_val
-from mstrio.utils.helper import get_objects_id
+from mstrio.utils.helper import get_args_from_func, get_default_args_from_func, get_objects_id
+from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
@@ -17,9 +18,10 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def list_datasource_connections(connection: "Connection", to_dictionary: bool = False,
-                                limit: Optional[int] = None,
-                                **filters) -> Union[List["DatasourceConnection"], List[dict]]:
+@method_version_handler('11.3.0000')
+def list_datasource_connections(
+    connection: "Connection", to_dictionary: bool = False, limit: Optional[int] = None, **filters
+) -> Union[List["DatasourceConnection"], List[dict]]:
     """Get list of DatasourceConnection objects or dicts. Optionally filter the
     connections by specifying filters.
 
@@ -62,6 +64,7 @@ class ExecutionMode(AutoName):
     SYNCHRONOUS = auto()
 
 
+@class_version_handler('11.3.0000')
 class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
     """Datasource connection configuration object that represents a connection
     to the datasource.
@@ -125,23 +128,75 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
         'char_encoding_windows': CharEncoding,
     }
     _API_GETTERS = {
-        ('abbreviation', 'type', 'subtype', 'ext_type', 'date_created', 'date_modified', 'version',
-         'owner', 'icon_path', 'view_media', 'ancestors', 'certified_info',
-         'acl'): objects.get_object_info,
-        ('id', 'name', 'description', 'execution_mode', 'max_cancel_attempt_time',
-         'max_query_exe_time', 'max_connection_attempt_time', 'connection_lifetime',
-         'connection_idle_timeout', 'char_encoding_windows', 'char_encoding_unix', 'table_prefix',
-         'connection_string', 'parameterized_queries', 'extended_fetch', 'driver_type',
-         'datasource_login', 'database_type', 'database_version', 'oauth_parameter', 'acg', 'iam',
-         'resource', 'scope', 'enable_sso'): datasources.get_datasource_connection
+        (
+            'abbreviation',
+            'type',
+            'subtype',
+            'ext_type',
+            'date_created',
+            'date_modified',
+            'version',
+            'owner',
+            'icon_path',
+            'view_media',
+            'ancestors',
+            'certified_info',
+            'acl'
+        ): objects.get_object_info,
+        (
+            'id',
+            'name',
+            'description',
+            'execution_mode',
+            'max_cancel_attempt_time',
+            'max_query_exe_time',
+            'max_connection_attempt_time',
+            'connection_lifetime',
+            'connection_idle_timeout',
+            'char_encoding_windows',
+            'char_encoding_unix',
+            'table_prefix',
+            'connection_string',
+            'parameterized_queries',
+            'extended_fetch',
+            'driver_type',
+            'datasource_login',
+            'database_type',
+            'database_version',
+            'oauth_parameter',
+            'acg',
+            'iam',
+            'resource',
+            'scope',
+            'enable_sso'
+        ): datasources.get_datasource_connection
     }
     _API_PATCH: dict = {
         ('abbreviation'): (objects.update_object, 'partial_put'),
-        ("name", "description", "execution_mode", "max_cancel_attempt_time", "max_query_exe_time",
-         "max_connection_attempt_time", "connection_lifetime", "connection_idle_timeout",
-         "char_encoding_windows", "char_encoding_unix", "table_prefix", "connection_string",
-         "parameterized_queries", "extended_fetch", "driver_type", "database_type",
-         "database_version", "datasource_login", 'iam', 'resource', 'scope', 'enable_sso'): (
+        (
+            "name",
+            "description",
+            "execution_mode",
+            "max_cancel_attempt_time",
+            "max_query_exe_time",
+            "max_connection_attempt_time",
+            "connection_lifetime",
+            "connection_idle_timeout",
+            "char_encoding_windows",
+            "char_encoding_unix",
+            "table_prefix",
+            "connection_string",
+            "parameterized_queries",
+            "extended_fetch",
+            "driver_type",
+            "database_type",
+            "database_version",
+            "datasource_login",
+            'iam',
+            'resource',
+            'scope',
+            'enable_sso'
+        ): (
             datasources.update_datasource_connection,
             'patch',
         )
@@ -171,8 +226,9 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
         "enable_sso": bool
     }
 
-    def __init__(self, connection: "Connection", name: Optional[str] = None,
-                 id: Optional[str] = None) -> None:
+    def __init__(
+        self, connection: "Connection", name: Optional[str] = None, id: Optional[str] = None
+    ) -> None:
         """Initialize DatasourceConnection object and synchronize with server.
 
         Args:
@@ -187,7 +243,8 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
 
         if id is None:
             objects_info = DatasourceConnection._list_datasource_connections(
-                connection=connection, name=name, to_dictionary=True)
+                connection=connection, name=name, to_dictionary=True
+            )
             if objects_info:
                 object_info, object_info["connection"] = objects_info[0], connection
                 self._init_variables(**object_info)
@@ -198,25 +255,26 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
 
     def _init_variables(self, **kwargs) -> None:
         super()._init_variables(**kwargs)
-        self.execution_mode = ExecutionMode(
-            kwargs["execution_mode"]) if kwargs.get("execution_mode") else None
+        self.execution_mode = ExecutionMode(kwargs["execution_mode"]
+                                            ) if kwargs.get("execution_mode") else None
         self.max_cancel_attempt_time = kwargs.get("max_cancel_attempt_time")
         self.max_query_exe_time = kwargs.get("max_query_exe_time")
         self.max_connection_attempt_time = kwargs.get("max_connection_attempt_time")
         self.connection_lifetime = kwargs.get("connection_lifetime")
         self.connection_idle_timeout = kwargs.get("connection_idle_timeout")
         self.char_encoding_windows = CharEncoding(
-            kwargs["char_encoding_windows"]) if kwargs.get("char_encoding_windows") else None
-        self.char_encoding_unix = CharEncoding(
-            kwargs["char_encoding_unix"]) if kwargs.get("char_encoding_unix") else None
+            kwargs["char_encoding_windows"]
+        ) if kwargs.get("char_encoding_windows") else None
+        self.char_encoding_unix = CharEncoding(kwargs["char_encoding_unix"]
+                                               ) if kwargs.get("char_encoding_unix") else None
         self.table_prefix = kwargs.get("table_prefix")
         self.connection_string = kwargs.get("connection_string")
         self.parameterized_queries = kwargs.get("parameterized_queries")
         self.extended_fetch = kwargs.get("extended_fetch")
         self.driver_type = DriverType(kwargs["driver_type"]) if kwargs.get("driver_type") else None
         self.datasource_login = DatasourceLogin.from_dict(
-            kwargs.get("datasource_login"),
-            self.connection) if kwargs.get("datasource_login") else None
+            kwargs.get("datasource_login"), self.connection
+        ) if kwargs.get("datasource_login") else None
         self.database_type = kwargs.get("database_type")
         self.database_version = kwargs.get("database_version")
         self._oauth_parameter = kwargs.get("oauth_parameter")
@@ -225,22 +283,31 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
         self.scope = kwargs.get("scope")
         self.enable_sso = kwargs.get("enable_sso")
 
-    def alter(self, name: Optional[str] = None, description: Optional[str] = None,
-              execution_mode: Union[str, ExecutionMode] = None,
-              max_cancel_attempt_time: Optional[int] = None,
-              max_query_exe_time: Optional[int] = None,
-              max_connection_attempt_time: Optional[int] = None,
-              connection_lifetime: Optional[int] = None,
-              connection_idle_timeout: Optional[int] = None,
-              char_encoding_windows: Union[str, CharEncoding] = None,
-              char_encoding_unix: Union[str, CharEncoding] = None,
-              table_prefix: Optional[str] = None, connection_string: Optional[str] = None,
-              parameterized_queries: Optional[bool] = None, extended_fetch: Optional[bool] = None,
-              driver_type: Union[str, DriverType] = None, database_type: Optional[str] = None,
-              database_version: Optional[str] = None, datasource_login: Union[str, DatasourceLogin,
-                                                                              None] = None,
-              iam: Optional[dict] = None, resource: Optional[str] = None,
-              scope: Optional[str] = None, enable_sso: Optional[bool] = None) -> None:
+    def alter(
+        self,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        execution_mode: Union[str, ExecutionMode] = None,
+        max_cancel_attempt_time: Optional[int] = None,
+        max_query_exe_time: Optional[int] = None,
+        max_connection_attempt_time: Optional[int] = None,
+        connection_lifetime: Optional[int] = None,
+        connection_idle_timeout: Optional[int] = None,
+        char_encoding_windows: Union[str, CharEncoding] = None,
+        char_encoding_unix: Union[str, CharEncoding] = None,
+        table_prefix: Optional[str] = None,
+        connection_string: Optional[str] = None,
+        parameterized_queries: Optional[bool] = None,
+        extended_fetch: Optional[bool] = None,
+        driver_type: Union[str, DriverType] = None,
+        database_type: Optional[str] = None,
+        database_version: Optional[str] = None,
+        datasource_login: Union[str, DatasourceLogin, None] = None,
+        iam: Optional[dict] = None,
+        resource: Optional[str] = None,
+        scope: Optional[str] = None,
+        enable_sso: Optional[bool] = None
+    ) -> None:
         """Alter the datasource connection properties.
 
         Args:
@@ -285,8 +352,8 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
             'id': get_objects_id(datasource_login, DatasourceLogin)
         } if datasource_login else None
         func = self.alter
-        args = func.__code__.co_varnames[:func.__code__.co_argcount]
-        defaults = func.__defaults__  # type: ignore
+        args = get_args_from_func(func)
+        defaults = get_default_args_from_func(func)
         default_dict = dict(zip(args[-len(defaults):], defaults)) if defaults else {}
         local = locals()
         properties = {}
@@ -296,23 +363,34 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
         self._alter_properties(**properties)
 
     @classmethod
-    def create(cls, connection: "Connection", name: str, description: Optional[str] = None,
-               acg: Optional[int] = None, execution_mode: Union[str, ExecutionMode] = None,
-               max_cancel_attempt_time: Optional[int] = None,
-               max_query_exe_time: Optional[int] = None,
-               max_connection_attempt_time: Optional[int] = None,
-               connection_lifetime: Optional[int] = None,
-               connection_idle_timeout: Optional[int] = None,
-               char_encoding_windows: Union[str, CharEncoding] = None,
-               char_encoding_unix: Union[str,
-                                         CharEncoding] = None, table_prefix: Optional[str] = None,
-               connection_string: Optional[str] = None, parameterized_queries: bool = False,
-               extended_fetch: bool = False, datasource_login: Union[DatasourceLogin, str,
-                                                                     None] = None,
-               database_type: Optional[str] = None, database_version: Optional[str] = None,
-               driver_type: Union[str, DriverType] = None, oauth_parameter: Optional[str] = None,
-               iam: Optional[dict] = None, resource: Optional[str] = None,
-               scope: Optional[str] = None, enable_sso: bool = False) -> "DatasourceConnection":
+    def create(
+        cls,
+        connection: "Connection",
+        name: str,
+        description: Optional[str] = None,
+        acg: Optional[int] = None,
+        execution_mode: Union[str, ExecutionMode] = None,
+        max_cancel_attempt_time: Optional[int] = None,
+        max_query_exe_time: Optional[int] = None,
+        max_connection_attempt_time: Optional[int] = None,
+        connection_lifetime: Optional[int] = None,
+        connection_idle_timeout: Optional[int] = None,
+        char_encoding_windows: Union[str, CharEncoding] = None,
+        char_encoding_unix: Union[str, CharEncoding] = None,
+        table_prefix: Optional[str] = None,
+        connection_string: Optional[str] = None,
+        parameterized_queries: bool = False,
+        extended_fetch: bool = False,
+        datasource_login: Union[DatasourceLogin, str, None] = None,
+        database_type: Optional[str] = None,
+        database_version: Optional[str] = None,
+        driver_type: Union[str, DriverType] = None,
+        oauth_parameter: Optional[str] = None,
+        iam: Optional[dict] = None,
+        resource: Optional[str] = None,
+        scope: Optional[str] = None,
+        enable_sso: bool = False
+    ) -> "DatasourceConnection":
         """Create a new datasource connection on the I-Server.
 
         Args:
@@ -381,9 +459,7 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
             "database": {
                 "login": {
                     "id": login_id
-                },
-                "type": database_type,
-                "version": database_version
+                }, "type": database_type, "version": database_version
             },
             "driverType": get_enum_val(driver_type, DriverType),
             "oauthParameter": oauth_parameter,
@@ -397,9 +473,11 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
         if config.verbose:
             logger.info(
                 f"Successfully created datasource connection named: '{response.get('name')}' "
-                f"with ID: '{response.get('id')}'")
+                f"with ID: '{response.get('id')}'"
+            )
         return cls.from_dict(source=response, connection=connection)
 
+    @method_version_handler('11.3.0100')
     def test_connection(self) -> bool:
         """Test datasource connection object.
 
@@ -410,13 +488,20 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
         return datasources.test_datasource_connection(self.connection, body).ok
 
     @classmethod
-    def _list_datasource_connections(cls, connection: "Connection", to_dictionary: bool = False,
-                                     limit: Optional[int] = None,
-                                     **filters) -> Union[List["DatasourceConnection"], List[dict]]:
-        objects = helper.fetch_objects(connection=connection,
-                                       api=datasources.get_datasource_connections,
-                                       dict_unpack_value="connections", limit=limit,
-                                       filters=filters)
+    def _list_datasource_connections(
+        cls,
+        connection: "Connection",
+        to_dictionary: bool = False,
+        limit: Optional[int] = None,
+        **filters
+    ) -> Union[List["DatasourceConnection"], List[dict]]:
+        objects = helper.fetch_objects(
+            connection=connection,
+            api=datasources.get_datasource_connections,
+            dict_unpack_value="connections",
+            limit=limit,
+            filters=filters
+        )
         if to_dictionary:
             return objects
         else:

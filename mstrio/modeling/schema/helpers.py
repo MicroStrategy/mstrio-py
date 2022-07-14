@@ -238,8 +238,9 @@ class SchemaObjectReference(Dictable):  # noqa
         return hash(self.object_id)
 
     @classmethod
-    def create_from(cls, schema_object: Union["Attribute", "UserHierarchy"],
-                    is_embedded: bool = None) -> "SchemaObjectReference":
+    def create_from(
+        cls, schema_object: Union["Attribute", "UserHierarchy"], is_embedded: bool = None
+    ) -> "SchemaObjectReference":
         """Converts a schema object into a schema object reference
 
             Args:
@@ -357,14 +358,19 @@ class AttributeDisplays(Dictable):
     _DELETE_NONE_VALUES_RECURSION = False
 
     _FROM_DICT_MAP = {
-        "report_displays": (lambda source, connection:
-                            [FormReference.from_dict(content, connection) for content in source]),
-        "browse_displays": (lambda source, connection:
-                            [FormReference.from_dict(content, connection) for content in source]),
+        "report_displays": (
+            lambda source,
+            connection: [FormReference.from_dict(content, connection) for content in source]
+        ),
+        "browse_displays": (
+            lambda source,
+            connection: [FormReference.from_dict(content, connection) for content in source]
+        ),
     }
 
-    def __init__(self, report_displays: List[FormReference],
-                 browse_displays: List[FormReference]) -> None:
+    def __init__(
+        self, report_displays: List[FormReference], browse_displays: List[FormReference]
+    ) -> None:
         self.report_displays = report_displays
         self.browse_displays = browse_displays
 
@@ -395,14 +401,19 @@ class AttributeSorts(Dictable):
     _DELETE_NONE_VALUES_RECURSION = False
 
     _FROM_DICT_MAP = {
-        "report_sorts": (lambda source, connection:
-                         [AttributeSort.from_dict(content, connection) for content in source]),
-        "browse_sorts": (lambda source, connection:
-                         [AttributeSort.from_dict(content, connection) for content in source]),
+        "report_sorts": (
+            lambda source,
+            connection: [AttributeSort.from_dict(content, connection) for content in source]
+        ),
+        "browse_sorts": (
+            lambda source,
+            connection: [AttributeSort.from_dict(content, connection) for content in source]
+        ),
     }
 
-    def __init__(self, report_sorts: List[AttributeSort],
-                 browse_sorts: List[AttributeSort]) -> None:
+    def __init__(
+        self, report_sorts: List[AttributeSort], browse_sorts: List[AttributeSort]
+    ) -> None:
         self.report_sorts = report_sorts
         self.browse_sorts = browse_sorts
 
@@ -416,10 +427,7 @@ class TableColumn(Dictable):
        create if it needs to make a column to contain data for some higher
        level construct (e.g. a fact, an attribute form etc.)."""
     _DELETE_NONE_VALUES_RECURSION = False
-    _FROM_DICT_MAP = {
-        "data_type": DataType,
-        "sub_type": ObjectSubType
-    }
+    _FROM_DICT_MAP = {"data_type": DataType, "sub_type": ObjectSubType}
     data_type: DataType
     column_name: Optional[str] = None  # When retrieved as part of a logical tab
     name: Optional[str] = None  # When retrieved from datasources API

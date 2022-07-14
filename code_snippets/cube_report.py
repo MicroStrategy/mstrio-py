@@ -9,19 +9,19 @@ ease its usage.
 
 from mstrio.project_objects import OlapCube, Report
 
-
 # get connection to an environment
 from mstrio.connection import get_connection
 
-PROJECT_NAME='<Project_name>' # Insert project name here
+PROJECT_NAME = '<Project_name>'  # Insert project name here
 CUBE_ID = "<Cube_ID>"
 REPORT_ID = "<Report_ID>"
-ATTRIBUTES_LIST = ["<Attribute_ID>", "<Attribute_ID>"] #Insert list of attributes that you want to include in  your functions
-METRICS_LIST = ["<Metric_ID>"] # insert list of metrics to be used in your functions
-ATTRIBUTES_ELEMENTS_LIST=["<Attribute_ID:Element_Name>", "<Attribute_ID:Element_Name>"]
+ATTRIBUTES_LIST = [
+    "<Attribute_ID>", "<Attribute_ID>"
+]  #Insert list of attributes that you want to include in  your functions
+METRICS_LIST = ["<Metric_ID>"]  # insert list of metrics to be used in your functions
+ATTRIBUTES_ELEMENTS_LIST = ["<Attribute_ID:Element_Name>", "<Attribute_ID:Element_Name>"]
 
-conn = get_connection(workstationData, project_name= PROJECT_NAME)
-
+conn = get_connection(workstationData, project_name=PROJECT_NAME)
 
 # get cube based on its id and store it in data frame
 my_cube = OlapCube(connection=conn, id=CUBE_ID)

@@ -22,8 +22,13 @@ class CertifiedInfo(Dictable):
     """
     _DELETE_NONE_VALUES_RECURSION = False
 
-    def __init__(self, connection: Connection, certified: bool,
-                 date_certified: Optional[str] = None, certifier: Optional[dict] = None):
+    def __init__(
+        self,
+        connection: Connection,
+        certified: bool,
+        date_certified: Optional[str] = None,
+        certifier: Optional[dict] = None
+    ):
         self._connection = connection
         self._certified = certified
         self._date_certified = date_certified
@@ -35,8 +40,9 @@ class CertifiedInfo(Dictable):
         return f"Object certified on {self.date_certified} by {self._certifier}"
 
     def __repr__(self):
-        param_value_dict = auto_match_args_entity(self.__init__, self, exclude=['self'],
-                                                  include_defaults=False)
+        param_value_dict = auto_match_args_entity(
+            self.__init__, self, exclude=['self'], include_defaults=False
+        )
         params_list = []
         for param, value in param_value_dict.items():
             if param == "connection" and isinstance(value, Connection):

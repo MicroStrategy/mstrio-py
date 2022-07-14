@@ -14,6 +14,7 @@ from mstrio.users_and_groups.user_connections import UserConnections
 from mstrio.utils import helper, time_helper
 from mstrio.utils.acl import TrusteeACLMixin
 from mstrio.utils.entity import DeleteMixin, Entity, ObjectTypes
+from mstrio.utils.version_helper import method_version_handler
 
 if TYPE_CHECKING:
     from mstrio.access_and_security.privilege import Privilege
@@ -37,9 +38,14 @@ def create_users_from_csv(connection: Connection, csv_file: str) -> List["User"]
     return User._create_users_from_csv(connection=connection, csv_file=csv_file)
 
 
-def list_users(connection: Connection, name_begins: Optional[str] = None,
-               abbreviation_begins: Optional[str] = None, to_dictionary: bool = False,
-               limit: Optional[int] = None, **filters) -> Union[List["User"], List[dict]]:
+def list_users(
+    connection: Connection,
+    name_begins: Optional[str] = None,
+    abbreviation_begins: Optional[str] = None,
+    to_dictionary: bool = False,
+    limit: Optional[int] = None,
+    **filters
+) -> Union[List["User"], List[dict]]:
     """Get list of user objects or user dicts. Optionally filter the users by
     specifying 'name_begins', 'abbreviation_begins' or other filters.
 
@@ -125,27 +131,68 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
     }
     _OBJECT_TYPE = ObjectTypes.USER
     _API_GETTERS = {
-        ('id', 'name', 'type', 'subtype', 'ext_type', 'abbreviation', 'date_created',
-         'date_modified', 'version', 'owner', 'ancestors', 'username', 'full_name', 'enabled',
-         'password_modifiable', 'require_new_password', 'standard_auth', 'memberships', 'acg',
-         'acl', 'trust_id', 'initials'): users.get_user_info,
+        (
+            'id',
+            'name',
+            'type',
+            'subtype',
+            'ext_type',
+            'abbreviation',
+            'date_created',
+            'date_modified',
+            'version',
+            'owner',
+            'ancestors',
+            'username',
+            'full_name',
+            'enabled',
+            'password_modifiable',
+            'require_new_password',
+            'standard_auth',
+            'memberships',
+            'acg',
+            'acl',
+            'trust_id',
+            'initials'
+        ): users.get_user_info,
         'addresses': users.get_addresses,
         'security_roles': users.get_user_security_roles,
         'privileges': users.get_user_privileges,
     }
     _API_PATCH: dict = {
-        ('name', 'abbreviation', 'username', 'full_name', 'enabled', 'password', 'description',
-         'password_modifiable', 'require_new_password', 'password_expiration_date',
-         'standard_auth', 'ldapdn', 'trust_id', 'initials', 'privileges', 'memberships',
-         'addresses', 'security_roles'): (users.update_user_info, 'patch')
+        (
+            'name',
+            'abbreviation',
+            'username',
+            'full_name',
+            'enabled',
+            'password',
+            'description',
+            'password_modifiable',
+            'require_new_password',
+            'password_expiration_date',
+            'standard_auth',
+            'ldapdn',
+            'trust_id',
+            'initials',
+            'privileges',
+            'memberships',
+            'addresses',
+            'security_roles'
+        ): (users.update_user_info, 'patch')
     }
     _FROM_DICT_MAP = {
         **Entity._FROM_DICT_MAP,
         'password_expiration_date': time_helper.DatetimeFormats.FULLDATETIME,
     }
 
-    def __init__(self, connection: Connection, username: Optional[str] = None,
-                 name: Optional[str] = None, id: Optional[str] = None) -> None:
+    def __init__(
+        self,
+        connection: Connection,
+        username: Optional[str] = None,
+        name: Optional[str] = None,
+        id: Optional[str] = None
+    ) -> None:
         """Initialize User object by passing username, name, or id.
         When `id` is provided (not `None`), `username` and `name` are omitted.
         When `id` is not provided (`None`) and `username` is provided (not
@@ -160,7 +207,8 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
         """
         if id is None and name is None and username is None:
             helper.exception_handler(
-                "Please specify either 'id', 'username' or 'name' parameter in the constructor.")
+                "Please specify either 'id', 'username' or 'name' parameter in the constructor."
+            )
 
         if id is None:
             users = User._get_user_ids(
@@ -177,8 +225,9 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
                 [id] = users
             else:
                 temp_name = name if name else username
-                helper.exception_handler(f"There is no user: '{temp_name}'",
-                                         exception_type=ValueError)
+                helper.exception_handler(
+                    f"There is no user: '{temp_name}'", exception_type=ValueError
+                )
 
         super().__init__(connection=connection, object_id=id, username=username, name=name)
 
@@ -201,14 +250,23 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
         self._security_filters = kwargs.get("security_filters")
 
     @classmethod
-    def create(cls, connection: Connection, username: str, full_name: str,
-               password: Optional[str] = None, description: Optional[str] = None,
-               enabled: bool = True, password_modifiable: bool = True,
-               password_expiration_date: Optional[Union[str, datetime]] = None,
-               require_new_password: bool = True, standard_auth: bool = True,
-               ldapdn: Optional[str] = None, trust_id: Optional[str] = None,
-               database_auth_login: Optional[str] = None,
-               memberships: Optional[list] = None) -> "User":
+    def create(
+        cls,
+        connection: Connection,
+        username: str,
+        full_name: str,
+        password: Optional[str] = None,
+        description: Optional[str] = None,
+        enabled: bool = True,
+        password_modifiable: bool = True,
+        password_expiration_date: Optional[Union[str, datetime]] = None,
+        require_new_password: bool = True,
+        standard_auth: bool = True,
+        ldapdn: Optional[str] = None,
+        trust_id: Optional[str] = None,
+        database_auth_login: Optional[str] = None,
+        memberships: Optional[list] = None
+    ) -> "User":
         """Create a new user on the I-Server. Returns User object.
 
         Args:
@@ -232,8 +290,10 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
             memberships: specify User Group IDs which User will be member off.
         """
         password_expiration_date = time_helper.map_datetime_to_str(
-            name='password_expiration_date', date=password_expiration_date,
-            string_to_date_map=cls._FROM_DICT_MAP)
+            name='password_expiration_date',
+            date=password_expiration_date,
+            string_to_date_map=cls._FROM_DICT_MAP
+        )
         body = {
             "username": username,
             "fullName": full_name,
@@ -261,7 +321,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
     @classmethod
     def _create_users_from_csv(cls, connection: Connection, csv_file: str) -> List["User"]:
         func = cls.create
-        args = func.__code__.co_varnames[:func.__code__.co_argcount]
+        args = helper.get_args_from_func(func)
         df = read_csv(csv_file, na_filter=False, usecols=lambda x: x in args)
         user_list = []
         all_param_value_dict = df.to_dict('records')
@@ -278,25 +338,41 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
         return user_list
 
     @classmethod
-    def _get_users(cls, connection: Connection, name_begins: Optional[str] = None,
-                   abbreviation_begins: Optional[str] = None, to_dictionary: bool = False,
-                   limit: Optional[int] = None, **filters) -> Union[List["User"], List[dict]]:
+    def _get_users(
+        cls,
+        connection: Connection,
+        name_begins: Optional[str] = None,
+        abbreviation_begins: Optional[str] = None,
+        to_dictionary: bool = False,
+        limit: Optional[int] = None,
+        **filters
+    ) -> Union[List["User"], List[dict]]:
         msg = "Error getting information for a set of users."
-        objects = helper.fetch_objects_async(connection, users.get_users_info,
-                                             users.get_users_info_async, limit=limit,
-                                             chunk_size=1000, error_msg=msg,
-                                             name_begins=name_begins,
-                                             abbreviation_begins=abbreviation_begins,
-                                             filters=filters)
+        objects = helper.fetch_objects_async(
+            connection,
+            users.get_users_info,
+            users.get_users_info_async,
+            limit=limit,
+            chunk_size=1000,
+            error_msg=msg,
+            name_begins=name_begins,
+            abbreviation_begins=abbreviation_begins,
+            filters=filters
+        )
         if to_dictionary:
             return objects
         else:
             return [cls.from_dict(source=obj, connection=connection) for obj in objects]
 
     @classmethod
-    def _get_user_ids(cls, connection: Connection, name_begins: Optional[str] = None,
-                      abbreviation_begins: Optional[str] = None, limit: Optional[int] = None,
-                      **filters) -> List[str]:
+    def _get_user_ids(
+        cls,
+        connection: Connection,
+        name_begins: Optional[str] = None,
+        abbreviation_begins: Optional[str] = None,
+        limit: Optional[int] = None,
+        **filters
+    ) -> List[str]:
         user_dicts = User._get_users(
             connection=connection,
             name_begins=name_begins,
@@ -307,12 +383,21 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
         )
         return [user['id'] for user in user_dicts]
 
-    def alter(self, username: Optional[str] = None, full_name: Optional[str] = None,
-              description: Optional[str] = None, password: Optional[str] = None,
-              enabled: Optional[bool] = None, password_modifiable: Optional[bool] = None,
-              password_expiration_date: Optional[str] = None, standard_auth: Optional[bool] = None,
-              require_new_password: Optional[bool] = None, ldapdn: Optional[str] = None,
-              trust_id: Optional[str] = None, database_auth_login: Optional[str] = None) -> None:
+    def alter(
+        self,
+        username: Optional[str] = None,
+        full_name: Optional[str] = None,
+        description: Optional[str] = None,
+        password: Optional[str] = None,
+        enabled: Optional[bool] = None,
+        password_modifiable: Optional[bool] = None,
+        password_expiration_date: Optional[str] = None,
+        standard_auth: Optional[bool] = None,
+        require_new_password: Optional[bool] = None,
+        ldapdn: Optional[str] = None,
+        trust_id: Optional[str] = None,
+        database_auth_login: Optional[str] = None
+    ) -> None:
         """Alter user properties.
 
         Args:
@@ -333,8 +418,8 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
             database_auth_login: Database Authentication Login
         """
         func = self.alter
-        args = func.__code__.co_varnames[:func.__code__.co_argcount]
-        defaults = func.__defaults__  # type: ignore
+        args = helper.get_args_from_func(func)
+        defaults = helper.get_default_args_from_func(func)
         default_dict = dict(zip(args[-len(defaults):], defaults)) if defaults else {}
         local = locals()
         properties = {}
@@ -344,8 +429,9 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
 
         self._alter_properties(**properties)
 
-    def add_address(self, name: Optional[str] = None, address: Optional[str] = None,
-                    default: bool = True) -> None:
+    def add_address(
+        self, name: Optional[str] = None, address: Optional[str] = None, default: bool = True
+    ) -> None:
         """Add new address to the user object.
 
         Args:
@@ -355,8 +441,9 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
             default: Specifies whether this address is the default address
                 (change isDefault parameter).
         """
-        helper.validate_param_value('address', address, str, regex=r"[^@]+@[^@]+\.[^@]+",
-                                    valid_example="name@mail.com")
+        helper.validate_param_value(
+            'address', address, str, regex=r"[^@]+@[^@]+\.[^@]+", valid_example="name@mail.com"
+        )
         helper.validate_param_value('name', name, str)
         helper.validate_param_value('default', default, bool)
         body = {
@@ -372,8 +459,13 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
                 logger.info(f"Added address '{address}' for user '{self.name}'")
             setattr(self, "_addresses", response.json().get('addresses'))
 
-    def update_address(self, id: str, name: Optional[str] = None, address: Optional[str] = None,
-                       default: Optional[bool] = None) -> None:
+    def update_address(
+        self,
+        id: str,
+        name: Optional[str] = None,
+        address: Optional[str] = None,
+        default: Optional[bool] = None
+    ) -> None:
         """Update existing address. The address ID has to be specified
         as the name is not unique.
 
@@ -390,8 +482,13 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
             helper.validate_param_value('name', name, str)
             body["name"] = name
         if address is not None:
-            helper.validate_param_value('address', address, str, regex=r"[^@]+@[^@]+\.[^@]+",
-                                        valid_example="name@mail.com")
+            helper.validate_param_value(
+                'address',
+                address,
+                str,
+                regex=r"[^@]+@[^@]+\.[^@]+",
+                valid_example="name@mail.com"
+            )
             body["value"] = address
         if default is not None:
             helper.validate_param_value('default', default, bool)
@@ -401,8 +498,9 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
                 logger.info(f"Updated address with ID '{id}' for user '{self.name}'")
             self.fetch("addresses")
 
-    def remove_address(self, name: Optional[str] = None, address: Optional[str] = None,
-                       id: Optional[str] = None) -> None:
+    def remove_address(
+        self, name: Optional[str] = None, address: Optional[str] = None, id: Optional[str] = None
+    ) -> None:
         """Remove existing address from the user object. Specify either address
         ID or name. Warning, address names are not unique and can potentially
         remove multiple addresses.
@@ -416,18 +514,17 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
         initial_addresses = self.addresses
         if name is None and id is None and address is None or (name and id and address):
             helper.exception_handler(
-                "Please specify either 'name' or 'id' parameter in the method.")
+                "Please specify either 'name' or 'id' parameter in the method."
+            )
         if id is not None:
             addresses = helper.filter_list_of_dicts(initial_addresses, id=id)
             new_addresses = helper.filter_list_of_dicts(initial_addresses, id=f'!={id}')
         elif address is not None:
             addresses = helper.filter_list_of_dicts(initial_addresses, value=address)
-            new_addresses = helper.filter_list_of_dicts(initial_addresses,
-                                                        value=f'!={address}')
+            new_addresses = helper.filter_list_of_dicts(initial_addresses, value=f'!={address}')
         elif name is not None:
             addresses = helper.filter_list_of_dicts(initial_addresses, name=name)
-            new_addresses = helper.filter_list_of_dicts(initial_addresses,
-                                                        name=f'!={name}')
+            new_addresses = helper.filter_list_of_dicts(initial_addresses, name=f'!={name}')
 
         for addr in addresses:
             response = users.delete_address(self.connection, id=self.id, address_id=addr['id'])
@@ -440,7 +537,8 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
                 setattr(self, "_addresses", new_addresses)
 
     def add_to_user_groups(
-            self, user_groups: Union[str, "UserGroup", List[Union[str, "UserGroup"]]]) -> None:
+        self, user_groups: Union[str, "UserGroup", List[Union[str, "UserGroup"]]]
+    ) -> None:
         """Adds this User to user groups specified in user_groups.
 
         Args:
@@ -453,7 +551,8 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
             logger.info(f"User '{self.name}' is already a member of {failed}")
 
     def remove_from_user_groups(
-            self, user_groups: Union[str, "UserGroup", List[Union[str, "UserGroup"]]]) -> None:
+        self, user_groups: Union[str, "UserGroup", List[Union[str, "UserGroup"]]]
+    ) -> None:
         """Removes this User from user groups specified in user_groups.
 
         Args:
@@ -471,8 +570,9 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
         existing_ids = [obj.get('id') for obj in memberships]
         self.remove_from_user_groups(user_groups=existing_ids)
 
-    def assign_security_role(self, security_role: Union[SecurityRole, str],
-                             project: Union["Project", str] = None) -> None:  # NOSONAR
+    def assign_security_role(
+        self, security_role: Union[SecurityRole, str], project: Union["Project", str] = None
+    ) -> None:  # NOSONAR
         """Assigns a Security Role to the user for given project.
 
         Args:
@@ -481,16 +581,16 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
         """
 
         security_role = security_role if isinstance(security_role, SecurityRole) else SecurityRole(
-            self.connection, id=str(security_role))
+            self.connection, id=str(security_role)
+        )
 
         security_role.grant_to([self.id], project)
         if config.verbose:
-            logger.info(
-                f"Assigned Security Role '{security_role.name}' to user: '{self.name}'"
-            )
+            logger.info(f"Assigned Security Role '{security_role.name}' to user: '{self.name}'")
 
-    def revoke_security_role(self, security_role: Union[SecurityRole, str],
-                             project: Union["Project", str] = None) -> None:  # NOSONAR
+    def revoke_security_role(
+        self, security_role: Union[SecurityRole, str], project: Union["Project", str] = None
+    ) -> None:  # NOSONAR
         """Removes a Security Role from the user for given project.
 
         Args:
@@ -499,16 +599,17 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
         """
 
         security_role = security_role if isinstance(security_role, SecurityRole) else SecurityRole(
-            self.connection, id=str(security_role))
+            self.connection, id=str(security_role)
+        )
 
         security_role.revoke_from([self.id], project)
         if config.verbose:
-            logger.info(
-                f"Revoked Security Role '{security_role.name}' from user: '{self.name}'"
-            )
+            logger.info(f"Revoked Security Role '{security_role.name}' from user: '{self.name}'")
 
-    def list_security_filters(self, projects: Optional[Union[str, List[str]]] = None,
-                              to_dictionary: bool = False) -> dict:
+    @method_version_handler('11.3.0200')
+    def list_security_filters(
+        self, projects: Optional[Union[str, List[str]]] = None, to_dictionary: bool = False
+    ) -> dict:
         """Get the list of security filters for user. They can be filtered by
         the projects' ids.
 
@@ -572,8 +673,9 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
             security_filter = SecurityFilter.from_dict({"id": security_filter}, self.connection)
         return security_filter.revoke(self.id)
 
-    def grant_privilege(self, privilege: Union[str, List[str], "Privilege",
-                                               List["Privilege"]]) -> None:
+    def grant_privilege(
+        self, privilege: Union[str, List[str], "Privilege", List["Privilege"]]
+    ) -> None:
         """Grant privileges directly to the user.
 
         Args:
@@ -592,16 +694,13 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
         if succeeded:
             self.fetch('privileges')  # fetch the object properties and set object attributes
             if config.verbose:
-                logger.info(
-                    f"Granted privilege(s) {succeeded} to '{self.name}'"
-                )
+                logger.info(f"Granted privilege(s) {succeeded} to '{self.name}'")
         if failed and config.verbose:
-            logger.info(
-                f"User '{self.name}' already has privilege(s) {failed}"
-            )
+            logger.info(f"User '{self.name}' already has privilege(s) {failed}")
 
-    def revoke_privilege(self, privilege: Union[str, List[str], "Privilege",
-                                                List["Privilege"]]) -> None:
+    def revoke_privilege(
+        self, privilege: Union[str, List[str], "Privilege", List["Privilege"]]
+    ) -> None:
         """Revoke directly granted user privileges.
 
         Args:
@@ -609,19 +708,26 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
         """
         from mstrio.access_and_security.privilege import Privilege
         privileges = {
-            priv['id'] for priv in Privilege._validate_privileges(self.connection, privilege)}
+            priv['id']
+            for priv in Privilege._validate_privileges(self.connection, privilege)
+        }
         existing_ids = [
             privilege['privilege']['id'] for privilege in self.list_privileges(mode='ALL')
         ]
         directly_granted = {
-            privilege['privilege']['id'] for privilege in self.list_privileges(mode='GRANTED')}
+            privilege['privilege']['id']
+            for privilege in self.list_privileges(mode='GRANTED')
+        }
         to_revoke = list(privileges.intersection(directly_granted))
         not_directly_granted = list(
-            (set(existing_ids) - directly_granted).intersection(privileges))
+            (set(existing_ids) - directly_granted).intersection(privileges)
+        )
 
         if not_directly_granted:
-            msg = (f"Privileges {sorted(not_directly_granted)} are inherited and will be omitted. "
-                   "Only directly granted privileges can be revoked by this method.")
+            msg = (
+                f"Privileges {sorted(not_directly_granted)} are inherited and will be omitted. "
+                "Only directly granted privileges can be revoked by this method."
+            )
             helper.exception_handler(msg, exception_type=Warning)
 
         succeeded, failed = self._update_nested_properties(to_revoke, "privileges", "remove",
@@ -644,7 +750,9 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
         if not force:
             user_input = input(
                 "Are you sure you want to revoke all privileges from user '{}'? [Y/N]: ".format(
-                    self.name))
+                    self.name
+                )
+            )
         if force or user_input == 'Y':
             to_revoke = [
                 privilege['privilege']['id'] for privilege in self.list_privileges(mode='GRANTED')
@@ -652,12 +760,11 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
             if to_revoke:
                 self.revoke_privilege(privilege=to_revoke)
             else:
-                logger.info(
-                    f"User '{self.name}' does not have any directly granted privileges"
-                )
+                logger.info(f"User '{self.name}' does not have any directly granted privileges")
 
-    def list_privileges(self, mode: Union[PrivilegeMode, str] = PrivilegeMode.ALL,
-                        to_dataframe: bool = False) -> list:
+    def list_privileges(
+        self, mode: Union[PrivilegeMode, str] = PrivilegeMode.ALL, to_dataframe: bool = False
+    ) -> list:
         """List privileges for user.
 
         Args:
@@ -680,8 +787,10 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
             try:
                 mode = PrivilegeMode(mode)
             except ValueError:
-                msg = ("Wrong privilege mode has been passed, allowed modes are "
-                       "['ALL'/'INHERITED'/'GRANTED']. See: `privilege.PrivilegeMode` enum.")
+                msg = (
+                    "Wrong privilege mode has been passed, allowed modes are "
+                    "['ALL'/'INHERITED'/'GRANTED']. See: `privilege.PrivilegeMode` enum."
+                )
                 helper.exception_handler(msg, ValueError)
 
         privileges = list()

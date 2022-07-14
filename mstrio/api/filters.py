@@ -2,10 +2,6 @@ from typing import Optional, TYPE_CHECKING
 
 from mstrio.utils.api_helpers import changeset_decorator, unpack_information
 from mstrio.utils.error_handlers import ErrorHandler
-from mstrio.utils.wip import module_wip, WipLevels
-
-module_wip(globals(), level=WipLevels.WARNING)
-
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
@@ -99,8 +95,7 @@ def get_filter(
     return connection.get(
         url=f"{connection.base_url}/api/model/filters/{id}",
         headers={
-            "X-MSTR-ProjectID": project_id,
-            "X-MSTR-MS-Changeset": changeset_id
+            "X-MSTR-ProjectID": project_id, "X-MSTR-MS-Changeset": changeset_id
         },
         params={
             "showExpressionAs": show_expression_as,

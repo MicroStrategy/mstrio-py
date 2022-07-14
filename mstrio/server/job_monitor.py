@@ -14,6 +14,7 @@ from mstrio.utils.enum_helper import AutoName
 from mstrio.utils.helper import validate_param_value
 from mstrio.utils.monitors import all_nodes_async
 from mstrio.utils.time_helper import DatetimeFormats, map_str_to_datetime
+from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
 if TYPE_CHECKING:
     from mstrio.users_and_groups import User
@@ -166,37 +167,88 @@ class SortBy(Enum):
     ELAPSED_TIME_DESC = '-elapsedTime'
 
 
+@method_version_handler('11.3.0200')
 def _set_api_wrappers(connection) -> dict:
     if version.parse(connection.iserver_version) == version.parse(ISERVER_VERSION_11_3_2):
         return {
-            ('id', 'description', 'status', 'type', 'priority', 'processing_unit_priority',
-             'warehouse_priority', 'object_id', 'user', 'project_name', 'creation_time',
-             'total_tasks', 'completed_tasks', 'filter_name', 'template_name', 'sql',
-             'subscription_owner', 'subscription_recipient', 'destination'): monitors.get_job
+            (
+                'id',
+                'description',
+                'status',
+                'type',
+                'priority',
+                'processing_unit_priority',
+                'warehouse_priority',
+                'object_id',
+                'user',
+                'project_name',
+                'creation_time',
+                'total_tasks',
+                'completed_tasks',
+                'filter_name',
+                'template_name',
+                'sql',
+                'subscription_owner',
+                'subscription_recipient',
+                'destination'
+            ): monitors.get_job
         }
     else:
         return {
-            ('id', 'type', 'status', 'user', 'description', 'object_type', 'object_id',
-             'parent_id', 'child_ids', 'subscription_type', 'processing_unit_priority', 'step_id',
-             'pu_name', 'creation_time', 'completed_tasks', 'total_tasks', 'project_name',
-             'subscription_recipient', 'memory_usage', 'elapsed_time', 'step_elapsed_time',
-             'filter_name', 'template_name', 'sql', 'subscription_owner', 'error_time',
-             'error_message', 'step_statistics'): monitors.get_job_v2
+            (
+                'id',
+                'type',
+                'status',
+                'user',
+                'description',
+                'object_type',
+                'object_id',
+                'parent_id',
+                'child_ids',
+                'subscription_type',
+                'processing_unit_priority',
+                'step_id',
+                'pu_name',
+                'creation_time',
+                'completed_tasks',
+                'total_tasks',
+                'project_name',
+                'subscription_recipient',
+                'memory_usage',
+                'elapsed_time',
+                'step_elapsed_time',
+                'filter_name',
+                'template_name',
+                'sql',
+                'subscription_owner',
+                'error_time',
+                'error_message',
+                'step_statistics'
+            ): monitors.get_job_v2
         }
 
 
-def list_jobs(connection: "Connection", node: Optional[Union[Node, str]] = None,
-              user: Optional[Union["User", str]] = None, description: Optional[str] = None,
-              type: Optional[Union[JobType, str]] = None, status: Optional[Union[JobStatus,
-                                                                                 str]] = None,
-              object_id: Optional[str] = None, object_type: Optional[ObjectType] = None,
-              project: Optional[Union[Project, str]] = None, pu_name: Optional[Union[PUName,
-                                                                                     str]] = None,
-              subscription_type: Optional[Union[SubscriptionType, str]] = None,
-              subscription_recipient: Optional[Union["User", str]] = None,
-              memory_usage: Optional[str] = None, elapsed_time: Optional[str] = None,
-              sort_by: Optional[Union[SortBy, str]] = None, to_dictionary: bool = False,
-              limit: Optional[int] = None, **filters) -> Union[List["Job"], List[dict]]:
+@method_version_handler('11.3.0200')
+def list_jobs(
+    connection: "Connection",
+    node: Optional[Union[Node, str]] = None,
+    user: Optional[Union["User", str]] = None,
+    description: Optional[str] = None,
+    type: Optional[Union[JobType, str]] = None,
+    status: Optional[Union[JobStatus, str]] = None,
+    object_id: Optional[str] = None,
+    object_type: Optional[ObjectType] = None,
+    project: Optional[Union[Project, str]] = None,
+    pu_name: Optional[Union[PUName, str]] = None,
+    subscription_type: Optional[Union[SubscriptionType, str]] = None,
+    subscription_recipient: Optional[Union["User", str]] = None,
+    memory_usage: Optional[str] = None,
+    elapsed_time: Optional[str] = None,
+    sort_by: Optional[Union[SortBy, str]] = None,
+    to_dictionary: bool = False,
+    limit: Optional[int] = None,
+    **filters
+) -> Union[List["Job"], List[dict]]:
     """List jobs objects or job dictionaires.
     Args:
         connection(object): MicroStrategy connection object returned by
@@ -248,28 +300,61 @@ def list_jobs(connection: "Connection", node: Optional[Union[Node, str]] = None,
     """
     user = user.full_name if isinstance(user, Entity) else user
     subscription_recipient = subscription_recipient.full_name if isinstance(
-        user, Entity) else subscription_recipient
+        user, Entity
+    ) else subscription_recipient
     if project:
         project = project if isinstance(project, Project) else Project(connection, name=project)
 
     # depending on version call either one or the other
     if version.parse(connection.iserver_version) == version.parse(ISERVER_VERSION_11_3_2):
-        filters = __prepare_v1_request(description, object_type, pu_name, subscription_type,
-                                       subscription_recipient, memory_usage, elapsed_time, filters)
-        return list_jobs_v1(connection=connection, node=node, project=project, status=status,
-                            job_type=type, user=user, limit=limit, to_dictionary=to_dictionary,
-                            **filters)
+        filters = __prepare_v1_request(
+            description,
+            object_type,
+            pu_name,
+            subscription_type,
+            subscription_recipient,
+            memory_usage,
+            elapsed_time,
+            filters
+        )
+        return list_jobs_v1(
+            connection=connection,
+            node=node,
+            project=project,
+            status=status,
+            job_type=type,
+            user=user,
+            limit=limit,
+            to_dictionary=to_dictionary,
+            **filters
+        )
     else:
         project_name = project.name if project else None
         node_name = node.name if isinstance(node, Node) else node
         msg = "Error fetching chunk of jobs."
         objects = all_nodes_async(
-            connection, async_api=monitors.get_jobs_v2_async, filters=filters, error_msg=msg,
-            unpack_value='jobs', limit=limit, node_name=node_name, user=user,
-            description=description, type=type, object_id=object_id, object_type=object_type,
-            project_name=project_name, status=status, pu_name=pu_name,
-            subscription_type=subscription_type, subscription_recipient=subscription_recipient,
-            memory_usage=memory_usage, elapsed_time=elapsed_time, sort_by=sort_by, fields=['jobs'])
+            connection,
+            async_api=monitors.get_jobs_v2_async,
+            filters=filters,
+            error_msg=msg,
+            unpack_value='jobs',
+            limit=limit,
+            node_name=node_name,
+            user=user,
+            description=description,
+            type=type,
+            object_id=object_id,
+            object_type=object_type,
+            project_name=project_name,
+            status=status,
+            pu_name=pu_name,
+            subscription_type=subscription_type,
+            subscription_recipient=subscription_recipient,
+            memory_usage=memory_usage,
+            elapsed_time=elapsed_time,
+            sort_by=sort_by,
+            fields=['jobs']
+        )
 
     if to_dictionary:
         return objects
@@ -277,14 +362,20 @@ def list_jobs(connection: "Connection", node: Optional[Union[Node, str]] = None,
         return [Job.from_dict(source=obj, connection=connection) for obj in objects]
 
 
-def list_jobs_v1(connection: Connection, node: Optional[Union[Node, str]] = None,
-                 project: Optional[Union[Project, str]] = None,
-                 status: Optional[Union[JobStatus,
-                                        str]] = None, job_type: Optional[Union[JobType,
-                                                                               str]] = None,
-                 user: Optional[Union["User", str]] = None, object_id: Optional[str] = None,
-                 sort_by: Optional[Union[SortBy, str]] = None, to_dictionary: bool = False,
-                 limit: Optional[int] = None, **filters) -> Union[List["Job"], List[dict]]:
+@method_version_handler('11.3.0200')
+def list_jobs_v1(
+    connection: Connection,
+    node: Optional[Union[Node, str]] = None,
+    project: Optional[Union[Project, str]] = None,
+    status: Optional[Union[JobStatus, str]] = None,
+    job_type: Optional[Union[JobType, str]] = None,
+    user: Optional[Union["User", str]] = None,
+    object_id: Optional[str] = None,
+    sort_by: Optional[Union[SortBy, str]] = None,
+    to_dictionary: bool = False,
+    limit: Optional[int] = None,
+    **filters
+) -> Union[List["Job"], List[dict]]:
     """List job objects or job dictionaries. Optionally filter list.
     NOTE: list_jobs can return up to 1024 jobs per request.
 
@@ -324,10 +415,21 @@ def list_jobs_v1(connection: Connection, node: Optional[Union[Node, str]] = None
 
     node_name = node.name if isinstance(node, Node) else node
     msg = "Error fetching chunk of jobs."
-    objects = all_nodes_async(connection, async_api=monitors.get_jobs_async, filters=filters,
-                              error_msg=msg, unpack_value='jobs', limit=limit, node_name=node_name,
-                              project_id=project_id, status=status, job_type=job_type,
-                              user_full_name=user_full_name, object_id=object_id, sort_by=sort_by)
+    objects = all_nodes_async(
+        connection,
+        async_api=monitors.get_jobs_async,
+        filters=filters,
+        error_msg=msg,
+        unpack_value='jobs',
+        limit=limit,
+        node_name=node_name,
+        project_id=project_id,
+        status=status,
+        job_type=job_type,
+        user_full_name=user_full_name,
+        object_id=object_id,
+        sort_by=sort_by
+    )
 
     if to_dictionary:
         return objects
@@ -335,6 +437,7 @@ def list_jobs_v1(connection: Connection, node: Optional[Union[Node, str]] = None
         return [Job.from_dict(source=obj, connection=connection) for obj in objects]
 
 
+@method_version_handler('11.3.0200')
 def kill_jobs(connection: Connection,
               jobs: List[Union["Job", str]]) -> Union[Success, PartialSuccess, MstrException]:
     """Kill existing jobs by Job objects or job ids.
@@ -354,17 +457,24 @@ def kill_jobs(connection: Connection,
     return monitors.cancel_jobs(connection, jobs)
 
 
-def kill_all_jobs(connection: Connection, user: Optional[Union["User", str]] = None,
-                  description: Optional[str] = None, type: Optional[Union[JobType, str]] = None,
-                  status: Optional[Union[JobStatus, str]] = None, object_id: Optional[str] = None,
-                  object_type: Optional[Union[ObjectType, str]] = None,
-                  project: Optional[Union[Project,
-                                          str]] = None, pu_name: Optional[Union[PUName,
-                                                                                str]] = None,
-                  subscription_type: Optional[Union[SubscriptionType, str]] = None,
-                  subscription_recipient: Optional[Union["User", str]] = None,
-                  memory_usage: Optional[str] = None, elapsed_time: Optional[str] = None,
-                  force: bool = False, **filters) -> Union[Success, PartialSuccess, MstrException]:
+@method_version_handler('11.3.0200')
+def kill_all_jobs(
+    connection: Connection,
+    user: Optional[Union["User", str]] = None,
+    description: Optional[str] = None,
+    type: Optional[Union[JobType, str]] = None,
+    status: Optional[Union[JobStatus, str]] = None,
+    object_id: Optional[str] = None,
+    object_type: Optional[Union[ObjectType, str]] = None,
+    project: Optional[Union[Project, str]] = None,
+    pu_name: Optional[Union[PUName, str]] = None,
+    subscription_type: Optional[Union[SubscriptionType, str]] = None,
+    subscription_recipient: Optional[Union["User", str]] = None,
+    memory_usage: Optional[str] = None,
+    elapsed_time: Optional[str] = None,
+    force: bool = False,
+    **filters
+) -> Union[Success, PartialSuccess, MstrException]:
     """Kill jobs filtered by passed fields
 
     Args:
@@ -408,9 +518,22 @@ def kill_all_jobs(connection: Connection, user: Optional[Union["User", str]] = N
         MstrException: otherwise
     """
 
-    jobs = list_jobs(connection, user, description, type, status, object_id, object_type, project,
-                     pu_name, subscription_type, subscription_recipient, memory_usage,
-                     elapsed_time, filters)
+    jobs = list_jobs(
+        connection,
+        user,
+        description,
+        type,
+        status,
+        object_id,
+        object_type,
+        project,
+        pu_name,
+        subscription_type,
+        subscription_recipient,
+        memory_usage,
+        elapsed_time,
+        filters
+    )
     assert jobs, "No jobs to kill"
 
     jobs_ids = [job.id for job in jobs]
@@ -421,19 +544,30 @@ def kill_all_jobs(connection: Connection, user: Optional[Union["User", str]] = N
         return kill_jobs(connection, jobs_ids)
 
 
-def __prepare_v1_request(description: str, object_type: str, pu_name: str, subscription_type: str,
-                         subscription_recipient: str, memory_usage: str, elapsed_time: str,
-                         filters: dict) -> dict:
+def __prepare_v1_request(
+    description: str,
+    object_type: str,
+    pu_name: str,
+    subscription_type: str,
+    subscription_recipient: str,
+    memory_usage: str,
+    elapsed_time: str,
+    filters: dict
+) -> dict:
     # raise VersionException if parameter not supported in v1
     unsupported_parameters = [
         description, object_type, pu_name, subscription_type, subscription_recipient, memory_usage
     ]
-    params_str = ("description, object_type, pu_name, subscription_type, "
-                  "subscription_recipient, memory_usage")
+    params_str = (
+        "description, object_type, pu_name, subscription_type, "
+        "subscription_recipient, memory_usage"
+    )
     if any(unsupported_parameters):
-        msg = (f"Passed unsupported parameter for this version of IServer "
-               f"({ISERVER_VERSION_11_3_2}) Parameters supported only in 11.3.3+ "
-               f"versions: {params_str}")
+        msg = (
+            f"Passed unsupported parameter for this version of IServer "
+            f"({ISERVER_VERSION_11_3_2}) Parameters supported only in 11.3.3+ "
+            f"versions: {params_str}"
+        )
         raise VersionException(msg)
 
     if elapsed_time:
@@ -454,6 +588,7 @@ def __elapsed_filtering(elapsed: str) -> str:
         raise TypeError('Incorrect "duration" format, correct example: "gt:100" ')
 
 
+@class_version_handler('11.3.0200')
 class Job(EntityBase):
     """Python representation of a Job object.
     Note: Some functionality is missing when working with 11.3.2 I-Server
@@ -508,12 +643,36 @@ class Job(EntityBase):
         'pu_name': PUName,
     }
     _API_GETTERS = {
-        ('id', 'type', 'status', 'user', 'description', 'object_type', 'object_id', 'parent_id',
-         'child_ids', 'subscription_type', 'processing_unit_priority', 'step_id', 'pu_name',
-         'creation_time', 'completed_tasks', 'total_tasks', 'project_name',
-         'subscription_recipient', 'memory_usage', 'elapsed_time', 'step_elapsed_time',
-         'filter_name', 'template_name', 'sql', 'subscription_owner', 'error_time',
-         'error_message', 'step_statistics'): monitors.get_job_v2
+        (
+            'id',
+            'type',
+            'status',
+            'user',
+            'description',
+            'object_type',
+            'object_id',
+            'parent_id',
+            'child_ids',
+            'subscription_type',
+            'processing_unit_priority',
+            'step_id',
+            'pu_name',
+            'creation_time',
+            'completed_tasks',
+            'total_tasks',
+            'project_name',
+            'subscription_recipient',
+            'memory_usage',
+            'elapsed_time',
+            'step_elapsed_time',
+            'filter_name',
+            'template_name',
+            'sql',
+            'subscription_owner',
+            'error_time',
+            'error_message',
+            'step_statistics'
+        ): monitors.get_job_v2
     }
     _REST_ATTR_MAP = {
         "job_id": None,  # delete job_id and only use id
@@ -559,13 +718,14 @@ class Job(EntityBase):
         self._description = kwargs.get('description')
         self._status = JobStatus(kwargs.get('status')) if kwargs.get('status') else None
         self._processing_unit_priority = kwargs.get('processing_unit_priority')
-        self._creation_time = map_str_to_datetime("creation_time", kwargs.get("creation_time"),
-                                                  self._FROM_DICT_MAP)
+        self._creation_time = map_str_to_datetime(
+            "creation_time", kwargs.get("creation_time"), self._FROM_DICT_MAP
+        )
         self._elapsed_time = kwargs.get('elapsed_time')
         self._project_name = kwargs.get('project_name')
         self._object_id = kwargs.get('object_id')
-        self._object_type = ObjectType(
-            kwargs.get('object_type')) if kwargs.get('object_type') else None
+        self._object_type = ObjectType(kwargs.get('object_type')
+                                       ) if kwargs.get('object_type') else None
         self._sql = kwargs.get('sql')
         self._subscription_owner = kwargs.get('subscription_owner')
         self._subscription_recipient = kwargs.get('subscription_recipient')
@@ -576,8 +736,9 @@ class Job(EntityBase):
         self._completed_tasks = kwargs.get('completed_tasks')
         self._parent_id = kwargs.get('parent_id')
         self._child_ids = kwargs.get('child_ids')
-        self._subscription_type = SubscriptionType(kwargs.get('subscription_type')) if kwargs.get(
-            'subscription_type') else kwargs.get('subscription_type')
+        self._subscription_type = SubscriptionType(
+            kwargs.get('subscription_type')
+        ) if kwargs.get('subscription_type') else kwargs.get('subscription_type')
         self._step_id = kwargs.get('step_id')
         self._pu_name = PUName(kwargs.get('pu_name')) if kwargs.get('pu_name') else None
         self._memory_usage = kwargs.get('memory_usage')
@@ -585,8 +746,8 @@ class Job(EntityBase):
         self._filter_name = kwargs.get('filter_name')
         self._template_name = kwargs.get('template_name')
         self._error_time = map_str_to_datetime(
-            "error_time", kwargs.get("error_time"),
-            self._FROM_DICT_MAP) if kwargs.get("error_time") else None
+            "error_time", kwargs.get("error_time"), self._FROM_DICT_MAP
+        ) if kwargs.get("error_time") else None
         self._error_message = kwargs.get('error_message')
         self._step_statistics = kwargs.get('step_statistics')
 

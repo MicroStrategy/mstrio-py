@@ -50,8 +50,9 @@ def validate_enum_value(obj, enum):
     error message with possible options will be displayed.
     """
     from mstrio.utils.helper import exception_handler
-    possible_values = [[e.value for e in item] for item in enum] if isinstance(
-        enum, tuple) else [e.value for e in enum]
+    possible_values = [[e.value
+                        for e in item]
+                       for item in enum] if isinstance(enum, tuple) else [e.value for e in enum]
     err_msg = f"Incorrect enum value '{obj}'. Possible values are {possible_values}"
     if obj not in list(chain(possible_values)):
         exception_handler(err_msg, exception_type=ValueError)

@@ -115,8 +115,12 @@ class ConstantArrayParameter(ParameterBase):
         self.constants = values
 
     @classmethod
-    def from_dict(cls, source: Dict[str, Any], connection: Optional["Connection"] = None,
-                  to_snake_case: bool = True):
+    def from_dict(
+        cls,
+        source: Dict[str, Any],
+        connection: Optional["Connection"] = None,
+        to_snake_case: bool = True
+    ):
         source["type"] = source.get('constantsType' if to_snake_case else 'constants_type')
         source["values"] = source.get('constants')
         return super().from_dict(source, connection)

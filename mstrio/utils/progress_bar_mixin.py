@@ -6,9 +6,16 @@ from tqdm.auto import tqdm
 class ProgressBarMixin:
     _progress_bar: tqdm = None
 
-    def _display_progress_bar(self, desc: str, total: Union[int, float],
-                              unit: Optional[str] = None, initial: Union[int, float] = 0,
-                              bar_format: Optional[str] = None, leave: bool = True, **kwargs):
+    def _display_progress_bar(
+        self,
+        desc: str,
+        total: Union[int, float],
+        unit: Optional[str] = None,
+        initial: Union[int, float] = 0,
+        bar_format: Optional[str] = None,
+        leave: bool = True,
+        **kwargs
+    ):
         """Create and display progress bar. Needs to be closed with
         `close_progress_bar`, when updates no longer needed.
 
@@ -41,8 +48,15 @@ class ProgressBarMixin:
                 bar [default: 0]. If using float, consider specifying {n:.3f} or
                 similar in bar_format, or specifying unit_scale.
             """
-        self._progress_bar = tqdm(total=total, desc=desc, unit=unit, bar_format=bar_format,
-                                  initial=initial, leave=leave, **kwargs)
+        self._progress_bar = tqdm(
+            total=total,
+            desc=desc,
+            unit=unit,
+            bar_format=bar_format,
+            initial=initial,
+            leave=leave,
+            **kwargs
+        )
 
     def _close_progress_bar(self):
         """Close progress bar when no longer needed. Blocks updates with
@@ -50,8 +64,9 @@ class ProgressBarMixin:
         self._progress_bar.close()
         self._progress_bar = None
 
-    def _update_progress_bar_if_needed(self, new_description: Optional[str] = None,
-                                       update_increment: Union[int, float] = 1):
+    def _update_progress_bar_if_needed(
+        self, new_description: Optional[str] = None, update_increment: Union[int, float] = 1
+    ):
         """Updates the state of the progress bar.
         Use it after `display_progress_bar`.
         Args:

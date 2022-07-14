@@ -131,9 +131,25 @@ class AttributeForm(Entity):  # noqa
 
     _OBJECT_TYPE = ObjectTypes.ATTRIBUTE_FORM
     _API_GETTERS = {
-        ('id', 'name', 'abbreviation', 'type', 'subtype', 'ext_type', 'date_created',
-         'date_modified', 'version', 'owner', 'icon_path', 'view_media', 'ancestors',
-         'certified_info', 'acg', 'acl', 'target_info'): objects.get_object_info
+        (
+            'id',
+            'name',
+            'abbreviation',
+            'type',
+            'subtype',
+            'ext_type',
+            'date_created',
+            'date_modified',
+            'version',
+            'owner',
+            'icon_path',
+            'view_media',
+            'ancestors',
+            'certified_info',
+            'acg',
+            'acl',
+            'target_info'
+        ): objects.get_object_info
     }
 
     def __init__(self, connection: Connection, id: str) -> None:
@@ -153,13 +169,14 @@ class AttributeForm(Entity):  # noqa
         self.is_multilingual = kwargs.get('is_multilingual', False)
         self.is_form_group = kwargs.get('is_form_group', False)
         self.geographical_role = self.GeographicalRole(
-            kwargs.get('geographical_role')) if kwargs.get('geographical_role') else None
-        self.time_role = self.TimeRole(
-            kwargs.get('time_role')) if kwargs.get('time_role') else None
-        self.display_format = self.DisplayFormat(
-            kwargs.get('display_format')) if kwargs.get('display_format') else None
-        self.data_type = DataType.from_dict(
-            kwargs.get('data_type')) if kwargs.get('data_type') else None
+            kwargs.get('geographical_role')
+        ) if kwargs.get('geographical_role') else None
+        self.time_role = self.TimeRole(kwargs.get('time_role')
+                                       ) if kwargs.get('time_role') else None
+        self.display_format = self.DisplayFormat(kwargs.get('display_format')
+                                                 ) if kwargs.get('display_format') else None
+        self.data_type = DataType.from_dict(kwargs.get('data_type')
+                                            ) if kwargs.get('data_type') else None
 
         self.expressions = [
             FactExpression.from_dict(expr, self._connection) for expr in kwargs.get('expressions')
@@ -167,7 +184,8 @@ class AttributeForm(Entity):  # noqa
 
         self.alias = kwargs.get('alias')
         self.lookup_table = SchemaObjectReference.from_dict(
-            kwargs.get('lookup_table')) if kwargs.get('lookup_table') else None
+            kwargs.get('lookup_table')
+        ) if kwargs.get('lookup_table') else None
 
         self.child_forms = [
             FormReference.from_dict(expr, self._connection) for expr in kwargs.get('child_forms')
@@ -212,10 +230,27 @@ class AttributeForm(Entity):  # noqa
     def to_dict(self, camel_case=True) -> dict:
 
         return {
-            key: val for key, val in self.list_properties(camel_case).items() if key not in [
-                'id', 'abbreviation', 'type', 'subtype', 'ext_type', 'date_created',
-                'date_modified', 'version', 'owner', 'icon_path', 'view_media', 'ancestors',
-                'certified_info', 'acg', 'acl', 'target_info', 'formType'
+            key: val
+            for key,
+            val in self.list_properties(camel_case).items()
+            if key not in [
+                'id',
+                'abbreviation',
+                'type',
+                'subtype',
+                'ext_type',
+                'date_created',
+                'date_modified',
+                'version',
+                'owner',
+                'icon_path',
+                'view_media',
+                'ancestors',
+                'certified_info',
+                'acg',
+                'acl',
+                'target_info',
+                'formType'
             ]
         }
 
@@ -252,8 +287,10 @@ class AttributeForm(Entity):  # noqa
         """
         expressions = [expr for expr in self.expressions if expr.id == id]
         if not expressions:
-            raise ValueError(f"AttributeForm with id {self.id} does not contain "
-                             f"Fact Expressions with id {id}.")
+            raise ValueError(
+                f"AttributeForm with id {self.id} does not contain "
+                f"Fact Expressions with id {id}."
+            )
         return expressions[0]
 
     # Attribute form expressions management
@@ -270,8 +307,9 @@ class AttributeForm(Entity):  # noqa
         self.verify_is_simple_form(method_name_if_error='Adding expression')
         self.expressions.append(expression)
 
-    def _remove_fact_expression(self, fact_expression_id: str,
-                                new_lookup_table: Optional[SchemaObjectReference] = None):
+    def _remove_fact_expression(
+        self, fact_expression_id: str, new_lookup_table: Optional[SchemaObjectReference] = None
+    ):
         """
         Internal method that affects ONLY LOCAL AttributeForm object.
         To make changes on the server, use `Attribute._remove_fact_expression()`
@@ -290,13 +328,18 @@ class AttributeForm(Entity):  # noqa
         if len(self.expressions) == 1:
             exception_handler(
                 "You can't remove the only expression "
-                f"from the attribute form with id: {self.id}.", ValueError)
+                f"from the attribute form with id: {self.id}.",
+                ValueError
+            )
         ex_postition = next(
-            (i for i, ex in enumerate(self.expressions) if ex.id == fact_expression_id), None)
+            (i for i, ex in enumerate(self.expressions) if ex.id == fact_expression_id), None
+        )
         if ex_postition is None:
             exception_handler(
                 f"The form with id: {self.id}, don't use "
-                f"expression with id: {fact_expression_id}.", ValueError)
+                f"expression with id: {fact_expression_id}.",
+                ValueError
+            )
         removed_ex = self.expressions.pop(ex_postition)
 
         # AttributeForm can't use `lookup_table` that is not used in any of
@@ -307,7 +350,9 @@ class AttributeForm(Entity):  # noqa
             elif new_lookup_table is None:
                 exception_handler(
                     "Please provide new lookup_table for the attribute form "
-                    f"with id: {self.id}.", AttributeError)
+                    f"with id: {self.id}.",
+                    AttributeError
+                )
             else:
                 self.lookup_table = new_lookup_table
 
@@ -333,12 +378,16 @@ class AttributeForm(Entity):  # noqa
         except StopIteration:
             exception_handler(
                 f"Attribute Form: {self.id} does not have Fact Expression"
-                f" with ID: {fact_expression_id}.", ValueError)
+                f" with ID: {fact_expression_id}.",
+                ValueError
+            )
 
     def verify_is_simple_form(self, method_name_if_error: str):
+        """Verify whether the form is a simple form and not a group form"""
         if self.is_form_group:
-            exception_handler(f"{method_name_if_error} is not available for the form group.",
-                              AttributeError)
+            exception_handler(
+                f"{method_name_if_error} is not available for the form group.", AttributeError
+            )
 
     def is_referenced_by(self, form_reference: FormReference) -> bool:
         """Check if attribute form is referenced in `form_reference`."""

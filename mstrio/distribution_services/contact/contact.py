@@ -11,12 +11,18 @@ from mstrio.users_and_groups.user import User
 from mstrio.utils.entity import auto_match_args_entity, DeleteMixin, EntityBase
 from mstrio.utils.enum_helper import AutoName
 from mstrio.utils.helper import (
-    camel_to_snake, delete_none_values, Dictable, fetch_objects, get_objects_id
+    camel_to_snake,
+    delete_none_values,
+    Dictable,
+    fetch_objects,
+    get_args_from_func,
+    get_default_args_from_func,
+    get_objects_id
 )
+from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
-
 
 logger = logging.getLogger(__name__)
 
@@ -50,18 +56,24 @@ class ContactAddress(Dictable):
     _DELETE_NONE_VALUES_RECURSION = False
     _FROM_DICT_MAP = {'delivery_type': ContactDeliveryType, 'device': Device.from_dict}
 
-    def __init__(self, name: str, physical_address: str,
-                 delivery_type: Union[ContactDeliveryType, str], device: Union['Device', str],
-                 id: Optional[str] = None, is_default: bool = False,
-                 connection: Optional['Connection'] = None):
+    def __init__(
+        self,
+        name: str,
+        physical_address: str,
+        delivery_type: Union[ContactDeliveryType, str],
+        device: Union['Device', str],
+        id: Optional[str] = None,
+        is_default: bool = False,
+        connection: Optional['Connection'] = None
+    ):
 
         self.id = id
         self.name = name
         self.physical_address = physical_address
         self.is_default = is_default
 
-        self.delivery_type = delivery_type if isinstance(
-            delivery_type, ContactDeliveryType) else ContactDeliveryType(delivery_type)
+        self.delivery_type = delivery_type if isinstance(delivery_type, ContactDeliveryType
+                                                         ) else ContactDeliveryType(delivery_type)
 
         if isinstance(device, Device):
             self.device = device
@@ -72,13 +84,14 @@ class ContactAddress(Dictable):
             self.device = Device(connection, id=device)
 
     def __repr__(self) -> str:
-        param_dict = auto_match_args_entity(self.__init__, self, exclude=['self'],
-                                            include_defaults=False)
+        param_dict = auto_match_args_entity(
+            self.__init__, self, exclude=['self'], include_defaults=False
+        )
 
         params = [
             f"{param}={self.delivery_type}"
-            if param == 'delivery_type' else f'{param}={repr(value)}'
-            for param, value in param_dict.items()
+            if param == 'delivery_type' else f'{param}={repr(value)}' for param,
+            value in param_dict.items()
         ]
         formatted_params = ', '.join(params)
 
@@ -109,8 +122,10 @@ class ContactAddress(Dictable):
         return super().from_dict(source, connection, to_snake_case)
 
 
-def list_contacts(connection: 'Connection', to_dictionary: bool = False,
-                  limit: Optional[int] = None, **filters) -> Union[List['Contact'], List[dict]]:
+@method_version_handler('11.3.0100')
+def list_contacts(
+    connection: 'Connection', to_dictionary: bool = False, limit: Optional[int] = None, **filters
+) -> Union[List['Contact'], List[dict]]:
     """Get all contacts as list of Contact objects or dictionaries.
 
     Optionally filter the contacts by specifying filters.
@@ -126,13 +141,11 @@ def list_contacts(connection: 'Connection', to_dictionary: bool = False,
     """
 
     return Contact._list_contacts(
-        connection=connection,
-        to_dictionary=to_dictionary,
-        limit=limit,
-        **filters
+        connection=connection, to_dictionary=to_dictionary, limit=limit, **filters
     )
 
 
+@class_version_handler('11.3.0100')
 class Contact(EntityBase, DeleteMixin):
     """Object representation of Microstrategy Contact object
 
@@ -156,13 +169,20 @@ class Contact(EntityBase, DeleteMixin):
         'memberships': [ContactGroup.from_dict],
     }
     _API_GETTERS = {
-        ('id', 'name', 'description', 'enabled', 'linked_user', 'memberships',
-         'contact_addresses'): contacts.get_contact
+        (
+            'id',
+            'name',
+            'description',
+            'enabled',
+            'linked_user',
+            'memberships',
+            'contact_addresses'
+        ): contacts.get_contact
     }
     _API_DELETE = staticmethod(contacts.delete_contact)
     _API_PATCH = {
-        ('name', 'description', 'enabled', 'linked_user', 'contact_addresses', 'memberships'):
-            (contacts.update_contact, 'put')
+        ('name', 'description', 'enabled', 'linked_user', 'contact_addresses',
+         'memberships'): (contacts.update_contact, 'put')
     }
     _PATCH_PATH_TYPES = {
         'name': str,
@@ -173,8 +193,9 @@ class Contact(EntityBase, DeleteMixin):
         'memberships': list
     }
 
-    def __init__(self, connection: 'Connection', id: Optional[str] = None,
-                 name: Optional[str] = None):
+    def __init__(
+        self, connection: 'Connection', id: Optional[str] = None, name: Optional[str] = None
+    ):
         """Initialize Contact object by passing id or name.
         When `id` is provided, name is omitted.
 
@@ -188,11 +209,7 @@ class Contact(EntityBase, DeleteMixin):
             raise ValueError("Please specify either 'id' or 'name' parameter in the constructor.")
 
         if id is None:
-            result = self._list_contacts(
-                connection=connection,
-                name=name,
-                to_dictionary=True
-            )
+            result = Contact._list_contacts(connection=connection, name=name, to_dictionary=True)
 
             if result:
                 object_data = result[0]
@@ -214,20 +231,25 @@ class Contact(EntityBase, DeleteMixin):
 
         addresses = kwargs.get('contact_addresses')
         self.contact_addresses = [
-            ContactAddress.from_dict(address, self.connection)
-            for address in addresses
+            ContactAddress.from_dict(address, self.connection) for address in addresses
         ] if addresses else None
 
         memberships = kwargs.get('memberships')
         self.memberships = [
-            ContactGroup.from_dict(m, self.connection)
-            for m in memberships
+            ContactGroup.from_dict(m, self.connection) for m in memberships
         ] if memberships else None
 
     @classmethod
-    def create(cls, connection: 'Connection', name: str, linked_user: Union['User', str],
-               contact_addresses: Iterable[Union['ContactAddress', dict]],
-               description: Optional[str] = None, enabled: bool = True) -> 'Contact':
+    @method_version_handler('11.3.0200')
+    def create(
+        cls,
+        connection: 'Connection',
+        name: str,
+        linked_user: Union['User', str],
+        contact_addresses: Iterable[Union['ContactAddress', dict]],
+        description: Optional[str] = None,
+        enabled: bool = True
+    ) -> 'Contact':
         """Create a new contact.
 
         Args:
@@ -263,9 +285,14 @@ class Contact(EntityBase, DeleteMixin):
 
         return cls.from_dict(source=response, connection=connection)
 
-    def alter(self, name: Optional[str] = None, description: Optional[str] = None,
-              enabled: Optional[bool] = None, linked_user: Optional[Union['User', str]] = None,
-              contact_addresses: Optional[Iterable[Union['ContactAddress', dict]]] = None):
+    def alter(
+        self,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        enabled: Optional[bool] = None,
+        linked_user: Optional[Union['User', str]] = None,
+        contact_addresses: Optional[Iterable[Union['ContactAddress', dict]]] = None
+    ):
         """Update properties of a contact
 
         Args:
@@ -278,9 +305,8 @@ class Contact(EntityBase, DeleteMixin):
         linked_user = {'id': get_objects_id(linked_user, User)} if linked_user else None
 
         func = self.alter
-        args = func.__code__.co_varnames[:func.__code__.co_argcount]
-
-        defaults = func.__defaults__  # type: ignore
+        args = get_args_from_func(func)
+        defaults = get_default_args_from_func(func)
         defaults_dict = dict(zip(args[-len(defaults):], defaults)) if defaults else {}
         local = locals()
         properties = defaultdict(dict)
@@ -292,9 +318,13 @@ class Contact(EntityBase, DeleteMixin):
         self._alter_properties(**properties)
 
     @classmethod
-    def _list_contacts(cls, connection: 'Connection', to_dictionary: bool = False,
-                       limit: Optional[int] = None, **filters
-                       ) -> Union[List['Contact'], List[dict]]:
+    def _list_contacts(
+        cls,
+        connection: 'Connection',
+        to_dictionary: bool = False,
+        limit: Optional[int] = None,
+        **filters
+    ) -> Union[List['Contact'], List[dict]]:
         """Get all contacts as list of Contact objects or dictionaries.
 
         Optionally filter the contacts by specifying filters.
@@ -320,10 +350,7 @@ class Contact(EntityBase, DeleteMixin):
         if to_dictionary:
             return objects
 
-        return [
-            cls.from_dict(source=obj, connection=connection)
-            for obj in objects
-        ]
+        return [cls.from_dict(source=obj, connection=connection) for obj in objects]
 
     def add_to_contact_group(self, contact_group: Union['ContactGroup', str]):
         """Add to ContactGroup

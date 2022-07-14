@@ -9,8 +9,14 @@ if TYPE_CHECKING:
 
 
 @ErrorHandler(err_msg='Error getting information for a set of recipients.')
-def get_recipients(connection, search_term, search_pattern="CONTAINS_ANY_WORD", offset=0, limit=-1,
-                   enabled_status='ALL'):
+def get_recipients(
+    connection,
+    search_term,
+    search_pattern="CONTAINS_ANY_WORD",
+    offset=0,
+    limit=-1,
+    enabled_status='ALL'
+):
     """Get information for a set of recipients.
 
     Args:
@@ -48,8 +54,9 @@ def get_recipients(connection, search_term, search_pattern="CONTAINS_ANY_WORD", 
 
 
 @ErrorHandler(err_msg='Error getting information for a set of users')
-def get_users_info(connection, name_begins, abbreviation_begins, offset=0, limit=-1, fields=None,
-                   error_msg=None):
+def get_users_info(
+    connection, name_begins, abbreviation_begins, offset=0, limit=-1, fields=None, error_msg=None
+):
     """Get information for a set of users.
 
     Args:
@@ -83,8 +90,15 @@ def get_users_info(connection, name_begins, abbreviation_begins, offset=0, limit
     )
 
 
-def get_users_info_async(future_session: "FuturesSession", connection, name_begins,
-                         abbreviation_begins, offset=0, limit=-1, fields=None):
+def get_users_info_async(
+    future_session: "FuturesSession",
+    connection,
+    name_begins,
+    abbreviation_begins,
+    offset=0,
+    limit=-1,
+    fields=None
+):
     """Get information for a set of users asynchronously.
 
     Args:
@@ -176,8 +190,7 @@ def get_addresses(connection, id, fields=None):
     """
 
     return connection.get(
-        url=f'{connection.base_url}/api/users/{id}/addresses',
-        params={'fields': fields}
+        url=f'{connection.base_url}/api/users/{id}/addresses', params={'fields': fields}
     )
 
 
@@ -295,8 +308,7 @@ def get_user_privileges(connection, id, project_id=None, privilege_level=None):
     return connection.get(
         url=url,
         params={
-            'privilege.level': privilege_level,
-            'projectId': project_id
+            'privilege.level': privilege_level, 'projectId': project_id
         },
     )
 
@@ -337,10 +349,7 @@ def get_user_info(connection, id, fields=None):
         HTTP response object returned by the MicroStrategy REST server.
     """
 
-    return connection.get(
-        url=f'{connection.base_url}/api/users/{id}',
-        params={'fields': fields}
-    )
+    return connection.get(url=f'{connection.base_url}/api/users/{id}', params={'fields': fields})
 
 
 @ErrorHandler(err_msg='Error deleting user with ID {id}')
@@ -391,8 +400,10 @@ def update_user_info(connection, id, body, fields=None):
     )
 
 
-@ErrorHandler(err_msg='Error getting information for the direct user groups that '
-              'a user with ID {id} belongs to.')
+@ErrorHandler(
+    err_msg='Error getting information for the direct user groups that '
+    'a user with ID {id} belongs to.'
+)
 def get_memberships(connection, id, fields=None):
     """Get information for the direct user groups that a specific user belongs
     to.
@@ -415,9 +426,14 @@ def get_memberships(connection, id, fields=None):
 
 
 @ErrorHandler(err_msg='Error getting security filters for user with ID {id}.')
-def get_security_filters(connection: "Connection", id: str,
-                         projects: Optional[Union[str, List[str]]] = None, offset: int = 0,
-                         limit: int = -1, error_msg: Optional[str] = None):
+def get_security_filters(
+    connection: "Connection",
+    id: str,
+    projects: Optional[Union[str, List[str]]] = None,
+    offset: int = 0,
+    limit: int = -1,
+    error_msg: Optional[str] = None
+):
     """Get each project level security filter and its corresponding inherited
     security filters for the user with given ID.
 
@@ -439,6 +455,7 @@ def get_security_filters(connection: "Connection", id: str,
     url = f"{connection.base_url}/api/users/{id}/securityFilters"
 
     projects = (
-        ','.join(projects if isinstance(projects, list) else [projects])) if projects else projects
+        ','.join(projects if isinstance(projects, list) else [projects])
+    ) if projects else projects
     params = {'projects.id': projects, 'offset': offset, 'limit': limit}
     return connection.get(url=url, params=params)

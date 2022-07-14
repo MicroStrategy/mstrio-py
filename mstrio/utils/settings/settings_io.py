@@ -30,7 +30,8 @@ class SettingsSerializerFactory():
 
         if file_type is None:
             raise ValueError(
-                "This file type is not supported. Supported file types are .json, .csv, .pickle")
+                "This file type is not supported. Supported file types are .json, .csv, .pickle"
+            )
         elif file_type == 'json':
             return JSONSettingsIO()
         elif file_type == 'csv':
@@ -57,8 +58,10 @@ class SettingsIO(metaclass=ABCMeta):
         if not isinstance(cls.FILE_NAME, (str, tuple)):
             raise NotImplementedError("FILE_NAME not defined")
         elif not file.endswith(cls.FILE_NAME):
-            msg = (f'The file extension is different than {cls.FILE_NAME}, please note that using'
-                   ' a different extension might disrupt opening the file correctly.')
+            msg = (
+                f'The file extension is different than {cls.FILE_NAME}, please note that using'
+                ' a different extension might disrupt opening the file correctly.'
+            )
             helper.exception_handler(msg, exception_type=Warning)
 
     @classmethod
@@ -69,17 +72,20 @@ class SettingsIO(metaclass=ABCMeta):
             raise TypeError('Unsupported settings.')
 
     @classmethod
-    def check_version(cls, version: Union[str, int, None], settings_type: Union[str,
-                                                                                None]) -> None:
+    def check_version(
+        cls, version: Union[str, int, None], settings_type: Union[str, None]
+    ) -> None:
         if isinstance(version, str):
             version = int(version)
         if version is None or settings_type is None:
             return None
         else:
-            server_settings_not_supported = (settings_type == "allServerSettings"
-                                             and version > cls.SERVER_VERSION)
-            project_settings_not_supported = (settings_type == "allProjectSettings"
-                                              and version > cls.PROJECT_VERSION)
+            server_settings_not_supported = (
+                settings_type == "allServerSettings" and version > cls.SERVER_VERSION
+            )
+            project_settings_not_supported = (
+                settings_type == "allProjectSettings" and version > cls.PROJECT_VERSION
+            )
             if server_settings_not_supported or project_settings_not_supported:
                 raise VersionException("Unsupported settings version")
 
@@ -103,8 +109,9 @@ class PickleSettingsIO(SettingsIO):
 
         with open(file, 'wb') as f:
             # save version and type
-            settings_dict.update(__version__=cls.get_version(settings_obj),
-                                 __page__=settings_obj._TYPE)
+            settings_dict.update(
+                __version__=cls.get_version(settings_obj), __page__=settings_obj._TYPE
+            )
             pickle.dump(settings_dict, f, protocol=4)  # pickle protocol added in python 3.4
         if config.verbose:
             logger.info(f"{EXPORTED_MSG} '{file}'")
@@ -122,8 +129,9 @@ class PickleSettingsIO(SettingsIO):
             cls.check_version(version, settings_type)
             # convert memory units for v1 (no version) settings
             if version is None:
-                settings_dict = convert_settings_to_mega_byte(settings_dict,
-                                                              settings_obj._CONVERSION_MAP)
+                settings_dict = convert_settings_to_mega_byte(
+                    settings_dict, settings_obj._CONVERSION_MAP
+                )
 
         return settings_dict
 
@@ -140,8 +148,9 @@ class JSONSettingsIO(SettingsIO):
 
         with open(file, 'w') as f:
             # save version and type
-            settings_dict.update(__version__=cls.get_version(settings_obj),
-                                 __page__=settings_obj._TYPE)
+            settings_dict.update(
+                __version__=cls.get_version(settings_obj), __page__=settings_obj._TYPE
+            )
             json.dump(settings_dict, f, indent=4)
         if config.verbose:
             logger.info(f"{EXPORTED_MSG} '{file}'")
@@ -159,8 +168,9 @@ class JSONSettingsIO(SettingsIO):
             cls.check_version(version, settings_type)
             # convert memory units for v1 (no version) settings
             if version is None:
-                settings_dict = convert_settings_to_mega_byte(settings_dict,
-                                                              settings_obj._CONVERSION_MAP)
+                settings_dict = convert_settings_to_mega_byte(
+                    settings_dict, settings_obj._CONVERSION_MAP
+                )
 
         return settings_dict
 
@@ -220,8 +230,9 @@ class CSVSettingsIO(SettingsIO):
 
         # convert memory units for v1 Server settings
         if version == "1" and settings_type == "allServerSettings":
-            processed_settings = convert_settings_to_mega_byte(processed_settings,
-                                                               settings_obj._CONVERSION_MAP)
+            processed_settings = convert_settings_to_mega_byte(
+                processed_settings, settings_obj._CONVERSION_MAP
+            )
 
         return processed_settings
 
@@ -239,9 +250,11 @@ class CSVSettingsIO(SettingsIO):
         elif isinstance(version, str):
             version = int(version)
 
-        server_settings_not_supported = (settings_type == "allServerSettings"
-                                         and version > cls.SERVER_VERSION)
-        project_settings_not_supported = (settings_type == "allProjectSettings"
-                                          and version > cls.PROJECT_VERSION)
+        server_settings_not_supported = (
+            settings_type == "allServerSettings" and version > cls.SERVER_VERSION
+        )
+        project_settings_not_supported = (
+            settings_type == "allProjectSettings" and version > cls.PROJECT_VERSION
+        )
         if server_settings_not_supported or project_settings_not_supported:
             raise VersionException('Unsupported CSV settings version.')

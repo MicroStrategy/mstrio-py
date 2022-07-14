@@ -24,7 +24,17 @@ class CacheType(AutoName):
     SHORTCUTWITHBOOKMARK = 'shortcut_and_bookmark'
 
 
-class ShortcutCacheFormat(AutoName):
+class LegacyCacheType(AutoUpperName):
+    """
+    Available values when using environment with version 11.3.0100 or lower
+    """
+    RESERVED = auto()
+    SHORTCUT = auto()
+    SHORTCUTWITHBOOKMARK = auto()
+    BOOKMARK = auto()
+
+
+class ShortcutCacheFormat(AutoUpperName):
     RESERVED = auto()
     JSON = auto()
     BINARY = auto()
@@ -65,13 +75,19 @@ class DeliveryDictable(Dictable):
         return obj
 
     def validate(self):
+        """Validate whether all obligatory properties of the Delivery object
+            are present and whether all the properties present are of
+            correct types."""
         for key, value in self.__dict__.items():
             vtype = self.VALIDATION_DICT[key][0]
             obligatory = self.VALIDATION_DICT[key][1]
             if value and not isinstance(value, vtype):
                 exception_handler(
                     "{} has incorrect type {}. Correct type is {}.".format(
-                        key, type(value), vtype), TypeError)
+                        key, type(value), vtype
+                    ),
+                    TypeError
+                )
             elif value is None and obligatory:
                 exception_handler(f"{key} is obligatory and cannot be empty.", ValueError)
 
@@ -87,13 +103,15 @@ class ZipSettings(DeliveryDictable):
     _DELETE_NONE_VALUES_RECURSION = False
 
     VALIDATION_DICT = {
-        "filename": [str, False],
-        "password": [str, False],
-        "password_protect": [bool, False]
+        "filename": [str, False], "password": [str, False], "password_protect": [bool, False]
     }
 
-    def __init__(self, filename: Optional[str] = None, password: Optional[str] = None,
-                 password_protect: bool = False):
+    def __init__(
+        self,
+        filename: Optional[str] = None,
+        password: Optional[str] = None,
+        password_protect: bool = False
+    ):
         self.filename = filename
         self.password = password if password_protect else None
         self.password_protect = password_protect
@@ -161,10 +179,16 @@ class Delivery(DeliveryDictable):
             "zip": [ZipSettings, False]
         }
 
-        def __init__(self, subject: Optional[str] = None, message: Optional[str] = None,
-                     filename: Optional[str] = None, space_delimiter: Optional[str] = None,
-                     send_content_as: Optional[SendContentAs] = None,
-                     overwrite_older_version: bool = False, zip: Optional[ZipSettings] = None):
+        def __init__(
+            self,
+            subject: Optional[str] = None,
+            message: Optional[str] = None,
+            filename: Optional[str] = None,
+            space_delimiter: Optional[str] = None,
+            send_content_as: Optional[SendContentAs] = None,
+            overwrite_older_version: bool = False,
+            zip: Optional[ZipSettings] = None
+        ):
             self.subject = subject
             self.message = message
             self.filename = filename
@@ -175,6 +199,10 @@ class Delivery(DeliveryDictable):
             self.validate()
 
         def validate(self):
+            """Validate whether all obligatory properties of the Delivery
+                object are present, whether all the properties present are
+                of correct types and whether the message and subject do
+                not exceed the charater limits."""
             if self.message and len(self.message) > 1000:
                 exception_handler("Message too long. Max message length is 1000 characters.")
             if self.subject and len(self.subject) > 265:
@@ -200,8 +228,13 @@ class Delivery(DeliveryDictable):
             "zip": [ZipSettings, False]
         }
 
-        def __init__(self, filename: Optional[str] = None, space_delimiter: Optional[str] = None,
-                     burst_sub_folder: Optional[str] = None, zip: Optional[ZipSettings] = None):
+        def __init__(
+            self,
+            filename: Optional[str] = None,
+            space_delimiter: Optional[str] = None,
+            burst_sub_folder: Optional[str] = None,
+            zip: Optional[ZipSettings] = None
+        ):
             self.filename = filename
             self.space_delimiter = space_delimiter
             self.burst_sub_folder = burst_sub_folder
@@ -231,10 +264,15 @@ class Delivery(DeliveryDictable):
             "use_print_range": [bool, False]
         }
 
-        def __init__(self, copies: Optional[int] = None, range_start: Optional[int] = None,
-                     range_end: Optional[int] = None, collated: bool = False,
-                     orientation: Orientation = Orientation.PORTRAIT.name,
-                     use_print_range: bool = False):
+        def __init__(
+            self,
+            copies: Optional[int] = None,
+            range_start: Optional[int] = None,
+            range_end: Optional[int] = None,
+            collated: bool = False,
+            orientation: Orientation = Orientation.PORTRAIT.name,
+            use_print_range: bool = False
+        ):
             self.copies = copies
             self.range_start = range_start
             self.range_end = range_end
@@ -254,13 +292,15 @@ class Delivery(DeliveryDictable):
         _DELETE_NONE_VALUES_RECURSION = False
 
         VALIDATION_DICT = {
-            "filename": [str, False],
-            "space_delimiter": [str, False],
-            "zip": [ZipSettings, False]
+            "filename": [str, False], "space_delimiter": [str, False], "zip": [ZipSettings, False]
         }
 
-        def __init__(self, space_delimiter: Optional[str] = None, filename: Optional[str] = None,
-                     zip: Optional[ZipSettings] = None):
+        def __init__(
+            self,
+            space_delimiter: Optional[str] = None,
+            filename: Optional[str] = None,
+            zip: Optional[ZipSettings] = None
+        ):
             self.space_delimiter = space_delimiter
             self.filename = filename
             self.zip = zip
@@ -284,10 +324,14 @@ class Delivery(DeliveryDictable):
             "is_all_library_users": [bool, False],
         }
 
-        def __init__(self, cache_type: CacheType = CacheType.RESERVED,
-                     shortcut_cache_format: ShortcutCacheFormat = ShortcutCacheFormat.RESERVED,
-                     library_cache_types: List[LibraryCacheTypes] = None,
-                     reuse_dataset_cache: bool = False, is_all_library_users: bool = False):
+        def __init__(
+            self,
+            cache_type: CacheType = CacheType.RESERVED,
+            shortcut_cache_format: ShortcutCacheFormat = ShortcutCacheFormat.RESERVED,
+            library_cache_types: List[LibraryCacheTypes] = None,
+            reuse_dataset_cache: bool = False,
+            is_all_library_users: bool = False
+        ):
             self.cache_type = cache_type
             self.shortcut_cache_format = shortcut_cache_format
             self.library_cache_types = library_cache_types
@@ -317,9 +361,14 @@ class Delivery(DeliveryDictable):
             "re_run_hl": [bool, False]
         }
 
-        def __init__(self, client_type: ClientType = ClientType.RESERVED.name,
-                     device_id: Optional[str] = None, do_not_create_update_caches: bool = False,
-                     overwrite_older_version: bool = False, re_run_hl: bool = False):
+        def __init__(
+            self,
+            client_type: ClientType = ClientType.RESERVED.name,
+            device_id: Optional[str] = None,
+            do_not_create_update_caches: bool = False,
+            overwrite_older_version: bool = False,
+            re_run_hl: bool = False
+        ):
             self.client_type = client_type
             self.device_id = device_id
             self.do_not_create_update_caches = do_not_create_update_caches
@@ -347,9 +396,13 @@ class Delivery(DeliveryDictable):
             "re_run_hl": [bool, False]
         }
 
-        def __init__(self, device_id: Optional[str] = None,
-                     do_not_create_update_caches: bool = False,
-                     overwrite_older_version: bool = False, re_run_hl: bool = False):
+        def __init__(
+            self,
+            device_id: Optional[str] = None,
+            do_not_create_update_caches: bool = False,
+            overwrite_older_version: bool = False,
+            re_run_hl: bool = False
+        ):
             self.device_id = device_id
             self.do_not_create_update_caches = do_not_create_update_caches
             self.overwrite_older_version = overwrite_older_version
@@ -368,34 +421,52 @@ class Delivery(DeliveryDictable):
         "history_list": [HistoryList, False]
     }
 
-    def __init__(self, mode=DeliveryMode.EMAIL.value, expiration: str = None,
-                 contact_security: Optional[bool] = None, subject: Optional[str] = None,
-                 message: Optional[str] = None, filename: Optional[str] = None,
-                 compress: bool = False, zip: Optional[ZipSettings] = None,
-                 password: Optional[str] = None, password_protect: bool = False,
-                 space_delimiter: Optional[str] = None,
-                 send_content_as: SendContentAs = SendContentAs.DATA,
-                 overwrite_older_version: bool = False, burst_sub_folder: Optional[str] = None,
-                 copies: Optional[int] = None, range_start: Optional[int] = None,
-                 range_end: Optional[int] = None, collated: bool = False,
-                 orientation: Orientation = Orientation.PORTRAIT.name,
-                 use_print_range: bool = False, client_type: ClientType = ClientType.RESERVED.name,
-                 device_id: Optional[str] = None, do_not_create_update_caches: bool = False,
-                 re_run_hl: bool = False, email: Optional[Email] = None,
-                 file: Optional[File] = None, cache_type: Union[CacheType,
-                                                                str] = CacheType.RESERVED,
-                 shortcut_cache_format: Union[ShortcutCacheFormat,
-                                              str] = ShortcutCacheFormat.RESERVED,
-                 library_cache_types: List[Union[LibraryCacheTypes, str]] = [LibraryCacheTypes.WEB],  # noqa: E501
-                 reuse_dataset_cache: bool = False,
-                 is_all_library_users: bool = False, notification_enabled: bool = False,
-                 personal_notification_address_id: Optional[str] = None):
+    def __init__(
+        self,
+        mode=DeliveryMode.EMAIL.value,
+        expiration: str = None,
+        contact_security: Optional[bool] = None,
+        subject: Optional[str] = None,
+        message: Optional[str] = None,
+        filename: Optional[str] = None,
+        compress: bool = False,
+        zip: Optional[ZipSettings] = None,
+        password: Optional[str] = None,
+        password_protect: bool = False,
+        space_delimiter: Optional[str] = None,
+        send_content_as: SendContentAs = SendContentAs.DATA,
+        overwrite_older_version: bool = False,
+        burst_sub_folder: Optional[str] = None,
+        copies: Optional[int] = None,
+        range_start: Optional[int] = None,
+        range_end: Optional[int] = None,
+        collated: bool = False,
+        orientation: Orientation = Orientation.PORTRAIT.name,
+        use_print_range: bool = False,
+        client_type: ClientType = ClientType.RESERVED.name,
+        device_id: Optional[str] = None,
+        do_not_create_update_caches: bool = False,
+        re_run_hl: bool = False,
+        email: Optional[Email] = None,
+        file: Optional[File] = None,
+        cache_type: Union[CacheType, str] = CacheType.RESERVED,
+        shortcut_cache_format: Union[ShortcutCacheFormat, str] = ShortcutCacheFormat.RESERVED,
+        library_cache_types: List[Union[LibraryCacheTypes,
+                                        str]] = [LibraryCacheTypes.WEB],  # noqa: E501
+        reuse_dataset_cache: bool = False,
+        is_all_library_users: bool = False,
+        notification_enabled: bool = False,
+        personal_notification_address_id: Optional[str] = None
+    ):
         self.mode = mode
         if expiration:
             if not self._expiration_check(expiration):
                 exception_handler(
                     "Expiration date must be later or equal to {}".format(
-                        datetime.now().strftime("%Y-%m-%d")), ValueError)
+                        datetime.now().strftime("%Y-%m-%d")
+                    ),
+                    ValueError
+                )
             else:
                 self.expiration = expiration
         self.contact_security = contact_security
@@ -404,24 +475,43 @@ class Delivery(DeliveryDictable):
         ) if zip is None and compress else zip if zip is not None and compress else None
 
         if self.DeliveryMode(mode) == self.DeliveryMode.EMAIL:
-            self.email = self.Email(subject, message, filename, space_delimiter, send_content_as,
-                                    overwrite_older_version, temp_zip)
+            self.email = self.Email(
+                subject,
+                message,
+                filename,
+                space_delimiter,
+                send_content_as,
+                overwrite_older_version,
+                temp_zip
+            )
         elif self.DeliveryMode(mode) == self.DeliveryMode.FILE:
             self.file = self.File(filename, space_delimiter, burst_sub_folder, temp_zip)
         elif self.DeliveryMode(mode) == self.DeliveryMode.PRINTER:
-            self.printer = self.Printer(copies, range_start, range_end, collated, orientation,
-                                        use_print_range)
+            self.printer = self.Printer(
+                copies, range_start, range_end, collated, orientation, use_print_range
+            )
         elif self.DeliveryMode(mode) == self.DeliveryMode.FTP:
             self.ftp = self.Ftp(space_delimiter, filename, temp_zip)
         elif self.DeliveryMode(mode) == self.DeliveryMode.CACHE:
-            self.cache = self.Cache(cache_type, shortcut_cache_format, library_cache_types,
-                                    reuse_dataset_cache, is_all_library_users)
+            self.cache = self.Cache(
+                cache_type,
+                shortcut_cache_format,
+                library_cache_types,
+                reuse_dataset_cache,
+                is_all_library_users
+            )
         elif self.DeliveryMode(mode) == self.DeliveryMode.MOBILE:
-            self.mobile = self.Mobile(client_type, device_id, do_not_create_update_caches,
-                                      overwrite_older_version, re_run_hl)
+            self.mobile = self.Mobile(
+                client_type,
+                device_id,
+                do_not_create_update_caches,
+                overwrite_older_version,
+                re_run_hl
+            )
         elif self.DeliveryMode(mode) == self.DeliveryMode.HISTORY_LIST:
-            self.history_list = self.HistoryList(device_id, do_not_create_update_caches,
-                                                 overwrite_older_version, re_run_hl)
+            self.history_list = self.HistoryList(
+                device_id, do_not_create_update_caches, overwrite_older_version, re_run_hl
+            )
         if notification_enabled:
             self.notification_enabled = notification_enabled
             self.personal_notification = {"address_id": personal_notification_address_id}

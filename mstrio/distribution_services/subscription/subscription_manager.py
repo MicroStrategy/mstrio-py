@@ -7,6 +7,7 @@ from mstrio import config
 import mstrio.api.subscriptions as subscriptions_
 from mstrio.connection import Connection
 from mstrio.utils import helper
+from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
 from . import CacheUpdateSubscription, EmailSubscription, Subscription
 from .content import Content
@@ -15,17 +16,21 @@ from .delivery import Delivery
 logger = logging.getLogger(__name__)
 
 
-def list_subscriptions(connection: Connection, project_id: Optional[str] = None,
-                       project_name: Optional[str] = None, to_dictionary: bool = False,
-                       limit: Optional[int] = None,
-                       **filters) -> Union[List["Subscription"], List[dict]]:
+@method_version_handler('11.2.0203')
+def list_subscriptions(
+    connection: Connection,
+    project_id: Optional[str] = None,
+    project_name: Optional[str] = None,
+    to_dictionary: bool = False,
+    limit: Optional[int] = None,
+    **filters
+) -> Union[List["Subscription"], List[dict]]:
     """Get all subscriptions per project as list of Subscription objects or
     dictionaries.
 
     Optionally filter the subscriptions by specifying filters.
     Specify either `project_id` or `project_name`.
-    When `project_id` is provided (not `None`), `project_name` is
-    omitted.
+    When `project_id` is provided (not `None`), `project_name` is omitted.
 
     Args:
         connection(object): MicroStrategy connection object
@@ -40,9 +45,13 @@ def list_subscriptions(connection: Connection, project_id: Optional[str] = None,
             'allowUnsubscribe', 'dateCreated', 'dateModified', 'owner',
             'schedules', 'contents', 'recipients', 'delivery']
     """
-    project_id = Subscription._project_id_check(connection, project_id, project_name)
-    chunk_size = 1000 if version.parse(
-        connection.iserver_version) >= version.parse('11.3.0300') else 1000000
+    project_id = helper.get_valid_project_id(
+        connection=connection,
+        project_id=project_id,
+        project_name=project_name,
+    )
+    chunk_size = 1000 if version.parse(connection.iserver_version
+                                       ) >= version.parse('11.3.0300') else 1000000
     msg = 'Error getting subscription list.'
     objects = helper.fetch_objects_async(
         connection=connection,
@@ -76,24 +85,40 @@ subscription_type_from_delivery_mode_dict = {
 
 
 def get_subscription_type_from_delivery_mode(mode: DeliveryMode):
+    """Returns the subscription type of the provided Delivery Mode.
+
+    Args:
+        mode: DeliveryMode object of which to get the subscription type"""
     return subscription_type_from_delivery_mode_dict.get(mode, Subscription)
 
 
 def dispatch_from_dict(source: dict, connection: Connection, project_id: str):
+    """Returns the subscription type object from the provided source
+
+    Args:
+        source: dictionary of an object to return from the specified
+            subscription
+        connection: MicroStrategy connection object returned
+            by `connection.Connection()`
+        project_id: Project ID"""
     delivery_mode = DeliveryMode(source["delivery"]["mode"])
     sub_type = get_subscription_type_from_delivery_mode(delivery_mode)
     return sub_type.from_dict(source, connection, project_id)
 
 
+@class_version_handler('11.2.0203')
 class SubscriptionManager:
     """Manage subscriptions."""
 
-    def __init__(self, connection: Connection, project_id: Optional[str] = None,
-                 project_name: Optional[str] = None):
+    def __init__(
+        self,
+        connection: Connection,
+        project_id: Optional[str] = None,
+        project_name: Optional[str] = None
+    ):
         """Initialize the SubscriptionManager object.
         Specify either `project_id` or `project_name`.
-        When `project_id` is provided (not `None`), `project_name` is
-        omitted.
+        When `project_id` is provided (not `None`), `project_name` is omitted.
 
         Args:
             connection: MicroStrategy connection object returned
@@ -102,10 +127,15 @@ class SubscriptionManager:
             project_name: Project name
         """
         self.connection = connection
-        self.project_id = Subscription._project_id_check(connection, project_id, project_name)
+        self.project_id = helper.get_valid_project_id(
+            connection=connection,
+            project_id=project_id,
+            project_name=project_name,
+        )
 
-    def list_subscriptions(self, to_dictionary: bool = False, limit: Optional[int] = None,
-                           **filters):
+    def list_subscriptions(
+        self, to_dictionary: bool = False, limit: Optional[int] = None, **filters
+    ):
         """Get all subscriptions as list of Subscription objects or
         dictionaries.
 
@@ -121,8 +151,12 @@ class SubscriptionManager:
                 'allowUnsubscribe', 'dateCreated', 'dateModified', 'owner',
                 'schedules', 'contents', 'recipients', 'delivery']
         """
-        return list_subscriptions(connection=self.connection, project_id=self.project_id,
-                                  to_dictionary=to_dictionary, **filters)
+        return list_subscriptions(
+            connection=self.connection,
+            project_id=self.project_id,
+            to_dictionary=to_dictionary,
+            **filters
+        )
 
     def delete(self, subscriptions: Union[List[Subscription], List[str]], force=False) -> bool:
         """Deletes all passed subscriptions. Returns True if successfully
@@ -138,16 +172,15 @@ class SubscriptionManager:
             temp_subs = []
             for subscription in subscriptions:
                 subscription = subscription if isinstance(
-                    subscription, Subscription) else Subscription(self.connection, subscription,
-                                                                  self.project_id)
+                    subscription, Subscription
+                ) else Subscription(self.connection, subscription, self.project_id)
                 temp_subs.append(subscription)
             subscriptions = temp_subs
             succeeded = 0
             user_input = 'N'
             if not force:
                 to_be_deleted = [
-                    f"Subscription '{sub.name}' with ID: '{sub.id}'"
-                    for sub in subscriptions
+                    f"Subscription '{sub.name}' with ID: '{sub.id}'" for sub in subscriptions
                 ]
                 print("Found subscriptions:")
                 for sub in to_be_deleted:
@@ -161,7 +194,8 @@ class SubscriptionManager:
                         subscription.id,
                         self.project_id,
                         error_msg="Subscription '{}' with id '{}'' could not be deleted.".format(
-                            subscription.name, subscription.id),
+                            subscription.name, subscription.id
+                        ),
                         exception_type=UserWarning,
                     )
                     if response.ok:
@@ -186,16 +220,19 @@ class SubscriptionManager:
             subscriptions = subscriptions if isinstance(subscriptions, list) else [subscriptions]
             for subscription in subscriptions:
                 subscription = subscription if isinstance(
-                    subscription, Subscription) else Subscription(self.connection, subscription,
-                                                                  self.project_id)
+                    subscription, Subscription
+                ) else Subscription(self.connection, subscription, self.project_id)
                 if subscription.delivery.mode == 'EMAIL':
                     subscription.execute()
                 else:
-                    msg = (f"Subscription '{subscription.name}' with ID '{subscription.id}' "
-                           "could not be executed. Delivery mode '{subscription.delivery['mode']}'"
-                           " is not supported.")
+                    msg = (
+                        f"Subscription '{subscription.name}' with ID '{subscription.id}' "
+                        "could not be executed. Delivery mode '{subscription.delivery['mode']}'"
+                        " is not supported."
+                    )
                     helper.exception_handler(msg, UserWarning)
 
+    @method_version_handler('11.3.0000')
     def available_bursting_attributes(self, content: Union[dict, "Content"]):
         """Get a list of available attributes for bursting feature, for a given
         content.
@@ -207,16 +244,21 @@ class SubscriptionManager:
         c_id = content['id'] if isinstance(content, dict) else content.id
         c_type = content['type'] if isinstance(content, dict) else content.type
 
-        response = subscriptions_.bursting_attributes(self.connection, self.project_id, c_id,
-                                                      c_type.upper())
+        response = subscriptions_.bursting_attributes(
+            self.connection, self.project_id, c_id, c_type.upper()
+        )
 
         if response.ok:
             return response.json()['burstingAttributes']
 
-    def available_recipients(self, content_id: Optional[str] = None,
-                             content_type: Optional[str] = None,
-                             content: Optional["Content"] = None,
-                             delivery_type='EMAIL') -> List[dict]:
+    @method_version_handler('11.3.0000')
+    def available_recipients(
+        self,
+        content_id: Optional[str] = None,
+        content_type: Optional[str] = None,
+        content: Optional["Content"] = None,
+        delivery_type='EMAIL'
+    ) -> List[dict]:
         """List available recipients for a subscription contents.
         Specify either both `content_id` and `content_type` or just `content`
         object.
@@ -234,18 +276,19 @@ class SubscriptionManager:
             content_id = content.id
             content_type = content.type
         else:
-            helper.exception_handler('Specify either a content ID and type or content object.',
-                                     ValueError)
+            helper.exception_handler(
+                'Specify either a content ID and type or content object.', ValueError
+            )
 
         body = {
             "contents": [{
-                "id": content_id,
-                "type": content_type
+                "id": content_id, "type": content_type
             }],
         }
 
-        response = subscriptions_.available_recipients(self.connection, self.project_id, body,
-                                                       delivery_type)
+        response = subscriptions_.available_recipients(
+            self.connection, self.project_id, body, delivery_type
+        )
 
         if response.ok and config.verbose:
             return response.json()['recipients']

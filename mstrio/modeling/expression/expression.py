@@ -7,7 +7,9 @@ from mstrio.object_management import search_operations
 from mstrio.object_management.search_enums import SearchPattern
 from mstrio.types import ObjectSubTypes, ObjectTypes
 from mstrio.utils.enum_helper import AutoName
-from mstrio.utils.helper import camel_to_snake, delete_none_values, Dictable, snake_to_camel
+from mstrio.utils.helper import (
+    camel_to_snake, delete_none_values, Dictable, get_valid_project_id, snake_to_camel
+)
 
 from .enums import DependenceType, DimtyType, ExpressionType, NodeType
 
@@ -137,8 +139,9 @@ class Token(Dictable):
         return snake_to_camel(result) if camel_case else result
 
     @classmethod
-    def from_dict(cls, source: dict, connection: Optional['Connection'] = None,
-                  to_snake_case: bool = True):
+    def from_dict(
+        cls, source: dict, connection: Optional['Connection'] = None, to_snake_case: bool = True
+    ):
         data = camel_to_snake(source) if to_snake_case else source.copy()
 
         attribute_form = data.get('attribute_form')
@@ -197,6 +200,7 @@ def list_functions(
     to_dictionary: bool = False,
     search_pattern: Union[SearchPattern, int] = SearchPattern.CONTAINS,
     project_id: Optional[str] = None,
+    project_name: Optional[str] = None,
     limit: Optional[int] = None,
     **filters,
 ) -> Union[List['SchemaObjectReference'], List[dict]]:
@@ -215,6 +219,13 @@ def list_functions(
         * - 0 or more of any characters
         e.g. name_begins = ?onny will return Sonny and Tonny
 
+    Specify either `project_id` or `project_name`.
+    When `project_id` is provided (not `None`), `project_name` is omitted.
+
+    Note:
+        When `project_id` is `None` and `project_name` is `None`,
+        then its value is overwritten by `project_id` from `connection` object.
+
     Args:
         connection: MicroStrategy connection object returned by
             `connection.Connection()`
@@ -227,6 +238,7 @@ def list_functions(
             available in ENUM mstrio.browsing.SearchPattern.
             Default value is CONTAINS (4).
         project_id (string, optional): Project ID
+        project_name(string, optional): Project name
         limit (integer, optional): limit the number of elements returned. If
             None all object are returned.
         **filters: Available filter parameters:
@@ -242,9 +254,13 @@ def list_functions(
     Returns:
         list with SchemaObjectReference objects or list of dictionaries
     """
-    if project_id is None:
-        connection._validate_project_selected()
-        project_id = connection.project_id
+    project_id = get_valid_project_id(
+        connection=connection,
+        project_id=project_id,
+        project_name=project_name,
+        with_fallback=False if project_name else True,
+    )
+
     objects = search_operations.full_search(
         connection,
         object_types=ObjectTypes.FUNCTION,
@@ -263,7 +279,7 @@ def list_functions(
             **obj,
             'object_id': obj.get('id'),
             'sub_type': ObjectSubType.FUNCTION
-                        if obj.get('subtype') == ObjectSubTypes.FUNCTION.value else None,  # noqa
+            if obj.get('subtype') == ObjectSubTypes.FUNCTION.value else None,  # noqa
         } for obj in objects
     ]
 

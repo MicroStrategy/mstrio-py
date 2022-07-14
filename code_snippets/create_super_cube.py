@@ -20,15 +20,15 @@ import pandas as pd
 from mstrio.project_objects.datasets import SuperCube
 from mstrio.connection import get_connection
 
-PROJECT_NAME='<Project_name>' # Insert project name here
-SUPER_CUBE_NAME = "<Cube_name>" # Insert name of created suber cube here
-SUPER_CUBE_ID = "<Cube_ID>" # insert ID of edited super cube here
+PROJECT_NAME = '<Project_name>'  # Insert project name here
+SUPER_CUBE_NAME = "<Cube_name>"  # Insert name of created suber cube here
+SUPER_CUBE_ID = "<Cube_ID>"  # insert ID of edited super cube here
 
 conn = get_connection(workstationData, project_name=PROJECT_NAME)
 
 # prepare Pandas DataFrames to add it into tables of super cube
 stores = {"store_id": [1, 2, 3], "location": ["New York", "Seattle", "Los Angeles"]}
-stores_df = pd.DataFrame(stores, columns=["store_id", "location"]) 
+stores_df = pd.DataFrame(stores, columns=["store_id", "location"])
 
 sales = {
     "store_id": [1, 2, 3],
@@ -52,8 +52,13 @@ ds.create()
 # attributes and which as metrics.
 ds.add_table(name="Stores", data_frame=stores_df, update_policy="add", to_attribute=["store_id"])
 
-ds.add_table(name="Sales", data_frame=sales_df, update_policy="add", to_attribute=["store_id"],
-             to_metric=["sales_fmt"])
+ds.add_table(
+    name="Sales",
+    data_frame=sales_df,
+    update_policy="add",
+    to_attribute=["store_id"],
+    to_metric=["sales_fmt"]
+)
 
 # It is possible to update previously created super cubes what looks really
 # similar to creation. You can use different update policies which are explained

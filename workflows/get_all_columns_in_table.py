@@ -10,8 +10,9 @@ from mstrio.utils.wip import module_wip, WipLevels
 module_wip(globals(), level=WipLevels.PREVIEW)
 
 
-def list_table_columns(connection: Connection, table: Optional[Union[SchemaObjectReference,
-                                                                     str]] = None) -> dict:
+def list_table_columns(
+    connection: Connection, table: Optional[Union[SchemaObjectReference, str]] = None
+) -> dict:
     """List all the columns for a given table, if tables is not specified,
     list all the columns for all available tables.
 
@@ -35,8 +36,11 @@ def list_table_columns(connection: Connection, table: Optional[Union[SchemaObjec
     def unpack(table_res):
         columns_list_dict = table_res['physicalTable']['columns']
         return [
-            SchemaObjectReference(col['information']['subType'], col['information']['objectId'],
-                                  col['information']['name']) for col in columns_list_dict
+            SchemaObjectReference(
+                col['information']['subType'],
+                col['information']['objectId'],
+                col['information']['name']
+            ) for col in columns_list_dict
         ]
 
     if table:

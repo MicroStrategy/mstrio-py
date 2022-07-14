@@ -5,8 +5,9 @@ from mstrio.utils.error_handlers import ErrorHandler
 
 @changeset_decorator
 @ErrorHandler(err_msg='Error getting attribute {id} relationship.')
-def get_attribute_relationships(connection: Connection, id: str, changeset_id: str,
-                                project_id: str):
+def get_attribute_relationships(
+    connection: Connection, id: str, changeset_id: str, project_id: str
+):
     """Get relationship(s) of an attribute
 
     Args:
@@ -21,9 +22,9 @@ def get_attribute_relationships(connection: Connection, id: str, changeset_id: s
     return connection.get(
         url=f'{connection.base_url}/api/model/systemHierarchy/attributes/{id}/relationships',
         headers={
-            'X-MSTR-MS-Changeset': changeset_id,
-            'X-MSTR-ProjectID': project_id
-        })
+            'X-MSTR-MS-Changeset': changeset_id, 'X-MSTR-ProjectID': project_id
+        }
+    )
 
 
 @changeset_decorator
@@ -47,4 +48,6 @@ def update_attribute_relationships(
     """
     return connection.put(
         url=f'{connection.base_url}/api/model/systemHierarchy/attributes/{id}/relationships',
-        headers={'X-MSTR-MS-Changeset': changeset_id}, json=body)
+        headers={'X-MSTR-MS-Changeset': changeset_id},
+        json=body
+    )

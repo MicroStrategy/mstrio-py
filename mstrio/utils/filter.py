@@ -7,8 +7,14 @@ class Filter:
     err_msg_invalid = "Invalid object ID: '{}'"
     err_msg_duplicated = "Duplicate object ID: '{}'"
 
-    def __init__(self, attributes: list, metrics: list, attr_elements: Optional[list] = None,
-                 row_count_metrics: Optional[list] = None, operator: str = 'In'):
+    def __init__(
+        self,
+        attributes: list,
+        metrics: list,
+        attr_elements: Optional[list] = None,
+        row_count_metrics: Optional[list] = None,
+        operator: str = 'In'
+    ):
 
         self.attributes = {}
         for a in attributes:
@@ -47,8 +53,9 @@ class Filter:
         if self.__invalid(object_id):
             raise ValueError(self.err_msg_invalid.format(object_id))
         if self.__duplicated(object_id):
-            helper.exception_handler(msg=self.err_msg_duplicated.format(object_id),
-                                     exception_type=Warning)
+            helper.exception_handler(
+                msg=self.err_msg_duplicated.format(object_id), exception_type=Warning
+            )
         else:
             typ = self.__type(object_id)
 
@@ -68,8 +75,9 @@ class Filter:
                 raise ValueError(self.err_msg_invalid.format(element_id))
 
             if self.__duplicated(element_id):
-                helper.exception_handler(msg=self.err_msg_duplicated.format(element_id),
-                                         exception_type=Warning)
+                helper.exception_handler(
+                    msg=self.err_msg_duplicated.format(element_id), exception_type=Warning
+                )
             else:
                 self.attr_elems[element_id] = {}
                 self.attr_elems[element_id]["name"] = element_id
@@ -152,8 +160,7 @@ class Filter:
         for att in attr_elements:
             for el in att["elements"]:
                 self.attr_elems[el["id"]] = {
-                    "name": att["attribute_name"],
-                    "attribute_id": att["attribute_id"]
+                    "name": att["attribute_name"], "attribute_id": att["attribute_id"]
                 }
 
     def __type(self, object_id):
@@ -174,8 +181,8 @@ class Filter:
         if object_is_attr_el:
             return object_id.split(':')[0] not in self.attributes.keys()
         else:
-            valid_object_ids = list(self.metrics.keys()) + list(
-                self.attributes.keys()) + self.row_count_metrics
+            valid_object_ids = list(self.metrics.keys()
+                                    ) + list(self.attributes.keys()) + self.row_count_metrics
             return object_id not in valid_object_ids
 
     def __duplicated(self, object_id):

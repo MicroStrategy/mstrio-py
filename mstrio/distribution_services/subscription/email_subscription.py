@@ -11,13 +11,17 @@ class EmailSubscription(Subscription):
     """Class representation of MicroStrategy Email Subscription object."""
     _DELETE_NONE_VALUES_RECURSION = False
 
-    def __init__(self, connection: Connection, subscription_id: Optional[str] = None,
-                 project_id: Optional[str] = None, project_name: Optional[str] = None):
+    def __init__(
+        self,
+        connection: Connection,
+        subscription_id: Optional[str] = None,
+        project_id: Optional[str] = None,
+        project_name: Optional[str] = None
+    ):
         """Initialize EmailSubscription object, populates it with I-Server data
         if subscription_id is passed.
         Specify either `project_id` or `project_name`.
-        When `project_id` is provided (not `None`), `project_name` is
-        omitted.
+        When `project_id` is provided (not `None`), `project_name` is omitted.
 
         Args:
             connection: MicroStrategy connection object returned
@@ -99,14 +103,29 @@ class EmailSubscription(Subscription):
             zip_password(str): optional password for the compressed file
         """
         return super()._Subscription__create(
-            connection=connection, name=name, project_id=project_id, project_name=project_name,
+            connection=connection,
+            name=name,
+            project_id=project_id,
+            project_name=project_name,
             allow_delivery_changes=allow_delivery_changes,
             allow_personalization_changes=allow_personalization_changes,
-            allow_unsubscribe=allow_unsubscribe, send_now=send_now, owner_id=owner_id,
-            schedules=schedules, contents=contents, recipients=recipients, delivery_mode='EMAIL',
-            delivery_expiration_date=delivery_expiration_date, contact_security=contact_security,
-            email_subject=email_subject, email_message=email_message, filename=filename,
-            compress=compress, space_delimiter=space_delimiter,
+            allow_unsubscribe=allow_unsubscribe,
+            send_now=send_now,
+            owner_id=owner_id,
+            schedules=schedules,
+            contents=contents,
+            recipients=recipients,
+            delivery_mode='EMAIL',
+            delivery_expiration_date=delivery_expiration_date,
+            contact_security=contact_security,
+            email_subject=email_subject,
+            email_message=email_message,
+            filename=filename,
+            compress=compress,
+            space_delimiter=space_delimiter,
             email_send_content_as=email_send_content_as,
-            overwrite_older_version=overwrite_older_version, zip_filename=zip_filename,
-            zip_password_protect=zip_password_protect, zip_password=zip_password)
+            overwrite_older_version=overwrite_older_version,
+            zip_filename=zip_filename,
+            zip_password_protect=zip_password_protect,
+            zip_password=zip_password
+        )

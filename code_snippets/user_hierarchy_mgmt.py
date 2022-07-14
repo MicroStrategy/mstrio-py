@@ -5,10 +5,18 @@ Its basic goal is to present what can be done with this module and to
 ease its usage.
 """
 
-from mstrio.modeling.schema import (ElementDisplayOption, HierarchyAttribute,
-                                    HierarchyRelationship, SchemaManagement, SchemaObjectReference,
-                                    SchemaUpdateType, ObjectSubType, UserHierarchy,
-                                    UserHierarchySubType, list_user_hierarchies)
+from mstrio.modeling.schema import (
+    ElementDisplayOption,
+    HierarchyAttribute,
+    HierarchyRelationship,
+    SchemaManagement,
+    SchemaObjectReference,
+    SchemaUpdateType,
+    ObjectSubType,
+    UserHierarchy,
+    UserHierarchySubType,
+    list_user_hierarchies
+)
 
 from mstrio.connection import get_connection
 
@@ -25,7 +33,6 @@ USER_HIERARCHY_NAME = '<user_hierarchy_name>'
 USER_HIERARCHY_DESCRIPTION = 'user_hierarchy_description>'
 FOLDER_ID = '<folder_id>'
 SUBTYPE = '<sub_type>'
-
 
 conn = get_connection(workstationData, project_name=PROJECT_NAME)
 # get a list of user hierarchies

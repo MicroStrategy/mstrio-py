@@ -7,7 +7,14 @@ from .server import ServerSettings
 
 # isort: off
 from .job_monitor import (
-    Job, JobStatus, JobType, kill_all_jobs, kill_jobs, list_jobs, ObjectType, PUName,
+    Job,
+    JobStatus,
+    JobType,
+    kill_all_jobs,
+    kill_jobs,
+    list_jobs,
+    ObjectType,
+    PUName,
     SubscriptionType
 )
 # isort: on

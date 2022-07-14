@@ -99,8 +99,9 @@ def report_instance_id(connection, report_id, instance_id, offset=0, limit=5000)
     )
 
 
-def report_instance_id_coroutine(future_session: "FuturesSession", connection, report_id,
-                                 instance_id, offset=0, limit=5000):
+def report_instance_id_coroutine(
+    future_session: "FuturesSession", connection, report_id, instance_id, offset=0, limit=5000
+):
     """Get the future of a previously created instance for a specific report
     asynchronously, using the in-memory instance created by report_instance().
 
@@ -140,14 +141,14 @@ def report_single_attribute_elements(connection, report_id, attribute_id, offset
     return connection.get(
         url=url,
         params={
-            'offset': offset,
-            'limit': limit
+            'offset': offset, 'limit': limit
         },
     )
 
 
-def report_single_attribute_elements_coroutine(future_session: "FuturesSession", connection,
-                                               report_id, attribute_id, offset=0, limit=200000):
+def report_single_attribute_elements_coroutine(
+    future_session: "FuturesSession", connection, report_id, attribute_id, offset=0, limit=200000
+):
     """Get elements of a specific attribute of a specific report.
 
     Args:
@@ -193,8 +194,7 @@ def get_report_prompts(connection, report_id, closed=None, fields=None):
     return connection.get(
         url=url,
         params={
-            'closed': closed,
-            'fields': fields
+            'closed': closed, 'fields': fields
         },
     )
 
@@ -222,7 +222,6 @@ def get_prompted_instance(connection, report_id, instance_id, closed=None, field
     return connection.get(
         url=url,
         params={
-            'closed': closed,
-            'fields': fields
+            'closed': closed, 'fields': fields
         },
     )

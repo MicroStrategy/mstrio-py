@@ -3,13 +3,15 @@ from enum import auto
 import logging
 from typing import Iterable, Optional, Union, List, TYPE_CHECKING
 
-
 from mstrio import config
 from mstrio.api import contact_groups
 from mstrio.users_and_groups.user import User
 from mstrio.utils.entity import auto_match_args_entity, DeleteMixin, EntityBase
 from mstrio.utils.enum_helper import AutoName
-from mstrio.utils.helper import Dictable, fetch_objects_async, get_objects_id
+from mstrio.utils.helper import (
+    Dictable, fetch_objects_async, get_args_from_func, get_default_args_from_func, get_objects_id
+)
+from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
@@ -21,6 +23,7 @@ logger = logging.getLogger(__name__)
 class ContactGroupMemberType(AutoName):
     CONTACT = auto()
     CONTACT_GROUP = auto()
+    USER = auto()
 
 
 class ContactGroupMember(Dictable):
@@ -36,9 +39,14 @@ class ContactGroupMember(Dictable):
     _DELETE_NONE_VALUES_RECURSION = False
     _FROM_DICT_MAP = {"type": ContactGroupMemberType}
 
-    def __init__(self, name: str, type: Union[str,
-                                              ContactGroupMemberType], id: Optional[str] = None,
-                 description: Optional[str] = None, enabled: bool = True):
+    def __init__(
+        self,
+        name: str,
+        type: Union[str, ContactGroupMemberType],
+        id: Optional[str] = None,
+        description: Optional[str] = None,
+        enabled: bool = True
+    ):
         self.name = name
         self.type = ContactGroupMemberType(type) if isinstance(type, str) else type
         self.id = id
@@ -46,12 +54,13 @@ class ContactGroupMember(Dictable):
         self.enabled = enabled
 
     def __repr__(self) -> str:
-        param_dict = auto_match_args_entity(self.__init__, self, exclude=['self'],
-                                            include_defaults=False)
+        param_dict = auto_match_args_entity(
+            self.__init__, self, exclude=['self'], include_defaults=False
+        )
 
         params = [
-            f"{param}={self.type}" if param == 'type' else f'{param}={repr(value)}'
-            for param, value in param_dict.items()
+            f"{param}={self.type}" if param == 'type' else f'{param}={repr(value)}' for param,
+            value in param_dict.items()
         ]
         formatted_params = ', '.join(params)
 
@@ -59,7 +68,8 @@ class ContactGroupMember(Dictable):
 
     @classmethod
     def from_contact_or_contact_group(
-            cls, obj: Union['Contact', 'ContactGroup']) -> 'ContactGroupMember':
+        cls, obj: Union['Contact', 'ContactGroup']
+    ) -> 'ContactGroupMember':
         """Initialize instance of class ContactGroupMember
 
         Args:
@@ -78,9 +88,10 @@ class ContactGroupMember(Dictable):
             return cls(id=obj.id, name=obj.name, type=ContactGroupMemberType.CONTACT_GROUP)
 
 
-def list_contact_groups(connection: "Connection", to_dictionary: bool = False,
-                        limit: Optional[int] = None,
-                        **filters) -> Union[List["ContactGroup"], List[dict]]:
+@method_version_handler('11.3.0200')
+def list_contact_groups(
+    connection: "Connection", to_dictionary: bool = False, limit: Optional[int] = None, **filters
+) -> Union[List["ContactGroup"], List[dict]]:
     """Get all contact groups as list of ContactGroup objects or
     dictionaries.
 
@@ -95,10 +106,12 @@ def list_contact_groups(connection: "Connection", to_dictionary: bool = False,
         **filters: Available filter parameters: ['id', 'name', 'description',
             enabled]
     """
-    return ContactGroup._list_contact_groups(connection=connection, to_dictionary=to_dictionary,
-                                             limit=limit, **filters)
+    return ContactGroup._list_contact_groups(
+        connection=connection, to_dictionary=to_dictionary, limit=limit, **filters
+    )
 
 
+@class_version_handler('11.3.0200')
 class ContactGroup(EntityBase, DeleteMixin):
     """Object representation of Microstrategy Contact Group object
 
@@ -126,8 +139,8 @@ class ContactGroup(EntityBase, DeleteMixin):
     }
     _API_DELETE = staticmethod(contact_groups.delete_contact_group)
     _API_PATCH = {
-        ('name', 'description', 'enabled', 'linked_user', 'members'):
-            (contact_groups.update_contact_group, 'put')
+        ('name', 'description', 'enabled', 'linked_user',
+         'members'): (contact_groups.update_contact_group, 'put')
     }
     _PATCH_PATH_TYPES = {
         'name': str,
@@ -138,8 +151,9 @@ class ContactGroup(EntityBase, DeleteMixin):
         'memberships': list
     }
 
-    def __init__(self, connection: 'Connection', id: Optional[str] = None,
-                 name: Optional[str] = None):
+    def __init__(
+        self, connection: 'Connection', id: Optional[str] = None, name: Optional[str] = None
+    ):
         """Initialize Contact Group object by passing id or name.
         When `id` is provided, name is omitted.
 
@@ -153,7 +167,7 @@ class ContactGroup(EntityBase, DeleteMixin):
             raise ValueError("Please specify either 'id' or 'name' parameter in the constructor.")
 
         if id is None:
-            result = self._list_contact_groups(
+            result = ContactGroup._list_contact_groups(
                 connection=connection,
                 name=name,
                 to_dictionary=True,
@@ -177,20 +191,24 @@ class ContactGroup(EntityBase, DeleteMixin):
 
         members = kwargs.get('members')
         self.members = [
-            ContactGroupMember.from_dict(member)
-            for member in members
+            ContactGroupMember.from_dict(member) for member in members
         ] if members else None
 
         memberships = kwargs.get('memberships')
         self._memberships = [
-            self.from_dict(m, self.connection)
-            for m in memberships
+            self.from_dict(m, self.connection) for m in memberships
         ] if memberships else None
 
     @classmethod
-    def create(cls, connection: "Connection", name: str, linked_user: Union[str, User],
-               members: List[Union[dict, ContactGroupMember]], description: Optional[str] = None,
-               enabled: bool = True) -> 'ContactGroup':
+    def create(
+        cls,
+        connection: "Connection",
+        name: str,
+        linked_user: Union[str, User],
+        members: List[Union[dict, ContactGroupMember]],
+        description: Optional[str] = None,
+        enabled: bool = True
+    ) -> 'ContactGroup':
         """Create a new contact group.
 
         Args:
@@ -224,9 +242,14 @@ class ContactGroup(EntityBase, DeleteMixin):
             )
         return cls.from_dict(res, connection)
 
-    def alter(self, name: Optional[str] = None, description: Optional[str] = None,
-              enabled: Optional[bool] = None, linked_user: Optional[Union['User', str]] = None,
-              members: Optional[Iterable[Union['ContactGroupMember', dict]]] = None):
+    def alter(
+        self,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        enabled: Optional[bool] = None,
+        linked_user: Optional[Union['User', str]] = None,
+        members: Optional[Iterable[Union['ContactGroupMember', dict]]] = None
+    ):
         """Update properties of a contact group
 
         Args:
@@ -241,9 +264,8 @@ class ContactGroup(EntityBase, DeleteMixin):
         linked_user = {'id': get_objects_id(linked_user, User)} if linked_user else None
 
         func = self.alter
-        args = func.__code__.co_varnames[:func.__code__.co_argcount]
-
-        defaults = func.__defaults__  # type: ignore
+        args = get_args_from_func(func)
+        defaults = get_default_args_from_func(func)
         defaults_dict = dict(zip(args[-len(defaults):], defaults)) if defaults else {}
         local = locals()
 
@@ -256,9 +278,14 @@ class ContactGroup(EntityBase, DeleteMixin):
         self._alter_properties(**properties)
 
     @classmethod
-    def _list_contact_groups(cls, connection: "Connection", to_dictionary: bool = False,
-                             limit: Optional[int] = None, offset: Optional[int] = None,
-                             **filters) -> Union[List["ContactGroup"], List[dict]]:
+    def _list_contact_groups(
+        cls,
+        connection: "Connection",
+        to_dictionary: bool = False,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+        **filters
+    ) -> Union[List["ContactGroup"], List[dict]]:
         objects = fetch_objects_async(
             connection=connection,
             api=contact_groups.get_contact_groups,
@@ -278,13 +305,13 @@ class ContactGroup(EntityBase, DeleteMixin):
         super()._set_object_attributes(**kwargs)
         memberships = kwargs.get("memberships")
 
-        memberships_objs = [
-            self.from_dict(m, self.connection) for m in memberships
-        ] if memberships else []
+        memberships_objs = [self.from_dict(m, self.connection)
+                            for m in memberships] if memberships else []
         setattr(self, '_memberships', memberships_objs)
 
-    def add_members(self, members: Iterable[Union['ContactGroupMember', 'Contact',
-                                                  'ContactGroup']]):
+    def add_members(
+        self, members: Iterable[Union['ContactGroupMember', 'Contact', 'ContactGroup']]
+    ):
         """Add member
 
         Args:
@@ -300,8 +327,9 @@ class ContactGroup(EntityBase, DeleteMixin):
 
         self.alter(members=new_members + self.members)
 
-    def remove_members(self, members: Iterable[Union['ContactGroupMember', 'Contact',
-                                                     'ContactGroup']]):
+    def remove_members(
+        self, members: Iterable[Union['ContactGroupMember', 'Contact', 'ContactGroup']]
+    ):
         """Remove member
 
         Args:

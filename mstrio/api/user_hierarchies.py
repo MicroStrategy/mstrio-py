@@ -8,9 +8,14 @@ if TYPE_CHECKING:
 
 
 @ErrorHandler(err_msg='Error listing Hierarchies.')
-def get_user_hierarchies(connection: "Connection", project_id: Optional[str] = None,
-                         changeset_id: Optional[str] = None, limit: int = 1000, offset: int = 0,
-                         error_msg: Optional[str] = None):
+def get_user_hierarchies(
+    connection: "Connection",
+    project_id: Optional[str] = None,
+    changeset_id: Optional[str] = None,
+    limit: int = 1000,
+    offset: int = 0,
+    error_msg: Optional[str] = None
+):
     """Get a list of all user hierarchies.
     The project ID is required to return all user hierarchy definitions
     in metadata. The changeset ID is required to return all user hierarchy
@@ -52,8 +57,9 @@ def get_user_hierarchies(connection: "Connection", project_id: Optional[str] = N
 @changeset_decorator
 @unpack_information
 @ErrorHandler(err_msg='Error creating the user hierarchy.')
-def create_user_hierarchy(connection: "Connection", body: dict, changeset_id: str,
-                          error_msg: Optional[str] = None):
+def create_user_hierarchy(
+    connection: "Connection", body: dict, changeset_id: str, error_msg: Optional[str] = None
+):
     """Creates a new user hierarchy in the changeset,
     based on the definition provided in request body.
 
@@ -75,8 +81,13 @@ def create_user_hierarchy(connection: "Connection", body: dict, changeset_id: st
 
 @unpack_information
 @ErrorHandler(err_msg='Error getting the user hierarchy with ID: {id}.')
-def get_user_hierarchy(connection: "Connection", id: str, project_id: Optional[str] = None,
-                       changeset_id: Optional[str] = None, error_msg: Optional[str] = None):
+def get_user_hierarchy(
+    connection: "Connection",
+    id: str,
+    project_id: Optional[str] = None,
+    changeset_id: Optional[str] = None,
+    error_msg: Optional[str] = None
+):
     """Get the definition of a user hierarchy.
     The project ID is required to return a user hierarchy's definition
     in metadata. The changeset ID is required to return a user hierarchy's
@@ -104,8 +115,7 @@ def get_user_hierarchy(connection: "Connection", id: str, project_id: Optional[s
     return connection.get(
         url=f"{connection.base_url}/api/model/hierarchies/{id}",
         headers={
-            'X-MSTR-ProjectID': project_id,
-            'X-MSTR-MS-Changeset': changeset_id
+            'X-MSTR-ProjectID': project_id, 'X-MSTR-MS-Changeset': changeset_id
         },
     )
 
@@ -113,8 +123,13 @@ def get_user_hierarchy(connection: "Connection", id: str, project_id: Optional[s
 @changeset_decorator
 @unpack_information
 @ErrorHandler(err_msg='Error updating the user hierarchy with ID: {id}.')
-def update_user_hierarchy(connection: "Connection", changeset_id: str, id: str,
-                          body: dict, error_msg: Optional[str] = None):
+def update_user_hierarchy(
+    connection: "Connection",
+    changeset_id: str,
+    id: str,
+    body: dict,
+    error_msg: Optional[str] = None
+):
     """Updates a specific user hierarchy in the changeset,
     based on the definition provided in the request body.
 
@@ -140,8 +155,9 @@ def update_user_hierarchy(connection: "Connection", changeset_id: str, id: str,
 
 @changeset_decorator
 @ErrorHandler(err_msg='Error deleting the user hierarchy with ID: {id}.')
-def delete_user_hierarchy(connection: "Connection", id: str, changeset_id: str,
-                          error_msg: Optional[str] = None):
+def delete_user_hierarchy(
+    connection: "Connection", id: str, changeset_id: str, error_msg: Optional[str] = None
+):
     """Delete a specific user hierarchy
 
     Args:
@@ -159,7 +175,5 @@ def delete_user_hierarchy(connection: "Connection", id: str, changeset_id: str,
 
     return connection.delete(
         url=f"{connection.base_url}/api/model/hierarchies/{id}",
-        headers={
-            'X-MSTR-MS-Changeset': changeset_id
-        },
+        headers={'X-MSTR-MS-Changeset': changeset_id},
     )

@@ -17,8 +17,10 @@ class MstrException(Exception):
         self.message = err_data.get("message")
         self.ticket_id = err_data.get("ticketId")
         self.iserver_code = err_data.get("iServerCode")
-        self.full_message = (f"{self.code}: {self.message} (Ticket ID: {self.ticket_id}, "
-                             f"iServerCode: {self.iserver_code})")
+        self.full_message = (
+            f"{self.code}: {self.message} (Ticket ID: {self.ticket_id}, "
+            f"iServerCode: {self.iserver_code})"
+        )
         super().__init__(self.full_message)
 
 
@@ -69,8 +71,10 @@ class PartialSuccess(Exception):
 
         self.succeeded = filter_list_of_dicts(data, status=[200, 204])
         self.failed = filter_list_of_dicts(data, status=">=400")
-        self.full_message = (f"Operation partially successful:\n{len(self.failed)} failed "
-                             f"requests\n{len(self.succeeded)} succeeded requests")
+        self.full_message = (
+            f"Operation partially successful:\n{len(self.failed)} failed "
+            f"requests\n{len(self.succeeded)} succeeded requests"
+        )
         super().__init__(self.full_message)
 
     def __bool__(self):

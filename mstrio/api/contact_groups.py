@@ -9,8 +9,9 @@ if TYPE_CHECKING:
 
 
 @ErrorHandler(err_msg='Error listing Contact Groups.')
-def get_contact_groups(connection: "Connection", offset: int = 0, limit: int = 1000,
-                       error_msg: Optional[str] = None):
+def get_contact_groups(
+    connection: "Connection", offset: int = 0, limit: int = 1000, error_msg: Optional[str] = None
+):
     """Get a list of all contact groups that the authenticated user has access
         to.
 
@@ -31,8 +32,9 @@ def get_contact_groups(connection: "Connection", offset: int = 0, limit: int = 1
     return connection.get(url=url, params=params)
 
 
-def get_contact_groups_async(future_session: "FuturesSession", connection: "Connection",
-                             offset: int = 0, limit: int = 1000):
+def get_contact_groups_async(
+    future_session: "FuturesSession", connection: "Connection", offset: int = 0, limit: int = 1000
+):
     """Get a list of all contact groups that the authenticated user has access
         to.
 
@@ -88,8 +90,9 @@ def get_contact_group(connection: "Connection", id: str, error_msg: Optional[str
 
 
 @ErrorHandler(err_msg='Error updating Contact Group with ID {id}')
-def update_contact_group(connection: "Connection", id: str, body: dict,
-                         error_msg: Optional[str] = None):
+def update_contact_group(
+    connection: "Connection", id: str, body: dict, error_msg: Optional[str] = None
+):
     """Update a contact group.
 
     Args:

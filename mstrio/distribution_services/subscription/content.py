@@ -147,14 +147,20 @@ class Content(Dictable):
                 ALL = auto()
 
             # ExportToPdfSettings
-            def __init__(self, page_option: PageOption = PageOption.PAGE,
-                         page_size: PageSize = PageSize.LETTER,
-                         orientation: Orientation = Orientation.AUTOMATIC,
-                         page_detail_level=PageDetailLevel.OVERVIEW, include_header: bool = True,
-                         include_footer: bool = True, include_toc: bool = False,
-                         filter_summary: FilterSummary = FilterSummary.BAR,
-                         fit_to_page: bool = False, repeat_column_header: bool = False,
-                         grid_paging_mode: GridPagingMode = GridPagingMode.NONE):
+            def __init__(
+                self,
+                page_option: PageOption = PageOption.PAGE,
+                page_size: PageSize = PageSize.LETTER,
+                orientation: Orientation = Orientation.AUTOMATIC,
+                page_detail_level=PageDetailLevel.OVERVIEW,
+                include_header: bool = True,
+                include_footer: bool = True,
+                include_toc: bool = False,
+                filter_summary: FilterSummary = FilterSummary.BAR,
+                fit_to_page: bool = False,
+                repeat_column_header: bool = False,
+                grid_paging_mode: GridPagingMode = GridPagingMode.NONE
+            ):
 
                 self.page_option = page_option
                 self.page_size = page_size
@@ -186,11 +192,16 @@ class Content(Dictable):
             """
             _DELETE_NONE_VALUES_RECURSION = False
 
-            def __init__(self, slicing_attributes: List[str] = None,
-                         address_attribute_id: Optional[str] = None,
-                         device_id: Optional[str] = None, form_id: Optional[str] = None):
+            def __init__(
+                self,
+                slicing_attributes: List[str] = None,
+                address_attribute_id: Optional[str] = None,
+                device_id: Optional[str] = None,
+                form_id: Optional[str] = None
+            ):
                 self.slicing_attributes = slicing_attributes if isinstance(
-                    slicing_attributes, list) else []
+                    slicing_attributes, list
+                ) else []
                 self.address_attribute_id = address_attribute_id
                 self.device_id = device_id
                 self.form_id = form_id
@@ -204,12 +215,17 @@ class Content(Dictable):
                 self.instance_id = instance_id
 
         # Properties
-        def __init__(self, format_mode: FormatMode = FormatMode.DEFAULT,
-                     view_mode: ViewMode = ViewMode.DEFAULT,
-                     format_type: FormatType = FormatType.PDF,
-                     export_to_pdf_settings: Optional[ExportToPdfSettings] = None,
-                     delimiter: Optional[str] = None, bursting: Optional[Bursting] = None,
-                     prompt: Optional[Prompt] = None, file_name: Optional[str] = None):
+        def __init__(
+            self,
+            format_mode: FormatMode = FormatMode.DEFAULT,
+            view_mode: ViewMode = ViewMode.DEFAULT,
+            format_type: FormatType = FormatType.PDF,
+            export_to_pdf_settings: Optional[ExportToPdfSettings] = None,
+            delimiter: Optional[str] = None,
+            bursting: Optional[Bursting] = None,
+            prompt: Optional[Prompt] = None,
+            file_name: Optional[str] = None
+        ):
 
             self.format_mode = format_mode
             self.view_mode = view_mode
@@ -286,40 +302,48 @@ class Content(Dictable):
                 _DELETE_NONE_VALUES_RECURSION = False
 
                 # XXX: Should all of those be optional or all required or what?
-                def __init__(self, db_role_id: Optional[str] = None,
-                             namespace: Optional[str] = None, table_name: Optional[str] = None,
-                             url: Optional[str] = None):
+                def __init__(
+                    self,
+                    db_role_id: Optional[str] = None,
+                    namespace: Optional[str] = None,
+                    table_name: Optional[str] = None,
+                    url: Optional[str] = None
+                ):
                     self.db_role_id = db_role_id
                     self.namespace = namespace
                     self.table_name = table_name
                     self.url = url
 
             # TableRefreshInfo
-            def __init__(self, id: str, refresh_policy: RefreshPolicy,
-                         alternate_source: Optional[AlternateSource] = None):
+            def __init__(
+                self,
+                id: str,
+                refresh_policy: RefreshPolicy,
+                alternate_source: Optional[AlternateSource] = None
+            ):
                 self.id = id
                 self.refresh_policy = refresh_policy
                 self.alternate_source = alternate_source
 
             _FROM_DICT_MAP = {
-                "refresh_policy": RefreshPolicy,
-                "alternate_source": AlternateSource.from_dict
+                "refresh_policy": RefreshPolicy, "alternate_source": AlternateSource.from_dict
             }
 
         # RefreshCondition
-        def __init__(self, tables: List[TableRefreshInfo],
-                     dataset_refresh_policy: Optional[RefreshPolicy] = None,
-                     filters: Optional[List[SubscriptionFilter]] = None):
+        def __init__(
+            self,
+            tables: List[TableRefreshInfo],
+            dataset_refresh_policy: Optional[RefreshPolicy] = None,
+            filters: Optional[List[SubscriptionFilter]] = None
+        ):
             self.tables = tables
             self.dataset_refresh_policy = dataset_refresh_policy
             self.filters = filters
 
         _FROM_DICT_MAP = {
             "dataset_refresh_policy": RefreshPolicy,
-            "tables": lambda tables: [
-                Content.RefreshCondition.TableRefreshInfo.from_dict(t)
-                for t in tables
-            ],
+            "tables": lambda tables:
+            [Content.RefreshCondition.TableRefreshInfo.from_dict(t) for t in tables],
             "filters": lambda filters: [
                 Content.RefreshCondition.SubscriptionFilter.from_dict(f)  # noqa
                 for f in filters
@@ -327,9 +351,14 @@ class Content(Dictable):
         }
 
     # Content
-    def __init__(self, id: str, type: Type, name: Optional[str] = None,
-                 personalization: Optional[Properties] = None,
-                 refresh_condition: Optional[RefreshCondition] = None):
+    def __init__(
+        self,
+        id: str,
+        type: Type,
+        name: Optional[str] = None,
+        personalization: Optional[Properties] = None,
+        refresh_condition: Optional[RefreshCondition] = None
+    ):
         self.id = id
         self.type = type
         self.name = name

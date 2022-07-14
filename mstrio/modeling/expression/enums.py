@@ -288,3 +288,15 @@ class IsIndependent(Enum):
      of other parts of the larger expression"""
     YES = 1
     NO = 0
+
+
+class ExpressionFormat(AutoName):
+    """"Expression format to be fetched from server, it might be tree or token:
+    - tree: tree data structure fully defining the expression. This format can
+    be used if you want to examine and modify the expression programmatically.
+    - tokens: list of parsed tokens. This format can be used if you want
+    to examine and modify the expression using the parser component. Note that
+    generating tokens requires additional time.
+    """
+    TREE = auto()
+    TOKENS = auto()

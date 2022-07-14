@@ -7,7 +7,10 @@ ease its usage.
 
 from mstrio.connection import get_connection
 from mstrio.distribution_services import (
-    EmailTransmitterProperties, list_transmitters, RecipientFieldType, Transmitter,
+    EmailTransmitterProperties,
+    list_transmitters,
+    RecipientFieldType,
+    Transmitter,
     TransmitterDeliveryType
 )
 

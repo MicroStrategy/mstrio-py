@@ -12,10 +12,12 @@ from mstrio.users_and_groups.user import User
 from mstrio.utils import helper
 from mstrio.utils.entity import Entity, EntityBase, ObjectTypes
 from mstrio.utils.helper import get_objects_id
+from mstrio.utils.version_helper import method_version_handler
 
 logger = logging.getLogger(__name__)
 
 
+@method_version_handler('11.3.0000')
 def list_datasource_mappings(
         connection: Connection, default_connection_map: bool = False,
         project: Optional[Union[Project, str]] = None, to_dictionary: bool = False,
@@ -48,9 +50,14 @@ def list_datasource_mappings(
     Examples:
         >>> list_datasource_mappings(connection, name='db_login_name')
     """
-    return DatasourceMap._list(connection=connection,
-                               default_connection_map=default_connection_map, project=project,
-                               to_dictionary=to_dictionary, limit=limit, **filters)
+    return DatasourceMap._list(
+        connection=connection,
+        default_connection_map=default_connection_map,
+        project=project,
+        to_dictionary=to_dictionary,
+        limit=limit,
+        **filters
+    )
 
 
 class Locale(Entity):
@@ -109,12 +116,18 @@ class DatasourceMap(EntityBase):
         "locale": Locale.from_dict
     }
 
-    def __init__(self, connection: Connection, id: Optional[str] = None,
-                 project: Optional[Union[Project,
-                                         str]] = None, default_connection_map: bool = False,
-                 ds_connection: Optional["DatasourceConnection"] = None,
-                 datasource: Optional["DatasourceInstance"] = None, user: Optional["User"] = None,
-                 login: Optional["DatasourceLogin"] = None, locale: Optional[Locale] = None):
+    def __init__(
+        self,
+        connection: Connection,
+        id: Optional[str] = None,
+        project: Optional[Union[Project, str]] = None,
+        default_connection_map: bool = False,
+        ds_connection: Optional["DatasourceConnection"] = None,
+        datasource: Optional["DatasourceInstance"] = None,
+        user: Optional["User"] = None,
+        login: Optional["DatasourceLogin"] = None,
+        locale: Optional[Locale] = None
+    ):
         """Initialise Datasource Map object by passing the ID or by passing
         True for `default_connection_map` and the project for which to
         fetch the default map.
@@ -135,7 +148,8 @@ class DatasourceMap(EntityBase):
             if project is None or not default_connection_map:
                 helper.exception_handler(
                     "Please either specify the `id` or `default_connection_map` and"
-                    " the `project` to find the default map for the given project.")
+                    " the `project` to find the default map for the given project."
+                )
             else:
                 mapping: DatasourceMap = self._list(connection, True, project)
                 if mapping:
@@ -145,17 +159,34 @@ class DatasourceMap(EntityBase):
                     datasource = mapping.datasource
                     user = mapping.user
                     login = mapping.login
-                    self.__init__(connection, id, project, default_connection_map, ds_connection,
-                                  datasource, user, login, locale)
+                    self.__init__(
+                        connection,
+                        id,
+                        project,
+                        default_connection_map,
+                        ds_connection,
+                        datasource,
+                        user,
+                        login,
+                        locale
+                    )
                 else:
                     helper.exception_handler(
                         f"The project {project} has no default datasource map.",
-                        exception_type=ValueError)
+                        exception_type=ValueError
+                    )
         else:
-            super().__init__(connection, id, project=project,
-                             default_connection_map=default_connection_map,
-                             ds_connection=ds_connection, datasource=datasource, user=user,
-                             login=login, locale=locale)
+            super().__init__(
+                connection,
+                id,
+                project=project,
+                default_connection_map=default_connection_map,
+                ds_connection=ds_connection,
+                datasource=datasource,
+                user=user,
+                login=login,
+                locale=locale
+            )
 
     def _init_variables(self, **kwargs) -> None:
         super()._init_variables(**kwargs)
@@ -182,7 +213,8 @@ class DatasourceMap(EntityBase):
         user_input = 'N'
         if not force:
             user_input = input(
-                f"Are you sure you want to delete datasource map with ID: {self.id}? [Y/N]: ")
+                f"Are you sure you want to delete datasource map with ID: {self.id}? [Y/N]: "
+            )
         if force or user_input == 'Y':
             response = datasources.delete_datasource_mapping(self.connection, self.id)
             if response.status_code == 204 and config.verbose:
@@ -192,16 +224,26 @@ class DatasourceMap(EntityBase):
             return False
 
     @classmethod
-    def _list(cls, connection: Connection, default_connection_map: Optional[bool] = False,
-              project: Optional[Union[Project, str]] = None, to_dictionary: bool = False,
-              limit: Optional[int] = None, **filters) -> Union[List["DatasourceMap"], List[dict]]:
+    def _list(
+        cls,
+        connection: Connection,
+        default_connection_map: Optional[bool] = False,
+        project: Optional[Union[Project, str]] = None,
+        to_dictionary: bool = False,
+        limit: Optional[int] = None,
+        **filters
+    ) -> Union[List["DatasourceMap"], List[dict]]:
         project_id = project.id if isinstance(project, Project) else project
         try:
-            mappings = helper.fetch_objects(connection=connection,
-                                            api=datasources.get_datasource_mappings,
-                                            default_connection_map=default_connection_map,
-                                            project_id=project_id, limit=limit,
-                                            dict_unpack_value="mappings", filters=filters)
+            mappings = helper.fetch_objects(
+                connection=connection,
+                api=datasources.get_datasource_mappings,
+                default_connection_map=default_connection_map,
+                project_id=project_id,
+                limit=limit,
+                dict_unpack_value="mappings",
+                filters=filters
+            )
         except HTTPError as err:
             if err.errno == 404:
                 if config.verbose:
@@ -215,11 +257,18 @@ class DatasourceMap(EntityBase):
             return [cls.from_dict(source=elem, connection=connection) for elem in mappings]
 
     @classmethod
-    def create(cls, connection: Connection, project: Union[Project, str],
-               user: Union[User, str], ds_connection: Union[DatasourceConnection, str],
-               datasource: Union[DatasourceInstance, str], login: Union[DatasourceLogin, str],
-               locale: Optional[Locale] = None, locale_id: Optional[str] = None,
-               locale_name: Optional[str] = None) -> "DatasourceMap":
+    def create(
+        cls,
+        connection: Connection,
+        project: Union[Project, str],
+        user: Union[User, str],
+        ds_connection: Union[DatasourceConnection, str],
+        datasource: Union[DatasourceInstance, str],
+        login: Union[DatasourceLogin, str],
+        locale: Optional[Locale] = None,
+        locale_id: Optional[str] = None,
+        locale_name: Optional[str] = None
+    ) -> "DatasourceMap":
         """Create a new Datasource Map object on the server.
         If more than one locale related parameters are provided,
         `locale` has priority, then `locale_id`.

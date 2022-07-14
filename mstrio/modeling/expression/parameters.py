@@ -49,6 +49,14 @@ class PredicateParameter(Dictable):
 
     @staticmethod
     def dispatch(source, connection: Optional['Connection'] = None) -> Type['PredicateParameter']:
+        """Returns an appropriate PredicateParameter object from the
+            provided source
+
+        Args:
+            source: object that specifies PredicateParameter that will be
+                returned
+            connection (optional): MicroStrategy connection object returned
+            by `connection.Connection()`"""
         data = camel_to_snake(source)
         parameter_type = ParameterType(data.pop('parameter_type'))
         cls = PREDICATE_PARAMETER_MAP[parameter_type]
