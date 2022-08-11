@@ -6,9 +6,7 @@ from typing import Optional, TYPE_CHECKING
 from mstrio.modeling.schema.helpers import SchemaObjectReference
 from mstrio.utils.enum_helper import AutoName
 from mstrio.utils.helper import Dictable
-from mstrio.utils.wip import module_wip, WipLevels
 
-module_wip(globals(), level=WipLevels.WARNING)
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
@@ -87,6 +85,10 @@ class DimensionalityUnit(Dictable):
 class Dimensionality(Dictable):
     """
     Object that specifies the dimensionality.
+
+    This class can only be used for simple metrics.
+    For creation and altering of compound metrics, dimensionality needs to be
+    defined through the use of the Expression class.
 
     Attributes:
         dimtyUnits: The list of dimty unit

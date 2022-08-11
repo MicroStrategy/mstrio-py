@@ -18,12 +18,10 @@ from mstrio.utils.helper import (
     delete_none_values, Dictable, filter_params_for_func, get_valid_project_id
 )
 from mstrio.utils.version_helper import method_version_handler
-from mstrio.utils.wip import module_wip, WipLevels
 
 if TYPE_CHECKING:
     from mstrio.modeling.metric import Metric
 
-module_wip(globals(), level=WipLevels.WARNING)
 logger = logging.getLogger(__name__)
 
 
@@ -263,6 +261,10 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa: F811
     @dataclass
     class Conditionality(Dictable):
         """Object that specifies the conditionality
+
+        This class can only be used for simple metrics.
+        For creation and altering of compound metrics, conditionality needs to
+        be defined through the use of the Expression class.
 
         Attributes:
             filter (SchemaObjectReference, optional): reference to the filter

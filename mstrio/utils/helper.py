@@ -55,7 +55,7 @@ def deprecation_warning(
     if change_compatible_immediately:
         msg = (
             f"{deprecated}{module} is deprecated and will not be supported starting from mstrio-py"
-            f"{version}. Please use {new} instead."
+            f" {version}. Please use {new} instead."
         )
     else:
         msg = (
@@ -1119,7 +1119,7 @@ class Dictable:
         source_list: list[dict[str, Any]],
         connection: Optional["Connection"] = None,
         to_snake_case: bool = True
-    ) -> T:
+    ) -> list[T]:
         """Creates multiple objects from a list of dictionaries. For each
         dictionary provided the keys in camel case are changed to object's
         attribute names (by default in snake case) and dict values are composed

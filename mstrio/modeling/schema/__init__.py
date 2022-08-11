@@ -10,5 +10,6 @@ from .schema_management import (
     SchemaTaskStatus,
     SchemaUpdateType
 )
-from .user_hierarchy import *
 from .table import *
+from .transformation import *
+from .user_hierarchy import *

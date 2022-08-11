@@ -108,6 +108,10 @@ def list_connected_datasource_instances(
     connected_datasource_instances = [
         ds_instance for ds_instance in all_datasource_instances
         if ds_instance.get('datasource_connection').get('id') in datasource_connections_ids
+        # remove xquery datasources because they are not available
+        # in Workstation and listing namespaces for them can cause
+        # IServer to become unresponsive.
+        and ds_instance.get('database_type') != 'xquery'
     ]
 
     if to_dictionary:

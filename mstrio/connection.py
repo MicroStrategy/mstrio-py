@@ -10,7 +10,7 @@ import requests
 from requests import Session
 from requests.adapters import HTTPAdapter, Retry
 from requests.cookies import RequestsCookieJar
-from urllib3.exceptions import InsecureRequestWarning
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
 
 from mstrio import config
 from mstrio.api import authentication, exceptions, hooks, misc, projects

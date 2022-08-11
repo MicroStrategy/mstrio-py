@@ -2,7 +2,7 @@ from enum import Enum
 import sys
 from typing import List, TYPE_CHECKING, Union
 
-from mstrio.access_and_security.security_filter import SecurityFilter  # noqa: F401
+from mstrio.modeling.security_filter import SecurityFilter  # noqa: F401
 from mstrio.access_and_security.security_role import SecurityRole  # noqa: F401
 from mstrio.datasources import DatasourceConnection  # noqa: F401
 from mstrio.datasources import DatasourceInstance, DatasourceLogin  # noqa: F401

@@ -6,9 +6,7 @@ from typing import Any, Dict, Optional, Union
 from mstrio.connection import Connection
 from mstrio.utils.enum_helper import AutoName
 from mstrio.utils.helper import Dictable
-from mstrio.utils.wip import module_wip, WipLevels
 
-module_wip(globals(), level=WipLevels.WARNING)
 logger = logging.getLogger(__name__)
 
 

@@ -11,11 +11,10 @@ from mstrio.modeling.schema.helpers import (
     ObjectSubType, PhysicalTableType, SchemaObjectReference, TableColumn, TableColumnMergeOption
 )
 from mstrio.modeling.schema.table import (
-    list_datasource_warehouse_tables,
     list_logical_tables,
-    list_namespaces,
     list_physical_tables,
     list_tables_prefixes,
+    list_warehouse_tables,
     LogicalTable,
     PhysicalTable,
 )
@@ -40,8 +39,7 @@ print(physical_tables)
 logical_tables = list_logical_tables(connection=conn)
 print(logical_tables)
 
-# Get datasource warehouse table
-# 1. List connected datasource instances
+# List connected datasource instances
 connected_datasource_instances = list_connected_datasource_instances(connection=conn)
 print(connected_datasource_instances)
 
@@ -49,46 +47,34 @@ print(connected_datasource_instances)
 DATASOURCE_ID = "<datasource_id>"
 DATASOURCE_NAME = "<datasource_name>"
 
-# 2. Get a datasource by name
-datasource = [
-    datasource for datasource in list_connected_datasource_instances(connection=conn)
-    if datasource.name == DATASOURCE_NAME
-][0]
-print(datasource)
-
-# 3. List namespaces
-namespaces = list_namespaces(connection=conn, id=DATASOURCE_ID)
-print(namespaces)
-
-# Define a variable, which can be later used in a script
-NAMESPACE_ID = "<namespace_id>"
-NAMESPACE_NAME = "<namespace_name>"
-
-# 4. Get a namespace by name for a specific datasource
-namespace = [
-    namespace for namespace in list_namespaces(connection=conn, id=DATASOURCE_ID)
-    if namespace.get("name") == NAMESPACE_NAME
-][0]
-print(namespace)
-
-# 5. List available Warehouse Tables in a specific datasource within a given namespace
-warehouse_tables = list_datasource_warehouse_tables(
-    connection=conn, datasource_id=DATASOURCE_ID, namespace_id=NAMESPACE_ID
-)
-print(warehouse_tables)
+# List of all available Warehouse Tables
+all_warehouse_tables = list_warehouse_tables(connection=conn)
+print(all_warehouse_tables)
 
 # Define a variables, which can be later used in a script
 WAREHOUSE_TABLE_NAME = "<warehouse_table_name>"  # Insert name of the Table here
 
-# Get a Warehouse Tables with the name WAREHOUSE_TABLE_NAME
-# from the specified DATASOURCE_ID and NAMESPACE_ID
-lu_item_table = list_datasource_warehouse_tables(
-    connection=conn,
-    datasource_id=DATASOURCE_ID,
-    namespace_id=NAMESPACE_ID,
-    name=WAREHOUSE_TABLE_NAME
+# List all Warehouse tables with the name WAREHOUSE_TABLE_NAME
+lu_item_tables = list_warehouse_tables(
+    connection=conn, name=WAREHOUSE_TABLE_NAME
+)
+print(lu_item_tables)
+
+# List all Warehouse tables from the DATASOURCE_ID datasource
+datasource_tables = list_warehouse_tables(
+    connection=conn, datasource_id=DATASOURCE_ID
+)
+print(datasource_tables)
+
+# Get a Warehouse tables with the name WAREHOUSE_TABLE_NAME
+# from the specified DATASOURCE_ID
+lu_item_table = list_warehouse_tables(
+    connection=conn, name=WAREHOUSE_TABLE_NAME, datasource_id=DATASOURCE_ID
 )[0]
 
+print(lu_item_table)
+
+# List Warehouse table columns
 print(lu_item_table.list_columns())
 
 # List dependent logical tables of a Warehouse Table.
@@ -100,12 +86,9 @@ print(lu_item_table.list_dependent_logical_tables())
 # Define a variable, which can be later used in a script
 NEW_LOGICAL_TABLE_NAME = "<new_logical_table_name>"  # Insert name of the logical table
 
-lu_item_table = list_datasource_warehouse_tables(
-    connection=conn,
-    datasource_id=DATASOURCE_ID,
-    namespace_id=NAMESPACE_ID,
-    name=WAREHOUSE_TABLE_NAME
-)[0]
+logical_table = lu_item_table.add_to_project(logical_table_name=NEW_LOGICAL_TABLE_NAME)
+print(logical_table)
+print(logical_table.physical_table)  # List a physical table for a logical table defined above
 
 # List logical tables
 logical_tables = list_logical_tables(conn)
@@ -140,10 +123,48 @@ print(physical_table)
 # List dependent logical tables of a physical table
 print(physical_table.list_dependent_logical_tables())
 
+# Create logical table alias for physical table
+LogicalTable.create_alias(connection=conn, id=PHYSICAL_TABLE_ID)
+
 # Define variable, which can be later used in a script
 # The variable below is needed when altering or creating a logical table
 LOGICAL_TABLE_DESCRIPTION = (
     "<logical_table_description>"  # Insert description of the logical table
+)
+
+# Create logical table of type normal for a physical table
+logical_table = LogicalTable.create(
+    connection=conn,
+    physical_table=PhysicalTable(
+        connection=conn, id=PHYSICAL_TABLE_ID
+    ),
+    primary_data_source=SchemaObjectReference(
+        object_id=DATASOURCE_ID, sub_type=ObjectSubType.DB_ROLE
+    ),
+    table_name=LOGICAL_TABLE_NAME,
+    table_description=LOGICAL_TABLE_DESCRIPTION,
+    sub_type=ObjectSubType.LOGICAL_TABLE,
+)
+print(logical_table)
+
+# Create logical table of type SQL
+logical_table = LogicalTable.create(
+    connection=conn,
+    physical_table_type=PhysicalTableType.SQL,
+    columns=[
+        TableColumn(
+            data_type=DataType(
+                type=DataType.Type.INTEGER, scale="-2147483648", precision="2"
+            ),
+            column_name="item_id",
+        )
+    ],
+    sql_statement="SELECT item_id FROM inventory_orders",
+    primary_data_source=SchemaObjectReference(
+        object_id=DATASOURCE_ID, sub_type=ObjectSubType.DB_ROLE
+    ),
+    table_name=LOGICAL_TABLE_NAME,
+    table_description=LOGICAL_TABLE_DESCRIPTION,
 )
 
 # Remove all logical tables added for a specific Warehouse Table from a project.
@@ -208,14 +229,14 @@ normal_table.alter(physical_table_object_name=PHYSICAL_TABLE_NAME_ALTERED)
 normal_table.alter(physical_table_prefix=PHYSICAL_TABLE_PREFIX)
 
 # Alter logical table based on physical table of type SQL
-sql_table.alter(name=LOGICAL_TABLE_NAME)  # logical table name
+sql_table.alter(name=LOGICAL_TABLE_NAME_ALTERED)  # logical table name
 sql_table.alter(is_true_key=True)
 sql_table.alter(logical_size=10)
 sql_table.alter(is_logical_size_locked=True)
 sql_table.alter(enclose_sql_in_parentheses=True)
 sql_table.alter(physical_table_object_name=PHYSICAL_TABLE_NAME_ALTERED)
 
-# You cannot alter logical tables based on physical tables of type warehouse_partition!
+# You cannot alter logical tables based on physical tables of  type warehouse_partition!
 
 # Update structure of physical table of type normal
 normal_table.update_physical_table_structure(TableColumnMergeOption.REUSE_ANY)

@@ -207,10 +207,10 @@ class Filter(Entity, CopyMixin, DeleteMixin, MoveMixin):
         Args:
             connection: MicroStrategy connection object returned
                 by `connection.Connection()`
-            id (str): identifier of a pre-existing filter containing
+            id (str, optional): identifier of a pre-existing filter containing
                 the required data. Defaults to None.
-            name (str): name of a pre-existing filter containing required data.
-                Defaults to None.
+            name (str, optional): name of a pre-existing filter containing
+                required data. Defaults to None.
             show_expression_as (enum or str, optional): specify how expressions
                 should be presented
                 Available values:

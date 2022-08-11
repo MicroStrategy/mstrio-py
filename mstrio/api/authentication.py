@@ -64,6 +64,7 @@ def session_renew(connection):
         skip_expiration_check=True,
         url=f'{connection.base_url}/api/sessions',
         headers={'X-MSTR-ProjectID': None},
+        timeout=2.0
     )
 
 

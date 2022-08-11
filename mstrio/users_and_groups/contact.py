@@ -1,3 +1,4 @@
+# NOSONAR
 from collections import defaultdict
 from enum import auto
 import logging
@@ -5,15 +6,13 @@ from typing import Iterable, List, Optional, TYPE_CHECKING, Union
 
 from mstrio import config
 from mstrio.api import contacts
-from mstrio.distribution_services.contact_group import ContactGroup
-from mstrio.distribution_services.device import Device
+from mstrio.distribution_services.device.device import Device
 from mstrio.users_and_groups.user import User
 from mstrio.utils.entity import auto_match_args_entity, DeleteMixin, EntityBase
 from mstrio.utils.enum_helper import AutoName
 from mstrio.utils.helper import (
     camel_to_snake,
     delete_none_values,
-    deprecation_warning,
     Dictable,
     fetch_objects,
     get_args_from_func,
@@ -21,16 +20,10 @@ from mstrio.utils.helper import (
     get_objects_id
 )
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
+from mstrio.users_and_groups.contact_group import ContactGroup
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
-
-deprecation_warning(
-    '`mstrio.distribution_services.contact`',
-    '`mstrio.users_and_groups.contact`',
-    '11.3.7.103',  # NOSONAR
-    False
-)
 
 logger = logging.getLogger(__name__)
 
@@ -61,6 +54,7 @@ class ContactAddress(Dictable):
         connection: instance of Connection, optional,
             is required if device is string
     """
+
     _DELETE_NONE_VALUES_RECURSION = False
     _FROM_DICT_MAP = {'delivery_type': ContactDeliveryType, 'device': Device.from_dict}
 
@@ -74,7 +68,6 @@ class ContactAddress(Dictable):
         is_default: bool = False,
         connection: Optional['Connection'] = None
     ):
-
         self.id = id
         self.name = name
         self.physical_address = physical_address

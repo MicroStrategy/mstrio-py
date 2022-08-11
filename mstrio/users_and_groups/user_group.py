@@ -15,7 +15,7 @@ from mstrio.utils.version_helper import method_version_handler
 
 if TYPE_CHECKING:
     from mstrio.access_and_security.privilege import Privilege
-    from mstrio.access_and_security.security_filter import SecurityFilter
+    from mstrio.modeling.security_filter import SecurityFilter
     from mstrio.server import Project
     from mstrio.users_and_groups.user import User
 
@@ -532,7 +532,7 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin):
             group in the particular project, then this project is not placed in
             the dictionary.
         """
-        from mstrio.access_and_security.security_filter import SecurityFilter
+        from mstrio.modeling.security_filter import SecurityFilter
         objects_ = usergroups.get_security_filters(self.connection, self.id, projects).json()
         projects_ = objects_.get("projects")
 
@@ -561,7 +561,7 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin):
             True when applying was successful. False otherwise.
         """
         if isinstance(security_filter, str):
-            from mstrio.access_and_security.security_filter import SecurityFilter
+            from mstrio.modeling.security_filter import SecurityFilter
             security_filter = SecurityFilter.from_dict({"id": security_filter}, self.connection)
         return security_filter.apply(self.id)
 
@@ -577,7 +577,7 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin):
             True when revoking was successful. False otherwise.
         """
         if isinstance(security_filter, str):
-            from mstrio.access_and_security.security_filter import SecurityFilter
+            from mstrio.modeling.security_filter import SecurityFilter
             security_filter = SecurityFilter.from_dict({"id": security_filter}, self.connection)
         return security_filter.revoke(self.id)
 
