@@ -1,8 +1,37 @@
 # Changelog
 
+## 11.3.6.103 - 2022/08/12
+
+### Major changes
+
+- added `Transformation`, `TransformationAttribute` and `TransformationAttributeForm` classes in
+  `mstrio.modeling.schema.transformation` subpackage to allow transformation management
+- added `list_transformations` to allow listing for transformations
+- added `DefaultSubtotals`, `Dimensionality`, `DimensionalityUnit`, `FormatProperty`, `Metric`,
+  `MetricFormat` and `Threshold` classes in `mstrio.modeling.metric` subpackage to allow
+  metric management
+- added `list_metrics` to allow listing for metrics
+
+### Minor changes
+
+- added `list_locales` to `mstrio.datasource.datasource_map` module to allow listing locales
+- added `DatasourceMap.alter()` method to allow altering user-defined connection mapping
+- added `list_warehouse_tables()` method to `mstrio.modeling.schema.table.warehouse_table` module
+  to allow listing all warehouse tables from all available datasources
+
+### Deprecated
+
+- `mstrio.distribution_services.contact` module is deprecated and is moved to
+  `mstrio.users_and_groups` subpackage
+- `mstrio.distribution_services.contact_group` module is deprecated and is moved to
+  `mstrio.users_and_groups` subpackage
+- `mstrio.access_and_security.security_filter` subpackage is deprecated and replaced by
+  `mstrio.modeling.security_filter` and `mstrio.modeling.expression` subpackages
+
 ## 11.3.6.102 - 2022/07/15
 
 ### Major changes
+
 - added `Filter` class in `mstrio.modeling.filter` subpackage to allow filter
   management
 - added `list_filters` to allow listing of filters
@@ -31,7 +60,7 @@
 ### Deprecated
 
 - `name_begins` parameter is deprecated in functions listing cubes and reports
-   in favour of `name` parameter
+  in favour of `name` parameter
 
 ## 11.3.5.103 - 2022/05/20
 
@@ -60,7 +89,7 @@
 
 - Changed `ExecutionMode` elements from `ASYNCH_CONNECTION` to `ASYNC_CONNECTION` and from `ASYNCH_STATEMENT` to `ASYNC_STATEMENT`
 - refactored `examples` into `code_snippets` folder, with changes to make them more
-easily usable in MicroStrategy Workstation
+  easily usable in MicroStrategy Workstation
 - renamed folder `workstation_demos` into `workflows`
 
 ## 11.3.5.101 - 2022/03/25

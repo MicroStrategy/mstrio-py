@@ -12,7 +12,7 @@ from mstrio.utils.datasources import (
     alter_patch_req_body
 )
 from mstrio.utils.error_handlers import ErrorHandler
-from mstrio.utils.helper import exception_handler, response_handler
+from mstrio.utils.helper import exception_handler, response_handler, IServerError
 
 
 @ErrorHandler(err_msg='Error getting available DBMSs.')
@@ -142,7 +142,6 @@ def get_datasource_namespaces(
     project_id: Optional[str] = None,
     refresh: Optional[bool] = None,
     fields: Optional[str] = None,
-    timeout: float = 3.03,
     error_msg: Optional[str] = None
 ):
     """Get namespaces for a specific datasource.
@@ -173,7 +172,6 @@ def get_datasource_namespaces(
             'refresh': refresh,
             'fields': fields,
         },
-        timeout=timeout
     )
 
 
@@ -185,7 +183,6 @@ def get_datasource_namespaces_async(
     project_id: Optional[str] = None,
     refresh: Optional[bool] = None,
     fields: Optional[str] = None,
-    timeout: float = 3.03,
     error_msg: Optional[str] = None
 ):
     return session.get(
@@ -197,7 +194,6 @@ def get_datasource_namespaces_async(
             'refresh': refresh,
             'fields': fields,
         },
-        timeout=timeout
     )
 
 
@@ -377,39 +373,46 @@ def test_datasource_connection(connection, body, error_msg=None):
     return connection.post(url=url, json=body)
 
 
-@ErrorHandler(err_msg='Error fetching Datasource mappings.')
+@ErrorHandler(err_msg='Error fetching connection mappings.')
 def get_datasource_mappings(
     connection: Connection,
     default_connection_map: Optional[bool] = False,
     project_id: Optional[str] = None,
     error_msg: Optional[str] = None
 ):
-    """Get information for all datasource connection mappings.
+    """Get information for all connection mappings.
 
     Args:
         connection: MicroStrategy REST API connection object
         default_connection_map (bool, optional): If True will get the default
-            connection map for an project. Requires `project_id`
+            connection mappings for a project. Requires `project_id`
             parameter. Default False.
         project_id: The project_id, required only for default connection
-            map.
+            mappings.
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
         Complete HTTP response object. Expected status is 200.
     """
-    url = f"{connection.base_url}/api/datasources/mappings"
-    return connection.get(
-        url=url, params={
-            "defaultConnectionMap": default_connection_map, "projectId": project_id
+    response = connection.get(
+        url=f"{connection.base_url}/api/datasources/mappings",
+        params={
+            "defaultConnectionMap": default_connection_map,
+            "projectId": project_id,
         }
     )
+
+    if default_connection_map and not response.ok and response.status_code == 404:
+        response.status_code = 200
+        response._content = json.dumps({'mappings': []}).encode('utf-8')
+
+    return response
 
 
 # This is a 'fake' get single resource endpoint. Only listing all mappings
 # is available on REST API.
 # TODO Change to normal get, when it will be available on REST.
-@ErrorHandler(err_msg='Error fetching Datasource mapping with ID {id}.')
+@ErrorHandler(err_msg='Error fetching connection mapping with ID {id}.')
 def get_datasource_mapping(
     connection: Connection,
     id=str,
@@ -417,43 +420,52 @@ def get_datasource_mapping(
     project_id: Optional[str] = None,
     error_msg: Optional[str] = None
 ):
-    """Get information about specific datasource_mapping.
+    """Get information about specific connection mapping.
 
     Args:
         connection: MicroStrategy REST API connection object
         id: ID of the mapping
         default_connection_map (bool, optional): If True will get the default
-            connection map for a project. Requires `project_id`
+            connection mappings for a project. Requires `project_id`
             parameter. Default False.
         project_id: The project_id, required only for default connection
-            map.
+            mappings.
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
         Complete HTTP response object. Expected status is 200.
     """
-    url = f"{connection.base_url}/api/datasources/mappings"
-    response = connection.get(
-        url=url, params={
-            "defaultConnectionMap": default_connection_map, "projectId": project_id
-        }
+
+    response = get_datasource_mappings(
+        connection=connection,
+        default_connection_map=default_connection_map,
+        project_id=project_id,
+        error_msg=error_msg,
     )
 
     # Faking get single resource endpoint. Only 'list all' available on REST
     if response.ok:
         response_json = response.json()
-        if 'mappings' in response_json.keys():
-            mappings = [mapping for mapping in response_json['mappings'] if mapping["id"] == id]
-            if len(mappings) > 0:
-                response_json = mappings[0]
-                response_json['ds_connection'] = response_json.pop('connection')
-        response.encoding, response._content = 'utf-8', json.dumps(response_json).encode('utf-8')
+
+        try:
+            mappings = [
+                mapping
+                for mapping in response_json['mappings']
+                if mapping["id"] == id
+            ]
+
+            mapping_data = mappings[0]
+            mapping_data['ds_connection'] = mapping_data.pop('connection')
+        except LookupError:
+            raise IServerError(message="Connection Mapping not found", http_code=None)
+
+        response.encoding, response._content = 'utf-8', json.dumps(mapping_data).encode('utf-8')
     return response
 
 
-@ErrorHandler(err_msg='Error creating Datasource mapping.')
+@ErrorHandler(err_msg='Error creating connection mapping.')
 def create_datasource_mapping(connection: Connection, body, error_msg: Optional[str] = None):
-    """Create a new datasource mapping.
+    """Create a new connection mapping.
 
     Args:
         connection: MicroStrategy REST API connection object
@@ -467,9 +479,9 @@ def create_datasource_mapping(connection: Connection, body, error_msg: Optional[
     return connection.post(url=url, json=body)
 
 
-@ErrorHandler(err_msg='Error deleting Datasource mapping with ID {id}')
+@ErrorHandler(err_msg='Error deleting connection mapping with ID {id}')
 def delete_datasource_mapping(connection: Connection, id: str, error_msg: Optional[str] = None):
-    """Delete a datasource mapping based on id.
+    """Delete a connection mapping based on id.
 
     Args:
         connection: MicroStrategy REST API connection object

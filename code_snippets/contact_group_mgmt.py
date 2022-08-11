@@ -9,11 +9,10 @@ ease its usage.
 # and they can be also represented as dictionaries). User linked to the contact
 # group can be passed as a `User` object or just its ID.
 
-from mstrio.distribution_services import (ContactGroup, ContactGroupMember, ContactGroupMemberType)
-from mstrio.users_and_groups import User
 from mstrio.connection import get_connection
-from production.mstrio.distribution_services.contact.contact import Contact
-from production.mstrio.distribution_services.contact_group.contact_group import list_contact_groups
+from mstrio.users_and_groups import (
+    Contact, ContactGroup, ContactGroupMember, ContactGroupMemberType, list_contact_groups, User
+)
 
 PROJECT_NAME = '<Project_name>'  # Insert project name here
 MEMBER_NAME = '<Username>'  # here insert member name

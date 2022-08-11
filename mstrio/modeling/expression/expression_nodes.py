@@ -478,10 +478,11 @@ class AttributeFormPredicate(PredicateNode):
         'parameters': [PredicateParameter.dispatch],
         'attribute': SchemaObjectReference,
         'form': SchemaObjectReference,
+        'function': Function
     }
     _ALLOW_NONE_ATTRIBUTES = ['parameters']
 
-    function: str
+    function: Function
     attribute: SchemaObjectReference
     form: SchemaObjectReference
     # in swagger is required, but can be empty list
@@ -491,7 +492,7 @@ class AttributeFormPredicate(PredicateNode):
     def _get_node_data(self):
         result = {
             'predicate_tree': {
-                'function': self.function,
+                'function': self.function.value,
                 'attribute': self.attribute.to_dict(),
                 'form': self.form.to_dict(),
                 'parameters': [item.to_dict() for item in self.parameters],

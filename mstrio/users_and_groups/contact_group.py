@@ -1,3 +1,4 @@
+# NOSONAR
 from collections import defaultdict
 from enum import auto
 import logging
@@ -9,25 +10,13 @@ from mstrio.users_and_groups.user import User
 from mstrio.utils.entity import auto_match_args_entity, DeleteMixin, EntityBase
 from mstrio.utils.enum_helper import AutoName
 from mstrio.utils.helper import (
-    Dictable,
-    deprecation_warning,
-    fetch_objects_async,
-    get_args_from_func,
-    get_default_args_from_func,
-    get_objects_id
+    Dictable, fetch_objects_async, get_args_from_func, get_default_args_from_func, get_objects_id
 )
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
-    from mstrio.distribution_services.contact import Contact
-
-deprecation_warning(
-    '`mstrio.distribution_services.contact_group`',
-    '`mstrio.users_and_groups.contact_group`',
-    '11.3.7.103',  # NOSONAR
-    False
-)
+    from mstrio.users_and_groups.contact import Contact
 
 logger = logging.getLogger(__name__)
 
@@ -91,7 +80,7 @@ class ContactGroupMember(Dictable):
         Returns:
             ContactGroupMember object
         """
-        from mstrio.distribution_services.contact import Contact
+        from mstrio.users_and_groups.contact import Contact
 
         if isinstance(obj, Contact):
             return cls(id=obj.id, name=obj.name, type=ContactGroupMemberType.CONTACT)

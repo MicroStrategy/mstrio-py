@@ -29,6 +29,7 @@ class ObjectTypes(Enum):
     SUBSCRIPTION_TRANSMITTER = 35
     CONFIGURATION = 36
     SEARCH = 39
+    ROLE = 43
     SECURITY_ROLE = 44
     LOCALE = 45
     CONSOLIDATION = 47
@@ -82,6 +83,7 @@ class ObjectSubTypes(Enum):
     ATTRIBUTE_RECURSIVE = 3076
     ATTRIBUTE_ROLE = 3073
     ATTRIBUTE_TRANSFORMATION = 3074
+    ROLE_TRANSFORMATION = 11009
     NONE = None
 
     def __new__(cls, value):

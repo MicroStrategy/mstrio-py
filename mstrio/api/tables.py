@@ -8,8 +8,8 @@ if TYPE_CHECKING:
     from mstrio.connection import Connection
 
 
-@ErrorHandler("Error getting the table with ID: {id}")
 @unpack_information
+@ErrorHandler("Error getting the table with ID: {id}")
 def get_table(
     connection: "Connection",
     id: str,
@@ -45,8 +45,8 @@ def get_table(
     )
 
 
-@ErrorHandler("Error listing tables")
 @unpack_information
+@ErrorHandler("Error listing tables")
 def get_tables(
     connection: "Connection",
     project_id: Optional[str] = None,
@@ -89,9 +89,9 @@ def get_tables(
     )
 
 
-@ErrorHandler("Error updating the table with ID: {id}")
 @unpack_information
 @changeset_decorator
+@ErrorHandler("Error updating the table with ID: {id}")
 def patch_table(
     connection: "Connection",
     id: str,
@@ -134,9 +134,9 @@ def patch_table(
     )
 
 
-@ErrorHandler("Error creating the table")
-@changeset_decorator
 @unpack_information
+@changeset_decorator
+@ErrorHandler("Error creating the table")
 def post_table(
     connection: "Connection",
     changeset_id: str,

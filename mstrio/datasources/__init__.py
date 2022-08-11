@@ -14,4 +14,4 @@ from .datasource_instance import (
     list_datasource_instances
 )
 from .datasource_login import DatasourceLogin, list_datasource_logins
-from .datasource_map import DatasourceMap, list_datasource_mappings, Locale
+from .datasource_map import DatasourceMap, list_datasource_mappings, list_locales, Locale

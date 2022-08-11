@@ -133,7 +133,8 @@ class PackageSettings(Dictable):
         acl_on_new_objects: Optional[AclOnNewObjects] = None
     ):
         self.default_action = default_action
-        self.update_schema = update_schema if isinstance(update_schema, list) else [update_schema]
+        self.update_schema = (update_schema if isinstance(update_schema, list)
+                              or not update_schema else [update_schema])
         self.acl_on_replacing_objects = acl_on_replacing_objects
         self.acl_on_new_objects = acl_on_new_objects if isinstance(acl_on_new_objects,
                                                                    list) else [acl_on_new_objects]

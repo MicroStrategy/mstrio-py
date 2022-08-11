@@ -41,28 +41,34 @@ packaging_version.Version = NoNormalizeVersion
 with open('README.md') as f:
     long_description = f.read()
 
+
+peer_force_version = [  # peer dependency (dep of dep)
+                        # but we need to force version for SEC
+                        # backend only (front peers are
+                        # handled in code ~20 lines below)
+    'notebook>=6.4.12',
+    'ipython>=8.1.1, <9',
+    'urllib3>=1.26.0',  # ver 1.25.x is incompatible
+]
+
 requirements = [
-    'notebook>=6.4.12',  # Jupyter Notebook - ver required for SEC
-    'ipython>=8.1.1, <9',  # dep of dep - higher ver required for SEC
-    'requests>=2.27, <2.28',
-    'urllib3>=1.26.0',  # dep of dep (but ver 1.25.x is incompatible)
+    'requests>=2.27, <2.29',
     'requests_futures>=1.0.0, <1.1',
     'pandas>=1.1.5, <=1.5',
-    'numpy>=1.22.3, <1.23',
+    'numpy>=1.23.1, <1.24',
     'tqdm>=4.41, <4.70',
     'packaging>=21.3, <22',
-    'dictdiffer>=0.8.1, <0.10',
     'stringcase>=1.2, <1.3',
-    'Jinja2>=3.0, <4.0',
-]
+] + peer_force_version
 
 # Add dependencies for connector-jupyter if connector-jupyter folder is added
 if find_in_file('graft connector-jupyter', MANIFEST_FILE):
-    requirements.extend([
-        'lxml>=4.7.1',  # dep of dep but prev vers are considered vulnerable
-        'jupyter_contrib_nbextensions>=0.5.1, <0.6',
+    requirements += [
+        'lxml>=4.9.1',  # peer, UI related, force ver for SEC
+        'jupyter-contrib-nbextensions>=0.5.1, <0.6',
         'ipywidgets>=7.5.1, <8'
-    ])
+    ]
+
 setup(
     name=__title__,
     python_requires='>=3.10',

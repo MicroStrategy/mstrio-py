@@ -36,7 +36,8 @@ With mstrio-py for **system administration**, it’s easy to minimize costs by a
 - [Other](#other)
 <!--te-->
 
-# Main Features<a id="main-features"></a>
+<a id="main-features" name="main-features"></a>
+# Main Features
 
 Main features of **mstrio-py** allows to access MicroStrategy data:
 
@@ -60,7 +61,7 @@ Since version **11.3.0.1**, **mstrio-py** includes also administration modules:
 - **Cube Cache** management modules (see [code_snippets][code_snippet_cache])
 - **Intelligent Cube** management modules (see [code_snippets][code_snippet_olap])
 - **Security filter** module (see [code_snippets][code_snippet_security_filter])
-- **Datasources** subpackage for database management (see [code_snippets][code_snippet_datasource])
+- **Datasources and Connection Mapping** subpackage for database management (see [code_snippets][code_snippet_datasource])
 - **Job Monitor** module for job monitoring (see [code_snippets][code_snippet_job_monitor])
 - **Object management** module (see [code_snippets][code_snippet_object_mgmt])
 - **Contact** module (see [code_snippets][code_snippet_contact])
@@ -76,23 +77,30 @@ It is subject to change until it is released as Generally Available.
 - **Fact** module (see [code_snippets][code_snippet_fact])
 - **Tables** module (see [code_snippets][code_snippet_table_mgmt])
 - **Filter** module (see [code_snippets][code_snippet_filter])
+- **Transformation** module (see [code_snippets][code_snippet_transformation])
+- **Metrics** module (see [code_snippets][code_snippet_metrics])
 
-# Documentation<a id="documentation"></a>
+<a id="documentation" name="documentation"></a>
+# Documentation
 
 Detailed information about **mstrio-py** package can be found in [**official documentation**][mstrio_py_doc].
 
-# Usage Remarks<a id="usage-remarks"></a>
+<a id="usage-remarks" name="usage-remarks"></a>
+# Usage Remarks
 
-## General<a id="general"></a>
+<a id="general" name="general"></a>
+## General
 
 - **Chrome** is the only supported web browser. `mstrio-py` should work properly in **Safari**, **Opera** or **Edge** but we cannot guarantee a seamless experience.
 - It is recommended NOT to use Anaconda environment. Please see **Installation** section below for details.
 
-## GUI<a id="gui"></a>
+<a id="gui" name="gui"></a>
+## GUI
 
 - GUI `Import -> Prepare Data` filters out all "**_Row Count - ..._**" columns even if they are an integral part of a Dataset. Starting column's name with "_Row Count_" is not advised.
 
-## Backend<a id="backend"></a>
+<a id="backend" name="backend"></a>
+## Backend
 
 - Currently it is not possible to use `mstrio-py` package to update cubes created via Web. Unfortunately it is not possible to use any REST API endpoint to check whether cube was created
 via Web or via REST API to provide some warning. In case of seeing one of the following error
@@ -118,16 +126,20 @@ Cube cannot be found.
 Error getting cube metadata information. I-Server Error ERR001, (ServiceManager: XML syntax error.)
 ```
 
-# Installation<a id="installation"></a>
+<a id="installation" name="installation"></a>
+# Installation
 
-## Prerequisites<a id="prerequisites"></a>
+<a id="prerequisites" name="prerequisites"></a>
+## Prerequisites
 
-### mstrio-py<a id="mstrio-py"></a>
+<a id="mstrio-py" name="mstrio-py"></a>
+### mstrio-py
 
 - Python 3.10+
 - MicroStrategy 2019 Update 4 (11.1.4)+
 
-### MicroStrategy for Jupyter<a id="microstrategy-for-jupyter"></a>
+<a id="microstrategy-for-jupyter" name="microstrategy-for-jupyter"></a>
+### MicroStrategy for Jupyter
 
 - [CORS enabled on MicroStrategy Library server][cors_manual]
 - [Cookies sent by MicroStrategy Library server have 'SameSite' parameter set to 'None'][same_site_manual]
@@ -135,7 +147,8 @@ Error getting cube metadata information. I-Server Error ERR001, (ServiceManager:
 **Note**: MicroStrategy for Jupyter is accessible only to users with assigned Microstrategy privileges:
 `Use Application Jupyter` and `Use Library Web`. For more details, please refer to Microstrategy licensing.
 
-## Install the `mstrio-py` Package<a id="install-the-mstrio-py-package"></a>
+<a id="install-the-mstrio-py-package" name="install-the-mstrio-py-package"></a>
+## Install the `mstrio-py` Package
 
 **Note**: it is NOT recommended to install mstrio-py in an Anaconda environment.
 For a seamless experience, install and run it in Python's [virtual environment][python_venv] instead.
@@ -146,7 +159,8 @@ Installation is easy when using [pip](https://pypi.org/project/mstrio-py). Read 
 pip install mstrio-py
 ```
 
-## Enable the Jupyter Notebook extension<a id="enable-the-jupyter-notebook-extension"></a>
+<a id="enable-the-jupyter-notebook-extension" name="enable-the-jupyter-notebook-extension"></a>
+## Enable the Jupyter Notebook extension
 
 Once mstrio-py is installed you can install and enable the Jupyter Notebook extension by using the commands below:
 
@@ -155,9 +169,10 @@ jupyter nbextension install connector-jupyter --py --sys-prefix
 jupyter nbextension enable connector-jupyter --py --sys-prefix
 ```
 
-# Versioning & Changelog<a id="versioning--changelog"></a>
+<a id="versioning--changelog" name="versioning--changelog"></a>
+# Versioning & Changelog
 
-Current version: **11.3.6.102** (15 July 2022). Check out [**Changelog**][release_notes] to see what's new.
+Current version: **11.3.6.103** (12 August 2022). Check out [**Changelog**][release_notes] to see what's new.
 
 mstrio-py is constantly developed to support newest MicroStrategy REST APIs. Functionalities may be added to mstrio on monthly basis. It is **recommended** to always install the newest version of mstrio-py, as it will be most stable and still maintain backwards compatibility with various MicroStrategy installations, dating back to 11.1.4.
 
@@ -180,20 +195,23 @@ To install a specific, archived version of mstrio, choose the desired version av
 pip install mstrio-py==10.11.1
 ```
 
-# Deprecating Features<a id="deprecating-features"></a>
+<a id="deprecating-features" name="deprecating-features"></a>
+# Deprecating Features
 
 When features (modules, parameters, attributes, methods etc.) are marked for deprecation but still accessed, the following `DeprecationWarning` will be shown (example below). The functionality will continue to work until the version specified in the warning is released.
 
 ![Deprecation warning ][deprecation]
 
-# More Resources<a id="more-resources"></a>
+<a id="more-resources" name="more-resources"></a>
+# More Resources
 
 - [Tutorials for mstrio][mstr_datasci_comm]
 - [Check out mstrio for R][r_github]
 - [Learn more about the MicroStrategy REST API][mstr_rest_docs]
 - [MicroStrategy REST API demo documentation][mstr_rest_demo]
 
-# Other<a id="other"></a>
+<a id="other" name="other"></a>
+# Other
 
 "Jupyter" and the Jupyter logos are trademarks or registered trademarks of NumFOCUS.
 
@@ -239,3 +257,5 @@ When features (modules, parameters, attributes, methods etc.) are marked for dep
 [code_snippet_table_mgmt]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/table_mgmt.py
 [code_snippet_filter]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/filter.py
 [code_snippet_privilege]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/security_roles_and_privileges.py
+[code_snippet_transformation]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/transformation.py
+[code_snippet_metrics]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/metrics.py

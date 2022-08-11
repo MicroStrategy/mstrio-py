@@ -1,15 +1,22 @@
 from typing import List, Optional, TYPE_CHECKING, Union
 
 from mstrio.access_and_security.security_filter import (
-    AttributeRef, ObjectInformation, Qualification
+    AttributeRef,
+    ObjectInformation,
+    Qualification,
 )
-from mstrio.api import changesets, objects, security_filters
-from mstrio.api.security_filters import ShowExpressionAs, UpdateOperator
+from mstrio.api import changesets, objects, security_filters_old
+from mstrio.api.security_filters_old import ShowExpressionAs, UpdateOperator
 from mstrio.object_management import full_search, SearchPattern
 from mstrio.users_and_groups import User, UserGroup
 from mstrio.utils import helper
 from mstrio.utils.entity import (
-    CopyMixin, DeleteMixin, Entity, MoveMixin, ObjectSubTypes, ObjectTypes
+    CopyMixin,
+    DeleteMixin,
+    Entity,
+    MoveMixin,
+    ObjectSubTypes,
+    ObjectTypes,
 )
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
@@ -141,7 +148,7 @@ class SecurityFilter(Entity, CopyMixin, MoveMixin, DeleteMixin):
 
     def _get_definition(self):
         """Get the definition of security filter."""
-        res = security_filters.read_security_filter(
+        res = security_filters_old.get_security_filter(
             self.connection,
             self.id,
             self.connection.project_id,
@@ -158,7 +165,7 @@ class SecurityFilter(Entity, CopyMixin, MoveMixin, DeleteMixin):
     def _get_members(self):
         """Get the users and user groups that the specified security filter is
         applied to."""
-        res = security_filters.get_security_filter_members(
+        res = security_filters_old.get_security_filter_members(
             self.connection,
             self.id,
             self.connection.project_id,
@@ -340,7 +347,7 @@ class SecurityFilter(Entity, CopyMixin, MoveMixin, DeleteMixin):
                 attribute list.
         """
         res = SecurityFilter.__create_update_helper(
-            security_filters.create_security_filter,
+            security_filters_old.create_security_filter,
             connection,
             qualification,
             name,
@@ -391,7 +398,7 @@ class SecurityFilter(Entity, CopyMixin, MoveMixin, DeleteMixin):
         description = self.description if description is None else description
         folder_id = self.information.destination_folder_id if folder_id is None else folder_id
         res = self.__create_update_helper(
-            security_filters.update_security_filter,
+            security_filters_old.update_security_filter,
             self.connection,
             qualification,
             name,
@@ -437,7 +444,7 @@ class SecurityFilter(Entity, CopyMixin, MoveMixin, DeleteMixin):
         """Update members of security filter."""
         users_or_groups = self.__retrieve_ids_from_list(users_and_groups)
         body = {"operationList": [{"op": op.value, "path": "/members", "value": users_or_groups}]}
-        res = security_filters.update_security_filter_members(
+        res = security_filters_old.update_security_filter_members(
             self.connection, self.id, body, self.connection.project_id, throw_error=False
         )
         if res.ok:

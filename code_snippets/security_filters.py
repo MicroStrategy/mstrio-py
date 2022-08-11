@@ -6,182 +6,220 @@ Its basic goal is to present what can be done with this module and to
 ease its usage.
 """
 
-from mstrio.access_and_security.security_filter import (
-    AttributeFormSystemRef,
-    AttributeRef,
+from mstrio.connection import get_connection
+from mstrio.modeling import (
+    Attribute,
+    AttributeFormPredicate,
     ConstantParameter,
-    ConstantType,
-    list_security_filters,
-    LogicFunction,
-    LogicOperator,
-    PredicateForm,
-    PredicateFormFunction,
-    Qualification,
-    SecurityFilter
+    Expression,
+    Function,
+    list_attributes,
+    ObjectSubType,
+    Operator,
+    SchemaObjectReference,
+    Variant,
+    VariantType
 )
-from mstrio.object_management import full_search
-from mstrio.types import ObjectTypes
+from mstrio.modeling.security_filter import list_security_filters, SecurityFilter
 from mstrio.users_and_groups import list_user_groups, list_users
 
-from mstrio.connection import get_connection
-
 PROJECT_NAME = '<project_name>'  # Project to connect to
-
-SECURITY_FILTER_ID = '<sec_filter_id>'
-SECURITY_FILTER_NAME = '<sec_filter_name>'
-SECURITY_FILTER_NAME_NEW = '<new_sec_filter_name>'
-SECURITY_FILTER_NAME_2 = '<sec_filter_name_2>'
-SECURITY_FILTER_DESCRIPTION = '<sec_filter_description>'
-QUALIFICATION = Qualification(
-    tree=PredicateForm(
-        # see access_and_security/security_filter/predicates.py
-        # for PredicateFormFunction values
-        function=PredicateFormFunction.GREATER,
-        # see access_and_security/security_filter/predicate_parameters.py
-        # for ConstantType values
-        parameters=[ConstantParameter(ConstantType.DOUBLE, '<value>')],
-        # insert object id and its attribute name to which you want to refer to
-        attribute=AttributeRef('<object_id>', '<attribute_name>'),
-        # insert object id and its attribute form system name
-        # to which you want to refer to
-        form=AttributeFormSystemRef('<object_id>', '<attribute_form_system_name>')
-    )
-)
-CUSTOMER_ATTRIBUTE_ID = '<object_with_attribute_id>'  # id of an object that uses the attribute
 PROJECT_ID = '<project_id>'  # project in which a security filter will be searched for
 FOLDER_ID = '<folder_id>'  # folder in which new security filter will be created
-FOLDER_ID_NEW = '<new_folder_id>'  # folder to which a security filter will be moved
-
-# see ObjectTypes enum in types.py for available values
-OBJECT_TYPES = ObjectTypes.ATTRIBUTE_FORM
-USED_BY_OBJECT_TYPE = ObjectTypes.ATTRIBUTE
-
-# see access_and_security/security_filter/predicates.py
-# for PredicateFormFunction values
-PREDICATE_FORM_FUNCTION = PredicateFormFunction.EQUALS
-# see access_and_security/security_filter/predicate_parameters.py
-# for ConstantType values
-PREDICATE_FORM_PARAM = ConstantParameter(ConstantType.STRING, '<value>')
-# insert object id and its attribute name to which you want to refer to
-PREDICATE_FORM_ATTRIBUTE = AttributeRef('<object_id>', '<attribute_name>')
-# insert object id and its attribute form system name
-# to which you want to refer to
-PREDICATE_FORM_ATTRIBUTE_FORM = AttributeFormSystemRef(
-    '<object_id>', '<attribute_form_system_name>'
-)
-# insert data locale used to select value of the form
-PREDICATE_FORM_DATA_LOCALE = '<locale>'
-
-# see access_and_security/security_filter/predicates.py
-# for PredicateFormFunction values
-PREDICATE_FORM_FUNCTION_2 = PredicateFormFunction.EQUALS
-# see access_and_security/security_filter/predicate_parameters.py
-# for ConstantType values
-PREDICATE_FORM_PARAM_2 = ConstantParameter(ConstantType.STRING, '<value>')
-# insert object id and its attribute name to which you want to refer to
-PREDICATE_FORM_ATTRIBUTE_2 = AttributeRef('<object_id>', '<attribute_name>')
-# insert object id and its attribute form system name
-# to which you want to refer to
-PREDICATE_FORM_ATTRIBUTE_FORM_2 = AttributeFormSystemRef(
-    '<object_id>', '<attribute_form_system_name>'
-)
-# insert data locale used to select value of the form
-PREDICATE_FORM_DATA_LOCALE_2 = '<locale>'
-
-PARAMETER_CHANGED_VALUE = '<value>'  # value of paramater to change to
-USER_NAME_BEGINS = '<username_begins>'  # beginning of username to look for
-USER_GROUP_NAME_BEGINS = '<usergroup_name_begins>'  # beginning of usergroup to look for
 
 conn = get_connection(workstationData, project_name=PROJECT_NAME)
 
-# list all security filters
-list_security_filters(conn)
+# List all security filters
+security_filters = list_security_filters(conn)
+print(security_filters)
 
-# initialize security filter by its id
-sec_fil = SecurityFilter(conn, id=SECURITY_FILTER_ID)
+# Define a variable, which can be later used in a script
+SECURITY_FILTER_ID = '<sec_filter_id>'
+SECURITY_FILTER_NAME = '<sec_filter_name>'
 
-# show information, qualification and members of the security filter
-sec_fil.information.to_dict()
-sec_fil.qualification.to_dict()
-sec_fil.members
+# Get a security filter by id
+security_filter = SecurityFilter(conn, id=SECURITY_FILTER_ID)
+print(security_filter)
+
+# Get a security filter by name
+security_filter = SecurityFilter(conn, name=SECURITY_FILTER_NAME)
+print(security_filter)
+
+# List the properties of the security filter
+print(security_filter.list_properties())
+
+# Show the qualification of the security filter
+print(security_filter.qualification)
+
+# List the members of the security filter
+print(security_filter.members)
 
 # create new security filter
-name = SECURITY_FILTER_NAME
-folder_id = FOLDER_ID
-qualification = QUALIFICATION
 
-new_sec_fil = SecurityFilter.create(conn, qualification, name, folder_id)
+# Define a variable, which can be later used in a script
+NEW_SECURITY_FILTER_NAME = '<new_sec_filter_name>'
+
+QUALIFICATION = Expression(
+    tree=AttributeFormPredicate(
+        # see access_and_security/security_filter/predicates.py
+        # for PredicateFormFunction values
+        function=Function.GREATER,
+        # see access_and_security/security_filter/predicate_parameters.py
+        # for ConstantType values
+        parameters=[
+            ConstantParameter(
+                constant=Variant(type=VariantType.STRING, value='<constant_value>')
+            )
+        ],
+        # insert object id and its attribute name to which you want to refer to
+        attribute=SchemaObjectReference(
+            sub_type=ObjectSubType.ATTRIBUTE,
+            object_id='<attribute_object_id>',
+            name='<attribute_name>'
+        ),
+        # insert object id and its attribute form system name
+        # to which you want to refer to
+        form=SchemaObjectReference(
+            sub_type=ObjectSubType.ATTRIBUTE_FORM_SYSTEM,
+            object_id='<form_object_id>',
+            name='<attribute_form_system_name>'
+        )
+    )
+)
+
+new_security_filter = SecurityFilter.create(
+    connection=conn,
+    qualification=QUALIFICATION,
+    name=NEW_SECURITY_FILTER_NAME,
+    destination_folder=FOLDER_ID
+)
+print(new_security_filter)
 
 # Create new security filter with more than one attribute form.
 
-# 1. Find attribute forms for the particular attribute
-# You have to look for objects with type ObjectTypes.ATTRIBUTE_FORM which are
-# used by object with type ObjectTypes.ATTRIBUTE and ID of particular attribute.
-attr_forms_of_customer_attr = full_search(
-    conn,
-    project_id=PROJECT_ID,
-    object_types=OBJECT_TYPES,
-    to_dictionary=False,
-    used_by_object_id=CUSTOMER_ATTRIBUTE_ID,
-    used_by_object_type=USED_BY_OBJECT_TYPE,
-)
-# just a simple example of extracting just `name` and `id` from each dict of
-# attribute form which was returned
-tmp_dict = [{'id': a.id, 'name': a.name} for a in attr_forms_of_customer_attr]
+# 1. List attributes to get attribute IDs
+attributes = list_attributes(conn)
+print(attributes)
 
-# 2. To build security filter qualification where there are two attribute
-# forms you have to create two separate `PredicateForm`s and connect them with
-# `LogicOperator`. You cannot set values for two attribute forms in a single
-# `PredicateForm`.
-pf1 = PredicateForm(
-    function=PREDICATE_FORM_FUNCTION,
-    parameters=[PREDICATE_FORM_PARAM],
-    attribute=PREDICATE_FORM_ATTRIBUTE,
-    form=PREDICATE_FORM_ATTRIBUTE_FORM,
-    data_locale=PREDICATE_FORM_DATA_LOCALE,
+# Define a variable, which can be later used in a script
+ATTRIBUTE_1_ID = '<attribute_ID>'
+ATTRIBUTE_1_NAME = '<attribute_name>'
+ATTRIBUTE_2_ID = '<attribute_ID>'
+ATTRIBUTE_2_NAME = '<attribute_name>'
+
+# 2. Find attribute forms for the particular attribute
+attribute_1_forms = Attribute(conn, id=ATTRIBUTE_1_ID).forms
+print(attribute_1_forms)
+
+attribute_2_forms = Attribute(conn, id=ATTRIBUTE_2_ID).forms
+print(attribute_2_forms)
+
+# Define a variable, which can be later used in a script
+ATTRIBUTE_1_FORM_ID = '<attribute_form_ID>'
+ATTRIBUTE_2_FORM_ID = '<attribute_form_ID>'
+
+# 3. To build security filter qualification where there are two attribute
+# forms you have to create two separate `AttributeFormPredicate` objects
+# and connect them with logic function using one value of `Function` enum.
+# You cannot set values for two attribute forms in a single
+# `AttributeFormPredicate`.
+
+# Define a variable, which can be later used in a script
+NEW_SECURITY_FILTER_NAME_2 = '<new_sec_filter_name>'
+
+predicate1 = AttributeFormPredicate(
+    function=Function.EQUALS,
+    parameters=[
+        ConstantParameter(
+             constant=Variant(type=VariantType.STRING, value='<constant_value>')
+        )
+    ],
+    attribute=SchemaObjectReference(
+        sub_type=ObjectSubType.ATTRIBUTE,
+        object_id=ATTRIBUTE_1_ID,
+        name=ATTRIBUTE_1_NAME
+    ),
+    form=SchemaObjectReference(
+        sub_type=ObjectSubType.ATTRIBUTE_FORM_SYSTEM,
+        object_id=ATTRIBUTE_1_FORM_ID,
+    ),
 )
-pf2 = PredicateForm(
-    function=PREDICATE_FORM_FUNCTION_2,
-    parameters=[PREDICATE_FORM_PARAM_2],
-    attribute=PREDICATE_FORM_ATTRIBUTE_2,
-    form=PREDICATE_FORM_ATTRIBUTE_FORM_2,
-    data_locale=PREDICATE_FORM_DATA_LOCALE_2,
+predicate2 = AttributeFormPredicate(
+    function=Function.EQUALS,
+    parameters=[
+        ConstantParameter(
+             constant=Variant(type=VariantType.STRING, value='<constant_value>')
+        )
+    ],
+    attribute=SchemaObjectReference(
+        sub_type=ObjectSubType.ATTRIBUTE,
+        object_id=ATTRIBUTE_2_ID,
+        name=ATTRIBUTE_2_NAME
+    ),
+    form=SchemaObjectReference(
+        sub_type=ObjectSubType.ATTRIBUTE_FORM_SYSTEM,
+        object_id=ATTRIBUTE_2_FORM_ID,
+    ),
 )
-# see access_and_security/security_filter/predicates.py for LogicFunction values
-logic_operator = LogicOperator(function=LogicFunction.AND, children=[pf1, pf2])
-qualification2 = Qualification(tree=logic_operator)
-name2 = SECURITY_FILTER_NAME_2
-new_sec_fil2 = SecurityFilter.create(conn, qualification2, name2, folder_id)
+
+new_security_filter2 = SecurityFilter.create(
+    connection=conn,
+    qualification=Expression(
+        tree=Operator(
+            function=Function.AND,
+            children=[predicate1, predicate2]
+        )
+    ),
+    name=NEW_SECURITY_FILTER_NAME_2,
+    destination_folder=FOLDER_ID
+)
+print(new_security_filter2)
 
 # alter security filter - its name, description, qualification and folder
-new_name = SECURITY_FILTER_NAME_NEW
-new_description = SECURITY_FILTER_DESCRIPTION
-# copy old qualification and change year
-new_qualification = Qualification.from_dict(new_sec_fil.qualification.to_dict())
-new_qualification.tree.parameters[0].constant['value'] = PARAMETER_CHANGED_VALUE
-new_folder_id = FOLDER_ID_NEW
-sec_fil.alter(qualification=new_qualification, name=new_name, description=new_description)
+
+# Define a variable, which can be later used in a script
+NEW_SECURITY_FILTER_NAME = '<new_security_filter_name>'
+NEW_SECURITY_FILTER_DESCRIPTION = '<new_security_filter_description>'
+
+security_filter.alter(name=NEW_SECURITY_FILTER_NAME, description=NEW_SECURITY_FILTER_DESCRIPTION)
+print(security_filter)
+
+# Define a variable, which can be later used in a script
+PARAMETER_CHANGED_VALUE = '<value>'  # value of parameter to change to
+
+# copy old qualification and change value of parameter
+new_qualification = security_filter.qualification
+new_qualification.tree.parameters[0].constant.value = PARAMETER_CHANGED_VALUE
+
+security_filter.alter(qualification=new_qualification)
+print(security_filter)
+
+# Define a variable, which can be later used in a script
+USER_NAME_BEGINS = '<username_begins>'  # beginning of username to look for
+USER_GROUP_NAME_BEGINS = '<user_group_name_begins>'  # beginning of user group to look for
 
 # prepare users and user groups for applying and revoking security filter
-mstr_user = list_users(conn, name_begins=USER_NAME_BEGINS)[0]
-system_monitors = list_user_groups(conn, name_begins=USER_GROUP_NAME_BEGINS)[0]
+user = list_users(conn, name_begins=USER_NAME_BEGINS)[0]
+group = list_user_groups(conn, name_begins=USER_GROUP_NAME_BEGINS)[0]
 
 # apply user(s) and/or user group(s) to security filter
-sec_fil.apply([mstr_user, system_monitors.id])
+security_filter.apply([user, group.id])
 
 # revoke user(s) and/or user group(s) from security filter
-sec_fil.revoke([mstr_user.id, system_monitors])
-sec_fil.revoke(sec_fil.members)  # revoke all members of security filter
+security_filter.revoke([user.id, group])
+
+# revoke all members of security filter
+security_filter.revoke(security_filter.members)
 
 # apply security filter directly to user or user group
-mstr_user.apply_security_filter(sec_fil)
+user.apply_security_filter(security_filter)
 
 # revoke security filter directly from user or user group
-system_monitors.apply_security_filter(sec_fil.id)
+group.apply_security_filter(security_filter.id)
 
 # fetch the latest security filter state
-sec_fil.fetch(fetch_definition=False, fetch_members=True)
+security_filter.fetch()
 
 # delete security filter. When `force` argument is set
 # to `False` (default value) then deletion must be approved.
-sec_fil.delete(force=True)
+security_filter.delete(force=True)

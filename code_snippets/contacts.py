@@ -6,11 +6,11 @@ Its basic goal is to present what can be done with this module and to
 ease its usage.
 """
 
-from mstrio.distribution_services import (
-    Contact, ContactAddress, ContactDeliveryType, ContactGroup, Device, list_contacts
-)
-from mstrio.users_and_groups import User
 from mstrio.connection import get_connection
+from mstrio.distribution_services import Device
+from mstrio.users_and_groups import (
+    Contact, ContactAddress, ContactDeliveryType, ContactGroup, list_contacts, User
+)
 
 PROJECT_NAME = '<Project_name>'  # Insert project name here
 CONTACT_ID = '<Contact_ID>'  # Insert your contact ID here

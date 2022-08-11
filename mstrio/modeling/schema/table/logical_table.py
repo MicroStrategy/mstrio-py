@@ -32,7 +32,7 @@ from mstrio.utils.version_helper import class_version_handler, method_version_ha
 
 NO_PROJECT_ERR_MSG = "You must specify or select a project."
 
-logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 @method_version_handler('11.3.0100')
@@ -384,7 +384,7 @@ class LogicalTable(Entity, DeleteMixin):
             "physical_table",
             "secondary_data_sources",
         ): (tables_api.patch_table, "partial_put"),
-        ("folder_id"): (objects.update_object, "partial_put"),
+        "folder_id": (objects.update_object, "partial_put"),
     }
     _PATCH_PATH_TYPES = {
         "name": str,
@@ -718,7 +718,7 @@ class LogicalTable(Entity, DeleteMixin):
         ).json()
 
         if config.verbose:
-            logging.info(
+            logger.info(
                 f"Successfully created table named: '{response['name']}' "
                 f"with ID: '{response['id']}'"
             )
@@ -744,7 +744,7 @@ class LogicalTable(Entity, DeleteMixin):
 
         response = tables_api.post_table(connection=connection, data=body).json()
         if config.verbose:
-            logging.info(
+            logger.info(
                 f"Successfully created table alias named: '{response['name']}' "
                 f"with ID: '{response['id']}'"
             )
@@ -915,7 +915,7 @@ class LogicalTable(Entity, DeleteMixin):
         )
         if res.ok:
             data = res.json().get("physicalTable")
-            logging.info(
+            logger.info(
                 f"Successfully modified a structure of a physical table '{data.get('tableName')}' "
                 f"with ID: '{data.get('information').get('objectId')}' "
                 f"in a '{data.get('namespace')}' namespace "

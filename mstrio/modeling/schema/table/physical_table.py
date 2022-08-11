@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 NO_PROJECT_ERR_MSG = "You must specify or select a project."
 
-logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 @method_version_handler('11.3.0100')
@@ -31,7 +31,7 @@ def list_physical_tables(
     to_dictionary: bool = False,
     include_unassigned_tables: bool = False
 ) -> Union[list["PhysicalTable"], list[dict]]:
-    """List all physical tables in a project mapped to a specified connection.
+    """List all physical tables in a project.
 
     Specify either `project_id` or `project_name`.
     When `project_id` is provided (not `None`), `project_name` is omitted.
@@ -71,7 +71,7 @@ def list_physical_tables(
             project=project_id,
             object_types=ObjectTypes.DBTABLE,
             limit=limit,
-            **filters
+            **(filters or {})
         )
     else:
         tables = fetch_objects(
@@ -91,15 +91,27 @@ def list_physical_tables(
 
 
 @method_version_handler('11.3.0100')
-def list_tables_prefixes(connection: Connection, project_id: Optional[str] = None):
+def list_tables_prefixes(
+        connection: Connection,
+        project_id: Optional[str] = None,
+        project_name: Optional[str] = None,
+):
     """Returns the prefixes for the physical tables
 
     Args:
         connection: Object representation of MSTR Connection
         project_id (Optional[str], optional): ID of a project. Defaults to None
+        project_name (Optional[str], optional): Name of a project. Defaults to
+            None.
 
     Returns:
-        A dictionary of prefixes for all the physical tables"""
+        A dictionary of prefixes for all the physical tables
+    """
+    project_id = get_valid_project_id(connection=connection,
+                                      project_id=project_id,
+                                      project_name=project_name,
+                                      with_fallback=False if project_name else True)
+
     physical_tables = list_physical_tables(connection, project_id=project_id, to_dictionary=True)
     return {table.get("table_prefix") for table in physical_tables}
 
@@ -110,7 +122,6 @@ def list_namespaces(
     id: str,
     refresh: Optional[bool] = None,
     limit: Optional[int] = None,
-    timeout: float = 6.06,
     **filters,
 ) -> list[dict]:
     """Get list of namespaces. Optionally filter them by specifying filters.
@@ -122,8 +133,6 @@ def list_namespaces(
         refresh (bool, optional): Force refresh
         limit: limit the number of elements returned. If `None` (default), all
             objects are returned.
-        timeout: the number of seconds Requests will wait for your client to
-            establish a connection to a remote machine
         **filters: Available filter parameters: ['id', 'name']
 
     Examples:
@@ -137,7 +146,6 @@ def list_namespaces(
         filters=filters,
         id=id,
         refresh=refresh,
-        timeout=timeout,
     )
 
     return namespaces
@@ -227,11 +235,13 @@ class PhysicalTable(Entity):
         try:
             # If the physical table is included in a project, more info can be
             # fetched.
-            physical_tables = list_physical_tables(connection, project_id, to_dictionary=True)
-            table = next(filter(lambda table: table.get("id") == id, physical_tables))
+            physical_tables: list[dict] = list_physical_tables(connection, project_id,
+                                                               to_dictionary=True,
+                                                               filters={'id': id})
+            table = physical_tables[0]
             table.update({"table_type": table.pop("type", None)})
             self._set_object_attributes(**table)
-        except StopIteration:
+        except LookupError:
             pass
 
     def _init_variables(self, **kwargs) -> None:
@@ -277,12 +287,8 @@ class PhysicalTable(Entity):
         from mstrio.modeling.schema.table.logical_table import list_logical_tables
 
         logical_tables = list_logical_tables(connection=self.connection)
-        return list(
-            filter(
-                lambda logical_table: logical_table.physical_table.id == self.id,
-                logical_tables,
-            )
-        )
+
+        return [table for table in logical_tables if table.physical_table.id == self.id]
 
     def delete(self, force: bool = False) -> None:
         """Searches for all logical table dependents based on provided physical
@@ -300,11 +306,11 @@ class PhysicalTable(Entity):
         """
         dependent_logical_tables = self.list_dependent_logical_tables()
         if dependent_logical_tables:
-            logging.warning("Following dependent logical tables will be deleted: ")
-            logging.warning(",".join(str(table) for table in dependent_logical_tables))
+            logger.warning("Following dependent logical tables will be deleted: ")
+            logger.warning(",".join(str(table) for table in dependent_logical_tables))
             confirmed_delete = (force or input("Do you want to continue? [Y/n]: ").lower() == "y")
             if confirmed_delete:
                 [table.delete(force=True) for table in dependent_logical_tables]
-                logging.info(f"Successfully removed Warehouse Table with id: {self.id}")
+                logger.info(f"Successfully removed Warehouse Table with id: {self.id}")
         else:
-            logging.error("This table is not included in a project.")
+            logger.error("This table is not included in a project.")
