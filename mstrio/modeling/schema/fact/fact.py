@@ -138,7 +138,7 @@ class Fact(Entity, CopyMixin, DeleteMixin, MoveMixin):
         version_id: the version number this object is currently carrying
     """
     _OBJECT_TYPE = ObjectTypes.FACT
-    _DELETE_NONE_VALUES_RECURSION = False
+
     _API_GETTERS = {
         (
             'id',

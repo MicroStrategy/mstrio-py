@@ -1,5 +1,9 @@
 import json
+from typing import Optional
 
+from requests.adapters import Response
+
+from mstrio.connection import Connection
 from mstrio.utils.error_handlers import ErrorHandler
 
 
@@ -146,4 +150,33 @@ def delete_schedule(connection, id, fields=None, error_msg=None):
     """
     return connection.delete(
         url=f'{connection.base_url}/api/schedules/{id}', params={'fields': fields}
+    )
+
+
+@ErrorHandler(err_msg='Error getting schedule information')
+def get_contents_schedule(
+        connection: "Connection",
+        project_id: str,
+        body: dict,
+        fields: Optional[str] = None
+) -> Response:
+    """Get a list of available schedules for a list of contents within a given
+        project.
+
+    Args:
+        connection(object): MicroStrategy connection object returned by
+            `connection.Connection()`.
+        project_id(str): Field to filter on project id (exact match),
+        body: List of contents
+        fields(list, optional): Comma separated top-level field whitelist. This
+            allows client to selectively retrieve part of the response model.
+
+    Return:
+        HTTP response object. Expected status: 200
+    """
+    return connection.post(
+        url=f'{connection.base_url}/api/schedules/results',
+        headers={'X-MSTR-ProjectID': project_id},
+        params={'fields': fields},
+        json=body
     )

@@ -36,13 +36,6 @@ object-assign
  * Released under the MIT License.
  */
 
-/*!
- * set-value <https://github.com/jonschlinkert/set-value>
- *
- * Copyright (c) 2014-2018, Jon Schlinkert.
- * Released under the MIT License.
- */
-
 /** @license React v0.19.1
  * scheduler.production.min.js
  *

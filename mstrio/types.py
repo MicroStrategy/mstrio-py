@@ -70,6 +70,7 @@ class ObjectTypes(Enum):
 class ObjectSubTypes(Enum):
     FILTER = 256
     OLAP_CUBE = 776
+    INCREMENTAL_REFRESH_REPORT = 777
     SUPER_CUBE = 779
     FUNCTION = 2816
     USER = 8704

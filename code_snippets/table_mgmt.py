@@ -19,8 +19,8 @@ from mstrio.modeling.schema.table import (
     PhysicalTable,
 )
 
-PROJECT_ID = "<project_id>"  # Project ID to connect to
-PROJECT_NAME = "<project_name>"  # Project to connect to
+PROJECT_ID = $project_id  # Project ID to connect to
+PROJECT_NAME = $project_name  # Project to connect to
 
 conn = get_connection(workstationData, project_name=PROJECT_NAME)
 
@@ -29,7 +29,7 @@ table_prefixes = list_tables_prefixes(connection=conn)
 print(table_prefixes)
 
 # Define a variable, which can be later used in a script
-PHYSICAL_TABLE_PREFIX = "<physical_table_prefix>"  # Insert prefix of the Table here
+PHYSICAL_TABLE_PREFIX = $physical_table_prefix  # Insert prefix of the Table here
 
 # Get a list of physical tables
 physical_tables = list_physical_tables(connection=conn, project_id=PROJECT_ID)
@@ -44,26 +44,22 @@ connected_datasource_instances = list_connected_datasource_instances(connection=
 print(connected_datasource_instances)
 
 # Define a variable, which can be later used in a script
-DATASOURCE_ID = "<datasource_id>"
-DATASOURCE_NAME = "<datasource_name>"
+DATASOURCE_ID = $datasource_id
+DATASOURCE_NAME = $datasource_name
 
 # List of all available Warehouse Tables
 all_warehouse_tables = list_warehouse_tables(connection=conn)
 print(all_warehouse_tables)
 
-# Define a variables, which can be later used in a script
-WAREHOUSE_TABLE_NAME = "<warehouse_table_name>"  # Insert name of the Table here
+# Define a variable, which can be later used in a script
+WAREHOUSE_TABLE_NAME = $warehouse_table_name  # Insert name of the Table here
 
 # List all Warehouse tables with the name WAREHOUSE_TABLE_NAME
-lu_item_tables = list_warehouse_tables(
-    connection=conn, name=WAREHOUSE_TABLE_NAME
-)
+lu_item_tables = list_warehouse_tables(connection=conn, name=WAREHOUSE_TABLE_NAME)
 print(lu_item_tables)
 
 # List all Warehouse tables from the DATASOURCE_ID datasource
-datasource_tables = list_warehouse_tables(
-    connection=conn, datasource_id=DATASOURCE_ID
-)
+datasource_tables = list_warehouse_tables(connection=conn, datasource_id=DATASOURCE_ID)
 print(datasource_tables)
 
 # Get a Warehouse tables with the name WAREHOUSE_TABLE_NAME
@@ -84,7 +80,7 @@ print(lu_item_table.list_dependent_logical_tables())
 # logical table object and physical table object on the server
 
 # Define a variable, which can be later used in a script
-NEW_LOGICAL_TABLE_NAME = "<new_logical_table_name>"  # Insert name of the logical table
+NEW_LOGICAL_TABLE_NAME = $new_logical_table_name  # Insert name of the logical table
 
 logical_table = lu_item_table.add_to_project(logical_table_name=NEW_LOGICAL_TABLE_NAME)
 print(logical_table)
@@ -94,9 +90,9 @@ print(logical_table.physical_table)  # List a physical table for a logical table
 logical_tables = list_logical_tables(conn)
 print(logical_tables)
 
-# Define variables, which can be later used in a script
-LOGICAL_TABLE_ID = "<logical_table_id>"  # Insert ID of the logical table
-LOGICAL_TABLE_NAME = "<logical_table_name>"  # Insert name of the logical table
+# Define a variable, which can be later used in a script
+LOGICAL_TABLE_ID = $logical_table_id  # Insert ID of the logical table
+LOGICAL_TABLE_NAME = $logical_table_name  # Insert name of the logical table
 
 # These tables can then be retrieved from the server on demand.
 # Get logical table by id
@@ -114,7 +110,7 @@ print(logical_table.list_columns())
 list_physical_tables(conn, project_id=PROJECT_ID)
 
 # Define a variable, which can be later used in a script
-PHYSICAL_TABLE_ID = "<physical_table_id>"
+PHYSICAL_TABLE_ID = $physical_table_id
 
 # Physical table can be retrieved by its id
 physical_table = PhysicalTable(connection=conn, id=PHYSICAL_TABLE_ID)
@@ -128,16 +124,12 @@ LogicalTable.create_alias(connection=conn, id=PHYSICAL_TABLE_ID)
 
 # Define variable, which can be later used in a script
 # The variable below is needed when altering or creating a logical table
-LOGICAL_TABLE_DESCRIPTION = (
-    "<logical_table_description>"  # Insert description of the logical table
-)
+LOGICAL_TABLE_DESCRIPTION = $logical_table_description  # Insert description of the logical table
 
 # Create logical table of type normal for a physical table
 logical_table = LogicalTable.create(
     connection=conn,
-    physical_table=PhysicalTable(
-        connection=conn, id=PHYSICAL_TABLE_ID
-    ),
+    physical_table=PhysicalTable(connection=conn, id=PHYSICAL_TABLE_ID),
     primary_data_source=SchemaObjectReference(
         object_id=DATASOURCE_ID, sub_type=ObjectSubType.DB_ROLE
     ),
@@ -153,9 +145,7 @@ logical_table = LogicalTable.create(
     physical_table_type=PhysicalTableType.SQL,
     columns=[
         TableColumn(
-            data_type=DataType(
-                type=DataType.Type.INTEGER, scale="-2147483648", precision="2"
-            ),
+            data_type=DataType(type=DataType.Type.INTEGER, scale="-2147483648", precision="2"),
             column_name="item_id",
         )
     ],
@@ -176,7 +166,7 @@ normal_tables = list_logical_tables(connection=conn, table_type=PhysicalTableTyp
 print(normal_tables)
 
 # Define a variable, which can be later used in a script
-NORMAL_TABLE_NAME = "<normal_table_name>"
+NORMAL_TABLE_NAME = $normal_table_name
 
 # Get a table by the name
 normal_table = LogicalTable(conn, name=NORMAL_TABLE_NAME)
@@ -187,7 +177,7 @@ sql_tables = list_logical_tables(connection=conn, table_type=PhysicalTableType.S
 print(sql_tables)
 
 # Define a variable, which can be later used in a script
-SQL_TABLE_NAME = "<sql_table_name>"
+SQL_TABLE_NAME = $sql_table_name
 
 # Get a table by the name
 sql_table = LogicalTable(conn, name=SQL_TABLE_NAME)
@@ -212,13 +202,9 @@ logical_tables[0].delete(force=True)
 
 # Define variables, which can be later used in a script
 # The variable below is needed when altering a logical table
-LOGICAL_TABLE_NAME_ALTERED = "<logical_table_name>"  # Insert altered Table name
-# The variable below is needed when altering or creating a logical table
-LOGICAL_TABLE_DESCRIPTION = (
-    "<logical_table_description>"  # Insert description of the logical table
-)
+LOGICAL_TABLE_NAME_ALTERED = $logical_table_name_altered  # Insert altered Table name
 # Physical Table
-PHYSICAL_TABLE_NAME_ALTERED = "<physical_table_name>"  # Insert altered Table name
+PHYSICAL_TABLE_NAME_ALTERED = $physical_table_name_altered  # Insert altered Table name
 
 # Alter logical table based on physical table of type normal
 normal_table.alter(name=LOGICAL_TABLE_NAME_ALTERED)  # logical table name

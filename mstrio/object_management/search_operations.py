@@ -49,7 +49,7 @@ class SearchObject(Entity, CopyMixin, MoveMixin):
         acg: Access rights (See EnumDSSXMLAccessRightFlags for possible values)
         acl: Object access control list
     """
-    _DELETE_NONE_VALUES_RECURSION = False
+
     _OBJECT_TYPE = ObjectTypes.SEARCH
     _FROM_DICT_MAP = {**Entity._FROM_DICT_MAP, 'owner': User.from_dict}
     _API_PATCH: dict = {**Entity._API_PATCH, ('folder_id'): (objects.update_object, 'partial_put')}

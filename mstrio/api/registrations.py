@@ -47,6 +47,7 @@ def get_services_metadata(connection, error_msg=None):
     return connection.get(url=f'{connection.base_url}/api/registrations/services/metadata')
 
 
+@ErrorHandler(err_msg='Error to start/stop service')
 def start_stop_service(
     connection, login, password, name, id, address, action="START", error_msg=None
 ):

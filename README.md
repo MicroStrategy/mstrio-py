@@ -52,10 +52,10 @@ Since version **11.3.0.1**, **mstrio-py** includes also administration modules:
 
 - **Project** management module (see [code_snippets][code_snippet_project])
 - **Server** management module (see [code_snippets][code_snippet_server])
-- **User** and **Usergroup** management modules (see [code_snippets][code_snippet_user])
+- **User** and **User Group** management modules (see [code_snippets][code_snippet_user])
 - **Schedules** management module (see [code_snippets][code_snippet_schedules])
 - **Subscription** management modules including **Email Subscription** and **Cache Update Subscription** (see [code_snippets][code_snippet_subs])
-- **Document** and **Dossiers** in **User Library** modules (see [code_snippets][code_snippet_library])
+- **User Library** module (see [code_snippets][code_snippet_library])
 - **User Connections** management module
 - **Privilege** and **Security Role** management modules (see [code_snippets][code_snippet_privilege])
 - **Cube Cache** management modules (see [code_snippets][code_snippet_cache])
@@ -75,10 +75,13 @@ It is subject to change until it is released as Generally Available.
 - **User Hierarchy** module (see [code_snippets][code_snippet_user_hierarchy])
 - **Attribute** module (see [code_snippets][code_snippet_attribute])
 - **Fact** module (see [code_snippets][code_snippet_fact])
-- **Tables** module (see [code_snippets][code_snippet_table_mgmt])
+- **Table** module (see [code_snippets][code_snippet_table_mgmt])
 - **Filter** module (see [code_snippets][code_snippet_filter])
 - **Transformation** module (see [code_snippets][code_snippet_transformation])
-- **Metrics** module (see [code_snippets][code_snippet_metrics])
+- **Metric** module (see [code_snippets][code_snippet_metrics])
+- **Document** module (see [code_snippets][code_snippet_document])
+- **Dossier** module (see [code_snippets][code_snippet_dossier])
+- **Content Cache** module (see [code_snippets][code_snippet_content_cache])
 
 <a id="documentation" name="documentation"></a>
 # Documentation
@@ -172,7 +175,7 @@ jupyter nbextension enable connector-jupyter --py --sys-prefix
 <a id="versioning--changelog" name="versioning--changelog"></a>
 # Versioning & Changelog
 
-Current version: **11.3.6.103** (12 August 2022). Check out [**Changelog**][release_notes] to see what's new.
+Current version: **11.3.7.103** (11 November 2022). Check out [**Changelog**][release_notes] to see what's new.
 
 mstrio-py is constantly developed to support newest MicroStrategy REST APIs. Functionalities may be added to mstrio on monthly basis. It is **recommended** to always install the newest version of mstrio-py, as it will be most stable and still maintain backwards compatibility with various MicroStrategy installations, dating back to 11.1.4.
 
@@ -259,3 +262,6 @@ When features (modules, parameters, attributes, methods etc.) are marked for dep
 [code_snippet_privilege]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/security_roles_and_privileges.py
 [code_snippet_transformation]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/transformation.py
 [code_snippet_metrics]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/metrics.py
+[code_snippet_content_cache]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/content_cache.py
+[code_snippet_document]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/document.py
+[code_snippet_dossier]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/dossier.py

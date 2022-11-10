@@ -18,8 +18,6 @@ class Relationship(Dictable):
             one_to_many, one_to_one, many_to_many
     """
 
-    _DELETE_NONE_VALUES_RECURSION = False
-
     class RelationshipType(AutoName):
         """Enumeration constants used to specify type of the relationship"""
         ONE_TO_MANY = auto()

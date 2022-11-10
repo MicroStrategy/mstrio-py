@@ -9,7 +9,7 @@ from mstrio.modeling.schema import SchemaManagement, SchemaLockType, SchemaUpdat
 
 from mstrio.connection import get_connection
 
-PROJECT_NAME = '<project_name>'  # Project to connect to
+PROJECT_NAME = $project_name  # Project to connect to
 
 conn = get_connection(workstationData, project_name=PROJECT_NAME)
 

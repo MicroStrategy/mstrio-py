@@ -51,7 +51,7 @@ class Subscription(EntityBase):
         connection: The MicroStrategy connection object
         project_id: The ID of the project the Subscription belongs to
     """
-    _DELETE_NONE_VALUES_RECURSION = False
+
     _API_GETTERS = {
         (
             "id",

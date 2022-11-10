@@ -11,19 +11,18 @@ from mstrio.server import Cluster, Environment, Project
 from mstrio.connection import get_connection
 from mstrio.utils.wip import module_wip, WipLevels
 
-# TODO remove wip when Input functionality will be implemented to WS-Scripts
 # For some methods to work, a connection to environment
 # using user's credentials is needed.
 module_wip(globals(), level=WipLevels.WARNING)
 
-PROJECT_NAME = '<project_name>'  # Project to connect to
+PROJECT_NAME = $project_name  # Project to connect to
 
 # cluster nodes names
-NODE_NAME = '<node_name>'
-NODE_NAME_2 = '<node_name_2>'
+NODE_NAME = $node_name
+NODE_NAME_2 = $node_name_2
 
-SERVICE_NAME = '<service_name>'
-FILE_NAME = '<file_name>'  # file name with extension 'csv', 'json' or 'pickle'
+SERVICE_NAME = $service_name
+FILE_NAME = $file_name  # file name with extension 'csv', 'json' or 'pickle'
 
 conn = get_connection(workstationData, project_name=PROJECT_NAME)
 

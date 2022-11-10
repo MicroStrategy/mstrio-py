@@ -1,19 +1,17 @@
 from typing import Optional, TYPE_CHECKING
 
-from mstrio.utils.api_helpers import changeset_decorator, unpack_information
+from mstrio.utils.api_helpers import changeset_manager, unpack_information
 from mstrio.utils.error_handlers import ErrorHandler
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
 
 
-@changeset_decorator
 @unpack_information
 @ErrorHandler(err_msg="Error creating the filter.")
 def create_filter(
     connection: "Connection",
     body: dict,
-    changeset_id: str,
     show_expression_as: Optional[str] = None,
     show_filter_tokens: bool = False,
     error_msg: Optional[str] = None,
@@ -23,7 +21,6 @@ def create_filter(
 
     Args:
         connection: MicroStrategy REST API connection object
-        changeset_id (str): Changeset ID
         body (dict): Filter creation body
         error_msg (str, optional): Custom Error Message for Error Handling
         show_expression_as (str, optional): specify how expressions should be
@@ -38,15 +35,16 @@ def create_filter(
     Returns:
         Complete HTTP response object. Expected status is 201.
     """
-    return connection.post(
-        url=f"{connection.base_url}/api/model/filters",
-        headers={"X-MSTR-MS-Changeset": changeset_id},
-        json=body,
-        params={
-            "showExpressionAs": show_expression_as,
-            "showFilterTokens": str(show_filter_tokens).lower(),
-        },
-    )
+    with changeset_manager(connection) as changeset_id:
+        return connection.post(
+            url=f"{connection.base_url}/api/model/filters",
+            headers={"X-MSTR-MS-Changeset": changeset_id},
+            json=body,
+            params={
+                "showExpressionAs": show_expression_as,
+                "showFilterTokens": str(show_filter_tokens).lower(),
+            },
+        )
 
 
 @unpack_information
@@ -104,12 +102,10 @@ def get_filter(
     )
 
 
-@changeset_decorator
 @unpack_information
 @ErrorHandler(err_msg="Error updating the filter with ID: {id}.")
 def update_filter(
     connection: "Connection",
-    changeset_id: str,
     id: str,
     body: dict,
     show_expression_as: Optional[str] = None,
@@ -121,7 +117,6 @@ def update_filter(
 
     Args:
         connection: MicroStrategy REST API connection object
-        changeset_id (str, optional): Changeset ID
         id (str): Filter ID. The ID can be:
             - the object ID used in the metadata.
             - the object ID used in the changeset, but not yet committed
@@ -140,12 +135,13 @@ def update_filter(
     Returns:
         Complete HTTP response object. Expected status is 200.
     """
-    return connection.put(
-        url=f"{connection.base_url}/api/model/filters/{id}",
-        headers={"X-MSTR-MS-Changeset": changeset_id},
-        json=body,
-        params={
-            "showExpressionAs": show_expression_as,
-            "showFilterTokens": str(show_filter_tokens).lower(),
-        },
-    )
+    with changeset_manager(connection) as changeset_id:
+        return connection.put(
+            url=f"{connection.base_url}/api/model/filters/{id}",
+            headers={"X-MSTR-MS-Changeset": changeset_id},
+            json=body,
+            params={
+                "showExpressionAs": show_expression_as,
+                "showFilterTokens": str(show_filter_tokens).lower(),
+            },
+        )

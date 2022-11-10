@@ -1,24 +1,37 @@
-from typing import List, Optional, Union
+import logging
+from typing import Optional
 
-from pandas import DataFrame
+from pandas import concat, DataFrame
 
+from mstrio import config
 from mstrio.api import documents, library, objects
+from mstrio.api.schedules import get_contents_schedule
 from mstrio.connection import Connection
+from mstrio.distribution_services.schedule import Schedule
+from mstrio.object_management import Folder
+from mstrio.project_objects import OlapCube, SuperCube
 from mstrio.server.environment import Environment
-from mstrio.users_and_groups import list_users, User, UserGroup, UserOrGroup
+from mstrio.users_and_groups import User, UserGroup, UserOrGroup
 from mstrio.utils import helper
+from mstrio.utils.cache import CacheSource, ContentCacheMixin
 from mstrio.utils.certified_info import CertifiedInfo
 from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, MoveMixin, ObjectTypes, VldbMixin
+from mstrio.utils.helper import filter_params_for_func, get_valid_project_id, IServerError
+from mstrio.utils.version_helper import method_version_handler
+
+logger = logging.getLogger(__name__)
 
 
 def list_documents(
     connection: Connection,
-    name: Optional[str] = None,
     to_dictionary: bool = False,
     to_dataframe: bool = False,
     limit: Optional[int] = None,
+    name: Optional[str] = None,
+    project_id: Optional[str] = None,
+    project_name: Optional[str] = None,
     **filters
-):
+) -> list["Document"] | list[dict] | DataFrame:
     """Get all Documents available in the project specified within the
     `connection` object.
 
@@ -26,35 +39,33 @@ def list_documents(
     If `to_dictionary` is True, `to_dataframe` is omitted.
 
     Args:
-        connection(object): MicroStrategy connection object returned
+        connection (Connection): MicroStrategy connection object returned
             by 'connection.Connection()'
-        name: exact name of the document to list
-        to_dictionary(bool, optional): if True, return Documents as
+        to_dictionary (bool, optional): if True, return Documents as
             list of dicts
-        to_dataframe(bool, optional): if True, return Documents as
+        to_dataframe (bool, optional): if True, return Documents as
             pandas DataFrame
-        limit: limit the number of elements returned. If `None` (default), all
-            objects are returned.
+        limit (int, optional): limit the number of elements returned.
+            If `None` (default), all objects are returned.
+        name (str, optional): characters that the document name must contain
+        project_id (str, optional): Project ID
+        project_name (str, optional): Project name
         **filters: Available filter parameters: ['name', 'id', 'type',
             'subtype', 'date_created', 'date_modified', 'version', 'acg',
             'owner', 'ext_type', 'view_media', 'certified_info', 'project_id']
 
     Returns:
-            List of documents.
+            List of documents or list of dictionaries or DataFrame object
     """
-    # TODO: consider adding Connection.project_selected attr/method
-    if connection.project_id is None:
-        raise ValueError(
-            "Please log into a specific project to load documents within it. "
-            "To load all documents across the whole environment use "
-            f"{list_documents_across_projects.__name__} function."
-        )
+
     return Document._list_all(
         connection,
         to_dictionary=to_dictionary,
         name=name,
         limit=limit,
         to_dataframe=to_dataframe,
+        project_id=project_id,
+        project_name=project_name,
         **filters
     )
 
@@ -66,59 +77,79 @@ def list_documents_across_projects(
     to_dataframe: bool = False,
     limit: Optional[int] = None,
     **filters
-):
+) -> list["Document"] | list[dict] | DataFrame:
     """Get all Documents stored on the server.
 
     Optionally use `to_dictionary` or `to_dataframe` to choose output format.
     If `to_dictionary` is True, `to_dataframe` is omitted.
 
     Args:
-        connection(object): MicroStrategy connection object returned
+        connection (Connection): MicroStrategy connection object returned
             by 'connection.Connection()'
-        name: exact names of the documents to list
-        to_dictionary(bool, optional): if True, return Documents as
+        name (string, optional): characters that the document name must contain
+        to_dictionary (bool, optional): if True, return Documents as
             list of dicts
-        to_dataframe(bool, optional): if True, return Documents as
+        to_dataframe (bool, optional): if True, return Documents as
             pandas DataFrame
-        limit: limit the number of elements returned. If `None` (default), all
-            objects are returned.
+        limit (int, optional): limit the number of elements returned. If `None`
+            (default), all objects are returned.
         **filters: Available filter parameters: ['name', 'id', 'type',
             'subtype', 'date_created', 'date_modified', 'version', 'acg',
             'owner', 'ext_type', 'view_media', 'certified_info', 'project_id']
 
     Returns:
-            List of documents.
+            List of documents or list of dictionaries or DataFrame object
     """
     project_id_before = connection.project_id
     env = Environment(connection)
     projects = env.list_projects()
-    output = []
+    output = DataFrame() if to_dataframe else []
     for project in projects:
-        connection.select_project(project_id=project.id)
-        output.extend(
-            Document._list_all(
-                connection,
-                to_dictionary=to_dictionary,
-                name=name,
-                limit=limit,
-                to_dataframe=to_dataframe,
-                **filters
-            )
+        try:
+            connection.select_project(project_id=project.id)
+        except ValueError:
+            if config.verbose:
+                logger.info(
+                    f'Project {project.name} ({project.id}) is skipped '
+                    f'because it does not exist or user has no access '
+                    f'to it'
+                )
+            continue
+
+        docs = Document._list_all(
+            connection,
+            to_dictionary=to_dictionary,
+            name=name,
+            limit=limit,
+            to_dataframe=to_dataframe,
+            **filters
         )
-        output = list(set(output))
+        if to_dataframe:
+            output = concat([output, docs], ignore_index=True)
+        else:
+            output.extend(docs)
+
     connection.select_project(project_id=project_id_before)
-    return output
+    return output[:limit]
 
 
-class Document(Entity, VldbMixin, CopyMixin, MoveMixin, DeleteMixin):
+class Document(Entity, VldbMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCacheMixin):
+    """ Python representation of MicroStrategy Document object
+
+    _CACHE_TYPE is a variable used by ContentCache class for cache filtering
+    purposes.
+    """
+
     _OBJECT_TYPE = ObjectTypes.DOCUMENT_DEFINITION
+    _CACHE_TYPE = CacheSource.Type.DOCUMENT
+    _API_GETTERS = {**Entity._API_GETTERS, 'recipients': library.get_document}
+    _API_PATCH = {('name', 'description', 'folder_id'): (objects.update_object, 'partial_put')}
     _FROM_DICT_MAP = {
         **Entity._FROM_DICT_MAP,
         'owner': User.from_dict,
-        'certified_info': CertifiedInfo.from_dict
+        'certified_info': CertifiedInfo.from_dict,
+        'recipients': [User.from_dict]
     }
-    _API_PATCH: dict = {**Entity._API_PATCH, ('folder_id'): (objects.update_object, 'partial_put')}
-    _DELETE_NONE_VALUES_RECURSION = False
 
     def __init__(
         self, connection: Connection, name: Optional[str] = None, id: Optional[str] = None
@@ -126,10 +157,10 @@ class Document(Entity, VldbMixin, CopyMixin, MoveMixin, DeleteMixin):
         """Initialize Document object by passing name or id.
 
         Args:
-            connection: MicroStrategy connection object returned
+            connection (object): MicroStrategy connection object returned
                 by `connection.Connection()`
-            name: name of Document
-            id: ID of Document
+            name (string, optional): name of Document
+            id (string, optional): ID of Document
         """
         if id is None:
             document = super()._find_object_with_name(
@@ -141,34 +172,77 @@ class Document(Entity, VldbMixin, CopyMixin, MoveMixin, DeleteMixin):
     def _init_variables(self, **kwargs) -> None:
         super()._init_variables(**kwargs)
         self._instance_id = ""
-        self._recipients = []
+        self._recipients = kwargs.get('recipients')
+        self._project_id = self.connection.project_id
+        self._template_info = kwargs.get('templateInfo')
+        self._folder_id = None
 
-    def alter(self, name: Optional[str] = None, description: Optional[str] = None):
-        """Alter Document name or/and description.
+    def list_properties(self):
+        """List properties for the document.
+
+        Returns:
+            A list of all document properties."""
+        properties = {
+            'id': self.id,
+            'name': self.name,
+            'description': self.description,
+            'type': self.type,
+            'subtype': self.subtype,
+            'ext_type': self.ext_type,
+            'ancestors': self.ancestors,
+            'certified_info': self.certified_info,
+            'comments': self.comments,
+            'date_created': self.date_created,
+            'date_modified': self.date_modified,
+            'instance_id': self.instance_id,
+            'owner': self.owner,
+            'recipients': self.recipients,
+            'version': self.version,
+            'template_info': self.template_info,
+            'acg': self.acg,
+            'acl': self.acl
+        }
+        return properties
+
+    def alter(
+        self,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        folder_id: Optional[Folder | str] = None
+    ):
+        """Alter Document name, description and/or folder id.
 
         Args:
-            name: new name of the Document
-            description: new description of the Document
+            name (string, optional): new name of the Document
+            description (string, optional): new description of the Document
+            folder_id (string | Folder, optional): A globally unique identifier
+                used to distinguish between metadata objects within the same
+                project. It is possible for two metadata objects in different
+                projects to have the same Object Id.
         """
-        func = self.alter
-        args = func.__code__.co_varnames[:func.__code__.co_argcount]
-        defaults = func.__defaults__  # type: ignore
-        default_dict = dict(zip(args[-len(defaults):], defaults)) if defaults else {}
-        local = locals()
-        properties = {}
-        for property_key in default_dict.keys():
-            if local[property_key] is not None:
-                properties[property_key] = local[property_key]
+        description = description or self.description
+        properties = filter_params_for_func(self.alter, locals(), exclude=['self'])
         self._alter_properties(**properties)
+        if folder_id:
+            self._folder_id = folder_id
 
-    def publish(self, recipients: Optional[Union[UserOrGroup, List[UserOrGroup]]] = None):
+    def __validate_user(self, recipient_id: str) -> str | None:
+        try:
+            User(self.connection, id=recipient_id)
+        except IServerError:
+            if config.verbose:
+                logger.info(f'{recipient_id} is not a valid value for User ID')
+            return None
+        return recipient_id
+
+    def publish(self, recipients: Optional[UserOrGroup | list[UserOrGroup]] = None):
         """Publish the document for authenticated user. If `recipients`
         parameter is specified publishes the document for the given users.
 
         Args:
-            recipients(list): list of users or user groups to publish the
-                document to (can be a list of IDs or a list of User and
-                UserGroup elements)
+            recipients(UserOrGroup | list[UserOrGroup], optional): list of users
+                or user groups to publish the document to (can be a list of IDs
+                or a list of User and UserGroup elements)
         """
         if not isinstance(recipients, list) and recipients is not None:
             recipients = [recipients]
@@ -182,19 +256,22 @@ class Document(Entity, VldbMixin, CopyMixin, MoveMixin, DeleteMixin):
             recipients = [user["id"] for user in users]
         elif any([not isinstance(el, str) for el in recipients]):
             raise ValueError('Please provide either list of User, UserGroup or str elements.')
+        for recipient in recipients:
+            if not self.__validate_user(recipient):
+                recipients.remove(recipient)
         body = {'id': self.id, 'recipients': recipients}
-        self._instance_id = ''
         library.publish_document(self.connection, body)
+        self.fetch(attr='recipients')
 
-    def unpublish(self, recipients: Optional[Union[UserOrGroup, List[UserOrGroup]]] = None):
+    def unpublish(self, recipients: Optional[UserOrGroup | list[UserOrGroup]] = None):
         """Unpublish the document for all users it was previously published to.
         If `recipients` parameter is specified unpublishes the document for the
         given users.
 
         Args:
-            recipients(list): list of users or user groups to publish the
-                document to (can be a list of IDs or a list of User and
-                UserGroup elements).
+            recipients(UserOrGroup | list[UserOrGroup], optional): list of users
+                or user groups to publish the document to (can be a list of IDs
+                or a list of User and UserGroup elements)
         """
 
         if recipients is None:
@@ -212,17 +289,49 @@ class Document(Entity, VldbMixin, CopyMixin, MoveMixin, DeleteMixin):
                     'Please provide either list User and UserGroup elements or str elements.'
                 )
             for user_id in recipients:
-                library.unpublish_document_for_user(
-                    self.connection, document_id=self.id, user_id=user_id
-                )
+                if self.__validate_user(user_id):
+                    library.unpublish_document_for_user(
+                        self.connection, document_id=self.id, user_id=user_id
+                    )
+        self.fetch(attr='recipients')
 
-    def share_to(self, users: Union[UserOrGroup, List[UserOrGroup]]):
+    @method_version_handler('11.3.0600')
+    def list_available_schedules(self,
+                                 to_dictionary: bool = False) -> list["Schedule"] | list[dict]:
+        """Get a list of schedules available for the object instance.
+
+        Args:
+            to_dictionary (bool, optional): If True returns a list of
+                dictionaries, otherwise returns a list of Schedules.
+                False by default.
+
+        Returns:
+            List of Schedule objects or list of dictionaries.
+        """
+        schedules_list_response = (
+            get_contents_schedule(
+                connection=self.connection,
+                project_id=self.connection.project_id,
+                body={
+                    'id': self.id, 'type': 'document'
+                }
+            ).json()
+        ).get('schedules')
+        if to_dictionary:
+            return schedules_list_response
+        else:
+            return [
+                Schedule.from_dict(connection=self.connection, source=schedule_id)
+                for schedule_id in schedules_list_response
+            ]
+
+    def share_to(self, users: UserOrGroup | list[UserOrGroup]):
         """Shares the document to the listed users' libraries.
 
         Args:
-            users(list): list of users or user groups to publish the
-                document to (can be a list of IDs or a list of User and
-                UserGroup elements).
+            users(UserOrGroup | list[UserOrGroup]): list of users or user
+                groups to publish the document to (can be a list of IDs or a
+                list of User and UserGroup elements).
         """
         self.publish(users)
 
@@ -230,18 +339,27 @@ class Document(Entity, VldbMixin, CopyMixin, MoveMixin, DeleteMixin):
     def _list_all(
         cls,
         connection: Connection,
+        search_pattern: Optional[str] = 'CONTAINS',
         name: Optional[str] = None,
         to_dictionary: bool = False,
         to_dataframe: bool = False,
         limit: Optional[int] = None,
+        project_id: Optional[str] = None,
+        project_name: Optional[str] = None,
         **filters
-    ) -> Union[List["Document"], List[dict], DataFrame]:
+    ) -> list["Document"] | list[dict] | DataFrame:
         msg = "Error retrieving documents from the environment."
         if to_dictionary and to_dataframe:
             helper.exception_handler(
                 "Please select either `to_dictionary=True` or `to_dataframe=True`, but not both.",
                 ValueError
             )
+        project_id = get_valid_project_id(
+            connection=connection,
+            project_id=project_id,
+            project_name=project_name,
+            with_fallback=False if project_name else True,
+        )
         objects = helper.fetch_objects_async(
             connection,
             api=documents.get_documents,
@@ -250,8 +368,10 @@ class Document(Entity, VldbMixin, CopyMixin, MoveMixin, DeleteMixin):
             limit=limit,
             chunk_size=1000,
             error_msg=msg,
+            project_id=project_id,
             filters=filters,
-            search_term=name
+            search_term=name,
+            search_pattern=search_pattern
         )
         if to_dictionary:
             return objects
@@ -260,8 +380,11 @@ class Document(Entity, VldbMixin, CopyMixin, MoveMixin, DeleteMixin):
         else:
             return [cls.from_dict(source=obj, connection=connection) for obj in objects]
 
-    def get_connected_cubes(self):
-        """Lists cubes used by this document."""
+    def get_connected_cubes(self) -> list[SuperCube | OlapCube]:
+        """Lists cubes used by this document.
+
+        Returns:
+            A list of cubes used by the document."""
         cubes = documents.get_cubes_used_by_document(self.connection, self.id).json()
         ret_cubes = [helper.choose_cube(self.connection, cube) for cube in cubes]
         return [tmp for tmp in ret_cubes if tmp]  # remove `None` values
@@ -277,13 +400,17 @@ class Document(Entity, VldbMixin, CopyMixin, MoveMixin, DeleteMixin):
         return self._instance_id
 
     @property
+    def folder_id(self):
+        if not self._folder_id:
+            self._folder_id = next(
+                folder['id'] for folder in self.ancestors if folder['level'] == 1
+            ) if self.ancestors else None
+        return self._folder_id
+
+    @property
     def recipients(self):
-        response = library.get_document(connection=self.connection,
-                                        id=self.id).json()['recipients']
-        if response:
-            self._recipients = list_users(
-                connection=self.connection, id=[r['id'] for r in response]
-            )
-        else:
-            self._recipients = []
         return self._recipients
+
+    @property
+    def template_info(self):
+        return self._template_info

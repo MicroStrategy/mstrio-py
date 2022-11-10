@@ -52,7 +52,6 @@ class DimensionalityUnit(Dictable):
         IGNORE = auto()
         NONE = auto()
 
-    _DELETE_NONE_VALUES_RECURSION = False
     _FROM_DICT_MAP = {
         'dimensionality_unit_type': DimensionalityUnitType,
         'filtering': Filtering,
@@ -98,8 +97,6 @@ class Dimensionality(Dictable):
             to add extra units
         prompt: reference to a prompt
     """
-
-    _DELETE_NONE_VALUES_RECURSION = False
 
     _FROM_DICT_MAP = {
         'dimensionality_units': [DimensionalityUnit], 'prompt': SchemaObjectReference

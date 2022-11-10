@@ -18,7 +18,6 @@ class Content(Dictable):
             of the content
 
     """
-    _DELETE_NONE_VALUES_RECURSION = False
 
     class Type(AutoName):
         REPORT = auto()
@@ -42,7 +41,6 @@ class Content(Dictable):
             prompt: Promp settings object
             file_name: file name of content
         """
-        _DELETE_NONE_VALUES_RECURSION = False
 
         class FormatMode(AutoUpperName):
             DEFAULT = auto()
@@ -104,7 +102,6 @@ class Content(Dictable):
                     header
                 grid_paging_mode: Specifies how grids should be paginated
             """
-            _DELETE_NONE_VALUES_RECURSION = False
 
             class PageOption(AutoUpperName):
                 DEFAULT = auto()
@@ -190,7 +187,6 @@ class Content(Dictable):
                 device_id: Device ID in the email burst feature
                 form_id: Form ID in the email burst feature
             """
-            _DELETE_NONE_VALUES_RECURSION = False
 
             def __init__(
                 self,
@@ -207,8 +203,6 @@ class Content(Dictable):
                 self.form_id = form_id
 
         class Prompt(Dictable):
-
-            _DELETE_NONE_VALUES_RECURSION = False
 
             def __init__(self, enabled: bool, instance_id: str = None):
                 self.enabled = enabled
@@ -256,7 +250,6 @@ class Content(Dictable):
                 setting value is not provided or empty.
             filters: list of SubscriptionFilter objects
         """
-        _DELETE_NONE_VALUES_RECURSION = False
 
         class SubscriptionFilter(Dictable):
             """Subscription filter. The format of the subscription filters are
@@ -270,7 +263,6 @@ class Content(Dictable):
                 type: Filter type
                 expression: Metric limits
             """
-            _DELETE_NONE_VALUES_RECURSION = False
 
             def __init__(self, type: str, expression):
                 self.type = type
@@ -288,7 +280,6 @@ class Content(Dictable):
                 refresh_policy: Table refresh policy
                 alternateSource: AlternateSource object
             """
-            _DELETE_NONE_VALUES_RECURSION = False
 
             class AlternateSource(Dictable):
                 """Alternate source
@@ -299,7 +290,6 @@ class Content(Dictable):
                     table_name: Table name of alternate source
                     url: URL of alternate source
                 """
-                _DELETE_NONE_VALUES_RECURSION = False
 
                 # XXX: Should all of those be optional or all required or what?
                 def __init__(
@@ -342,10 +332,10 @@ class Content(Dictable):
 
         _FROM_DICT_MAP = {
             "dataset_refresh_policy": RefreshPolicy,
-            "tables": lambda tables:
-            [Content.RefreshCondition.TableRefreshInfo.from_dict(t) for t in tables],
-            "filters": lambda filters: [
-                Content.RefreshCondition.SubscriptionFilter.from_dict(f)  # noqa
+            "tables": lambda tables, connection:
+            [Content.RefreshCondition.TableRefreshInfo.from_dict(t, connection) for t in tables],
+            "filters": lambda filters, connection: [
+                Content.RefreshCondition.SubscriptionFilter.from_dict(f, connection)  # noqa
                 for f in filters
             ],
         }

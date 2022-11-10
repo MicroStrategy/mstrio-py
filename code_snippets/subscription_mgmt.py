@@ -20,25 +20,26 @@ from mstrio.distribution_services import (
 
 from mstrio.connection import get_connection
 
-PROJECT_NAME = '<project_name>'  # Project to connect to
-CONTENT_TYPE = '<content_type>'  # see distribution_services/subscription/content.py for available options
-FORMAT_TYPE = '<format_type>'  # see distribution_services/subscription/content.py for available options
-EMAIL_SUBSCRIPTION_NAME = '<email_subscription_name>'
-EMAIL_SUBJECT = '<email_subject>'
-CACHE_SUBSCRIPTION_NAME = '<cache_subscription_name>'
-SCHEDULE_NAME = '<schedule_name>'
-DELIVERY_EXPIRATION_DATE = '<delivery_expiration_date>'
+PROJECT_NAME = $project_name  # Project to connect to
+CONTENT_TYPE = $content_type  # see distribution_services/subscription/content.py for available options
+FORMAT_TYPE = $format_type  # see distribution_services/subscription/content.py for available options
+EMAIL_SUBSCRIPTION_NAME = $email_subscription_name
+EMAIL_SUBJECT = $email_subject
+CACHE_SUBSCRIPTION_NAME = $cache_subscription_name
+CACHE_SUBSCRIPTION_NEW_NAME = $cache_subscription_new_name
+SCHEDULE_NAME = $schedule_name
+DELIVERY_EXPIRATION_DATE = $delivery_expiration_date
 
-SUBSCRIPTION_ID = '<subscription_id>'
-SUBSCRIPTION_ID_2 = '<subscription_id_2>'
-CONTENT_ID = '<content_id>'
-PROJECT_ID = '<project_id>'
-RECIPIENT_ID = '<recipient_id>'
-RECIPIENT_ID_2 = '<recipient_id_2>'
-REMOVED_USER_ID = '<user_to_remove_id>'
-ADMIN_USER_ID = '<admin_user_id>'
-SCHEDULE_ID = '<schedule_id>'
-OWNER_ID = '<owner_id>'
+SUBSCRIPTION_ID = $subscription_id
+SUBSCRIPTION_ID_2 = $subscription_id_2
+CONTENT_ID = $content_id
+PROJECT_ID = $project_id
+RECIPIENT_ID = $recipient_id
+RECIPIENT_ID_2 = $recipient_id_2
+USER_TO_REMOVE_ID = $user_to_remove_id
+ADMIN_USER_ID = $admin_user_id
+SCHEDULE_ID = $schedule_id
+OWNER_ID = $owner_id
 
 conn = get_connection(workstationData, project_name=PROJECT_NAME)
 
@@ -73,9 +74,9 @@ sub.execute()
 # replace a user with an admin in all of its subscriptions (e.g. when user exits
 # company)
 for s in sub_mngr.list_subscriptions(to_dictionary=False):
-    if REMOVED_USER_ID in [r['id'] for r in s.recipients]:
+    if USER_TO_REMOVE_ID in [r['id'] for r in s.recipients]:
         s.add_recipient(recipients=ADMIN_USER_ID)
-        s.remove_recipient(recipients=REMOVED_USER_ID)
+        s.remove_recipient(recipients=USER_TO_REMOVE_ID)
 
 # create an email subscription
 EmailSubscription.create(
@@ -112,7 +113,7 @@ cache_update_sub = CacheUpdateSubscription.create(
 )  # see distribution_services/subscription/delivery.py for available options
 
 # change name and owner of cache update subscription
-cache_update_sub.alter(name=f"<{cache_update_sub.name}_(Altered)>", owner_id=OWNER_ID)
+cache_update_sub.alter(name=CACHE_SUBSCRIPTION_NEW_NAME, owner_id=OWNER_ID)
 
 # list all cache update subscriptions
 cache_update_subs = [

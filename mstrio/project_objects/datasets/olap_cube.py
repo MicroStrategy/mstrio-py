@@ -1,5 +1,5 @@
 import logging
-from typing import List, Optional, Union
+from typing import Optional, Union
 
 import pandas as pd
 
@@ -7,7 +7,7 @@ from mstrio.api import cubes
 from mstrio.connection import Connection
 from mstrio.object_management.search_operations import full_search, SearchPattern
 from mstrio.utils.entity import ObjectSubTypes, ObjectTypes
-from mstrio.utils.helper import deprecation_warning, exception_handler, get_valid_project_id
+from mstrio.utils.helper import exception_handler, get_valid_project_id
 from mstrio.utils.version_helper import class_version_handler
 
 from .cube import _Cube, load_cube
@@ -18,23 +18,22 @@ logger = logging.getLogger(__name__)
 def list_olap_cubes(
     connection: Connection,
     name: Optional[str] = None,
-    name_begins: Optional[str] = None,
     search_pattern: Union[SearchPattern, int] = SearchPattern.CONTAINS,
     project_id: Optional[str] = None,
     project_name: Optional[str] = None,
     to_dictionary: bool = False,
     limit: Optional[int] = None,
     **filters,
-) -> Union[List["OlapCube"], List[dict]]:
+) -> Union[list["OlapCube"], list[dict]]:
     """Get list of OlapCube objects or dicts with them. Optionally filter cubes
     by specifying 'name'.
 
     Optionally use `to_dictionary` to choose output format.
 
-    Wildcards available for 'name_begins':
+    Wildcards available for 'name':
         ? - any character
         * - 0 or more of any characters
-        e.g. name_begins = ?onny will return Sonny and Tonny
+        e.g. name = ?onny will return Sonny and Tonny
 
     Specify either `project_id` or `project_name`.
     When `project_id` is provided (not `None`), `project_name` is omitted.
@@ -48,7 +47,6 @@ def list_olap_cubes(
             `connection.Connection()`
         name (string, optional): value the search pattern is set to, which
             will be applied to the names of olap cubes being searched
-        name_begins (string, optional): deprecated. Use `name` instead.
         search_pattern (SearchPattern enum or int, optional): pattern to search
             for, such as Begin With or Contains. Possible values are available
             in ENUM mstrio.browsing.SearchPattern.
@@ -73,14 +71,6 @@ def list_olap_cubes(
         with_fallback=False if project_name else True,
     )
 
-    if name_begins:
-        deprecation_warning(
-            "`name_begins`",
-            "`name`",
-            "11.3.7.101",  # NOSONAR
-            False
-        )
-        name, search_pattern = name_begins, SearchPattern.BEGIN_WITH
     objects_ = full_search(
         connection,
         object_types=ObjectSubTypes.OLAP_CUBE,
@@ -123,7 +113,6 @@ class OlapCube(_Cube):
         table_definition
     """
     _OBJECT_SUBTYPE = ObjectSubTypes.OLAP_CUBE.value
-    _DELETE_NONE_VALUES_RECURSION = False
 
     def __init__(
         self,
@@ -166,7 +155,7 @@ class OlapCube(_Cube):
     @classmethod
     def available_metrics(
         cls, connection: Connection, basic_info_only: bool = True, to_dataframe: bool = False
-    ) -> Union[List[dict], List[pd.DataFrame]]:
+    ) -> Union[list[dict], list[pd.DataFrame]]:
         """Get all metrics available on I-Server.
 
         Args:
@@ -190,7 +179,7 @@ class OlapCube(_Cube):
     @classmethod
     def available_attributes(
         cls, connection: Connection, basic_info_only: bool = True, to_dataframe: bool = False
-    ) -> Union[List[dict], List[pd.DataFrame]]:
+    ) -> Union[list[dict], list[pd.DataFrame]]:
         """Get all attributes available on I-Server.
 
         Args:
@@ -214,7 +203,7 @@ class OlapCube(_Cube):
     @classmethod
     def available_attribute_forms(
         cls, connection: Connection, basic_info_only: bool = True, to_dataframe: bool = False
-    ) -> Union[List[dict], List[pd.DataFrame]]:
+    ) -> Union[list[dict], list[pd.DataFrame]]:
         """Get all attribute forms available on I-Server.
 
         Args:
@@ -242,7 +231,7 @@ class OlapCube(_Cube):
         object_type=Union[ObjectTypes, ObjectSubTypes],
         basic_info_only: bool = True,
         to_dataframe: bool = False
-    ) -> Union[List[dict], List[pd.DataFrame]]:
+    ) -> Union[list[dict], list[pd.DataFrame]]:
         """Helper function to get available objects based on their type. It
         should be used to get only available attribute, metrics or attribute
         forms."""
@@ -280,8 +269,8 @@ class OlapCube(_Cube):
         folder_id: str,
         description: str = None,
         overwrite: bool = False,
-        attributes: List[dict] = [],
-        metrics: List[dict] = []
+        attributes: list[dict] = [],
+        metrics: list[dict] = []
     ) -> Union['OlapCube', None]:
         """Create an OLAP Cube by defining its name, description, destination
         folder, attributes and metrics.
@@ -323,7 +312,7 @@ class OlapCube(_Cube):
         return load_cube(connection, cube_id)
 
     @staticmethod
-    def __check_objects(objects_: List[dict], obj_name: str) -> bool:
+    def __check_objects(objects_: list[dict], obj_name: str) -> bool:
         """Check objects (attribute or metrics) before creation or update of an
         OLAP Cube."""
         for obj in objects_:
@@ -356,7 +345,7 @@ class OlapCube(_Cube):
             return False
         return True
 
-    def update(self, attributes: List[dict] = [], metrics: List[dict] = []) -> bool:
+    def update(self, attributes: list[dict] = [], metrics: list[dict] = []) -> bool:
         """Update an OLAP Cube. When Cube is unpublished, then it is possible to
          add or remove attributes and metrics to/from its definition and
          rearrange existing one. When cube is published it is possible only to
@@ -399,7 +388,7 @@ class OlapCube(_Cube):
 
     @staticmethod
     def __check_attributes_update(
-        attributes: List[dict], existing_attributes: List[dict], status: int
+        attributes: list[dict], existing_attributes: list[dict], status: int
     ) -> bool:
         """Check dictionaries with attributes before update of an OLAP Cube."""
         return OlapCube.__check_objects_update(
@@ -408,14 +397,14 @@ class OlapCube(_Cube):
 
     @staticmethod
     def __check_metrics_update(
-        metrics: List[dict], existing_metrics: List[dict], status: int
+        metrics: list[dict], existing_metrics: list[dict], status: int
     ) -> bool:
         """Check dictionaries with metrics before update of an OLAP Cube."""
         return OlapCube.__check_objects_update(metrics, existing_metrics, 'metric', status)
 
     @staticmethod
     def __check_objects_update(
-        objects_: List[dict], existing_objects: List[dict], object_name: str, status: int
+        objects_: list[dict], existing_objects: list[dict], object_name: str, status: int
     ) -> bool:
         """Check objects (attributes or metrics) represented as dictionaries
         before update of an OLAP Cube. When status of cube is 0, then it is not

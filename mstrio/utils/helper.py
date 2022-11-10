@@ -106,16 +106,20 @@ def get_default_args_from_func(func: Callable[[Any], Any]):
     }
 
 
-def camel_to_snake(response: Union[dict, list]) -> Union[dict, List[dict]]:
+def camel_to_snake(
+    response: Union[dict, list],
+    whitelist: list[str] = None,
+) -> Union[dict, List[dict]]:
     """Converts dictionary keys from camelCase to snake_case.
        It works recursively for dicts in dicts."""
+
+    whitelist = whitelist or []
 
     def convert_dict(source):
         return {
             stringcase.snakecase(key):
-            value if not isinstance(value, dict) else convert_dict(value)
-            for key,
-            value in source.items()
+            value if not isinstance(value, dict) or key in whitelist else convert_dict(value)
+            for key, value in source.items()
         }
 
     if type(response) == list:
@@ -126,16 +130,19 @@ def camel_to_snake(response: Union[dict, list]) -> Union[dict, List[dict]]:
         raise ValueError("Not supported data type for camel_to_snake conversion")
 
 
-def snake_to_camel(response: Union[dict, list]) -> Union[dict, List[dict]]:
+def snake_to_camel(
+    response: Union[dict, list],
+    whitelist: list[str] = None,
+) -> Union[dict, List[dict]]:
     """Converts dictionary keys from snake_case to camelCase.
        It works recursively for dicts in dicts."""
+    whitelist = whitelist or []
 
     def convert_dict(source):
         return {
             stringcase.camelcase(key):
-            value if not isinstance(value, dict) else convert_dict(value)
-            for key,
-            value in source.items()
+            value if not isinstance(value, dict) or key in whitelist else convert_dict(value)
+            for key, value in source.items()
         }
 
     if type(response) == list:
@@ -712,7 +719,6 @@ def create_folder(
     folder_description: Optional[str] = None,
     parent_name: Optional[str] = None,
     parent_id: Optional[str] = None,
-    error_msg=None
 ):
     """Create a folder.
 
@@ -991,7 +997,7 @@ class Dictable:
     # list of attribute name, which are allowed to have none values
     # in dict returned by .to_dict()
     _ALLOW_NONE_ATTRIBUTES: List[str] = []
-    _DELETE_NONE_VALUES_RECURSION: bool  # enable or disable recursion in delete_none_values
+    _KEEP_CAMEL_CASE: list[str] = []
 
     @classmethod
     def _unpack_objects(cls, key, val, camel_case=True):
@@ -1046,7 +1052,7 @@ class Dictable:
 
         Returns:
             dict: A dictionary representation of object's attributes and values.
-                By default the dictionary keys are in camel case.
+                By default, the dictionary keys are in camel case.
         """
 
         hidden_keys = [
@@ -1070,10 +1076,10 @@ class Dictable:
         result = delete_none_values(
             result,
             whitelist_attributes=self._ALLOW_NONE_ATTRIBUTES,
-            recursion=self._DELETE_NONE_VALUES_RECURSION
+            recursion=False
         )
         result = {key: result[key] for key in sorted(result, key=sort_object_properties)}
-        return snake_to_camel(result) if camel_case else result
+        return snake_to_camel(result, whitelist=self._KEEP_CAMEL_CASE) if camel_case else result
 
     @classmethod
     def from_dict(
@@ -1100,7 +1106,12 @@ class Dictable:
         Returns:
             T: An object of type T.
         """
-        object_source = camel_to_snake(source) if to_snake_case else source
+        object_source = (
+            camel_to_snake(source, whitelist=cls._KEEP_CAMEL_CASE)
+            if to_snake_case
+            else source
+        )
+
         if connection is not None:
             object_source["connection"] = connection
 

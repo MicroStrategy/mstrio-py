@@ -183,7 +183,11 @@ class CSVSettingsIO(SettingsIO):
     @classmethod
     def to_file(cls, file: str, settings_obj: "BaseSettings") -> None:
         cls.validate_file_name(file)
-        with open(file, 'w') as f:
+        # newline = '' to disable universal newlines translation
+        # It should always be safe to specify newline='', since the csv module
+        # does its own (universal) newline handling.
+        # https://docs.python.org/3/library/csv.html#examples
+        with open(file, 'w', newline='') as f:
             # Add lines for workstation compatibility
             version = cls.get_version(settings_obj)
             f.write(f"#__page__,{settings_obj._TYPE}\n#__version__,{version}\nName, Value\n")

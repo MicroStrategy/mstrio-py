@@ -1,6 +1,6 @@
 from copy import deepcopy
 import logging
-from typing import Callable, List, Optional, TYPE_CHECKING, Union
+from typing import Callable, Optional, TYPE_CHECKING, Union
 import warnings
 
 from mstrio import config
@@ -43,7 +43,7 @@ def list_attributes(
     project_name: Optional[str] = None,
     show_expression_as: Union[ExpressionFormat, str] = ExpressionFormat.TREE,
     **filters,
-) -> Union[List["Attribute"], List[dict]]:
+) -> Union[list["Attribute"], list[dict]]:
     """Get list of Attribute objects or dicts with them.
     Optionally filter attributes by specifying 'name', 'attribute_subtype'.
 
@@ -162,7 +162,6 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
         acg: access rights (See EnumDSSXMLAccessRightFlags for possible values)
         acl: object access control list
         """
-    _DELETE_NONE_VALUES_RECURSION = False
 
     _OBJECT_TYPE = ObjectTypes.ATTRIBUTE
     _API_GETTERS = {
@@ -210,7 +209,7 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
             'key_form',
             'displays',
             'sorts'
-        ): (attributes.update_attribute, 'partial_put'),  # noqa
+        ): (attributes.update_attribute, 'partial_put'),
         ('relationships'): (hierarchies.update_attribute_relationships, 'partial_put'),
         ('folder_id'): (objects.update_object, 'partial_put')
     }
@@ -232,7 +231,7 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
 
     @staticmethod
     def validate_key_form(
-        key_form: FormReference, forms: List[AttributeForm], error_msg: Optional[str] = None
+        key_form: FormReference, forms: list[AttributeForm], error_msg: Optional[str] = None
     ) -> FormReference:
         """Validate whether the key form exists in the list of attribute forms
             provided
@@ -254,12 +253,12 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
         elif key_form is None or not any(form.is_referenced_by(key_form) for form in forms):
             raise AttributeError(
                 error_msg or "Please select a `key_form` from the `forms` provided."
-            )  # noqa
+            )
         return key_form
 
     @staticmethod
     def check_if_referenced_forms_exist(
-        error_msg: str, forms: List[AttributeForm], refs: List[FormReference]
+        error_msg: str, forms: list[AttributeForm], refs: list[FormReference]
     ):
         """Check if all references point to a form in forms."""
         for ref in refs:
@@ -272,7 +271,7 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
 
     @staticmethod
     def validate_displays(
-        displays: AttributeDisplays, forms: List[AttributeForm]
+        displays: AttributeDisplays, forms: list[AttributeForm]
     ) -> AttributeDisplays:
         """Validate whether the Attribute Displays are populated correctly and
             only use references to forms present in the Attribute Forms of this
@@ -301,7 +300,7 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
 
     @staticmethod
     def validate_sorts(sorts: AttributeSorts,
-                       forms: List[AttributeForm]) -> Optional[AttributeSorts]:
+                       forms: list[AttributeForm]) -> Optional[AttributeSorts]:
         """Validate whether the sorts use form references that aren't present
             in the provided forms
 
@@ -312,17 +311,19 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
 
         Returns:
             Validated sorts or nothing if the provided sorts were empty."""
-        if sorts is None:
+        if sorts is None or (sorts.browse_sorts is None and sorts.report_sorts is None):
             return None
 
         # Validate if sorts use form refs not present in forms
         error_msg = "FormReference present in `sort` is not present in `forms`."
-        Attribute.check_if_referenced_forms_exist(
-            error_msg, forms, [attr_sort.form for attr_sort in sorts.report_sorts]
-        )
-        Attribute.check_if_referenced_forms_exist(
-            error_msg, forms, [attr_sort.form for attr_sort in sorts.browse_sorts]
-        )
+        if sorts.report_sorts is not None:
+            Attribute.check_if_referenced_forms_exist(
+                error_msg, forms, [attr_sort.form for attr_sort in sorts.report_sorts]
+            )
+        if sorts.browse_sorts is not None:
+            Attribute.check_if_referenced_forms_exist(
+                error_msg, forms, [attr_sort.form for attr_sort in sorts.browse_sorts]
+            )
         return sorts
 
     @classmethod
@@ -332,7 +333,7 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
         name: str,
         sub_type: Union[ObjectSubType, str],
         destination_folder: Union[Folder, str],
-        forms: List[AttributeForm],
+        forms: list[AttributeForm],
         key_form: FormReference,
         displays: AttributeDisplays,
         description: Optional[str] = None,
@@ -392,7 +393,7 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
             },
             'forms': [form.to_dict() for form in forms] if forms else None,
             'attributeLookupTable': attribute_lookup_table.to_dict()
-            if attribute_lookup_table else None,  # noqa
+            if attribute_lookup_table else None,
             'keyForm': key_form.to_dict() if key_form else None,
             'displays': displays.to_dict() if displays else None,
             'sorts': sorts.to_dict() if sorts else None,
@@ -487,7 +488,7 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
         is_embedded: Optional[bool] = None,
         description: Optional[str] = None,
         destination_folder_id: Optional[str] = None,
-        forms: Optional[List[AttributeForm]] = None,
+        forms: Optional[list[AttributeForm]] = None,
         attribute_lookup_table: Optional[SchemaObjectReference] = None,
         key_form: Optional[FormReference] = None,
         displays: Optional[AttributeDisplays] = None,
@@ -530,7 +531,7 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
     def add_child(
         self,
         child: Optional[SchemaObjectReference] = None,
-        joint_child: Optional[List[SchemaObjectReference]] = None,
+        joint_child: Optional[list[SchemaObjectReference]] = None,
         relationship_type: Relationship.RelationshipType = Relationship.RelationshipType
         .ONE_TO_MANY,
         table: Optional[SchemaObjectReference] = None
@@ -603,7 +604,7 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
     def remove_child(
         self,
         child: Optional[SchemaObjectReference] = None,
-        joint_child: Optional[List[SchemaObjectReference]] = None
+        joint_child: Optional[list[SchemaObjectReference]] = None
     ) -> None:
         """Removes a child of the attribute.
 
@@ -663,7 +664,7 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
 
     def list_relationship_candidates(
         self, already_used: bool = True, to_dictionary: bool = True
-    ) -> Union[dict, List[SchemaObjectReference]]:
+    ) -> Union[dict, list[SchemaObjectReference]]:
         """Lists potential relationship candidates for the Attribute.
 
         Args:
@@ -711,7 +712,7 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
             result = {
                 tab: [candidate for candidate in candidates if candidate not in used]
                 for tab,
-                candidates in result.items()  # noqa
+                candidates in result.items()
             }
 
         if to_dictionary is False:
@@ -721,7 +722,7 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
 
     def list_tables(
         self, expression: Optional[Union[FactExpression, str]] = None
-    ) -> List[SchemaObjectReference]:
+    ) -> list[SchemaObjectReference]:
         """List all tables in the given expression. If expression is not
         specified, list all tables for attribute.
 
@@ -795,14 +796,14 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
         self,
         form: Optional[AttributeForm] = None,
         name: Optional[str] = None,
-        expressions: Optional[List[FactExpression]] = None,
+        expressions: Optional[list[FactExpression]] = None,
         lookup_table: Optional[SchemaObjectReference] = None,
         description: Optional[str] = None,
         category: Optional[str] = None,
         display_format: Optional[AttributeForm.DisplayFormat] = None,
         data_type: Optional[DataType] = None,
         alias: Optional[str] = None,
-        child_forms: Optional[List[FormReference]] = None,
+        child_forms: Optional[list[FormReference]] = None,
         geographical_role: Optional[AttributeForm.GeographicalRole] = None,
         time_role: Optional[AttributeForm.TimeRole] = None,
         is_form_group: bool = False,
@@ -863,7 +864,7 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
 
     @staticmethod
     def _remove_form_from_displays(
-        form_to_be_removed: AttributeForm, forms: List[AttributeForm], displays: AttributeDisplays
+        form_to_be_removed: AttributeForm, forms: list[AttributeForm], displays: AttributeDisplays
     ) -> AttributeDisplays:
         """Remove all references to the form from local instance of displays,
         AttributeDisplays object.
@@ -890,7 +891,7 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
 
     @staticmethod
     def _remove_form_from_sorts(
-        form_to_be_removed: AttributeForm, forms: List[AttributeForm], sorts: AttributeSorts
+        form_to_be_removed: AttributeForm, forms: list[AttributeForm], sorts: AttributeSorts
     ) -> AttributeSorts:
         """Remove all references to the form from local instance of displays,
         AttributeSorts object.
@@ -905,14 +906,16 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
             AttributeSorts object without references to the removed form
         """
         sorts = deepcopy(sorts)
-        for index in range(len(sorts.report_sorts)):
-            if form_to_be_removed.is_referenced_by(sorts.report_sorts[index].form):
-                sorts.report_sorts.pop(index)
-                break
-        for index in range(len(sorts.browse_sorts)):
-            if form_to_be_removed.is_referenced_by(sorts.browse_sorts[index].form):
-                sorts.browse_sorts.pop(index)
-                break
+        if sorts.report_sorts:
+            for index in range(len(sorts.report_sorts)):
+                if form_to_be_removed.is_referenced_by(sorts.report_sorts[index].form):
+                    sorts.report_sorts.pop(index)
+                    break
+        if sorts.browse_sorts:
+            for index in range(len(sorts.browse_sorts)):
+                if form_to_be_removed.is_referenced_by(sorts.browse_sorts[index].form):
+                    sorts.browse_sorts.pop(index)
+                    break
         return Attribute.validate_sorts(sorts, forms)
 
     def remove_form(self, form_id: str, new_key_form: Optional[FormReference] = None):
@@ -963,10 +966,10 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
         description: Optional[str] = None,
         display_format: Optional[AttributeForm.DisplayFormat] = None,
         data_type: Optional[DataType] = None,
-        expressions: Optional[List[FactExpression]] = None,
+        expressions: Optional[list[FactExpression]] = None,
         alias: Optional[str] = None,
         lookup_table: Optional[SchemaObjectReference] = None,
-        child_forms: Optional[List[FormReference]] = None,
+        child_forms: Optional[list[FormReference]] = None,
         geographical_role: Optional[AttributeForm.GeographicalRole] = None,
         time_role: Optional[AttributeForm.TimeRole] = None,
         is_form_group: Optional[bool] = None,
@@ -1012,7 +1015,7 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
         form_id: str,
         fact_expression_id: str,
         expression: Optional['Expression'] = None,
-        tables: Optional[List[SchemaObjectReference]] = None,
+        tables: Optional[list[SchemaObjectReference]] = None,
     ):
         """Alter fact expression of the attribute form with given ID
         Args:

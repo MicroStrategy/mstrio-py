@@ -1,7 +1,7 @@
 from enum import Enum
 import logging
 from operator import itemgetter
-from typing import List, Optional, TYPE_CHECKING, Union
+from typing import Optional, TYPE_CHECKING, Union
 
 from pandas.core.frame import DataFrame
 import requests
@@ -19,7 +19,6 @@ from mstrio.utils.entity import DeleteMixin, Entity, VldbMixin
 from mstrio.utils.filter import Filter
 from mstrio.utils.helper import (
     choose_cube,
-    deprecation_warning,
     exception_handler,
     fallback_on_timeout,
     get_parallel_number,
@@ -57,7 +56,7 @@ class CubeStates(Enum):
     UNKNOWN3 = 16384
 
     @classmethod
-    def show_status(cls, status: int) -> List[str]:
+    def show_status(cls, status: int) -> list[str]:
         """Show states of a cube calculated from numerical value of its state.
         Additionally list of those states' names is returned.
 
@@ -68,7 +67,7 @@ class CubeStates(Enum):
             List with names of cube's states.
         """
 
-        def parse_cube_status_bin_to_list(status_bin: int) -> List[str]:
+        def parse_cube_status_bin_to_list(status_bin: int) -> list[str]:
             output = []
             # sort states from enum based on its value and return as a table of
             # tuples (value, name)
@@ -92,23 +91,22 @@ class CubeStates(Enum):
 def list_all_cubes(
     connection: Connection,
     name: Optional[str] = None,
-    name_begins: Optional[str] = None,
     search_pattern: Union[SearchPattern, int] = SearchPattern.CONTAINS,
     project_id: Optional[str] = None,
     project_name: Optional[str] = None,
     to_dictionary: bool = False,
     limit: Optional[int] = None,
     **filters
-) -> Union[List[Union["OlapCube", "SuperCube"]], List[dict]]:
+) -> Union[list[Union["OlapCube", "SuperCube"]], list[dict]]:
     """Get list of Cube objects (OlapCube or SuperCube) or dicts with them.
     Optionally filter cubes by specifying 'name'.
 
     Optionally use `to_dictionary` to choose output format.
 
-    Wildcards available for 'name_begins':
+    Wildcards available for 'name':
         ? - any character
         * - 0 or more of any characters
-        e.g. name_begins = ?onny will return Sonny and Tonny
+        e.g. name = ?onny will return Sonny and Tonny
 
     Specify either `project_id` or `project_name`.
     When `project_id` is provided (not `None`), `project_name` is omitted.
@@ -122,7 +120,6 @@ def list_all_cubes(
             `connection.Connection()`
         name (string, optional): value the search pattern is set to, which
             will be applied to the names of cubes being searched
-        name_begins (string, optional): deprecated. Use `name` instead.
         search_pattern (SearchPattern enum or int, optional): pattern to search
             for, such as Begin With or Contains. Possible values are available
             in ENUM mstrio.browsing.SearchPattern.
@@ -147,14 +144,6 @@ def list_all_cubes(
         with_fallback=False if project_name else True,
     )
 
-    if name_begins:
-        deprecation_warning(
-            "`name_begins`",
-            "`name`",
-            "11.3.7.101",  # NOSONAR
-            False
-        )
-        name, search_pattern = name_begins, SearchPattern.BEGIN_WITH
     objects_ = full_search(
         connection,
         project=project_id,
@@ -185,7 +174,7 @@ def load_cube(
     cube_name: Optional[str] = None,
     folder_id: Optional[str] = None,
     instance_id: Optional[str] = None
-) -> Union["OlapCube", "SuperCube", List[Union["OlapCube", "SuperCube"]]]:
+) -> Union["OlapCube", "SuperCube", list[Union["OlapCube", "SuperCube"]]]:
     """Load single cube specified by either 'cube_id' or both 'cube_name' and
     'folder_id'.
 
@@ -286,7 +275,6 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
         'certified_info': CertifiedInfo.from_dict
     }
     _SIZE_LIMIT = 10000000  # this sets desired chunk size in bytes
-    _DELETE_NONE_VALUES_RECURSION = False
 
     def __init__(
         self,
@@ -387,7 +375,7 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
                 properties[property_key] = local[property_key]
         self._alter_properties(**properties)
 
-    def get_caches(self) -> List["CubeCache"]:
+    def get_caches(self) -> list["CubeCache"]:
         """Get list of caches of the cube.
 
         Returns:
@@ -607,7 +595,7 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
         if res.ok:
             self._status = int(res.headers['X-MSTR-CubeStatus'])
 
-    def show_status(self) -> List[str]:
+    def show_status(self) -> list[str]:
         """Show which states are represented by cube's status."""
         return CubeStates.show_status(self.status)
 
@@ -889,13 +877,13 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
         return self._owner_id
 
     @property
-    def attributes(self) -> List[dict]:
+    def attributes(self) -> list[dict]:
         if not self.__definition_retrieved:
             self._get_definition()
         return self._attributes
 
     @property
-    def metrics(self) -> List[dict]:
+    def metrics(self) -> list[dict]:
         if not self.__definition_retrieved:
             self._get_definition()
         return self._metrics

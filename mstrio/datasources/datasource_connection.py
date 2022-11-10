@@ -116,7 +116,7 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
         scope: List of delegated permissions that the app is requesting.
         enable_sso: Specifies whether to use Single Sign-On.
     """
-    _DELETE_NONE_VALUES_RECURSION = False
+
     _OBJECT_TYPE = ObjectTypes.DBCONNECTION
     _FROM_DICT_MAP = {
         **Entity._FROM_DICT_MAP,

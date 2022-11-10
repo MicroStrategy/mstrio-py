@@ -7,10 +7,10 @@ ease its usage.
 from mstrio.distribution_services import Event, list_events
 from mstrio.connection import get_connection
 
-PROJECT_NAME = '<Project_name>'  # Project to connect to
-EVENT_ID = '<Event_id>'  # id for Event object
-EVENT_NAME = '<Name_of_event>'  # name for Event object
-EVENT_DESCRIPTION = '<Description_of_event>'
+PROJECT_NAME = $project_name  # Project to connect to
+EVENT_ID = $event_id  # id for Event object
+EVENT_NAME = $event_name  # name for Event object
+EVENT_DESCRIPTION = $event_description
 
 conn = get_connection(workstationData, project_name=PROJECT_NAME)
 

@@ -135,7 +135,6 @@ class WarehouseTable(Dictable):
     """
 
     _FROM_DICT_MAP: dict = {"datasource": DatasourceInstance.from_dict}
-    _DELETE_NONE_VALUES_RECURSION = False
 
     def __init__(
         self,

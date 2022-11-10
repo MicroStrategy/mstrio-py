@@ -74,7 +74,6 @@ class SecurityRole(Entity, DeleteMixin):
         acg: Access rights (See EnumDSSXMLAccessRightFlags for possible values)
         acl: Object access control list
     """
-    _DELETE_NONE_VALUES_RECURSION = False
 
     _OBJECT_TYPE = ObjectTypes.SECURITY_ROLE
     _PATCH_PATH_TYPES = {"name": str, "description": str}

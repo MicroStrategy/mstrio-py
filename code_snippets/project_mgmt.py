@@ -9,18 +9,20 @@ ease its usage.
 from mstrio.server import compare_project_settings, Environment, Project
 from mstrio.connection import get_connection
 
-PROJECT_NAME = '<Project_name>'  # Insert name of project to interact with
-NODE_NAME = '<Node_name>'  # Insert name of node, that has a project, to load or unload it
+PROJECT_NAME = $project_name  # Insert name of project to interact with
+NODE_NAME = $node_name  # Insert name of node, that has a project, to load or unload it
 
-PROJECT_DESCRIPTION = '<Description_of_project>'  # Insert description of newly created project
+PROJECT_DESCRIPTION = $project_description  # Insert description of newly created project
 
 # These strings are used for project settings comparison
-PROJECT_1_NAME = '<Project_name>'
-PROJECT_2_NAME = '<Project_name>'
-CSV_FILE_EXPORT_IMPORT = 'path/to/file.csv'  # Name of file to/from which settings are imported
+PROJECT_1_NAME = $project_1_name
+PROJECT_2_NAME = $project_2_name
+CSV_FILE_EXPORT = $csv_file_export  # Name of file to which settings are exported
+CSV_FILE_IMPORT = $csv_file_import  # Name of file from which settings are imported
 
 conn = get_connection(workstationData, project_name=PROJECT_NAME)
 env = Environment(connection=conn)
+
 
 # get list of all projects or those just loaded
 all_projects = env.list_projects()
@@ -54,8 +56,8 @@ df_cmp = compare_project_settings(projects=[project, project1, project2], show_d
 
 # save/load settings of a project to/from a file (format can be 'csv',
 # 'json' or 'pickle')
-project.settings.to_csv(name=CSV_FILE_EXPORT_IMPORT)
-project.settings.import_from(file=CSV_FILE_EXPORT_IMPORT)
+project.settings.to_csv(name=CSV_FILE_EXPORT)
+project.settings.import_from(file=CSV_FILE_IMPORT)
 
 # change a setting of a project
 project.settings.cubeIndexGrowthUpperBound = 501

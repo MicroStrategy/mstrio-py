@@ -7,12 +7,12 @@ from mstrio.utils.helper import exception_handler
 logger = logging.getLogger(__name__)
 
 
-def print_url(response, *args, **kwargs):
+def print_url(response, *args, **kwargs):  # NOSONAR required for hook to session objects
     """Response hook to print url for debugging."""
     logger.debug(response.url)
 
 
-def save_response(response, *args, **kwargs):
+def save_response(response, *args, **kwargs):  # NOSONAR required for hook to session objects
     """Response hook to save REST API responses to files structured by the API
     family."""
     import json

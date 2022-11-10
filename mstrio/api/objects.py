@@ -342,8 +342,7 @@ def get_objects_async(
     search_id,
     offset=0,
     limit=-1,
-    get_tree=False,
-    error_msg=None
+    get_tree=False
 ):
     """Get list of objects from metadata asynchronously.
 

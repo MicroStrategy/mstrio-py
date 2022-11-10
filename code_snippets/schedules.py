@@ -15,24 +15,23 @@ from mstrio.utils.wip import module_wip, WipLevels
 
 # Currently there is no way to delete schedules with a script in Workstation.
 # The functionality can be used in standalone Python runtime.
-# TODO remove wip when Input functionality will be implemented to WS-Scripts
 module_wip(globals(), level=WipLevels.WARNING)
 
-PROJECT_NAME = '<Project_name>'  # Project to connect to
-SCHEDULE_ID = '<Schedule_ID>'  # id for Schedule object lookup
-SCHEDULE_NAME = '<Name_of_schedule>'  # name for Schedule object
+PROJECT_NAME = $project_name  # Project to connect to
+SCHEDULE_ID = $schedule_id  # id for Schedule object lookup
+SCHEDULE_NAME = $schedule_name  # name for Schedule object
 
-SCHEDULE_EVENT_NAME = '<Name_of_event>'  # name of existing event to base a schedule on
+SCHEDULE_EVENT_NAME = $schedule_event_name  # name of existing event to base a schedule on
 
 SCHEDULE_TYPE = Schedule.ScheduleType.TIME_BASED  # see distribution_services/device/schedule.py for possible values
-SCHEDULE_START_DATE = '<Date>'  # YYYY-MM-DD format
-SCHEDULE_STOP_DATE = '<Date>'  # YYYY-MM-DD format
-SCHEDULE_EXECUTE_TIME = '<Time>'  # HH:MM:SS format
-SUBSCRIPTION_ID = '<Subscription_ID>'  # id for Subscription object lookup
+SCHEDULE_START_DATE = $schedule_start_date  # YYYY-MM-DD format
+SCHEDULE_STOP_DATE = $schedule_stop_date  # YYYY-MM-DD format
+SCHEDULE_EXECUTE_TIME = $schedule_execute_time  # HH:MM:SS format
+SUBSCRIPTION_ID = $subscription_id  # id for Subscription object lookup
 
 # properties to alter schedule with
-SCHEDULE_EXPIRE_TIME = '<Date>'  # YYYY-MM-DD format
-SCHEDULE_DESCRIPTION = '<Description_of_schedule>'
+SCHEDULE_EXPIRE_DATE = $schedule_expire_date  # YYYY-MM-DD format
+SCHEDULE_DESCRIPTION = $schedule_description
 SCHEDULE_TIME = ScheduleTime.from_details(
     recurrence_pattern=ScheduleEnums.RecurrencePattern.MONTHLY,
     monthly_pattern=ScheduleEnums.MonthlyPattern.DAYS_OF_MONTH,
@@ -68,7 +67,7 @@ schedule.list_properties()
 
 # disable/enable (pass new schedule expire time)
 schedule.disable()
-schedule.enable(SCHEDULE_EXPIRE_TIME)
+schedule.enable(SCHEDULE_EXPIRE_DATE)
 
 # alter schedule properties
 schedule.alter(description=SCHEDULE_DESCRIPTION)

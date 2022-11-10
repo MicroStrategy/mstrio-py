@@ -1,5 +1,8 @@
+import inspect
 from functools import wraps
 from inspect import getattr_static, getmembers
+
+from packaging.version import parse as version_parser
 
 from mstrio.api.exceptions import VersionException
 from mstrio.connection import Connection
@@ -14,20 +17,24 @@ def method_version_handler(version):
     version at which the functionality becomes applicable.
     """
 
-    def wrapper(function):
-
+    def wrapper(function, cls=None):
         @wraps(function)
         def inner(*args, **kwargs):
-            if conn := kwargs.get("connection"):
+            if conn := kwargs.get('connection'):
                 connection_obj = conn
-            elif conn := list(filter(lambda arg: isinstance(arg, Connection), args)):
+            elif conn := [arg for arg in args if isinstance(arg, Connection)]:
                 connection_obj = conn[0]
+            elif cls:
+                raise TypeError(
+                    f"{function.__name__}() "
+                    "missing required argument: 'connection'"
+                )
             else:
-                connection_obj = (
-                    getattr(args[0], 'connection', None) or getattr(args[0], '_connection')
+                connection_obj = getattr(args[0], 'connection', None) or getattr(
+                    args[0], '_connection', None
                 )
 
-            if connection_obj._iserver_version < version:
+            if version_parser(connection_obj.iserver_version) < version_parser(version):
                 raise VersionException(
                     f"Environments must run IServer version {version} or newer. "
                     "Please update your environments to use this feature."
@@ -48,10 +55,40 @@ def class_version_handler(version):
     decorator = method_version_handler(version)
 
     def wrapper(cls):
-        for name, method in getmembers(cls):
-            if name in cls.__dict__ and callable(method) and not isinstance(
-                    getattr_static(cls, name), staticmethod):
-                setattr(cls, name, decorator(method))
+        for name, obj in getmembers(cls):
+            if name in vars(cls):
+                # get attribute without triggering descriptor protocol
+                attr = getattr_static(cls, name)
+
+                if inspect.isfunction(attr) and name == '__init__':
+                    # if __init__ method
+                    setattr(cls, name, decorator(obj, cls))
+                elif inspect.isfunction(attr):
+                    # if other instance method
+                    setattr(cls, name, decorator(obj))
+                elif (
+                    isinstance(attr, staticmethod)
+                    and Connection in obj.__annotations__.values()
+                ):
+                    # if static method with Connection in params
+                    setattr(
+                        cls,
+                        name,
+                        staticmethod(decorator(obj, cls=cls)),
+                    )
+                elif (
+                    isinstance(attr, classmethod)
+                    and Connection in obj.__annotations__.values()
+                ):
+                    # if class method with Connection in params
+                    setattr(
+                        cls,
+                        name,
+                        classmethod(decorator(obj.__func__, cls=cls)),
+                    )
+                # if static or class method without params of type Connection
+                # -> skip it
+
         return cls
 
     return wrapper

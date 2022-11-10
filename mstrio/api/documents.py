@@ -1,26 +1,45 @@
-from typing import TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
+
+from requests import Response
 
 from mstrio.utils.error_handlers import ErrorHandler
+from mstrio.utils.helper import get_valid_project_id
 
 if TYPE_CHECKING:
     from requests_futures.sessions import FuturesSession
 
+    from mstrio.connection import Connection
+
 
 @ErrorHandler(err_msg='Error getting available dossiers.')
 def get_dossiers(
-    connection,
-    search_term,
-    certified_status,
-    search_pattern='EXACTLY',
-    offset=0,
-    limit=-1,
-    fields=None,
-    error_msg=None
-):
+    connection: "Connection",
+    offset: int = 0,
+    limit: int = -1,
+    search_term: Optional[str] = None,
+    certified_status: Optional[str] = None,
+    search_pattern: Optional[str] = None,
+    fields: Optional[str] = None,
+    project_id: Optional[str] = None,
+    error_msg: Optional[str] = None
+) -> Response:
     """Get the list of available dossiers.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection(object): MicroStrategy REST API connection object
+        offset(int): Starting point within the collection of returned search
+            results. Used to control paging behavior.
+        limit(int): Maximum number of items returned for a single request.
+            Used to control paging behavior.
+        search_term(str, optional): The value that the search searchPattern is
+            set to.
+        certified_status(str, optional): Define a search criteria of the
+            certified status of the object
+        search_pattern(str, optional): The kind of search pattern that will be
+            applied to the search,
+        fields(str, optional): A whitelist of top-level fields separated by
+            commas. Allow the client to selectively retrieve fields in the
+            response.
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
@@ -29,11 +48,13 @@ def get_dossiers(
     url = f'{connection.base_url}/api/dossiers'
     return connection.get(
         url=url,
+        headers={'X-MSTR-ProjectID': project_id},
         params={
             'searchTerm': search_term,
             'searchPattern': search_pattern,
             'offset': offset,
             'limit': limit,
+            'certifiedStatus': certified_status,
             'fields': fields
         },
     )
@@ -41,19 +62,33 @@ def get_dossiers(
 
 def get_dossiers_async(
     future_session: "FuturesSession",
-    connection,
-    search_term,
-    certified_status,
-    search_pattern='EXACTLY',
-    offset=0,
-    limit=-1,
-    fields=None,
-    error_msg=None
+    connection: "Connection",
+    offset: int = 0,
+    limit: int = -1,
+    search_term: Optional[str] = None,
+    certified_status: Optional[str] = None,
+    search_pattern: Optional[str] = None,
+    fields: Optional[str] = None,
+    project_id: Optional[str] = None
 ):
     """Get the list of available dossiers asynchronously.
 
     Args:
+        future_session: FuturesSession object
         connection: MicroStrategy REST API connection object
+        offset(int): Starting point within the collection of returned search
+            results. Used to control paging behavior.
+        limit(int): Maximum number of items returned for a single request.
+            Used to control paging behavior.
+        search_term(str, optional): The value that the search searchPattern is
+            set to.
+        certified_status(str, optional): Define a search criteria of the
+            certified status of the object
+        search_pattern(str, optional): The kind of search pattern that will be
+            applied to the search,
+        fields(str, optional): A whitelist of top-level fields separated by
+            commas. Allow the client to selectively retrieve fields in the
+            response.
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
@@ -61,31 +96,48 @@ def get_dossiers_async(
     """
     connection._validate_project_selected()
     url = f'{connection.base_url}/api/dossiers'
+    headers = {'X-MSTR-ProjectID': project_id},
     params = {
         'searchTerm': search_term,
         'searchPattern': search_pattern,
         'offset': offset,
         'limit': limit,
+        'certifiedStatus': certified_status,
         'fields': fields
     }
-    return future_session.get(url=url, params=params)
+    return future_session.get(url=url, params=params, headers=headers)
 
 
 @ErrorHandler(err_msg='Error getting available documents.')
 def get_documents(
-    connection,
-    search_term,
-    certified_status,
-    search_pattern='EXACTLY',
-    offset=0,
-    limit=-1,
-    fields=None,
-    error_msg=None
-):
+    connection: "Connection",
+    offset: int = 0,
+    limit: int = -1,
+    search_pattern: str = None,
+    search_term: Optional[str] = None,
+    certified_status: Optional[str] = None,
+    project_id: Optional[str] = None,
+    fields: Optional[str] = None,
+    error_msg: Optional[str] = None
+) -> Response:
     """Get the list of available documents.
 
     Args:
         connection: MicroStrategy REST API connection object
+        offset(int): Starting point within the collection of returned search
+            results. Used to control paging behavior.
+        limit(int): Maximum number of items returned for a single request.
+            Used to control paging behavior.
+        search_pattern(str, optional): The kind of search pattern that will be
+            applied to the search,
+        search_term(str, optional): The value that the search searchPattern is
+            set to.
+        certified_status(str, optional): Define a search criteria of the
+            certified status of the object
+        project_id(str, optional): Project ID
+        fields(str, optional): A whitelist of top-level fields separated by
+            commas. Allow the client to selectively retrieve fields in the
+            response.
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
@@ -94,11 +146,13 @@ def get_documents(
     url = f'{connection.base_url}/api/documents/'
     return connection.get(
         url=url,
+        headers={'X-MSTR-ProjectID': project_id},
         params={
             'searchTerm': search_term,
             'searchPattern': search_pattern,
             'offset': offset,
             'limit': limit,
+            'certifiedStatus': certified_status,
             'fields': fields
         },
     )
@@ -107,18 +161,33 @@ def get_documents(
 def get_documents_async(
     future_session: "FuturesSession",
     connection,
-    search_term,
-    certified_status,
-    search_pattern='EXACTLY',
-    offset=0,
-    limit=-1,
-    fields=None,
-    error_msg=None
+    offset: int = 0,
+    limit: int = -1,
+    search_pattern: str = None,
+    search_term: Optional[str] = None,
+    project_id: Optional[str] = None,
+    certified_status: Optional[str] = None,
+    fields: Optional[str] = None,
 ):
     """Get the list of available documents asynchronously.
 
     Args:
+        future_session: FutureSession object
         connection: MicroStrategy REST API connection object
+        offset(int): Starting point within the collection of returned search
+            results. Used to control paging behavior.
+        limit(int): Maximum number of items returned for a single request.
+            Used to control paging behavior.
+        search_pattern(str, optional): The kind of search pattern that will be
+            applied to the search,
+        search_term(str, optional): The value that the search searchPattern is
+            set to.
+        project_id(str, optional): Project ID
+        certified_status(str, optional): Define a search criteria of the
+            certified status of the object
+        fields(str, optional): A whitelist of top-level fields separated by
+            commas. Allow the client to selectively retrieve fields in the
+            response.
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
@@ -130,9 +199,11 @@ def get_documents_async(
         'searchPattern': search_pattern,
         'offset': offset,
         'limit': limit,
+        'certifiedStatus': certified_status,
         'fields': fields
     }
-    future = future_session.get(url=url, params=params)
+    headers = {'X-MSTR-ProjectID': project_id}
+    future = future_session.get(url=url, params=params, headers=headers)
     return future
 
 
@@ -149,7 +220,7 @@ def get_document_status(connection, document_id, instance_id, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    url = f"{connection.base_url}​/api​/documents​/{document_id}​/instances​/{instance_id}​/status"
+    url = f"{connection.base_url}/api/documents/{document_id}/instances/{instance_id}/status"
     return connection.get(url=url, headers={'X-MSTR-ProjectID': None})
 
 
@@ -167,7 +238,7 @@ def get_prompts_for_instance(connection, document_id, instance_id, error_msg=Non
     Returns:
         Complete HTTP response object.
     """
-    url = f"{connection.base_url}​/api​/documents​/{document_id}​/instances​/{instance_id}​/prompts"  # noqa
+    url = f"{connection.base_url}/api/documents/{document_id}/instances/{instance_id}/prompts"
     return connection.get(url=url, headers={'X-MSTR-ProjectID': None})
 
 
@@ -188,7 +259,8 @@ def get_attribute_element_for_prompt(
     Returns:
         Complete HTTP response object.
     """
-    url = f"{connection.base_url}​/api​/documents​/{document_id}​/instances​/{instance_id}​/prompts​/{prompt_identifier}​/elements"  # noqa
+    url = f"{connection.base_url}/api/documents/{document_id}/instances/{instance_id}/prompts" \
+          f"/{prompt_identifier}/elements"
     return connection.get(url=url, headers={'X-MSTR-ProjectID': None})
 
 
@@ -206,7 +278,8 @@ def get_available_object(connection, document_id, instance_id, prompt_identifier
     Returns:
         Complete HTTP response object.
     """
-    url = f"{connection.base_url}/api​/documents​/{document_id}​/instances​/{instance_id}​/prompts​/{prompt_identifier}​/objects"  # noqa
+    url = f"{connection.base_url}/api/documents/{document_id}/instances/{instance_id}/prompts" \
+          f"/{prompt_identifier}/objects"
     return connection.get(url=url, headers={'X-MSTR-ProjectID': None})
 
 
@@ -227,7 +300,8 @@ def export_visualization_to_pdf(
     Returns:
         Complete HTTP response object.
     """
-    url = f"{connection.base_url}​/api​/documents​/{document_id}​/instances​/{instance_id}​/visualizations​/{node_key}​/pdf"  # noqa
+    url = f"{connection.base_url}/api/documents/{document_id}/instances/{instance_id}" \
+          f"/visualizations/{node_key}/pdf"
     return connection.post(url=url, headers={'X-MSTR-ProjectID': None}, json=body)
 
 
@@ -249,12 +323,19 @@ def export_visualization_to_csv(
     Returns:
         Complete HTTP response object.
     """
-    url = f"{connection.base_url}​/api​/documents​/{document_id}​/instances​/{instance_id}​/visualizations​/{node_key}​/csv"  # noqa
+    url = f"{connection.base_url}/api/documents/{document_id}/instances/{instance_id}" \
+          f"/visualizations/{node_key}/csv"
     return connection.post(url=url, headers={'X-MSTR-ProjectID': None}, json=body)
 
 
 @ErrorHandler(err_msg='Error exporting document {document_id} to PDF file.')
-def export_document_to_pdf(connection, document_id, instance_id, body, error_msg=None):
+def export_document_to_pdf(
+        connection: "Connection",
+        document_id: str,
+        instance_id: str,
+        body: dict,
+        error_msg: Optional[str] = None
+) -> Response:
     """Export a specific document instance to a PDF file.
 
     Args:
@@ -267,12 +348,19 @@ def export_document_to_pdf(connection, document_id, instance_id, body, error_msg
     Returns:
         Complete HTTP response object.
     """
-    url = f"{connection.base_url}​/api​/documents​/{document_id}​/instances​/{instance_id}​/pdf"
-    return connection.post(url=url, headers={'X-MSTR-ProjectID': None}, json=body)
+    project_id = get_valid_project_id(connection=connection, project_id=connection.project_id)
+    url = f"{connection.base_url}/api/documents/{document_id}/instances/{instance_id}/pdf"
+    return connection.post(url=url, headers={'X-MSTR-ProjectID': project_id}, json=body)
 
 
 @ErrorHandler(err_msg='Error exporting document {document_id} to .mstr file')
-def export_document_to_mstr(connection, document_id, instance_id, body, error_msg=None):
+def export_document_to_mstr(
+        connection: "Connection",
+        document_id: str,
+        instance_id: str,
+        body: dict,
+        error_msg: Optional[str] = None
+) -> Response:
     """Export a specific document in a specific project to an .mstr file.
 
     Args:
@@ -285,12 +373,19 @@ def export_document_to_mstr(connection, document_id, instance_id, body, error_ms
     Returns:
         Complete HTTP response object.
     """
-    url = f"{connection.base_url}​/api​/documents​/{document_id}​/instances​/{instance_id}​/mstr"
-    return connection.post(url=url, headers={'X-MSTR-ProjectID': None}, json=body)
+    project_id = get_valid_project_id(connection=connection, project_id=connection.project_id)
+    url = f"{connection.base_url}/api/documents/{document_id}/instances/{instance_id}/mstr"
+    return connection.post(url=url, headers={'X-MSTR-ProjectID': project_id}, json=body)
 
 
 @ErrorHandler(err_msg='Error exporting document {document_id} to Excel file.')
-def export_document_to_excel(connection, document_id, instance_id, body, error_msg=None):
+def export_document_to_excel(
+        connection: "Connection",
+        document_id: str,
+        instance_id: str,
+        body: dict,
+        error_msg: Optional[str] = None
+) -> Response:
     """Export a document from a specific document instance to an Excel file.
 
     Args:
@@ -303,8 +398,9 @@ def export_document_to_excel(connection, document_id, instance_id, body, error_m
     Returns:
         Complete HTTP response object.
     """
-    url = f"{connection.base_url}​/api​/documents​/{document_id}​/instances​/{instance_id}​/excel"
-    return connection.post(url=url, headers={'X-MSTR-ProjectID': None}, json=body)
+    project_id = get_valid_project_id(connection=connection, project_id=connection.project_id)
+    url = f"{connection.base_url}/api/documents/{document_id}/instances/{instance_id}/excel"
+    return connection.post(url=url, headers={'X-MSTR-ProjectID': project_id}, json=body)
 
 
 @ErrorHandler(err_msg='Error setting document {document_id} to prompt status.')
@@ -320,7 +416,7 @@ def set_document_to_prompt_status(connection, document_id, instance_id, error_ms
     Returns:
         Complete HTTP response object.
     """
-    url = f"{connection.base_url}​/api​/documents​/{document_id}​/instances​/{instance_id}​/rePrompt"  # noqa
+    url = f"{connection.base_url}/api/documents/{document_id}/instances/{instance_id}/rePrompt"
     return connection.post(url=url, headers={'X-MSTR-ProjectID': None})
 
 
@@ -354,7 +450,7 @@ def overwrite_document(connection, document_id, instance_id, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    url = f"{connection.base_url}​/api​/documents​/{document_id}​/instances​/{instance_id}​/save"
+    url = f"{connection.base_url}/api/documents/{document_id}/instances/{instance_id}/save"
     return connection.post(url=url, headers={'X-MSTR-ProjectID': None})
 
 
@@ -371,7 +467,7 @@ def save_document_as(connection, document_id, instance_id, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    url = f"{connection.base_url}/api​/documents​/{document_id}​/instances​/{instance_id}​/saveAs"  # noqa
+    url = f"{connection.base_url}/api/documents/{document_id}/instances/{instance_id}/saveAs"
     return connection.post(url=url, headers={'X-MSTR-ProjectID': None})
 
 
@@ -405,7 +501,7 @@ def delete_document_instance(connection, document_id, instance_id, error_msg=Non
     Returns:
         Complete HTTP response object.
     """
-    url = f"{connection.base_url}​/api​/documents​/{document_id}​/instances​/{instance_id}​"
+    url = f"{connection.base_url}/api/documents/{document_id}/instances/{instance_id}"
     return connection.delete(url=url, headers={'X-MSTR-ProjectID': None})
 
 
@@ -423,7 +519,7 @@ def refresh_document_instance(connection, document_id, instance_id, error_msg=No
     Returns:
         Complete HTTP response object.
     """
-    url = f"{connection.base_url}​/api​/documents​/{document_id}​/instances/{instance_id}/refresh​"
+    url = f"{connection.base_url}/api/documents/{document_id}/instances/{instance_id}/refresh"
     return connection.put(url=url, headers={'X-MSTR-ProjectID': None})
 
 
@@ -440,7 +536,7 @@ def get_prompts(connection, document_id, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    url = f"{connection.base_url}​/api​/documents​/{document_id}​/prompts"
+    url = f"{connection.base_url}/api/documents/{document_id}/prompts"
     return connection.get(url=url, headers={'X-MSTR-ProjectID': None})
 
 
@@ -460,7 +556,8 @@ def answer_prompts(connection, document_id, instance_id, body, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    url = f"{connection.base_url}/api​/documents​/{document_id}​/instances/{instance_id}/prompts/answers"  # noqa
+    url = f"{connection.base_url}/api/documents/{document_id}/instances/{instance_id}" \
+          f"/prompts/answers"
     return connection.put(url=url, headers={'X-MSTR-ProjectID': None}, json=body)
 
 
@@ -477,7 +574,7 @@ def get_document_shortcut(connection, document_id, instance_id, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    url = f"{connection.base_url}/api​/documents​/{document_id}​/instances/{instance_id}/shortcut"
+    url = f"{connection.base_url}/api/documents/{document_id}/instances/{instance_id}/shortcut"
     return connection.get(url=url)
 
 
@@ -494,24 +591,26 @@ def create_dossier_instance(connection, dossier_id, body, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    url = f"{connection.base_url}​/api​/dossiers/{dossier_id}​/instances​"
+    url = f"{connection.base_url}/api/dossiers/{dossier_id}/instances"
     return connection.post(url=url, headers={'X-MSTR-ProjectID': None}, json=body)
 
 
 @ErrorHandler(err_msg='Error getting hierarchy for dossier {id}')
-def get_dossier_hierarchy(connection, id, error_msg=None):
+def get_dossier_hierarchy(
+        connection: "Connection",
+        id: str
+) -> Response:
     """Get the hierarchy of a specific dossier in a specific project.
 
     Args:
         connection: MicroStrategy REST API connection object
         id (string): Dossier ID
-        error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
         Complete HTTP response object.
     """
     url = f"{connection.base_url}/api/v2/dossiers/{id}/definition/"
-    return connection.get(url=url, headers={'X-MSTR-ProjectID': None})
+    return connection.get(url=url)
 
 
 @ErrorHandler(err_msg='Error getting definition of document {id}')
@@ -544,7 +643,7 @@ def get_dossier_hierarchy_from_instance(connection, dossier_id, instance_id, err
     Returns:
         Complete HTTP response object.
     """
-    url = f"{connection.base_url}/api​/v2/dossiers/{dossier_id}/​instances/{instance_id}/definition"  # noqa
+    url = f"{connection.base_url}/api/v2/dossiers/{dossier_id}/instances/{instance_id}/definition"
     return connection.get(url=url, headers={'X-MSTR-ProjectID': None})
 
 
@@ -564,5 +663,6 @@ def get_definition_and_results_of_visualization(
     Returns:
         Complete HTTP response object.
     """
-    url = f"{connection.base_url}/api/​v2/dossiers​/{dossier_id}​/instances​/{instance_id}​/chapters​/{chapter_key}​/visualizations​/{visualization_key}"  # noqa
+    url = f"{connection.base_url}/api/v2/dossiers/{dossier_id}/instances/{instance_id}/chapters" \
+          f"/{chapter_key}/visualizations/{visualization_key}"
     return connection.get(url=url, headers={'X-MSTR-ProjectID': None})

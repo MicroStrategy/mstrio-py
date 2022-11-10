@@ -13,30 +13,30 @@ from mstrio.users_and_groups import (
 
 from mstrio.connection import get_connection
 
-PROJECT_NAME = '<project_name>'  # Project to connect to
+PROJECT_NAME = $project_name  # Project to connect to
 
 # Usernames and full names for users to create
-USERNAME_1 = '<username_1>'
-FULLNAME_1 = '<full_name_1>'
-USERNAME_2 = '<username_2>'
-FULLNAME_2 = '<full_name_2>'
-USERNAME_3 = '<username_3>'
-FULLNAME_3 = '<full_name_3>'
-USERNAME_4 = '<username_4>'
-FULLNAME_4 = '<full_name_4>'
-USERNAME_5 = '<username_5>'
-FULLNAME_5 = '<full_name_5>'
-USERNAME_6 = '<username_6>'
-FULLNAME_6 = '<full_name_6>'
+USERNAME_1 = $username_1
+FULLNAME_1 = $full_name_1
+USERNAME_2 = $username_2
+FULLNAME_2 = $full_name_2
+USERNAME_3 = $username_3
+FULLNAME_3 = $full_name_3
+USERNAME_4 = $username_4
+FULLNAME_4 = $full_name_4
+USERNAME_5 = $username_5
+FULLNAME_5 = $full_name_5
+USERNAME_6 = $username_6
+FULLNAME_6 = $full_name_6
 
-NAME_BEGINS = '<name_begins>'  # beginning of the full name to look for in listing users
-INITIALS = '<name_initials>'  # initials to look for in listing users
-USERGROUP_NAME = '<usergroup_name>'  # name of a User Group to create and add users
-CSV_FILE = '<path_to_csv_file>'  # csv file to create user from
-OBJECT_ID = '<object_id>'  # ID of an object to which permissions will be set
-OBJECT_TYPE = '<object_type>'  # type of an object to which permissions will be set;
+NAME_BEGINS = $name_begins  # beginning of the full name to look for in listing users
+INITIALS = $initials # initials to look for in listing users
+USER_GROUP_NAME = $user_group_name  # name of a User Group to create and add users
+CSV_FILE = $csv_file  # csv file to create user from
+OBJECT_ID = $object_id  # ID of an object to which permissions will be set
+OBJECT_TYPE = $object_type  # type of an object to which permissions will be set;
 # see ObjectTypes enum in types.py for available object type values
-PERMISSION = '<permission_type>'  # type of permission to set;
+PERMISSION = $permission  # type of permission to set;
 # see Permissions enum in /utils/acl.py for available permission values
 
 conn = get_connection(workstationData, project_name=PROJECT_NAME)
@@ -76,25 +76,27 @@ my_users = list_users(connection=conn, name_begins=NAME_BEGINS, initials=INITIAL
 # get all user groups (you can also add additional filters as for users) and
 # create a new one
 user_groups_list = list_user_groups(connection=conn)
-UserGroup.create(connection=conn, name=USERGROUP_NAME)
+UserGroup.create(connection=conn, name=USER_GROUP_NAME)
 
 # get user, user group and add this user to this user group
 user_ = User(connection=conn, name=FULLNAME_6)
-user_group_ = UserGroup(connection=conn, name=USERGROUP_NAME)
+user_group_ = UserGroup(connection=conn, name=USER_GROUP_NAME)
 user_group_.add_users(users=[user_.id])
+
+# Available values for permissions are 'grant', 'deny', 'default' or None
+grant_right = 'right'
 
 # set custom permissions of the user for given objects
 user_.set_custom_permissions(
     to_objects=[OBJECT_ID],
     object_type=OBJECT_TYPE,
-    execute=
-    '<permission>',  # Available values for permissions are 'grant', 'deny', 'default' or None
-    use='<permission>',
-    control='<permission>',
-    delete='<permission>',
-    write='<permission>',
-    read='<permission>',
-    browse='<permission>'
+    execute=grant_right,
+    use=grant_right,
+    control=grant_right,
+    delete=grant_right,
+    write=grant_right,
+    read=grant_right,
+    browse=grant_right
 )
 
 # set permission of the user group for given objects

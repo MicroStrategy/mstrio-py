@@ -28,7 +28,14 @@ warnings.filterwarnings(action=print_warnings, module=module_path)
 warnings.filterwarnings(action=print_warnings, category=DeprecationWarning, module=module_path)
 warnings.filterwarnings(action='default', category=UserWarning, module=module_path)
 
-logging_level = logging.DEBUG if debug else logging.INFO
+
+def get_logging_level() -> int:
+    """Calculate and return logging level
+    to configure logger.
+    """
+    return logging.DEBUG if debug else logging.INFO
+
+
 logger_stream_handler = logging.StreamHandler(stream=sys.stdout)
 
 # warns issued by the warnings module will be redirected to the logging.warning
@@ -38,4 +45,13 @@ logger = logging.getLogger()
 warnings_logger = logging.getLogger("py.warnings")
 
 logger.addHandler(logger_stream_handler)
-logger.setLevel(logging_level)
+logger.setLevel(get_logging_level())
+
+
+def toggle_debug_mode() -> None:
+    """Toggle debug mode between INFO and DEBUG.
+    It will change root logger's logging level.
+    """
+    global debug
+    debug = not debug
+    logger.setLevel(get_logging_level())

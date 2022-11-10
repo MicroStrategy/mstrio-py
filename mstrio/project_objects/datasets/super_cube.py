@@ -1,19 +1,18 @@
 import logging
 import time
-from typing import List, Optional, Union
+from typing import Optional, Union
 
 from packaging import version
 import pandas as pd
 from tqdm.auto import tqdm
 
 from mstrio import config
-from mstrio.api import datasets
+from mstrio.api import cubes, datasets
 from mstrio.connection import Connection
 from mstrio.object_management.search_operations import full_search, SearchPattern
 from mstrio.utils import helper
 from mstrio.utils.encoder import Encoder
 from mstrio.utils.entity import CertifyMixin, ObjectSubTypes
-from mstrio.utils.helper import deprecation_warning
 from mstrio.utils.model import Model
 
 from .cube import _Cube
@@ -24,23 +23,22 @@ logger = logging.getLogger(__name__)
 def list_super_cubes(
     connection: Connection,
     name: Optional[str] = None,
-    name_begins: Optional[str] = None,
     search_pattern: Union[SearchPattern, int] = SearchPattern.CONTAINS,
     project_id: Optional[str] = None,
     project_name: Optional[str] = None,
     to_dictionary: bool = False,
     limit: Optional[int] = None,
     **filters,
-) -> Union[List["SuperCube"], List[dict]]:
+) -> Union[list["SuperCube"], list[dict]]:
     """Get list of SuperCube objects or dicts with them.
     Optionally filter cubes by specifying 'name'.
 
     Optionally use `to_dictionary` to choose output format.
 
-    Wildcards available for 'name_begins':
+    Wildcards available for 'name':
         ? - any character
         * - 0 or more of any characters
-        e.g. name_begins = ?onny will return Sonny and Tonny
+        e.g. name = ?onny will return Sonny and Tonny
 
     Specify either `project_id` or `project_name`.
     When `project_id` is provided (not `None`), `project_name` is omitted.
@@ -54,7 +52,6 @@ def list_super_cubes(
             `connection.Connection()`
         name (string, optional): value the search pattern is set to, which
             will be applied to the names of super cubes being searched
-        name_begins (string, optional): deprecated. Use `name` instead.
         search_pattern (SearchPattern enum or int, optional): pattern to search
             for, such as Begin With or Contains. Possible values are available
             in ENUM mstrio.browsing.SearchPattern.
@@ -78,14 +75,7 @@ def list_super_cubes(
         project_name=project_name,
         with_fallback=False if project_name else True,
     )
-    if name_begins:
-        deprecation_warning(
-            "`name_begins`",
-            "`name`",
-            "11.3.7.101",  # NOSONAR
-            False
-        )
-        name, search_pattern = name_begins, SearchPattern.BEGIN_WITH
+
     objects_ = full_search(
         connection,
         object_types=ObjectSubTypes.SUPER_CUBE,
@@ -136,7 +126,6 @@ class SuperCube(_Cube, CertifyMixin):
     _OBJECT_SUBTYPE = ObjectSubTypes.SUPER_CUBE.value
     __VALID_POLICY = ['add', 'update', 'replace', 'upsert']
     __MAX_DESC_LEN = 250
-    _DELETE_NONE_VALUES_RECURSION = False
 
     def __init__(
         self,
@@ -212,8 +201,13 @@ class SuperCube(_Cube, CertifyMixin):
         super()._init_variables(**kwargs)
         self._tables = []
         self._session_id = None
+        # used to check publish status after completing publish
+        self.__last_session_id = None
         self._folder_id = None
         self.__upload_body = None
+        # used to store indexes for every table after an update to have correct
+        # index in case of doing multiple updates without publish
+        self.__update_indexes = {}
 
     def add_table(self, name, data_frame, update_policy, to_metric=None, to_attribute=None):
         """Add a `Pandas.DataFrame` to a collection of tables which are later
@@ -241,7 +235,6 @@ class SuperCube(_Cube, CertifyMixin):
                 identifier as a primary key in the super cube.
         """
         update_policy = update_policy.lower()
-        version_ok = version.parse(self._connection.iserver_version) >= version.parse("11.2.0300")
 
         if not isinstance(data_frame, pd.DataFrame):
             raise TypeError("`data_frame` parameter must be a valid `Pandas.DataFrame`.")
@@ -249,12 +242,7 @@ class SuperCube(_Cube, CertifyMixin):
             raise ValueError(
                 "`DataFrame` column names need to be unique for each table in the super cube."
             )
-        if update_policy not in self.__VALID_POLICY:
-            raise ValueError(f"Update policy must be one of {self.__VALID_POLICY}.")
-        if self._id is None and update_policy != "replace" and version_ok:
-            raise ValueError(
-                "Update policy has to be 'replace' if a super cube is created or overwritten."
-            )
+        self.__check_update_policy(update_policy)
         if to_attribute and to_metric and any(col in to_attribute for col in to_metric):
             raise ValueError(
                 "Column name(s) present in `to_attribute` also present in `to_metric`."
@@ -279,6 +267,31 @@ class SuperCube(_Cube, CertifyMixin):
                 table["to_metric"] = to_metric
 
         self._tables.append(table)
+        if not self.__update_indexes.get(name):
+            self.__update_indexes[name] = 0
+
+    def __check_update_policy(self, update_policy: str) -> None:
+        version_ok = version.parse(self._connection.iserver_version) >= version.parse("11.2.0300")
+        if update_policy not in self.__VALID_POLICY:
+            raise ValueError(f"Update policy must be one of {self.__VALID_POLICY}.")
+        if self._id is None and update_policy != "replace" and version_ok:
+            raise ValueError(
+                "Update policy has to be 'replace' if a super cube is created or overwritten."
+            )
+
+    def remove_table(self, name):
+        """Removes a table from a collection of tables which are
+        later used to populate the MicroStrategy super cube with data.
+
+        Note: this operation is executed locally and is used only to prepare
+            data before sending it to server. You can check current state of
+            tables with property `tables`.
+
+        Args:
+            name (str): Logical name of the table that is visible to users of
+                the super cube in MicroStrategy.
+        """
+        self._tables = [t for t in self._tables if t.get('table_name') != name]
 
     def create(
         self,
@@ -346,12 +359,14 @@ class SuperCube(_Cube, CertifyMixin):
 
         # form request body and create a session for data uploads
         self.__form_upload_body()
-        response = datasets.upload_session(
-            connection=self._connection, id=self._id, body=self.__upload_body
-        )
 
-        response_json = response.json()
-        self._session_id = response_json['uploadSessionId']
+        if not self._session_id:
+            response = datasets.upload_session(
+                connection=self._connection, id=self._id, body=self.__upload_body
+            )
+            response_json = response.json()
+            self._session_id = response_json['uploadSessionId']
+            self.__last_session_id = None
 
         # upload each table
         for ix, _table in enumerate(self._tables):
@@ -377,7 +392,7 @@ class SuperCube(_Cube, CertifyMixin):
                 # form body of the request
                 body = {
                     "tableName": _name,
-                    "index": index + 1,
+                    "index": self.__update_indexes.get(_name, 0) + index + 1,
                     "data": b64_enc,
                 }
 
@@ -387,6 +402,7 @@ class SuperCube(_Cube, CertifyMixin):
                     id=self._id,
                     session_id=self._session_id,
                     body=body,
+                    throw_error=False
                 )
 
                 if not response.ok:
@@ -394,9 +410,16 @@ class SuperCube(_Cube, CertifyMixin):
                     datasets.publish_cancel(
                         connection=self._connection, id=self._id, session_id=self._session_id
                     )
+                    self.reset_session()
+                    pbar.close()
+                    return
 
                 pbar.set_postfix(rows=min((index + 1) * chunksize, total))
             pbar.close()
+
+            # prepare index in case of the next update operation for this table
+            # without publishing
+            self.__update_indexes[_name] += it_total
         self._tables = []
 
         # if desired, automatically publish the data to the new super cube
@@ -448,7 +471,6 @@ class SuperCube(_Cube, CertifyMixin):
         Returns:
             True if the data was published successfully, else False.
         """
-
         response = datasets.publish(
             connection=self._connection, id=self._id, session_id=self._session_id
         )
@@ -458,6 +480,7 @@ class SuperCube(_Cube, CertifyMixin):
             datasets.publish_cancel(
                 connection=self._connection, id=self._id, session_id=self._session_id
             )
+            self.reset_session()
             return False
 
         status = 6  # default initial status
@@ -467,6 +490,7 @@ class SuperCube(_Cube, CertifyMixin):
             if status == 1:
                 # clear instance_id to force new instance creation
                 self.instance_id = None
+                self.reset_session()
                 if config.verbose:
                     logger.info(f"Super cube '{self.name}' published successfully.")
                 return True
@@ -478,32 +502,31 @@ class SuperCube(_Cube, CertifyMixin):
             status: The status of the publication process as a dictionary. In
                 the 'status' key, "1" denotes completion.
         """
-        if not self._session_id:
-            raise AttributeError("No upload session created.")
-        else:
-            response = datasets.publish_status(
-                connection=self._connection, id=self._id, session_id=self._session_id
-            )
-            return response.json()
+        # after publish, `self._session_id` is reseted to force new session
+        # creation in the next update, so we have to use its value saved in
+        # `self.__last_session_id`
+        session_id = self._session_id if self._session_id else self.__last_session_id
 
-    def upload_status(self, connection: Connection, id: str, session_id: str):
-        """Check the status of data that was uploaded to a super cube.
+        return self.upload_status(connection=self.connection, id=self.id, session_id=session_id)
 
-        Args:
-            connection: MicroStrategy connection object returned by
-                `connection.Connection()`.
-            id (str): Identifier of a pre-existing super cube.
-            session_id (str): Identifier of the server session used for
-                collecting uploaded data.
+    def reset_session(self):
+        """Reset upload session."""
+        if self._session_id:
+            # save last session id in case of checking status of publish
+            self.__last_session_id = self._session_id
+            # clear session_id to force new session creation
+            self._session_id = None
+            self.__update_indexes = {}
+
+    def export_sql_view(self) -> str:
+        """Export SQL View of a Super Cube.
+
+        Returns:
+            SQL View of a Super Cube.
         """
-        # TODO not sure why we have this functionality twice
-        response = datasets.publish_status(connection=connection, id=id, session_id=session_id)
-
-        helper.response_handler(
-            response=response,
-            msg=f"Publication status for super cube with ID: '{id}':",
-            throw_error=False
-        )
+        res = cubes.get_sql_view(self._connection, self._id)
+        sql_statement = res.json()['sqlStatement']
+        return sql_statement
 
     def __build_model(self):
         """Create json representation of the super cube."""
@@ -534,6 +557,27 @@ class SuperCube(_Cube, CertifyMixin):
         self.__upload_body = body
 
     @staticmethod
+    def upload_status(connection: Connection, id: str, session_id: str):
+        """Check the status of data that was uploaded to a super cube.
+
+        Args:
+            connection (Optional[Connection]): MicroStrategy connection object
+                returned by `connection.Connection()`.
+            id (Optional[str]): Identifier of a pre-existing super cube.
+            session_id (Optional[str]): Identifier of the server session used
+                for collecting uploaded data.
+
+        Returns:
+            status: The status of the publication process as a dictionary. In
+                the 'status' key, "1" denotes completion.
+        """
+        if not session_id:
+            raise AttributeError("No upload session created.")
+        else:
+            response = datasets.publish_status(connection=connection, id=id, session_id=session_id)
+            return response.json()
+
+    @staticmethod
     def __check_param_len(param, msg, max_length):
         if len(param) > max_length:
             raise ValueError(msg)
@@ -554,3 +598,7 @@ class SuperCube(_Cube, CertifyMixin):
     @property
     def session_id(self) -> str:
         return self._session_id
+
+    @property
+    def tables(self):
+        return self._tables

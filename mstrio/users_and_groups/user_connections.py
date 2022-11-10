@@ -79,8 +79,6 @@ class UserConnections:
                 'date_connection_created', 'duration', 'session_id', 'client',
                 'config_level']
         """
-        # TODO: This fully initialises a Cluster object every time the function
-        # is run. It would be better to somehow cache it for a given connection.
         all_nodes = Cluster(self.connection).list_nodes(to_dictionary=True)
         all_connections = []
         if nodes is None:
@@ -227,9 +225,6 @@ class UserConnections:
                 err_msg = f'Error disconnecting user sessions: {connection_ids}.'
                 return helper.response_handler(response=res, msg=err_msg, throw_error=False)
         else:
-            # TODO: This can probably be made more elegant and potentially
-            # performant if we use the ID as dict key and status as value
-            # and maybe use comprehension instead of appending in loop.
             statuses: List[Dict[str, Union[str, int]]] = []
             for connection_id in connection_ids:
                 response = monitors.delete_user_connection(

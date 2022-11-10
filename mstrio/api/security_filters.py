@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from mstrio.utils.api_helpers import changeset_decorator, unpack_information
+from mstrio.utils.api_helpers import changeset_manager, unpack_information
 from mstrio.utils.error_handlers import ErrorHandler
 
 if TYPE_CHECKING:
@@ -42,12 +42,10 @@ def update_security_filter_members(
     )
 
 
-@changeset_decorator
 @unpack_information
 @ErrorHandler(err_msg='Error creating new security filter.')
 def create_security_filter(
     connection: "Connection",
-    changeset_id: str,
     body: dict,
     show_filter_tokens: bool = False,
     show_expression_as: str = None,
@@ -60,7 +58,6 @@ def create_security_filter(
 
     Args:
         connection: MicroStrategy REST API connection object
-        changeset_id (str): Changeset ID
         body (dict): Security Filter creation body
         error_msg (str, optional): Custom Error Message for Error Handling
         show_expression_as (str, optional): specify how expressions should be
@@ -75,15 +72,16 @@ def create_security_filter(
     Returns:
         Complete HTTP response object. Expected status is 201.
     """
-    return connection.post(
-        url=f"{connection.base_url}/api/model/securityFilters",
-        headers={'X-MSTR-MS-Changeset': changeset_id},
-        json=body,
-        params={
-            'showFilterTokens': str(show_filter_tokens).lower(),
-            'showExpressionAs': show_expression_as
-        }
-    )
+    with changeset_manager(connection) as changeset_id:
+        return connection.post(
+            url=f"{connection.base_url}/api/model/securityFilters",
+            headers={'X-MSTR-MS-Changeset': changeset_id},
+            json=body,
+            params={
+                'showFilterTokens': str(show_filter_tokens).lower(),
+                'showExpressionAs': show_expression_as
+            }
+        )
 
 
 @unpack_information
@@ -145,13 +143,11 @@ def get_security_filter(
     )
 
 
-@changeset_decorator
 @unpack_information
 @ErrorHandler(err_msg='Error updating security filter with ID {id}')
 def update_security_filter(
     connection: "Connection",
     id: str,
-    changeset_id: str,
     body: dict,
     show_expression_as: str = None,
     show_fields: str = None,
@@ -168,7 +164,6 @@ def update_security_filter(
             - the object ID used in the metadata.
             - the object ID used in the changeset, but not yet committed
             to metadata.
-        changeset_id (str, optional): Changeset ID
         body (dict): Security Filter update info
         show_expression_as (str, optional): specify how expressions should be
             presented
@@ -185,16 +180,17 @@ def update_security_filter(
     Returns:
         Complete HTTP response object. Expected status is 200.
     """
-    return connection.put(
-        url=f"{connection.base_url}/api/model/securityFilters/{id}",
-        headers={'X-MSTR-MS-Changeset': changeset_id},
-        params={
-            'showExpressionAs': show_expression_as,
-            'showFields': show_fields,
-            'showFilterTokens': str(show_filter_tokens).lower()
-        },
-        json=body
-    )
+    with changeset_manager(connection) as changeset_id:
+        return connection.put(
+            url=f"{connection.base_url}/api/model/securityFilters/{id}",
+            headers={'X-MSTR-MS-Changeset': changeset_id},
+            params={
+                'showExpressionAs': show_expression_as,
+                'showFields': show_fields,
+                'showFilterTokens': str(show_filter_tokens).lower()
+            },
+            json=body
+        )
 
 
 @ErrorHandler(err_msg='Error getting information for set of security filters.')
@@ -205,7 +201,7 @@ def get_security_filters(
     offset: int = 0,
     limit: int = -1,
     fields: str = None,
-    error_msg=None
+    error_msg: str = None
 ):
     """Get all list of Security Filters for a project.
     You can set the offset and limit for pagination function.
@@ -226,6 +222,7 @@ def get_security_filters(
     Returns:
         Complete HTTP response object.
     """
+
     return connection.get(
         url=f'{connection.base_url}/api/securityFilters',
         headers={'X-MSTR-ProjectID': project_id},

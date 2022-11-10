@@ -18,12 +18,12 @@ from mstrio.users_and_groups import User
 
 from mstrio.connection import get_connection
 
-PROJECT_NAME = '<Project_name>'  # Project to connect to
-USER_NAME = '<Username>'  # name for User object lookup
-JOB_ID = '<Job_id>'  # id for Job object lookup
-LIST_JOBS_FILTER_TIME = 'gt:10000'
-LIST_JOBS_FILTER_MEM = 'gt:500'
-KILL_JOBS_FILTER_TIME = 5 * 60**2  # 5 hours, converted to seconds
+PROJECT_NAME = $project_name  # Project to connect to
+USERNAME = $username  # name for User object lookup
+JOB_ID = $job_id  # id for Job object lookup
+LIST_JOBS_FILTER_TIME = $list_jobs_filter_time # for example 'gt:10000'
+LIST_JOBS_FILTER_MEM = $list_jobs_filter_mem # for example 'gt:500'
+KILL_JOBS_FILTER_TIME = $kill_jobs_filter_time  # should be converted to seconds
 
 conn = get_connection(workstationData, project_name=PROJECT_NAME)
 
@@ -31,7 +31,7 @@ conn = get_connection(workstationData, project_name=PROJECT_NAME)
 project = Project(connection=conn, name=PROJECT_NAME)
 
 # get user by name
-john = User(connection=conn, name=USER_NAME)
+john = User(connection=conn, name=USERNAME)
 
 # instantiate an existing job using constructor
 job = Job(conn, id=JOB_ID)
@@ -44,9 +44,11 @@ job.kill()
 
 # get list of `Job` objects for all jobs on the environment
 jobs = list_jobs(conn)
+print(jobs)
 
 # get list of dicts representing job information for all jobs on the environment
 jobs = list_jobs(conn, to_dictionary=True)
+print(jobs)
 
 # get a list of `Job` objects filtered by job status, project and object type
 list_jobs(conn, status=JobStatus.LOADING_PROMPT, project=project, object_type=ObjectType.CUBE)
@@ -66,8 +68,8 @@ result = kill_jobs(conn, slow_jobs)
 
 # kill_jobs return Success, PartialSuccess or MSTRException, you can check which
 # jobs were killed and which were not, and why in case of PartialSuccess
-result.succeeded
-result.failed
+print(result.succeeded)
+print(result.failed)
 
 # you can easily evaluate if all passed jobs were killed using bool() evaluation
 # on result, which will return True if result is Success and False if result
@@ -89,4 +91,4 @@ result = kill_all_jobs(conn, pu_name=PUName.SQL_ENGINE, memory_usage='gt:800')
 # see server/job_monitor.py for PUName values
 
 # like kill_jobs, kill_all_jobs return Success, PartialSuccess or MSTRException
-result.succeeded
+print(result.succeeded)

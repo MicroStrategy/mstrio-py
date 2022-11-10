@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-@method_version_handler(version='11.3.05')
+@method_version_handler(version='11.3.0500')
 def list_metrics(
     connection: Connection,
     name: Optional[str] = None,
@@ -197,7 +197,6 @@ class Threshold(Dictable):
         PICTURE = auto()
         SYMBOL = auto()
 
-    _DELETE_NONE_VALUES_RECURSION = True
     _FROM_DICT_MAP = {
         'format': [FormatProperty],
         'condition': Expression.from_dict,
@@ -283,7 +282,6 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa: F811
             REPORT_INTO_METRIC_FILTER = auto()
             METRIC_INTO_REPORT_FILTER = auto()
 
-        _DELETE_NONE_VALUES_RECURSION = True
         _FROM_DICT_MAP = {
             'filter': SchemaObjectReference.from_dict,
             'embedMethod': EmbedMethod,
@@ -310,7 +308,6 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa: F811
                 subtotal type for the Total should be
         """
 
-        _DELETE_NONE_VALUES_RECURSION = True
         _FROM_DICT_MAP = {
             'definition': SchemaObjectReference.from_dict,
             'implementation': SchemaObjectReference.from_dict,
@@ -341,8 +338,6 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa: F811
         DEFAULT = auto()
         INNER = auto()
         OUTER = auto()
-
-    _DELETE_NONE_VALUES_RECURSION = True
 
     _OBJECT_TYPE = ObjectTypes.METRIC
     _API_GETTERS = {
@@ -435,13 +430,13 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa: F811
     }
 
     @classmethod
-    @method_version_handler('11.3.05')
+    @method_version_handler('11.3.0500')
     def from_dict(cls, source: dict, connection: Optional['Connection'] = None):
         new_source = source.copy()
         new_source['dimensionality'] = source.get('dimty', None)
         return super().from_dict(new_source, connection)
 
-    @method_version_handler('11.3.05')
+    @method_version_handler('11.3.0500')
     def __init__(
         self,
         connection: Connection,
@@ -480,7 +475,7 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa: F811
             connection=connection, object_id=id, name=name, show_expression_as=show_expression_as
         )
 
-    @method_version_handler('11.3.05')
+    @method_version_handler('11.3.0500')
     def _init_variables(self, **kwargs) -> None:
         super()._init_variables(**kwargs)
         self._id = kwargs.get('id')
@@ -521,7 +516,7 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa: F811
         ) else ExpressionFormat(show_expression_as)
 
     @classmethod
-    @method_version_handler('11.3.05')
+    @method_version_handler('11.3.0500')
     def create(
         cls,
         connection: 'Connection',
@@ -628,7 +623,7 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa: F811
             }, connection=connection
         )
 
-    @method_version_handler('11.3.05')
+    @method_version_handler('11.3.0500')
     def alter(
         self,
         name: str = None,
@@ -682,12 +677,12 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa: F811
                 - `ExpressionFormat.TREE` or `tree`
                 - `ExpressionFormat.TOKENS or `tokens` (default)
         """
-        if name is None:
-            name = self.name
+
+        name = name or self.name
         properties = filter_params_for_func(self.alter, locals(), exclude=['self'])
         self._alter_properties(**properties)
 
-    @method_version_handler('11.3.05')
+    @method_version_handler('11.3.0500')
     def to_dict(self, camel_case: bool = True) -> dict:
         result = super().to_dict(camel_case)
         result.pop('_showExpressionAs', None)

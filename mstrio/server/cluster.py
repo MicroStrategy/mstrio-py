@@ -605,7 +605,14 @@ class Cluster:
     def _show_color(val: str) -> str:
         """Prepare color in which values of columns in DataFrames for
         topologies are shown."""
-        color = 'Green' if val == 'Running' else '#b22222' if val == 'Stopped' else 'Black'
+        match val:
+            case 'Running':
+                color = 'Green'
+            case 'Stopped':
+                color = '#b22222'
+            case _:
+                color = 'Black'
+
         return 'color: %s' % color
 
     @property

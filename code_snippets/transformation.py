@@ -12,18 +12,16 @@ from mstrio.modeling.schema.transformation.transformation import (
 )
 
 # Following variables are defining basic transformations
-PROJECT_NAME = '<Project_name>'  # Insert name of project here
-TRANSFORMATION_NAME = '<Transformation_name>'  # Insert name of edited transformation here
-TRANSFORMATION_ID = '<Transformation_ID>'  # Insert ID of transformation here
-TRANSFORMATION_NEW_NAME = '<Transformation_name>'  # Insert new name of edited transformation here
-TRANSFORMATION_NEW_DESCRIPTION = '<Transformation_desc>'  # Insert new description of edited transformation here
-FOLDER_ID = '<Folder_ID>'  # Insert folder ID here
+PROJECT_NAME = $project_name  # Insert name of project here
+TRANSFORMATION_NAME = $transformation_name  # Insert name of edited transformation here
+TRANSFORMATION_ID = $transformation_id  # Insert ID of transformation here
+TRANSFORMATION_NEW_NAME = $transformation_new_name  # Insert new name of edited transformation here
+TRANSFORMATION_NEW_DESCRIPTION = $transformation_new_description  # Insert new description of edited transformation here
+FOLDER_ID = $folder_id  # Insert folder ID here
+
 
 # For every object we want to reference using a SchemaObjectReference we need
-# to provide an Object ID for, the below placeholder will replace all IDs for
-# these code snippets. In actual scripts the OBJECT_ID instances need to be
-# replaced with IDs specific to the object used.
-OBJECT_ID = '<Object_ID>'
+# to provide an Object ID for. For the script to work correctly all occurences of `'<Object_ID>'` need to be replaced with IDs specific to the object used. In the future all of those will be made as separate variables.
 
 conn = get_connection(workstationData, PROJECT_NAME)
 
@@ -37,7 +35,7 @@ TRANSFORMATION_DATA = {
         TransformationAttribute(
             id="96ED42A511D5B117C000E78A4CC5F24F",
             base_attribute=SchemaObjectReference(
-                object_id=OBJECT_ID,
+                object_id='<Object_ID>',
                 sub_type=ObjectSubType.ATTRIBUTE,
                 name="Day"
             ),
@@ -46,7 +44,7 @@ TRANSFORMATION_DATA = {
                     id="45C11FA478E745FEA08D781CEA190FE5",
                     name="ID",
                     lookup_table=SchemaObjectReference(
-                        object_id=OBJECT_ID,
+                        object_id='<Object_ID>',
                         sub_type=ObjectSubType.LOGICAL_TABLE,
                         name="LU_DAY"
                     ),
@@ -69,7 +67,7 @@ TRANSFORMATION_ATTRIBUTE_FORM = TransformationAttributeForm(
     id='45C11FA478E745FEA08D781CEA190FE5',
     name='ID',
     lookup_table=SchemaObjectReference(
-        object_id=OBJECT_ID,
+        object_id='<Object_ID>',
         sub_type=ObjectSubType.LOGICAL_TABLE,
         name='LU_QUARTER'
     ),
@@ -87,7 +85,7 @@ TRANSFORMATION_ATTRIBUTE_FORM = TransformationAttributeForm(
 TRANSFORMATION_ATTRIBUTE = TransformationAttribute(
     id='2437C06311D5BD85C000F98A4CC5F24F',
     base_attribute=SchemaObjectReference(
-        object_id=OBJECT_ID,
+        object_id='<Object_ID>',
         sub_type=ObjectSubType.ATTRIBUTE,
         name='Quarter'
     ),
@@ -96,7 +94,7 @@ TRANSFORMATION_ATTRIBUTE = TransformationAttribute(
             id='45C11FA478E745FEA08D781CEA190FE5',
             name='ID',
             lookup_table=SchemaObjectReference(
-                object_id=OBJECT_ID,
+                object_id='<Object_ID>',
                 sub_type=ObjectSubType.LOGICAL_TABLE,
                 name='LU_QUARTER'
             ),

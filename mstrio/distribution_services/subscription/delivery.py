@@ -57,7 +57,6 @@ class LibraryCacheTypes(AutoName):
 
 
 class DeliveryDictable(Dictable):
-    _DELETE_NONE_VALUES_RECURSION = False
 
     VALIDATION_DICT = {}
 
@@ -100,7 +99,6 @@ class ZipSettings(DeliveryDictable):
         password: Optional password for the compressed file
         password_protect: Whether to password protect file or not
     """
-    _DELETE_NONE_VALUES_RECURSION = False
 
     VALIDATION_DICT = {
         "filename": [str, False], "password": [str, False], "password_protect": [bool, False]
@@ -135,7 +133,6 @@ class Delivery(DeliveryDictable):
         mobile: Mobile delivery properties object
         history_list: HistoryList delivery properties
     """
-    _DELETE_NONE_VALUES_RECURSION = False
 
     class DeliveryMode(AutoUpperName):
         EMAIL = auto()
@@ -167,7 +164,6 @@ class Delivery(DeliveryDictable):
                 in the history list
             zip: Optional compression settings object
         """
-        _DELETE_NONE_VALUES_RECURSION = False
 
         VALIDATION_DICT = {
             "subject": [str, True],
@@ -219,7 +215,6 @@ class Delivery(DeliveryDictable):
             burst_sub_folder:The burst sub folder
             zip: Optional compression settings object
         """
-        _DELETE_NONE_VALUES_RECURSION = False
 
         VALIDATION_DICT = {
             "filename": [str, False],
@@ -253,7 +248,6 @@ class Delivery(DeliveryDictable):
             orientation: Whether orientation is portrait or landscape
             use_print_range: Whether a print range should be used
         """
-        _DELETE_NONE_VALUES_RECURSION = False
 
         VALIDATION_DICT = {
             "copies": [int, False],
@@ -289,7 +283,6 @@ class Delivery(DeliveryDictable):
             space_delimiter: The space delimiter
             zip: Optional compression settings object
         """
-        _DELETE_NONE_VALUES_RECURSION = False
 
         VALIDATION_DICT = {
             "filename": [str, False], "space_delimiter": [str, False], "zip": [ZipSettings, False]
@@ -316,7 +309,6 @@ class Delivery(DeliveryDictable):
             reuse_dataset_cache: Whether to reuse dataset cache
             is_all_library_users: Whether for all library users
         """
-        _DELETE_NONE_VALUES_RECURSION = False
 
         VALIDATION_DICT = {
             "library_cache_types": [list, False],
@@ -351,7 +343,6 @@ class Delivery(DeliveryDictable):
                 the history list
             re_run_hl: Whether the subscription will re-run against warehouse
         """
-        _DELETE_NONE_VALUES_RECURSION = False
 
         VALIDATION_DICT = {
             "client_type": [str, False],
@@ -387,7 +378,6 @@ class Delivery(DeliveryDictable):
                 the history list
             re_run_hl: Whether the subscription will re-run against warehouse
         """
-        _DELETE_NONE_VALUES_RECURSION = False
 
         VALIDATION_DICT = {
             "device_id": [str, False],
@@ -470,9 +460,13 @@ class Delivery(DeliveryDictable):
             else:
                 self.expiration = expiration
         self.contact_security = contact_security
-        temp_zip = ZipSettings(
-            filename, password, password_protect
-        ) if zip is None and compress else zip if zip is not None and compress else None
+
+        if zip is None and compress:
+            temp_zip = ZipSettings(filename, password, password_protect)
+        elif zip is not None and compress:
+            temp_zip = zip
+        else:
+            temp_zip = None
 
         if self.DeliveryMode(mode) == self.DeliveryMode.EMAIL:
             self.email = self.Email(
