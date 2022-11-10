@@ -4,14 +4,14 @@ from mstrio.users_and_groups import list_user_groups, list_users, User, UserGrou
 from mstrio.access_and_security.security_role import list_security_roles, SecurityRole
 from mstrio.connection import get_connection
 
-PROJECT_NAME = '<Project_name>'  # Insert name of project here
-PRIVILEGE_NAME = '<Privilege_name>'  # Insert name of edited privilege here
-PRIVILEGE_ID = '<Privilege_ID>'  # Insert ID of edited privilege here
+PROJECT_NAME = $project_name  # Insert name of project here
+PRIVILEGE_NAME = $privilege_name  # Insert name of edited privilege here
+PRIVILEGE_ID = $privilege_id  # Insert ID of edited privilege here
 # Following strings are for Security Roles edition
-SECURITY_ROLE_NAME = '<Security_Role_name>'  # Insert name of newly created or accesed security role
-SECURITY_ROLE_DESCRIPTION = '<Security_Role_desc>'  # Insert description of newly created or accesed security role
-USER_NAME = '<Username>'  # Insert name of user to be assigned or revoked security role
-USER_GROUP_NAME = '<User_group_name>'  # Insert name of user group to be assigned or revoked security role
+SECURITY_ROLE_NAME = $security_role_name  # Insert name of newly created or accesed security role
+SECURITY_ROLE_DESCRIPTION = $security_role_description  # Insert description of newly created or accesed security role
+USERNAME = $username  # Insert name of user to be assigned or revoked security role
+USER_GROUP_NAME = $user_group_name  # Insert name of user group to be assigned or revoked security role
 
 conn = get_connection(workstationData, project_name=PROJECT_NAME)
 
@@ -50,7 +50,7 @@ SecurityRole(connection=conn, name=SECURITY_ROLE_NAME)
 role.list_members(project_name=PROJECT_NAME)
 
 # Grant/Revoke Security Role to users/usergroups
-user = User(conn, name=USER_NAME)
+user = User(conn, name=USERNAME)
 users = list_users(conn)
 group = UserGroup(conn, name=USER_GROUP_NAME)
 groups = list_user_groups(conn)

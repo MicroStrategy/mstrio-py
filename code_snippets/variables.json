@@ -1,0 +1,1478 @@
+{
+  "attributes.py": {
+    "project_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "attribute_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "attribute_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "attribute_new_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "attribute_description": {
+      "type": "text",
+      "multiple": false
+    },
+    "table_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "attribute_form_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "attribute_form_altered_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "attribute_form_description": {
+      "type": "text",
+      "multiple": false
+    },
+    "folder_id": {
+      "type": "text",
+      "multiple": false
+    }
+  },
+  "connect.py": {
+    "project_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "base_url": {
+      "type": "text",
+      "multiple": false
+    },
+    "mstr_username": {
+      "type": "text",
+      "multiple": false
+    },
+    "mstr_password": {
+      "type": "secret",
+      "multiple": false
+    },
+    "project_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "identity_token": {
+      "type": "text",
+      "multiple": false
+    },
+    "certificate_path": {
+      "type": "text",
+      "multiple": false
+    },
+    "proxies_http_value": {
+      "type": "text",
+      "multiple": false
+    },
+    "proxies_https_key": {
+      "type": "text",
+      "multiple": false
+    },
+    "proxies_https_value": {
+      "type": "text",
+      "multiple": false
+    },
+    "proxies_http_value_username_and_password": {
+      "type": "text",
+      "multiple": false
+    }
+  },
+  "contact_group_mgmt.py": {
+    "project_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "member_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "member_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "username": {
+      "type": "text",
+      "multiple": false
+    },
+    "contact_group_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "contact_group_description": {
+      "type": "text",
+      "multiple": false
+    },
+    "contact_group_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "contact_group_new_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "contact_group_new_description": {
+      "type": "text",
+      "multiple": false
+    },
+    "other_username": {
+      "type": "text",
+      "multiple": false
+    },
+    "contact_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "other_contact_group_name": {
+      "type": "text",
+      "multiple": false
+    }
+  },
+  "contacts.py": {
+    "project_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "contact_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "contact_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "contact_address_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "physical_address": {
+      "type": "text",
+      "multiple": false
+    },
+    "device_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "new_contact_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "contact_description": {
+      "type": "text",
+      "multiple": false
+    },
+    "contact_new_description": {
+      "type": "text",
+      "multiple": false
+    },
+    "username": {
+      "type": "text",
+      "multiple": false
+    },
+    "new_contact_description": {
+      "type": "text",
+      "multiple": false
+    },
+    "contact_group_name": {
+      "type": "text",
+      "multiple": false
+    }
+  },
+  "create_super_cube.py": {
+    "project_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "super_cube_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "super_cube_id": {
+      "type": "text",
+      "multiple": false
+    }
+  },
+  "cube_cache.py": {
+    "project_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "cube_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "node_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "db_connection_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "cube_cache_id": {
+      "type": "text",
+      "multiple": false
+    }
+  },
+  "cube_report.py": {
+    "project_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "cube_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "report_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "attributes_list": {
+      "type": "text",
+      "multiple": true
+    },
+    "metrics_list": {
+      "type": "text",
+      "multiple": true
+    },
+    "attributes_elements_list": {
+      "type": "text",
+      "multiple": true
+    }
+  },
+  "datasource_mgmt.py": {
+    "project_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "project_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "new_datasource_login_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "new_datasource_username": {
+      "type": "text",
+      "multiple": false
+    },
+    "new_datasource_password": {
+      "type": "secret",
+      "multiple": false
+    },
+    "new_datasource_login_description": {
+      "type": "text",
+      "multiple": false
+    },
+    "datasource_login_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "datasource_login_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "datasource_login_new_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "datasource_login_new_description": {
+      "type": "text",
+      "multiple": false
+    },
+    "datasource_connection_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "datasource_connection_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "new_datasource_connection_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "new_datasource_connection_description": {
+      "type": "text",
+      "multiple": false
+    },
+    "datasource_connection_new_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "datasource_connection_new_description": {
+      "type": "text",
+      "multiple": false
+    },
+    "datasource_instance_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "datasource_instance_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "dbms_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "dbms_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "new_datasource_instance_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "new_datasource_instance_description": {
+      "type": "text",
+      "multiple": false
+    },
+    "new_datasource_instance_table_prefix": {
+      "type": "text",
+      "multiple": false
+    },
+    "datasource_instance_new_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "datasource_instance_new_description": {
+      "type": "text",
+      "multiple": false
+    },
+    "datasource_instance_table_new_prefix": {
+      "type": "text",
+      "multiple": false
+    },
+    "locale_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "locale_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "locale_abbreviation": {
+      "type": "text",
+      "multiple": false
+    },
+    "user_or_user_group_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "connection_mapping_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "connection_mapping_new_user_or_user_group": {
+      "type": "text",
+      "multiple": false
+    },
+    "connection_mapping_new_login": {
+      "type": "text",
+      "multiple": false
+    }
+  },
+  "device_mgmt.py": {
+    "project_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "smart_host_server": {
+      "type": "text",
+      "multiple": false
+    },
+    "smart_host_port": {
+      "type": "number",
+      "multiple": false
+    },
+    "feedback_service_server": {
+      "type": "text",
+      "multiple": false
+    },
+    "feedback_service_port": {
+      "type": "number",
+      "multiple": false
+    },
+    "file_device_path": {
+      "type": "text",
+      "multiple": false
+    },
+    "printer_location": {
+      "type": "text",
+      "multiple": false
+    },
+    "transmitter_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "device_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "device_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "device_description": {
+      "type": "text",
+      "multiple": false
+    }
+  },
+  "events.py": {
+    "project_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "event_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "event_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "event_description": {
+      "type": "text",
+      "multiple": false
+    }
+  },
+  "fact.py": {
+    "project_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "fact_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "fact_unique_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "fact_id1": {
+      "type": "text",
+      "multiple": false
+    },
+    "fact_id2": {
+      "type": "text",
+      "multiple": false
+    },
+    "fact_new_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "fact_new_desc1": {
+      "type": "text",
+      "multiple": false
+    },
+    "fact_new_desc2": {
+      "type": "text",
+      "multiple": false
+    },
+    "folder_id": {
+      "type": "text",
+      "multiple": false
+    }
+  },
+  "filter.py": {
+    "project_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "search_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "filter_id1": {
+      "type": "text",
+      "multiple": false
+    },
+    "filter_id2": {
+      "type": "text",
+      "multiple": false
+    },
+    "filter_id3": {
+      "type": "text",
+      "multiple": false
+    },
+    "filter_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "filter_new_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "filter_new_desc1": {
+      "type": "text",
+      "multiple": false
+    },
+    "filter_new_desc2": {
+      "type": "text",
+      "multiple": false
+    },
+    "folder_id": {
+      "type": "text",
+      "multiple": false
+    }
+  },
+  "intelligent_cube.py": {
+    "project_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "cube_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "attribute_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "attribute_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "metric_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "metric_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "cube_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "cube_description": {
+      "type": "text",
+      "multiple": false
+    },
+    "cube_folder_id": {
+      "type": "text",
+      "multiple": false
+    }
+  },
+  "job_monitor.py": {
+    "project_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "username": {
+      "type": "text",
+      "multiple": false
+    },
+    "job_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "list_jobs_filter_time": {
+      "type": "text",
+      "multiple": false
+    },
+    "list_jobs_filter_mem": {
+      "type": "text",
+      "multiple": false
+    },
+    "kill_jobs_filter_time": {
+      "type": "number",
+      "multiple": false
+    }
+  },
+  "metrics.py": {
+    "project_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "metric_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "metric_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "metric_new_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "metric_new_description": {
+      "type": "text",
+      "multiple": false
+    },
+    "folder_id": {
+      "type": "text",
+      "multiple": false
+    }
+  },
+  "migration.py": {
+    "project_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "source_base_url": {
+      "type": "text",
+      "multiple": false
+    },
+    "source_username": {
+      "type": "text",
+      "multiple": false
+    },
+    "source_password": {
+      "type": "secret",
+      "multiple": false
+    },
+    "target_base_url": {
+      "type": "text",
+      "multiple": false
+    },
+    "target_username": {
+      "type": "text",
+      "multiple": false
+    },
+    "target_password": {
+      "type": "secret",
+      "multiple": false
+    },
+    "username": {
+      "type": "text",
+      "multiple": false
+    },
+    "dossier_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "report_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "save_path": {
+      "type": "text",
+      "multiple": false
+    },
+    "custom_package_path": {
+      "type": "text",
+      "multiple": false
+    },
+    "undo_package_path": {
+      "type": "text",
+      "multiple": false
+    }
+  },
+  "object_mgmt.py": {
+    "project_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "project_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "folder_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "folder_parent_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "folder_description": {
+      "type": "text",
+      "multiple": false
+    },
+    "folder_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "trusted_user_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "object_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "object_description": {
+      "type": "text",
+      "multiple": false
+    },
+    "search_pattern": {
+      "type": "text",
+      "multiple": false
+    }
+  },
+  "project_mgmt.py": {
+    "project_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "node_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "project_description": {
+      "type": "text",
+      "multiple": false
+    },
+    "project_1_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "project_2_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "csv_file_export": {
+      "type": "text",
+      "multiple": false
+    },
+    "csv_file_import": {
+      "type": "text",
+      "multiple": false
+    }
+  },
+  "schedules.py": {
+    "project_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "schedule_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "schedule_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "schedule_event_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "schedule_start_date": {
+      "type": "date",
+      "multiple": false
+    },
+    "schedule_stop_date": {
+      "type": "date",
+      "multiple": false
+    },
+    "schedule_execute_time": {
+      "type": "text",
+      "multiple": false
+    },
+    "subscription_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "schedule_expire_date": {
+      "type": "date",
+      "multiple": false
+    },
+    "schedule_description": {
+      "type": "text",
+      "multiple": false
+    }
+  },
+  "schema_mgmt.py": {
+    "project_name": {
+      "type": "text",
+      "multiple": false
+    }
+  },
+  "security_filters.py": {
+    "project_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "project_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "folder_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "security_filter_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "security_filter_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "new_security_filter_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "constant_value_1": {
+      "type": "text",
+      "multiple": false
+    },
+    "attribute_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "attribute_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "attribute_form_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "attribute_form_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "attribute_1_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "attribute_1_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "attribute_2_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "attribute_2_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "constant_value_2": {
+      "type": "text",
+      "multiple": false
+    },
+    "constant_value_3": {
+      "type": "text",
+      "multiple": false
+    },
+    "attribute_form_1_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "attribute_form_2_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "new_security_filter_name_2": {
+      "type": "text",
+      "multiple": false
+    },
+    "new_security_filter_description": {
+      "type": "text",
+      "multiple": false
+    },
+    "parameter_changed_value": {
+      "type": "text",
+      "multiple": false
+    },
+    "username_begins": {
+      "type": "text",
+      "multiple": false
+    },
+    "user_group_name_begins": {
+      "type": "text",
+      "multiple": false
+    }
+  },
+  "security_roles_and_privileges.py": {
+    "project_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "privilege_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "privilege_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "security_role_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "security_role_description": {
+      "type": "text",
+      "multiple": false
+    },
+    "username": {
+      "type": "text",
+      "multiple": false
+    },
+    "user_group_name": {
+      "type": "text",
+      "multiple": false
+    }
+  },
+  "server_mgmt.py": {
+    "project_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "node_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "node_name_2": {
+      "type": "text",
+      "multiple": false
+    },
+    "service_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "file_name": {
+      "type": "text",
+      "multiple": false
+    }
+  },
+  "subscription_mgmt.py": {
+    "project_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "content_type": {
+      "type": "text",
+      "multiple": false
+    },
+    "format_type": {
+      "type": "text",
+      "multiple": false
+    },
+    "email_subscription_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "email_subject": {
+      "type": "text",
+      "multiple": false
+    },
+    "cache_subscription_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "cache_subscription_new_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "schedule_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "delivery_expiration_date": {
+      "type": "date",
+      "multiple": false
+    },
+    "subscription_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "subscription_id_2": {
+      "type": "text",
+      "multiple": false
+    },
+    "content_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "project_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "recipient_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "recipient_id_2": {
+      "type": "text",
+      "multiple": false
+    },
+    "user_to_remove_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "admin_user_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "schedule_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "owner_id": {
+      "type": "text",
+      "multiple": false
+    }
+  },
+  "table_mgmt.py": {
+    "project_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "project_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "physical_table_prefix": {
+      "type": "text",
+      "multiple": false
+    },
+    "datasource_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "datasource_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "warehouse_table_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "new_logical_table_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "logical_table_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "logical_table_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "physical_table_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "logical_table_description": {
+      "type": "text",
+      "multiple": false
+    },
+    "normal_table_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "sql_table_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "logical_table_name_altered": {
+      "type": "text",
+      "multiple": false
+    },
+    "physical_table_name_altered": {
+      "type": "text",
+      "multiple": false
+    }
+  },
+  "transformation.py": {
+    "project_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "transformation_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "transformation_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "transformation_new_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "transformation_new_description": {
+      "type": "text",
+      "multiple": false
+    },
+    "folder_id": {
+      "type": "text",
+      "multiple": false
+    }
+  },
+  "transmitter_mgmt.py": {
+    "project_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "sender_display_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "sender_email_address": {
+      "type": "text",
+      "multiple": false
+    },
+    "reply_to_display_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "reply_to_email_address": {
+      "type": "text",
+      "multiple": false
+    },
+    "transmitter_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "transmitter_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "transmitter_description": {
+      "type": "text",
+      "multiple": false
+    },
+    "notification_email_address": {
+      "type": "text",
+      "multiple": false
+    }
+  },
+  "user_hierarchy_mgmt.py": {
+    "project_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "attribute_name_1": {
+      "type": "text",
+      "multiple": false
+    },
+    "attribute_name_2": {
+      "type": "text",
+      "multiple": false
+    },
+    "attribute_name_3": {
+      "type": "text",
+      "multiple": false
+    },
+    "attribute_name_4": {
+      "type": "text",
+      "multiple": false
+    },
+    "element_display_option": {
+      "type": "text",
+      "multiple": false
+    },
+    "user_hierarchy_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "user_hierarchy_description": {
+      "type": "text",
+      "multiple": false
+    },
+    "folder_id": {
+      "type": "text",
+      "multiple": false
+    }
+  },
+  "user_library.py": {
+    "project_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "document_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "dossier_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "user_id_1": {
+      "type": "text",
+      "multiple": false
+    },
+    "user_id_2": {
+      "type": "text",
+      "multiple": false
+    },
+    "user_group_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "document_id_1": {
+      "type": "text",
+      "multiple": false
+    },
+    "document_id_2": {
+      "type": "text",
+      "multiple": false
+    },
+    "document_id_3": {
+      "type": "text",
+      "multiple": false
+    }
+  },
+  "user_mgmt.py": {
+    "project_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "username_1": {
+      "type": "text",
+      "multiple": false
+    },
+    "full_name_1": {
+      "type": "text",
+      "multiple": false
+    },
+    "username_2": {
+      "type": "text",
+      "multiple": false
+    },
+    "full_name_2": {
+      "type": "text",
+      "multiple": false
+    },
+    "username_3": {
+      "type": "text",
+      "multiple": false
+    },
+    "full_name_3": {
+      "type": "text",
+      "multiple": false
+    },
+    "username_4": {
+      "type": "text",
+      "multiple": false
+    },
+    "full_name_4": {
+      "type": "text",
+      "multiple": false
+    },
+    "username_5": {
+      "type": "text",
+      "multiple": false
+    },
+    "full_name_5": {
+      "type": "text",
+      "multiple": false
+    },
+    "username_6": {
+      "type": "text",
+      "multiple": false
+    },
+    "full_name_6": {
+      "type": "text",
+      "multiple": false
+    },
+    "name_begins": {
+      "type": "text",
+      "multiple": false
+    },
+    "initials": {
+      "type": "text",
+      "multiple": false
+    },
+    "user_group_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "csv_file": {
+      "type": "text",
+      "multiple": false
+    },
+    "object_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "object_type": {
+      "type": "text",
+      "multiple": false
+    },
+    "permission": {
+      "type": "text",
+      "multiple": false
+    }
+  },
+  "content_cache.py": {
+    "project_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "project_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "cache_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "other_cache_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "node_name": {
+      "type": "text",
+      "multiple": false
+    }
+  },
+  "document.py": {
+    "project_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "project_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "document_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "document_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "document_new_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "document_new_description": {
+      "type": "text",
+      "multiple": false
+    },
+    "user_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "user_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "folder_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "cache_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "other_cache_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "cache_status": {
+      "type": "text",
+      "multiple": false
+    }
+  },
+  "dossier.py": {
+    "project_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "project_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "dossier_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "dossier_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "new_dossier_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "new_dossier_description": {
+      "type": "text",
+      "multiple": false
+    },
+    "folder_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "user_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "cache_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "other_cache_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "cache_status": {
+      "type": "text",
+      "multiple": false
+    },
+    "user_name": {
+      "type": "text",
+      "multiple": false
+    }
+  },
+  "reports.py": {
+    "project_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "project_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "report_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "report_cache_id_1": {
+      "type": "text",
+      "multiple": false
+    },
+    "report_cache_id_2": {
+      "type": "text",
+      "multiple": false
+    },
+    "report_cache_id_3": {
+      "type": "text",
+      "multiple": false
+    },
+    "report_cache_id_4": {
+      "type": "text",
+      "multiple": false
+    },
+    "node_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "db_connection_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "db_login_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "user_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "wh_table_id":   {
+      "type": "text",
+      "multiple": false
+    }
+  }
+}

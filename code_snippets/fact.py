@@ -14,15 +14,15 @@ from mstrio.modeling.schema import SchemaManagement, SchemaObjectReference, Sche
 from workflows.get_all_columns_in_table import list_table_columns
 
 # Following variables are defining basic facts
-PROJECT_NAME = '<Project_name>'  # Insert name of project here
-FACT_NAME = '<Fact_name>'  # Insert name of existing fact here
-FACT_BY_NAME = '<Fact_unique_name>'  # Insert unique name of existing fact here
-FACT_ID1 = '<Fact_ID>'  # Insert ID of existing fact here
-FACT_ID2 = '<Fact_ID>'  # Insert ID of existing fact here
-FACT_NEW_NAME = '<Fact_name>'  # Insert new name of edited Fact here
-FACT_NEW_DESC1 = '<Fact_desc>'  # Insert new description of edited fact here
-FACT_NEW_DESC2 = '<Fact_desc>'  # Insert new description of edited fact here
-FOLDER_ID = '<Folder_ID>'  # Insert folder ID here
+PROJECT_NAME = $project_name  # Insert name of project here
+FACT_NAME = $fact_name  # Insert name of existing fact here
+FACT_UNIQUE_NAME = $fact_unique_name  # Insert unique name of existing fact here
+FACT_ID1 = $fact_id1  # Insert ID of existing fact here
+FACT_ID2 = $fact_id2  # Insert ID of existing fact here
+FACT_NEW_NAME = $fact_new_name  # Insert new name of edited Fact here
+FACT_NEW_DESC1 = $fact_new_desc1  # Insert new description of edited fact here
+FACT_NEW_DESC2 = $fact_new_desc2  # Insert new description of edited fact here
+FOLDER_ID = $folder_id  # Insert folder ID here
 
 conn: Connection = get_connection(workstationData, PROJECT_NAME)
 
@@ -44,7 +44,8 @@ FACT_DATA = {
             'tables': [
                 {
                     'objectId': '<Object_ID>', 'subType': 'logical_table', 'name': 'CITY_MNTH_SLS'
-                }, {
+                },
+                {
                     'objectId': '<Object_ID>', 'subType': 'logical_table', 'name': 'CUSTOMER_SLS'
                 }
             ]
@@ -54,10 +55,12 @@ FACT_DATA = {
 
 # fact expression data with expression specified as tree
 FACT_EXP_DATA = FactExpression(
-    expression=Expression(tree=ColumnReference(
-        column_name='day_date',
-        object_id='<Object_ID>',
-    )),
+    expression=Expression(
+        tree=ColumnReference(
+            column_name='day_date',
+            object_id='<Object_ID>',
+        )
+    ),
     tables=[
         SchemaObjectReference(
             name='LU_DAY',
@@ -127,7 +130,7 @@ tables_exp_obj = fact.get_tables(expression=exp_obj)
 properties = fact.list_properties()
 
 # Get existing fact by its unique name
-fact_by_name = Fact(connection=conn, name=FACT_BY_NAME)
+fact_by_name = Fact(connection=conn, name=FACT_UNIQUE_NAME)
 
 # Get specified fact by id with expressions represented as tokens
 fact2 = Fact(connection=conn, id=FACT_ID2, show_expression_as=ExpressionFormat.TOKENS)

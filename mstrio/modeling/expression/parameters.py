@@ -39,7 +39,6 @@ class PredicateParameter(Dictable):
     """Base class for parameters"""
 
     _TYPE = None
-    _DELETE_NONE_VALUES_RECURSION = False
 
     def to_dict(self, camel_case: bool = True) -> dict:
         result = super().to_dict(camel_case)
@@ -102,7 +101,6 @@ class AttributeElement(Dictable):
 
     """
 
-    _DELETE_NONE_VALUES_RECURSION = False
     _FROM_DICT_MAP = {
         'attribute': SchemaObjectReference,
     }
@@ -121,7 +119,6 @@ class Variant(Dictable):
             locale-neutral, format.
     """
 
-    _DELETE_NONE_VALUES_RECURSION = False
     _FROM_DICT_MAP = {
         'type': VariantType,
     }
@@ -138,8 +135,6 @@ class FunctionProperty(Dictable):
         name: function's property name
         value: function's property value
     """
-
-    _DELETE_NONE_VALUES_RECURSION = False
 
     name: str
     value: Variant

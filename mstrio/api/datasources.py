@@ -175,15 +175,13 @@ def get_datasource_namespaces(
     )
 
 
-@ErrorHandler("Error retrieving namespace with id: {id}")
 def get_datasource_namespaces_async(
     session: FuturesSessionWithRenewal,
     connection: "Connection",
     id: str,
     project_id: Optional[str] = None,
     refresh: Optional[bool] = None,
-    fields: Optional[str] = None,
-    error_msg: Optional[str] = None
+    fields: Optional[str] = None
 ):
     return session.get(
         url=f"{connection.base_url}/api/datasources/{id}/catalog/namespaces",
@@ -409,9 +407,6 @@ def get_datasource_mappings(
     return response
 
 
-# This is a 'fake' get single resource endpoint. Only listing all mappings
-# is available on REST API.
-# TODO Change to normal get, when it will be available on REST.
 @ErrorHandler(err_msg='Error fetching connection mapping with ID {id}.')
 def get_datasource_mapping(
     connection: Connection,

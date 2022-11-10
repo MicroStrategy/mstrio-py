@@ -190,8 +190,8 @@ class DeprecatedSetting:
         self.name = config.get('name')
         self.description = config.get('description')
 
-    def _validate_value(self, value, exception=False):
-        msg = f"Setting '{self.name}' is deprecated and is read-only"
+    def _validate_value(self, value):
+        msg = f"Setting '{self.name}' with value '{value}' is deprecated and is read-only"
         warnings.warn(msg, DeprecationWarning)
         return True
 

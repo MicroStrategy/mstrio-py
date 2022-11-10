@@ -14,15 +14,15 @@ from mstrio.distribution_services import (
     TransmitterDeliveryType
 )
 
-PROJECT_NAME = '<project_name>'  # Project to connect to
-SENDER_DISPLAY_NAME = '<sender_display_name>'  # name of a sender
-SENDER_EMAIL_ADDRESS = '<sender_email_address>'  # address of a sender
-REPLY_TO_DISPLAY_NAME = '<reply_to_display_name>'  # name for destination for replies
-REPLY_TO_EMAIL_ADDRESS = '<reply_to_email_address>'  # address for destination for replies
-TRANSMITTER_ID = '<transmitter_id>'
-TRANSMITTER_NAME = '<transmitter_name>'
-TRANSMITTER_DESCRIPTION = '<transmitter_description>'
-NOTIFICATION_EMAIL_ADDRESS = '<notification_email_address>'
+PROJECT_NAME = $project_name  # Project to connect to
+SENDER_DISPLAY_NAME = $sender_display_name  # name of a sender
+SENDER_EMAIL_ADDRESS = $sender_email_address  # address of a sender
+REPLY_TO_DISPLAY_NAME = $reply_to_display_name  # name for destination for replies
+REPLY_TO_EMAIL_ADDRESS = $reply_to_email_address  # address for destination for replies
+TRANSMITTER_ID = $transmitter_id
+TRANSMITTER_NAME = $transmitter_name
+TRANSMITTER_DESCRIPTION = $transmitter_description
+NOTIFICATION_EMAIL_ADDRESS = $notification_email_address
 
 conn = get_connection(workstationData, project_name=PROJECT_NAME)
 

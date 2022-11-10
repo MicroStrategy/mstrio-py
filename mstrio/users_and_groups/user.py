@@ -1,7 +1,10 @@
+import json
 from datetime import datetime
 import logging
+from enum import Enum
 from typing import List, Optional, TYPE_CHECKING, Union
 
+import pandas as pd
 from pandas import DataFrame, read_csv
 from requests.exceptions import HTTPError
 
@@ -14,6 +17,7 @@ from mstrio.users_and_groups.user_connections import UserConnections
 from mstrio.utils import helper, time_helper
 from mstrio.utils.acl import TrusteeACLMixin
 from mstrio.utils.entity import DeleteMixin, Entity, ObjectTypes
+from mstrio.utils.helper import Dictable
 from mstrio.utils.version_helper import method_version_handler
 
 if TYPE_CHECKING:
@@ -112,7 +116,6 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
         acg: Access rights (See EnumDSSXMLAccessRightFlags for possible values)
         acl: Object access control list
     """
-    _DELETE_NONE_VALUES_RECURSION = False
 
     _PATCH_PATH_TYPES = {
         "name": str,
@@ -834,6 +837,104 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
             True for success. False otherwise.
         """
         return super().delete(force=force)
+
+    def _to_dataframe_as_columns(self, properties: Optional[List[str]] = None) -> pd.DataFrame:
+        """Exports user object to dataframe, with properties as columns
+
+        Args:
+            properties (list, optional): list of properties to be exported
+
+        Returns: dataframe
+        """
+        excluded_keys = ['connection']
+        selected_keys = properties or (self.list_properties().keys() - excluded_keys)
+
+        def convert(obj, inside=False):
+
+            if isinstance(obj, (str, int)):
+                return obj
+            if isinstance(obj, Enum):
+                return obj.value
+            if isinstance(obj, datetime):
+                return str(datetime)
+
+            result = None
+
+            if isinstance(obj, list):
+                result = [convert(el, inside=True) for el in obj]
+            if isinstance(obj, Dictable):
+                result = dict(sorted(obj.to_dict().items()))
+            if isinstance(obj, dict):
+                result = {key: convert(value, inside=True) for key, value in obj.items()}
+
+            return result if inside else json.dumps(result)
+
+        data = {
+            key: convert(value)
+            for key, value in self.list_properties().items()
+            if key in selected_keys
+        }
+        return pd.DataFrame(data, index=[0])
+
+    @classmethod
+    def to_datafame_from_list(
+        cls,
+        objects: list['User'],
+        properties: Optional[List[str]] = None
+    ) -> pd.DataFrame:
+        """Exports list of user objects to dataframe.
+        The properties that are lists, dictionaries, or objects of
+        custom classes, are first converted to dictionary using `to_dict()`
+        method, then serialized string as json.
+
+        Args:
+            objects (list): list of user objects to be exported
+            properties (list, optional): list of properties of user object
+                to be exported
+
+        Returns: dataframe
+
+        Raises:
+            TypeError if `objects` parameter contains objects other than
+             of type User
+        """
+        dataframes = []
+
+        for obj in objects:
+            if not isinstance(obj, User):
+                raise TypeError('All objects in the list must be of type User.')
+
+            dataframes.append(obj._to_dataframe_as_columns(properties))
+
+        return pd.concat(dataframes, ignore_index=True)
+
+    @classmethod
+    def to_csv_from_list(
+        cls,
+        objects: list['User'],
+        path: Optional[str] = None,
+        properties: Optional[List[str]] = None,
+    ) -> str | None:
+        """Exports list of user objects to csv (if path is provided)
+        or to string (if path is not provided).
+        The properties that are lists, dictionaries, or objects of
+        custom classes, are first converted to dictionary using `to_dict()`
+        method, then serialized string as json.
+
+        Args:
+            objects (list): list of user objects to be exported
+            path (str, optional): a path specifying where to save the csv file
+            properties (list, optional): list of properties of user object
+                to be exported
+
+        Returns: str or None
+
+        Raises:
+            TypeError if `objects` parameter contains objects other than
+             of type User
+        """
+        dataframe = cls.to_datafame_from_list(objects, properties)
+        return dataframe.to_csv(index=False, path_or_buf=path)
 
     @property
     def memberships(self):

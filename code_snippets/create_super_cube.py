@@ -20,9 +20,9 @@ import pandas as pd
 from mstrio.project_objects.datasets import SuperCube
 from mstrio.connection import get_connection
 
-PROJECT_NAME = '<Project_name>'  # Insert project name here
-SUPER_CUBE_NAME = "<Cube_name>"  # Insert name of created suber cube here
-SUPER_CUBE_ID = "<Cube_ID>"  # insert ID of edited super cube here
+PROJECT_NAME = $project_name  # Insert project name here
+SUPER_CUBE_NAME = $super_cube_name  # Insert name of created suber cube here
+SUPER_CUBE_ID = $super_cube_id  # insert ID of edited super cube here
 
 conn = get_connection(workstationData, project_name=PROJECT_NAME)
 

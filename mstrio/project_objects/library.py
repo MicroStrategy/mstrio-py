@@ -1,9 +1,10 @@
-from typing import List, TYPE_CHECKING, Union
+from typing import List, TYPE_CHECKING, Union, Optional
 
 from mstrio.api import library
 from mstrio.project_objects.document import Document, list_documents
 from mstrio.project_objects.dossier import list_dossiers
-from mstrio.utils.helper import exception_handler
+from mstrio.utils.helper import get_valid_project_id
+from mstrio.connection import Connection
 
 if TYPE_CHECKING:
     from mstrio.project_objects.dossier import Dossier
@@ -11,24 +12,32 @@ if TYPE_CHECKING:
 
 class Library:
 
-    def __init__(self, connection):
-        # TODO: consider adding Connection.project_selected attr/method
-        if connection.project_id is None:
-            exception_handler(
-                "No project selected, library content will not be loaded.", exception_type=Warning
-            )
+    def __init__(
+        self,
+        connection: Connection,
+        project_id: Optional[str] = None,
+        project_name: Optional[str] = None,
+    ):
         self.connection = connection
         ids = self.__get_library_ids()
-        # TODO: consider adding Connection.project_selected attr/method
-        if connection.project_id is None:
+        self.user_id = connection.user_id
+
+        try:
+            project_id = get_valid_project_id(
+                connection=connection,
+                project_id=project_id,
+                project_name=project_name,
+                with_fallback=False if project_name else True,
+            )
+        except ValueError:
             self._documents = None
             self._dossiers = None
             self._contents = None
-        else:
-            self._documents = list_documents(self.connection, id=ids)
-            self._dossiers = list_dossiers(self.connection, id=ids)
-            self._contents = self._documents + self._dossiers
-        self.user_id = connection.user_id
+            return
+
+        self._documents = list_documents(self.connection, project_id=project_id, id=ids)
+        self._dossiers = list_dossiers(self.connection, project_id=project_id, id=ids)
+        self._contents = self._documents + self._dossiers
 
     def __get_library_ids(self):
         response = library.get_library(self.connection)

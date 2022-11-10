@@ -1,5 +1,47 @@
 # Changelog
 
+## 11.3.7.103 - 2022/11/11
+
+### Major changes
+
+- added `ContentCache` class in `mstrio.project_objects.content_cache` module to allow Document,
+  Dossier and Report cache management
+
+### Minor changes
+
+- added `list_properties` and `list_available_schedules` methods for
+  `mstrio.project_objects.document` module
+- added `list_properties` method for `mstrio.project_objects.dossier` module
+- added `VisualizationSelector`, `PageSelector`, `PageVisualization`, `ChapterPage` and
+  `DossierChapter` classes in `mstrio.project_objects.dossier` module
+- added cache management methods for `mstrio.project_objects.document` module by inheriting from
+  `ContentCache` class
+- added cache management methods for `mstrio.project_objects.dossier` module by inheriting from
+  `ContentCache` class
+- fixed `list_documents_across_projects` function to work properly when `to_dataframe` or
+  `to_dictionary` parameters are set to `True`, also to not return an error when user has no access
+   to one of the projects but to skip that project instead
+- fixed `list_dossiers_across_projects` function to work properly when `to_dataframe` or
+  `to_dictionary` parameters are set to `True`, also to not return an error when user has no access
+   to one of the projects but to skip that project instead
+- added `export_sql_view` method to `SuperCubes` to allow extraction of sql statement
+- increased chunk size for fetching projects
+- fixed importing and exporting project settings from/to CSV file
+- fixed `list_physical_tables` when logical table aliases are in the project
+- fixed `project_id` parameter not being used in `list_logical_tables`
+- added two methods to `User` class: `User.to_dataframe_from_list()` and `User.to_csv_from_list()`
+- fixed altering `table_prefix` in `DatasourceInstance`
+- fixed getting `Subscriptions` with `refresh_condition`
+
+### Deprecated
+
+- `mstrio.distribution_services.contact` module is no longer supported and is moved to
+  `mstrio.users_and_groups` subpackage
+- `mstrio.distribution_services.contact_group` module is no longer supported and is moved to
+  `mstrio.users_and_groups` subpackage
+- `mstrio.access_and_security.security_filter` module is no longer supported and is replaced by
+  `mstrio.modeling.security_filter` and `mstrio.modeling.expression` subpackages
+
 ## 11.3.6.103 - 2022/08/12
 
 ### Major changes

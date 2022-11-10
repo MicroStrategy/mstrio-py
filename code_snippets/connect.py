@@ -6,14 +6,21 @@ to present what can be done with this module and to ease its usage.
 
 from mstrio.connection import get_connection, Connection
 
-PROJECT_NAME = '<Project_name>'
-BASE_URL = '<URL>'  # Insert URL for your env here
-MSTR_USERNAME = '<Username>'  # Insert your env username here
-MSTR_PASSWORD = '<Password>'  # insert your mstr password here
-PROJECT_ID = '<Project_ID>'  # Insert you project ID here
-IDENTITY_TOKEN = '<Identtity_Token>'  # Insert your identity token here
-CERTIFICATE_PATH = "C:/path/to/your/certificate.pem"  # Insert your certificate path here
-PROXIES = {'http': 'foo.bar:3128', 'https://host.name': 'foo.bar:4012'}  # Edit your proxies here
+PROJECT_NAME = $project_name
+BASE_URL = $base_url  # Insert URL for your env here
+MSTR_USERNAME = $mstr_username  # Insert your env username here
+MSTR_PASSWORD = $mstr_password  # insert your mstr password here
+PROJECT_ID = $project_id  # Insert you project ID here
+IDENTITY_TOKEN = $identity_token  # Insert your identity token here
+CERTIFICATE_PATH = $certificate_path  # Insert your certificate path here
+
+PROXIES_HTTP_VALUE = $proxies_http_value  # f.e. 'foo.bar:3128'
+PROXIES_HTTPS_KEY = $proxies_https_key  # f.e. 'https://host.name'
+PROXIES_HTTPS_VALUE = $proxies_https_value # f.e. 'foo.bar:4012'
+PROXIES = {'http': PROXIES_HTTP_VALUE, PROXIES_HTTPS_KEY: PROXIES_HTTPS_VALUE }
+
+# f.e. 'https://<username>:<password>@<ip_address>:<port>/'
+PROXIES_HTTP_VALUE_USERNAME_AND_PASSWORD = $proxies_http_value_username_and_password
 
 # The Connection object manages your connection to MicroStrategy. Connect to
 # your MicroStrategy environment by providing the URL to the MicroStrategy REST
@@ -76,5 +83,5 @@ conn = Connection(BASE_URL, MSTR_USERNAME, MSTR_PASSWORD, project_id=PROJECT_ID,
 
 # User can also specify username and password in proxies parameter to use HTTP
 # Basic Auth:
-proxies = {'http': 'https://<username>:<password>@<ip_address>:<port>/'}
+proxies = {'http': PROXIES_HTTP_VALUE_USERNAME_AND_PASSWORD}
 conn = Connection(BASE_URL, MSTR_USERNAME, MSTR_PASSWORD, project_id=PROJECT_ID, proxies=proxies)

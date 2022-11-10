@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from enum import auto
-from typing import List, Optional, TYPE_CHECKING, Union
+from typing import Optional, TYPE_CHECKING, Union
 
 from mstrio.utils.enum_helper import AutoName
 from mstrio.utils.helper import Dictable, exception_handler
@@ -206,7 +206,7 @@ class PhysicalTableType(AutoName):
 
 
 @dataclass(eq=False)
-class SchemaObjectReference(Dictable):  # noqa
+class SchemaObjectReference(Dictable):
     """Information about an object referenced within the specification
     of another object. An object reference typically contains only enough
     fields to uniquely identify the referenced objects.
@@ -219,7 +219,6 @@ class SchemaObjectReference(Dictable):  # noqa
         is_embedded: if true indicates that the target object of this reference
             is embedded within this object, bool
     """
-    _DELETE_NONE_VALUES_RECURSION = False
 
     _FROM_DICT_MAP = {'sub_type': ObjectSubType}
 
@@ -284,8 +283,6 @@ class DataType(Dictable):
         in the representation
     """
 
-    _DELETE_NONE_VALUES_RECURSION = False
-
     class Type(AutoName):
         """String literal used to identify the gross data type of an actual
         or proposed column in a database."""
@@ -338,8 +335,6 @@ class FormReference(Dictable):
             name: name of the form
     """
 
-    _DELETE_NONE_VALUES_RECURSION = False
-
     def __init__(self, id: str = None, name: str = None) -> None:
         if id is None and name is None:
             exception_handler("Provide either `id` or `name` of a form object.", AttributeError)
@@ -355,8 +350,6 @@ class AttributeDisplays(Dictable):
         browse_displays: list of an AttributeSorts for browse displays
     """
 
-    _DELETE_NONE_VALUES_RECURSION = False
-
     _FROM_DICT_MAP = {
         "report_displays": (
             lambda source,
@@ -369,7 +362,7 @@ class AttributeDisplays(Dictable):
     }
 
     def __init__(
-        self, report_displays: List[FormReference], browse_displays: List[FormReference]
+        self, report_displays: list[FormReference], browse_displays: list[FormReference]
     ) -> None:
         self.report_displays = report_displays
         self.browse_displays = browse_displays
@@ -382,7 +375,6 @@ class AttributeSort(Dictable):
         form: A form reference
         ascending: whether the sort is in ascending or descending order
     """
-    _DELETE_NONE_VALUES_RECURSION = False
 
     _FROM_DICT_MAP = {"form": FormReference.from_dict}
 
@@ -398,7 +390,6 @@ class AttributeSorts(Dictable):
         report_sorts: list of an AttributeSorts for report sorts
         browse_sorts: list of an AttributeSorts for browse sorts
     """
-    _DELETE_NONE_VALUES_RECURSION = False
 
     _FROM_DICT_MAP = {
         "report_sorts": (
@@ -412,7 +403,9 @@ class AttributeSorts(Dictable):
     }
 
     def __init__(
-        self, report_sorts: List[AttributeSort], browse_sorts: List[AttributeSort]
+        self,
+        report_sorts: Optional[list[AttributeSort]] = None,
+        browse_sorts: Optional[list[AttributeSort]] = None
     ) -> None:
         self.report_sorts = report_sorts
         self.browse_sorts = browse_sorts
@@ -426,7 +419,7 @@ class TableColumn(Dictable):
        actually appear in any data source but which the engine should
        create if it needs to make a column to contain data for some higher
        level construct (e.g. a fact, an attribute form etc.)."""
-    _DELETE_NONE_VALUES_RECURSION = False
+
     _FROM_DICT_MAP = {"data_type": DataType, "sub_type": ObjectSubType}
     data_type: DataType
     column_name: Optional[str] = None  # When retrieved as part of a logical tab

@@ -1,10 +1,10 @@
 import json
-from typing import List, Optional, TYPE_CHECKING, Union
+from typing import Optional, TYPE_CHECKING, Union
 from unittest.mock import Mock
+from urllib.parse import quote, urlencode
 
 from packaging import version
 from requests.adapters import Response
-from requests.sessions import Request
 
 from mstrio.api.exceptions import MstrException, PartialSuccess, Success
 from mstrio.utils.error_handlers import bulk_operation_response_handler, ErrorHandler
@@ -52,7 +52,6 @@ def get_projects_async(
     connection: "Connection",
     offset: int = 0,
     limit: int = -1,
-    error_msg: str = None
 ):
     """Get list of all projects from metadata asynchronously.
     Args:
@@ -112,7 +111,7 @@ def update_node_properties(
     project_id: str,
     body: dict,
     error_msg: str = None,
-    whitelist: Optional[List[tuple]] = None
+    whitelist: Optional[list[tuple]] = None
 ):
     """Update properties such as project status for a specific project for
     respective cluster node. You obtain cluster node name and project id from
@@ -155,7 +154,7 @@ def add_node(
     connection: "Connection",
     node_name: str,
     error_msg: str = None,
-    whitelist: Optional[List[tuple]] = None
+    whitelist: Optional[list[tuple]] = None
 ):
     """Add a node to the connected Intelligence Server cluster. The node must
     meet I-Server clustering requirements. If the node is part of a multi-node
@@ -190,7 +189,7 @@ def remove_node(
     connection: "Connection",
     node_name: str,
     error_msg: str = None,
-    whitelist: Optional[List[tuple]] = None
+    whitelist: Optional[list[tuple]] = None
 ):
     """Remove a node from the connected Intelligence Server cluster. After a
     successful removal, some existing authorization tokens may become
@@ -306,7 +305,7 @@ def delete_user_connection(
 
 
 def delete_user_connection_async(
-    future_session: "FuturesSession", connection: "Connection", id: str, error_msg: str = None
+    future_session: "FuturesSession", connection: "Connection", id: str
 ):
     """Disconnect a user connection on specific intelligence server node.
 
@@ -322,7 +321,7 @@ def delete_user_connection_async(
     return future
 
 
-def delete_user_connections(connection: "Connection", ids: List[str]):
+def delete_user_connections(connection: "Connection", ids: list[str]):
     """Delete user connections on specific intelligence server node.
 
     Args:
@@ -582,7 +581,7 @@ def get_job(
     connection: "Connection",
     id: str,
     node_name: str = None,
-    fields: List[str] = None,
+    fields: list[str] = None,
     error_msg: str = None
 ):
     """Get job information.
@@ -611,8 +610,9 @@ def get_job(
 
     with FuturesSessionWithRenewal(connection=connection, max_workers=8) as session:
         futures = [
-            get_jobs_async(future_session=session, connection=connection, node_name=node)
-            for node in node_names
+            get_jobs_async(
+                future_session=session, connection=connection, node_name=node, fields=fields
+            ) for node in node_names
         ]
         jobs = []
         for f in futures:
@@ -640,7 +640,7 @@ def get_job(
 
 
 @ErrorHandler(err_msg="Error getting job {id}.")
-def get_job_v2(connection: "Connection", id: str, fields: List[str] = None, error_msg: str = None):
+def get_job_v2(connection: "Connection", id: str, fields: list[str] = None, error_msg: str = None):
     """Get job information.
 
     Args:
@@ -670,7 +670,7 @@ def get_jobs(
     user_full_name: str = None,
     object_id: str = None,
     sort_by: str = None,
-    fields: List[str] = None,
+    fields: list[str] = None,
     error_msg: str = None
 ) -> Response:
     """Get list of a jobs.
@@ -678,7 +678,7 @@ def get_jobs(
     Args:
         connection(object): MicroStrategy connection object returned by
             `connection.Connection()`.
-        node_name(str, optional): Node name,
+        node_name(str): Node name,
         project_id(str, optional): Project id ,
         status(str, optional): Job status to filter by,
         job_type(str, optional): Job type to filter by,
@@ -700,12 +700,14 @@ def get_jobs(
         'objectId': object_id,
         'sortBy': sort_by,
         'fields': ",".join(fields) if fields else None,
-    },
+    }
 
-    request = Request('GET', url=f'{connection.base_url}/api/monitors/jobs', params=params)
-    prepared_request = request.prepare()
-    url = prepared_request.url.replace("+", "%20")  # REST will not work with +
-    return connection.get(url)
+    params_delete_none = delete_none_values(params, recursion=True)
+    params_encoded = urlencode(params_delete_none, True, quote_via=quote)
+    return connection.get(
+        url=f'{connection.base_url}/api/monitors/jobs',
+        params=params_encoded,
+    )
 
 
 def get_jobs_async(
@@ -718,8 +720,7 @@ def get_jobs_async(
     user_full_name: str = None,
     object_id: str = None,
     sort_by: str = None,
-    fields: List[str] = None,
-    error_msg: str = None
+    fields: list[str] = None
 ) -> Response:
     """Get list of a jobs asynchronously.
 
@@ -728,7 +729,7 @@ def get_jobs_async(
             Server asynchronously
         connection(object): MicroStrategy connection object returned by
             `connection.Connection()`.
-        node_name(str, optional): Node name,
+        node_name(str): Node name,
         project_id(str, optional): Project id,
         status(str, optional): Job status to filter by,
         job_type(str, optional): Job type to filter by,
@@ -752,31 +753,32 @@ def get_jobs_async(
         'fields': ",".join(fields) if fields else None,
     }
 
-    request = Request('GET', url=f'{connection.base_url}/api/monitors/jobs', params=params)
-    prepared_request = request.prepare()
-    url = prepared_request.url.replace("+", "%20")  # REST will not work with +
-    return future_session.get(url)
+    params_delete_none = delete_none_values(params, recursion=True)
+    params_encoded = urlencode(params_delete_none, True, quote_via=quote)
+    return future_session.get(
+        url=f'{connection.base_url}/api/monitors/jobs', params=params_encoded
+    )
 
 
 @ErrorHandler(err_msg="Error getting jobs list")
 def get_jobs_v2(
     connection: "Connection",
     node_name: str,
-    user: Union[List[str], str] = None,
+    user: Union[list[str], str] = None,
     description: str = None,
-    type: Union[List[str], str] = None,
-    status: Union[List[str], str] = None,
-    object_id: Optional[List[str]] = None,
-    object_type: Union[List[str], str] = None,
-    project_id: Union[List[str], str] = None,
-    project_name: Union[List[str], str] = None,
-    pu_name: Union[List[str], str] = None,
-    subscription_type: Union[List[str], str] = None,
-    subscription_recipient: Union[List[str], str] = None,
+    type: Union[list[str], str] = None,
+    status: Union[list[str], str] = None,
+    object_id: Optional[list[str]] = None,
+    object_type: Union[list[str], str] = None,
+    project_id: Union[list[str], str] = None,
+    project_name: Union[list[str], str] = None,
+    pu_name: Union[list[str], str] = None,
+    subscription_type: Union[list[str], str] = None,
+    subscription_recipient: Union[list[str], str] = None,
     memory_usage: str = None,
     elapsed_time: str = None,
     sort_by: str = None,
-    fields: List[str] = None,
+    fields: list[str] = None,
     error_msg: str = None
 ):
     """Get list of a jobs.
@@ -784,7 +786,7 @@ def get_jobs_v2(
     Args:
         connection(object): MicroStrategy connection object returned by
             `connection.Connection()`.
-        node_name(str, optional): Node name,
+        node_name(str): Node name,
         user(str, optional): Field to filter on job owner's full name (exact
             match),
         description(str, optional): Field to filter on job description (partial
@@ -843,32 +845,33 @@ def get_jobs_v2(
         'fields': ",".join(fields) if fields else None,
     }
 
-    request = Request('GET', url=f'{connection.base_url}/api/v2/monitors/jobs', params=params)
-    prepared_request = request.prepare()
-    url = prepared_request.url.replace("+", "%20")  # REST will not work with +
-    return connection.get(url)
+    params_delete_none = delete_none_values(params, recursion=True)
+    params_encoded = urlencode(params_delete_none, True, quote_via=quote)
+    return connection.get(
+        url=f'{connection.base_url}/api/v2/monitors/jobs',
+        params=params_encoded,
+    )
 
 
 def get_jobs_v2_async(
     future_session: "FuturesSession",
     connection: "Connection",
     node_name: str,
-    user: Union[List[str], str] = None,
+    user: Union[list[str], str] = None,
     description: str = None,
-    type: Union[List[str], str] = None,
-    status: Union[List[str], str] = None,
-    object_id: Optional[List[str]] = None,
-    object_type: Union[List[str], str] = None,
-    project_id: Union[List[str], str] = None,
-    project_name: Union[List[str], str] = None,
-    pu_name: Union[List[str], str] = None,
-    subscription_type: Union[List[str], str] = None,
-    subscription_recipient: Union[List[str], str] = None,
+    type: Union[list[str], str] = None,
+    status: Union[list[str], str] = None,
+    object_id: Optional[list[str]] = None,
+    object_type: Union[list[str], str] = None,
+    project_id: Union[list[str], str] = None,
+    project_name: Union[list[str], str] = None,
+    pu_name: Union[list[str], str] = None,
+    subscription_type: Union[list[str], str] = None,
+    subscription_recipient: Union[list[str], str] = None,
     memory_usage: str = None,
     elapsed_time: str = None,
     sort_by: str = None,
-    fields: List[str] = None,
-    error_msg: str = None
+    fields: list[str] = None
 ) -> Response:
     """Get list of a jobs asynchronously.
 
@@ -877,7 +880,7 @@ def get_jobs_v2_async(
             Server asynchronously
         connection(object): MicroStrategy connection object returned by
             `connection.Connection()`.
-        node_name(str, optional): Node name,
+        node_name(str): Node name,
         user(str, optional): Field to filter on job owner's full name (exact
             match),
         description(str, optional): Field to filter on job description (partial
@@ -937,14 +940,15 @@ def get_jobs_v2_async(
         'fields': ",".join(fields) if fields else None,
     }
 
-    request = Request('GET', url=f'{connection.base_url}/api/v2/monitors/jobs', params=params)
-    prepared_request = request.prepare()
-    url = prepared_request.url.replace("+", "%20")  # REST will not work with +
-    return future_session.get(url)
+    params_delete_none = delete_none_values(params, recursion=True)
+    params_encoded = urlencode(params_delete_none, True, quote_via=quote)
+    return future_session.get(
+        url=f'{connection.base_url}/api/v2/monitors/jobs', params=params_encoded
+    )
 
 
 @ErrorHandler(err_msg="Error killing job {id}")
-def cancel_job(connection: "Connection", id: str, fields: List[str] = None, error_msg: str = None):
+def cancel_job(connection: "Connection", id: str, fields: list[str] = None, error_msg: str = None):
     """Cancel a job specified by `id`. Use cancel_job_v1 if I-Server version
     is 11.3.2 or cancel_job_v2 otherwise.
 
@@ -966,7 +970,7 @@ def cancel_job(connection: "Connection", id: str, fields: List[str] = None, erro
 
 @ErrorHandler(err_msg="Error killing job {id}")
 def cancel_job_v1(
-    connection: "Connection", id: str, fields: List[str] = None, error_msg: str = None
+    connection: "Connection", id: str, fields: list[str] = None, error_msg: str = None
 ):
     """Cancel a job specified by `id`.
 
@@ -987,7 +991,7 @@ def cancel_job_v1(
 
 @ErrorHandler(err_msg="Error killing job {id}")
 def cancel_job_v2(
-    connection: "Connection", id: str, fields: List[str] = None, error_msg: str = None
+    connection: "Connection", id: str, fields: list[str] = None, error_msg: str = None
 ):
     """Cancel a job specified by `id`.
 
@@ -1006,9 +1010,8 @@ def cancel_job_v2(
     return connection.delete(url=f'{connection.base_url}/api/v2/monitors/jobs/{id}', params=params)
 
 
-def cancel_jobs(
-    connection: "Connection", ids: List[str], fields: List[str] = None, error_msg: str = None
-) -> Union[Success, PartialSuccess, MstrException]:
+def cancel_jobs(connection: "Connection", ids: list[str],
+                fields: list[str] = None) -> Union[Success, PartialSuccess, MstrException]:
     """Cancel jobs specified by `ids`. Use cancel_jobs_v1 if I-Server version
     is 11.3.2 or cancel_jobs_v2 otherwise.
 
@@ -1018,23 +1021,20 @@ def cancel_jobs(
         ids(List[str]): IDs of the jobs
         fields(list, optional): Comma separated top-level field whitelist. This
             allows client to selectively retrieve part of the response model.
-        error_msg(str, optional): Customized error message.
     Returns:
         Success: object if all jobs were killed
         PartialSuccess: if not all jobs were killed
         MstrException: otherwise
     """
     if version.parse(connection.iserver_version) == version.parse(ISERVER_VERSION_11_3_2):
-        response = cancel_jobs_v1(connection, ids, fields, error_msg)
+        response = cancel_jobs_v1(connection, ids, fields)
     else:
-        response = cancel_jobs_v2(connection, ids, fields, error_msg)
+        response = cancel_jobs_v2(connection, ids, fields)
 
     return bulk_operation_response_handler(response, "jobCancellationStatus")
 
 
-def cancel_jobs_v1(
-    connection: "Connection", ids: List[str], fields: List[str] = None, error_msg: str = None
-):
+def cancel_jobs_v1(connection: "Connection", ids: list[str], fields: list[str] = None):
     """Cancel jobs specified by `ids`.
 
     Args:
@@ -1043,7 +1043,6 @@ def cancel_jobs_v1(
         ids(List[str]): IDs of the jobs
         fields(list, optional): Comma separated top-level field whitelist. This
             allows client to selectively retrieve part of the response model.
-        error_msg(str, optional): Customized error message.
     Returns:
         HTTP response object returned by the MicroStrategy REST server
     """
@@ -1058,9 +1057,7 @@ def cancel_jobs_v1(
         raise ValueError("No ids have been passed.")
 
 
-def cancel_jobs_v2(
-    connection: "Connection", ids: List[str], fields: List[str] = None, error_msg: str = None
-):
+def cancel_jobs_v2(connection: "Connection", ids: list[str], fields: list[str] = None):
     """Cancel jobs specified by `ids`.
 
     Args:
@@ -1069,7 +1066,6 @@ def cancel_jobs_v2(
         ids(List[str]): IDs of the jobs
         fields(list, optional): Comma separated top-level field whitelist. This
             allows client to selectively retrieve part of the response model.
-        error_msg(str, optional): Customized error message.
     Returns:
         HTTP response object returned by the MicroStrategy REST server
     """
@@ -1082,3 +1078,103 @@ def cancel_jobs_v2(
         )
     else:
         raise ValueError("No ids have been passed.")
+
+
+@ErrorHandler(err_msg="Error getting caches")
+def get_contents_caches(
+    connection: "Connection",
+    project_id: str,
+    node: str,
+    offset: int = 0,
+    limit: int = 1000,
+    status: Optional[str] = None,
+    content_type: Optional[str] = None,
+    content_format: Optional[str] = None,
+    size: Optional[str] = None,
+    owner: Optional[str] = None,
+    expiration: Optional[str] = None,
+    last_updated: Optional[str] = None,
+    hit_count: Optional[str] = None,
+    sort_by: Optional[str] = None,
+    fields: Optional[str] = None,
+    error_msg: Optional[str] = None
+) -> Response:
+    """Get cache objects
+
+    Args:
+        connection(object): MicroStrategy connection object returned by
+            `connection.Connection()`,
+        project_id(str): Field to filter on project id (exact
+            match),
+        node(str): Node name,
+        offset(int): Starting point within the collection of returned results.
+            Used to control paging behavior. Default value = 0,
+        limit(int): Maximum number of items returned for a single request.
+            Used to control paging behavior. Maximum and default value: 1000,
+        status(str, optional): Status of the content cache,
+        content_type(str, optional): type of content,
+        content_format(str, optional): Format of the content cache, intended for
+            document and dossier cache,
+        size(str, optional): Size of the content cache (in KB),
+        owner(str, optional): Owner of the content cache. Exact match on the
+            owner's full name,
+        expiration(str, optional): Expiration time of the cache,
+        last_updated(str, optional): Last update of the cache,
+        hit_count(str, optional): Hit count of the cache,
+        sort_by(str, optional): Specify sorting criteria,
+        fields(str, optional): A whitelist of top-level fields separated by
+            commas. Allow the client to selectively retrieve fields in the
+            response.
+        error_msg (string, optional): Custom Error Message for Error Handling
+    Returns:
+        HTTP response object. Expected status 200.
+    """
+    params = {
+        'projectId': project_id,
+        'clusterNode': node,
+        'offset': offset,
+        'limit': limit,
+        'status': status,
+        'type': content_type,
+        'format': content_format,
+        'size': size,
+        'owner': owner,
+        'expiration': expiration,
+        'lastUpdated': last_updated,
+        'hitCount': hit_count,
+        'sortBy': sort_by,
+        'fields': fields
+    }
+    params_delete_none = delete_none_values(params, recursion=True)
+    params_encoded = urlencode(params_delete_none, True, quote_via=quote)
+    return connection.get(
+        url=f'{connection.base_url}/api/monitors/caches/contents',
+        params=params_encoded,
+    )
+
+
+@ErrorHandler(err_msg='Error updating caches')
+def update_contents_caches(
+    connection: "Connection", node: str, body: dict, fields: Optional[str] = None
+) -> Response:
+    """Alter multiple content cache statuses or remove content caches entirely
+        in multiple projects at specific node.
+
+    Args:
+        connection(object): MicroStrategy connection object returned by
+            `connection.Connection()`,
+        node(str): Node name,
+        body(dict): List of contents
+        fields(list, optional): Comma separated top-level field whitelist. This
+            allows client to selectively retrieve part of the response model.
+
+    Returns:
+        HTTP response object. Expected status 200.
+    """
+    return connection.patch(
+        url=f'{connection.base_url}/api/v2/monitors/caches/contents',
+        params={
+            'clusterNode': node, 'fields': fields
+        },
+        json=body
+    )

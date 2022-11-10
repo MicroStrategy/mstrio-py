@@ -67,7 +67,7 @@ class ScheduleTime(Dictable):
 
     class Execution(Dictable):
         """Object representation of the execution information of the schedule"""
-        _DELETE_NONE_VALUES_RECURSION = False
+
         _FROM_DICT_MAP = {
             'execution_pattern': ScheduleEnums.ExecutionPattern,
         }
@@ -128,7 +128,7 @@ class ScheduleTime(Dictable):
     class Daily(Dictable):
         """Object representation of daily recurrence information of the schedule
         """
-        _DELETE_NONE_VALUES_RECURSION = False
+
         _FROM_DICT_MAP = {'daily_pattern': ScheduleEnums.DailyPattern}
 
         def __init__(
@@ -156,7 +156,7 @@ class ScheduleTime(Dictable):
     class Weekly(Dictable):
         """Object representation of weekly recurrence information of the
         schedule"""
-        _DELETE_NONE_VALUES_RECURSION = False
+
         _FROM_DICT_MAP = {'days_of_week': [ScheduleEnums.DaysOfWeek]}
 
         def __init__(
@@ -191,7 +191,7 @@ class ScheduleTime(Dictable):
     class Monthly(Dictable):
         """Object representation of monthly recurrence information of the
         schedule"""
-        _DELETE_NONE_VALUES_RECURSION = False
+
         _FROM_DICT_MAP = {
             'monthly_pattern': ScheduleEnums.MonthlyPattern,
             'week_offset': ScheduleEnums.WeekOffset,
@@ -265,7 +265,7 @@ class ScheduleTime(Dictable):
     class Yearly(Dictable):
         """Object representation of yearly recurrence information of the
         schedule"""
-        _DELETE_NONE_VALUES_RECURSION = False
+
         _FROM_DICT_MAP = {
             'yearly_pattern': ScheduleEnums.YearlyPattern,
             'week_offset': ScheduleEnums.WeekOffset,
@@ -318,7 +318,6 @@ class ScheduleTime(Dictable):
                     day_of_week, ScheduleEnums.DaysOfWeek
                 ) else ScheduleEnums.DaysOfWeek(day_of_week)
 
-    _DELETE_NONE_VALUES_RECURSION = False
     _FROM_DICT_MAP = {
         'recurrence_pattern': ScheduleEnums.RecurrencePattern,
         'days_of_week': ScheduleEnums.DaysOfWeek,
@@ -605,11 +604,15 @@ class ScheduleTime(Dictable):
                 if yearly_pattern is DAY_OF_WEEK. Possible values are FIRST,
                 SECOND, THIRD, FOURTH, LAST. Defaults to None.
             day_of_week (ScheduleEnums.DaysOfWeek, optional):
-                The days of week of weekly schedule or, The day of week in month
-                of monthly schedule, if monthly_pattern is DAY_OF_WEEK or,
-                The day of week in year of yearly schedule, if yearly_pattern is
-                DAY_OF_WEEK. Possible values are: MONDAY, TUESDAY, WEDNESDAY,
-                THURSDAY, FRIDAY, SATURDAY, SUNDAY. Defaults to None.
+                The day of week in month of monthly schedule, if monthly_pattern
+                is DAY_OF_WEEK or, The day of week in year of yearly schedule,
+                if yearly_pattern is DAY_OF_WEEK. Possible values are: MONDAY,
+                TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY.
+                Defaults to None.
+            days_of_week (List[ScheduleEnums.DaysOfWeek], optional):
+                The days of week of weekly schedule. Possible values are:
+                MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY.
+                Defaults to None.
             weekday_offset (ScheduleEnums.WeekdayOffset, optional):
                 The weekday offset in month of monthly schedule, if
                 monthly_pattern is WEEKDAY. Defaults to None.
@@ -625,7 +628,7 @@ class ScheduleTime(Dictable):
                 The yearly recurrence pattern of the schedule. Possible values
                 are DAY, DAY_OF_WEEK. Defaults to None.
         """
-        # todo days of week vs day of week
+
         if execution_pattern:
             execution_pattern = execution_pattern if isinstance(
                 execution_pattern, ScheduleEnums.ExecutionPattern

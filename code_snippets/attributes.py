@@ -3,7 +3,7 @@ and expressions. This script will not work without replacing parameters
 with real values. Its basic goal is to present what can be done with
 this module and to ease its usage.
 """
-from mstrio.connection import Connection, get_connection
+from mstrio.connection import get_connection
 from mstrio.modeling.schema import (
     Attribute,
     AttributeDisplays,
@@ -34,16 +34,19 @@ from mstrio.modeling.expression import (
 from workflows.get_all_columns_in_table import list_table_columns
 
 # Following variables are defining basic attributes
-PROJECT_NAME = '<Project_name>'  # Insert name of project here
-ATTRIBUTE_NAME = '<Attribute_name>'  # Insert name of edited attribute here
-ATTRIBUTE_ID = '<Attribute_ID>'  # Insert ID of edited attribute here
-ATTRIBUTE_NEW_NAME = '<Attribute_name>'  # Insert new name of edited attribute here
-ATTRIBUTE_DESCRIPTION = '<Attribute_desc>'  # Insert new description of edited attribute here
-TABLE_NAME = '<Table_name>'  # Insert table name here
-ATTRIBUTE_FORM_NAME = '<Attribute_name>'  # Insert attribute form name here
-ATTRIBUTE_FORM_ALTERED_NAME = '<Attribute_name>'  # Insert altered attribute form name here
-ATTRIBUTE_FORM_DESCRIPTION = '<Attribute_desc>'  # Insert altered attribute form description here
-FOLDER_ID = '<Folder_ID>'  # Insert folder ID here
+PROJECT_NAME = $project_name  # Insert name of project here
+ATTRIBUTE_NAME = $attribute_name # Insert name of edited attribute here
+ATTRIBUTE_ID = $attribute_id  # Insert ID of edited attribute here
+ATTRIBUTE_NEW_NAME = $attribute_new_name  # Insert new name of edited attribute here
+ATTRIBUTE_DESCRIPTION = $attribute_description  # Insert new description of edited attribute here
+TABLE_NAME = $table_name  # Insert table name here
+ATTRIBUTE_FORM_NAME = $attribute_form_name  # Insert attribute form name here
+ATTRIBUTE_FORM_ALTERED_NAME = $attribute_form_altered_name  # Insert altered attribute form name here
+ATTRIBUTE_FORM_DESCRIPTION = $attribute_form_description  # Insert altered attribute form description here
+FOLDER_ID = $folder_id  # Insert folder ID here
+
+# For every object we want to reference using a SchemaObjectReference we need
+# to provide an Object ID for. For the script to work correctly all occurences of `'<Object_ID>'` need to be replaced with IDs specific to the object used. In the future all of those will be made as separate variables.
 
 conn = get_connection(workstationData, PROJECT_NAME)
 

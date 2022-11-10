@@ -5,8 +5,8 @@ from typing import Tuple, Union
 
 class AutoName(Enum):
 
-    def _generate_next_value_(name, start, count, last_values):
-        return name.lower()
+    def _generate_next_value_(self, start, count, last_values):
+        return self.lower()
 
     @classmethod
     def has_value(cls, value):
@@ -15,8 +15,8 @@ class AutoName(Enum):
 
 class AutoUpperName(Enum):
 
-    def _generate_next_value_(name, start, count, last_values):
-        return name
+    def _generate_next_value_(self, start, count, last_values):
+        return self
 
 
 def __get_enum_helper(obj, enum: Union[Enum, Tuple[Enum]] = Enum,

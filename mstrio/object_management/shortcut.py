@@ -15,7 +15,7 @@ class ShortcutInfoFlags(IntFlag):
 
 
 class Shortcut(Entity, CopyMixin, MoveMixin):
-    _DELETE_NONE_VALUES_RECURSION = False
+
     _OBJECT_TYPE = ObjectTypes.SHORTCUT_TYPE
     _API_GETTERS = {
         (

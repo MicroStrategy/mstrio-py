@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, Type, Union
+from typing import Optional
 
 from tqdm import tqdm
 
@@ -11,14 +11,17 @@ from mstrio.modeling.schema import ObjectSubType, SchemaObjectReference
 from mstrio.modeling.schema.attribute import Attribute
 from mstrio.modeling.schema.fact import Fact
 from mstrio.modeling.schema.helpers import (
-    PhysicalTableType, TableColumn, TableColumnMergeOption, TablePrefixOption
+    PhysicalTableType,
+    TableColumn,
+    TableColumnMergeOption,
+    TablePrefixOption
 )
 from mstrio.modeling.schema.table.physical_table import PhysicalTable
 from mstrio.object_management import Folder
 from mstrio.object_management.search_operations import full_search
 from mstrio.types import ObjectTypes
 from mstrio.users_and_groups import User
-from mstrio.utils.entity import DeleteMixin, Entity
+from mstrio.utils.entity import DeleteMixin, Entity, MoveMixin
 from mstrio.utils.enum_helper import get_enum, get_enum_val
 from mstrio.utils.helper import (
     delete_none_values,
@@ -71,7 +74,7 @@ def list_logical_tables(
             objects are returned.
 
     Returns:
-        Union[list["LogicalTable"], list[dict]]: A list of LogicalTable objects
+        list["LogicalTable"] | list[dict]: A list of LogicalTable objects
             or dictionaries representing logical tables.
     """
     if any([name, folder_id, folder_name, project_id, project_name]):
@@ -131,7 +134,7 @@ def _full_search_logical_tables(
     project_name: Optional[str] = None,
     limit: Optional[int] = None,
     to_dictionary: bool = False
-) -> Union[list[Type["LogicalTable"]], list[dict]]:
+) -> list[type["LogicalTable"]] | list[dict]:
     """Searches for a logical table in a specified project. You can narrow the
        search result by folder's id or name.
 
@@ -162,7 +165,7 @@ def _full_search_logical_tables(
             - `folder_name` was specified but folder could not be found.
 
     Returns:
-        Union[list[dict], list["LogicalTable"]]: A list of logical tables
+        list[dict] | list["LogicalTable"]: A list of logical tables
             in a given project represented either as objects or dictionaries.
 
     Examples:
@@ -196,7 +199,7 @@ def _full_search_logical_tables(
     logical_tables = full_search(
         connection=connection,
         name=name,
-        project=connection.project_id,
+        project=project_id,
         object_types=ObjectTypes.TABLE,
         root=folder_id,
     )
@@ -214,7 +217,7 @@ def list_changeset_tables(
     limit: Optional[int] = None,
     changeset_id: Optional[str] = None,
     **filters,
-) -> list[Type["LogicalTable"]]:
+) -> list[type["LogicalTable"]]:
     # Changeset must be specified
     if not changeset_id:
         exception_handler(msg="You must specify changeset ID.", exception_type=ValueError)
@@ -240,7 +243,7 @@ def list_changeset_tables(
 
 
 @class_version_handler('11.3.0100')
-class LogicalTable(Entity, DeleteMixin):
+class LogicalTable(Entity, DeleteMixin, MoveMixin):
     """An object representation of a logical table, referred to as Table in
     Command Manager. A logical table describes the higher-level data model
     objects (facts, attributes, etc.) that the architect wishes to use to model
@@ -317,7 +320,6 @@ class LogicalTable(Entity, DeleteMixin):
             representations of a reference to a datasource.
     """
 
-    _DELETE_NONE_VALUES_RECURSION = False
     _OBJECT_TYPE: ObjectTypes = ObjectTypes.TABLE
     _FROM_DICT_MAP: dict = {
         **Entity._FROM_DICT_MAP,
@@ -547,7 +549,7 @@ class LogicalTable(Entity, DeleteMixin):
         check_secondary_data_source_table: Optional[bool] = None,
         column_merge_option: Optional[TableColumnMergeOption] = TableColumnMergeOption.REUSE_ANY,
         table_prefix_option: Optional[TablePrefixOption] = None,
-    ) -> Type["LogicalTable"]:
+    ) -> type["LogicalTable"]:
         """Create a new table in a specific project.
 
         Args:
@@ -722,10 +724,16 @@ class LogicalTable(Entity, DeleteMixin):
                 f"Successfully created table named: '{response['name']}' "
                 f"with ID: '{response['id']}'"
             )
-        return cls.from_dict(source=response, connection=connection)
+
+        # TODO remove when new proper endpoint will be implemented
+        table = cls.from_dict(source=response, connection=connection)
+        if destination_folder:
+            table.move(destination_folder)
+
+        return table
 
     @classmethod
-    def create_alias(cls, connection: "Connection", id: str) -> Type["LogicalTable"]:
+    def create_alias(cls, connection: "Connection", id: str) -> type["LogicalTable"]:
         """Create a new table alias in a specific project.
 
         Args:
@@ -795,8 +803,8 @@ class LogicalTable(Entity, DeleteMixin):
                 Table's data can be from different data sources. Primary data
                 source is the first option for table's data source. Defaults to
                 None.
-            secondary_data_sources (Optional[Union[List[SchemaObjectReference],
-                List[dict]]], optional): MicroStrategy support mapping the table
+            secondary_data_sources (Optional[List[SchemaObjectReference] |
+                List[dict]], optional): MicroStrategy support mapping the table
                 to more than one data source. This attribute is a list of object
                 representations of a reference to a datasource. Defaults to None
             physical_table_object_name (Optional[str], optional): A new name of
@@ -811,7 +819,7 @@ class LogicalTable(Entity, DeleteMixin):
             enclose_sql_in_parentheses(Optional[bool], optional): This encloses
                 the entire SQL that you typed in the sqlStatement field
                 in parentheses when the SQL statement is executed.
-            columns (Optional[Union[List[TableColumn], List[dict]]], optional):
+            columns (Optional[List[TableColumn] | List[dict]], optional):
                 A list of new columns of a physical table mapped to the logical
                 table. Defaults to None.
             folder_id (Optional[str], optional): The ID of a folder to which a
@@ -889,7 +897,7 @@ class LogicalTable(Entity, DeleteMixin):
            depends.
 
         Args:
-            col_merge_option (Union[TableColumnMergeOption, str]): A new
+            col_merge_option (TableColumnMergeOption | str): A new
                 structure for a physical table upon which the logical table
                 depends.
 
@@ -933,7 +941,7 @@ class LogicalTable(Entity, DeleteMixin):
 
         Args:
             connection (Connection): Object representation of MSTR Connection.
-            col_merge_option (Union[TableColumnMergeOption, str]): A new
+            col_merge_option (TableColumnMergeOption | str): A new
                 structure for a physical table upon which the logical table
                 depends.
         """

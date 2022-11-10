@@ -51,7 +51,6 @@ class VersatileDate(Dictable):
     """Base class for classes representing dynamic or static date objects"""
 
     _MODE = None
-    _DELETE_NONE_VALUES_RECURSION = False
 
     @staticmethod
     def dispatch(source, connection: Optional['Connection'] = None) -> Type['VersatileDate']:
@@ -75,7 +74,6 @@ class VersatileDate(Dictable):
 class DateAdjustment(Dictable):
     """Base class for date adjustment objects"""
 
-    _DELETE_NONE_VALUES_RECURSION = False
     pass
 
 
@@ -295,7 +293,6 @@ class VersatileTime(Dictable):
             is dynamic.
     """
 
-    _DELETE_NONE_VALUES_RECURSION = False
     _FROM_DICT_MAP = {
         'hour_mode': HourMode,
         'minute_and_second_mode': MinuteAndSecondMode,
@@ -324,7 +321,6 @@ class DynamicDateTimeStructure(Dictable):
         time: Object that represents either a dynamic time or a static time
     """
 
-    _DELETE_NONE_VALUES_RECURSION = False
     _FROM_DICT_MAP = {
         'type': DynamicDateTimeType,
         'date': VersatileDate.dispatch,

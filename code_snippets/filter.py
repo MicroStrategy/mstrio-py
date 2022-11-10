@@ -11,16 +11,16 @@ from mstrio.modeling import (
 )
 
 # Following variables are defining basic filters
-PROJECT_NAME = "<Project_name>"  # Insert name of project here
-SEARCH_NAME = "<Search_name>"  # Insert part of the filter name to be searched for
-FILTER_ID1 = "<Filter_ID>"  # Insert ID of existing filter here
-FILTER_ID2 = "<Filter_ID>"  # Insert ID of existing filter here
-FILTER_ID3 = "<Filter_ID>"  # Insert ID of existing filter here
-FILTER_NAME = "<Filter_name>"  # Insert name of a new filter to be created
-FILTER_NEW_NAME = "<Filter_name_alter>"  # Insert new name of edited Filter here
-FILTER_NEW_DESC1 = "<Filter_desc>"  # Insert new description of edited filter here
-FILTER_NEW_DESC2 = "<Filter_desc>"  # Insert new description of edited filter here
-FOLDER_ID = "<Folder_ID>"  # Insert folder ID here
+PROJECT_NAME = $project_name  # Insert name of project here
+SEARCH_NAME = $search_name  # Insert part of the filter name to be searched for
+FILTER_ID1 = $filter_id1  # Insert ID of existing filter here
+FILTER_ID2 = $filter_id2  # Insert ID of existing filter here
+FILTER_ID3 = $filter_id3  # Insert ID of existing filter here
+FILTER_NAME = $filter_name  # Insert name of a new filter to be created
+FILTER_NEW_NAME = $filter_new_name  # Insert new name of edited Filter here
+FILTER_NEW_DESC1 = $filter_new_desc1  # Insert new description of edited filter here
+FILTER_NEW_DESC2 = $filter_new_desc2  # Insert new description of edited filter here
+FOLDER_ID = $folder_id  # Insert folder ID here
 
 conn: Connection = get_connection(workstationData, PROJECT_NAME)
 

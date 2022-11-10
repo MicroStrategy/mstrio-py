@@ -8,15 +8,19 @@ ease its usage.
 from mstrio.project_objects import list_olap_cubes, OlapCube
 from mstrio.connection import get_connection
 
-PROJECT_NAME = '<Project_name>'  # Project to connect to
-CUBE_ID = '<Cube_id>'  # id for OlapCube object lookup
+PROJECT_NAME = $project_name  # Project to connect to
+CUBE_ID = $cube_id  # id for OlapCube object lookup
 
 # properties for defining a new OlapCube object
-ATTRIBUTE = {'id': '<Attribute_ID>', 'name': '<Attribute_name>', 'type': 'attribute'}
-METRIC = {'id': '<Metric_ID>', 'name': '<Metric_name>', 'type': 'metric'}
-CUBE_NAME = '<Name_of_OLAP_cube>'
-CUBE_DESCRIPTION = '<Description_of_OLAP_cube>'
-CUBE_FOLDER_ID = '<Folder_id>'
+ATTRIBUTE_ID = $attribute_id
+ATTRIBUTE_NAME = $attribute_name
+ATTRIBUTE = {'id': ATTRIBUTE_ID, 'name': ATTRIBUTE_NAME, 'type': 'attribute'}
+METRIC_ID = $metric_id
+METRIC_NAME = $metric_name
+METRIC = {'id': METRIC_ID, 'name': METRIC_NAME, 'type': 'metric'}
+CUBE_NAME = $cube_name
+CUBE_DESCRIPTION = $cube_description
+CUBE_FOLDER_ID = $cube_folder_id
 
 conn = get_connection(workstationData, project_name=PROJECT_NAME)
 

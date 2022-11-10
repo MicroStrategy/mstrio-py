@@ -12,20 +12,18 @@ from mstrio.users_and_groups import (
     Contact, ContactAddress, ContactDeliveryType, ContactGroup, list_contacts, User
 )
 
-PROJECT_NAME = '<Project_name>'  # Insert project name here
-CONTACT_ID = '<Contact_ID>'  # Insert your contact ID here
-CONTACT_NAME = '<Contact_name>'  # Insert your contact name here
-CONTACT_ADDRESS_NAME = '<Contact_adress_name>'  # Insert your contact address name here
-PHYSICAL_ADDRESS = '<Adress>'  # Insert physical address of created contact here
-DEVICE_ID = '<Device_ID>'  #Insert device used for contact here
-NEW_CONTACT_NAME = '<Contact_name>'  # Insert new contact name here
-CONTACT_DESCRIPTION = '<Contact_desc>'  #Insert  description for new contact here
-CONTACT_NEW_DESCRIPTION = '<Contact_desc>'  #Insert new description for contact here
-
-USER_NAME = '<Username>'  # Insert name of user to link to the contact
-NEW_CONTACT_DESCRIPTION = '<Contact_desc>'  # Description of newly created contact
-
-CONTACT_GROUP_NAME = '<Contact_group_name>'  # Insert name of contact group here
+PROJECT_NAME = $project_name  # Insert project name here
+CONTACT_ID = $contact_id  # Insert your contact ID here
+CONTACT_NAME = $contact_name  # Insert your contact name here
+CONTACT_ADDRESS_NAME = $contact_address_name  # Insert your contact address name here
+PHYSICAL_ADDRESS = $physical_address  # Insert physical address of created contact here
+DEVICE_ID = $device_id  #Insert device used for contact here
+NEW_CONTACT_NAME = $new_contact_name  # Insert new contact name here
+CONTACT_DESCRIPTION = $contact_description  #Insert  description for new contact here
+CONTACT_NEW_DESCRIPTION = $contact_new_description  #Insert new description for contact here
+USERNAME = $username  # Insert name of user to link to the contact
+NEW_CONTACT_DESCRIPTION = $new_contact_description  # Description of newly created contact
+CONTACT_GROUP_NAME = $contact_group_name  # Insert name of contact group here
 
 conn = get_connection(workstationData, project_name=PROJECT_NAME)
 
@@ -65,7 +63,7 @@ contact_address = ContactAddress(
 new_contact = Contact.create(
     connection=conn,
     name=CONTACT_NAME,
-    linked_user=User(conn, name=USER_NAME),
+    linked_user=User(conn, name=USERNAME),
     description=CONTACT_DESCRIPTION,
     enabled=True,
     contact_addresses=[contact_address]

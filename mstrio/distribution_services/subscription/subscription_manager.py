@@ -155,6 +155,7 @@ class SubscriptionManager:
             connection=self.connection,
             project_id=self.project_id,
             to_dictionary=to_dictionary,
+            limit=limit,
             **filters
         )
 
@@ -227,7 +228,7 @@ class SubscriptionManager:
                 else:
                     msg = (
                         f"Subscription '{subscription.name}' with ID '{subscription.id}' "
-                        "could not be executed. Delivery mode '{subscription.delivery['mode']}'"
+                        f"could not be executed. Delivery mode '{subscription.delivery['mode']}'"
                         " is not supported."
                     )
                     helper.exception_handler(msg, UserWarning)

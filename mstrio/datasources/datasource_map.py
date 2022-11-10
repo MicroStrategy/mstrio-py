@@ -42,7 +42,6 @@ class Locale(Entity):
         acl: Object access control list
     """
 
-    _DELETE_NONE_VALUES_RECURSION = False
     _OBJECT_TYPE = ObjectTypes.LOCALE
     _API_GETTERS = {
         (
@@ -272,7 +271,6 @@ class DatasourceMap(EntityBase, DeleteMixin):
             will be used.
     """
 
-    _DELETE_NONE_VALUES_RECURSION = False
     _API_GETTERS: dict[Union[str, tuple], Callable] = {
         (
             'id',
@@ -528,9 +526,6 @@ class DatasourceMap(EntityBase, DeleteMixin):
         return cls.from_dict(
             source=helper.camel_to_snake(response_data), connection=connection
         )
-
-    # TODO: improve to/from dict methods to allow renaming
-    # on _FROM_DICT_MAP level.
 
     @staticmethod
     def __translate_names(name: str):

@@ -52,7 +52,7 @@ class Event(Entity, DeleteMixin):
         id: Event ID
         description: Event descriptions
     """
-    _DELETE_NONE_VALUES_RECURSION = False
+
     _PATCH_PATH_TYPES = {'name': str, 'description': str}
     _OBJECT_TYPE = ObjectTypes.SCHEDULE_EVENT
     _API_GETTERS = {

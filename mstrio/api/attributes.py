@@ -1,16 +1,14 @@
 from typing import List, Optional
 
 from mstrio.connection import Connection
-from mstrio.utils.api_helpers import changeset_decorator, unpack_information
+from mstrio.utils.api_helpers import changeset_manager, unpack_information
 from mstrio.utils.error_handlers import ErrorHandler
 
 
-@changeset_decorator
 @unpack_information
 @ErrorHandler(err_msg='Error creating an attribute')
 def create_attribute(
     connection: Connection,
-    changeset_id: str,
     body: dict,
     show_expression_as: Optional[List[str]] = None,
     show_potential_tables: Optional[str] = None,
@@ -22,7 +20,6 @@ def create_attribute(
 
     Args:
         connection: MicroStrategy REST API connection object
-        changeset_id: ID of a changeset
         body: Attribute creation data
         show_expession_as: Specifies the format in which the expressions are
            returned in response
@@ -45,17 +42,18 @@ def create_attribute(
     Return:
         HTTP response object. Expected status: 201
     """
-    return connection.post(
-        url=f'{connection.base_url}/api/model/attributes',
-        headers={'X-MSTR-MS-Changeset': changeset_id},
-        params={
-            'showExpressionAs': show_expression_as,
-            'showPotentialTables': show_potential_tables,
-            'showFields': show_fields,
-            'fields': fields
-        },
-        json=body
-    )
+    with changeset_manager(connection) as changeset_id:
+        return connection.post(
+            url=f'{connection.base_url}/api/model/attributes',
+            headers={'X-MSTR-MS-Changeset': changeset_id},
+            params={
+                'showExpressionAs': show_expression_as,
+                'showPotentialTables': show_potential_tables,
+                'showFields': show_fields,
+                'fields': fields
+            },
+            json=body
+        )
 
 
 @unpack_information
@@ -109,13 +107,11 @@ def get_attribute(
     )
 
 
-@changeset_decorator
 @unpack_information
 @ErrorHandler(err_msg='Error updating attribute with ID: {id}')
 def update_attribute(
     connection: Connection,
     id: str,
-    changeset_id: str,
     body: dict,
     show_expression_as: Optional[List[str]] = None,
     show_potential_tables: Optional[str] = None,
@@ -130,9 +126,8 @@ def update_attribute(
     Args:
         connection: MicroStrategy REST API connection object
         id: ID of an attribute
-        changeset_id: ID of a changeset
         body: Attribute update data
-        show_expession_as: Specifies the format in which the expressions
+        show_expression_as: Specifies the format in which the expressions
            are returned in response.
            Available values: 'tokens', 'tree'
            If omitted, the expression is returned in 'text' format
@@ -155,15 +150,16 @@ def update_attribute(
     Return:
         HTTP response object. Expected status: 200
     """
-    return connection.patch(
-        url=f'{connection.base_url}/api/model/attributes/{id}',
-        headers={'X-MSTR-MS-Changeset': changeset_id},
-        params={
-            'showExpressionAs': show_expression_as,
-            'showPotentialTables': show_potential_tables,
-            'showFields': show_fields,
-            'fields': fields,
-            'removeInvalidFields': remove_invalid_fields
-        },
-        json=body
-    )
+    with changeset_manager(connection) as changeset_id:
+        return connection.patch(
+            url=f'{connection.base_url}/api/model/attributes/{id}',
+            headers={'X-MSTR-MS-Changeset': changeset_id},
+            params={
+                'showExpressionAs': show_expression_as,
+                'showPotentialTables': show_potential_tables,
+                'showFields': show_fields,
+                'fields': fields,
+                'removeInvalidFields': remove_invalid_fields
+            },
+            json=body
+        )

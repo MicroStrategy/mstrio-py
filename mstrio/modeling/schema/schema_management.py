@@ -35,7 +35,6 @@ class SchemaLockStatus(Dictable):
     """An object that contains all of the information about the lock status of
     the schema. If the schema is not locked then properties of the lock are not
     provided."""
-    _DELETE_NONE_VALUES_RECURSION = False
 
     _FROM_DICT_MAP = {
         'lock_type': SchemaLockType,
@@ -105,7 +104,6 @@ class SchemaTaskStatus(AutoName):
 class SchemaTaskError(Dictable):
     """Representation of properties used to report an error related to schema
     task."""
-    _DELETE_NONE_VALUES_RECURSION = False
 
     def __init__(self, code: str, message: str, additional_properties: Optional[dict] = None):
         """Initialize task error.
@@ -123,7 +121,6 @@ class SchemaTaskError(Dictable):
 
 class SchemaTask(Dictable):
     """Detailed information about a task which is performed on the schema."""
-    _DELETE_NONE_VALUES_RECURSION = False
 
     _FROM_DICT_MAP = {
         'status': SchemaTaskStatus,

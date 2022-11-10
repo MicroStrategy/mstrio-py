@@ -28,7 +28,6 @@ def _wiplevel_error(level):
     raise ValueError(f'Unrecognised WipLevel {level}.')
 
 
-# TODO: Discuss exact strings with UX.
 message_templates = {
     WipLevels.PREVIEW: (
         "In a current version, {}is available as "

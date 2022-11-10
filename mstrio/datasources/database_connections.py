@@ -96,7 +96,6 @@ class DatabaseConnections:
                and messages from the I-Server
             - in case of error it returns None
         """
-        user_input = 'N'
         if not force:
             user_input = input(
                 "Are you sure you want to disconnect all database connections? [Y/N]: "

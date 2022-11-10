@@ -244,6 +244,7 @@ class Transformation(Entity, MoveMixin, DeleteMixin):
         return properties
 
     @classmethod
+    @method_version_handler('11.3.0500')
     def create(
         cls,
         connection: 'Connection',
@@ -332,8 +333,8 @@ class Transformation(Entity, MoveMixin, DeleteMixin):
             mapping_type: transformation's mapping type
             description: transformation's description
         """
-        if name is None:
-            name = self.name
+
+        name = name or self.name
         properties = filter_params_for_func(self.alter, locals(), exclude=['self'])
         self._alter_properties(**properties)
 

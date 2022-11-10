@@ -1,7 +1,7 @@
 from enum import Enum, IntEnum
 import logging
 import time
-from typing import List, Optional, Union
+from typing import Optional, Union
 
 from pandas import DataFrame, Series
 from tqdm import tqdm
@@ -13,6 +13,7 @@ from mstrio.utils.entity import Entity, ObjectTypes
 import mstrio.utils.helper as helper
 from mstrio.utils.settings.base_settings import BaseSettings
 from mstrio.utils.version_helper import method_version_handler
+from mstrio.utils.wip import wip
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +58,7 @@ class IdleMode(Enum):
     PARTIAL = "full_idle"
 
 
-def compare_project_settings(projects: List["Project"], show_diff_only: bool = False) -> DataFrame:
+def compare_project_settings(projects: list["Project"], show_diff_only: bool = False) -> DataFrame:
     """Compares settings of project objects.
 
     Args:
@@ -124,7 +125,6 @@ class Project(Entity):
     }
     _FROM_DICT_MAP = {**Entity._FROM_DICT_MAP, 'status': ProjectStatus}
     _STATUS_PATH = "/status"
-    _DELETE_NONE_VALUES_RECURSION = False
 
     def __init__(
         self, connection: Connection, name: Optional[str] = None, id: Optional[str] = None
@@ -217,7 +217,7 @@ class Project(Entity):
         to_dictionary: bool = False,
         limit: Optional[int] = None,
         **filters
-    ) -> Union[List["Project"], List[dict]]:
+    ) -> Union[list["Project"], list[dict]]:
         msg = "Error getting information for a set of Projects."
         objects = helper.fetch_objects_async(
             connection,
@@ -225,7 +225,7 @@ class Project(Entity):
             monitors.get_projects_async,
             dict_unpack_value='projects',
             limit=limit,
-            chunk_size=50,
+            chunk_size=1000,
             error_msg=msg,
             filters=filters
         )
@@ -248,7 +248,7 @@ class Project(Entity):
 
     @classmethod
     def _list_project_ids(cls, connection: Connection, limit: Optional[int] = None,
-                          **filters) -> List[str]:
+                          **filters) -> list[str]:
         project_dicts = Project._list_projects(
             connection=connection,
             to_dictionary=True,
@@ -259,7 +259,7 @@ class Project(Entity):
 
     @classmethod
     def _list_loaded_projects(cls, connection: Connection, to_dictionary: bool = False,
-                              **filters) -> Union[List["Project"], List[dict]]:
+                              **filters) -> Union[list["Project"], list[dict]]:
         response = projects.get_projects(connection, whitelist=[('ERR014', 403)])
         list_of_dicts = response.json() if response.ok else []
         list_of_dicts = helper.camel_to_snake(list_of_dicts)  # Convert keys
@@ -291,7 +291,7 @@ class Project(Entity):
 
         self._alter_properties(**properties)
 
-    def __change_project_state(self, func, on_nodes: Union[str, List[str]] = None, **mode):
+    def __change_project_state(self, func, on_nodes: Union[str, list[str]] = None, **mode):
         if type(on_nodes) is list:
             for node in on_nodes:
                 func(node, **mode)
@@ -309,7 +309,7 @@ class Project(Entity):
     @method_version_handler('11.2.0000')
     def idle(
         self,
-        on_nodes: Optional[Union[str, List[str]]] = None,
+        on_nodes: Optional[Union[str, list[str]]] = None,
         mode: Union[IdleMode, str] = IdleMode.REQUEST
     ) -> None:
         """Request to idle a specific cluster node. Idle project with mode
@@ -357,7 +357,7 @@ class Project(Entity):
         self.__change_project_state(func=idle_project, on_nodes=on_nodes, mode=mode)
 
     @method_version_handler('11.2.0000')
-    def resume(self, on_nodes: Optional[Union[str, List[str]]] = None) -> None:
+    def resume(self, on_nodes: Optional[Union[str, list[str]]] = None) -> None:
         """Request to resume the project on the chosen cluster nodes. If
         nodes are not specified, the project will be loaded on all nodes.
 
@@ -385,7 +385,7 @@ class Project(Entity):
         self.__change_project_state(func=resume_project, on_nodes=on_nodes)
 
     @method_version_handler('11.2.0000')
-    def load(self, on_nodes: Optional[Union[str, List[str]]] = None) -> None:
+    def load(self, on_nodes: Optional[Union[str, list[str]]] = None) -> None:
         """Request to load the project onto the chosen cluster nodes. If
         nodes are not specified, the project will be loaded on all nodes.
 
@@ -413,7 +413,7 @@ class Project(Entity):
         self.__change_project_state(func=load_project, on_nodes=on_nodes)
 
     @method_version_handler('11.2.0000')
-    def unload(self, on_nodes: Optional[Union[str, List[str]]] = None) -> None:
+    def unload(self, on_nodes: Optional[Union[str, list[str]]] = None) -> None:
         """Request to unload the project from the chosen cluster nodes. If
         nodes are not specified, the project will be unloaded on all nodes.
         The unload action cannot be performed until all jobs and connections
@@ -487,9 +487,25 @@ class Project(Entity):
         """Update the current project settings on the I-Server."""
         self.settings.update(self.id)
 
+    def enable_caching(self) -> None:
+        """Enable caching settings for the current project on the I-Server."""
+        self.settings.enable_caching()
+        self.update_settings()
+
+    def disable_caching(self) -> None:
+        """Disable caching settings for the current project on the I-Server."""
+        self.settings.disable_caching()
+        self.update_settings()
+
     def fetch_settings(self) -> None:
         """Fetch the current project settings from the I-Server."""
         self.settings.fetch(self.id)
+
+    def list_caching_settings(self) -> dict:
+        """
+        Fetch current project settings connected with caching from I-Server
+        """
+        return self.settings.list_caching_properties()
 
     def is_loaded(self) -> bool:
         """Check if the project is loaded on any node (server)."""
@@ -593,6 +609,19 @@ class ProjectSettings(BaseSettings):
         'maxRAMForReportRWDCacheIndex': '%',
         'cubeIndexGrowthUpperBound': '%'
     }
+    _CACHING_SETTINGS_TO_ENABLE = (
+        "enableReportServerCaching",
+        "enableCachingForPromptedReportDocument",
+        "enableCachingForNonPromptedReportDocument",
+        "enableXmlCachingForReport",
+    )
+    _CACHING_SETTINGS_TO_DISABLE = _CACHING_SETTINGS_TO_ENABLE + (
+        "recordPromptAnswersForCacheMonitoring",
+        "enableDocumentOutputCachingInXml",
+        "enableDocumentOutputCachingInHtml",
+        "enableDocumentOutputCachingInPdf",
+        "enableDocumentOutputCachingInExcel"
+    )
 
     def __init__(self, connection: Connection, project_id: Optional[str] = None):
         """Initialize `ProjectSettings` object.
@@ -636,6 +665,26 @@ class ProjectSettings(BaseSettings):
                 partial_succ = response.json()
                 logging.info(f'Project settings partially successful.\n{partial_succ}')
 
+    @wip()
+    def enable_caching(self) -> None:
+        """
+        Enable caching settings for the current project on I-Server
+        using this Settings object
+        """
+        for setting in self._CACHING_SETTINGS_TO_ENABLE:
+            if hasattr(self, setting):
+                self.__setattr__(setting, True)
+
+    @wip()
+    def disable_caching(self) -> None:
+        """
+        Disable caching settings for the current project on I-Server
+        using this Settings object
+        """
+        for setting in self._CACHING_SETTINGS_TO_DISABLE:
+            if hasattr(self, setting):
+                self.__setattr__(setting, False)
+
     def _fetch(self) -> dict:
         response = projects.get_project_settings(
             self._connection, self._project_id, whitelist=[('ERR001', 404)]
@@ -664,3 +713,14 @@ class ProjectSettings(BaseSettings):
             super(BaseSettings, self).__setattr__('_project_id', project_id)
         if not self._connection or not self._project_id:
             raise AttributeError("Please provide `connection` and `project_id` parameter")
+
+    @wip()
+    def list_caching_properties(self) -> dict:
+        """
+        Fetch current project settings connected with caching from I-Server
+        """
+        self.fetch()
+        return {
+            k: v for (k, v) in self.list_properties().items()
+            if any(word in k.lower() for word in ("cache", "caching"))
+        }

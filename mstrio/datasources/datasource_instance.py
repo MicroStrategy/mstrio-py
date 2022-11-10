@@ -156,7 +156,6 @@ class DatasourceInstance(Entity, CopyMixin, DeleteMixin):
         acl: Object access control list
     """
 
-    _DELETE_NONE_VALUES_RECURSION = False
     _OBJECT_TYPE = ObjectTypes.DBROLE
     _FROM_DICT_MAP = {
         **Entity._FROM_DICT_MAP,
@@ -222,7 +221,7 @@ class DatasourceInstance(Entity, CopyMixin, DeleteMixin):
         "name": str,
         "description": str,
         "datasource_type": str,
-        "table_prefix": int,
+        "table_prefix": str,
         "intermediate_store_db_name": str,
         "intermediate_store_table_space_name": str,
         "odbc_version": str,

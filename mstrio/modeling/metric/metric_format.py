@@ -202,8 +202,6 @@ class FormatProperty(Dictable):
             self.hex_value = f'#{r}{g}{b}'
             self.red, self.green, self.blue = red, green, blue
 
-        _DELETE_NONE_VALUES_RECURSION = True
-
         hex_value: str
         server_value: str
         red: str
@@ -248,7 +246,6 @@ class FormatProperty(Dictable):
                 f'server_value: {self.server_value}'
             )
 
-    _DELETE_NONE_VALUES_RECURSION = True
     _FROM_DICT_MAP = {
         'type': FormatType,
     }
@@ -288,7 +285,7 @@ class MetricFormat(Dictable):
         header (list[FormatProperty]): list of format properties for the header
             of the metric
     """
-    _DELETE_NONE_VALUES_RECURSION = True
+
     _FROM_DICT_MAP = {
         'values': (
             lambda source,

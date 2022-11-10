@@ -191,7 +191,6 @@ class BaseSettings(metaclass=ABCMeta):
         self,
         settings: Optional[dict] = None,
         bad_setting=Warning,
-        bad_type=Warning,
         bulk_error=True
     ) -> None:
         """Validate setting-value pairs and raise AttributeError or TypeError
@@ -270,6 +269,7 @@ class BaseSettings(metaclass=ABCMeta):
             super().__setattr__(setting, value)
 
     def __override_settings_config(self, value: SettingValue) -> None:
+        # placeholder to be overwriten
         pass
 
     def __str__(self):

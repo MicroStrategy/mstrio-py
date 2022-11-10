@@ -51,7 +51,6 @@ class FactExpression(Dictable):
         the tables within the array has no significance.
     """
 
-    _DELETE_NONE_VALUES_RECURSION = False
     _FROM_DICT_MAP = {
         'tables': [SchemaObjectReference],
         'expression': Expression,

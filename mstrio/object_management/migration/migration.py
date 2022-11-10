@@ -67,7 +67,6 @@ class Migration(Dictable, ProgressBarMixin):
             running `migrate_package()` on that `Migration` instance (instead of
             performing full migration with an import from the source first.
             See demos and examples for details.)."""
-    _DELETE_NONE_VALUES_RECURSION = False
 
     def __init__(
         self,

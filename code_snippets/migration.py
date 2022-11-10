@@ -23,23 +23,23 @@ from mstrio.types import ObjectTypes
 from mstrio.users_and_groups.user import User
 
 # connection parameters
-PROJECT_NAME = '<Project_name>'
-SOURCE_BASE_URL = '<connection_base_url>'  # usually ends with /MicroStrategyLibrary/api
-SOURCE_USERNAME = '<username>'
-SOURCE_PASSWORD = '<password>'
-TARGET_BASE_URL = '<connection_base_url>'  # usually ends with /MicroStrategyLibrary/api
-TARGET_USERNAME = '<username>'
-TARGET_PASSWORD = '<password>'
+PROJECT_NAME = $project_name
+SOURCE_BASE_URL = $source_base_url  # usually ends with /MicroStrategyLibrary/api
+SOURCE_USERNAME = $source_username
+SOURCE_PASSWORD = $source_password
+TARGET_BASE_URL = $target_base_url  # usually ends with /MicroStrategyLibrary/api
+TARGET_USERNAME = $target_username
+TARGET_PASSWORD = $target_password
 
-USER_NAME = '<username>'  # user that is executing the migration
+USERNAME = $username  # user that is executing the migration
 
 # IDs for items to migrate
-DOSSIER_ID = '<Dossier_id>'
-REPORT_ID = '<Report_id>'
+DOSSIER_ID = $dossier_id
+REPORT_ID = $report_id
 
-SAVE_PATH = 'path/to/import_package.mmp'
-CUSTOM_PACKAGE_PATH = 'path/to/other_import_package.mmp'
-UNDO_PACKAGE_PATH = 'path/to/undo_package.mmp'
+SAVE_PATH = $save_path
+CUSTOM_PACKAGE_PATH = $custom_package_path
+UNDO_PACKAGE_PATH = $undo_package_path
 
 # Create connections to both source and target environments
 source_conn = Connection(
@@ -51,16 +51,16 @@ target_conn = Connection(
 
 # Make sure the current user have the following privileges:
 #   'Create package', id: 295
-#   'Apply package',  id: 296
+#   'Manage Migration Packages'(IServer >=11.3.7) or 'Apply package' (IServer <11.3.7),  id: 296
 # They can be granted by admin with the following commands:
-user = User(source_conn, username=USER_NAME)
+user = User(source_conn, username=USERNAME)
 Privilege(source_conn, id=295).add_to_user(user)
 Privilege(source_conn, id=296).add_to_user(user)
 
 # Or by name:
-user2 = User(target_conn, username=USER_NAME)
+user2 = User(target_conn, username=USERNAME)
 Privilege(target_conn, name='Create package').add_to_user(user2)
-Privilege(target_conn, name='Apply package').add_to_user(user2)
+Privilege(target_conn, name='Manage Migration Packages').add_to_user(user2)
 
 # Create PackageConfig with information what object should be migrated and how.
 # The options are of type Enum with all possible values listed.

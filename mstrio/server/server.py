@@ -88,7 +88,7 @@ class ServerSettings(BaseSettings):
             ServerSettings._CONFIG = response.json()
             super()._get_config()
 
-    def __override_settings_config(self, value: SettingValue) -> None:
+    def __override_settings_config(self, value: SettingValue) -> None:  # NOSONAR
         # config not accurate, needs override DE179361
         if version.parse(self._connection.iserver_version) < version.parse("11.3.0"):
             if value.name in ['maxJobsPerServer', 'maxInteractiveJobsPerServer']:

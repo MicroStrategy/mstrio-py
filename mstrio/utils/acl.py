@@ -66,8 +66,6 @@ T = TypeVar("T")
 
 class ACE(Dictable):
 
-    _DELETE_NONE_VALUES_RECURSION = False
-
     _FROM_DICT_MAP = {
         'rights': Rights,
     }
@@ -351,6 +349,7 @@ class ACLMixin:
 
         if isinstance(propagate_to_children, bool) and self._OBJECT_TYPE is ObjectTypes.FOLDER:
             body["propagateACLToChildren"] = propagate_to_children
+            body["propagationBehavior"] = "overwrite_recursive"
 
         response = objects.update_object(
             connection=self.connection, id=self.id, body=body, object_type=self._OBJECT_TYPE.value
@@ -444,7 +443,7 @@ class TrusteeACLMixin:
         except IServerError:
             pass
 
-        if not permission == Permissions.DEFAULT_ALL:
+        if permission != Permissions.DEFAULT_ALL:
             _modify_rights(
                 connection=self.connection,
                 trustee_id=self.id,
@@ -633,7 +632,7 @@ def _modify_rights(
 
     if isinstance(ids, str):
         ids = [ids]
-    # TODO decide what to do about this code
+
     for id in ids:
         response = objects.get_object_info(
             connection=connection, id=id, object_type=object_type.value, project_id=project
@@ -661,6 +660,7 @@ def _modify_rights(
 
         if isinstance(propagate_to_children, bool):
             body["propagateACLToChildren"] = propagate_to_children
+            body["propagationBehavior"] = "overwrite_recursive"
 
         _ = objects.update_object(
             connection=connection,
@@ -673,7 +673,6 @@ def _modify_rights(
 
 
 def _parse_acl_rights_bin_to_dict(rights_bin: int) -> Dict[Rights, bool]:
-    # TODO move this to ENUM?
     return {right: rights_bin & right.value != 0 for right in Rights}
 
 
@@ -686,7 +685,6 @@ def _parse_acl_rights_dict_to_bin(rights_dict: Dict[Rights, bool]) -> int:
 
 
 def _get_custom_right_value(right: Union[Rights, List[Rights]]) -> int:
-    # TODO move this to ENUM?
     right_value = 0
     if not isinstance(right, list):
         right = [right]

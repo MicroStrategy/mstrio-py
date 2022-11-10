@@ -1,9 +1,10 @@
 import logging
-from typing import List, Optional, TYPE_CHECKING, Union
+from typing import Optional, TYPE_CHECKING
 
 from mstrio import config
 from mstrio.api import monitors
 from mstrio.server.cluster import Cluster
+from mstrio.utils.cache import Cache
 from mstrio.utils.helper import camel_to_snake, exception_handler, fetch_objects_async
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
@@ -16,14 +17,14 @@ logger = logging.getLogger(__name__)
 @method_version_handler('11.3.0000')
 def list_cube_caches(
     connection: "Connection",
-    nodes: Optional[Union[List[str], str]] = None,
+    nodes: Optional[list[str] | str] = None,
     cube_id: Optional[str] = None,
     loaded: Optional[bool] = False,
     db_connection_id: Optional[str] = None,
-    project_ids: Optional[List[str]] = None,
+    project_ids: Optional[list[str]] = None,
     to_dictionary: Optional[bool] = False,
     limit: Optional[int] = None
-) -> Union[List["CubeCache"], List[dict]]:
+) -> list["CubeCache"] | list[dict]:
     """List cube caches. You can filter them by cube (`cube_id`), database
     connection (`db_connection_id`) and projects (`project_ids`). You can also
     obtain only loaded caches (`loaded=True`).
@@ -92,12 +93,12 @@ def list_cube_caches(
 
 def delete_cube_caches(
     connection: "Connection",
-    nodes: Union[List[str], str] = None,
-    cube_id: str = None,
-    db_connection_id: str = None,
     loaded: bool = False,
-    force: bool = False
-) -> Union[dict, None]:
+    force: bool = False,
+    nodes: Optional[list[str] | str] = None,
+    cube_id: Optional[str] = None,
+    db_connection_id: Optional[str] = None
+) -> Optional[dict]:
     """Delete all cube caches on a given node.
 
     Optionally it is possible to specify for which cube or for which database
@@ -112,7 +113,7 @@ def delete_cube_caches(
             `connection.Connection()`.
         nodes (list of strings or string, optional): names of nodes from which
             caches will be deleted. By default it equals `None` and in that
-            case all nodes' names are loaded from the cluster.
+            case all nodes names are loaded from the cluster.
         cube_id (string, optional): When provided, only caches for the cube with
             given ID will be deleted (if any).
         db_connection_id (string, optional): When provided, only caches for the
@@ -172,74 +173,75 @@ def delete_cube_cache(connection: "Connection", id: str, force: bool = False):
 
 
 @class_version_handler('11.3.0000')
-class CubeCache:
+class CubeCache(Cache):
     """
     Manage cube cache.
     """
 
-    def __init__(self, connection: "Connection", cache_id: str, cube_cache_dict: dict = None):
-        """Initialize the CubeCache object. To avoid calling I-Server provide
-        a dict with cube cache properties.
+    def __init__(
+        self,
+        connection: "Connection",
+        cache_id: str,
+        cube_cache_dict: Optional[dict] = None
+    ):
+        """Initialize the CubeCache object. If cube_cache_dict provided
+        no I-Server request will be sent.
 
         Args:
-            connection:
             connection: MicroStrategy connection object returned by
                 `connection.Connection()`.
             cache_id (string): cube cache id
-            cube_cache_dict (dict): dictionary with properties of cube cache
-                object. If it is provided then cache dictionary will not be
-                retrieved from I-Server.
+            cube_cache_dict (dict, optional): dictionary with properties of cube
+                cache object. If it is provided then cache dictionary will not
+                be retrieved from I-Server.
         """
-        self._connection = connection
-        self._id = cache_id
+        super().__init__(connection, cache_id)
 
-        if cube_cache_dict is None:
-            cube_cache_dict = self.__get_info()
-        self.__save_info(cube_cache_dict)
+        if not cube_cache_dict:
+            self.fetch()
+        else:
+            self._init_variables(**cube_cache_dict)
 
-    def __get_info(self):
-        return monitors.get_cube_cache_info(self._connection, self._id).json()
-
-    def __save_info(self, cube_cache_dict):
+    def _init_variables(self, **cube_cache_dict):
         cube_cache_dict = camel_to_snake(cube_cache_dict)
-        self._project_id = cube_cache_dict.get('project_id', None)
-        self._source = cube_cache_dict.get('source', None)
-        self._state = cube_cache_dict.get('state', None)
-        self._last_update_time = cube_cache_dict.get('last_update_time', None)
-        self._last_hit_time = cube_cache_dict.get('last_hit_time', None)
-        self._hit_count = cube_cache_dict.get('hit_count', None)
-        self._size = cube_cache_dict.get('size', None)
-        self._creator_name = cube_cache_dict.get('creator_name', None)
-        self._creator_id = cube_cache_dict.get('creator_id', None)
-        self._last_update_job = cube_cache_dict.get('last_update_job', None)
-        self._open_view_count = cube_cache_dict.get('open_view_count', None)
-        self._creation_time = cube_cache_dict.get('creation_time', None)
-        self._historic_hit_count = cube_cache_dict.get('historic_hit_count', None)
+        super()._init_variables(**cube_cache_dict)
+        self._state = cube_cache_dict.get('state')
+        self._last_update_job = cube_cache_dict.get('last_update_job')
+        self._open_view_count = cube_cache_dict.get('open_view_count')
+        self._historic_hit_count = cube_cache_dict.get('historic_hit_count')
         self._database_connections = cube_cache_dict.get('database_connections', [])
-        self._file_name = cube_cache_dict.get('file_name', None)
+        self._file_name = cube_cache_dict.get('file_name')
         self._data_languages = cube_cache_dict.get('data_languages', [])
-        self._row_count = cube_cache_dict.get('row_count', None)
-        self._column_count = cube_cache_dict.get('column_count', None)
-        self._job_execution_statistics = cube_cache_dict.get('job_execution_statistics', None)
+        self._row_count = cube_cache_dict.get('row_count')
+        self._column_count = cube_cache_dict.get('column_count')
+        self._creator_id = cube_cache_dict.get('creator_id')
+        self._job_execution_statistics = cube_cache_dict.get('job_execution_statistics')
 
     def fetch(self):
-        """Refresh cube cache properties by retrieving them from I-Server."""
-        self.__save_info(self.__get_info())
+        res = monitors.get_cube_cache_info(self._connection, self._id)
+        self._init_variables(**res.json())
 
     @classmethod
-    def from_dict(cls, connection: "Connection", caches: List[dict]) -> List["CubeCache"]:
+    def from_dict(cls, connection: "Connection", caches: list[dict]) -> list["CubeCache"]:
         return [CubeCache(connection, cache_dict['id'], cache_dict) for cache_dict in caches]
 
-    def __alter_status(self, active: bool = None, loaded: bool = None) -> Union[str, None]:
+    def __alter_status(self, active: bool = None, loaded: bool = None) -> str | None:
         if active is not None and loaded is not None:
             msg = 'You cannot set both states during one request'
             exception_handler(msg, UserWarning)
             return None
-        res = monitors.alter_cube_cache_status(self._connection, self._id, active, loaded, False)
-        if res.ok:
-            return res.json()['manipulationId']
-        else:
-            return None
+        res = monitors.alter_cube_cache_status(
+            self._connection, self._id, active, loaded, False
+        )
+        return res.json()['manipulationId']
+
+    def load(self):
+        """Load cache."""
+        return self.__alter_status(loaded=True)
+
+    def unload(self):
+        """Unload cache."""
+        return self.__alter_status(loaded=False)
 
     def activate(self):
         """Activate cube cache."""
@@ -280,51 +282,22 @@ class CubeCache:
         else:
             return False
 
-    def load(self):
-        """Load cube cache."""
-        return self.__alter_status(loaded=True)
-
-    def unload(self):
-        """Unload cube cache."""
-        return self.__alter_status(loaded=False)
-
     def list_properties(self):
         """List properties for cube cache."""
         return {
-            'cache_id': self._id,
-            'size': self._size,
-            'row_count': self._row_count,
-            'column_count': self._column_count,
-            'last_update_time': self._last_update_time,
-            'last_hit_time': self._last_hit_time,
-            'hit_count': self._hit_count,
-            'historic_hit_count': self._historic_hit_count,
-            'open_view_count': self._open_view_count,
-            'creator_name': self._creator_name,
-            'creator_id': self._creator_id,
-            'creation_time': self._creation_time,
-            'last_update_job': self._last_update_job,
+            **super().list_properties(),
+            'row_count': self.row_count,
+            'column_count': self.column_count,
+            'historic_hit_count': self.historic_hit_count,
+            'open_view_count': self.open_view_count,
+            'creator_id': self.creator_id,
+            'last_update_job': self.last_update_job,
         }
 
-    def get_manipulation_status(self, manipulation_id: str) -> Union[dict, None]:
+    def get_manipulation_status(self, manipulation_id: str) -> dict:
         """Get manipulation status of cube cache."""
         res = monitors.get_cube_cache_manipulation_status(self._connection, manipulation_id, False)
-        if res.ok:
-            return res.json()['status']
-        else:
-            return None
-
-    @property
-    def id(self):
-        return self._id
-
-    @property
-    def project_id(self):
-        return self._project_id
-
-    @property
-    def source(self):
-        return self._source
+        return res.json()['status']
 
     @property
     def state(self):
@@ -349,28 +322,12 @@ class CubeCache:
         return self._job_execution_statistics
 
     @property
-    def size(self):
-        return self._size
-
-    @property
     def row_count(self):
         return self._row_count
 
     @property
     def column_count(self):
         return self._column_count
-
-    @property
-    def last_update_time(self):
-        return self._last_update_time
-
-    @property
-    def last_hit_time(self):
-        return self._last_hit_time
-
-    @property
-    def hit_count(self):
-        return self._hit_count
 
     @property
     def historic_hit_count(self):
@@ -381,20 +338,8 @@ class CubeCache:
         return self._open_view_count
 
     @property
-    def creator_name(self):
-        return self._creator_name
-
-    @property
     def creator_id(self):
         return self._creator_id
-
-    @property
-    def creation_id(self):
-        return self._creation_id
-
-    @property
-    def creation_time(self):
-        return self._creation_time
 
     @property
     def last_update_job(self):

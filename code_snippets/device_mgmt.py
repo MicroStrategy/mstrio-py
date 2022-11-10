@@ -27,17 +27,17 @@ from mstrio.distribution_services import (
 )
 from mstrio.connection import get_connection
 
-PROJECT_NAME = '<Project_name>'  # Project to connect to
-SMART_HOST_SERVER = '<example.com>'  # server name for smart host
-SMART_HOST_PORT = 22  # server port for smart host
-FEEDBACK_SERVICE_SERVER = '<Service_name>'  # server name for ios feedback server
-FEEDBACK_SERVICE_PORT = 1212  # server port for ios feedback server
-FILE_DEVICE_PATH = 'path/to/file'  # path for file device
-PRINTER_LOCATION = '<Printer_location>'  # printer location field for printer device properties
-TRANSMITTER_ID = '<Transmitter_id>'  # id for Transmitter object
-DEVICE_ID = '<Device_id>'  # id for Device object
-DEVICE_NAME = '<Name_of_device>'
-DEVICE_DESCRIPTION = '<Description_of_device>'
+PROJECT_NAME = $project_name  # Project to connect to
+SMART_HOST_SERVER = $smart_host_server  # server name for smart host
+SMART_HOST_PORT = $smart_host_port  # server port for smart host
+FEEDBACK_SERVICE_SERVER = $feedback_service_server  # server name for ios feedback server
+FEEDBACK_SERVICE_PORT = $feedback_service_port  # server port for ios feedback server
+FILE_DEVICE_PATH = $file_device_path  # path for file device
+PRINTER_LOCATION = $printer_location  # printer location field for printer device properties
+TRANSMITTER_ID = $transmitter_id  # id for Transmitter object
+DEVICE_ID = $device_id  # id for Device object
+DEVICE_NAME = $device_name
+DEVICE_DESCRIPTION = $device_description
 
 conn = get_connection(workstationData, project_name=PROJECT_NAME)
 

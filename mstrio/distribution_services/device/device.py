@@ -99,7 +99,7 @@ class Device(Entity, DeleteMixin):
         acg: Access rights (See EnumDSSXMLAccessRightFlags for possible values)
         acl: Object access control list
     """
-    _DELETE_NONE_VALUES_RECURSION = False
+
     _OBJECT_TYPE = ObjectTypes.SUBSCRIPTION_DEVICE
     _DEVICE_TYPE_MAP = {
         "android": AndroidDeviceProperties,

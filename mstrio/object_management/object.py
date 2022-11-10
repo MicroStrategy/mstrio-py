@@ -1,4 +1,5 @@
-from typing import List, Optional, TYPE_CHECKING, Union
+import logging
+from typing import Optional, TYPE_CHECKING
 
 from mstrio.api import objects
 from mstrio.object_management.search_operations import full_search, SearchDomain, SearchPattern
@@ -8,11 +9,15 @@ from mstrio.utils.acl import ACLMixin
 from mstrio.utils.certified_info import CertifiedInfo
 from mstrio.utils.entity import CertifyMixin, CopyMixin, DeleteMixin, Entity, MoveMixin
 from mstrio.utils.helper import (
-    get_args_from_func, get_default_args_from_func, get_valid_project_id
+    get_args_from_func,
+    get_default_args_from_func,
+    get_valid_project_id
 )
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
+
+logger = logging.getLogger(__name__)
 
 
 def list_objects(
@@ -21,12 +26,12 @@ def list_objects(
     name: Optional[str] = None,
     project_id: Optional[str] = None,
     project_name: Optional[str] = None,
-    domain: Union[SearchDomain, int] = SearchDomain.CONFIGURATION,
-    search_pattern: Union[SearchPattern, int] = SearchPattern.CONTAINS,
+    domain: SearchDomain | int = SearchDomain.CONFIGURATION,
+    search_pattern: SearchPattern | int = SearchPattern.CONTAINS,
     to_dictionary: bool = False,
     limit: int = None,
     **filters,
-) -> Union[List["Object"], List[dict]]:
+) -> list["Object"] | list[dict]:
     """Get list of objects or dicts. Optionally filter the
     objects by specifying filters.
 
@@ -57,16 +62,15 @@ def list_objects(
     Examples:
         >>> list_objects(connection, object_type=ObjectTypes.USER)
     """
-    # Project is validated only if project was specified in arguments -
-    # otherwise fetch is performed from a non-project area.
-    if project_id or project_name:
-        project_id = get_valid_project_id(
-            connection=connection,
-            project_id=project_id,
-            project_name=project_name,
-        )
 
-    return Object._list_objects(
+    project_id = get_valid_project_id(
+        connection=connection,
+        project_id=project_id,
+        project_name=project_name,
+        with_fallback=True
+    )
+
+    result = Object._list_objects(
         connection=connection,
         object_type=object_type,
         name=name,
@@ -77,6 +81,13 @@ def list_objects(
         limit=limit,
         **filters,
     )
+
+    if not result:
+        logger.info(
+            f"Search in the domain: {domain.name} returned empty result."
+            " Try searching in different domain."
+        )
+    return result
 
 
 class Object(Entity, ACLMixin, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin):
@@ -107,7 +118,7 @@ class Object(Entity, ACLMixin, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin):
         project_id: project ID
         target_info: target information, only applicable to Shortcut objects
     """
-    _DELETE_NONE_VALUES_RECURSION = False
+
     _FROM_DICT_MAP = {
         **Entity._FROM_DICT_MAP,
         'certified_info': CertifiedInfo.from_dict,
@@ -193,11 +204,11 @@ class Object(Entity, ACLMixin, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin):
         name: Optional[str] = None,
         project_id: Optional[str] = None,
         to_dictionary: bool = False,
-        domain: Union[int, SearchDomain] = SearchDomain.CONFIGURATION,
-        pattern: Union[int, SearchPattern] = SearchPattern.CONTAINS,
+        domain: int | SearchDomain = SearchDomain.CONFIGURATION,
+        pattern: int | SearchPattern = SearchPattern.CONTAINS,
         limit: Optional[int] = None,
         **filters,
-    ) -> Union[List["Object"], List[dict]]:
+    ) -> list["Object"] | list[dict]:
         objects = full_search(
             connection,
             object_types=object_type,

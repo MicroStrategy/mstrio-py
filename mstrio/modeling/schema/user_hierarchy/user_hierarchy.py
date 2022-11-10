@@ -77,7 +77,6 @@ class HierarchyAttribute(Dictable):
         limit: the element display limit when element_display_option
             is limited_elements
     """
-    _DELETE_NONE_VALUES_RECURSION = False
 
     _FROM_DICT_MAP = {
         'element_display_option': ElementDisplayOption,
@@ -125,7 +124,6 @@ class HierarchyRelationship(Dictable):
             child in a current hierarchy relationship,
             SchemaObjectReference object
     """
-    _DELETE_NONE_VALUES_RECURSION = False
 
     _FROM_DICT_MAP = {
         'parent': SchemaObjectReference.from_dict, 'child': SchemaObjectReference.from_dict
@@ -187,7 +185,6 @@ class UserHierarchy(Entity, CopyMixin, MoveMixin, DeleteMixin):
         destination_folder_id: a globally unique identifier used to distinguish
             between metadata objects within the same project
     """
-    _DELETE_NONE_VALUES_RECURSION = False
 
     _OBJECT_TYPE = ObjectTypes.DIMENSION
     _FROM_DICT_MAP = {
@@ -440,7 +437,7 @@ class UserHierarchy(Entity, CopyMixin, MoveMixin, DeleteMixin):
         body = self.to_dict()
         body['relationships'] = relationships
         response = user_hierarchies.update_user_hierarchy(
-            connection=self.connection, id=self.id, changeset_id=None, body=body
+            connection=self.connection, id=self.id, body=body
         )
         if response.ok:
             response = response.json()

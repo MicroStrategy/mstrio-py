@@ -212,8 +212,6 @@ class EntityBase(helper.Dictable):
                     self._set_object_attributes(**object_dict)
                 elif type(response) == list:
                     self._set_object_attributes(**{key: response})
-                # TODO: consider changing camel_to_snake logic to work with
-                # list of keys
 
             # keep track of fetched attributes
             self._add_to_fetched(key)
@@ -336,7 +334,7 @@ class EntityBase(helper.Dictable):
         the attribute was set as a property, and if yes it stores the attribute
         with '_' prefix """
 
-        object_info = helper.camel_to_snake(kwargs)
+        object_info = helper.camel_to_snake(kwargs, whitelist=self._KEEP_CAMEL_CASE)
         object_info = self._rest_to_python(object_info)
 
         # determine which attributes should be private
@@ -649,7 +647,7 @@ class EntityBase(helper.Dictable):
                 'patch').
         """
         changed = []
-        camel_properties = helper.snake_to_camel(properties)
+        camel_properties = helper.snake_to_camel(properties, whitelist=self._KEEP_CAMEL_CASE)
         for attrs, (func, func_type) in self._API_PATCH.items():
             if func_type == 'partial_put':
                 translated_properties = self._python_to_rest(camel_properties)
@@ -1062,15 +1060,15 @@ class CopyMixin:
         """
         if self._OBJECT_TYPE.value in [32]:
             raise NotImplementedError("Object cannot be copied yet.")
-        # TODO if object uniqueness depends on project_id extract proj_id
-        # TODO automatically
+
+        from mstrio.server.project import Project
         response = objects.copy_object(
             self.connection,
             id=self.id,
             name=name,
             folder_id=folder_id,
             object_type=self._OBJECT_TYPE.value,
-            project_id=project
+            project_id=project.id if isinstance(project, Project) else project
         )
         return self.from_dict(source=response.json(), connection=self.connection)
 

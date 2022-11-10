@@ -1,6 +1,6 @@
 from typing import Optional, TYPE_CHECKING
 
-from mstrio.utils.api_helpers import changeset_decorator, unpack_information
+from mstrio.utils.api_helpers import changeset_manager, unpack_information
 from mstrio.utils.error_handlers import ErrorHandler
 from mstrio.utils.sessions import FuturesSessionWithRenewal
 
@@ -90,12 +90,10 @@ def get_tables(
 
 
 @unpack_information
-@changeset_decorator
 @ErrorHandler("Error updating the table with ID: {id}")
 def patch_table(
     connection: "Connection",
     id: str,
-    changeset_id: str,
     body: dict,
     column_merge_option: Optional[str] = None,
     fields: Optional[dict] = None,
@@ -106,7 +104,6 @@ def patch_table(
     Args:
         connection (object): MicroStrategy REST API connection object
         id (str): Table ID
-        changeset_id (str): Changeset ID
         body (dict): Table update body
         column_merge_option (str, optional): Defines a column merge option
             Available values: 'reuse_any', 'reuse_compatible_data_type',
@@ -124,22 +121,21 @@ def patch_table(
     Returns:
         Complete HTTP response object. Expected status is 200.
     """
-    return connection.patch(
-        url=f"{connection.base_url}/api/model/tables/{id}",
-        headers={"X-MSTR-MS-Changeset": changeset_id},
-        json=body,
-        params={
-            "columnMergeOption": column_merge_option, "fields": fields
-        },
-    )
+    with changeset_manager(connection) as changeset_id:
+        return connection.patch(
+            url=f"{connection.base_url}/api/model/tables/{id}",
+            headers={"X-MSTR-MS-Changeset": changeset_id},
+            json=body,
+            params={
+                "columnMergeOption": column_merge_option, "fields": fields
+            },
+        )
 
 
 @unpack_information
-@changeset_decorator
 @ErrorHandler("Error creating the table")
 def post_table(
     connection: "Connection",
-    changeset_id: str,
     data: dict,
     check_secondary_data_source_table: Optional[bool] = None,
     column_merge_option: Optional[str] = None,
@@ -151,7 +147,6 @@ def post_table(
 
     Args:
         connection (object): MicroStrategy REST API connection object
-        changeset_id (str): Changeset ID
         data (dict): Table creation data
         check_secondary_data_source_table (bool, optional):
             Available values: 'true', 'false'
@@ -182,18 +177,19 @@ def post_table(
     Returns:
         Complete HTTP response object. Expected status is 201.
     """
-    return connection.post(
-        url=f"{connection.base_url}/api/model/tables",
-        headers={"X-MSTR-MS-Changeset": changeset_id},
-        json=data,
-        params={
-            "checkSecondaryDataSourceTable": "true"
-            if check_secondary_data_source_table else "false",
-            "columnMergeOption": column_merge_option,
-            "tablePrefixOption": table_prefix_option,
-            "fields": fields,
-        },
-    )
+    with changeset_manager(connection) as changeset_id:
+        return connection.post(
+            url=f"{connection.base_url}/api/model/tables",
+            headers={"X-MSTR-MS-Changeset": changeset_id},
+            json=data,
+            params={
+                "checkSecondaryDataSourceTable": "true"
+                if check_secondary_data_source_table else "false",
+                "columnMergeOption": column_merge_option,
+                "tablePrefixOption": table_prefix_option,
+                "fields": fields,
+            },
+        )
 
 
 @ErrorHandler("Error fetching available Warehouse Tables")
@@ -253,8 +249,7 @@ def get_available_warehouse_tables_async(
     session: FuturesSessionWithRenewal,
     connection: "Connection",
     datasource_id: str,
-    namespace_id: str,
-    error_msg: Optional[str] = None,
+    namespace_id: str
 ):
     return session.get(
         f"{connection.base_url}/api/datasources/{datasource_id}/catalog/namespaces/{namespace_id}"

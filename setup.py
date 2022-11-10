@@ -46,16 +46,15 @@ peer_force_version = [  # peer dependency (dep of dep)
                         # but we need to force version for SEC
                         # backend only (front peers are
                         # handled in code ~20 lines below)
-    'notebook>=6.4.12',
-    'ipython>=8.1.1, <9',
     'urllib3>=1.26.0',  # ver 1.25.x is incompatible
+    'Jinja2>=3, <4',    # UI related, but also dev-dep of `pandas` but required for testing
 ]
 
 requirements = [
     'requests>=2.27, <2.29',
     'requests_futures>=1.0.0, <1.1',
     'pandas>=1.1.5, <=1.5',
-    'numpy>=1.23.1, <1.24',
+    'numpy>=1.23.4, <1.24',
     'tqdm>=4.41, <4.70',
     'packaging>=21.3, <22',
     'stringcase>=1.2, <1.3',
@@ -64,9 +63,17 @@ requirements = [
 # Add dependencies for connector-jupyter if connector-jupyter folder is added
 if find_in_file('graft connector-jupyter', MANIFEST_FILE):
     requirements += [
-        'lxml>=4.9.1',  # peer, UI related, force ver for SEC
+        # direct dependencies
         'jupyter-contrib-nbextensions>=0.5.1, <0.6',
-        'ipywidgets>=7.5.1, <8'
+        'ipywidgets>=8.0.2, <9',
+
+        # peer, UI related, force version for SEC
+        'notebook>=6.4.12',
+        'jupyter-core>=4.11.2',
+        'lxml>=4.9.1',
+        'ipython>=8.4.0, <9',
+        'nbconvert>=7, <8',
+        'mistune>=2.0.4'
     ]
 
 setup(

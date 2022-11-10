@@ -14,18 +14,18 @@ from mstrio.users_and_groups import (
     Contact, ContactGroup, ContactGroupMember, ContactGroupMemberType, list_contact_groups, User
 )
 
-PROJECT_NAME = '<Project_name>'  # Insert project name here
-MEMBER_NAME = '<Username>'  # here insert member name
-MEMBER_ID = '<Member_ID>'  # Insert member ID
-USER_NAME = '<Username>'  # name of user to link to the contact group
-CONTACT_GROUP_NAME = '<Contact_group_name>'  # Name of contact group
-CONTACT_GROUP_DESCRIPTION = '<Contact_group_desc>'  # Description of newly created contact group
-CONTACT_GROUP_ID = '<Contact_group_ID>'  # Insert your contact group ID here
-CONTACT_GROUP_NEW_NAME = '<Contact_group_name>'  # Insert new name of contact group
-CONTACT_GROUP_NEW_DESCRIPTION = '<Contact_group_desc>'  # Insert new description of contact group
-OTHER_USER_NAME = '<Username>'  # Insert new user for contact group
-CONTACT_NAME = '<Contact_name>'  # Insert contact name here
-OTHER_CONTACT_GROUP_NAME = '<Contact_group_name>'  # Insert name of another contact group here
+PROJECT_NAME = $project_name  # Insert project name here
+MEMBER_NAME = $member_name  # here insert member name
+MEMBER_ID = $member_id  # Insert member ID
+USERNAME = $username  # name of user to link to the contact group
+CONTACT_GROUP_NAME = $contact_group_name  # Name of contact group
+CONTACT_GROUP_DESCRIPTION = $contact_group_description  # Description of newly created contact group
+CONTACT_GROUP_ID = $contact_group_id  # Insert your contact group ID here
+CONTACT_GROUP_NEW_NAME = $contact_group_new_name  # Insert new name of contact group
+CONTACT_GROUP_NEW_DESCRIPTION = $contact_group_new_description  # Insert new description of contact group
+OTHER_USERNAME = $other_username  # Insert new user for contact group
+CONTACT_NAME = $contact_name  # Insert contact name here
+OTHER_CONTACT_GROUP_NAME = $other_contact_group_name  # Insert name of another contact group here
 
 conn = get_connection(workstationData, project_name=PROJECT_NAME)
 
@@ -38,7 +38,7 @@ member1 = ContactGroupMember(
 new_cg = ContactGroup.create(
     connection=conn,
     name=CONTACT_GROUP_NAME,
-    linked_user=User(conn, username=USER_NAME),
+    linked_user=User(conn, username=USERNAME),
     members=[member1],
     description=CONTACT_GROUP_DESCRIPTION,
     enabled=True,
@@ -62,7 +62,7 @@ cg_enabled = cg.enabled
 cg.alter(
     name=CONTACT_GROUP_NEW_NAME,
     description=CONTACT_GROUP_NEW_DESCRIPTION,
-    linked_user=User(conn, username=OTHER_USER_NAME),
+    linked_user=User(conn, username=OTHER_USERNAME),
     enabled=False,
 )
 

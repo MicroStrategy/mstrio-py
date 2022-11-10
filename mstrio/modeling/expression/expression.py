@@ -21,7 +21,6 @@ if TYPE_CHECKING:
 class ExpressionNode(Dictable):
     """Base class representing a node of an expression tree."""
 
-    _DELETE_NONE_VALUES_RECURSION = False
     _TYPE = None
     _FROM_DICT_MAP = {
         'expression_type': ExpressionType,
@@ -73,8 +72,6 @@ class Token(Dictable):
         attribute_form: If the token represents an attribute form in the context
            of an object (say City@DESC) then provide attribute form id
     """
-
-    _DELETE_NONE_VALUES_RECURSION = False
 
     class Type(AutoName):
         """Enumeration constant that classifies the text within a token"""
@@ -178,8 +175,6 @@ class Expression(Dictable):
         tree: Representation of an expression as a tree of nodes, instance of
             one of classes inheriting from ExpressionNode class
     """
-
-    _DELETE_NONE_VALUES_RECURSION = False
 
     _FROM_DICT_MAP = {
         'tokens': [Token],

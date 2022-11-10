@@ -1,4 +1,5 @@
 from concurrent.futures import as_completed
+from contextlib import contextmanager
 from functools import wraps
 from json import dumps
 from typing import List, Optional
@@ -84,22 +85,15 @@ def unpack_tables(response_json):
     return copy
 
 
-def changeset_decorator(func):
-
-    @wraps(func)
-    def changeset_inner(*args, **kwargs):
-        connection = args[0] if args and isinstance(args[0], Connection) else kwargs["connection"]
-        changeset = create_changeset(connection, schema_edit=True)
-        changeset_id = changeset.json()['id']
-        kwargs['changeset_id'] = changeset_id
-        try:
-            resp = func(*args, **kwargs)
-            commit_changeset_changes(connection=connection, id=changeset_id)
-        finally:
-            delete_changeset(connection=connection, id=changeset_id)
-        return resp
-
-    return changeset_inner
+@contextmanager
+def changeset_manager(connection):
+    response = create_changeset(connection, schema_edit=True)
+    changeset_id = response.json()['id']
+    try:
+        yield changeset_id
+        commit_changeset_changes(connection=connection, id=changeset_id)
+    finally:
+        delete_changeset(connection=connection, id=changeset_id)
 
 
 def async_get(

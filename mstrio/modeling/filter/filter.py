@@ -191,7 +191,7 @@ class Filter(Entity, CopyMixin, DeleteMixin, MoveMixin):
         'qualification': dict,
         'is_embedded': bool,
     }
-    _DELETE_NONE_VALUES_RECURSION = False
+
     _ALLOW_NONE_ATTRIBUTES = ['qualification']
 
     def __init__(
@@ -222,10 +222,10 @@ class Filter(Entity, CopyMixin, DeleteMixin, MoveMixin):
         """
         connection._validate_project_selected()
         if id is None:
-            filter = super()._find_object_with_name(
+            found_filter = super()._find_object_with_name(
                 connection=connection, name=name, listing_function=list_filters
             )
-            id = filter['id']
+            id = found_filter['id']
         super().__init__(
             connection=connection,
             object_id=id,

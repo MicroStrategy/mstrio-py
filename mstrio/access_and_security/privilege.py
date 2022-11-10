@@ -1,14 +1,16 @@
-from typing import List, Optional, Union
+from typing import List, Optional, Union, TYPE_CHECKING
 
 from pandas import DataFrame
 
 from mstrio.api import security
 from mstrio.connection import Connection
-from mstrio.users_and_groups.user import User
 from mstrio.users_and_groups.user_group import UserGroup
 from mstrio.utils import helper
 from mstrio.utils.entity import EntityBase
 from mstrio.utils.version_helper import class_version_handler
+
+if TYPE_CHECKING:
+    from mstrio.users_and_groups.user import User
 
 
 @class_version_handler('11.2.0100')
@@ -24,7 +26,6 @@ class Privilege(EntityBase):
         is_project_level_privilege: specify if privilege is compatible with
             server configuration level or project level
     """
-    _DELETE_NONE_VALUES_RECURSION = False
 
     def __init__(
         self, connection: Connection, name: Optional[str] = None, id: Optional[str] = None
@@ -124,12 +125,12 @@ class Privilege(EntityBase):
         Args:
             users: list of `User` objects or names.
         """
+        from mstrio.users_and_groups.user import User
         if isinstance(users, str):
             users = [User(self.connection, name=users)]
         elif isinstance(users, User):
             users = [users]
         elif hasattr(users, '__iter__') and all(isinstance(el, str) for el in users):
-            # TODO use list_users(name=[users])
             users = [User(self.connection, name=user) for user in users]
         for user in users:
             user.grant_privilege(self.id)
@@ -140,12 +141,12 @@ class Privilege(EntityBase):
         Args:
             users: list of `User` objects or names.
         """
+        from mstrio.users_and_groups.user import User
         if isinstance(users, str):
             users = [User(self.connection, name=users)]
         elif isinstance(users, User):
             users = [users]
         elif hasattr(users, '__iter__') and all(isinstance(el, str) for el in users):
-            # TODO use list_users(name=[users])
             users = [User(self.connection, name=user) for user in users]
         for user in users:
             user.revoke_privilege(self.id)
@@ -161,7 +162,6 @@ class Privilege(EntityBase):
         elif isinstance(groups, UserGroup):
             groups = [groups]
         elif hasattr(groups, '__iter__') and all(isinstance(el, str) for el in groups):
-            # TODO use list_user_groups(name=[groups])
             groups = [UserGroup(self.connection, name=group) for group in groups]
         for group in groups:
             group.grant_privilege(self.id)
@@ -177,7 +177,6 @@ class Privilege(EntityBase):
         elif isinstance(groups, UserGroup):
             groups = [groups]
         elif hasattr(groups, '__iter__') and all(isinstance(el, str) for el in groups):
-            # TODO use list_user_groups(name=[groups])
             groups = [UserGroup(self.connection, name=group) for group in groups]
         for group in groups:
             group.revoke_privilege(self.id)
@@ -197,8 +196,7 @@ class Privilege(EntityBase):
         validated = []
 
         privileges = privileges if isinstance(privileges, list) else [privileges]
-        # TODO: This whole thing can probably be made more efficient and elegant
-        # with some list comprehension instead of appending in a loop.
+
         for privilege in privileges:
             is_str_name = type(privilege) == str and len(privilege) > 3
             is_str_id = type(privilege) == str and len(privilege) > 0 and len(privilege) <= 3
@@ -213,13 +211,9 @@ class Privilege(EntityBase):
                 privilege_ok = bool(temp_priv)
 
             if privilege_ok:
-                privilege_id = temp_priv[0]['id']
-                privilege_name = temp_priv[0]['name']
-                validated.append({'id': privilege_id, 'name': privilege_name})
+                validated.append({'id': temp_priv[0]['id'], 'name': temp_priv[0]['name']})
             elif isinstance(privilege, Privilege):
-                privilege_id = privilege.id
-                privilege_name = privilege.name
-                validated.append({'id': privilege_id, 'name': privilege_name})
+                validated.append({'id': privilege.id, 'name': privilege.name})
             else:
                 docs_url = (
                     "https://lw.microstrategy.com/msdz/msdl/GARelease_Current/docs/"
@@ -252,7 +246,6 @@ class PrivilegeList:
     Attributes:
         connection: A MicroStrategy connection object
     """
-    _DELETE_NONE_VALUES_RECURSION = False
 
     def __init__(self, connection: Connection):
         """Initialize PrivilegeList object.

@@ -1,6 +1,6 @@
 from typing import Optional, TYPE_CHECKING
 
-from mstrio.utils.api_helpers import changeset_decorator, unpack_information
+from mstrio.utils.api_helpers import changeset_manager, unpack_information
 from mstrio.utils.error_handlers import ErrorHandler
 
 if TYPE_CHECKING:
@@ -54,29 +54,28 @@ def get_user_hierarchies(
     )
 
 
-@changeset_decorator
 @unpack_information
 @ErrorHandler(err_msg='Error creating the user hierarchy.')
 def create_user_hierarchy(
-    connection: "Connection", body: dict, changeset_id: str, error_msg: Optional[str] = None
+    connection: "Connection", body: dict, error_msg: Optional[str] = None
 ):
     """Creates a new user hierarchy in the changeset,
     based on the definition provided in request body.
 
     Args:
         connection: MicroStrategy REST API connection object
-        changeset_id (str): Changeset ID
         body: User hierarchy creation body
         error_msg (str, optional): Custom Error Message for Error Handling
 
     Returns:
         Complete HTTP response object. Expected status is 201.
     """
-    return connection.post(
-        url=f"{connection.base_url}/api/model/hierarchies",
-        headers={'X-MSTR-MS-Changeset': changeset_id},
-        json=body
-    )
+    with changeset_manager(connection) as changeset_id:
+        return connection.post(
+            url=f"{connection.base_url}/api/model/hierarchies",
+            headers={'X-MSTR-MS-Changeset': changeset_id},
+            json=body
+        )
 
 
 @unpack_information
@@ -97,7 +96,7 @@ def get_user_hierarchy(
 
     Args:
         connection: MicroStrategy REST API connection object
-        hierarchy_id (str): Hierarchy ID. The ID can be:
+        id (str): Hierarchy ID. The ID can be:
             - the object ID used in the metadata.
             - the object ID used in the changeset, but not yet committed
             to metadata.
@@ -120,12 +119,10 @@ def get_user_hierarchy(
     )
 
 
-@changeset_decorator
 @unpack_information
 @ErrorHandler(err_msg='Error updating the user hierarchy with ID: {id}.')
 def update_user_hierarchy(
     connection: "Connection",
-    changeset_id: str,
     id: str,
     body: dict,
     error_msg: Optional[str] = None
@@ -135,8 +132,7 @@ def update_user_hierarchy(
 
     Args:
         connection: MicroStrategy REST API connection object
-        changeset_id (str, optional): Changeset ID
-        hierarchy_id (str): Hierarchy ID. The ID can be:
+        id (str): Hierarchy ID. The ID can be:
             - the object ID used in the metadata.
             - the object ID used in the changeset, but not yet committed
             to metadata.
@@ -146,34 +142,33 @@ def update_user_hierarchy(
     Returns:
         Complete HTTP response object. Expected status is 200.
     """
-    return connection.patch(
-        url=f"{connection.base_url}/api/model/hierarchies/{id}",
-        headers={'X-MSTR-MS-Changeset': changeset_id},
-        json=body
-    )
+    with changeset_manager(connection) as changeset_id:
+        return connection.patch(
+            url=f"{connection.base_url}/api/model/hierarchies/{id}",
+            headers={'X-MSTR-MS-Changeset': changeset_id},
+            json=body
+        )
 
 
-@changeset_decorator
 @ErrorHandler(err_msg='Error deleting the user hierarchy with ID: {id}.')
 def delete_user_hierarchy(
-    connection: "Connection", id: str, changeset_id: str, error_msg: Optional[str] = None
+    connection: "Connection", id: str, error_msg: Optional[str] = None
 ):
     """Delete a specific user hierarchy
 
     Args:
         connection: MicroStrategy REST API connection object
-        hierarchy_id (str): Hierarchy ID. The ID can be:
+        id (str): Hierarchy ID. The ID can be:
             - the object ID used in the metadata.
             - the object ID used in the changeset, but not yet committed
             to metadata.
-        changeset_id (str): Changeset ID
         error_msg (str, optional): Custom Error Message for Error Handling
 
     Returns:
         Complete HTTP response object. Expected status is 204.
     """
-
-    return connection.delete(
-        url=f"{connection.base_url}/api/model/hierarchies/{id}",
-        headers={'X-MSTR-MS-Changeset': changeset_id},
-    )
+    with changeset_manager(connection) as changeset_id:
+        return connection.delete(
+            url=f"{connection.base_url}/api/model/hierarchies/{id}",
+            headers={'X-MSTR-MS-Changeset': changeset_id},
+        )

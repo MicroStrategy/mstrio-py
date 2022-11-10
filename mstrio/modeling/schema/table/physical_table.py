@@ -84,6 +84,8 @@ def list_physical_tables(
             fields="physicalTable",
         )
 
+        tables = list({item['id']: item for item in tables}.values())
+
     return (
         tables if to_dictionary else
         PhysicalTable.bulk_from_dict(source_list=tables, connection=connection)
@@ -177,7 +179,6 @@ class PhysicalTable(Entity):
         sql_statement: This field applies only to a free form sql physical table
     """
 
-    _DELETE_NONE_VALUES_RECURSION = False
     _OBJECT_TYPE: ObjectTypes = ObjectTypes.DBTABLE
     _FROM_DICT_MAP = {
         **Entity._FROM_DICT_MAP,

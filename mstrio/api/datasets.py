@@ -191,7 +191,7 @@ def publish_status(connection, id, session_id):
 
 
 @ErrorHandler(err_msg='Failed to cancel the publication of dataset with ID {id}')
-def publish_cancel(connection, id, session_id):
+def publish_cancel(connection, id, session_id, throw_error=False):
     """Delete a multi-table dataset upload session and cancel publication.
 
     Args:
