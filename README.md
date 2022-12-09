@@ -141,6 +141,8 @@ Error getting cube metadata information. I-Server Error ERR001, (ServiceManager:
 - Python 3.10+
 - MicroStrategy 2019 Update 4 (11.1.4)+
 
+**Note**: Python 3.11 is not officially supported yet.
+
 <a id="microstrategy-for-jupyter" name="microstrategy-for-jupyter"></a>
 ### MicroStrategy for Jupyter
 
