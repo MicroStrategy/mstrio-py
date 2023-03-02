@@ -31,41 +31,45 @@ from mstrio.modeling.expression import (
     VariantType,
     Function
 )
-from workflows.get_all_columns_in_table import list_table_columns
-
-# Following variables are defining basic attributes
-PROJECT_NAME = $project_name  # Insert name of project here
-ATTRIBUTE_NAME = $attribute_name # Insert name of edited attribute here
-ATTRIBUTE_ID = $attribute_id  # Insert ID of edited attribute here
-ATTRIBUTE_NEW_NAME = $attribute_new_name  # Insert new name of edited attribute here
-ATTRIBUTE_DESCRIPTION = $attribute_description  # Insert new description of edited attribute here
-TABLE_NAME = $table_name  # Insert table name here
-ATTRIBUTE_FORM_NAME = $attribute_form_name  # Insert attribute form name here
-ATTRIBUTE_FORM_ALTERED_NAME = $attribute_form_altered_name  # Insert altered attribute form name here
-ATTRIBUTE_FORM_DESCRIPTION = $attribute_form_description  # Insert altered attribute form description here
-FOLDER_ID = $folder_id  # Insert folder ID here
+from mstrio.modeling.schema.table import list_logical_tables, LogicalTable
 
 # For every object we want to reference using a SchemaObjectReference we need
-# to provide an Object ID for. For the script to work correctly all occurences of `'<Object_ID>'` need to be replaced with IDs specific to the object used. In the future all of those will be made as separate variables.
+# to provide an Object ID for. For the script to work correctly all occurences
+# of `'<object_id>'` and others with form `<some_name>` need to be replaced with
+# data specific to the object used.
+
+# Define a variable which can be later used in a script
+PROJECT_NAME = $project_name  # Insert project name here
 
 conn = get_connection(workstationData, PROJECT_NAME)
 
-# Function list_table_columns() might be useful to get table columns information
-# needed to create/alter an Attribute
-table_columns = list_table_columns(conn)
+# Function list_logical_tables() might be useful to get table information
+# needed to create/alter an Attribute.
+# Table name and ID will be used in tables[] in ATTRIBUTE_DATA
+logical_tables = list_logical_tables(conn)
+
+# Function LogicalTable.list_columns() might be useful to get table columns information
+# needed to create/alter an Attribute.
+# Column name and ID will be used in expressions[] in ATTRIBUTE_DATA
+logical_table = LogicalTable(conn, id='<logical_table_id>')
+table_columns = logical_table.list_columns()
+
+# Define a variable which can be later used in a script
+FOLDER_ID = $folder_id  # Insert folder ID here
 
 # Example attribute data.
 # Parts of this dictionary will be used in the later parts of this demo script
+# Many values in this dictionary should be changed to real ones
 ATTRIBUTE_DATA = {
-    'name': 'Demo Attribute',
+    'name': '<attribute_name>',
     'sub_type': ObjectSubType.ATTRIBUTE,
     'destination_folder': FOLDER_ID,
     'forms': [
         AttributeForm.local_create(
             conn,
-            name='ID',
-            alias='day_date',
-            category='ID',
+            name='<attribute_form_name>',
+            alias='<alias>',
+            category='<category>',
             display_format=AttributeForm.DisplayFormat.DATE,
             data_type=DataType(
                 type=DataType.Type.TIME_STAMP,
@@ -76,35 +80,35 @@ ATTRIBUTE_DATA = {
                 FactExpression(
                     expression=Expression(
                         tree=ColumnReference(
-                            column_name='day_date',
-                            object_id='<Object_ID>',
+                            column_name='<column_name>',
+                            object_id='<object_id>',
                         ),
                     ),
                     tables=[
                         SchemaObjectReference(
-                            name='DAY_CTR_SLS',
+                            name='<table_name>',
                             sub_type=ObjectSubType.LOGICAL_TABLE,
-                            object_id='<Object_ID>',
+                            object_id='<object_id>',
                         ),
                         SchemaObjectReference(
-                            name='LU_DAY',
+                            name='<table_name>',
                             sub_type=ObjectSubType.LOGICAL_TABLE,
-                            object_id='<Object_ID>',
+                            object_id='<object_id>',
                         ),
                     ],
                 ),
             ],
             lookup_table=SchemaObjectReference(
-                name='LU_DAY',
+                name='<lookup_table_name>',
                 sub_type=ObjectSubType.LOGICAL_TABLE,
-                object_id='<Object_ID>',
+                object_id='<object_id>',
             ),
         ),
         AttributeForm.local_create(
             conn,
-            name='COST',
-            alias='total_cost',
-            category='COST',
+            name='<attribute_form_name>',
+            alias='<alias>',
+            category='<cost>',
             display_format=AttributeForm.DisplayFormat.NUMBER,
             data_type=DataType(
                 type=DataType.Type.FLOAT,
@@ -115,37 +119,40 @@ ATTRIBUTE_DATA = {
                 FactExpression(
                     expression=Expression(
                         tree=ColumnReference(
-                            column_name='tot_cost',
-                            object_id='<Object_ID>',
+                            column_name='<column_name>',
+                            object_id='<object_id>',
                         ),
                     ),
                     tables=[
                         SchemaObjectReference(
-                            name='DAY_CTR_SLS',
+                            name='<table_name>',
                             sub_type=ObjectSubType.LOGICAL_TABLE,
-                            object_id='<Object_ID>',
+                            object_id='<object_id>',
                         )
                     ],
                 ),
             ],
             lookup_table=SchemaObjectReference(
-                name='DAY_CTR_SLS',
+                name='<lookup_table_name>',
                 sub_type=ObjectSubType.LOGICAL_TABLE,
-                object_id='<Object_ID>',
+                object_id='<object_id>',
             ),
         ),
     ],
-    'key_form': FormReference(name='ID'),
+    'key_form': FormReference(name='<form_name>'),
     'displays': AttributeDisplays(
-        report_displays=[FormReference(name='ID')],
-        browse_displays=[FormReference(name='ID')],
+        report_displays=[FormReference(name='<form_name>')],
+        browse_displays=[FormReference(name='<form_name>')],
     ),
     'attribute_lookup_table': SchemaObjectReference(
-        name='LU_DAY',
+        name='<attribute_lookup_table_name>',
         sub_type=ObjectSubType.LOGICAL_TABLE,
-        object_id='<Object_ID>',
+        object_id='<object_id>',
     ),
 }
+
+# Define a variable which can be later used in a script
+ATTRIBUTE_NAME = $attribute_name # Insert name of edited attribute here
 
 # Attributes management
 # Get list of attributes, with examples of different conditions
@@ -153,15 +160,21 @@ ATTRIBUTE_DATA = {
 list_of_all_atrs = list_attributes(connection=conn)
 list_of_limited_atrs = list_attributes(connection=conn, limit=10)
 list_of_atrs_by_name = list_attributes(connection=conn, name=ATTRIBUTE_NAME)
-list_of_atrs_by_id = list_attributes(connection=conn, id=ATTRIBUTE_ID)
 list_of_atrs_as_trees = list_attributes(conn, show_expression_as=ExpressionFormat.TREE)
 
 # list attributes with expressions represented as tokens
 list_of_atrs_as_tokens = list_attributes(conn, show_expression_as=ExpressionFormat.TOKENS)
 
-# Get specific attribute by id or name with expression represented as trees
+# Define a variable which can be later used in a script
+ATTRIBUTE_ID = $attribute_id  # Insert ID of edited attribute here
+
+# Get specific attribute by id
 attr = Attribute(connection=conn, id=ATTRIBUTE_ID)
+
+# Get specific attribute by name
 attr = Attribute(connection=conn, name=ATTRIBUTE_NAME)
+
+# Get specific attribute with expression represented as tree (default argument)
 attr = Attribute(conn, name=ATTRIBUTE_NAME, show_expression_as=ExpressionFormat.TREE)
 
 # Get an attribute with expression represented as tokens
@@ -170,7 +183,8 @@ attr = Attribute(conn, id=ATTRIBUTE_ID, show_expression_as=ExpressionFormat.TOKE
 # Listing properties
 properies = attr.list_properties()
 
-# Create attribute and get it with expression represented as tree
+# Create attribute and get it with expression represented as tree.
+# Data from constant `ATTRIBUTE_DATA` defined above in the file is used here
 attr = Attribute.create(connection=conn, **ATTRIBUTE_DATA)
 attr = Attribute.create(
     connection=conn,
@@ -194,6 +208,10 @@ attr = Attribute.create(conn, **ATTRIBUTE_DATA, show_expression_as=ExpressionFor
 schema_manager = SchemaManagement(connection=conn, project_id=conn.project_id)
 task = schema_manager.reload(update_types=[SchemaUpdateType.LOGICAL_SIZE])
 
+# Define variables which can be later used in a script
+ATTRIBUTE_NEW_NAME = $attribute_new_name  # Insert new name of edited attribute here
+ATTRIBUTE_DESCRIPTION = $attribute_description  # Insert new description of edited attribute here
+
 # Alter attributes
 attr.alter(name=ATTRIBUTE_NEW_NAME, description=ATTRIBUTE_DESCRIPTION)
 
@@ -204,17 +222,17 @@ sorts = attr.sorts
 # Alter displays and sorts
 attr.alter(
     displays=AttributeDisplays(
-        report_displays=[FormReference(name='ID'), FormReference(name='COST')],
-        browse_displays=[FormReference(name='ID')],
+        report_displays=[FormReference(name='<form_name>'), FormReference(name='<form_name>')],
+        browse_displays=[FormReference(name='<form_name>')],
     )
 )
 attr.alter(
     sorts=AttributeSorts(
         report_sorts=[
-            AttributeSort(FormReference(name='ID'), ascending=True),
-            AttributeSort(FormReference(name='COST'))
+            AttributeSort(FormReference(name='form_name'), ascending=True),
+            AttributeSort(FormReference(name='form_name'))
         ],
-        browse_sorts=[AttributeSort(FormReference(name='COST'))],
+        browse_sorts=[AttributeSort(FormReference(name='<form_name>'))],
     )
 )
 
@@ -225,6 +243,9 @@ candidates = attr_item.list_relationship_candidates(already_used=False, to_dicti
 
 # Listing tables
 tables = attr_item.list_tables()
+
+TABLE_NAME = $table_name  # Insert table name here
+
 
 # Select table with given TABLE_NAME from tables
 [choosen_table] = [tab for tab in tables if tab.name == TABLE_NAME]
@@ -259,9 +280,9 @@ attr_item.remove_parent(relationship_parent)
 # Add a form to the attribute
 attribute_form = AttributeForm.local_create(
     conn,
-    name='SALES',
-    alias='tot_unit_sales',
-    category='SALES',
+    name='<attribute_form_name>',
+    alias='<alias>',
+    category='<category>',
     display_format=AttributeForm.DisplayFormat.NUMBER,
     data_type=DataType(
         type=DataType.Type.FLOAT,
@@ -272,31 +293,38 @@ attribute_form = AttributeForm.local_create(
         FactExpression(
             expression=Expression(
                 tree=ColumnReference(
-                    column_name='tot_unit_sales',
-                    object_id='<Object_ID>',
+                    column_name='<column_name>',
+                    object_id='<object_id>',
                 ),
             ),
             tables=[
                 SchemaObjectReference(
-                    name='DAY_CTR_SLS',
+                    name='<table_name>',
                     sub_type=ObjectSubType.LOGICAL_TABLE,
-                    object_id='<Object_ID>',
+                    object_id='<object_id>',
                 )
             ],
         ),
     ],
     lookup_table=SchemaObjectReference(
-        name='DAY_CTR_SLS',
+        name='<lookup_table_name>',
         sub_type=ObjectSubType.LOGICAL_TABLE,
-        object_id='<Object_ID>',
+        object_id='<object_id>',
     ),
 )
 
 attr.add_form(form=attribute_form)
 
+ATTRIBUTE_FORM_NAME = $attribute_form_name  # Insert attribute form name here
+
+
 # Get form with specified id. This retrieves the form from the local
 # Attribute object, not from the server
 attr_form = attr.get_form(name=ATTRIBUTE_FORM_NAME)
+
+ATTRIBUTE_FORM_ALTERED_NAME = $attribute_form_altered_name  # Insert altered attribute form name here
+ATTRIBUTE_FORM_DESCRIPTION = $attribute_form_description  # Insert altered attribute form description here
+
 # Alter form
 attr.alter_form(
     form_id=attr_form.id, name=ATTRIBUTE_FORM_ALTERED_NAME, description=ATTRIBUTE_FORM_DESCRIPTION
@@ -315,10 +343,10 @@ fact_expression = FactExpression(
         tokens=[
             Token(
                 type=Token.Type.COLUMN_REFERENCE,
-                value='order_date',
+                value='<value>',
                 target=SchemaObjectReference(
-                    object_id='<Object_ID>',
-                    name='order_date',
+                    object_id='<object_id>',
+                    name='<target_name>',
                     sub_type=ObjectSubType.COLUMN,
                 ),
                 level=Token.Level.RESOLVED,
@@ -334,14 +362,14 @@ fact_expression = FactExpression(
     ),
     tables=[
         SchemaObjectReference(
-            name='table 1 name',
+            name='<table_name>',
             sub_type=ObjectSubType.LOGICAL_TABLE,
-            object_id='table 1 id',
+            object_id='<object_id>',
         ),
         SchemaObjectReference(
-            name='table 2 name',
+            name='<table_name>',
             sub_type=ObjectSubType.LOGICAL_TABLE,
-            object_id='table 2 id',
+            object_id='<object_id>',
         ),
     ],
 )
@@ -350,15 +378,15 @@ fact_expression = FactExpression(
 fact_expression = FactExpression(
     expression=Expression(
         tree=ColumnReference(
-            column_name='DAY_DATE',
-            object_id='<Object_ID>',
+            column_name='<column_name>',
+            object_id='<object_id>',
         ),
     ),
     tables=[
         SchemaObjectReference(
-            name='LU_DAY',
+            name='<table_name>',
             sub_type=ObjectSubType.LOGICAL_TABLE,
-            object_id='<Object_ID>',
+            object_id='<object_id>',
         ),
     ],
 )
@@ -373,8 +401,8 @@ new_expression = Expression(
         function=Function.ADD,
         children=[
             ColumnReference(
-                column_name='ly_date_day',
-                object_id='<Object_ID>',
+                column_name='<column_name>',
+                object_id='<object_id>',
             ),
             Constant(variant=Variant(VariantType.INT32, '1')),
         ],

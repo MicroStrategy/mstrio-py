@@ -1,5 +1,5 @@
 import logging
-from typing import List, Optional, Union
+from typing import Optional
 
 from packaging import version
 
@@ -9,7 +9,14 @@ from mstrio.connection import Connection
 from mstrio.utils import helper
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
-from . import CacheUpdateSubscription, EmailSubscription, Subscription
+from . import (
+    CacheUpdateSubscription,
+    EmailSubscription,
+    FileSubscription,
+    FTPSubscription,
+    HistoryListSubscription,
+    Subscription
+)
 from .content import Content
 from .delivery import Delivery
 
@@ -24,7 +31,7 @@ def list_subscriptions(
     to_dictionary: bool = False,
     limit: Optional[int] = None,
     **filters
-) -> Union[List["Subscription"], List[dict]]:
+) -> list["Subscription"] | list[dict]:
     """Get all subscriptions per project as list of Subscription objects or
     dictionaries.
 
@@ -81,6 +88,9 @@ DeliveryMode = Delivery.DeliveryMode
 subscription_type_from_delivery_mode_dict = {
     DeliveryMode.CACHE: CacheUpdateSubscription,
     DeliveryMode.EMAIL: EmailSubscription,
+    DeliveryMode.FILE: FileSubscription,
+    DeliveryMode.FTP: FTPSubscription,
+    DeliveryMode.HISTORY_LIST: HistoryListSubscription
 }
 
 
@@ -159,7 +169,7 @@ class SubscriptionManager:
             **filters
         )
 
-    def delete(self, subscriptions: Union[List[Subscription], List[str]], force=False) -> bool:
+    def delete(self, subscriptions: list[Subscription] | list[str], force=False) -> bool:
         """Deletes all passed subscriptions. Returns True if successfully
         removed all subscriptions.
 
@@ -172,9 +182,10 @@ class SubscriptionManager:
         else:
             temp_subs = []
             for subscription in subscriptions:
-                subscription = subscription if isinstance(
-                    subscription, Subscription
-                ) else Subscription(self.connection, subscription, self.project_id)
+                if not isinstance(subscription, Subscription):
+                    subscription = Subscription(
+                        connection=self.connection, id=subscription, project_id=self.project_id
+                    )
                 temp_subs.append(subscription)
             subscriptions = temp_subs
             succeeded = 0
@@ -209,7 +220,7 @@ class SubscriptionManager:
 
                 return succeeded == len(subscriptions)
 
-    def execute(self, subscriptions: Union[List[Subscription], List[str]]):
+    def execute(self, subscriptions: list[Subscription] | list[str]):
         """Executes all passed subscriptions.
 
         Args:
@@ -220,21 +231,22 @@ class SubscriptionManager:
         else:
             subscriptions = subscriptions if isinstance(subscriptions, list) else [subscriptions]
             for subscription in subscriptions:
-                subscription = subscription if isinstance(
-                    subscription, Subscription
-                ) else Subscription(self.connection, subscription, self.project_id)
-                if subscription.delivery.mode == 'EMAIL':
+                if not isinstance(subscription, Subscription):
+                    subscription = Subscription(
+                        connection=self.connection, id=subscription, project_id=self.project_id
+                    )
+                if subscription.delivery.mode in ('EMAIL', 'FILE', 'HISTORY_LIST', 'FTP'):
                     subscription.execute()
                 else:
                     msg = (
                         f"Subscription '{subscription.name}' with ID '{subscription.id}' "
-                        f"could not be executed. Delivery mode '{subscription.delivery['mode']}'"
+                        f"could not be executed. Delivery mode '{subscription.delivery.mode}'"
                         " is not supported."
                     )
                     helper.exception_handler(msg, UserWarning)
 
     @method_version_handler('11.3.0000')
-    def available_bursting_attributes(self, content: Union[dict, "Content"]):
+    def available_bursting_attributes(self, content: dict | Content):
         """Get a list of available attributes for bursting feature, for a given
         content.
 
@@ -259,7 +271,7 @@ class SubscriptionManager:
         content_type: Optional[str] = None,
         content: Optional["Content"] = None,
         delivery_type='EMAIL'
-    ) -> List[dict]:
+    ) -> list[dict]:
         """List available recipients for a subscription contents.
         Specify either both `content_id` and `content_type` or just `content`
         object.

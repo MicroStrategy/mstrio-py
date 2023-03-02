@@ -229,6 +229,12 @@ class Connection:
                 exception_type=exceptions.VersionException
             )
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exception_type, exception_value, exception_traceback):
+        self.close()
+
     def connect(self) -> None:
         """Authenticates the user and creates a new connection with the
         Intelligence Server.

@@ -1,11 +1,11 @@
-import json
 from datetime import datetime
+from enum import Enum, IntFlag
+import json
 import logging
-from enum import Enum
-from typing import List, Optional, TYPE_CHECKING, Union
+from typing import Optional, TYPE_CHECKING
 
-import pandas as pd
 from pandas import DataFrame, read_csv
+import pandas as pd
 from requests.exceptions import HTTPError
 
 from mstrio import config
@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def create_users_from_csv(connection: Connection, csv_file: str) -> List["User"]:
+def create_users_from_csv(connection: Connection, csv_file: str) -> list["User"]:
     """Create new user objects from csv file. Possible header values for the
     users are the same as in the `User.create()` method.
 
@@ -49,7 +49,7 @@ def list_users(
     to_dictionary: bool = False,
     limit: Optional[int] = None,
     **filters
-) -> Union[List["User"], List[dict]]:
+) -> list["User"] | list[dict]:
     """Get list of user objects or user dicts. Optionally filter the users by
     specifying 'name_begins', 'abbreviation_begins' or other filters.
 
@@ -262,7 +262,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
         description: Optional[str] = None,
         enabled: bool = True,
         password_modifiable: bool = True,
-        password_expiration_date: Optional[Union[str, datetime]] = None,
+        password_expiration_date: Optional[str | datetime] = None,
         require_new_password: bool = True,
         standard_auth: bool = True,
         ldapdn: Optional[str] = None,
@@ -322,7 +322,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
         return cls.from_dict(source=response, connection=connection)
 
     @classmethod
-    def _create_users_from_csv(cls, connection: Connection, csv_file: str) -> List["User"]:
+    def _create_users_from_csv(cls, connection: Connection, csv_file: str) -> list["User"]:
         func = cls.create
         args = helper.get_args_from_func(func)
         df = read_csv(csv_file, na_filter=False, usecols=lambda x: x in args)
@@ -349,7 +349,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
         to_dictionary: bool = False,
         limit: Optional[int] = None,
         **filters
-    ) -> Union[List["User"], List[dict]]:
+    ) -> list["User"] | list[dict]:
         msg = "Error getting information for a set of users."
         objects = helper.fetch_objects_async(
             connection,
@@ -375,7 +375,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
         abbreviation_begins: Optional[str] = None,
         limit: Optional[int] = None,
         **filters
-    ) -> List[str]:
+    ) -> list[str]:
         user_dicts = User._get_users(
             connection=connection,
             name_begins=name_begins,
@@ -442,7 +442,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
             address: The actual value of the address i.e. email address
                 associated with this address name/id
             default: Specifies whether this address is the default address
-                (change isDefault parameter).
+                (change isDefault parameter). Default value is set to True.
         """
         helper.validate_param_value(
             'address', address, str, regex=r"[^@]+@[^@]+\.[^@]+", valid_example="name@mail.com"
@@ -540,7 +540,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
                 setattr(self, "_addresses", new_addresses)
 
     def add_to_user_groups(
-        self, user_groups: Union[str, "UserGroup", List[Union[str, "UserGroup"]]]
+        self, user_groups: "str | UserGroup | list[str | UserGroup]"
     ) -> None:
         """Adds this User to user groups specified in user_groups.
 
@@ -554,7 +554,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
             logger.info(f"User '{self.name}' is already a member of {failed}")
 
     def remove_from_user_groups(
-        self, user_groups: Union[str, "UserGroup", List[Union[str, "UserGroup"]]]
+        self, user_groups: "str | UserGroup | list[str | UserGroup]"
     ) -> None:
         """Removes this User from user groups specified in user_groups.
 
@@ -574,7 +574,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
         self.remove_from_user_groups(user_groups=existing_ids)
 
     def assign_security_role(
-        self, security_role: Union[SecurityRole, str], project: Union["Project", str] = None
+        self, security_role: SecurityRole | str, project: Optional["Project | str"] = None
     ) -> None:  # NOSONAR
         """Assigns a Security Role to the user for given project.
 
@@ -592,7 +592,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
             logger.info(f"Assigned Security Role '{security_role.name}' to user: '{self.name}'")
 
     def revoke_security_role(
-        self, security_role: Union[SecurityRole, str], project: Union["Project", str] = None
+        self, security_role: SecurityRole | str, project: Optional["Project | str"] = None
     ) -> None:  # NOSONAR
         """Removes a Security Role from the user for given project.
 
@@ -611,7 +611,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
 
     @method_version_handler('11.3.0200')
     def list_security_filters(
-        self, projects: Optional[Union[str, List[str]]] = None, to_dictionary: bool = False
+        self, projects: Optional[str | list[str]] = None, to_dictionary: bool = False
     ) -> dict:
         """Get the list of security filters for user. They can be filtered by
         the projects' ids.
@@ -647,7 +647,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
             return objects_
         return self._security_filters
 
-    def apply_security_filter(self, security_filter: Union["SecurityFilter", str]) -> bool:
+    def apply_security_filter(self, security_filter: "SecurityFilter | str") -> bool:
         """Apply a security filter to the user.
 
         Args:
@@ -661,7 +661,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
             security_filter = SecurityFilter.from_dict({"id": security_filter}, self.connection)
         return security_filter.apply(self.id)
 
-    def revoke_security_filter(self, security_filter: Union["SecurityFilter", str]) -> bool:
+    def revoke_security_filter(self, security_filter: "SecurityFilter | str") -> bool:
         """Revoke a security filter from the user.
 
         Args:
@@ -677,7 +677,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
         return security_filter.revoke(self.id)
 
     def grant_privilege(
-        self, privilege: Union[str, List[str], "Privilege", List["Privilege"]]
+        self, privilege: "str | list[str] | Privilege | list[Privilege]"
     ) -> None:
         """Grant privileges directly to the user.
 
@@ -702,7 +702,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
             logger.info(f"User '{self.name}' already has privilege(s) {failed}")
 
     def revoke_privilege(
-        self, privilege: Union[str, List[str], "Privilege", List["Privilege"]]
+        self, privilege: "str | list[str] | Privilege | list[Privilege]"
     ) -> None:
         """Revoke directly granted user privileges.
 
@@ -766,7 +766,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
                 logger.info(f"User '{self.name}' does not have any directly granted privileges")
 
     def list_privileges(
-        self, mode: Union[PrivilegeMode, str] = PrivilegeMode.ALL, to_dataframe: bool = False
+        self, mode: PrivilegeMode | str = PrivilegeMode.ALL, to_dataframe: bool = False
     ) -> list:
         """List privileges for user.
 
@@ -816,7 +816,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
 
         return to_df(privileges) if to_dataframe else privileges
 
-    def disconnect(self, nodes: Union[str, List[str]] = None) -> None:
+    def disconnect(self, nodes: Optional[str | list[str]] = None) -> None:
         """Disconnect all active user connection sessions for the specified
         node.
 
@@ -838,7 +838,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
         """
         return super().delete(force=force)
 
-    def _to_dataframe_as_columns(self, properties: Optional[List[str]] = None) -> pd.DataFrame:
+    def _to_dataframe_as_columns(self, properties: Optional[list[str]] = None) -> pd.DataFrame:
         """Exports user object to dataframe, with properties as columns
 
         Args:
@@ -851,12 +851,14 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
 
         def convert(obj, inside=False):
 
+            if isinstance(obj, IntFlag):
+                return obj.value
             if isinstance(obj, (str, int)):
                 return obj
             if isinstance(obj, Enum):
                 return obj.value
             if isinstance(obj, datetime):
-                return str(datetime)
+                return str(obj)
 
             result = None
 
@@ -880,7 +882,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
     def to_datafame_from_list(
         cls,
         objects: list['User'],
-        properties: Optional[List[str]] = None
+        properties: Optional[list[str]] = None
     ) -> pd.DataFrame:
         """Exports list of user objects to dataframe.
         The properties that are lists, dictionaries, or objects of
@@ -913,7 +915,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
         cls,
         objects: list['User'],
         path: Optional[str] = None,
-        properties: Optional[List[str]] = None,
+        properties: Optional[list[str]] = None,
     ) -> str | None:
         """Exports list of user objects to csv (if path is provided)
         or to string (if path is not provided).

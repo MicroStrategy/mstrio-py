@@ -1,6 +1,7 @@
 import os
 
-from setuptools import dist, find_packages, setup
+import pkg_resources
+from setuptools import find_packages, setup
 from setuptools.extern.packaging import version as packaging_version
 
 from mstrio import (__author__, __author_email__, __description__, __license__, __title__,
@@ -15,7 +16,7 @@ else:
     dist_version = __version__  # define the default version
 
 # Patch Version class to preserve original version string
-dist.pkg_resources.safe_version = lambda v: v
+pkg_resources.safe_version = lambda v: v
 
 
 class NoNormalizeVersion(packaging_version.Version):
@@ -48,16 +49,17 @@ peer_force_version = [  # peer dependency (dep of dep)
                         # handled in code ~20 lines below)
     'urllib3>=1.26.0',  # ver 1.25.x is incompatible
     'Jinja2>=3, <4',    # UI related, but also dev-dep of `pandas` but required for testing
+    'certifi>=2022.12.7',  # SEC safe version
 ]
 
 requirements = [
     'requests>=2.27, <2.29',
-    'requests_futures>=1.0.0, <1.1',
-    'pandas>=1.1.5, <=1.5',
-    'numpy>=1.23.4, <1.24',
+    'requests-futures>=1.0.0, <1.1',
+    'pandas>=1.1.5, <1.6',
+    'numpy>=1.24, <1.25',
     'tqdm>=4.41, <4.70',
     'packaging>=21.3, <22',
-    'stringcase>=1.2, <1.3',
+    'stringcase>=1.2, <1.3'
 ] + peer_force_version
 
 # Add dependencies for connector-jupyter if connector-jupyter folder is added
@@ -69,11 +71,12 @@ if find_in_file('graft connector-jupyter', MANIFEST_FILE):
 
         # peer, UI related, force version for SEC
         'notebook>=6.4.12',
-        'jupyter-core>=4.11.2',
+        'jupyter_core>=4.11.2',
         'lxml>=4.9.1',
         'ipython>=8.4.0, <9',
         'nbconvert>=7, <8',
-        'mistune>=2.0.4'
+        'mistune>=2.0.4',
+        'setuptools>=65.5.1'
     ]
 
 setup(
@@ -97,7 +100,7 @@ setup(
     extras_require={
         'dev': [
             'flake8', 'mypy', 'yapf', 'nose', 'coverage', 'pytest', 'pytest-cov', 'isort',
-            'pre-commit'
+            'pre-commit', 'flaky', 'python-decouple'
         ],  # noqa
     },
     packages=find_packages(),
@@ -109,6 +112,7 @@ setup(
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',
         'Programming Language :: Python :: 3 :: Only',
         'Intended Audience :: Developers',
         'Intended Audience :: System Administrators',

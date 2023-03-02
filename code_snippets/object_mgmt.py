@@ -30,23 +30,9 @@ from mstrio.utils.entity import Rights
 
 from mstrio.connection import get_connection
 
-PROJECT_NAME = $project_name  # Project to connect to
+# Define variables which can be later used in a script
+PROJECT_NAME = $project_name
 PROJECT_ID = $project_id
-
-# properties of folder to be created or altered
-FOLDER_NAME = $folder_name
-FOLDER_PARENT_ID = $folder_parent_id
-FOLDER_DESCRIPTION = $folder_description
-FOLDER_ID = $folder_id  # ID for Folder object lookup
-TRUSTED_USER_ID = $trusted_user_id
-
-OBJECT_NAME = $object_name
-OBJECT_DESCRIPTION = $object_description
-
-SEARCH_PATTERN = $search_pattern  # string to get search suggestions for
-
-# For every object we want to reference using a SchemaObjectReference we need
-# to provide an Object ID for. For the script to work correctly all occurences of `'<Object_ID>'` need to be replaced with IDs specific to the object used. In the future all of those will be made as separate variables.
 
 conn = get_connection(workstationData, project_name=PROJECT_NAME)
 
@@ -64,10 +50,19 @@ get_predefined_folder_contents(
     conn, folder_type=PredefinedFolders.PUBLIC_REPORTS, project_id=PROJECT_ID
 )
 
+# Define variables which can be later used in a script
+FOLDER_NAME = $folder_name
+FOLDER_PARENT_ID = $folder_parent_id
+FOLDER_DESCRIPTION = $folder_description
+
 # create new folder in a particular folder
 new_folder = Folder.create(
     conn, name=FOLDER_NAME, parent=FOLDER_PARENT_ID, description=FOLDER_DESCRIPTION
 )
+
+# Define variables which can be later used in a script
+FOLDER_ID = $folder_id  # ID for Folder object lookup
+TRUSTED_USER_ID = $trusted_user_id
 
 # get folder with a given ID
 folder = Folder(conn, id=FOLDER_ID)
@@ -100,17 +95,27 @@ folder.delete(force=True)
 reports = list_objects(conn, ObjectTypes.REPORT_DEFINITION)  # see types.py for ObjectTypes values
 documents = list_objects(conn, ObjectTypes.DOCUMENT_DEFINITION)
 
+# Define variables which can be later used in a script
+OBJECT_ID = $object_id
+OBJECT_NAME = $object_name
+OBJECT_DESCRIPTION = $object_description
+
 # initialize an object of a given type (in this case `FOLDER`) with a given id
-object = Object(conn, ObjectTypes.FOLDER, '<Object_ID>')  # see types.py for ObjectTypes values
+object = Object(conn, ObjectTypes.FOLDER, OBJECT_ID)  # see types.py for ObjectTypes values
 
 # alter name and description of an object
 object.alter(name=OBJECT_NAME, description=OBJECT_DESCRIPTION)
 
+# Define variables which can be later used in a script
+REPORT_ID = $report_id
+DOCUMENT_ID = $document_id
+DOSSIER_ID = $dossier_id
+
 # certify object
-Object(conn, ObjectTypes.REPORT_DEFINITION, '<Object_ID>').certify()
+Object(conn, ObjectTypes.REPORT_DEFINITION, REPORT_ID).certify()
 
 # decertify object
-Object(conn, ObjectTypes.REPORT_DEFINITION, '<Object_ID>').decertify()
+Object(conn, ObjectTypes.REPORT_DEFINITION, REPORT_ID).decertify()
 
 # get object properties as a dictionary
 object.to_dict()
@@ -130,11 +135,15 @@ object.move(FOLDER_ID)
 # Delete objects of a given types (in this case `REPORT` and 'DOCUMENT)
 # and given ids. When argument `force` is set to `False` (default value), then
 # deletion must be approved.
-Object(conn, ObjectTypes.REPORT_DEFINITION, '<Object_ID>').delete()
-Object(conn, ObjectTypes.DOCUMENT_DEFINITION, '<Object_ID>').delete(force=True)
+Object(conn, ObjectTypes.REPORT_DEFINITION, REPORT_ID).delete()
+Object(conn, ObjectTypes.DOCUMENT_DEFINITION, DOCUMENT_ID).delete(force=True)
+
+# Define variables which can be later used in a script
+SEARCH_OBJECT_ID = $search_object_id
+SEARCH_PATTERN = $search_pattern  # string to get search suggestions for
 
 # initialize SearchObject and synchronize with server
-search_object = SearchObject(conn, id='<Object_ID>')
+search_object = SearchObject(conn, id=SEARCH_OBJECT_ID)
 
 # get search suggestions with the pattern set performed in all unique projects
 # across the cluster (it takes effect only in I-Server with cluster nodes)
@@ -191,28 +200,31 @@ results = full_search(
 # return cubes that are used by the given dossier (it can be performed with the
 # function `full_search` or method `get_connected_cubes` from `Document` class
 # or method `get_dependencies` from `Entity` class)
-cubes = Dossier(conn, id='<Object_ID>').get_connected_cubes()
-cubes = Dossier(conn, id='<Object_ID>').list_dependencies(
+cubes = Dossier(conn, id=DOSSIER_ID).get_connected_cubes()
+cubes = Dossier(conn, id=DOSSIER_ID).list_dependencies(
     project=PROJECT_ID, object_types=[ObjectSubTypes.OLAP_CUBE, ObjectSubTypes.SUPER_CUBE]
 )
 cubes = full_search(
     conn,
     project=PROJECT_ID,
     object_types=[ObjectSubTypes.OLAP_CUBE, ObjectSubTypes.SUPER_CUBE],
-    used_by_object_id='<Object_ID>',
+    used_by_object_id=DOCUMENT_ID,
     used_by_object_type=ObjectTypes.DOCUMENT_DEFINITION
 )
 
 # we can also list cubes that use given dossier
-cubes_using_dossier = Dossier(conn, id='<Object_ID>').list_dependents(
+cubes_using_dossier = Dossier(conn, id=DOSSIER_ID).list_dependents(
     project=PROJECT_ID, object_types=[ObjectSubTypes.OLAP_CUBE, ObjectSubTypes.SUPER_CUBE]
 )
+
+# Define a variable which can be later used in a script
+METRIC_ID = $metric_id
 
 # get all objects that use (also recursive) metric with given id
 objects = full_search(
     conn,
     project=PROJECT_ID,
-    uses_object_id='<Object_ID>',
+    uses_object_id=METRIC_ID,
     uses_object_type=ObjectTypes.METRIC,
     uses_recursive=True
 )

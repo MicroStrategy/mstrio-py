@@ -18,6 +18,7 @@ from mstrio.types import ExtendedType, ObjectSubTypes, ObjectTypes
 from mstrio.utils import helper
 from mstrio.utils.acl import ACE, ACLMixin, Rights
 from mstrio.utils.dependence_mixin import DependenceMixin
+from mstrio.utils.exceptions import NotSupportedError
 from mstrio.utils.time_helper import bulk_str_to_datetime, DatetimeFormats, map_str_to_datetime
 
 if TYPE_CHECKING:
@@ -34,6 +35,10 @@ class EntityBase(helper.Dictable):
 
     Class attributes:
     _OBJECT_TYPE (ObjectTypes): MSTR Object type defined in ObjectTypes
+    _OBJECT_SUBTYPES (list[ObjectSubTypes] | None): MSTR Object subtype defined
+        in ObjectSubTypes. It contains a list of subtypes, which the class
+        supports. Used in fetch(), to verify whether the retrieved object
+        is supported. None means that subtype won't be verified.
     _REST_ATTR_MAP (Dict[str, str]): A dictionary whose keys are names of
         fields of an HTTP response from the server, and values are their
         respective Python API mappings. This dictionary is mainly used when
@@ -134,6 +139,7 @@ class EntityBase(helper.Dictable):
         target_info (dict): ?
     """
     _OBJECT_TYPE: ObjectTypes = ObjectTypes.NONE  # MSTR object type defined in ObjectTypes
+    _OBJECT_SUBTYPES: list[ObjectSubTypes] | None = None  # None means subtype won't be verified.
     _REST_ATTR_MAP: Dict[str, str] = {}
     _API_GETTERS: Dict[Union[str, tuple], Callable] = {}
     _FROM_DICT_MAP: Dict[str, Callable] = {
@@ -202,19 +208,52 @@ class EntityBase(helper.Dictable):
 
             response = func(**param_value_dict)
             if response.ok:
-                response = response.json()
-                if type(response) == dict:
+                json = response.json()
+                if self._OBJECT_SUBTYPES and (subtype := json['subtype']):
+                    self._check_object_subtype(subtype)
+                if type(json) == dict:
                     object_dict = {
-                        key if isinstance(key, str) and len(response) == 1 else k: v
+                        key if isinstance(key, str) and len(json) == 1 else k: v
                         for k,
-                        v in response.items()
+                        v in json.items()
                     }
                     self._set_object_attributes(**object_dict)
-                elif type(response) == list:
-                    self._set_object_attributes(**{key: response})
+                elif type(json) == list:
+                    self._set_object_attributes(**{key: json})
 
             # keep track of fetched attributes
             self._add_to_fetched(key)
+
+    @classmethod
+    def _check_object_subtype(cls, subtype: int) -> None:
+        """Check if subtype is supported by a class.
+
+        Args:
+            subtype(int): number representing object's subtype.
+
+        Returns:
+            None
+
+        Raises:
+            NotSupportedError: If suptype is not in _OBJECT_SUBTYPES list.
+        """
+        if cls._OBJECT_SUBTYPES and not cls._is_subtype_supported(subtype):
+            raise NotSupportedError(
+                f"Objects with subtype {ObjectSubTypes(subtype) !r} are not supported."
+            )
+
+    @classmethod
+    def _is_subtype_supported(cls, subtype: int) -> bool:
+        """Check if subtype is supported by a class.
+
+        Args:
+            subtype (int): number representing object's subtype.
+
+        Returns:
+            True if subtype is supported by class.
+            False if subtype is not supported.
+        """
+        return subtype in [item.value for item in cls._OBJECT_SUBTYPES]
 
     def _add_to_fetched(self, keys: Union[str, tuple]) -> None:
         """Adds name/-s of attribute/-s to the `_fetched_attributes` set.
@@ -238,7 +277,7 @@ class EntityBase(helper.Dictable):
 
         Raises:
             TypeError: `attr` not passed as a string.
-            NotImplementedError: cls._API_GETTERS dictionary was not specified
+            ValueError: cls._API_GETTERS dictionary was not specified
             properly.
 
         Returns:
@@ -256,7 +295,7 @@ class EntityBase(helper.Dictable):
                 if attr in attributes:
                     return func
             else:
-                raise NotImplementedError
+                raise ValueError
         return None
 
     @classmethod
@@ -642,7 +681,7 @@ class EntityBase(helper.Dictable):
             A list of successful or unsuccessful requests.
 
         Raises:
-            NotImplementedError: If there is no information in `self._API_PATCH`
+            NotSupportedError: If there is no information in `self._API_PATCH`
                 dictionary about the update's type ('partial_put', 'put' or
                 'patch').
         """
@@ -660,7 +699,7 @@ class EntityBase(helper.Dictable):
                 body = self.__patch_body(attrs, translated_properties, op)
             else:
                 msg = f"{func} function is not supported by `_send_proper_patch_request`"
-                raise NotImplementedError(msg)
+                raise NotSupportedError(msg)
 
             if not body:
                 continue
@@ -1059,7 +1098,7 @@ class CopyMixin:
                 New python object holding the copied object.
         """
         if self._OBJECT_TYPE.value in [32]:
-            raise NotImplementedError("Object cannot be copied yet.")
+            raise NotSupportedError("Copying of object with type 32 is not supported.")
 
         from mstrio.server.project import Project
         response = objects.copy_object(

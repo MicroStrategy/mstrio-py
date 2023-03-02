@@ -1,11 +1,14 @@
+import itertools
 import logging
-from typing import List, Optional, TYPE_CHECKING, Union
+from concurrent.futures import as_completed
+from typing import Optional, TYPE_CHECKING, Type
 
 from mstrio.api import browsing, objects
 from mstrio.connection import Connection
 from mstrio.object_management.search_enums import (
     CertifiedStatus, SearchDomain, SearchPattern, SearchResultsFormat
 )
+from mstrio.server import Environment
 from mstrio.server.project import Project
 from mstrio.types import ObjectSubTypes, ObjectTypes
 from mstrio.users_and_groups import User
@@ -18,6 +21,7 @@ from mstrio.utils.helper import (
     get_objects_id,
     merge_id_and_type
 )
+from mstrio.utils.sessions import FuturesSessionWithRenewal
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
 if TYPE_CHECKING:
@@ -68,10 +72,10 @@ class SearchObject(Entity, CopyMixin, MoveMixin):
 @method_version_handler('11.3.0000')
 def quick_search(
     connection: Connection,
-    project: Optional[Union[Project, str]] = None,
+    project: Optional[Project | str] = None,
     name: Optional[str] = None,
     root: Optional[str] = None,
-    pattern: Union[SearchPattern, int] = SearchPattern.CONTAINS,
+    pattern: SearchPattern | int = SearchPattern.CONTAINS,
     object_types: Optional["TypeOrSubtype"] = None,
     get_ancestors: bool = False,
     cross_cluster: bool = False,
@@ -99,12 +103,13 @@ def quick_search(
             will be performed.
         pattern(integer or enum class object): Pattern to search for,
             such as Begin With or Exactly. Possible values are available in
-            ENUM mstrio.browsing.SearchPattern. Default value is CONTAINS (4).
+            ENUM mstrio.object_management.SearchPattern.
+            Default value is CONTAINS (4).
         object_types(enum class object or integer or list of enum class objects
             or integers): Type(s) of object(s) to be searched, such as
             Folder, Attribute or User. Possible values available in ENUMs
-            mstrio.utils.entity.ObjectTypes and
-            mstrio.utils.entity.ObjectSubTypes
+            mstrio.types.ObjectTypes and
+            mstrio.types.ObjectSubTypes
         get_ancestors(bool): Specifies whether to return the list of ancestors
             for each object
         certified_status(CertifiedStatus): Defines a search criteria based
@@ -156,11 +161,11 @@ def quick_search(
 @method_version_handler('11.3.0100')
 def quick_search_from_object(
     connection: Connection,
-    project: Union[Project, str],
-    search_object: Union[SearchObject, str],
+    project: Project | str,
+    search_object: SearchObject | str,
     include_ancestors: bool = False,
     include_acl: bool = False,
-    subtypes: Optional[Union[ObjectSubTypes, List[ObjectSubTypes], int, List[int]]] = None,
+    subtypes: Optional[ObjectSubTypes | list[ObjectSubTypes] | int | list[int]] = None,
     limit: Optional[int] = None,
     offset: Optional[int] = None,
     to_dictionary: bool = True
@@ -214,11 +219,11 @@ def quick_search_from_object(
 @method_version_handler('11.3.0000')
 def get_search_suggestions(
     connection: Connection,
-    project: Optional[Union[Project, str]] = None,
+    project: Optional[Project | str] = None,
     key: Optional[str] = None,
     max_results: int = 4,
     cross_cluster: Optional[bool] = None
-) -> List[str]:
+) -> list[str]:
     """Request search suggestions from the server.
 
     Args:
@@ -249,26 +254,26 @@ def get_search_suggestions(
 @method_version_handler('11.3.0000')
 def full_search(
     connection: Connection,
-    project: Optional[Union[Project, str]] = None,
+    project: Optional[Project | str] = None,
     name: Optional[str] = None,
-    pattern: Union[SearchPattern, int] = SearchPattern.CONTAINS,
-    domain: Union[SearchDomain, int] = SearchDomain.PROJECT,
+    pattern: SearchPattern | int = SearchPattern.CONTAINS,
+    domain: SearchDomain | int = SearchDomain.PROJECT,
     root: Optional[str] = None,
     object_types: Optional["TypeOrSubtype"] = None,
-    uses_object_id: Optional[Union[EntityBase, str]] = None,
-    uses_object_type: Optional[Union[ObjectTypes, int]] = None,
+    uses_object_id: Optional[EntityBase | str] = None,
+    uses_object_type: Optional[ObjectTypes | int] = None,
     uses_recursive: bool = False,
     uses_one_of: bool = False,
-    used_by_object_id: Optional[Union[EntityBase, str]] = None,
-    used_by_object_type: Optional[Union[ObjectTypes, str]] = None,
+    used_by_object_id: Optional[EntityBase | str] = None,
+    used_by_object_type: Optional[ObjectTypes | str] = None,
     used_by_recursive: bool = False,
     used_by_one_of: bool = False,
-    results_format: Union[SearchResultsFormat, str] = SearchResultsFormat.LIST,
+    results_format: SearchResultsFormat | str = SearchResultsFormat.LIST,
     limit: Optional[int] = None,
     offset: Optional[int] = None,
     to_dictionary: bool = True,
     **filters
-) -> Union[List[dict], List[Entity]]:
+) -> list[dict] | list[Entity]:
     """Perform a full metadata search and return results.
 
     Args:
@@ -281,23 +286,24 @@ def full_search(
             B (name).
         pattern(integer or enum class object): Pattern to search for,
             such as Begin With or Exactly. Possible values are available in
-            ENUM mstrio.browsing.SearchPattern. Default value is CONTAINS (4).
+            ENUM mstrio.object_management.SearchPattern.
+            Default value is CONTAINS (4).
         domain(integer or enum class object): Domain where the search
             will be performed, such as Local or Project. Possible values are
-            available in ENUM mstrio.browsing.SearchDomain. Default value is
-            PROJECT (2).
+            available in ENUM mstrio.object_management.SearchDomain.
+            Default value is PROJECT (2).
         root(string, optional): Folder ID of the root folder where the search
             will be performed.
         object_types(enum class object or integer or list of enum class objects
             or integers): Type(s) of object(s) to be searched, such as
             Folder, Attribute or User. Possible values available in ENUMs
-            mstrio.utils.entity.ObjectTypes and
-            mstrio.utils.entity.ObjectSubTypes
+            mstrio.types.ObjectTypes and
+            mstrio.types.ObjectSubTypes
         uses_object_id(string): Constrain the search to only return
             objects which use the given object.
         uses_object_type(string): Constrain the search to only return
             objects which use the given object. Possible values
-            available in ENUMs mstrio.utils.entity.ObjectTypes
+            available in ENUMs mstrio.types.ObjectTypes
         uses_recursive(boolean): Control the Intelligence server to
             also find objects that use the given objects indirectly. Default
             value is false.
@@ -308,7 +314,7 @@ def full_search(
             objects which are used by the given object.
         used_by_object_type(string): Constrain the search to only return
             objects which are used by the given object. Possible values
-            available in ENUM mstrio.utils.entity.ObjectTypes
+            available in ENUM mstrio.types.ObjectTypes
         used_by_recursive(boolean, optional): Control the Intelligence server
             to also find objects that are used by the given objects indirectly.
             Default value is false.
@@ -343,18 +349,18 @@ def full_search(
 @method_version_handler('11.3.0000')
 def start_full_search(
     connection: Connection,
-    project: Optional[Union[Project, str]] = None,
+    project: Optional[Project | str] = None,
     name: Optional[str] = None,
     object_types: Optional["TypeOrSubtype"] = None,
-    pattern: Union[SearchPattern, int] = SearchPattern.CONTAINS,
-    domain: Union[SearchDomain, int] = SearchDomain.PROJECT,
+    pattern: SearchPattern | int = SearchPattern.CONTAINS,
+    domain: SearchDomain | int = SearchDomain.PROJECT,
     root: Optional[str] = None,
-    uses_object_id: Optional[Union[EntityBase, str]] = None,
-    uses_object_type: Optional[Union[ObjectTypes, ObjectSubTypes, int]] = None,
+    uses_object_id: Optional[EntityBase | str] = None,
+    uses_object_type: Optional[ObjectTypes | ObjectSubTypes | int] = None,
     uses_recursive: bool = False,
     uses_one_of: bool = False,
-    used_by_object_id: Optional[Union[EntityBase, str]] = None,
-    used_by_object_type: Optional[Union[ObjectTypes, ObjectSubTypes, int]] = None,
+    used_by_object_id: Optional[EntityBase | str] = None,
+    used_by_object_type: Optional[ObjectTypes | ObjectSubTypes | int] = None,
     used_by_recursive: bool = False,
     used_by_one_of: bool = False
 ) -> dict:
@@ -368,26 +374,27 @@ def start_full_search(
         object_types(enum class object or integer or list of enum class objects
             or integers): Type(s) of object(s) to be searched, such as
             Folder, Attribute or User. Possible values available in ENUMs
-            mstrio.utils.entity.ObjectTypes and
-            mstrio.utils.entity.ObjectSubTypes
+            mstrio.types.ObjectTypes and
+            mstrio.types.ObjectSubTypes
         name(string): Value the search pattern is set to, which will
             be applied to the names of object types being searched. For example,
             search for all report objects (type) whose name begins with (patter)
             B (name).
         pattern(integer or enum class object): Pattern to search for,
             such as Begin With or Exactly. Possible values are available in
-            ENUM mstrio.browsing.SearchPattern. Default value is CONTAINS (4).
+            ENUM mstrio.object_management.SearchPattern.
+            Default value is CONTAINS (4).
         domain(integer or enum class object): Domain where the search
             will be performed, such as Local or Project. Possible values are
-            available in ENUM mstrio.browsing.SearchDomain. Default value is
-            PROJECT (2).
+            available in ENUM mstrio.object_management.SearchDomain.
+            Default value is PROJECT (2).
         root(string, optional): Folder ID of the root folder where the search
             will be performed.
         uses_object_id(string): Constrain the search to only return
             objects which use the given object.
         uses_object_type(int, ObjectTypes): Constrain the search to only return
             objects which use the given object. Possible values
-            available in ENUMs mstrio.utils.entity.ObjectTypes
+            available in ENUMs mstrio.types.ObjectTypes
         uses_recursive(boolean): Control the Intelligence server to
             also find objects that use the given objects indirectly. Default
             value is false.
@@ -398,7 +405,7 @@ def start_full_search(
             objects which are used by the given object.
         used_by_object_type(int, ObjectTypes): Constrain the search to only
             return objects which are used by the given object. Possible values
-            available in ENUM mstrio.utils.entity.ObjectTypes
+            available in ENUM mstrio.types.ObjectTypes
         used_by_recursive(boolean, optional): Control the Intelligence server
             to also find objects that are used by the given objects indirectly.
             Default value is false.
@@ -456,7 +463,7 @@ def start_full_search(
 def get_search_results(
     connection: Connection,
     search_id: str,
-    project: Optional[Union[Project, str]] = None,
+    project: Optional[Project | str] = None,
     results_format: SearchResultsFormat = SearchResultsFormat.LIST,
     limit: Optional[int] = None,
     offset: Optional[int] = None,
@@ -544,3 +551,68 @@ def _get_search_result_tree_format(
     if resp.content:
         return resp.json()
     return {}
+
+
+def find_objects_with_id(
+    connection: Connection,
+    object_id: str,
+    projects: Optional[list[Project] | list[str]] = None,
+    to_dictionary=False,
+) -> list[dict[str, dict | Type[Entity]]]:
+    """Find object by its ID only, without knowing project ID and object type.
+    The search is performed by iterating over projects and trying to retrieve
+    the objects with different type.
+
+    Limitation:
+        - Only object types supported by mstrio, i.g. present in
+            `mstrio.types.ObjecTypes` enum, are used.
+        - Configuration object are also not searched.
+
+    Args:
+        connection (Connection): MicroStrategy connection object returned by
+            `connection.Connection()`.
+        object_id (str): ID of an object.
+        projects (list[Project] | list[str], optional): List of projects where
+            to perform the search. By default, if no project are provides, the
+            search is performed on all loaded projects.
+        to_dictionary (bool, optional): If True returns dicts, by default
+            (False) returns objects.
+
+    Returns:
+        Returns list of dict with the following structure:
+        {
+            'project_id': <str>,
+            'object_data': <dict or object>
+        }
+    """
+    env = Environment(connection)
+    projects = projects if projects else env.list_loaded_projects()
+
+    with FuturesSessionWithRenewal(connection=connection) as session:
+        futures = []
+
+        for project, obj_type in itertools.product(projects, ObjectTypes):
+            project_id = project.id if isinstance(project, Project) else project
+
+            future = objects.get_object_info_async(
+                futures_session=session,
+                connection=connection,
+                id=object_id,
+                object_type=obj_type.value,
+                project_id=project_id,
+            )
+            future.project_id = project_id
+            futures.append(future)
+
+    from mstrio.utils.object_mapping import map_object
+
+    return [
+        {
+            'project_id': future.project_id,
+            'object_data': result.json()
+            if to_dictionary
+            else map_object(connection, result.json()),
+        }
+        for future in as_completed(futures)
+        if (result := future.result()) and result.ok
+    ]

@@ -178,10 +178,6 @@
       "type": "text",
       "multiple": false
     },
-    "new_contact_description": {
-      "type": "text",
-      "multiple": false
-    },
     "contact_group_name": {
       "type": "text",
       "multiple": false
@@ -247,6 +243,10 @@
     "attributes_elements_list": {
       "type": "text",
       "multiple": true
+    },
+    "column_name": {
+      "type": "text",
+      "multiple": false
     }
   },
   "datasource_mgmt.py": {
@@ -314,6 +314,14 @@
       "type": "text",
       "multiple": false
     },
+    "datasource_connection_id_dsn": {
+      "type": "text",
+      "multiple": false
+    },
+    "datasource_connection_id_dsn_list": {
+      "type": "text",
+      "multiple": true
+    },
     "datasource_instance_id": {
       "type": "text",
       "multiple": false
@@ -353,6 +361,14 @@
     "datasource_instance_table_new_prefix": {
       "type": "text",
       "multiple": false
+    },
+    "datasource_instance_id_dsn": {
+      "type": "text",
+      "multiple": false
+    },
+    "datasource_instance_id_dsn_list": {
+      "type": "text",
+      "multiple": true
     },
     "locale_id": {
       "type": "text",
@@ -429,6 +445,36 @@
       "multiple": false
     }
   },
+  "dynamic_recipient_list.py": {
+    "project_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "drl_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "drl_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "source_report_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "attribute_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "attribute_form_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "description": {
+      "type": "text",
+      "multiple": false
+    }
+  },
   "events.py": {
     "project_name": {
       "type": "text",
@@ -456,15 +502,7 @@
       "type": "text",
       "multiple": false
     },
-    "fact_unique_name": {
-      "type": "text",
-      "multiple": false
-    },
-    "fact_id1": {
-      "type": "text",
-      "multiple": false
-    },
-    "fact_id2": {
+    "fact_id": {
       "type": "text",
       "multiple": false
     },
@@ -472,11 +510,7 @@
       "type": "text",
       "multiple": false
     },
-    "fact_new_desc1": {
-      "type": "text",
-      "multiple": false
-    },
-    "fact_new_desc2": {
+    "fact_new_description": {
       "type": "text",
       "multiple": false
     },
@@ -494,15 +528,7 @@
       "type": "text",
       "multiple": false
     },
-    "filter_id1": {
-      "type": "text",
-      "multiple": false
-    },
-    "filter_id2": {
-      "type": "text",
-      "multiple": false
-    },
-    "filter_id3": {
+    "filter_id": {
       "type": "text",
       "multiple": false
     },
@@ -514,11 +540,7 @@
       "type": "text",
       "multiple": false
     },
-    "filter_new_desc1": {
-      "type": "text",
-      "multiple": false
-    },
-    "filter_new_desc2": {
+    "filter_new_desc": {
       "type": "text",
       "multiple": false
     },
@@ -700,11 +722,35 @@
       "type": "text",
       "multiple": false
     },
+    "object_id": {
+      "type": "text",
+      "multiple": false
+    },
     "object_name": {
       "type": "text",
       "multiple": false
     },
     "object_description": {
+      "type": "text",
+      "multiple": false
+    },
+    "report_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "document_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "dossier_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "metric_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "search_object_id": {
       "type": "text",
       "multiple": false
     },
@@ -723,6 +769,10 @@
       "multiple": false
     },
     "project_description": {
+      "type": "text",
+      "multiple": false
+    },
+    "project_new_description": {
       "type": "text",
       "multiple": false
     },
@@ -793,10 +843,6 @@
   },
   "security_filters.py": {
     "project_name": {
-      "type": "text",
-      "multiple": false
-    },
-    "project_id": {
       "type": "text",
       "multiple": false
     },
@@ -962,6 +1008,42 @@
       "type": "text",
       "multiple": false
     },
+    "file_subscription_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "file_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "zip_file_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "zip_password": {
+      "type": "text",
+      "multiple": false
+    },
+    "ftp_subscription_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "ftp_address_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "physical_address": {
+      "type": "text",
+      "multiple": false
+    },
+    "ftp_device_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "history_list_subscription_name": {
+      "type": "text",
+      "multiple": false
+    },
     "cache_subscription_name": {
       "type": "text",
       "multiple": false
@@ -970,27 +1052,11 @@
       "type": "text",
       "multiple": false
     },
-    "schedule_name": {
-      "type": "text",
-      "multiple": false
-    },
     "delivery_expiration_date": {
       "type": "date",
       "multiple": false
     },
-    "subscription_id": {
-      "type": "text",
-      "multiple": false
-    },
-    "subscription_id_2": {
-      "type": "text",
-      "multiple": false
-    },
     "content_id": {
-      "type": "text",
-      "multiple": false
-    },
-    "project_id": {
       "type": "text",
       "multiple": false
     },
@@ -999,6 +1065,14 @@
       "multiple": false
     },
     "recipient_id_2": {
+      "type": "text",
+      "multiple": false
+    },
+    "recipient_id_3": {
+      "type": "text",
+      "multiple": false
+    },
+    "recipient_id_4": {
       "type": "text",
       "multiple": false
     },
@@ -1140,6 +1214,14 @@
       "type": "text",
       "multiple": false
     },
+    "transmitter_new_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "transmitter_new_description": {
+      "type": "text",
+      "multiple": false
+    },
     "notification_email_address": {
       "type": "text",
       "multiple": false
@@ -1274,6 +1356,26 @@
       "type": "text",
       "multiple": false
     },
+    "username_7": {
+      "type": "text",
+      "multiple": false
+    },
+    "full_name_7": {
+      "type": "text",
+      "multiple": false
+    },
+    "password_7": {
+      "type": "text",
+      "multiple": false
+    },
+    "user_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "user_group_id": {
+      "type": "text",
+      "multiple": false
+    },
     "name_begins": {
       "type": "text",
       "multiple": false
@@ -1298,16 +1400,16 @@
       "type": "text",
       "multiple": false
     },
-    "permission": {
+    "address_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "address": {
       "type": "text",
       "multiple": false
     }
   },
   "content_cache.py": {
-    "project_id": {
-      "type": "text",
-      "multiple": false
-    },
     "project_name": {
       "type": "text",
       "multiple": false
@@ -1317,10 +1419,6 @@
       "multiple": false
     },
     "other_cache_id": {
-      "type": "text",
-      "multiple": false
-    },
-    "node_name": {
       "type": "text",
       "multiple": false
     }
@@ -1446,14 +1544,6 @@
       "type": "text",
       "multiple": false
     },
-    "report_cache_id_3": {
-      "type": "text",
-      "multiple": false
-    },
-    "report_cache_id_4": {
-      "type": "text",
-      "multiple": false
-    },
     "node_name": {
       "type": "text",
       "multiple": false
@@ -1470,7 +1560,7 @@
       "type": "text",
       "multiple": false
     },
-    "wh_table_id":   {
+    "wh_table_id": {
       "type": "text",
       "multiple": false
     }

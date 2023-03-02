@@ -230,7 +230,7 @@ def list_functions(
             returns SchemaObjectReference objects
         search_pattern (SearchPattern enum or int, optional): pattern to
             search for, such as Begin With or Exactly. Possible values are
-            available in ENUM mstrio.browsing.SearchPattern.
+            available in ENUM mstrio.object_management.SearchPattern.
             Default value is CONTAINS (4).
         project_id (string, optional): Project ID
         project_name(string, optional): Project name

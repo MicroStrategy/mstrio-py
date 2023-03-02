@@ -23,9 +23,8 @@ from mstrio.modeling import (
 from mstrio.modeling.security_filter import list_security_filters, SecurityFilter
 from mstrio.users_and_groups import list_user_groups, list_users
 
+# Define a variable which can be later used in a script
 PROJECT_NAME = $project_name  # Project to connect to
-PROJECT_ID = $project_id  # project in which a security filter will be searched for
-FOLDER_ID = $folder_id  # folder in which new security filter will be created
 
 conn = get_connection(workstationData, project_name=PROJECT_NAME)
 
@@ -33,7 +32,7 @@ conn = get_connection(workstationData, project_name=PROJECT_NAME)
 security_filters = list_security_filters(conn)
 print(security_filters)
 
-# Define a variable, which can be later used in a script
+# Define variables which can be later used in a script
 SECURITY_FILTER_ID = $security_filter_id
 SECURITY_FILTER_NAME = $security_filter_name
 
@@ -54,7 +53,7 @@ print(security_filter.qualification)
 # List the members of the security filter
 print(security_filter.members)
 
-# Define a variable, which can be later used in a script
+# Define variables which can be later used in a script
 NEW_SECURITY_FILTER_NAME = $new_security_filter_name
 CONSTANT_VALUE_1 = $constant_value_1
 ATTRIBUTE_ID = $attribute_id
@@ -87,6 +86,9 @@ QUALIFICATION = Expression(
     )
 )
 
+# Define a variable which can be later used in a script
+FOLDER_ID = $folder_id  # folder in which new security filter will be created
+
 new_security_filter = SecurityFilter.create(
     connection=conn,
     qualification=QUALIFICATION,
@@ -101,7 +103,7 @@ print(new_security_filter)
 attributes = list_attributes(conn)
 print(attributes)
 
-# Define a variable, which can be later used in a script
+# Define variables which can be later used in a script
 ATTRIBUTE_1_ID = $attribute_1_id
 ATTRIBUTE_1_NAME = $attribute_1_name
 ATTRIBUTE_2_ID = $attribute_2_id
@@ -120,7 +122,7 @@ print(attribute_2_forms)
 # You cannot set values for two attribute forms in a single
 # `AttributeFormPredicate`.
 
-# Define a variable, which can be later used in a script
+# Define variables which can be later used in a script
 ATTRIBUTE_FORM_1_ID = $attribute_form_1_id
 ATTRIBUTE_FORM_2_ID = $attribute_form_2_id
 CONSTANT_VALUE_2 = $constant_value_2
@@ -155,7 +157,7 @@ predicate2 = AttributeFormPredicate(
     ),
 )
 
-# Define a variable, which can be later used in a script
+# Define variables which can be later used in a script
 NEW_SECURITY_FILTER_NAME_2 = $new_security_filter_name_2
 NEW_SECURITY_FILTER_DESCRIPTION = $new_security_filter_description
 
@@ -173,7 +175,7 @@ print(new_security_filter2)
 security_filter.alter(name=NEW_SECURITY_FILTER_NAME, description=NEW_SECURITY_FILTER_DESCRIPTION)
 print(security_filter)
 
-# Define a variable, which can be later used in a script
+# Define a variable which can be later used in a script
 PARAMETER_CHANGED_VALUE = $parameter_changed_value  # value of parameter to change to
 
 # copy old qualification and change value of parameter
@@ -183,7 +185,7 @@ new_qualification.tree.parameters[0].constant.value = PARAMETER_CHANGED_VALUE
 security_filter.alter(qualification=new_qualification)
 print(security_filter)
 
-# Define a variable, which can be later used in a script
+# Define variables which can be later used in a script
 USERNAME_BEGINS = $username_begins  # beginning of username to look for
 USER_GROUP_NAME_BEGINS = $user_group_name_begins  # beginning of user group to look for
 

@@ -157,8 +157,8 @@ sales_df = pd.DataFrame(sales, columns=["store_id", "category", "sales", "sales_
 
 from mstrio.project_objects import SuperCube
 ds = SuperCube(connection=conn, name="Store Analysis")
-ds.add_table(name="Stores", data_frame=stores_df, update_policy="replace")
-ds.add_table(name="Sales", data_frame=sales_df, update_policy="replace")
+ds.add_table(name="Stores", data_frame=stores_df, update_policy="add")
+ds.add_table(name="Sales", data_frame=sales_df, update_policy="add")
 ds.create()
 ```
 
@@ -167,10 +167,10 @@ By default `SuperCube.create()` will create a SuperCube, upload the data to the 
 When using `SuperCube.add_table()`, Pandas data types are mapped to MicroStrategy data types. By default, numeric data (integers and floats) are modeled as MicroStrategy Metrics and non-numeric data are modeled as MicroStrategy Attributes. This can be problematic if your data contains columns with integers that should behave as Attributes (e.g. a row ID), or if your data contains string-based, numeric-_looking_ data which should be Metrics (e.g. formatted sales data: `["$450", "$325"]`). To control this behavior, provide a list of columns that you want to convert from one type to another.
 
 ```python
-ds.add_table(name="Stores", data_frame=stores_df, update_policy="replace",
+ds.add_table(name="Stores", data_frame=stores_df, update_policy="add",
              to_attribute=["store_id"])
 
-ds.add_table(name="Sales", data_frame=sales_df, update_policy="replace",
+ds.add_table(name="Sales", data_frame=sales_df, update_policy="add",
              to_attribute=["store_id"],
              to_metric=["sales_fmt"])
 ```
@@ -186,12 +186,14 @@ When the source data changes and users need the latest data for analysis and rep
 ```python
 from mstrio.project_objects import SuperCube
 ds = SuperCube(connection=conn, id=dataset_id)
-ds.add_table(name="Stores", data_frame=stores_df, update_policy="replace")
-ds.add_table(name="Sales", data_frame=sales_df, update_policy="replace")
+ds.add_table(name="Stores", data_frame=stores_df, update_policy="update")
+ds.add_table(name="Sales", data_frame=sales_df, update_policy="upsert")
 ds.update()
 ```
 
-The `update_policy` parameter controls how the data in the SuperCube gets updated. Currently supported update operation is `replace` (truncates and replaces the data).
+The `update_policy` parameter controls how the data in the SuperCube gets updated. Currently supported update operations are `add` (inserts entirely new data), `update` (updates existing data), `upsert` (simultaneously updates existing data and inserts new data), and `replace` (truncates and replaces the data).
+Using the `update` and `upsert` update policies, it's only possible to update metric values. It's not possible to update values of attributes,
+because values of attributes are used to identify rows, which metric values will be updated.  
 
 By default `SuperCube.update()` will upload the data to the Intelligence Server and publish the SuperCube. If you just want
 to update the SuperCube but not publish the row-level data, use `SuperCube.update(auto_publish=False)`. To publish it later, use `SuperCube.publish()`.

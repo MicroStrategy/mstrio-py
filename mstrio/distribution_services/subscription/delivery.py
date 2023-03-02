@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import auto
-from typing import List, Optional, Union
+from typing import Optional, Union
 
 from mstrio.utils.enum_helper import AutoName, AutoUpperName
 from mstrio.utils.helper import camel_to_snake, Dictable, exception_handler
@@ -320,7 +320,7 @@ class Delivery(DeliveryDictable):
             self,
             cache_type: CacheType = CacheType.RESERVED,
             shortcut_cache_format: ShortcutCacheFormat = ShortcutCacheFormat.RESERVED,
-            library_cache_types: List[LibraryCacheTypes] = None,
+            library_cache_types: Optional[list[LibraryCacheTypes]] = None,
             reuse_dataset_cache: bool = False,
             is_all_library_users: bool = False
         ):
@@ -441,7 +441,7 @@ class Delivery(DeliveryDictable):
         file: Optional[File] = None,
         cache_type: Union[CacheType, str] = CacheType.RESERVED,
         shortcut_cache_format: Union[ShortcutCacheFormat, str] = ShortcutCacheFormat.RESERVED,
-        library_cache_types: List[Union[LibraryCacheTypes,
+        library_cache_types: list[Union[LibraryCacheTypes,
                                         str]] = [LibraryCacheTypes.WEB],  # noqa: E501
         reuse_dataset_cache: bool = False,
         is_all_library_users: bool = False,

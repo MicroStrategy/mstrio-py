@@ -7,22 +7,29 @@ ease its usage.
 from mstrio.distribution_services import Event, list_events
 from mstrio.connection import get_connection
 
+# Define a variable which can be later used in a script
 PROJECT_NAME = $project_name  # Project to connect to
-EVENT_ID = $event_id  # id for Event object
-EVENT_NAME = $event_name  # name for Event object
-EVENT_DESCRIPTION = $event_description
 
 conn = get_connection(workstationData, project_name=PROJECT_NAME)
 
 # List all events
 all_events = list_events(conn)
 
-# Get event by ID. Event can be also found by its name
+# Define variables which can be later used in a script
+EVENT_ID = $event_id  # id for Event object
+EVENT_NAME = $event_name  # name for Event object
+
+# Get event by id
 sample_event = Event(conn, id=EVENT_ID)
+
+# Get event by name
 sample_event = Event(conn, name=EVENT_NAME)
 
 # list the Event's properties
 sample_event.list_properties()
+
+# Define a variable which can be later used in a script
+EVENT_DESCRIPTION = $event_description
 
 # Create event with description
 db_load_event = Event.create(conn, name=EVENT_NAME, description=EVENT_DESCRIPTION)

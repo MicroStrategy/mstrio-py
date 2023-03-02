@@ -52,7 +52,8 @@ def list_objects(
             are defined in EnumDSSXMLSearchDomain
         search_pattern (SearchPattern enum or int, optional): pattern to search
             for, such as Begin With or Exactly. Possible values are available in
-            ENUM mstrio.browsing.SearchPattern. Default value is CONTAINS (4).
+            ENUM mstrio.object_management.SearchPattern.
+            Default value is CONTAINS (4).
         to_dictionary: If True returns dict, by default (False) returns Objects.
         limit: limit the number of elements returned. If `None` (default), all
             objects are returned.

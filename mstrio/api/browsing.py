@@ -45,15 +45,15 @@ def store_search_instance(
             Default value is CONTAINS (4).
         domain(integer or enum class object, optional): Domain where the search
             will be performed, such as Local or Project. Possible values are
-            available in ENUM mstrio.browsing.SearchDomain. Default value is
-            DOMAIN_PROJECT (2).
+            available in ENUM mstrio.object_management.SearchDomain.
+            Default value is DOMAIN_PROJECT (2).
         root(string, optional): Folder ID of the root folder where the search
             will be performed.
         object_types(list of enum class objects or integers, optional):
             Type(s) of object(s) to be searched, such as
             Folder, Attribute or User. Possible values available in ENUMs
-            mstrio.utils.entity.ObjectTypes and
-            mstrio.utils.entity.ObjectSubTypes.
+            mstrio.types.ObjectTypes and
+            mstrio.types.ObjectSubTypes.
         uses_object(string, optional): Constrain the search to only return
             objects which use the given object. The value should be 'objectId;
             object type', for example 'E02FE6DC430378A8BBD315AA791FC580;3'. It
@@ -367,7 +367,7 @@ def get_search_suggestions(
     """Store results of the Search engine to return search suggestions.
 
     Args:
-       connection (object): MicroStrategy REST API connection object
+        connection (object): MicroStrategy REST API connection object
         project_id (string, optional): project ID
         key (string, optional): value the search pattern is set to, which will
             be applied to the names of suggestions being searched

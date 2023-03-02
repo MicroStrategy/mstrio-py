@@ -1,10 +1,11 @@
 from enum import auto
 import logging
-from typing import List, Optional, TYPE_CHECKING, Union
+from typing import Optional, TYPE_CHECKING
 
 from mstrio import config
 from mstrio.api import datasources, objects
 from mstrio.datasources import DatasourceConnection, Dbms, list_datasource_connections
+from mstrio.server.project import Project
 from mstrio.users_and_groups.user import User
 from mstrio.utils import helper
 from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, ObjectTypes
@@ -14,7 +15,6 @@ from mstrio.utils.version_helper import class_version_handler, method_version_ha
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
-    from mstrio.server.project import Project
 
 logger = logging.getLogger(__name__)
 
@@ -24,11 +24,11 @@ def list_datasource_instances(
     connection: "Connection",
     to_dictionary: bool = False,
     limit: Optional[int] = None,
-    ids: Optional[List[str]] = None,
-    database_types: Optional[List[str]] = None,
-    project: Optional[Union["Project", str]] = None,
+    ids: Optional[list[str]] = None,
+    database_types: Optional[list[str]] = None,
+    project: Optional[Project | str] = None,
     **filters
-) -> Union[List["DatasourceInstance"], List[dict]]:
+) -> list["DatasourceInstance"] | list[dict]:
     """Get list of DatasourceInstance objects or dicts. Optionally filter the
     datasource instances by specifying filters.
 
@@ -86,7 +86,7 @@ def list_datasource_instances(
 
 def list_connected_datasource_instances(
     connection: "Connection", to_dictionary: bool = False
-) -> Union[list["DatasourceInstance"], list[dict]]:
+) -> list["DatasourceInstance"] | list[dict]:
     """List all datasource instances for which there is an associated
     Database Login and are connected to a project mapped to a Connection object.
 
@@ -293,18 +293,18 @@ class DatasourceInstance(Entity, CopyMixin, DeleteMixin):
         cls,
         connection: "Connection",
         name: str,
-        dbms: Union[Dbms, str],
+        dbms: Dbms | str,
         description: Optional[str] = None,
-        datasource_type: Optional[Union[str, DatasourceType]] = None,
+        datasource_type: Optional[str | DatasourceType] = None,
         table_prefix: Optional[str] = None,
         odbc_version: Optional[str] = None,
         intermediate_store_db_name: Optional[str] = None,
         intermediate_store_table_space_name: Optional[str] = None,
-        datasource_connection: Union[str, DatasourceConnection, None] = None,
+        datasource_connection: Optional[str | DatasourceConnection] = None,
         database_type: str = None,
         database_version: str = None,
-        primary_datasource: Union[str, "DatasourceInstance", None] = None,
-        data_mart_datasource: Union[str, "DatasourceInstance", None] = None
+        primary_datasource: Optional["str | DatasourceInstance"] = None,
+        data_mart_datasource: Optional["str | DatasourceInstance"] = None
     ) -> Optional["DatasourceInstance"]:
         """Create a new DatasourceInstance object on I-Server.
 
@@ -372,15 +372,15 @@ class DatasourceInstance(Entity, CopyMixin, DeleteMixin):
         self,
         name: Optional[str] = None,
         description: Optional[str] = None,
-        datasource_type: Optional[Union[str, DatasourceType]] = None,
+        datasource_type: Optional[str | DatasourceType] = None,
         table_prefix: Optional[str] = None,
         odbc_version: Optional[str] = None,
         intermediate_store_db_name: Optional[str] = None,
         intermediate_store_table_space_name: Optional[str] = None,
-        dbms: Union[str, Dbms, None] = None,
-        datasource_connection: Union[str, DatasourceConnection, None] = None,
-        primary_datasource: Union[str, "DatasourceInstance", None] = None,
-        data_mart_datasource: Union[str, "DatasourceInstance", None] = None
+        dbms: Optional[str | Dbms] = None,
+        datasource_connection: Optional[str | DatasourceConnection] = None,
+        primary_datasource: Optional["str | DatasourceInstance"] = None,
+        data_mart_datasource: Optional["str | DatasourceInstance"] = None
     ) -> None:
         """Alter DatasourceInstance properties.
 
@@ -429,9 +429,10 @@ class DatasourceInstance(Entity, CopyMixin, DeleteMixin):
         limit: Optional[int] = None,
         ids: Optional[list] = None,
         database_types: Optional[list] = None,
-        project: Optional[Union["Project", str]] = None,
+        project: Optional[Project | str] = None,
         **filters
-    ) -> Union[List["DatasourceInstance"], List[dict]]:
+    ) -> list["DatasourceInstance"] | list[dict]:
+        project_id = project.id if isinstance(project, Project) else project
         objects = helper.fetch_objects(
             connection=connection,
             api=datasources.get_datasource_instances,
@@ -440,8 +441,12 @@ class DatasourceInstance(Entity, CopyMixin, DeleteMixin):
             filters=filters,
             ids=ids,
             database_types=database_types,
-            project=project
+            project=project_id
         )
+        if project_id:
+            for obj in objects:
+                obj['project_id'] = project_id
+
         if to_dictionary:
             return objects
         else:
@@ -469,3 +474,12 @@ class DatasourceInstance(Entity, CopyMixin, DeleteMixin):
                     connection=self.connection
                 )
             )
+
+    @method_version_handler('11.3.0900')
+    def convert_ds_connection_to_dsn_less(self):
+        """Convert datasource embedded connection from DSN to DSN-less format
+        connection string and update the object to metadata.
+        """
+        response = datasources.convert_ds_dsn(connection=self.connection, datasource_id=self.id)
+        if response.ok:
+            self.fetch()

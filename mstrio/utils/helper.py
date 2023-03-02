@@ -1167,3 +1167,17 @@ class Dictable:
             (f'{param}={repr(value)}' for param, value in param_dict.items())
         )
         return f'{self.__class__.__name__}({formatted_params})'
+
+
+def is_dossier(view_media: int):
+    """Documents and dossiers have the same type and subtype when returned
+    from search api. They can be distinguished only by view_media value.
+    """
+    return view_media & 4160749568 == 1879048192 or view_media & 4160749568 == 1610612736
+
+
+def is_document(view_media: int):
+    """Documents and dossiers have the same type and subtype when returned
+    from search api. They can be distinguished only by view_media value.
+    """
+    return not is_dossier(view_media)

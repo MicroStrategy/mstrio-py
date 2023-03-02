@@ -1,5 +1,47 @@
 # Changelog
 
+## 11.3.9.101 - 2023/03/03
+
+### Major changes
+
+- added `HistoryListSubscription`, `FTPSubscription` and `FileSubscription`
+  classes in `mstrio.distribution_services.subscription` package to allow
+  management of new subscription types
+- added `DynamicRecipientList` class in `mstrio_distribution_services.subscription`
+  package to allow management of Dynamic Recipient Lists
+- added `list_dynamic_recipient_lists` to allow listing dynamic recipient lists
+
+### Minor changes
+
+- added verification, when initializing `Report` object, if object is supported,
+  currently supported are objects with subtypes: 768 - grid, 769 - graph 769,
+  770 - engine, 774 - grid and graph, 778 - transaction, 781 - hyper card
+- changed `list_reports` function to return only object supported by `Report` class
+- added methods to convert connection from DSN to DSN-less format in classes
+  `DatasourceInstance` and `DatasourceConnection`
+- improved error messages when calling `list_dependents` and `list_dependencies`
+  on unsupported objects
+- added support for `Time` type to `SuperCube` class
+- added `with` statement compatibility for `Connection` object
+- added function `find_objects_with_id` in `mstrio.object_management.search_operations`
+  to allow searching for object when knowing only its ID
+- fixed listing and initialising by name documents and dossiers
+  when name was longer than 30 characters
+- fixed not being able to create `SuperCube` with update policy other than `replace`
+- added checking during creation if `SuperCube` with given name already exists in a folder,
+  and display an error if it does
+- added support for Python 3.11
+- fixed `Dossier` class to work properly when being initialised by name
+- fixed `Project.alter` method
+- fixed managing `Subscriptions` recipients to work properly with existing recipients
+- fixed circular import of the `Device` module for `Contact` and `distribution_services`
+- altered `attributes.py` code snippet to use `list_table_columns`
+  and `list_logical_tables` methods from `table` module
+- updated dependencies in `requirements.txt`
+- fixed `list_objects` method to work properly for different domains
+- fixed and combined `_update_acl` and `_modify_rights` methods, added `modify_rights` method
+- added `Service` and `ServiceWithNode` classes in `mstrio.server.node` module
+
 ## 11.3.7.103 - 2022/11/11
 
 ### Major changes

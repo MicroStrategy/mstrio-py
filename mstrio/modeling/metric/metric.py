@@ -68,7 +68,7 @@ def list_metrics(
             None all object are returned.
         search_pattern (SearchPattern enum or int, optional): pattern to
             search for, such as Begin With or Exactly. Possible values are
-            available in ENUM mstrio.browsing.SearchPattern.
+            available in ENUM mstrio.object_management.SearchPattern.
             Default value is CONTAINS (4).
         show_expression_as (ExpressionFormat, str): specify how expressions
             should be presented

@@ -11,46 +11,46 @@ from mstrio.modeling.schema.transformation.transformation import (
     list_transformations, Transformation, TransformationAttribute, TransformationAttributeForm
 )
 
-# Following variables are defining basic transformations
-PROJECT_NAME = $project_name  # Insert name of project here
-TRANSFORMATION_NAME = $transformation_name  # Insert name of edited transformation here
-TRANSFORMATION_ID = $transformation_id  # Insert ID of transformation here
-TRANSFORMATION_NEW_NAME = $transformation_new_name  # Insert new name of edited transformation here
-TRANSFORMATION_NEW_DESCRIPTION = $transformation_new_description  # Insert new description of edited transformation here
-FOLDER_ID = $folder_id  # Insert folder ID here
-
-
 # For every object we want to reference using a SchemaObjectReference we need
-# to provide an Object ID for. For the script to work correctly all occurences of `'<Object_ID>'` need to be replaced with IDs specific to the object used. In the future all of those will be made as separate variables.
+# to provide an Object ID for. For the script to work correctly all occurences
+# of `'<object_id>'` and others with form `<some_name>` need to be replaced with
+# data specific to the object used.
+
+# Define a variable which can be later used in a script
+PROJECT_NAME = $project_name  # Insert name of project here
 
 conn = get_connection(workstationData, PROJECT_NAME)
 
-# Example Transformation data
+# Define variables which can be later used in a script
+FOLDER_ID = $folder_id  # Insert folder ID here
+TRANSFORMATION_NAME = $transformation_name  # Insert name of edited transformation here
+
+# Example of Transformation data
 # Parts of this dictionary will be used in the later parts of this demo script
 TRANSFORMATION_DATA = {
-    'name': 'Demo Transformation',
+    'name': TRANSFORMATION_NAME,
     'destination_folder': FOLDER_ID,
     'sub_type': ObjectSubType.ROLE_TRANSFORMATION,
     'attributes': [
         TransformationAttribute(
-            id="96ED42A511D5B117C000E78A4CC5F24F",
+            id='<object_id>',
             base_attribute=SchemaObjectReference(
-                object_id='<Object_ID>',
+                object_id='<object_id>',
                 sub_type=ObjectSubType.ATTRIBUTE,
-                name="Day"
+                name="<attribute_name>"
             ),
             forms=[
                 TransformationAttributeForm(
-                    id="45C11FA478E745FEA08D781CEA190FE5",
-                    name="ID",
+                    id='<object_id>',
+                    name='<transformation_attribute_form_name>',
                     lookup_table=SchemaObjectReference(
-                        object_id='<Object_ID>',
+                        object_id='<object_id>',
                         sub_type=ObjectSubType.LOGICAL_TABLE,
-                        name="LU_DAY"
+                        name='<logical_table_name>'
                     ),
                     expression=Expression(
                         tokens=[
-                            Token(value='lq_day_date', type='column_reference'),
+                            Token(value='<token_value>', type='column_reference'),
                             Token(value='', type='end_of_text')
                         ]
                     )
@@ -64,17 +64,17 @@ TRANSFORMATION_DATA = {
 # Example TransformationAttributeForm data
 # This object will be used in the later parts of this demo script
 TRANSFORMATION_ATTRIBUTE_FORM = TransformationAttributeForm(
-    id='45C11FA478E745FEA08D781CEA190FE5',
-    name='ID',
+    id='<object_id>',
+    name='<transformation_attribute_form_name>',
     lookup_table=SchemaObjectReference(
-        object_id='<Object_ID>',
+        object_id='<object_id>',
         sub_type=ObjectSubType.LOGICAL_TABLE,
-        name='LU_QUARTER'
+        name='<logical_table_name>'
     ),
     expression=Expression(
-        text='ly_quarter_id',
+        text='<text>',
         tokens=[
-            Token(value='ly_quarter_id', type='column_reference'),
+            Token(value='<token_value>', type='column_reference'),
             Token(value='', type='end_of_text')
         ]
     )
@@ -83,25 +83,25 @@ TRANSFORMATION_ATTRIBUTE_FORM = TransformationAttributeForm(
 # Example TransformationAttribute data
 # This object will nbe used in the later parts of this demo script
 TRANSFORMATION_ATTRIBUTE = TransformationAttribute(
-    id='2437C06311D5BD85C000F98A4CC5F24F',
+    id='<object_id>',
     base_attribute=SchemaObjectReference(
-        object_id='<Object_ID>',
+        object_id='<object_id>',
         sub_type=ObjectSubType.ATTRIBUTE,
-        name='Quarter'
+        name='<attribute_name>'
     ),
     forms=[
         TransformationAttributeForm(
-            id='45C11FA478E745FEA08D781CEA190FE5',
-            name='ID',
+            id='<object_id>',
+            name='<transformation_attribute_form_name>',
             lookup_table=SchemaObjectReference(
-                object_id='<Object_ID>',
+                object_id='<object_id>',
                 sub_type=ObjectSubType.LOGICAL_TABLE,
-                name='LU_QUARTER'
+                name='<logical_table_name>'
             ),
             expression=Expression(
-                text='prev_quarter_id',
+                text='<expression_text>',
                 tokens=[
-                    Token(value='prev_quarter_id', type='column_reference'),
+                    Token(value='<token_value>', type='column_reference'),
                     Token(value='', type='end_of_text')
                 ]
             )
@@ -115,6 +115,10 @@ TRANSFORMATION_ATTRIBUTE = TransformationAttribute(
 list_of_all_transformations = list_transformations(connection=conn)
 list_of_limited_transformations = list_transformations(connection=conn, limit=5)
 list_of_transformations_by_name = list_transformations(connection=conn, name=TRANSFORMATION_NAME)
+
+# Define a variable which can be later used in a script
+TRANSFORMATION_ID = $transformation_id  # Insert ID of transformation here
+
 list_of_transformations_by_id = list_transformations(connection=conn, id=TRANSFORMATION_ID)
 list_of_transformations_as_trees = list_transformations(
     connection=conn, show_expression_as=ExpressionFormat.TREE
@@ -125,17 +129,14 @@ list_of_transformations_as_tokens = list_transformations(
     connection=conn, show_expression_as=ExpressionFormat.TOKENS
 )
 
-# Get specific Transformation by id or name with expression represented as trees
-transf = Transformation(connection=conn, id=TRANSFORMATION_ID)
-transf = Transformation(connection=conn, name=TRANSFORMATION_NAME)
-transf = Transformation(
-    connection=conn, name=TRANSFORMATION_NAME, show_expression_as=ExpressionFormat.TREE
-)
-
-# Get a Transformation with expression represented as tokens
-transf = Transformation(
-    connection=conn, name=TRANSFORMATION_NAME, show_expression_as=ExpressionFormat.TOKENS
-)
+# Get specific Transformation by id with expression represented as trees (default)
+transf = Transformation(connection=conn, id=TRANSFORMATION_ID, show_expression_as=ExpressionFormat.TREE)
+# Get specific Transformation by id with expression represented as tokens
+transf = Transformation(connection=conn, id=TRANSFORMATION_ID, show_expression_as=ExpressionFormat.TOKENS)
+# Get specific Transformation by name with expression represented as trees (default)
+transf = Transformation(connection=conn, name=TRANSFORMATION_NAME, show_expression_as=ExpressionFormat.TREE)
+# Get specific Transformation by name with expression represented as tokens
+transf = Transformation(connection=conn, name=TRANSFORMATION_NAME, show_expression_as=ExpressionFormat.TOKENS)
 
 # Listing properties
 properties = transf.list_properties()
@@ -158,6 +159,10 @@ transf = Transformation.create(
 transf = Transformation.create(
     connection=conn, **TRANSFORMATION_DATA, show_expression_as=ExpressionFormat.TOKENS
 )
+
+# Define variables which can be later used in a script
+TRANSFORMATION_NEW_NAME = $transformation_new_name  # Insert new name of edited transformation here
+TRANSFORMATION_NEW_DESCRIPTION = $transformation_new_description  # Insert new description of edited transformation here
 
 # Alter transformations
 transf.alter(name=TRANSFORMATION_NEW_NAME)

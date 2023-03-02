@@ -1,5 +1,8 @@
 from typing import Optional, TYPE_CHECKING, Union
 
+from mstrio.utils.exceptions import NotSupportedError
+from mstrio.types import ObjectTypes
+
 if TYPE_CHECKING:
     from mstrio.object_management.search_enums import (
         SearchDomain, SearchPattern, SearchResultsFormat
@@ -39,18 +42,19 @@ class DependenceMixin:
                 begins with (patter) B (name).
             pattern(integer or enum class object): Pattern to search for,
                 such as Begin With or Exactly. Possible values are available in
-                ENUM mstrio.browsing.SearchPattern. Default value is CONTAINS.
+                ENUM mstrio.object_management.SearchPattern.
+                Default value is CONTAINS (4).
             domain(integer or enum class object): Domain where the search
                 will be performed, such as Local or Project. Possible values are
-                available in ENUM mstrio.browsing.SearchDomain. Default value is
-                PROJECT (2).
+                available in ENUM mstrio.object_management.SearchDomain.
+                Default value is PROJECT (2).
             root(string, optional): Folder ID of the root folder where the
                 search will be performed.
             object_types(enum class object or integer or list of enum class
                 objects or integers): Type(s) of object(s) to be searched,
                 such as Folder, Attribute or User. Possible values available
-                in ENUMs mstrio.utils.entity.ObjectTypes and
-                mstrio.utils.entity.ObjectSubTypes
+                in ENUMs mstrio.types.ObjectTypes and
+                mstrio.types.ObjectSubTypes
             uses_recursive(boolean): Control the Intelligence server to
                 also find objects that use the given objects indirectly. Default
                 value is false.
@@ -69,9 +73,17 @@ class DependenceMixin:
         """
         from mstrio.object_management.search_operations import full_search
 
+        if self._OBJECT_TYPE == ObjectTypes.NONE:
+            raise NotSupportedError(
+                f"Listing dependents is not supported for unsupported object"
+                f" with ID {self.id}."
+            )
+
         project = project or self.connection.project_id
         if project is None:
-            raise AttributeError("Project not selected. Select project using `project` parameter.")
+            raise AttributeError(
+                "Project not selected. Select project using `project` parameter."
+            )
 
         return full_search(
             connection=self.connection,
@@ -116,18 +128,19 @@ class DependenceMixin:
                 begins with (patter) B (name).
             pattern(integer or enum class object): Pattern to search for,
                 such as Begin With or Exactly. Possible values are available in
-                ENUM mstrio.browsing.SearchPattern. Default value is CONTAINS.
+                ENUM mstrio.object_management.SearchPattern.
+                Default value is CONTAINS (4).
             domain(integer or enum class object): Domain where the search
                 will be performed, such as Local or Project. Possible values are
-                available in ENUM mstrio.browsing.SearchDomain. Default value is
-                PROJECT (2).
+                available in ENUM mstrio.object_management.SearchDomain.
+                Default value is PROJECT (2).
             root(string, optional): Folder ID of the root folder where the
                 search will be performed.
             object_types(enum class object or integer or list of enum class
                 objects or integers): Type(s) of object(s) to be searched,
                 such as Folder, Attribute or User. Possible values available
-                in ENUMs mstrio.utils.entity.ObjectTypes and
-                mstrio.utils.entity.ObjectSubTypes
+                in ENUMs mstrio.types.ObjectTypes and
+                mstrio.types.ObjectSubTypes
             used_by_recursive(boolean, optional): Control the Intelligence
                 server to also find objects that are used by the given objects
                 indirectly. Default value is false.
@@ -146,9 +159,17 @@ class DependenceMixin:
         """
         from mstrio.object_management.search_operations import full_search
 
+        if self._OBJECT_TYPE == ObjectTypes.NONE:
+            raise NotSupportedError(
+                f"Listing dependencies is not supported for unsupported object"
+                f" with ID {self.id}."
+            )
+
         project = project or self.connection.project_id
         if project is None:
-            raise AttributeError("Project not selected. Select project using `project` parameter.")
+            raise AttributeError(
+                "Project not selected. Select project using `project` parameter."
+            )
 
         return full_search(
             connection=self.connection,

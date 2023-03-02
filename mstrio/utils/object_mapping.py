@@ -1,22 +1,30 @@
 from enum import Enum
 import sys
-from typing import List, TYPE_CHECKING, Union
+from typing import Optional, TYPE_CHECKING
 
-from mstrio.modeling.security_filter import SecurityFilter  # noqa: F401
 from mstrio.access_and_security.security_role import SecurityRole  # noqa: F401
 from mstrio.datasources import DatasourceConnection  # noqa: F401
 from mstrio.datasources import DatasourceInstance, DatasourceLogin  # noqa: F401
 from mstrio.distribution_services.schedule import Schedule  # noqa: F401
+from mstrio.modeling.filter import Filter  # noqa: F401
+from mstrio.modeling.metric import Metric  # noqa: F401
+from mstrio.modeling.schema import (  # noqa: F401
+    Attribute,
+    Fact,
+    LogicalTable,
+    Transformation,
+    UserHierarchy
+)
+from mstrio.modeling.security_filter import SecurityFilter  # noqa: F401
 from mstrio.object_management.folder import Folder  # noqa: F401
 from mstrio.object_management.object import Object
 from mstrio.object_management.search_operations import SearchObject  # noqa: F401
+from mstrio.object_management.shortcut import Shortcut  # noqa: F401
 from mstrio.project_objects import Document, Report  # noqa: F401
 from mstrio.project_objects.datasets import OlapCube, SuperCube  # noqa: F401
 from mstrio.server import Project  # noqa: F401
 from mstrio.types import ObjectSubTypes, ObjectTypes
 from mstrio.users_and_groups import User, UserGroup  # noqa: F401
-from mstrio.modeling.filter import Filter  # noqa: F401
-from mstrio.modeling.schema import Attribute  # noqa: F401
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
@@ -36,6 +44,12 @@ class TypeObjectMapping(Enum):
     SearchObject = ObjectTypes.SEARCH  # noqa: F811
     Attribute = ObjectTypes.ATTRIBUTE  # noqa: F811
     Filter = ObjectTypes.FILTER  # noqa: F811
+    LogicalTable = ObjectTypes.TABLE  # noqa: F811
+    Fact = ObjectTypes.FACT  # noqa: F811
+    Transformation = ObjectTypes.ROLE  # noqa: F811
+    Metric = ObjectTypes.METRIC  # noqa: F811
+    UserHierarchy = ObjectTypes.DIMENSION  # noqa: F811
+    Shortcut = ObjectTypes.SHORTCUT_TYPE  # noqa: F811
 
 
 class SubTypeObjectMapping(Enum):
@@ -50,9 +64,7 @@ def __str_to_class(classname):
     return getattr(sys.modules[__name__], classname)
 
 
-def map_to_object(
-    object_type: Union[int, ObjectTypes], subtype: Union[int, ObjectSubTypes] = None
-):
+def map_to_object(object_type: int | ObjectTypes, subtype: Optional[int | ObjectSubTypes] = None):
     if not isinstance(object_type, ObjectTypes):
         try:
             object_type = ObjectTypes(object_type)
@@ -75,9 +87,23 @@ def map_to_object(
         return Object
 
 
-def map_objects_list(connection: "Connection", objects_list: List):
+def map_object(connection: "Connection", obj: dict):
+    """Map a dict that represents an object to an instance of the corresponding
+        mstrio class.
+    """
+
+    return map_to_object(
+        obj.get('type'),
+        obj.get('subtype')
+    ).from_dict(source=obj, connection=connection)
+
+
+def map_objects_list(connection: "Connection", objects_list: list):
+    """Map a list of dict that represent objects to instances of
+        the corresponding mstrio classes.
+    """
+
     return [
-        map_to_object(obj.get('type'),
-                      obj.get('subtype')).from_dict(source=obj, connection=connection)
+        map_object(connection, obj)
         for obj in objects_list
     ]

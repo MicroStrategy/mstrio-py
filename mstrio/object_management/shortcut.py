@@ -1,5 +1,5 @@
 from enum import IntFlag
-from typing import Any, Dict, List, Optional, TypeVar, Union
+from typing import Any, Optional, TypeVar
 
 from mstrio.api import browsing, objects
 from mstrio.connection import Connection
@@ -66,8 +66,7 @@ class Shortcut(Entity, CopyMixin, MoveMixin):
         id: str,
         project_id: str = None,
         project_name: str = None,
-        shortcut_info_flag: Union[ShortcutInfoFlags,
-                                  int] = ShortcutInfoFlags.DssDossierShortcutInfoTOC
+        shortcut_info_flag: ShortcutInfoFlags | int = ShortcutInfoFlags.DssDossierShortcutInfoTOC
     ):
         """Initialize the Shortcut object and populate it with I-Server data.
 
@@ -124,13 +123,9 @@ class Shortcut(Entity, CopyMixin, MoveMixin):
     T = TypeVar('T')
 
     @classmethod
-    def from_dict(cls: T, source: Dict[str, Any], connection: Connection) -> Union[T, dict]:
-        """Instantiate a Shortcut from a dict source.
-           If `projectId` not present in source, return dict."""
-        # Without projectId the fetching functionality will fail
-        if source.get("project_id") or source.get("projectId"):
-            return super(Entity, cls).from_dict(source=source, connection=connection)
-        return source
+    def from_dict(cls: T, source: dict[str, Any], connection: Connection) -> T:
+        """Instantiate a Shortcut from a dict source."""
+        return super(Entity, cls).from_dict(source=source, connection=connection)
 
     @property
     def owned_by_current_user(self):
@@ -187,15 +182,14 @@ class Shortcut(Entity, CopyMixin, MoveMixin):
 
 def get_shortcuts(
     connection: Connection,
-    shortcut_ids: List[str],
+    shortcut_ids: list[str],
     project_id: str = None,
     project_name: str = None,
-    shortcut_info_flag: Union[ShortcutInfoFlags,
-                              int] = ShortcutInfoFlags.DssDossierShortcutInfoDefault,
+    shortcut_info_flag: ShortcutInfoFlags | int = ShortcutInfoFlags.DssDossierShortcutInfoDefault,
     to_dictionary: bool = False,
     limit: Optional[int] = None,
     **filters
-) -> Union[List[dict], List[Shortcut]]:
+) -> list[dict] | list[Shortcut]:
     """Retrieve information about specific published shortcuts
     in specific project.
 

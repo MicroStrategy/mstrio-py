@@ -1,5 +1,5 @@
 from enum import auto
-from typing import List, Optional
+from typing import Optional
 
 from mstrio.distribution_services.subscription.common import RefreshPolicy
 from mstrio.utils.enum_helper import AutoName, AutoUpperName
@@ -190,7 +190,7 @@ class Content(Dictable):
 
             def __init__(
                 self,
-                slicing_attributes: List[str] = None,
+                slicing_attributes: Optional[list[str]] = None,
                 address_attribute_id: Optional[str] = None,
                 device_id: Optional[str] = None,
                 form_id: Optional[str] = None
@@ -218,7 +218,9 @@ class Content(Dictable):
             delimiter: Optional[str] = None,
             bursting: Optional[Bursting] = None,
             prompt: Optional[Prompt] = None,
-            file_name: Optional[str] = None
+            file_name: Optional[str] = None,
+            content_modes: Optional[list[str]] = None,
+            bookmark_ids: Optional[list[str]] = None
         ):
 
             self.format_mode = format_mode
@@ -230,6 +232,8 @@ class Content(Dictable):
             self.bursting = bursting
             self.prompt = prompt
             self.file_name = file_name
+            self.content_modes = content_modes
+            self.bookmark_ids = bookmark_ids
 
         _FROM_DICT_MAP = {
             "format_mode": FormatMode,
@@ -322,9 +326,9 @@ class Content(Dictable):
         # RefreshCondition
         def __init__(
             self,
-            tables: List[TableRefreshInfo],
+            tables: list[TableRefreshInfo],
             dataset_refresh_policy: Optional[RefreshPolicy] = None,
-            filters: Optional[List[SubscriptionFilter]] = None
+            filters: Optional[list[SubscriptionFilter]] = None
         ):
             self.tables = tables
             self.dataset_refresh_policy = dataset_refresh_policy
@@ -332,9 +336,11 @@ class Content(Dictable):
 
         _FROM_DICT_MAP = {
             "dataset_refresh_policy": RefreshPolicy,
-            "tables": lambda tables, connection:
+            "tables": lambda tables,
+            connection:
             [Content.RefreshCondition.TableRefreshInfo.from_dict(t, connection) for t in tables],
-            "filters": lambda filters, connection: [
+            "filters": lambda filters,
+            connection: [
                 Content.RefreshCondition.SubscriptionFilter.from_dict(f, connection)  # noqa
                 for f in filters
             ],

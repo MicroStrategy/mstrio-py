@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, TYPE_CHECKING, Union
+from typing import Optional, TYPE_CHECKING
 
 from mstrio import config
 from mstrio.api import filters, objects
@@ -29,11 +29,11 @@ def list_filters(
     limit: Optional[int] = None,
     project_id: Optional[str] = None,
     project_name: Optional[str] = None,
-    search_pattern: Union[SearchPattern, int] = SearchPattern.CONTAINS,
-    show_expression_as: Union[ExpressionFormat, str] = ExpressionFormat.TREE,
+    search_pattern: SearchPattern | int = SearchPattern.CONTAINS,
+    show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
     show_filter_tokens: bool = False,
     **filters
-) -> Union[list["Filter"], list[dict]]:
+) -> list["Filter"] | list[dict]:
     """Get a list of Filter objects or dicts. Optionally filter the
     objects by specifying filters parameter.
 
@@ -57,7 +57,7 @@ def list_filters(
         project_name (str, optional): Project name
         search_pattern (SearchPattern enum or int, optional): pattern to
             search for, such as Begin With or Exactly. Possible values are
-            available in ENUM mstrio.browsing.SearchPattern.
+            available in ENUM mstrio.object_management.SearchPattern.
             Default value is CONTAINS (4).
         show_expression_as (ExpressionFormat or str, optional): specify how
             expressions should be presented
@@ -199,7 +199,7 @@ class Filter(Entity, CopyMixin, DeleteMixin, MoveMixin):
         connection: "Connection",
         id: Optional[str] = None,
         name: Optional[str] = None,
-        show_expression_as: Union[ExpressionFormat, str] = ExpressionFormat.TREE,
+        show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
         show_filter_tokens: bool = False
     ):
         """Initialize filter object by its identifier.
@@ -253,12 +253,12 @@ class Filter(Entity, CopyMixin, DeleteMixin, MoveMixin):
         cls,
         connection: "Connection",
         name: str,
-        destination_folder: Union[Folder, str],
-        qualification: Optional[Union[Expression, dict]] = None,
+        destination_folder: Folder | str,
+        qualification: Optional[Expression | dict] = None,
         description: Optional[str] = None,
         is_embedded: Optional[bool] = False,
         primary_locale: Optional[str] = None,
-        show_expression_as: Union[ExpressionFormat, str] = ExpressionFormat.TREE,
+        show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
         show_filter_tokens: bool = False,
     ) -> "Filter":
         """Create a new filter in a specific project.
@@ -335,7 +335,7 @@ class Filter(Entity, CopyMixin, DeleteMixin, MoveMixin):
         name: Optional[str] = None,
         description: Optional[str] = None,
         destination_folder_id: Optional[str] = None,
-        qualification: Optional[Union[Expression, dict]] = None,
+        qualification: Optional[Expression | dict] = None,
         is_embedded: Optional[bool] = None,
     ):
         """Alter the filter properties.

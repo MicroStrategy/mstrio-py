@@ -279,15 +279,7 @@ class Project(Entity):
             name: new name of the project.
             description: new description of the project.
         """
-        func = self.alter
-        args = helper.get_default_args_from_func(func)
-        defaults = helper.get_default_args_from_func(func)
-        default_dict = dict(zip(args[-len(defaults):], defaults)) if defaults else {}
-        local = locals()
-        properties = {}
-        for property_key in default_dict.keys():
-            if local[property_key] is not None:
-                properties[property_key] = local[property_key]
+        properties = helper.filter_params_for_func(self.alter, locals(), exclude=['self'])
 
         self._alter_properties(**properties)
 

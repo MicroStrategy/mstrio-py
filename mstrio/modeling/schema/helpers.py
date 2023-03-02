@@ -3,6 +3,7 @@ from enum import auto
 from typing import Optional, TYPE_CHECKING, Union
 
 from mstrio.utils.enum_helper import AutoName
+from mstrio.utils.exceptions import NotSupportedError
 from mstrio.utils.helper import Dictable, exception_handler
 
 if TYPE_CHECKING:
@@ -269,7 +270,9 @@ class SchemaObjectReference(Dictable):
             from mstrio.modeling.schema.attribute import Attribute
             return Attribute(connection, id=self.object_id)
         else:
-            raise NotImplementedError(f"{self.sub_type} object sub type is not supported yet.")
+            raise NotSupportedError(
+                f"{self.sub_type} object sub type is not supported."
+            )
 
 
 class DataType(Dictable):

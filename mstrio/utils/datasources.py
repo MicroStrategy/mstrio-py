@@ -40,9 +40,9 @@ def alter_instance_list_resp(response):
 
 
 def alter_instance_json(response_json):
-    response_json['datasource_connection'] = response_json["database"]["connection"]
-    response_json['database_type'] = response_json["database"]["type"]
-    response_json['database_version'] = response_json["database"]["version"]
+    response_json['datasource_connection'] = response_json["database"].get("connection")
+    response_json['database_type'] = response_json["database"].get("type")
+    response_json['database_version'] = response_json["database"].get("version")
     response_json['primary_datasource'] = response_json["database"].get("primaryDatasource")
     response_json['data_mart_datasource'] = response_json["database"].get("dataMartDatasource")
     del response_json["database"]

@@ -52,6 +52,49 @@ def get_object_info(
     )
 
 
+def get_object_info_async(
+    futures_session: "FuturesSession", connection, id, object_type, project_id=None
+):
+    """Get information for a specific object in a specific project; if you do
+    not specify a project ID, you get information for the object just in the
+    non-project area.
+
+    You identify the object with the object ID and object type. You specify
+    the object type as a query parameter; possible values for object type are
+    provided in EnumDSSXMLObjectTypes.
+
+    Args:
+        futures_session (FuturesSession): Future Session object to call
+            MicroStrategy REST Server asynchronously
+        connection (Connection): MicroStrategy connection object returned by
+            `connection.Connection()`.
+        id (str): Object ID
+        object_type (int): One of EnumDSSXMLObjectTypes. Ex. 34 (User or
+        UserGroup), 44 (Security Role), 32 (Project), 8 (Folder), 36 (type of
+        I-Server configuration), 58 (Security Filter)
+        project_id(str): ID of a project in which the object is located.
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        HTTP response object returned by the MicroStrategy REST server.
+    """
+    if object_type == ObjectTypes.PROJECT.value:
+        headers = {'X-MSTR-ProjectID': None}
+    elif project_id:
+        headers = {'X-MSTR-ProjectID': project_id}
+    else:
+        headers = {'X-MSTR-ProjectID': connection.project_id}
+
+    if not project_id and not connection.project_id:
+        logger.info('Project was not selected. Search is performed for the non-project area')
+
+    return futures_session.get(
+        url=f'{connection.base_url}/api/objects/{id}',
+        headers=headers,
+        params={'type': object_type}
+    )
+
+
 @ErrorHandler(err_msg='Error deleting object with ID {id}')
 def delete_object(connection, id, object_type, project_id=None, error_msg=None):
     """Get information for a specific object in a specific project; if you do

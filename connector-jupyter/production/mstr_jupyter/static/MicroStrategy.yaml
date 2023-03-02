@@ -1,9 +1,9 @@
 Type: IPython Notebook Extension
-Compatibility: 4.x, 5.x
+Compatibility: 4.x, 5.x, 6.x
 Name: MicroStrategy
 Main: main.js
 Description: Connects Jupyter to MicroStrategy
-Link: readme.md
+Link: README.md
 Parameters:
 - name: name
   description: description

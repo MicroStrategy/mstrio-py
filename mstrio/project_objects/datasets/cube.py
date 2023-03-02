@@ -1,7 +1,7 @@
 from enum import Enum
 import logging
 from operator import itemgetter
-from typing import Optional, TYPE_CHECKING, Union
+from typing import Optional, TYPE_CHECKING
 
 from pandas.core.frame import DataFrame
 import requests
@@ -91,13 +91,13 @@ class CubeStates(Enum):
 def list_all_cubes(
     connection: Connection,
     name: Optional[str] = None,
-    search_pattern: Union[SearchPattern, int] = SearchPattern.CONTAINS,
+    search_pattern: SearchPattern | int = SearchPattern.CONTAINS,
     project_id: Optional[str] = None,
     project_name: Optional[str] = None,
     to_dictionary: bool = False,
     limit: Optional[int] = None,
     **filters
-) -> Union[list[Union["OlapCube", "SuperCube"]], list[dict]]:
+) -> list["OlapCube", "SuperCube"] | list[dict]:
     """Get list of Cube objects (OlapCube or SuperCube) or dicts with them.
     Optionally filter cubes by specifying 'name'.
 
@@ -122,7 +122,7 @@ def list_all_cubes(
             will be applied to the names of cubes being searched
         search_pattern (SearchPattern enum or int, optional): pattern to search
             for, such as Begin With or Contains. Possible values are available
-            in ENUM mstrio.browsing.SearchPattern.
+            in ENUM mstrio.object_management.SearchPattern.
             Default value is BEGIN WITH (4).
         project_id (string, optional): Project ID
         project_name (str, optional): Project name
@@ -174,7 +174,7 @@ def load_cube(
     cube_name: Optional[str] = None,
     folder_id: Optional[str] = None,
     instance_id: Optional[str] = None
-) -> Union["OlapCube", "SuperCube", list[Union["OlapCube", "SuperCube"]]]:
+) -> "OlapCube | SuperCube | list[OlapCube, SuperCube]":
     """Load single cube specified by either 'cube_id' or both 'cube_name' and
     'folder_id'.
 

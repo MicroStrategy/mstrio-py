@@ -260,7 +260,7 @@ ${modelingStepsCode}
 # Data Export
 mstr_dataset = SuperCube(mstr_connection, name="${saveAsName}"${descriptionConverted})
 ${tablesCode}
-mstr_dataset.create(folder_id="${folderId}")
+mstr_dataset.create(folder_id="${folderId}", force="True")
 ${certify ? 'mstr_dataset.certify()' : ''}
     `).trim();
   }

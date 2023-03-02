@@ -5,17 +5,18 @@ is to present what can be done with this module and to ease its usage.
 from mstrio.connection import get_connection
 from mstrio.project_objects.content_cache import ContentCache
 
-PROJECT_ID = $project_id # Insert project ID here
+# Define a variable which can be later used in a script
 PROJECT_NAME = $project_name  # Insert name of project here
-CACHE_ID = $cache_id  # Insert ID of cache on which you want to perform actions
-OTHER_CACHE_ID = $other_cache_id  # Insert ID of cache on which you want to perform actions
-NODE_NAME = $node_name  # Insert name of node or list of names on which you want to perform actions
 
 conn = get_connection(workstationData, PROJECT_NAME)
 
 # Content cache management
 # Listing caches with different conditions
 list_of_all_caches = ContentCache.list_caches(connection=conn)
+
+# Define a variable which can be later used in a script
+CACHE_ID = $cache_id  # Insert ID of cache on which you want to perform actions
+
 list_of_one_cache = ContentCache.list_caches(connection=conn, id=CACHE_ID)
 list_of_caches_as_dicts = ContentCache.list_caches(connection=conn, to_dictionary=True)
 
@@ -36,6 +37,9 @@ properties = content_cache.list_properties()
 
 # Delete content cache
 content_cache.delete(force=True)
+
+# Define a variable which can be later used in a script
+OTHER_CACHE_ID = $other_cache_id  # Insert ID of cache on which you want to perform actions
 
 # Unload multiple content caches
 ContentCache.unload_caches(connection=conn, cache_ids=[CACHE_ID, OTHER_CACHE_ID])

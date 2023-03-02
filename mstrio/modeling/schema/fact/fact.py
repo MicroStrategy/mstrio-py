@@ -1,5 +1,5 @@
 import logging
-from typing import List, Optional, Union
+from typing import Optional
 
 from mstrio import config
 from mstrio.api import facts, objects
@@ -27,10 +27,10 @@ def list_facts(
     limit: Optional[int] = None,
     project_id: Optional[str] = None,
     project_name: Optional[str] = None,
-    search_pattern: Union[SearchPattern, int] = SearchPattern.CONTAINS,
-    show_expression_as: Union[ExpressionFormat, str] = ExpressionFormat.TREE,
+    search_pattern: SearchPattern | int = SearchPattern.CONTAINS,
+    show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
     **filters,
-) -> Union[List["Fact"], List[dict]]:
+) -> list["Fact"] | list[dict]:
     """Get list of Fact objects or dicts with them.
 
     Specify either `project_id` or `project_name`.
@@ -53,7 +53,8 @@ def list_facts(
         project_name (str, optional): Project name
         search_pattern (SearchPattern enum or int, optional): pattern to search
             for, such as Begin With or Exactly. Possible values are available in
-            ENUM mstrio.browsing.SearchPattern. Default value is CONTAINS (4).
+            ENUM mstrio.object_management.SearchPattern.
+            Default value is CONTAINS (4).
         show_expression_as (optional, enum or str): specify how expressions
             should be presented.
             Available values:
@@ -195,7 +196,7 @@ class Fact(Entity, CopyMixin, DeleteMixin, MoveMixin):
         connection: Connection,
         id: Optional[str] = None,
         name: Optional[str] = None,
-        show_expression_as: Union[ExpressionFormat, str] = ExpressionFormat.TREE
+        show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE
     ) -> None:
         """Initialize a new instance of Fact class.
 
@@ -263,12 +264,12 @@ class Fact(Entity, CopyMixin, DeleteMixin, MoveMixin):
         cls,
         connection: Connection,
         name: str,
-        destination_folder: Union[Folder, str],
-        expressions: List[Union[FactExpression, dict]],
-        data_type: Optional[Union[DataType, dict]] = None,
+        destination_folder: Folder | str,
+        expressions: list[FactExpression | dict],
+        data_type: Optional[DataType | dict] = None,
         description: Optional[str] = None,
         is_embedded: bool = False,
-        show_expression_as: Union[ExpressionFormat, str] = ExpressionFormat.TREE,
+        show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
     ) -> "Fact":
         """Create new fact object.
 
@@ -335,7 +336,7 @@ class Fact(Entity, CopyMixin, DeleteMixin, MoveMixin):
         self,
         name: Optional[str] = None,
         description: Optional[str] = None,
-        data_type: Optional[Union[DataType, dict]] = None,
+        data_type: Optional[DataType | dict] = None,
     ):
         """Alter fact properties.
 
@@ -350,8 +351,8 @@ class Fact(Entity, CopyMixin, DeleteMixin, MoveMixin):
         self._alter_properties(**properties)
 
     def get_tables(
-        self, expression: Optional[Union[FactExpression, str]] = None
-    ) -> List[SchemaObjectReference]:
+        self, expression: Optional[FactExpression | str] = None
+    ) -> list[SchemaObjectReference]:
         """ Get list of all tables in given fact expression. If expression
         argument is not specified, list all tables for fact.
 
@@ -369,7 +370,7 @@ class Fact(Entity, CopyMixin, DeleteMixin, MoveMixin):
         tables_list = {tab for expr in expressions for tab in expr.tables}
         return list(tables_list)
 
-    def add_expression(self, expression: Union[FactExpression, dict]) -> None:
+    def add_expression(self, expression: FactExpression | dict) -> None:
         """Add expression to the fact.
 
         Args:

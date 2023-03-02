@@ -19,6 +19,7 @@ from .search_operations import (
     SearchObject,
     SearchPattern,
     SearchResultsFormat,
-    start_full_search
+    start_full_search,
+    find_objects_with_id,
 )
 from .shortcut import get_shortcuts, Shortcut, ShortcutInfoFlags

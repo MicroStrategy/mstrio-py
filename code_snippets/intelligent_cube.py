@@ -8,10 +8,26 @@ ease its usage.
 from mstrio.project_objects import list_olap_cubes, OlapCube
 from mstrio.connection import get_connection
 
+# Define a variable which can be later used in a script
 PROJECT_NAME = $project_name  # Project to connect to
+
+conn = get_connection(workstationData, project_name=PROJECT_NAME)
+
+# list all OLAP Cubes
+olap_cubes = list_olap_cubes(conn)
+
+# Define a variable which can be later used in a script
 CUBE_ID = $cube_id  # id for OlapCube object lookup
 
-# properties for defining a new OlapCube object
+# get OLAP Cube by its id
+olap_cube = OlapCube(conn, CUBE_ID)
+
+# list available attributes, metrics and attribute forms which can be used for
+# creation of a new OLAP Cube
+OlapCube.available_metrics(conn)
+OlapCube.available_attributes(conn)
+
+# Define variables which can be later used in a script
 ATTRIBUTE_ID = $attribute_id
 ATTRIBUTE_NAME = $attribute_name
 ATTRIBUTE = {'id': ATTRIBUTE_ID, 'name': ATTRIBUTE_NAME, 'type': 'attribute'}
@@ -21,19 +37,6 @@ METRIC = {'id': METRIC_ID, 'name': METRIC_NAME, 'type': 'metric'}
 CUBE_NAME = $cube_name
 CUBE_DESCRIPTION = $cube_description
 CUBE_FOLDER_ID = $cube_folder_id
-
-conn = get_connection(workstationData, project_name=PROJECT_NAME)
-
-# list all OLAP Cubes
-olap_cubes_ = list_olap_cubes(conn)
-
-# get OLAP Cube by its identifier
-olap_cube_ = OlapCube(conn, CUBE_ID)
-
-# list available attributes, metrics and attribute forms which can be used for
-# creation of a new OLAP Cube
-OlapCube.available_metrics(conn)
-OlapCube.available_attributes(conn)
 
 # create new OLAP Cube
 attributes = [ATTRIBUTE]

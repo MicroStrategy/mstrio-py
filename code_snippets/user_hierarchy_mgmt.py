@@ -20,39 +20,42 @@ from mstrio.modeling.schema import (
 
 from mstrio.connection import get_connection
 
-PROJECT_NAME = $project_name  # Project to connect to
-
-ATTRIBUTE_NAME_1 = $attribute_name_1
-ATTRIBUTE_NAME_2 = $attribute_name_2
-ATTRIBUTE_NAME_3 = $attribute_name_3
-ATTRIBUTE_NAME_4 = $attribute_name_4
-# see modeling/schema/user_hierarchy/user_hierarchy.py -
-# - ElementDisplayOption class for available options
-ELEMENT_DISPLAY_OPTION = $element_display_option
-USER_HIERARCHY_NAME = $user_hierarchy_name
-USER_HIERARCHY_DESCRIPTION = $user_hierarchy_description
-FOLDER_ID = $folder_id
-
 # For every object we want to reference using a SchemaObjectReference we need
-# to provide an Object ID for. For the script to work correctly all occurences of `'<Object_ID>'` need to be replaced with IDs specific to the object used. In the future all of those will be made as separate variables.
+# to provide an Object ID for. For the script to work correctly all occurences
+# of `'<object_id>'` and others with form `<some_name>` need to be replaced with
+# data specific to the object used.
+
+# Define a variable which can be later used in a script
+PROJECT_NAME = $project_name  # Project to connect to
 
 conn = get_connection(workstationData, project_name=PROJECT_NAME)
 
 # get a list of user hierarchies
 user_hierarchies = list_user_hierarchies(conn)
 
+# Define variables which can be later used in a script
+ATTRIBUTE_NAME_1 = $attribute_name_1
+ATTRIBUTE_NAME_2 = $attribute_name_2
+ATTRIBUTE_NAME_3 = $attribute_name_3
+ATTRIBUTE_NAME_4 = $attribute_name_4
+
 # create attributes to be added to a user hierarchy
 # an attribute can be either an object (HierarchyAttribute) or a dict
 attribute1 = HierarchyAttribute(
-    object_id='<Object_ID>',
+    object_id='<object_id>',
     entry_point=True,
     name=ATTRIBUTE_NAME_1,
     # see modeling/schema/user_hierarchy/user_hierarchy.py for available options
     element_display_option=ElementDisplayOption.ALL_ELEMENTS,
 )
 
+# Define a variable which can be later used in a script
+# see modeling/schema/user_hierarchy/user_hierarchy.py -
+# - ElementDisplayOption class for available options
+ELEMENT_DISPLAY_OPTION = $element_display_option
+
 attribute2 = {
-    "objectId": '<Object_ID>',
+    "objectId": '<object_id>',
     "entryPoint": True,
     "name": ATTRIBUTE_NAME_2,
     "elementDisplayOption": ELEMENT_DISPLAY_OPTION
@@ -61,19 +64,23 @@ attribute2 = {
 # create SchemaObjectReference objects to be used
 # for relationship creation
 sor1 = SchemaObjectReference(
-    object_id='<Object_ID>',
+    object_id='<object_id>',
     sub_type=ObjectSubType.ATTRIBUTE  # see modeling/schema/helpers.py - ObjectSubType class
     # for available options
 )
 
 sor2 = SchemaObjectReference(
-    object_id='<Object_ID>',
+    object_id='<object_id>',
     sub_type=ObjectSubType.ATTRIBUTE  # see modeling/schema/helpers.py - ObjectSubType class
     # for available options
 )
 
 # create a hierarhcy relationship between two attributes
 relationship = HierarchyRelationship(parent=sor1, child=sor2)
+
+# Define variables which can be later used in a script
+USER_HIERARCHY_NAME = $user_hierarchy_name
+FOLDER_ID = $folder_id
 
 # create a user hierarchy with subtype `DIMENSION_USER_HIERARCHY`
 # and previously created atributes and relationship
@@ -92,6 +99,9 @@ new_user_hierarchy = UserHierarchy.create(
 schema_manager = SchemaManagement(connection=conn, project_id=conn.project_id)
 task = schema_manager.reload(update_types=[SchemaUpdateType.LOGICAL_SIZE])
 
+# Define a variable which can be later used in a script
+USER_HIERARCHY_DESCRIPTION = $user_hierarchy_description
+
 # alter a user hierarchy, change it's name, description
 # and subtype
 new_user_hierarchy.alter(
@@ -104,14 +114,14 @@ new_user_hierarchy.alter(
 
 # define additional attributes
 attribute3 = HierarchyAttribute(
-    object_id='<Object_ID>',
+    object_id='<object_id>',
     entry_point=True,
     name=ATTRIBUTE_NAME_3,
     element_display_option=ElementDisplayOption.ALL_ELEMENTS,
 )
 
 attribute4 = HierarchyAttribute(
-    object_id='<Object_ID>',
+    object_id='<object_id>',
     entry_point=False,
     name=ATTRIBUTE_NAME_4,
     element_display_option=ElementDisplayOption.ALL_ELEMENTS,
@@ -125,11 +135,11 @@ new_user_hierarchy.add_attribute(attribute4)
 # define another relationship (it may be a dict)
 relationship = {
     'parent': {
-        'objectId': '<Object_ID>',
+        'objectId': '<object_id>',
         'subType': ObjectSubType.ATTRIBUTE  # see modeling/schema/helpers.py for available values
     },
     'child': {
-        'objectId': '<Object_ID>',
+        'objectId': '<object_id>',
         'subType': ObjectSubType.ATTRIBUTE  # see modeling/schema/helpers.py for available values
     }
 }

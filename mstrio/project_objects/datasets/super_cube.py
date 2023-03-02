@@ -1,20 +1,20 @@
 import logging
 import time
-from typing import Optional, Union
+from typing import Optional
 
-from packaging import version
 import pandas as pd
 from tqdm.auto import tqdm
 
 from mstrio import config
 from mstrio.api import cubes, datasets
 from mstrio.connection import Connection
+from mstrio.object_management import Folder, get_predefined_folder_contents, PredefinedFolders
 from mstrio.object_management.search_operations import full_search, SearchPattern
 from mstrio.utils import helper
 from mstrio.utils.encoder import Encoder
 from mstrio.utils.entity import CertifyMixin, ObjectSubTypes
 from mstrio.utils.model import Model
-
+from mstrio.utils.version_helper import is_server_min_version
 from .cube import _Cube
 
 logger = logging.getLogger(__name__)
@@ -23,13 +23,13 @@ logger = logging.getLogger(__name__)
 def list_super_cubes(
     connection: Connection,
     name: Optional[str] = None,
-    search_pattern: Union[SearchPattern, int] = SearchPattern.CONTAINS,
+    search_pattern: SearchPattern | int = SearchPattern.CONTAINS,
     project_id: Optional[str] = None,
     project_name: Optional[str] = None,
     to_dictionary: bool = False,
     limit: Optional[int] = None,
     **filters,
-) -> Union[list["SuperCube"], list[dict]]:
+) -> list["SuperCube"] | list[dict]:
     """Get list of SuperCube objects or dicts with them.
     Optionally filter cubes by specifying 'name'.
 
@@ -54,7 +54,7 @@ def list_super_cubes(
             will be applied to the names of super cubes being searched
         search_pattern (SearchPattern enum or int, optional): pattern to search
             for, such as Begin With or Contains. Possible values are available
-            in ENUM mstrio.browsing.SearchPattern.
+            in ENUM mstrio.object_management.SearchPattern.
             Default value is BEGIN WITH (4).
         project_id (string, optional): Project ID
         project_name (string, optional): Project name
@@ -271,13 +271,8 @@ class SuperCube(_Cube, CertifyMixin):
             self.__update_indexes[name] = 0
 
     def __check_update_policy(self, update_policy: str) -> None:
-        version_ok = version.parse(self._connection.iserver_version) >= version.parse("11.2.0300")
         if update_policy not in self.__VALID_POLICY:
             raise ValueError(f"Update policy must be one of {self.__VALID_POLICY}.")
-        if self._id is None and update_policy != "replace" and version_ok:
-            raise ValueError(
-                "Update policy has to be 'replace' if a super cube is created or overwritten."
-            )
 
     def remove_table(self, name):
         """Removes a table from a collection of tables which are
@@ -293,12 +288,36 @@ class SuperCube(_Cube, CertifyMixin):
         """
         self._tables = [t for t in self._tables if t.get('table_name') != name]
 
+    def __check_folder_contents(self, name: str, folder_id: Optional[str] = None):
+        """Check if folder already have object with given name.
+        If folder_id is None, check My Reports folder.
+        """
+
+        if folder_id:
+            folder = Folder(self.connection, id=folder_id)
+            contents = folder.get_contents(name=name)
+        else:
+            contents = get_predefined_folder_contents(
+                self.connection, PredefinedFolders.PROFILE_REPORTS, name=name
+            )
+
+        if contents:
+            raise ValueError(
+                f"Super Cube with name {self.name} already exist in {folder_id or 'My Reports'} "
+                "folder. If you want to override already existing cube, add tables with "
+                "update policy `replace` and call 'create()' method with argument 'force=True'."
+            )
+
+    def __are_all_tables_with_replace_policy(self):
+        return all(table['update_policy'] == 'replace' for table in self.tables)
+
     def create(
         self,
         folder_id: Optional[str] = None,
         auto_upload: bool = True,
         auto_publish: bool = True,
-        chunksize: int = 100000
+        chunksize: int = 100000,
+        force: bool = False
     ) -> None:
         """Create a new super cube and initialize cube object after successful
         creation. This function does not return new super cube, but it updates
@@ -317,6 +336,9 @@ class SuperCube(_Cube, CertifyMixin):
                 super cube, data has to be uploaded first.
             chunksize (int, optional): Number of rows to transmit to the
                 I-Server with each request when uploading.
+            force (bool, optional): If True, skip checking if a super cube
+                already exist in the folder with the given name.
+                Defaults to False.
         """
         if auto_publish and not auto_upload:
             raise ValueError(
@@ -327,6 +349,19 @@ class SuperCube(_Cube, CertifyMixin):
             self._folder_id = folder_id
         else:
             self._folder_id = ""
+
+        if not force:
+            self.__check_folder_contents(self.name, folder_id)
+
+        if (
+            force
+            and is_server_min_version(self.connection, '11.2.0300')
+            and not self.__are_all_tables_with_replace_policy()
+        ):
+            raise ValueError(
+                "All the tables must be added with update policy 'replace', when trying to "
+                "override existing Super Cube with 'force=True'."
+            )
 
         # generate model of the super cube
         self.__build_model()
@@ -498,11 +533,10 @@ class SuperCube(_Cube, CertifyMixin):
     def publish_status(self):
         """Check the status of data that was uploaded to a super cube.
 
-        Returns:
-            status: The status of the publication process as a dictionary. In
-                the 'status' key, "1" denotes completion.
+        Returns: status: The status of the publication process as a dictionary.
+            In the 'status' key, "1" denotes completion.
         """
-        # after publish, `self._session_id` is reseted to force new session
+        # after publish, `self._session_id` is reset to force new session
         # creation in the next update, so we have to use its value saved in
         # `self.__last_session_id`
         session_id = self._session_id if self._session_id else self.__last_session_id
