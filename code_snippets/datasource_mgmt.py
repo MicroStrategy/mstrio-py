@@ -24,7 +24,7 @@ from mstrio.datasources import (
 from mstrio.connection import get_connection
 
 
-# Define a variable, which can be later used in a script
+# Define variables which can be later used in a script
 PROJECT_ID = $project_id  # Project ID to connect to
 PROJECT_NAME = $project_name  # Insert project name to connect to
 
@@ -35,7 +35,7 @@ conn = get_connection(workstationData, project_name=PROJECT_NAME)
 datasource_login_list = list_datasource_logins(connection=conn)
 print(datasource_login_list)
 
-# Define a variable, which can be later used in a script
+# Define variables which can be later used in a script
 DATASOURCE_LOGIN_ID = $datasource_login_id  # Insert ID for login to datasource here
 DATASOURCE_LOGIN_NAME = $datasource_login_name  # Insert name for login to datasource here
 
@@ -47,7 +47,7 @@ print(datasource_login)
 datasource_login = DatasourceLogin(conn, name=DATASOURCE_LOGIN_NAME)
 print(datasource_login)
 
-# Define a variable, which can be later used in a script
+# Define variables which can be later used in a script
 NEW_DATASOURCE_LOGIN_NAME = $new_datasource_login_name  # Insert name for new login to datasource here
 NEW_DATASOURCE_USERNAME = $new_datasource_username  # Insert name of user in Datasource here
 NEW_DATASOURCE_PASSWORD = $new_datasource_password  # Insert datasource password here
@@ -63,7 +63,7 @@ datasource_login = DatasourceLogin.create(
 )
 print(datasource_login)
 
-# Define a variable, which can be later used in a script
+# Define variables which can be later used in a script
 DATASOURCE_LOGIN_NEW_NAME = $datasource_login_new_name  # Insert new name for login to datasource here
 DATASOURCE_LOGIN_NEW_DESCRIPTION = $datasource_login_new_description  # Insert new datasource login description
 
@@ -85,7 +85,7 @@ datasource_login.delete(force=True)
 datasource_conn_list = list_datasource_connections(connection=conn)
 print(datasource_conn_list)
 
-# Define a variable, which can be later used in a script
+# Define variables which can be later used in a script
 DATASOURCE_CONNECTION_ID = $datasource_connection_id  # Insert ID of datasource connection here
 DATASOURCE_CONNECTION_NAME = $datasource_connection_name  # Insert name of datasource connection here
 
@@ -97,7 +97,7 @@ print(datasource_connection)
 datasource_connection = DatasourceConnection(conn, name=DATASOURCE_CONNECTION_NAME)
 print(datasource_connection)
 
-# Define a variable, which can be later used in a script
+# Define variables which can be later used in a script
 NEW_DATASOURCE_CONNECTION_NAME = $new_datasource_connection_name  # Insert new name of datasource connection here
 NEW_DATASOURCE_CONNECTION_DESCRIPTION = $new_datasource_connection_description  # Insert new description of datasource connection here
 
@@ -111,7 +111,7 @@ datasource_connection = DatasourceConnection.create(
     datasource_login=DATASOURCE_LOGIN_ID,
 )
 
-# Define a variable, which can be later used in a script
+# Define variables which can be later used in a script
 DATASOURCE_CONNECTION_NEW_NAME = $datasource_connection_new_name  # Insert new name of datasource connection
 DATASOURCE_CONNECTION_NEW_DESCRIPTION = $datasource_connection_new_description  # Insert new description of datasource connection
 
@@ -128,6 +128,39 @@ print(datasource_connection.list_properties())
 # Delete a datasource connection
 datasource_connection.delete(force=True)
 
+
+# Note that conversion to DSN-less is supported on certified gateways:
+# Amazon Redshift; Azure Synapse Analytics; ExasolI;
+# BM Db2 for Linux, UNIX and Windows; MySQL; Oracle; PostgreSQL;
+# Salesforce; Cloudera Hive; Cloudera Impala; Google BigQuery; Spark SQL;
+# SAP HANA; Snowflake; SQL Server; Teradata
+
+# Define variables which can be later used in a script
+DATASOURCE_CONNECTION_ID_DSN = $datasource_connection_id_dsn  # Insert id of datasource connection that had DSN connection string
+
+# Initialize datasource connection object
+ds_conn = DatasourceConnection(conn, id=DATASOURCE_CONNECTION_ID_DSN)
+
+# List datasource connection properites before conversion
+print(ds_conn.list_properties())
+
+# This method is supported from Update 9 server version
+# Convert datasource connection to DSN-less
+ds_conn.convert_to_dsn_less()
+
+# List datasource connection properites after conversion
+print(ds_conn.list_properties())
+
+# Define variables which can be later used in a script
+DATASOURCE_CONNECTION_ID_DSN_LIST = $datasource_connection_id_dsn_list  # Insert IDs for datasource connections here
+
+# Convert datasource connections one by one from list
+for ds_conn_id in DATASOURCE_CONNECTION_ID_DSN_LIST:
+    ds_conn = DatasourceConnection(conn, id=ds_conn_id)
+    # This method is supported from Update 9 server version
+    ds_conn.convert_to_dsn_less()
+
+
 # Manage datasource instances
 # List all datasources
 datasources = list_datasource_instances(connection=conn)
@@ -143,7 +176,7 @@ datasources = list_datasource_instances(
 )
 print(datasources)
 
-# Define a variable, which can be later used in a script
+# Define variables which can be later used in a script
 DATASOURCE_INSTANCE_ID = $datasource_instance_id  # Insert ID for datasource instance here
 DATASOURCE_INSTANCE_NAME = $datasource_instance_name  # Insert name for datasource instance here
 
@@ -159,7 +192,7 @@ print(datasource_instance)
 dbms = list_available_dbms(connection=conn)
 print(dbms)
 
-# Define a variable, which can be later used in a script
+# Define variables which can be later used in a script
 DBMS_ID = $dbms_id  # Insert ID of DBMS that you want to find
 DBMS_NAME = $dbms_name  # Insert name of DBMS that you want to find
 
@@ -171,7 +204,7 @@ print(dbms)
 dbms = Dbms(conn, name=DBMS_NAME)
 print(dbms)
 
-# Define a variable, which can be later used in a script
+# Define variables which can be later used in a script
 NEW_DATASOURCE_INSTANCE_NAME = $new_datasource_instance_name  # Insert name for datasource instance here
 NEW_DATASOURCE_INSTANCE_DESCRIPTION = $new_datasource_instance_description  # Insert description for datasource instance here
 NEW_DATASOURCE_INSTANCE_TABLE_PREFIX = $new_datasource_instance_table_prefix  # Insert table prefix for datasource instance here
@@ -189,7 +222,7 @@ datasource_instance = DatasourceInstance.create(
 )
 print(datasource_instance)
 
-# Define a variable, which can be later used in a script
+# Define variables which can be later used in a script
 DATASOURCE_INSTANCE_NEW_NAME = $datasource_instance_new_name  # Insert new name for edited datasource instance here
 DATASOURCE_INSTANCE_NEW_DESCRIPTION = $datasource_instance_new_description  # Insert new description for edited datasource instance here
 DATASOURCE_INSTANCE_TABLE_NEW_PREFIX = $datasource_instance_table_new_prefix  # Insert new table prefix for edited datasource instance here
@@ -208,16 +241,44 @@ print(datasource_instance.list_properties())
 # Delete a datasource instance
 datasource_instance.delete(force=True)
 
+
+# Note that conversion to DSN-less is supported on certified gateways:
+# Amazon Redshift; Azure Synapse Analytics; ExasolI;
+# BM Db2 for Linux, UNIX and Windows; MySQL; Oracle; PostgreSQL;
+# Salesforce; Cloudera Hive; Cloudera Impala; Google BigQuery; Spark SQL;
+# SAP HANA; Snowflake; SQL Server; Teradata
+
+# Define variables which can be later used in a script
+DATASOURCE_INSTANCE_ID_DSN = $datasource_instance_id_dsn  # Insert ID for datasource instance here
+
+# Get datasource instance by id
+ds_instance = DatasourceInstance(conn, id=DATASOURCE_INSTANCE_ID_DSN)
+
+# This method is supported from Update 9 server version
+# Convert datasource embedded connection from DSN to DSN-less format
+ds_instance.convert_ds_connection_to_dsn_less()
+
+# Define variables which can be later used in a script
+DATASOURCE_INSTANCE_ID_DSN_LIST = $datasource_instance_id_dsn_list  # Insert IDs for datasource instances here
+
+# Convert datasource instance embedded connection one by one from list
+for ds_id in DATASOURCE_INSTANCE_ID_DSN_LIST:
+    ds_instance = DatasourceInstance(conn, id=ds_id)
+    # This method is supported from Update 9 server version
+    ds_instance.convert_ds_connection_to_dsn_less()
+
+
 # Manage connection mappings
 
 # List all locales
 locales_list = list_locales(connection=conn)
 print(locales_list)
 
-# Define a variable, which can be later used in a script
+# Define variables which can be later used in a script
 LOCALE_ID = $locale_id
 LOCALE_NAME = $locale_name
 LOCALE_ABBREVIATION = $locale_abbreviation
+
 # Initialize locale object by id
 locale = Locale(conn, id=LOCALE_ID)
 print(locale)
@@ -234,7 +295,7 @@ print(locale)
 connection_mapping_list = list_datasource_mappings(connection=conn)
 print(connection_mapping_list)
 
-# Define a variable, which can be later used in a script
+# Define a variable which can be later used in a script
 USER_OR_USER_GROUP_ID = $user_or_user_group_id  # Insert ID of a user or user group
                                                 # that you wish to be mapped
                                                 # with a connection mapping
@@ -296,7 +357,7 @@ connection_mapping_list = list_datasource_mappings(
 )
 print(connection_mapping_list)
 
-# Define a variable, which can be later used in a script
+# Define a variable which can be later used in a script
 CONNECTION_MAPPING_ID = $connection_mapping_id  # Insert ID of connection mapping
 
 # Initialise a connection mapping
@@ -367,7 +428,7 @@ connection_mapping = DatasourceMap.create(
 )
 print(connection_mapping)
 
-# Define a variable, which can be later used in a script
+# Define variables which can be later used in a script
 CONNECTION_MAPPING_NEW_USER_OR_USER_GROUP = $connection_mapping_new_user_or_user_group  # Insert new user or usergroup ID for connection mapping
 CONNECTION_MAPPING_NEW_LOGIN = $connection_mapping_new_login  # Insert new login ID for connection mapping
 

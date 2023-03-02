@@ -20,9 +20,8 @@ import pandas as pd
 from mstrio.project_objects.datasets import SuperCube
 from mstrio.connection import get_connection
 
+# Define a variable which can be later used in a script
 PROJECT_NAME = $project_name  # Insert project name here
-SUPER_CUBE_NAME = $super_cube_name  # Insert name of created suber cube here
-SUPER_CUBE_ID = $super_cube_id  # insert ID of edited super cube here
 
 conn = get_connection(workstationData, project_name=PROJECT_NAME)
 
@@ -38,12 +37,15 @@ sales = {
 }
 sales_df = pd.DataFrame(sales, columns=["store_id", "category", "sales", "sales_fmt"])
 
+# Define a variable which can be later used in a script
+SUPER_CUBE_NAME = $super_cube_name  # Insert name of created suber cube here
+
 # Add tables to the super cube and create it. By default 'create()' will
 # additionally upload data to the I-Server and publish it. You can manipulate it
 # by setting parameters `auto_upload` and `auto_publish`
 ds = SuperCube(connection=conn, name=SUPER_CUBE_NAME)
-ds.add_table(name="Stores", data_frame=stores_df, update_policy="replace")
-ds.add_table(name="Sales", data_frame=sales_df, update_policy="replace")
+ds.add_table(name="Stores", data_frame=stores_df, update_policy="add")
+ds.add_table(name="Sales", data_frame=sales_df, update_policy="add")
 ds.create()
 
 # When using `SuperCube.add_table()`, Pandas data types are mapped to
@@ -59,6 +61,9 @@ ds.add_table(
     to_attribute=["store_id"],
     to_metric=["sales_fmt"]
 )
+
+# Define a variable which can be later used in a script
+SUPER_CUBE_ID = $super_cube_id  # insert ID of edited super cube here
 
 # It is possible to update previously created super cubes what looks really
 # similar to creation. You can use different update policies which are explained

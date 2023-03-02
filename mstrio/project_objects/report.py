@@ -1,4 +1,4 @@
-from typing import Optional, Union
+from typing import Optional, Type
 
 from packaging import version
 import pandas as pd
@@ -6,7 +6,7 @@ import requests
 from tqdm.auto import tqdm
 
 from mstrio import config
-from mstrio.api import objects, reports
+from mstrio.api import objects, reports as reports_api
 from mstrio.api.schedules import get_contents_schedule
 from mstrio.connection import Connection
 from mstrio.distribution_services.schedule import Schedule
@@ -20,7 +20,8 @@ from mstrio.utils.entity import (
     DeleteMixin,
     Entity,
     MoveMixin,
-    ObjectTypes
+    ObjectTypes,
+    ObjectSubTypes
 )
 from mstrio.utils.filter import Filter
 from mstrio.utils.helper import (
@@ -38,14 +39,14 @@ from mstrio.utils.sessions import FuturesSessionWithRenewal
 def list_reports(
     connection: Connection,
     name: Optional[str] = None,
-    search_pattern: Union[SearchPattern, int] = SearchPattern.CONTAINS,
+    search_pattern: SearchPattern | int = SearchPattern.CONTAINS,
     project_id: Optional[str] = None,
     project_name: Optional[str] = None,
     to_dictionary: bool = False,
     limit: Optional[int] = None,
     folder_id: Optional[str] = None,
     **filters,
-) -> Union[list["Report"], list[dict]]:
+) -> list[Type['Report']] | list[dict]:
     """Get list of Report objects or dicts with them.
     Optionally filter reports by specifying 'name'.
 
@@ -72,7 +73,7 @@ def list_reports(
             returns Report objects
         search_pattern (SearchPattern enum or int, optional): pattern to search
             for, such as Begin With or Contains. Possible values are available
-            in ENUM mstrio.browsing.SearchPattern.
+            in ENUM mstrio.object_management.SearchPattern.
             Default value is BEGIN WITH (4).
         project_id (string, optional): Project ID
         project_name (string, optional): Project name
@@ -104,9 +105,13 @@ def list_reports(
         root=folder_id,
         **filters,
     )
+    reports = [
+        item for item in objects_
+        if Report._is_subtype_supported(item['subtype'])
+    ]
     if to_dictionary:
-        return objects_
-    return [Report.from_dict(obj_, connection) for obj_ in objects_]
+        return reports
+    return [Report.from_dict(report_dict, connection) for report_dict in reports]
 
 
 class Report(Entity, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCacheMixin):
@@ -152,6 +157,14 @@ class Report(Entity, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCac
         acl: Object access control list
     """
     _OBJECT_TYPE = ObjectTypes.REPORT_DEFINITION
+    _OBJECT_SUBTYPES = [
+        ObjectSubTypes.REPORT_GRID,
+        ObjectSubTypes.REPORT_GRAPH,
+        ObjectSubTypes.REPORT_ENGINE,
+        ObjectSubTypes.REPORT_GRID_AND_GRAPH,
+        ObjectSubTypes.REPORT_TRANSACTION,
+        ObjectSubTypes.REPORT_HYPER_CARD,
+    ]
     _CACHE_TYPE = CacheSource.Type.REPORT
     _FROM_DICT_MAP = {
         **Entity._FROM_DICT_MAP,
@@ -160,7 +173,10 @@ class Report(Entity, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCac
     }
     _SIZE_LIMIT = 10000000  # this sets desired chunk size in bytes
 
-    _API_PATCH: dict = {**Entity._API_PATCH, ('folder_id'): (objects.update_object, 'partial_put')}
+    _API_PATCH: dict = {
+        **Entity._API_PATCH,
+        ('folder_id',): (objects.update_object, 'partial_put')
+    }
 
     def __init__(
         self,
@@ -195,9 +211,7 @@ class Report(Entity, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCac
         self.instance_id = kwargs.get("instance_id")
         self._parallel = kwargs.get("parallel", True)
         self._initial_limit = 1000
-        self._progress_bar = True if kwargs.get(
-            "progress_bar", True
-        ) and config.progress_bar else False
+        self._progress_bar = kwargs.get("progress_bar", True) and config.progress_bar
         self._cross_tab = False
         self._cross_tab_filter = {}
         self._subtotals = {}
@@ -364,10 +378,10 @@ class Report(Entity, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCac
         return self._dataframe
 
     def __fetch_chunks_future(self, future_session, pagination, instance_id, limit):
-        """Fetch add'l rows from this object instance from the Intelligence
+        """Fetch added rows from this object instance from the Intelligence
         Server."""
         return [
-            reports.report_instance_id_coroutine(
+            reports_api.report_instance_id_coroutine(
                 future_session,
                 connection=self._connection,
                 report_id=self._id,
@@ -378,7 +392,7 @@ class Report(Entity, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCac
         ]
 
     def __fetch_chunks(self, parser, pagination, it_total, instance_id, limit):
-        """Fetch add'l rows from this object instance from the Intelligence
+        """Fetch added rows from this object instance from the Intelligence
         Server."""
         with tqdm(desc="Downloading", total=it_total + 1,
                   disable=(not self._progress_bar)) as fetch_pbar:
@@ -405,7 +419,7 @@ class Report(Entity, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCac
             body["subtotals"] = {"visible": self._subtotals["visible"]}
 
         # Request a new instance, set instance id
-        response = reports.report_instance(
+        response = reports_api.report_instance(
             connection=self._connection,
             report_id=self._id,
             body=body,
@@ -416,7 +430,7 @@ class Report(Entity, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCac
         return response
 
     def __get_chunk(self, instance_id: str, offset: int, limit: int) -> requests.Response:
-        return reports.report_instance_id(
+        return reports_api.report_instance_id(
             connection=self._connection,
             report_id=self._id,
             instance_id=instance_id,
@@ -498,8 +512,10 @@ class Report(Entity, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCac
 
         Implements GET /v2/reports/<report_id>.
         """
-        response = reports.report_definition(connection=self._connection,
-                                             report_id=self._id).json()
+        response = reports_api.report_definition(
+            connection=self._connection,
+            report_id=self._id
+        ).json()
 
         grid = response["definition"]["grid"]
         available_objects = response['definition']['availableObjects']
@@ -550,7 +566,7 @@ class Report(Entity, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCac
 
             @fallback_on_timeout()
             def fetch_for_attribute_given_limit(limit):
-                response = reports.report_single_attribute_elements(
+                response = reports_api.report_single_attribute_elements(
                     connection=self._connection,
                     report_id=self._id,
                     attribute_id=attribute['id'],
@@ -565,7 +581,7 @@ class Report(Entity, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCac
                 # If total number of elements is bigger than the chunk size
                 # (limit), fetch them incrementally.
                 for _offset in range(limit, total, limit):
-                    response = reports.report_single_attribute_elements(
+                    response = reports_api.report_single_attribute_elements(
                         connection=self._connection,
                         report_id=self._id,
                         attribute_id=attribute['id'],
@@ -626,7 +642,7 @@ class Report(Entity, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCac
                     # Get total number of rows from headers.
                     total = int(response.headers['x-mstr-total-count'])
                     for _offset in range(limit, total, limit):
-                        response = reports.report_single_attribute_elements(
+                        response = reports_api.report_single_attribute_elements(
                             connection=self._connection,
                             report_id=self._id,
                             attribute_id=attr["id"],
@@ -649,7 +665,7 @@ class Report(Entity, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCac
     def __fetch_attribute_elements_chunks(self, future_session, limit: int) -> list:
         # Fetch add'l rows from this object instance
         return [
-            reports.report_single_attribute_elements_coroutine(
+            reports_api.report_single_attribute_elements_coroutine(
                 future_session,
                 connection=self._connection,
                 report_id=self._id,

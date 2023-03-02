@@ -11,24 +11,23 @@ from mstrio.modeling.expression import (
 from mstrio.modeling.schema.fact import Fact, list_facts
 from mstrio.modeling.schema.helpers import DataType, ObjectSubType
 from mstrio.modeling.schema import SchemaManagement, SchemaObjectReference, SchemaUpdateType
-from workflows.get_all_columns_in_table import list_table_columns
 
-# Following variables are defining basic facts
+# For every object we want to reference using a SchemaObjectReference we need
+# to provide an Object ID for. For the script to work correctly all occurences
+# of `'<object_id>'` and others with form `<some_name>` need to be replaced with
+# data specific to the object used.
+
+# Define a variable which can be later used in a script
 PROJECT_NAME = $project_name  # Insert name of project here
-FACT_NAME = $fact_name  # Insert name of existing fact here
-FACT_UNIQUE_NAME = $fact_unique_name  # Insert unique name of existing fact here
-FACT_ID1 = $fact_id1  # Insert ID of existing fact here
-FACT_ID2 = $fact_id2  # Insert ID of existing fact here
-FACT_NEW_NAME = $fact_new_name  # Insert new name of edited Fact here
-FACT_NEW_DESC1 = $fact_new_desc1  # Insert new description of edited fact here
-FACT_NEW_DESC2 = $fact_new_desc2  # Insert new description of edited fact here
-FOLDER_ID = $folder_id  # Insert folder ID here
 
 conn: Connection = get_connection(workstationData, PROJECT_NAME)
 
-# Example fact data used to create new fact specified as dict
+# Define a variable which can be later used in a script
+FOLDER_ID = $folder_id  # Insert folder ID here
+
+# Example of fact data used to create new fact specified as dict
 FACT_DATA = {
-    'name': 'test_fact',
+    'name': '<fact_name>',
     'sub_type': ObjectSubType.FACT,
     'destination_folder': FOLDER_ID,
     'data_type': {
@@ -43,10 +42,10 @@ FACT_DATA = {
             },
             'tables': [
                 {
-                    'objectId': '<Object_ID>', 'subType': 'logical_table', 'name': 'CITY_MNTH_SLS'
+                    'objectId': '<object_id>', 'subType': 'logical_table', 'name': '<table_name>'
                 },
                 {
-                    'objectId': '<Object_ID>', 'subType': 'logical_table', 'name': 'CUSTOMER_SLS'
+                    'objectId': '<object_id>', 'subType': 'logical_table', 'name': '<table_name>'
                 }
             ]
         }
@@ -57,15 +56,15 @@ FACT_DATA = {
 FACT_EXP_DATA = FactExpression(
     expression=Expression(
         tree=ColumnReference(
-            column_name='day_date',
-            object_id='<Object_ID>',
+            column_name='<column_name>',
+            object_id='<object_id>',
         )
     ),
     tables=[
         SchemaObjectReference(
-            name='LU_DAY',
+            name='<table_name>',
             sub_type=ObjectSubType.LOGICAL_TABLE,
-            object_id='<Object_ID>',
+            object_id='<object_id>',
         ),
     ],
 )
@@ -78,7 +77,23 @@ DATA_TYPE_DATA = DataType(type='float', precision=6, scale=-2147483648)
 list_of_all_facts = list_facts(connection=conn)
 list_of_limited_facts = list_facts(connection=conn, limit=10)
 list_of_limited_facts_to_dict = list_facts(connection=conn, limit=10, to_dictionary=True)
+
+# Define a variable which can be later used in a script
+FACT_NAME = $fact_name  # Insert name of existing fact here
+
 list_of_facts_by_name = list_facts(connection=conn, name=FACT_NAME)
+
+# Define a variable which can be later used in a script
+FACT_ID = $fact_id  # Insert ID of existing fact here
+
+# Get fact by id with expressions represented as tree (default value)
+fact = Fact(connection=conn, id=FACT_ID)
+
+# Get fact by id with expressions represented as tokens
+fact = Fact(connection=conn, id=FACT_ID, show_expression_as=ExpressionFormat.TOKENS)
+
+# Get fact by name
+fact_by_name = Fact(connection=conn, name=FACT_NAME)
 
 # list of facts with expressions represented as trees
 list_of_facts_as_trees = list_facts(connection=conn, show_expression_as=ExpressionFormat.TREE)
@@ -107,15 +122,16 @@ first_exp_id = test_fact.expressions[0].id
 # Remove first expression from the fact
 test_fact.remove_expression(first_exp_id)
 
+# Define variables which can be later used in a script
+FACT_NEW_NAME = $fact_new_name  # Insert new name of edited Fact here
+FACT_NEW_DESCRIPTION = $fact_new_description  # Insert new description of edited fact here
+
 # Alter fact
-test_fact.alter(name=FACT_NEW_NAME, description=FACT_NEW_DESC1)
+test_fact.alter(name=FACT_NEW_NAME, description=FACT_NEW_DESCRIPTION)
 test_fact.alter(data_type=DATA_TYPE_DATA)
 
 # Delete newly created fact
 test_fact.delete(force=True)
-
-# Get specific fact by id with expressions represented as trees
-fact = Fact(connection=conn, id=FACT_ID1)
 
 # List all tables for fact
 tables_all = fact.get_tables()
@@ -128,12 +144,3 @@ tables_exp_obj = fact.get_tables(expression=exp_obj)
 
 # List fact properties
 properties = fact.list_properties()
-
-# Get existing fact by its unique name
-fact_by_name = Fact(connection=conn, name=FACT_UNIQUE_NAME)
-
-# Get specified fact by id with expressions represented as tokens
-fact2 = Fact(connection=conn, id=FACT_ID2, show_expression_as=ExpressionFormat.TOKENS)
-
-# Alter fact description
-fact2.alter(description=FACT_NEW_DESC2)

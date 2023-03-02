@@ -9,12 +9,14 @@ from mstrio.project_objects.dossier import (
     list_dossiers_across_projects
 )
 
-# Define variables, which can be later used in a script
-PROJECT_ID = $project_id # Insert project ID here
+# Define a variable which can be later used in a script
 PROJECT_NAME = $project_name  # Insert name of project here
-DOSSIER_NAME = $dossier_name  # Insert name of the Dossier here
 
 conn = get_connection(workstationData, PROJECT_NAME)
+
+# Define variables which can be later used in a script
+PROJECT_ID = $project_id # Insert project ID here
+DOSSIER_NAME = $dossier_name  # Insert name of the Dossier here
 
 # Dossier management
 # List dossiers with different conditions
@@ -41,7 +43,7 @@ list_of_dossiers_across_projects_as_dataframe = list_dossiers_across_projects(
 )
 print(list_of_dossiers_across_projects_as_dataframe)
 
-# Define a variable, which can be later used in a script
+# Define a variable which can be later used in a script
 DOSSIER_ID = $dossier_id  # Insert ID of Dossier on which you want to perform actions
 
 # Get single dossier by its id
@@ -54,7 +56,7 @@ print(properties)
 # Delete dossier without prompt
 dossier.delete(force=True)
 
-# Define variables, which can be later used in a script
+# Define variables which can be later used in a script
 NEW_DOSSIER_NAME = $new_dossier_name  # Insert new name of edited dossier here
 NEW_DOSSIER_DESCRIPTION = $new_dossier_description  # Insert new description of edited dossier here
 FOLDER_ID = $folder_id  # Insert folder ID here
@@ -64,7 +66,7 @@ dossier.alter(name=NEW_DOSSIER_NAME)
 dossier.alter(description=NEW_DOSSIER_DESCRIPTION)
 dossier.alter(folder_id=FOLDER_ID)
 
-# Define a variable, which can be later used in a script
+# Define a variable which can be later used in a script
 USER_ID = $user_id  # Insert user ID here
 
 # Publish and unpublish dossier
@@ -85,17 +87,15 @@ print(schedules_as_dicts)
 cubes = dossier.get_connected_cubes()
 print(cubes)
 
-# Define variables, which can be later used in a script
-CACHE_ID = $cache_id  # Insert ID of cache on which you want to perform actions
-OTHER_CACHE_ID = $other_cache_id  # Insert ID of cache on which you want to perform actions
-CACHE_STATUS = $cache_status # Insert cache status here
-USER_NAME = $user_name # Insert user name here
-
 # Get list of dossier cache, with examples of different conditions
 list_of_all_dossier_cache = Dossier.list_caches(connection=conn)
 print(list_of_all_dossier_cache)
 list_of_limited_dossier_cache = Dossier.list_caches(connection=conn, limit=5)
 print(list_of_limited_dossier_cache)
+
+# Define a variable which can be later used in a script
+CACHE_ID = $cache_id  # Insert ID of cache on which you want to perform actions
+
 list_of_dossier_cache_by_id = Dossier.list_caches(connection=conn, id=CACHE_ID)
 print(list_of_dossier_cache_by_id)
 list_of_all_dossier_caches_as_dicts = Dossier.list_caches(connection=conn, to_dictionary=True)
@@ -113,9 +113,16 @@ cache = Dossier.list_caches(connection=conn)[0]
 properties = cache.list_properties()
 print(properties)
 
+# Define a variable which can be later used in a script
+OTHER_CACHE_ID = $other_cache_id  # Insert ID of cache on which you want to perform actions
+
 # Unload multiple dossier caches
 Dossier.unload_caches(connection=conn, cache_ids=[CACHE_ID, OTHER_CACHE_ID])
 show_caches_status()
+
+# Define variables which can be later used in a script
+CACHE_STATUS = $cache_status # Insert cache status here
+USER_NAME = $user_name # Insert user name here
 
 # Unload all dossier caches with filter examples
 Dossier.unload_all_caches(connection=conn)

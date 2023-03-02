@@ -1,4 +1,6 @@
-from typing import List, Optional, TYPE_CHECKING, Union
+from typing import Optional, TYPE_CHECKING
+
+from requests import Response
 
 from mstrio.utils.error_handlers import ErrorHandler
 
@@ -20,21 +22,21 @@ def get_recipients(
     """Get information for a set of recipients.
 
     Args:
-        connection(object): MicroStrategy connection object returned by
+        connection (object): MicroStrategy connection object returned by
             `connection.Connection()`.
-        search_term(string): The value that the search_pattern parameter is set
+        search_term (string): The value that the search_pattern parameter is set
             to. For example, if the search search_pattern is “Begins with”,
             this parameter would be the value that the search results would
             begin with.
-        search_pattern(string): Available values : NONE, CONTAINS_ANY_WORD,
+        search_pattern (string): Available values : NONE, CONTAINS_ANY_WORD,
             BEGINS_WITH, BEGINS_WITH_PHRASE, EXACTLY, CONTAINS, ENDS_WITH.
             Default value : CONTAINS_ANY_WORD
-        offset(int): Starting point within the collection of returned search
+        offset (int): Starting point within the collection of returned search
             results. Used to control paging behavior.
-        limit(int): Maximum number of items returned for a single search
+        limit (int): Maximum number of items returned for a single search
             request. Used to control paging behavior. Use -1 (default ) for no
             limit (subject to governing settings).
-        enabled_status(string): Specifies whether to return only enabled users
+        enabled_status (string): Specifies whether to return only enabled users
             or all users and user groups that match the search criteria.
             Available values : ALL, ENABLED_ONLY. Default value : ALL.
 
@@ -60,17 +62,17 @@ def get_users_info(
     """Get information for a set of users.
 
     Args:
-        connection(object): MicroStrategy connection object returned by
+        connection (object): MicroStrategy connection object returned by
             `connection.Connection()`.
-        name_begins(string): Characters that the user name must begin with.
-        abbreviation_begins(string): Characters that the user abbreviation must
+        name_begins (string): Characters that the user name must begin with.
+        abbreviation_begins (string): Characters that the user abbreviation must
             begin with.
-        offset(int): Starting point within the collection of returned search
+        offset (int): Starting point within the collection of returned search
             results. Used to control paging behavior.
-        limit(int): Maximum number of items returned for a single search
+        limit (int): Maximum number of items returned for a single search
             request. Used to control paging behavior. Use -1 (default ) for no
             limit (subject to governing settings).
-        fields(list, optional): Comma separated top-level field whitelist. This
+        fields (list, optional): Comma separated top-level field whitelist. This
             allows client to selectively retrieve part of the response model.
         error_msg (string, optional): Custom Error Message for Error Handling
 
@@ -104,17 +106,17 @@ def get_users_info_async(
     Args:
         future_session: Future Session object to call MicroStrategy REST
             Server asynchronously
-        connection(object): MicroStrategy connection object returned by
+        connection (object): MicroStrategy connection object returned by
             `connection.Connection()`.
-        name_begins(string): Characters that the user name must begin with.
-        abbreviation_begins(string): Characters that the user abbreviation must
+        name_begins (string): Characters that the user name must begin with.
+        abbreviation_begins (string): Characters that the user abbreviation must
             begin with.
-        offset(int): Starting point within the collection of returned search
+        offset (int): Starting point within the collection of returned search
             results. Used to control paging behavior.
-        limit(int): Maximum number of items returned for a single search
+        limit (int): Maximum number of items returned for a single search
             request. Used to control paging behavior. Use -1 (default ) for no
             limit (subject to governing settings).
-        fields(list, optional): Comma separated top-level field whitelist. This
+        fields (list, optional): Comma separated top-level field whitelist. This
             allows client to selectively retrieve part of the response model.
 
     Returns:
@@ -140,7 +142,7 @@ def create_user(connection, body, username, fields=None):
     action on.
 
     Args:
-        connection(object): MicroStrategy connection object returned by
+        connection (object): MicroStrategy connection object returned by
             `connection.Connection()`.
         body: JSON formatted user data;
                 {
@@ -159,8 +161,8 @@ def create_user(connection, body, username, fields=None):
                     "string"
                 ]
                 }
-        username(str): username of a user, used in error message
-        fields(list, optional): Comma separated top-level field whitelist. This
+        username (str): username of a user, used in error message
+        fields (list, optional): Comma separated top-level field whitelist. This
             allows client to selectively retrieve part of the response model.
 
     Returns:
@@ -179,10 +181,10 @@ def get_addresses(connection, id, fields=None):
     """Get all of the addresses for a specific user.
 
     Args:
-        connection(object): MicroStrategy connection object returned by
+        connection (object): MicroStrategy connection object returned by
             `connection.Connection()`.
-        id(string): User ID.
-        fields(list, optional): Comma separated top-level field whitelist. This
+        id (string): User ID.
+        fields (list, optional): Comma separated top-level field whitelist. This
             allows client to selectively retrieve part of the response model.
 
     Returns:
@@ -199,10 +201,10 @@ def create_address(connection, id, body, fields=None):
     """Create a new address for a specific user.
 
     Args:
-        connection(object): MicroStrategy connection object returned by
+        connection (object): MicroStrategy connection object returned by
             `connection.Connection()`.
-        id(string): User ID.
-        fields(list, optional): Comma separated top-level field whitelist. This
+        id (string): User ID.
+        fields (list, optional): Comma separated top-level field whitelist. This
             allows client to selectively retrieve part of the response model.
         body: JSON-formatted address:
                 {
@@ -225,16 +227,48 @@ def create_address(connection, id, body, fields=None):
     )
 
 
+@ErrorHandler(err_msg='Error creating a new address for user with ID {id}')
+def create_address_v2(
+    connection: "Connection", id: str, body: dict, fields: Optional[str] = None
+) -> Response:
+    """Create a new address for a specific user.
+
+    Args:
+        connection (object): MicroStrategy connection object returned by
+            `connection.Connection()`.
+        id (string): User ID.
+        body (JSON): JSON-formatted address:
+                {
+                "name": "string",
+                "physicalAddress": "string",
+                "deliveryType": "string",
+                "deviceId": "string",
+                "deviceName": "string",
+                "isDefault": boolean
+                }
+        fields (list, optional): Comma separated top-level field whitelist. This
+            allows client to selectively retrieve part of the response model.
+
+    Returns:
+        HTTP response object returned by the MicroStrategy REST server.
+    """
+    return connection.post(
+        url=f'{connection.base_url}/api/v2/users/{id}/addresses',
+        params={'fields': fields},
+        json=body,
+    )
+
+
 @ErrorHandler(err_msg='Error updating address with ID {address_id} for user with ID {id}')
 def update_address(connection, id, address_id, body, fields=None):
     """Update a specific address for a specific user.
 
     Args:
-        connection(object): MicroStrategy connection object returned by
+        connection (object): MicroStrategy connection object returned by
             `connection.Connection()`.
-        id(string): User ID.
-        address_id(string): Address ID.
-        fields(list, optional): Comma separated top-level field whitelist. This
+        id (string): User ID.
+        address_id (string): Address ID.
+        fields (list, optional): Comma separated top-level field whitelist. This
             allows client to selectively retrieve part of the response model.
 
     Returns:
@@ -253,11 +287,11 @@ def delete_address(connection, id, address_id, fields=None):
     """Delete a specific address for a specific user.
 
     Args:
-        connection(object): MicroStrategy connection object returned by
+        connection (object): MicroStrategy connection object returned by
             `connection.Connection()`.
-        id(string): User ID.
-        address_id(string): Address ID.
-        fields(list, optional): Comma separated top-level field whitelist. This
+        id (string): User ID.
+        address_id (string): Address ID.
+        fields (list, optional): Comma separated top-level field whitelist. This
             allows client to selectively retrieve part of the response model.
 
     Returns:
@@ -339,10 +373,10 @@ def get_user_info(connection, id, fields=None):
     """Get information for a specific user.
 
     Args:
-        connection(object): MicroStrategy connection object returned by
+        connection (object): MicroStrategy connection object returned by
             `connection.Connection()`.
-        id(string): User ID.
-        fields(list, optional): Comma separated top-level field whitelist. This
+        id (string): User ID.
+        fields (list, optional): Comma separated top-level field whitelist. This
             allows client to selectively retrieve part of the response model.
 
     Returns:
@@ -357,9 +391,9 @@ def delete_user(connection, id):
     """Delete user for specific user id.
 
     Args:
-        connection(object): MicroStrategy connection object returned by
+        connection (object): MicroStrategy connection object returned by
             `connection.Connection()`.
-        id(string): User ID.
+        id (string): User ID.
 
     Returns:
         HTTP response object returned by the MicroStrategy REST server.
@@ -373,9 +407,9 @@ def update_user_info(connection, id, body, fields=None):
     """Update specific information for a specific user.
 
     Args:
-        connection(object): MicroStrategy connection object returned by
+        connection (object): MicroStrategy connection object returned by
             `connection.Connection()`.
-        id(string): User ID.
+        id (string): User ID.
         body (JSON):
                     Body:{
                         "operationList": [
@@ -386,7 +420,7 @@ def update_user_info(connection, id, body, fields=None):
                             }
                         ]
                         }
-        fields(list, optional): Comma separated top-level field whitelist. This
+        fields (list, optional): Comma separated top-level field whitelist. This
             allows client to selectively retrieve part of the response model.
 
     Returns:
@@ -409,10 +443,10 @@ def get_memberships(connection, id, fields=None):
     to.
 
     Args:
-        connection(object): MicroStrategy connection object returned by
+        connection (object): MicroStrategy connection object returned by
             `connection.Connection()`.
-        id(string): User ID.
-        fields(list, optional): Comma separated top-level field whitelist. This
+        id (string): User ID.
+        fields (list, optional): Comma separated top-level field whitelist. This
             allows client to selectively retrieve part of the response model.
 
     Returns:
@@ -429,7 +463,7 @@ def get_memberships(connection, id, fields=None):
 def get_security_filters(
     connection: "Connection",
     id: str,
-    projects: Optional[Union[str, List[str]]] = None,
+    projects: Optional[str | list[str]] = None,
     offset: int = 0,
     limit: int = -1,
     error_msg: Optional[str] = None

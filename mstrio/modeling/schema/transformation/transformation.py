@@ -68,7 +68,8 @@ def list_transformations(
         project_name (str, optional): Project name
         search_pattern (SearchPattern enum or int, optional): pattern to search
             for, such as Begin With or Exactly. Possible values are available in
-            ENUM mstrio.browsing.SearchPattern. Default value is CONTAINS (4).
+            ENUM mstrio.object_management.SearchPattern.
+            Default value is CONTAINS (4).
         show_expression_as (ExpressionFormat, str): specify how expressions
             should be presented
             Available values:
@@ -149,8 +150,6 @@ class Transformation(Entity, MoveMixin, DeleteMixin):
         acg: access rights (See EnumDSSXMLAccessRightFlags for possible values)
         acl: object access control list
     """
-    _DELETE_NONE_VALUES_RECURSION = False
-
     _OBJECT_TYPE = ObjectTypes.ROLE
     _API_GETTERS = {
         (
@@ -379,7 +378,6 @@ class TransformationAttributeForm(Dictable):
             a function to the operator's child nodes.
     """
 
-    _DELETE_NONE_VALUES_RECURSION = False
     _FROM_DICT_MAP = {
         "lookup_table": SchemaObjectReference,
         "expression": Expression,
@@ -408,7 +406,6 @@ class TransformationAttribute(Dictable):
         forms: Object that specifies the transformation attribute form.
     """
 
-    _DELETE_NONE_VALUES_RECURSION = False
     _FROM_DICT_MAP = {
         "base_attribute": SchemaObjectReference,
         "forms": ([TransformationAttributeForm.from_dict])

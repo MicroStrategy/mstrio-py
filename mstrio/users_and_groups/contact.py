@@ -2,11 +2,11 @@
 from collections import defaultdict
 from enum import auto
 import logging
-from typing import Iterable, List, Optional, TYPE_CHECKING, Union
+from typing import Iterable, Optional, TYPE_CHECKING
 
 from mstrio import config
 from mstrio.api import contacts
-from mstrio.distribution_services.device.device import Device
+from mstrio.users_and_groups.contact_group import ContactGroup
 from mstrio.users_and_groups.user import User
 from mstrio.utils.entity import auto_match_args_entity, DeleteMixin, EntityBase
 from mstrio.utils.enum_helper import AutoName
@@ -20,10 +20,10 @@ from mstrio.utils.helper import (
     get_objects_id
 )
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
-from mstrio.users_and_groups.contact_group import ContactGroup
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
+    from mstrio.distribution_services.device.device import Device
 
 logger = logging.getLogger(__name__)
 
@@ -54,16 +54,19 @@ class ContactAddress(Dictable):
         connection: instance of Connection, optional,
             is required if device is string
     """
+    @staticmethod
+    def __device_from_dict(source, connection):
+        from mstrio.distribution_services.device.device import Device
+        return Device.from_dict(source, connection)
 
-    _DELETE_NONE_VALUES_RECURSION = False
-    _FROM_DICT_MAP = {'delivery_type': ContactDeliveryType, 'device': Device.from_dict}
+    _FROM_DICT_MAP = {'delivery_type': ContactDeliveryType, 'device': __device_from_dict}
 
     def __init__(
         self,
         name: str,
         physical_address: str,
-        delivery_type: Union[ContactDeliveryType, str],
-        device: Union['Device', str],
+        delivery_type: ContactDeliveryType | str,
+        device: 'Device | str',
         id: Optional[str] = None,
         is_default: bool = False,
         connection: Optional['Connection'] = None
@@ -76,6 +79,7 @@ class ContactAddress(Dictable):
         self.delivery_type = delivery_type if isinstance(delivery_type, ContactDeliveryType
                                                          ) else ContactDeliveryType(delivery_type)
 
+        from mstrio.distribution_services.device.device import Device
         if isinstance(device, Device):
             self.device = device
         else:
@@ -126,7 +130,7 @@ class ContactAddress(Dictable):
 @method_version_handler('11.3.0100')
 def list_contacts(
     connection: 'Connection', to_dictionary: bool = False, limit: Optional[int] = None, **filters
-) -> Union[List['Contact'], List[dict]]:
+) -> list['Contact'] | list[dict]:
     """Get all contacts as list of Contact objects or dictionaries.
 
     Optionally filter the contacts by specifying filters.
@@ -162,7 +166,6 @@ class Contact(EntityBase, DeleteMixin):
         connection: instance of Connection class, represents connection
                     to MicroStrategy Intelligence Server
     """
-    _DELETE_NONE_VALUES_RECURSION = False
     _FROM_DICT_MAP = {
         **EntityBase._FROM_DICT_MAP,
         'linked_user': User.from_dict,
@@ -246,8 +249,8 @@ class Contact(EntityBase, DeleteMixin):
         cls,
         connection: 'Connection',
         name: str,
-        linked_user: Union['User', str],
-        contact_addresses: Iterable[Union['ContactAddress', dict]],
+        linked_user: 'User | str',
+        contact_addresses: Iterable['ContactAddress | dict'],
         description: Optional[str] = None,
         enabled: bool = True
     ) -> 'Contact':
@@ -291,8 +294,8 @@ class Contact(EntityBase, DeleteMixin):
         name: Optional[str] = None,
         description: Optional[str] = None,
         enabled: Optional[bool] = None,
-        linked_user: Optional[Union['User', str]] = None,
-        contact_addresses: Optional[Iterable[Union['ContactAddress', dict]]] = None
+        linked_user: Optional['User | str'] = None,
+        contact_addresses: Optional[Iterable['ContactAddress | dict']] = None
     ):
         """Update properties of a contact
 
@@ -325,7 +328,7 @@ class Contact(EntityBase, DeleteMixin):
         to_dictionary: bool = False,
         limit: Optional[int] = None,
         **filters
-    ) -> Union[List['Contact'], List[dict]]:
+    ) -> list['Contact'] | list[dict]:
         """Get all contacts as list of Contact objects or dictionaries.
 
         Optionally filter the contacts by specifying filters.
@@ -353,7 +356,7 @@ class Contact(EntityBase, DeleteMixin):
 
         return [cls.from_dict(source=obj, connection=connection) for obj in objects]
 
-    def add_to_contact_group(self, contact_group: Union['ContactGroup', str]):
+    def add_to_contact_group(self, contact_group: 'ContactGroup | str'):
         """Add to ContactGroup
 
         Args:
@@ -365,7 +368,7 @@ class Contact(EntityBase, DeleteMixin):
         contact_group.add_members([self])
         self.fetch()
 
-    def remove_from_contact_group(self, contact_group: Union['ContactGroup', str]):
+    def remove_from_contact_group(self, contact_group: 'ContactGroup | str'):
         """Remove from ContactGroup
 
         Args:

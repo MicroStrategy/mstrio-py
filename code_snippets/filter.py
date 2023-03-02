@@ -10,17 +10,8 @@ from mstrio.modeling import (
     ExpressionFormat, Filter, list_filters, SchemaManagement, SchemaUpdateType
 )
 
-# Following variables are defining basic filters
+# Define a variable which can be later used in a script
 PROJECT_NAME = $project_name  # Insert name of project here
-SEARCH_NAME = $search_name  # Insert part of the filter name to be searched for
-FILTER_ID1 = $filter_id1  # Insert ID of existing filter here
-FILTER_ID2 = $filter_id2  # Insert ID of existing filter here
-FILTER_ID3 = $filter_id3  # Insert ID of existing filter here
-FILTER_NAME = $filter_name  # Insert name of a new filter to be created
-FILTER_NEW_NAME = $filter_new_name  # Insert new name of edited Filter here
-FILTER_NEW_DESC1 = $filter_new_desc1  # Insert new description of edited filter here
-FILTER_NEW_DESC2 = $filter_new_desc2  # Insert new description of edited filter here
-FOLDER_ID = $folder_id  # Insert folder ID here
 
 conn: Connection = get_connection(workstationData, PROJECT_NAME)
 
@@ -84,6 +75,9 @@ FILTER_QUALIFICATION_AS_TOKENS = {
     ],
 }
 
+# Define a variable which can be later used in a script
+SEARCH_NAME = $search_name  # Insert part of the filter name to be searched for
+
 # Filters management
 # Get list of filters, with examples of different conditions
 list_of_all_filters = list_filters(connection=conn)
@@ -102,6 +96,30 @@ list_of_filters_as_tokens = list_filters(
 list_of_filters_with_qualification_as_tokens = list_filters(
     connection=conn, show_filter_tokens=True
 )
+
+# Define variables which can be later used in a script
+FILTER_ID = $filter_id  # Insert ID of existing filter here
+FILTER_NAME = $filter_name  # Insert name of a new filter to be created
+
+# Get specific filter by id with expressions represented as trees (default)
+filter = Filter(connection=conn, id=FILTER_ID)
+
+# Get specified filter by id with expressions represented as tokens
+filter_tokens_expression = Filter(
+    connection=conn, id=FILTER_ID, show_expression_as=ExpressionFormat.TOKENS
+)
+
+# Get specified filter by id with qualification also in tokens format
+filter_tokens_qualification = Filter(connection=conn, id=FILTER_ID, show_filter_tokens=True)
+
+# Get filter by name
+filter = Filter(connection=conn, name=FILTER_NAME)
+
+# List filter properties
+properties = filter.list_properties()
+
+# Define a variable which can be later used in a script
+FOLDER_ID = $folder_id  # Insert folder ID here
 
 # create new empty filter
 test_filter = Filter.create(
@@ -133,25 +151,12 @@ test_filter_tokens = Filter.create(
 schema_manager = SchemaManagement(connection=conn, project_id=conn.project_id)
 task = schema_manager.reload(update_types=[SchemaUpdateType.LOGICAL_SIZE])
 
-# Alter filter
-test_filter.alter(name=FILTER_NEW_NAME, description=FILTER_NEW_DESC1)
+# Define variables which can be later used in a script
+FILTER_NEW_NAME = $filter_new_name  # Insert new name of edited Filter here
+FILTER_NEW_DESC = $filter_new_desc  # Insert new description of edited filter here
 
-# Alter filter description
-test_filter_tokens.alter(description=FILTER_NEW_DESC2)
+# Alter filter
+test_filter.alter(name=FILTER_NEW_NAME, description=FILTER_NEW_DESC)
 
 # Delete newly created filter
 test_filter.delete(force=True)
-
-# Get specific filter by id with expressions represented as trees
-filter_ = Filter(connection=conn, id=FILTER_ID1)
-
-# Get specified filter by id with expressions represented as tokens
-filter_tokens_expression = Filter(
-    connection=conn, id=FILTER_ID2, show_expression_as=ExpressionFormat.TOKENS
-)
-
-# Get specified filter by id with qualification also in tokens format
-filter_tokens_qualification = Filter(connection=conn, id=FILTER_ID2, show_filter_tokens=True)
-
-# List filter properties
-properties = filter_.list_properties()

@@ -77,7 +77,8 @@ def list_attributes(
         project_name (str, optional): Project name
         search_pattern (SearchPattern enum or int, optional): pattern to search
             for, such as Begin With or Exactly. Possible values are available in
-            ENUM mstrio.browsing.SearchPattern. Default value is CONTAINS (4).
+            ENUM mstrio.object_management.SearchPattern.
+            Default value is CONTAINS (4).
         show_expression_as (ExpressionFormat, str): specify how expressions
             should be presented
             Available values:
@@ -182,6 +183,7 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
         (
             'abbreviation',
             'type',
+            'subtype',
             'ext_type',
             'date_created',
             'date_modified',

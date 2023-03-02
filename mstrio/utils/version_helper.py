@@ -2,6 +2,7 @@ import inspect
 from functools import wraps
 from inspect import getattr_static, getmembers
 
+from packaging import version
 from packaging.version import parse as version_parser
 
 from mstrio.api.exceptions import VersionException
@@ -92,3 +93,17 @@ def class_version_handler(version):
         return cls
 
     return wrapper
+
+
+def is_server_min_version(connection: 'Connection', version_str: str) -> bool:
+    """Check if iServer version is greater or equal than given version.
+
+    Args:
+        connection (Connection): MicroStrategy REST API connection object
+        version_str (str): String containg iServer version number
+
+    Returns:
+        True if iServer version is greater or equal to given version.
+        False if iServer version is lower than given version.
+    """
+    return version.parse(connection.iserver_version) >= version.parse(version_str)

@@ -1,4 +1,5 @@
 import pandas as pd
+import datetime as dt
 
 
 class Model:
@@ -142,7 +143,11 @@ class Model:
 
     def __get_col_types(self, table):
         """Map column types from each column in the list of table."""
-        return list(map(self.__map_data_type, list(table.dtypes.values)))
+        list_dtypes_values = list(table.dtypes.values)
+        for i in range(len(table.columns)):
+            if list_dtypes_values[i] == 'object' and isinstance(table.columns[i][0], dt.time):
+                list_dtypes_values[i] = 'time'
+        return list(map(self.__map_data_type, list_dtypes_values))
 
     def __add_metric(self, name, table_name):
         """Add a metric to a metric list instance."""
@@ -245,6 +250,8 @@ class Model:
             return "BOOLEAN"
         elif datatype == 'datetime64[ns]':
             return 'DATETIME'
+        elif datatype == 'time':
+            return 'TIME'
 
     @staticmethod
     def __check_param_len(param, msg, max_length):

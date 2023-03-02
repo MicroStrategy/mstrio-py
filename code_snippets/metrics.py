@@ -20,38 +20,36 @@ from mstrio.modeling import (
 )
 from mstrio.modeling.expression import Expression, Token
 
-# Following variables are defining basic metrics
-PROJECT_NAME = $project_name  # Insert name of project here
-METRIC_NAME = $metric_name  # Insert name of edited metric here
-METRIC_ID = $metric_id  # Insert ID of edited metric here
-METRIC_NEW_NAME = $metric_new_name  # Insert new name of edited metric here
-METRIC_NEW_DESCRIPTION = $metric_new_description  # Insert new description of edited metric here
-FOLDER_ID = $folder_id  # Insert folder ID here
-
 # For every object we want to reference using a SchemaObjectReference we need
-# to provide an Object ID for. For the script to work correctly all occurences of `'<Object_ID>'` need to be replaced with IDs specific to the object used. In the future all of those will be made as separate variables.
+# to provide an Object ID for. For the script to work correctly all occurences
+# of `'<object_id>'` and others with form `<some_name>` need to be replaced with
+# data specific to the object used.
+
+# Define variables which can be later used in a script
+PROJECT_NAME = $project_name  # Insert name of project here
+FOLDER_ID = $folder_id  # Insert folder ID here
 
 conn = get_connection(workstationData, PROJECT_NAME)
 
 # Example metric data.
 # Parts of this dictionary will be used in the later parts of this demo script
 METRIC_DATA = {
-    'name': 'Demo Metric',
+    'name': '<metric_name>',
     'sub_type': ObjectSubType.METRIC,
     'destination_folder': FOLDER_ID,
     "expression": Expression(
         text='Sum(Cost)',
         tokens=[
             Token(
-                value='Sum',
+                value='<token_value>',
                 type=Token.Type.FUNCTION,
-                target=SchemaObjectReference(sub_type=ObjectSubType.FUNCTION, object_id='<Object_ID>')
+                target=SchemaObjectReference(sub_type=ObjectSubType.FUNCTION, object_id='<object_id>')
             ),
             Token(value='(', type=Token.Type.CHARACTER),
             Token(
-                value='Cost',
+                value='<token_value>',
                 type=Token.Type.OBJECT_REFERENCE,
-                target=SchemaObjectReference(sub_type=ObjectSubType.FACT, object_id='<Object_ID>')
+                target=SchemaObjectReference(sub_type=ObjectSubType.FACT, object_id='<object_id>')
             ),
             Token(value=')', type=Token.Type.CHARACTER),
             Token(value='', type=Token.Type.END_OF_TEXT)
@@ -67,8 +65,8 @@ METRIC_DATA = {
                 relative_position=None,
                 target=SchemaObjectReference(
                     sub_type=ObjectSubType.ATTRIBUTE,
-                    name='Distribution Center',
-                    object_id='<Object_ID>'
+                    name='<attribute_name>',
+                    object_id='<object_id>'
                 ),
                 axis_collection=None
             ),
@@ -79,7 +77,7 @@ METRIC_DATA = {
                 group_by=True,
                 relative_position=None,
                 target=SchemaObjectReference(
-                    sub_type=ObjectSubType.ATTRIBUTE, name='Item', object_id='<Object_ID>'
+                    sub_type=ObjectSubType.ATTRIBUTE, name='<attribute_name>', object_id='<object_id>'
                 ),
                 axis_collection=None
             )
@@ -87,7 +85,7 @@ METRIC_DATA = {
     ),
     "conditionality": Metric.Conditionality(
         filter=SchemaObjectReference(
-            sub_type=ObjectSubType.FILTER, name='East Region', object_id='<Object_ID>'
+            sub_type=ObjectSubType.FILTER, name='<filter_name>', object_id='<object_id>'
         ),
         embed_method=Metric.Conditionality.EmbedMethod.METRIC_INTO_REPORT_FILTER,
         remove_elements=True
@@ -95,7 +93,7 @@ METRIC_DATA = {
     'metric_format_type': Metric.MetricFormatType.HTML_TAG,
     "metric_subtotals": [
         Metric.MetricSubtotal(
-            SchemaObjectReference(ObjectSubType.METRIC_SUBTOTAL, object_id='<Object_ID>')
+            SchemaObjectReference(ObjectSubType.METRIC_SUBTOTAL, object_id='<object_id>')
         )
     ],
     "aggregate_from_base": False,
@@ -110,7 +108,7 @@ METRIC_DATA = {
         ],
     ),
     "subtotal_from_base": False,
-    "column_name_alias": "metric1",
+    "column_name_alias": "<column_name_alias>",
     "thresholds": None
 }
 
@@ -118,6 +116,11 @@ METRIC_DATA = {
 # Get list of metrics, with examples of different conditions
 list_of_all_metrics = list_metrics(connection=conn)
 list_of_metrics_with_limit = list_metrics(connection=conn, limit=10)
+
+# Define variables which can be later used in a script
+METRIC_NAME = $metric_name  # Insert name of edited metric here
+METRIC_ID = $metric_id  # Insert ID of edited metric here
+
 list_of_metrics_by_name = list_metrics(connection=conn, name=METRIC_NAME)
 list_of_metrics_by_id = list_metrics(connection=conn, id=METRIC_ID)
 list_of_metrics_in_folder = list_metrics(connection=conn, root=FOLDER_ID)
@@ -154,7 +157,7 @@ task = schema_manager.reload(update_types=[SchemaUpdateType.LOGICAL_SIZE])
 # MetricSubtotals
 # During creation of `Metric` you can either use custom subtotals:
 custom_subtotal = Metric.MetricSubtotal(
-    definition=SchemaObjectReference(ObjectSubType.METRIC_SUBTOTAL, object_id='<Object_ID>')
+    definition=SchemaObjectReference(ObjectSubType.METRIC_SUBTOTAL, object_id='<object_id>')
 )
 # or default subtotals using `DefaultSubtotals`.:
 default_subtotal = Metric.MetricSubtotal(definition=DefaultSubtotals.AVERAGE)
@@ -223,6 +226,10 @@ server_color = FormatProperty(
 
 new_format.values.append(rgb_color)
 
+# Define variables which can be later used in a script
+METRIC_NEW_NAME = $metric_new_name  # Insert new name of edited metric here
+METRIC_NEW_DESCRIPTION = $metric_new_description  # Insert new description of edited metric here
+
 # Alter metric using newly defined format
 metr.alter(name=METRIC_NEW_NAME, description=METRIC_NEW_DESCRIPTION, format=new_format)
 
@@ -262,7 +269,7 @@ dimensionality_example = Dimensionality(
             group_by=True,
             relative_position=None,
             target=SchemaObjectReference(
-                sub_type=ObjectSubType.ATTRIBUTE, name='Item', object_id='<Object_ID>'
+                sub_type=ObjectSubType.ATTRIBUTE, name='<attribute_name>', object_id='<object_id>'
             ),
             axis_collection=None
         )
@@ -271,7 +278,7 @@ dimensionality_example = Dimensionality(
 
 conditionality_example = Metric.Conditionality(
     filter=SchemaObjectReference(
-        sub_type=ObjectSubType.FILTER, name='East Region', object_id='<Object_ID>'
+        sub_type=ObjectSubType.FILTER, name='<filter_name>', object_id='<object_id>'
     ),
     embed_method=Metric.Conditionality.EmbedMethod.METRIC_INTO_REPORT_FILTER,
     remove_elements=True
@@ -282,15 +289,15 @@ expression_example = Expression(
     text='Sum(Cost)',
     tokens=[
         Token(
-            value='Sum',
+            value='<token_value>',
             type=Token.Type.FUNCTION,
-            target=SchemaObjectReference(sub_type=ObjectSubType.FUNCTION, object_id='<Object_ID>')
+            target=SchemaObjectReference(sub_type=ObjectSubType.FUNCTION, object_id='<object_id>')
         ),
         Token(value='(', type=Token.Type.CHARACTER),
         Token(
-            value='Cost',
+            value='<token_value>',
             type=Token.Type.OBJECT_REFERENCE,
-            target=SchemaObjectReference(sub_type=ObjectSubType.FACT, object_id='<Object_ID>')
+            target=SchemaObjectReference(sub_type=ObjectSubType.FACT, object_id='<object_id>')
         ),
         Token(value=')', type=Token.Type.CHARACTER),
         # Here the dimensionality part begins:
@@ -299,9 +306,9 @@ expression_example = Expression(
         # The < symbolises aggregation by first value of the lookup table
         Token(value='<', type=Token.Type.CHARACTER),
         Token(
-            value='Item',
+            value='<token_value>',
             type=Token.Type.OBJECT_REFERENCE,
-            target=SchemaObjectReference(sub_type=ObjectSubType.ATTRIBUTE, object_id='<Object_ID>')
+            target=SchemaObjectReference(sub_type=ObjectSubType.ATTRIBUTE, object_id='<object_id>')
         ),
         # The % symbolises ignoring the report filter
         Token(value='%', type=Token.Type.CHARACTER),
@@ -310,9 +317,9 @@ expression_example = Expression(
         # Changes to conditionality in the Expression need to be in <> brackets
         Token(value='<', type=Token.Type.CHARACTER),
         Token(
-            value='[East Region]',
+            value='<token_value>',
             type=Token.Type.OBJECT_REFERENCE,
-            target=SchemaObjectReference(sub_type=ObjectSubType.FILTER, object_id='<Object_ID>')
+            target=SchemaObjectReference(sub_type=ObjectSubType.FILTER, object_id='<object_id>')
         ),
         # The @3 symbols represent merging the metric filter into the report filter
         Token(value=';', type=Token.Type.CHARACTER),

@@ -8,15 +8,17 @@ from mstrio.api import documents, library, objects
 from mstrio.api.schedules import get_contents_schedule
 from mstrio.connection import Connection
 from mstrio.distribution_services.schedule import Schedule
-from mstrio.object_management import Folder
+from mstrio.object_management import Folder, search_operations, SearchPattern
 from mstrio.project_objects import OlapCube, SuperCube
 from mstrio.server.environment import Environment
+from mstrio.types import ObjectSubTypes
 from mstrio.users_and_groups import User, UserGroup, UserOrGroup
 from mstrio.utils import helper
 from mstrio.utils.cache import CacheSource, ContentCacheMixin
 from mstrio.utils.certified_info import CertifiedInfo
 from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, MoveMixin, ObjectTypes, VldbMixin
 from mstrio.utils.helper import filter_params_for_func, get_valid_project_id, IServerError
+from mstrio.utils.helper import is_document
 from mstrio.utils.version_helper import method_version_handler
 
 logger = logging.getLogger(__name__)
@@ -164,7 +166,7 @@ class Document(Entity, VldbMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCach
         """
         if id is None:
             document = super()._find_object_with_name(
-                connection=connection, name=name, listing_function=Document._list_all
+                connection=connection, name=name, listing_function=self._list_all
             )
             id = document['id']
         super().__init__(connection=connection, object_id=id, name=name)
@@ -339,7 +341,7 @@ class Document(Entity, VldbMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCach
     def _list_all(
         cls,
         connection: Connection,
-        search_pattern: Optional[str] = 'CONTAINS',
+        search_pattern: SearchPattern | int = SearchPattern.CONTAINS,
         name: Optional[str] = None,
         to_dictionary: bool = False,
         to_dataframe: bool = False,
@@ -348,7 +350,7 @@ class Document(Entity, VldbMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCach
         project_name: Optional[str] = None,
         **filters
     ) -> list["Document"] | list[dict] | DataFrame:
-        msg = "Error retrieving documents from the environment."
+
         if to_dictionary and to_dataframe:
             helper.exception_handler(
                 "Please select either `to_dictionary=True` or `to_dataframe=True`, but not both.",
@@ -360,25 +362,30 @@ class Document(Entity, VldbMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCach
             project_name=project_name,
             with_fallback=False if project_name else True,
         )
-        objects = helper.fetch_objects_async(
+
+        objects = search_operations.full_search(
             connection,
-            api=documents.get_documents,
-            async_api=documents.get_documents_async,
-            dict_unpack_value='result',
-            limit=limit,
-            chunk_size=1000,
-            error_msg=msg,
-            project_id=project_id,
-            filters=filters,
-            search_term=name,
-            search_pattern=search_pattern
+            object_types=ObjectSubTypes.REPORT_WRITING_DOCUMENT,
+            project=project_id,
+            name=name,
+            pattern=search_pattern,
+            **filters,
         )
+        documents = [
+            obj for obj in objects if is_document(obj['view_media'])
+        ]
+
+        documents = documents[:limit] if limit else documents
+
         if to_dictionary:
-            return objects
+            return documents
         elif to_dataframe:
-            return DataFrame(objects)
+            return DataFrame(documents)
         else:
-            return [cls.from_dict(source=obj, connection=connection) for obj in objects]
+            return [
+                cls.from_dict(source=document, connection=connection)
+                for document in documents
+            ]
 
     def get_connected_cubes(self) -> list[SuperCube | OlapCube]:
         """Lists cubes used by this document.

@@ -56,7 +56,7 @@ class SettingsIO(metaclass=ABCMeta):
     @classmethod
     def validate_file_name(cls, file):
         if not isinstance(cls.FILE_NAME, (str, tuple)):
-            raise NotImplementedError("FILE_NAME not defined")
+            raise ValueError("FILE_NAME not defined")
         elif not file.endswith(cls.FILE_NAME):
             msg = (
                 f'The file extension is different than {cls.FILE_NAME}, please note that using'

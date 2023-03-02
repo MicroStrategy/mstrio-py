@@ -228,7 +228,6 @@ class SecurityFilter(Entity, CopyMixin, DeleteMixin, MoveMixin):
         'top_level': list,
         'below_level': list,
     }
-    _DELETE_NONE_VALUES_RECURSION = False
     _ALLOW_NONE_ATTRIBUTES = ['qualification']
 
     def __init__(

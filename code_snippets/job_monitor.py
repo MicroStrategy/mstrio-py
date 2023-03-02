@@ -18,20 +18,24 @@ from mstrio.users_and_groups import User
 
 from mstrio.connection import get_connection
 
+# Define a variable which can be later used in a script
 PROJECT_NAME = $project_name  # Project to connect to
-USERNAME = $username  # name for User object lookup
-JOB_ID = $job_id  # id for Job object lookup
-LIST_JOBS_FILTER_TIME = $list_jobs_filter_time # for example 'gt:10000'
-LIST_JOBS_FILTER_MEM = $list_jobs_filter_mem # for example 'gt:500'
-KILL_JOBS_FILTER_TIME = $kill_jobs_filter_time  # should be converted to seconds
 
 conn = get_connection(workstationData, project_name=PROJECT_NAME)
 
 # get project by name
 project = Project(connection=conn, name=PROJECT_NAME)
 
-# get user by name
-john = User(connection=conn, name=USERNAME)
+# get list of `Job` objects for all jobs on the environment
+jobs = list_jobs(conn)
+print(jobs)
+
+# get list of dicts representing job information for all jobs on the environment
+jobs = list_jobs(conn, to_dictionary=True)
+print(jobs)
+
+# Define variables which can be later used in a script
+JOB_ID = $job_id  # id for Job object lookup
 
 # instantiate an existing job using constructor
 job = Job(conn, id=JOB_ID)
@@ -42,22 +46,24 @@ job.list_properties()
 # kill the job
 job.kill()
 
-# get list of `Job` objects for all jobs on the environment
-jobs = list_jobs(conn)
-print(jobs)
-
-# get list of dicts representing job information for all jobs on the environment
-jobs = list_jobs(conn, to_dictionary=True)
-print(jobs)
-
 # get a list of `Job` objects filtered by job status, project and object type
 list_jobs(conn, status=JobStatus.LOADING_PROMPT, project=project, object_type=ObjectType.CUBE)
 # see server/job_monitor.py for JobStatus and ObjectType values
+
+# Define variables which can be later used in a script
+USERNAME = $username  # name for User object lookup
+
+# get user by name
+john = User(connection=conn, name=USERNAME)
 
 # get a list of `Job` objects filtered by job type and job owner
 list_jobs(
     conn, type=JobType.INTERACTIVE, user=john
 )  # see server/job_monitor.py for JobType values
+
+# Define variables which can be later used in a script
+LIST_JOBS_FILTER_TIME = $list_jobs_filter_time # for example 'gt:10000'
+LIST_JOBS_FILTER_MEM = $list_jobs_filter_mem # for example 'gt:500'
 
 # get a list of `Job` objects filtered by elapsed time and memory usage
 # NOTE: memory_usage filter works for 11.3.3+ I-Server versions
@@ -78,6 +84,9 @@ successfully_killed_passed_jobs = bool(result)
 if result:
     print('Successfully killed jobs.')
     # perform other automation actions
+
+# Define a variable which can be later used in a script
+KILL_JOBS_FILTER_TIME = $kill_jobs_filter_time  # should be converted to seconds
 
 # kill jobs running over a certain time
 elapsed_t = KILL_JOBS_FILTER_TIME  # time in seconds (for 11.3.2 I-Server version)

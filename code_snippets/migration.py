@@ -22,7 +22,7 @@ from mstrio.object_management.migration import (
 from mstrio.types import ObjectTypes
 from mstrio.users_and_groups.user import User
 
-# connection parameters
+# Define variables which can be later used in a script
 PROJECT_NAME = $project_name
 SOURCE_BASE_URL = $source_base_url  # usually ends with /MicroStrategyLibrary/api
 SOURCE_USERNAME = $source_username
@@ -31,16 +31,6 @@ TARGET_BASE_URL = $target_base_url  # usually ends with /MicroStrategyLibrary/ap
 TARGET_USERNAME = $target_username
 TARGET_PASSWORD = $target_password
 
-USERNAME = $username  # user that is executing the migration
-
-# IDs for items to migrate
-DOSSIER_ID = $dossier_id
-REPORT_ID = $report_id
-
-SAVE_PATH = $save_path
-CUSTOM_PACKAGE_PATH = $custom_package_path
-UNDO_PACKAGE_PATH = $undo_package_path
-
 # Create connections to both source and target environments
 source_conn = Connection(
     SOURCE_BASE_URL, SOURCE_USERNAME, SOURCE_PASSWORD, project_name=PROJECT_NAME, login_mode=1
@@ -48,6 +38,9 @@ source_conn = Connection(
 target_conn = Connection(
     TARGET_BASE_URL, TARGET_USERNAME, TARGET_PASSWORD, project_name=PROJECT_NAME, login_mode=1
 )
+
+# Define a variable which can be later used iin a script
+USERNAME = $username  # user that is executing the migration
 
 # Make sure the current user have the following privileges:
 #   'Create package', id: 295
@@ -61,6 +54,10 @@ Privilege(source_conn, id=296).add_to_user(user)
 user2 = User(target_conn, username=USERNAME)
 Privilege(target_conn, name='Create package').add_to_user(user2)
 Privilege(target_conn, name='Manage Migration Packages').add_to_user(user2)
+
+# Define variables which can be later used in a script
+DOSSIER_ID = $dossier_id
+REPORT_ID = $report_id
 
 # Create PackageConfig with information what object should be migrated and how.
 # The options are of type Enum with all possible values listed.
@@ -89,6 +86,10 @@ package_config = PackageConfig(
 package_config2 = PackageConfig(
     PackageConfig.PackageUpdateType.PROJECT, package_settings, package_content_info2
 )
+
+# Define variables which can be later used in a script
+SAVE_PATH = $save_path
+CUSTOM_PACKAGE_PATH = $custom_package_path
 
 # Create Migrations objects that can use all the functionalities
 mig = Migration(
@@ -158,6 +159,9 @@ bulk_migrate_package([mig, mig3])
 
 # If the migration needs to be reverted use `undo_migration()`
 mig.undo_migration()
+
+# Define a variable which can be later used in a script
+UNDO_PACKAGE_PATH = $undo_package_path
 
 # or run `migrate_package()` with path to the custom undo package
 Migration(

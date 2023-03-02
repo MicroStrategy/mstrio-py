@@ -54,7 +54,7 @@ Since version **11.3.0.1**, **mstrio-py** includes also administration modules:
 - **Server** management module (see [code_snippets][code_snippet_server])
 - **User** and **User Group** management modules (see [code_snippets][code_snippet_user])
 - **Schedules** management module (see [code_snippets][code_snippet_schedules])
-- **Subscription** management modules including **Email Subscription** and **Cache Update Subscription** (see [code_snippets][code_snippet_subs])
+- **Subscription** management modules including **Email Subscription**,  **Cache Update Subscription**, **File Subscription**, **FTP Subscription** and **History List Subscription** (see [code_snippets][code_snippet_subs])
 - **User Library** module (see [code_snippets][code_snippet_library])
 - **User Connections** management module
 - **Privilege** and **Security Role** management modules (see [code_snippets][code_snippet_privilege])
@@ -82,6 +82,7 @@ It is subject to change until it is released as Generally Available.
 - **Document** module (see [code_snippets][code_snippet_document])
 - **Dossier** module (see [code_snippets][code_snippet_dossier])
 - **Content Cache** module (see [code_snippets][code_snippet_content_cache])
+- **Dynamic Recipient List** module (see [code_snippets][code_snippet_dynamic_recipient_list])
 
 <a id="documentation" name="documentation"></a>
 # Documentation
@@ -141,8 +142,6 @@ Error getting cube metadata information. I-Server Error ERR001, (ServiceManager:
 - Python 3.10+
 - MicroStrategy 2019 Update 4 (11.1.4)+
 
-**Note**: Python 3.11 is not officially supported yet.
-
 <a id="microstrategy-for-jupyter" name="microstrategy-for-jupyter"></a>
 ### MicroStrategy for Jupyter
 
@@ -177,7 +176,7 @@ jupyter nbextension enable connector-jupyter --py --sys-prefix
 <a id="versioning--changelog" name="versioning--changelog"></a>
 # Versioning & Changelog
 
-Current version: **11.3.7.103** (11 November 2022). Check out [**Changelog**][release_notes] to see what's new.
+Current version: **11.3.9.101** (3 March 2023). Check out [**Changelog**][release_notes] to see what's new.
 
 mstrio-py is constantly developed to support newest MicroStrategy REST APIs. Functionalities may be added to mstrio on monthly basis. It is **recommended** to always install the newest version of mstrio-py, as it will be most stable and still maintain backwards compatibility with various MicroStrategy installations, dating back to 11.1.4.
 
@@ -267,3 +266,4 @@ When features (modules, parameters, attributes, methods etc.) are marked for dep
 [code_snippet_content_cache]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/content_cache.py
 [code_snippet_document]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/document.py
 [code_snippet_dossier]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/dossier.py
+[code_snippet_dynamic_recipient_list]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/dynamic_recipient_list.py

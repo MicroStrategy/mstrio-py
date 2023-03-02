@@ -12,31 +12,33 @@ from mstrio.users_and_groups import (
     Contact, ContactAddress, ContactDeliveryType, ContactGroup, list_contacts, User
 )
 
+# Define a variable which can be later used in a script
 PROJECT_NAME = $project_name  # Insert project name here
-CONTACT_ID = $contact_id  # Insert your contact ID here
-CONTACT_NAME = $contact_name  # Insert your contact name here
-CONTACT_ADDRESS_NAME = $contact_address_name  # Insert your contact address name here
-PHYSICAL_ADDRESS = $physical_address  # Insert physical address of created contact here
-DEVICE_ID = $device_id  #Insert device used for contact here
-NEW_CONTACT_NAME = $new_contact_name  # Insert new contact name here
-CONTACT_DESCRIPTION = $contact_description  #Insert  description for new contact here
-CONTACT_NEW_DESCRIPTION = $contact_new_description  #Insert new description for contact here
-USERNAME = $username  # Insert name of user to link to the contact
-NEW_CONTACT_DESCRIPTION = $new_contact_description  # Description of newly created contact
-CONTACT_GROUP_NAME = $contact_group_name  # Insert name of contact group here
 
 conn = get_connection(workstationData, project_name=PROJECT_NAME)
 
+# get list of all contacts
 contacts = list_contacts(conn)
 
 # get limited number of contacts
 contacts = list_contacts(conn, limit=1)
+
+# Define variables which can be later used in a script
+CONTACT_ID = $contact_id  # Insert your contact ID here
+CONTACT_NAME = $contact_name  # Insert your contact name here
 
 # get contact by id
 contact = Contact(conn, id=CONTACT_ID)
 
 # get contact by name
 contact = Contact(conn, name=CONTACT_NAME)
+
+# Define variables which can be later used in a script
+CONTACT_ADDRESS_NAME = $contact_address_name  # Insert your contact address name here
+PHYSICAL_ADDRESS = $physical_address  # Insert physical address of created contact here
+DEVICE_ID = $device_id  # Insert device used for contact here
+CONTACT_DESCRIPTION = $contact_description  # Insert  description for new contact here
+USERNAME = $username  # Insert name of user to link to the contact
 
 # create contact address by providing device object
 contact_address = ContactAddress(
@@ -66,11 +68,15 @@ new_contact = Contact.create(
     linked_user=User(conn, name=USERNAME),
     description=CONTACT_DESCRIPTION,
     enabled=True,
-    contact_addresses=[contact_address]
+    contact_addresses=[contact_address] # list of `ContactAddress` objects
 )
 
 # list properties for contact
 contact.list_properties()
+
+# Define variables which can be later used in a script
+NEW_CONTACT_NAME = $new_contact_name  # Insert new contact name here
+CONTACT_NEW_DESCRIPTION = $contact_new_description  #Insert new description for contact here
 
 # alter contact
 contact.alter(name=NEW_CONTACT_NAME)
@@ -91,6 +97,9 @@ new_address = ContactAddress(
 new_address_list = contact.contact_addresses + [new_address]
 # 3. update contact with a new list of contact addresses
 contact.alter(contact_addresses=new_address_list)
+
+# Define a variable which can be later used in a script
+CONTACT_GROUP_NAME = $contact_group_name  # Insert name of contact group here
 
 # get contact group
 contact_group = ContactGroup(conn, name=CONTACT_GROUP_NAME)

@@ -14,6 +14,7 @@ class SettingValueFactory():
             'time': TimeSetting,
             'email': EmailSetting,
             'object': ObjectSetting,
+            'mstr_object': MstrObjectSetting,
             None: DeprecatedSetting
         }
         setting_type = config.get('type')
@@ -175,6 +176,15 @@ class EmailSetting(SettingValue):
 
 class ObjectSetting(SettingValue):
     """Representation of an Object setting type."""
+
+    def __init__(self, config: dict):
+        super().__init__(config)
+        self.type = str
+        self.object_type = config.get('object_type')
+
+
+class MstrObjectSetting(SettingValue):
+    """Representation of an MstrObject setting type."""
 
     def __init__(self, config: dict):
         super().__init__(config)

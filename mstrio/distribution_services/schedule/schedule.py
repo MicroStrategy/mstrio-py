@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from enum import auto
 import logging
-from typing import List, Optional, Union
+from typing import Optional
 
 from mstrio import config
 from mstrio.api import objects, schedules
@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 @method_version_handler('11.3.0000')
 def list_schedules(
     connection: Connection, to_dictionary: bool = False, limit: int = None, **filters
-) -> Union[List["Schedule"], List[dict]]:
+) -> list["Schedule"] | list[dict]:
     """List schedule objects or schedule dictionaries. Optionally filter list.
 
     Args:
@@ -37,7 +37,7 @@ def list_schedules(
                                                 'start_date',
                                                 'expired']
     Returns:
-        Union[List["Schedule"], List[dict]]: [description]
+        list["Schedule"] | list[dict]: [description]
     """
 
     objects = helper.fetch_objects(
@@ -194,7 +194,7 @@ class Schedule(Entity, DeleteMixin):
         )
 
     @method_version_handler('11.3.0000')
-    def enable(self, stop_date: Union[str, datetime]) -> bool:
+    def enable(self, stop_date: str | datetime) -> bool:
         """Enables schedule and sets stop date
 
         Args:
@@ -218,7 +218,7 @@ class Schedule(Entity, DeleteMixin):
             return False
 
     @method_version_handler('11.3.0000')
-    def disable(self, stop_date: Union[str, datetime] = None) -> bool:
+    def disable(self, stop_date: Optional[str | datetime] = None) -> bool:
         """ Disable the schedule. Optional `stop_date` sets the date when
             the schedule should be disabled.
 
@@ -285,29 +285,29 @@ class Schedule(Entity, DeleteMixin):
         cls,
         connection: Connection,
         name: str,
-        schedule_type: Union[ScheduleType, str],
-        start_date: Union[str, datetime],
+        schedule_type: ScheduleType | str,
+        start_date: str | datetime,
         description: Optional[str] = None,
-        stop_date: Optional[Union[str, datetime]] = None,
+        stop_date: Optional[str | datetime] = None,
         event_id: Optional[str] = None,
         time: Optional[ScheduleTime] = None,
-        recurrence_pattern: Optional[Union[ScheduleEnums.RecurrencePattern, str]] = None,
-        execution_pattern: Optional[Union[ScheduleEnums.ExecutionPattern, str]] = None,
+        recurrence_pattern: Optional[ScheduleEnums.RecurrencePattern | str] = None,
+        execution_pattern: Optional[ScheduleEnums.ExecutionPattern | str] = None,
         execution_time: Optional[str] = None,
         start_time: Optional[str] = None,
         stop_time: Optional[str] = None,
         execution_repeat_interval: Optional[int] = None,
-        daily_pattern: Optional[Union[ScheduleEnums.DailyPattern, str]] = None,
+        daily_pattern: Optional[ScheduleEnums.DailyPattern | str] = None,
         repeat_interval: Optional[int] = None,
-        days_of_week: Optional[Union[List[ScheduleEnums.DaysOfWeek], List[str]]] = None,
+        days_of_week: Optional[list[ScheduleEnums.DaysOfWeek] | list[str]] = None,
         day: Optional[int] = None,
         month: Optional[int] = None,
-        week_offset: Optional[Union[ScheduleEnums.WeekOffset, str]] = None,
-        day_of_week: Optional[Union[ScheduleEnums.DaysOfWeek, str]] = None,
+        week_offset: Optional[ScheduleEnums.WeekOffset | str] = None,
+        day_of_week: Optional[ScheduleEnums.DaysOfWeek | str] = None,
         weekday_off_set: Optional[str] = None,
-        days_of_month: Optional[List[str]] = None,
-        monthly_pattern: Optional[Union[ScheduleEnums.MonthlyPattern, str]] = None,
-        yearly_pattern: Optional[Union[ScheduleEnums.YearlyPattern, str]] = None
+        days_of_month: Optional[list[str]] = None,
+        monthly_pattern: Optional[ScheduleEnums.MonthlyPattern | str] = None,
+        yearly_pattern: Optional[ScheduleEnums.YearlyPattern | str] = None
     ):
         """Create a Schedule using provided parameters as data.
 
@@ -424,30 +424,30 @@ class Schedule(Entity, DeleteMixin):
     @method_version_handler('11.3.0000')
     def alter(
         self,
-        name: str = None,
-        description: str = None,
-        start_date: Union[str, datetime] = None,
-        stop_date: Union[str, datetime] = None,
-        event: Event = None,
-        event_id: str = None,
-        time: ScheduleTime = None,
-        recurrence_pattern: ScheduleEnums.RecurrencePattern = None,
-        execution_pattern: ScheduleEnums.ExecutionPattern = None,
-        execution_time: str = None,
-        start_time: str = None,
-        stop_time: str = None,
-        execution_repeat_interval: int = None,
-        daily_pattern: ScheduleEnums.DailyPattern = None,
-        repeat_interval: int = None,
-        days_of_week: List[ScheduleEnums.DaysOfWeek] = None,
-        day: int = None,
-        month: int = None,
-        week_offset: ScheduleEnums.WeekOffset = None,
-        day_of_week: ScheduleEnums.DaysOfWeek = None,
-        weekday_offset: str = None,
-        days_of_month: List[str] = None,
-        monthly_pattern: ScheduleEnums.MonthlyPattern = None,
-        yearly_pattern: ScheduleEnums.YearlyPattern = None
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        start_date: Optional[str | datetime] = None,
+        stop_date: Optional[str | datetime] = None,
+        event: Optional[Event] = None,
+        event_id: Optional[str] = None,
+        time: Optional[ScheduleTime] = None,
+        recurrence_pattern: Optional[ScheduleEnums.RecurrencePattern] = None,
+        execution_pattern: Optional[ScheduleEnums.ExecutionPattern] = None,
+        execution_time: Optional[str] = None,
+        start_time: Optional[str] = None,
+        stop_time: Optional[str] = None,
+        execution_repeat_interval: Optional[int] = None,
+        daily_pattern: Optional[ScheduleEnums.DailyPattern] = None,
+        repeat_interval: Optional[int] = None,
+        days_of_week: Optional[list[ScheduleEnums.DaysOfWeek]] = None,
+        day: Optional[int] = None,
+        month: Optional[int] = None,
+        week_offset: Optional[ScheduleEnums.WeekOffset] = None,
+        day_of_week: Optional[ScheduleEnums.DaysOfWeek] = None,
+        weekday_offset: Optional[str] = None,
+        days_of_month: Optional[list[str]] = None,
+        monthly_pattern: Optional[ScheduleEnums.MonthlyPattern] = None,
+        yearly_pattern: Optional[ScheduleEnums.YearlyPattern] = None
     ) -> None:
         """Alter Schedule properties.
 

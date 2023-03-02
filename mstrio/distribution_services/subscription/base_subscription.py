@@ -1,7 +1,7 @@
 from enum import auto
 import logging
 from pprint import pformat
-from typing import Any, Dict, List, Optional, TypeVar, Union
+from typing import Any, Optional
 
 from mstrio import config
 from mstrio.api import subscriptions
@@ -22,6 +22,7 @@ from mstrio.distribution_services.subscription.delivery import (
 from mstrio.users_and_groups import User
 from mstrio.utils import helper, time_helper
 from mstrio.utils.entity import EntityBase
+from mstrio.utils.exceptions import NotSupportedError
 from mstrio.utils.enum_helper import AutoUpperName
 from mstrio.utils.helper import (
     get_args_from_func, get_default_args_from_func, get_valid_project_id
@@ -40,14 +41,11 @@ class RecipientsTypes(AutoUpperName):
     UNSUPPORTED = auto()
 
 
-T = TypeVar("T")
-
-
 class Subscription(EntityBase):
     """Class representation of MicroStrategy Subscription object.
 
     Attributes:
-        id: The ID of the Subscription
+        subscription_id: The ID of the Subscription
         connection: The MicroStrategy connection object
         project_id: The ID of the project the Subscription belongs to
     """
@@ -56,6 +54,7 @@ class Subscription(EntityBase):
         (
             "id",
             "name",
+            "multiple_contents",
             "editable",
             "date_created",
             "date_modified",
@@ -87,31 +86,45 @@ class Subscription(EntityBase):
     def __init__(
         self,
         connection: Connection,
-        subscription_id: str,
-        project_id: str = None,
-        project_name: str = None
+        id: Optional[str] = None,
+        subscription_id: Optional[str] = None,
+        project_id: Optional[str] = None,
+        project_name: Optional[str] = None
     ):
         """Initialize Subscription object, populates it with I-Server data.
         Specify either `project_id` or `project_name`.
         When `project_id` is provided (not `None`), `project_name` is omitted.
 
         Args:
-            connection: MicroStrategy connection object returned
+            connection (Connection): MicroStrategy connection object returned
                 by `connection.Connection()`
-            subscription_id: ID of the subscription to be initialized
-            project_id: Project ID
-            project_name: Project name
+            id (str, optional): ID of the subscription to be initialized, only
+                id or subscription_id have to be provided at once, if both
+                are provided id will take precedence
+            subscription_id (str, optional): ID of the subscription to be
+                initialized
+            project_id (str, optional): Project ID
+            project_name (str, optional): Project name
         """
         project_id = get_valid_project_id(
             connection=connection,
             project_id=project_id,
             project_name=project_name,
+            with_fallback=False if project_name else True,
         )
+        if id or subscription_id:
+            subscription_id = id if id else subscription_id
+        else:
+            helper.exception_handler(
+                msg='Must specify valid id or subscription_id', exception_type=ValueError
+            )
+
         super().__init__(connection, subscription_id, project_id=project_id)
 
     def _init_variables(self, project_id, **kwargs):
         super()._init_variables(**kwargs)
         self.subscription_id = kwargs.get('id')
+        self.multiple_contents = kwargs.get('multiple_contents')
         self.editable = kwargs.get('editable')
         self.allow_delivery_changes = kwargs.get('allow_delivery_changes')
         self.allow_personalization_changes = kwargs.get('allow_personalization_changes')
@@ -139,15 +152,16 @@ class Subscription(EntityBase):
     def alter(
         self,  # NOSONAR
         name: Optional[str] = None,
+        multiple_contents: Optional[bool] = None,
         allow_delivery_changes: Optional[bool] = None,
         allow_personalization_changes: Optional[bool] = None,
         allow_unsubscribe: Optional[bool] = None,
         send_now: bool = False,
         owner_id: Optional[str] = None,
-        schedules: Optional[Union[str, List[str], Schedule, List[Schedule]]] = None,
+        schedules: Optional[str | list[str] | Schedule | list[Schedule]] = None,
         contents: Optional[Content] = None,
-        recipients: Optional[Union[List[str], List[dict]]] = None,
-        delivery: Optional[Union[Delivery, dict]] = None,
+        recipients: Optional[list[str] | list[dict]] = None,
+        delivery: Optional[Delivery | dict] = None,
         delivery_mode: Optional[str] = None,
         custom_msg: Optional[str] = None,
         delivery_expiration_date: Optional[str] = None,
@@ -175,7 +189,7 @@ class Subscription(EntityBase):
         device_id: Optional[str] = None,
         do_not_create_update_caches: Optional[bool] = None,
         re_run_hl: Optional[bool] = None,
-        cache_library_cache_types: List[Union[LibraryCacheTypes, str]] = [LibraryCacheTypes.WEB],
+        cache_library_cache_types: list[LibraryCacheTypes | str] = [LibraryCacheTypes.WEB],
         cache_reuse_dataset_cache: bool = False,
         cache_is_all_library_users: bool = False,
         delivery_notification_enabled: bool = False,
@@ -185,74 +199,84 @@ class Subscription(EntityBase):
         Alter subscription.
 
         Args:
-            connection(Connection): a MicroStrategy connection object
-            name(str): name of the subscription,
-            project_id(str): project ID,
-            allow_delivery_changes(bool): whether the recipients can change
+            name (str): name of the subscription,
+            multiple_contents (bool, optional): whether multiple contents are
+                allowed
+            allow_delivery_changes (bool): whether the recipients can change
                 the delivery of the subscription,
-            allow_personalization_changes(bool): whether the recipients can
+            allow_personalization_changes (bool): whether the recipients can
                 personalize the subscription,
-            allow_unsubscribe(bool): whether the recipients can unsubscribe
+            allow_unsubscribe (bool): whether the recipients can unsubscribe
                 from the subscription,
-            send_now(bool): indicates whether to execute the subscription
+            send_now (bool): indicates whether to execute the subscription
                 immediately,
-            owner_id(str): ID of the subscription owner, by default logged in
+            owner_id (str): ID of the subscription owner, by default logged in
                 user ID,
-            schedules (Union[str, List[str], Schedule, List[Schedule]]):
+            schedules (str | list[str] | Schedule | list[Schedule]):
                 Schedules IDs or Schedule objects,
             contents (Content): The content of the subscription.
-            recipients (Union[List[str], List[dict]]): list of recipients IDs
+            recipients (list[str] | list[dict]): list of recipients IDs
                 or dicts,
-            delivery_mode(str, enum): the subscription delivery mode [EMAIL,
+            delivery (Delivery, dict, optional): delivery settings
+            delivery_mode (str, enum): the subscription delivery mode [EMAIL,
                 FILE, PRINTER, HISTORY_LIST, CACHE, MOBILE, FTP, SNAPSHOT,
                 PERSONAL_VIEW, SHARED_LINK, UNSUPPORTED],
-            delivery_expiration_date(str): expiration date of the subscription,
+            custom_msg (str, optional): customized message displayed when
+                Subscription has been successfully altered
+            delivery_expiration_date (str): expiration date of the subscription,
                 format should be yyyy-MM-dd,
-            contact_security(bool): whether to use contact security for each
+            contact_security (bool): whether to use contact security for each
                 contact group member,
-            filename(str): the filename that will be delivered when
+            filename (str): the filename that will be delivered when
                 the subscription is executed,
-            compress(bool): whether to compress the file
-            space_delimiter(str): space delimiter,
-            email_subject(str): email subject associated with the subscription,
-            email_message(str): email body of subscription,
-            email_send_content_as(str,enum): [data, data_and_history_list,
+            compress (bool): whether to compress the file
+            space_delimiter (str): space delimiter,
+            email_subject (str): email subject associated with the subscription,
+            email_message (str): email body of subscription,
+            email_send_content_as (str,enum): [data, data_and_history_list,
                 data_and_link_and_history_list, link_and_history_list],
-            overwrite_older_version(bool): whether the current subscription
+            overwrite_older_version (bool): whether the current subscription
                 will overwrite earlier versions of the same report or document
                 in the history list,
-            zip_filename(str): filename of the compressed content,
-            zip_password_protect(bool): whether to password protect zip file,
-            zip_password(str): optional password for the compressed file
-            file_burst_sub_folder(str): burst sub folder,
-            printer_copies(int): the number of copies that should be printed,
-            printer_range_start(int): the number indicating the first report
+            zip_filename (str): filename of the compressed content,
+            zip_password_protect (bool): whether to password protect zip file,
+            zip_password (str): optional password for the compressed file
+            file_burst_sub_folder (str): burst sub folder,
+            printer_copies (int): the number of copies that should be printed,
+            printer_range_start (int): the number indicating the first report
                 page that should be printed,
-            printer_range_end(int): the number indicating the last report
+            printer_range_end (int): the number indicating the last report
                 page that should be printed,
-            printer_collated(bool): whether the printing should be collated,
-            printer_orientation(str,enum): [ PORTRAIT, LANDSCAPE ]
-            printer_use_print_range(bool): whether print range should be used,
-            cache_cache_type(str,enum): [RESERVED, SHORTCUT,
+            printer_collated (bool): whether the printing should be collated,
+            printer_orientation (str,enum): [ PORTRAIT, LANDSCAPE ]
+            printer_use_print_range (bool): whether print range should be used,
+            cache_cache_type (str,enum): [RESERVED, SHORTCUT,
                 SHORTCUTWITHBOOKMARK]
-            cache_shortcut_cache_format(str,enum): [RESERVED, JSON, BINARY,
+            cache_shortcut_cache_format (str,enum): [RESERVED, JSON, BINARY,
                 BOTH]
-            mobile_client_type(str,enum): [RESERVED, BLACKBERRY, PHONE, TABLET,
+            mobile_client_type (str,enum): [RESERVED, BLACKBERRY, PHONE, TABLET,
                 ANDROID]
-            device_id(str): the mobile target project,
-            do_not_create_update_caches(bool): whether the current subscription
+            device_id (str): the mobile target project,
+            do_not_create_update_caches (bool): whether the current subscription
                 will overwrite earlier versions of the same report or document
                 in the history list,
-            re_run_hl(bool): whether subscription will re-run against warehouse
-            cache_library_cache_types: Set of library cache types,
-                available types can be web, android, ios
-            cache_reuse_dataset_cache: Whether to reuse dataset cache
-            cache_is_all_library_users: Whether for all library users
-            delivery_notification_enabled: Whether notification is enabled,
-                notification applies to cache
-            delivery_personal_notification_address_id: Notification details
+            re_run_hl (bool): whether subscription will re-run against warehouse
+            cache_library_cache_types (list[LibraryCacheTypes | str], optional):
+                Set of library cache types, available types can be
+                web, android, ios
+            cache_reuse_dataset_cache (bool): Whether to reuse dataset cache
+            cache_is_all_library_users (bool): Whether for all library users
+            delivery_notification_enabled (bool): Whether notification is
+                enabled, notification applies to cache
+            delivery_personal_notification_address_id (str, optional):
+                Notification details
         """
-
+        # TODO Potentially remove if new subscription types are supported
+        if self.delivery.mode in ['SNAPSHOT', 'PERSONAL_VIEW', 'SHARED_LINK', 'UNSUPPORTED']:
+            helper.exception_handler(
+                msg=f'{self.delivery.mode} subscription altering is not supported.',
+                exception_type=NotSupportedError
+            )
         # Schedules logic
         schedules = self.__validate_schedules(schedules=schedules)
         if not schedules:
@@ -309,7 +333,12 @@ class Subscription(EntityBase):
         # Recipients logic
         recipients = self.__is_val_changed(recipients=recipients)
         recipients = Subscription._validate_recipients(
-            self.connection, contents, recipients, self.project_id, delivery['mode']
+            self.connection,
+            contents,
+            recipients,
+            self.project_id,
+            delivery['mode'],
+            self.recipients
         )
 
         body = {
@@ -317,6 +346,7 @@ class Subscription(EntityBase):
             "allowDeliveryChanges": self.__is_val_changed(
                 allow_delivery_changes=allow_delivery_changes
             ),
+            "multipleContents": self.__is_val_changed(multiple_contents=multiple_contents),
             "allowPersonalizationChanges": self.__is_val_changed(
                 allow_personalization_changes=allow_personalization_changes
             ),
@@ -356,7 +386,7 @@ class Subscription(EntityBase):
                 return value if value != current_val and value is not None else current_val
 
     @staticmethod
-    def __validate_schedules(schedules: Union[str, List[str], Schedule, List[Schedule]] = None):
+    def __validate_schedules(schedules: str | list[str] | Schedule | list[Schedule] = None):
         tmp_schedules = []
         schedules = schedules if isinstance(schedules, list) else [schedules]
         schedules = [s for s in schedules if s is not None]
@@ -370,9 +400,7 @@ class Subscription(EntityBase):
         return tmp_schedules
 
     @staticmethod
-    def __validate_contents(
-        contents: Union[List[Union[Content, dict]], Content, dict]
-    ) -> List[dict]:
+    def __validate_contents(contents: list[Content | dict] | Content | dict) -> list[dict]:
         contents = contents if isinstance(contents, list) else [contents]
         content_type_msg = "Contents must be dictionaries or Content objects."
         return [
@@ -380,14 +408,6 @@ class Subscription(EntityBase):
             isinstance(content, dict) else helper.exception_handler(content_type_msg, TypeError)
             for content in contents
         ]
-
-    def list_properties(self):
-        """Lists all properties of subscription."""
-        return {
-            key: self.__dict__[key]
-            for key in sorted(self.__dict__, key=helper.sort_object_properties)
-            if key not in ['connection', 'project_id', '_delivery']
-        }
 
     def execute(self):
         """Executes a subscription with given name or GUID for given project.
@@ -435,7 +455,7 @@ class Subscription(EntityBase):
         return contents_bursting
 
     @method_version_handler('11.3.0000')
-    def available_recipients(self) -> List[dict]:
+    def available_recipients(self) -> list[dict]:
         """List available recipients for subscription content."""
         body = {"contents": [content.to_dict() for content in self.contents]}
         delivery_type = self.delivery.mode
@@ -449,7 +469,7 @@ class Subscription(EntityBase):
     @method_version_handler('11.3.0000')
     def add_recipient(
         self,
-        recipients: Union[List[dict], dict, List[str], str] = None,
+        recipients: list[dict] | dict | list[str] | str = None,
         recipient_id: Optional[str] = None,
         recipient_type: Optional[str] = None,
         recipient_include_type: str = 'TO'
@@ -493,7 +513,12 @@ class Subscription(EntityBase):
         ready_recipients = self.__prepare_recipients(recipients)
 
         ready_recipients = self._validate_recipients(
-            self.connection, self.contents, ready_recipients, self.project_id, self.delivery.mode
+            connection=self.connection,
+            contents=self.contents,
+            recipients=ready_recipients,
+            project_id=self.project_id,
+            delivery_mode=self.delivery.mode,
+            current_recipients=self.recipients
         )
 
         if ready_recipients:
@@ -503,7 +528,7 @@ class Subscription(EntityBase):
             logger.info('No recipients were added to the subscription.')
 
     @method_version_handler('11.3.0000')
-    def remove_recipient(self, recipients):
+    def remove_recipient(self, recipients: list[str] | list[dict]):
         """Removes recipient from given subscription in given project.
 
         Args:
@@ -515,7 +540,7 @@ class Subscription(EntityBase):
         """
         all_recipients = self.recipients
         recipients = recipients if isinstance(recipients, list) else [recipients]
-        exisiting_recipients = [rec['id'] for rec in self.recipients]
+        existing_recipients = [rec['id'] for rec in self.recipients]
 
         if len(self.recipients) == 1:
             helper.exception_handler(
@@ -523,7 +548,7 @@ class Subscription(EntityBase):
             )
         for recipient in recipients:
             rec_id = recipient['id'] if isinstance(recipient, dict) else recipient
-            if rec_id not in exisiting_recipients:
+            if rec_id not in existing_recipients:
                 helper.exception_handler(
                     f"{rec_id} is not a recipient of subscription", UserWarning
                 )
@@ -540,11 +565,11 @@ class Subscription(EntityBase):
 
     def __prepare_recipients(self, recipients):
 
-        exisiting_recipients = [rec['id'] for rec in self.recipients]
+        existing_recipients = [rec['id'] for rec in self.recipients]
         ready_recipients = []
 
         def __already_recipient(recipient):
-            if recipient in exisiting_recipients:
+            if recipient in existing_recipients:
                 helper.exception_handler(
                     f"{recipient} is already a recipient of subscription", UserWarning
                 )
@@ -569,9 +594,9 @@ class Subscription(EntityBase):
 
     def __change_delivery_properties(  # NOSONAR
         self,  # NOSONAR
-        mode=None,
-        expiration=None,
-        contact_security=None,
+        mode: Optional[str] = None,
+        expiration: Optional[str] = None,
+        contact_security: Optional[bool] = None,
         subject: Optional[str] = None,
         message: Optional[str] = None,
         filename: Optional[str] = None,
@@ -596,7 +621,7 @@ class Subscription(EntityBase):
         device_id: Optional[str] = None,
         do_not_create_update_caches: Optional[bool] = None,
         re_run_hl: Optional[bool] = None,
-        library_cache_types: List[Union[LibraryCacheTypes, str]] = [LibraryCacheTypes.WEB],
+        library_cache_types: list[LibraryCacheTypes | str] = [LibraryCacheTypes.WEB],
         reuse_dataset_cache: bool = False,
         is_all_library_users: bool = False,
         notification_enabled: bool = False,
@@ -648,31 +673,22 @@ class Subscription(EntityBase):
 
     @classmethod
     def from_dict(
-        cls: T,
-        source: Dict[str, Any] = None,
-        connection: Optional["Connection"] = None,
+        cls,
+        source: dict[str, Any],
+        connection: "Connection" = None,
         project_id: Optional[str] = None,
         project_name: Optional[str] = None
-    ) -> T:
+    ) -> "Subscription":
         """Initialize Subscription object from dictionary.
         Specify either `project_id` or `project_name`.
         When `project_id` is provided (not `None`), `project_name` is omitted"""
-        # This is tricky, as we have to consider 3 cases:
-        # - project_id given directly
-        # - project_name given in args
-        # - project_id in dict (if someone serialised to dict
-        #                           and is now deserialising)
-        try:
-            project_id = get_valid_project_id(
-                connection=connection,
-                project_id=project_id,
-                project_name=project_name,
-            )
-        except ValueError as err:
-            if source.get("project_id", False):
-                project_id = source["project_id"]
-            else:
-                raise err
+        if source.get('project_id') and not project_id:
+            project_id = source['project_id']
+        project_id = get_valid_project_id(
+            connection=connection,
+            project_id=project_id,
+            project_name=project_name,
+        )
         _source = {
             **source,
             "project_id": project_id,
@@ -687,17 +703,18 @@ class Subscription(EntityBase):
             cls,  # NOSONAR
             connection: Connection,
             name: str,
+            contents: Content | dict,
             project_id: Optional[str] = None,
             project_name: Optional[str] = None,
+            multiple_contents: Optional[bool] = None,
             allow_delivery_changes: Optional[bool] = None,
             allow_personalization_changes: Optional[bool] = None,
             allow_unsubscribe: Optional[bool] = None,
             send_now: Optional[bool] = None,
             owner_id: Optional[str] = None,
-            schedules: Optional[Union[str, List[str], Schedule, List[Schedule]]] = None,
-            contents: Content = None,
-            recipients: Union[List[dict], List[str]] = None,
-            delivery: Union[Delivery, dict] = None,
+            schedules: Optional[str | list[str] | Schedule | list[Schedule]] = None,
+            recipients: Optional[list[dict] | list[str]] = None,
+            delivery: Optional[Delivery | dict] = None,
             delivery_mode: str = Delivery.DeliveryMode.EMAIL,
             delivery_expiration_date: Optional[str] = None,
             contact_security: bool = True,
@@ -718,15 +735,13 @@ class Subscription(EntityBase):
             printer_collated: bool = True,
             printer_orientation: str = Orientation.PORTRAIT,
             printer_use_print_range: bool = False,
-            cache_cache_type: Union[CacheType, str] = CacheType.RESERVED,
-            cache_shortcut_cache_format: Union[ShortcutCacheFormat,
-                                               str] = ShortcutCacheFormat.RESERVED,
+            cache_cache_type: CacheType | str = CacheType.RESERVED,
+            cache_shortcut_cache_format: ShortcutCacheFormat | str = ShortcutCacheFormat.RESERVED,
             mobile_client_type: str = ClientType.RESERVED,
             device_id: Optional[str] = None,
             do_not_create_update_caches: bool = True,
             re_run_hl: bool = True,
-            cache_library_cache_types: List[Union[LibraryCacheTypes,
-                                                  str]] = [LibraryCacheTypes.WEB],
+            cache_library_cache_types: list[LibraryCacheTypes | str] = [LibraryCacheTypes.WEB],
             cache_reuse_dataset_cache: bool = False,
             cache_is_all_library_users: bool = False,
             delivery_notification_enabled: bool = False,
@@ -734,72 +749,77 @@ class Subscription(EntityBase):
         """Creates a subscription Create_Subscription_Outline.
 
         Args:
-            connection(Connection): a MicroStrategy connection object
-            name(str): name of the subscription,
-            project_id(str): project ID,
-            project_name(str): project name,
-            allow_delivery_changes(bool): whether the recipients can change
-                the delivery of the subscription,
-            allow_personalization_changes(bool): whether the recipients can
-                personalize the subscription,
-            allow_unsubscribe(bool): whether the recipients can unsubscribe
-                from the subscription,
-            send_now(bool): indicates whether to execute the subscription
-                immediately,
-            owner_id(str): ID of the subscription owner, by default logged in
-                user ID,
-            schedules (Union[str, List[str], Schedule, List[Schedule]]):
-                Schedules IDs or Schedule objects,
+            connection (Connection): a MicroStrategy connection object
+            name (str): name of the subscription,
             contents (Content): The content settings.
-            recipients (List[dict],List[str]): list of recipients IDs or dicts,
-            delivery(Union[Delivery,dict]): delivery object or dict
-            delivery_mode(str, enum): the subscription delivery mode [EMAIL,
+            project_id (str): project ID,
+            project_name (str): project name,
+            multiple_contents (bool, optional): whether multiple contents are
+                allowed
+            allow_delivery_changes (bool): whether the recipients can change
+                the delivery of the subscription,
+            allow_personalization_changes (bool): whether the recipients can
+                personalize the subscription,
+            allow_unsubscribe (bool): whether the recipients can unsubscribe
+                from the subscription,
+            send_now (bool): indicates whether to execute the subscription
+                immediately,
+            owner_id (str): ID of the subscription owner, by default logged in
+                user ID,
+            schedules (str | list[str] | Schedule | List[Schedule]):
+                Schedules IDs or Schedule objects,
+            recipients (list[dict], list[str]): list of recipients IDs or dicts,
+            delivery (Delivery | dict): delivery object or dict
+            delivery_mode (str, enum): the subscription delivery mode [EMAIL,
                 FILE, PRINTER, HISTORY_LIST, CACHE, MOBILE, FTP, SNAPSHOT,
                 PERSONAL_VIEW, SHARED_LINK, UNSUPPORTED],
-            delivery_expiration_date(str): expiration date of the subscription,
+            delivery_expiration_date (str): expiration date of the subscription,
                 format should be yyyy-MM-dd,
-            contact_security(bool): whether to use contact security for each
+            contact_security (bool): whether to use contact security for each
                 contact group member,
-            filename(str): the filename that will be delivered when
+            filename (str): the filename that will be delivered when
                 the subscription is executed,
-            compress(bool): whether to compress the file,
-            space_delimiter(str): space delimiter,
-            email_subject(str): email subject associated with the subscription,
-            email_message(str): email body of subscription,
-            email_send_content_as(str,enum): [data, data_and_history_list,
+            compress (bool): whether to compress the file,
+            space_delimiter (str): space delimiter,
+            email_subject (str): email subject associated with the subscription,
+            email_message (str): email body of subscription,
+            email_send_content_as (str,enum): [data, data_and_history_list,
                 data_and_link_and_history_list, link_and_history_list],
-            overwrite_older_version(bool): whether the current subscription
+            overwrite_older_version (bool): whether the current subscription
                 will overwrite earlier versions of the same report or document
                 in the history list,
-            zip_filename(str): filename of the compressed content,
-            zip_password_protect(bool): whether to password protect zip file,
-            zip_password(str): optional password for the compressed file,
-            file_burst_sub_folder(str): burst sub folder,
-            printer_copies(int): the number of copies that should be printed,
-            printer_range_start(int): the number indicating the first report
+            zip_filename (str): filename of the compressed content,
+            zip_password_protect (bool): whether to password protect zip file,
+            zip_password (str): optional password for the compressed file,
+            file_burst_sub_folder (str): burst sub folder,
+            printer_copies (int): the number of copies that should be printed,
+            printer_range_start (int): the number indicating the first report
                 page that should be printed,
-            printer_range_end(int): the number indicating the last report
+            printer_range_end (int): the number indicating the last report
                 page that should be printed,
-            printer_collated(bool): whether the printing should be collated,
-            printer_orientation(str,enum): [ PORTRAIT, LANDSCAPE ]
-            printer_use_print_range(bool): whether print range should be used,
-            cache_cache_type(str,enum): [RESERVED, SHORTCUT,
+            printer_collated (bool): whether the printing should be collated,
+            printer_orientation (str,enum): [ PORTRAIT, LANDSCAPE ]
+            printer_use_print_range (bool): whether print range should be used,
+            cache_cache_type (str,enum): [RESERVED, SHORTCUT,
                 SHORTCUTWITHBOOKMARK]
-            cache_shortcut_cache_format(str,enum):[RESERVED, JSON, BINARY, BOTH]
-            mobile_client_type(str,enum): [RESERVED, BLACKBERRY, PHONE, TABLET,
-                ANDROID]
-            device_id(str): the mobile target project,
-            do_not_create_update_caches(bool): whether the current subscription
+            cache_shortcut_cache_format (str,enum):
+                [RESERVED, JSON, BINARY, BOTH]
+            mobile_client_type (str,enum):
+                [RESERVED, BLACKBERRY, PHONE, TABLET, ANDROID]
+            device_id (str): the mobile target project,
+            do_not_create_update_caches (bool): whether the current subscription
                 will overwrite earlier versions of the same report or document
                 in the history list,
-            re_run_hl(bool): whether subscription will re-run against warehouse
-            cache_library_cache_types: Set of library cache types,
-                available types can be web, android, ios
-            cache_reuse_dataset_cache: Whether to reuse dataset cache
-            cache_is_all_library_users: Whether for all library users
-            delivery_notification_enabled: Whether notification is enabled,
-                notification applies to cache
-            delivery_personal_notification_address_id: Notification details
+            re_run_hl (bool): whether subscription will re-run against warehouse
+            cache_library_cache_types (list[LibraryCacheTypes | str], optional):
+                Set of library cache types, available types can be
+                web, android, ios
+            cache_reuse_dataset_cache (bool): Whether to reuse dataset cache
+            cache_is_all_library_users (bool): Whether for all library users
+            delivery_notification_enabled (bool): Whether notification is
+                enabled, notification applies to cache
+            delivery_personal_notification_address_id (str, optional):
+                Notification details
         """
         if connection._iserver_version <= '11.3.0100':
             cache_cache_type = LegacyCacheType[cache_cache_type.name]
@@ -812,10 +832,11 @@ class Subscription(EntityBase):
             connection=connection,
             project_id=project_id,
             project_name=project_name,
+            with_fallback=False if project_name else True
         )
 
         if not schedules:
-            msg = ("Please specify 'schedules' parameter.")
+            msg = "Please specify 'schedules' parameter."
             helper.exception_handler(msg)
 
         schedules = cls.__validate_schedules(schedules=schedules)
@@ -899,7 +920,12 @@ class Subscription(EntityBase):
 
     @staticmethod
     def _validate_recipients(
-        connection, contents: List[Union[Content, dict]], recipients, project_id, delivery_mode
+        connection: "Connection",
+        contents: list[Content | dict],
+        recipients: list[str] | list[dict] | str,
+        project_id: str,
+        delivery_mode: str,
+        current_recipients: Optional[list[dict]] = None
     ):
 
         def __not_available(recipient):
@@ -923,7 +949,9 @@ class Subscription(EntityBase):
         available_recipients = subscriptions.available_recipients(
             connection, project_id, body, delivery_mode
         )
-        available_recipients = available_recipients.json()['recipients']
+        if not current_recipients:
+            current_recipients = []
+        available_recipients = available_recipients.json()['recipients'] + current_recipients
         available_recipients_ids = [rec['id'] for rec in available_recipients]
         # Format recipients list if needed
         formatted_recipients = []

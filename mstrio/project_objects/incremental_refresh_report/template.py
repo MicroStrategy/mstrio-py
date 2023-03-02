@@ -6,6 +6,7 @@ from typing import Optional, Type
 from mstrio.connection import Connection
 from mstrio.modeling import ObjectSubType
 from mstrio.utils.enum_helper import AutoName
+from mstrio.utils.exceptions import NotSupportedError
 from mstrio.utils.helper import Dictable
 from mstrio.utils.wip import module_wip, WipLevels
 
@@ -41,8 +42,8 @@ class TemplateUnit(Dictable):
         elif unit_type == TemplateUnitType.METRICS:
             cls = MetricTemplateUnit
         else:
-            raise NotImplementedError(
-                f"Unit type: '{unit_type}' is not implemented for Template class."
+            raise NotSupportedError(
+                f"Unit type: '{unit_type}' is not supported for Template class."
             )
 
         return cls.from_dict(data, connection)

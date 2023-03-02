@@ -8,6 +8,7 @@ from typing import Optional, Union
 
 from packaging.version import Version
 
+from .exceptions import NotSupportedError
 from .. import __version__, config
 
 logger = logging.getLogger(__name__)
@@ -96,7 +97,7 @@ def _emit(
     elif level == WipLevels.WARNING:
         logger.warning(message)
     elif level == WipLevels.ERROR:
-        raise NotImplementedError(message)
+        raise NotSupportedError(message)
     else:
         _wiplevel_error(level)
 

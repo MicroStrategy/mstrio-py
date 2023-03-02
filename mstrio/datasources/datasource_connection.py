@@ -487,6 +487,18 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
         body = {"id": self.id}
         return datasources.test_datasource_connection(self.connection, body).ok
 
+    @method_version_handler('11.3.0900')
+    def convert_to_dsn_less(self):
+        """Convert datasource connection from DSN to DSN-less format and update
+        the object to metadata.
+        """
+        response = datasources.convert_connection_dsn(
+            connection=self.connection, ds_connection_id=self.id
+        )
+        if response.ok:
+            response = response.json()
+            self._set_object_attributes(**response)
+
     @classmethod
     def _list_datasource_connections(
         cls,

@@ -15,14 +15,8 @@ from mstrio.utils.wip import module_wip, WipLevels
 # using user's credentials is needed.
 module_wip(globals(), level=WipLevels.WARNING)
 
+# Define a variable which can be later used in a script
 PROJECT_NAME = $project_name  # Project to connect to
-
-# cluster nodes names
-NODE_NAME = $node_name
-NODE_NAME_2 = $node_name_2
-
-SERVICE_NAME = $service_name
-FILE_NAME = $file_name  # file name with extension 'csv', 'json' or 'pickle'
 
 conn = get_connection(workstationData, project_name=PROJECT_NAME)
 
@@ -36,6 +30,10 @@ services_topology_df = clstr.services_topology()
 # get list of services grouped by nodes or by services
 services_by_nodes = clstr.list_services(group_by='nodes')
 services_by_services = clstr.list_services(group_by='services')
+
+# Define variables which can be used in a script
+NODE_NAME = $node_name
+NODE_NAME_2 = $node_name_2
 
 # get list of nodes (information about projects within each node is given there)
 nodes = clstr.list_nodes(to_dictionary=True)
@@ -52,6 +50,9 @@ clstr.update_node_settings(
     node=NODE_NAME, load_balance_factor=99, initial_pool_size=511, max_pool_size=1023
 )
 clstr.reset_node_settings(node=NODE_NAME)
+
+# Define a variable which can be later used in a script
+SERVICE_NAME = $service_name
 
 # stop/start service on selected nodes (error will be thrown in case of wrong
 # names of service or nodes)
@@ -77,6 +78,9 @@ clstr.unload_project(project=PROJECT_NAME, on_nodes=[NODE_NAME, NODE_NAME_2])
 
 # get settings of a server as a dataframe
 server_settings_df = env.server_settings.to_dataframe
+
+# Define a variable which can be later used in a script
+FILE_NAME = $file_name  # file name with extension 'csv', 'json' or 'pickle'
 
 # save/load settings of a server to/from a file (format can be 'csv', 'json' or
 # 'pickle')

@@ -77,7 +77,7 @@ class DateAdjustment(Dictable):
     pass
 
 
-@dataclass
+@dataclass(frozen=True)
 class AdjustmentNone(DateAdjustment):
     """Indicate that there is no further adjustments"""
 

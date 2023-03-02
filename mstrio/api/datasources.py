@@ -2,8 +2,7 @@ import json
 from typing import Optional
 
 from mstrio.connection import Connection
-from mstrio.server.project import Project
-from mstrio.utils.api_helpers import FuturesSessionWithRenewal
+from mstrio.utils.api_helpers import FuturesSessionWithRenewal, unpack_information
 from mstrio.utils.datasources import (
     alter_conn_list_resp,
     alter_conn_resp,
@@ -12,7 +11,7 @@ from mstrio.utils.datasources import (
     alter_patch_req_body
 )
 from mstrio.utils.error_handlers import ErrorHandler
-from mstrio.utils.helper import exception_handler, response_handler, IServerError
+from mstrio.utils.helper import exception_handler, IServerError, response_handler
 
 
 @ErrorHandler(err_msg='Error getting available DBMSs.')
@@ -212,10 +211,7 @@ def get_datasource_instances(
     Returns:
         Complete HTTP response object. HTTP STATUS 200/400
     """
-    project = project.id if isinstance(project, Project) else project
-    project_provided = project is not None
-
-    if project_provided:
+    if project:
         url = f"{connection.base_url}/api/projects/{project}/datasources"
         response = connection.get(url=url)
     else:
@@ -225,7 +221,7 @@ def get_datasource_instances(
         response = connection.get(url=url, params={'id': ids, 'database.type': database_type})
     if not response.ok:
         res = response.json()
-        if project_provided and res.get("message") == "HTTP 404 Not Found":
+        if project and res.get("message") == "HTTP 404 Not Found":
             # aka project based endpoint not supported
             # try without filtering
             warning_msg = (
@@ -237,14 +233,14 @@ def get_datasource_instances(
             return get_datasource_instances(
                 connection=connection, ids=ids, database_type=database_type, error_msg=error_msg
             )
-        if error_msg is None:
-            if project_provided \
+        if not error_msg:
+            if project \
                     and res.get('code') == "ERR006" \
                     and "not a valid value for Project ID" in res.get('message'):
                 error_msg = f"{project} is not a valid Project class instance or ID"
                 raise ValueError(error_msg)
             error_msg = "Error getting Datasource Instances"
-            if project_provided:
+            if project:
                 error_msg += f" within `{project}` Project"
         response_handler(response, error_msg)
     response = alter_instance_list_resp(response)
@@ -287,7 +283,8 @@ def get_datasource_connection(connection, id, error_msg=None):
     response = connection.get(url=url)
     if not response.ok:
         if error_msg is None:
-            error_msg = f"Error getting Datasource Connection with ID: {id}"
+            error_msg = (f"Error getting Datasource Connection with ID: {id}. "
+                         f"Check if it is not embedded Datasource Connection.")
         response_handler(response, error_msg)
     response = alter_conn_resp(response)
     return response
@@ -443,11 +440,7 @@ def get_datasource_mapping(
         response_json = response.json()
 
         try:
-            mappings = [
-                mapping
-                for mapping in response_json['mappings']
-                if mapping["id"] == id
-            ]
+            mappings = [mapping for mapping in response_json['mappings'] if mapping["id"] == id]
 
             mapping_data = mappings[0]
             mapping_data['ds_connection'] = mapping_data.pop('connection')
@@ -585,3 +578,42 @@ def get_table_columns(
         f"{namespace_id}/tables/{table_id}"
     )
     return connection.get(url, headers={"X-MSTR-ProjectID": connection.project_id})
+
+
+@unpack_information
+@ErrorHandler(err_msg='Error converting Datasource embedded connection from DSN to DSN-less')
+def convert_ds_dsn(connection: Connection, datasource_id: str, error_msg: Optional[str] = None):
+    """Convert datasource embedded connection from DSN to DSN-less format
+    connection string and update the object to metadata.
+
+    Args:
+        connection: MicroStrategy REST API connection object
+        datasource_id (string) : Datasource id
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        HTTP response object with updated embedded connection data.
+        Expected status is 200.
+    """
+    url = f"{connection.base_url}/api/datasources/{datasource_id}/conversion"
+    return connection.post(url=url)
+
+
+@unpack_information
+@ErrorHandler(err_msg='Error converting Datasource connection object from DSN to DSN-less')
+def convert_connection_dsn(
+    connection: Connection, ds_connection_id: str, error_msg: Optional[str] = None
+):
+    """Convert datasource connection from DSN to DSN-less format connection
+    string and update the object to metadata.
+
+    Args:
+        connection: MicroStrategy REST API connection object
+        ds_connection_id (string) : Datasource connection object id
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        HTTP response object with updated object data. Expected status is 200.
+    """
+    url = f"{connection.base_url}/api/datasources/connections/{ds_connection_id}/conversion"
+    return connection.post(url=url)

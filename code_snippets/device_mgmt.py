@@ -27,19 +27,14 @@ from mstrio.distribution_services import (
 )
 from mstrio.connection import get_connection
 
+# Define a variable which will be later used in a script
 PROJECT_NAME = $project_name  # Project to connect to
-SMART_HOST_SERVER = $smart_host_server  # server name for smart host
-SMART_HOST_PORT = $smart_host_port  # server port for smart host
-FEEDBACK_SERVICE_SERVER = $feedback_service_server  # server name for ios feedback server
-FEEDBACK_SERVICE_PORT = $feedback_service_port  # server port for ios feedback server
-FILE_DEVICE_PATH = $file_device_path  # path for file device
-PRINTER_LOCATION = $printer_location  # printer location field for printer device properties
-TRANSMITTER_ID = $transmitter_id  # id for Transmitter object
-DEVICE_ID = $device_id  # id for Device object
-DEVICE_NAME = $device_name
-DEVICE_DESCRIPTION = $device_description
 
 conn = get_connection(workstationData, project_name=PROJECT_NAME)
+
+# Define variables which will be later used in a script
+SMART_HOST_SERVER = $smart_host_server  # server name for smart host
+SMART_HOST_PORT = $smart_host_port  # server port for smart host
 
 # create email device properties object
 # which is used when creating device
@@ -48,6 +43,10 @@ edp = EmailDeviceProperties(
     smart_host_settings=EmailSmartHostSettings(server=SMART_HOST_SERVER, port=SMART_HOST_PORT),
 )
 # see distribution_services/device/device_properties.py for EmailFormat values
+
+# Define variables which can be later used in a script
+FEEDBACK_SERVICE_SERVER = $feedback_service_server  # server name for ios feedback server
+FEEDBACK_SERVICE_PORT = $feedback_service_port  # server port for ios feedback server
 
 # create ios device properties object
 # which is used when creating iphone or ipad device
@@ -58,6 +57,9 @@ idp = IOSDeviceProperties(
     feedback_service_server=FEEDBACK_SERVICE_SERVER,
     feedback_service_port=FEEDBACK_SERVICE_PORT,
 )
+
+# Define a variable which can be later used in a script
+FILE_DEVICE_PATH = $file_device_path  # path for file device
 
 # create file device properties object
 # which is used when creating file device
@@ -71,6 +73,9 @@ fp = FileDeviceProperties(
     unix_windows_sharity=UnixWindowsSharity(sharity_enabled=False),
 )
 
+# Define a variable which can be later used in a script
+PRINTER_LOCATION = $printer_location  # printer location field for printer device properties
+
 # create print device properties object
 # which is used when creating print device
 printer_properties = PrinterProperties(pdf_setting=PrinterPdfSettings(post_script_level=1))
@@ -80,8 +85,16 @@ pdp = PrinterDeviceProperties(
     connection_parameters=ConnectionParameters(retries_count=6),
     backup_printer_properties=BackupPrinterProperties(print_on_backup=True),
 )
+
+# Define a variable which can be later used in a script
+TRANSMITTER_ID = $transmitter_id  # id for Transmitter object
+
 # get transmitters by id
 transmitter = Transmitter(conn, id=TRANSMITTER_ID)
+
+# Define variables which can be later used in a script
+DEVICE_NAME = $device_name
+DEVICE_DESCRIPTION = $device_description
 
 # create a device with device type as `email` (when type is `email` then
 # it is mandatory to provide `email_device_properties`)
@@ -144,8 +157,13 @@ new_printer_device = Device.create(
 # get list of devices
 print(list_devices(conn))
 
-# get device by ID. Device can be also found by its name.
+# Define a variable which can be later used in a script
+DEVICE_ID = $device_id  # id for Device object
+
+# get device by id
 device = Device(conn, id=DEVICE_ID)
+
+# get device by name
 device_by_name = Device(conn, name=DEVICE_NAME)
 
 # alter email type device and its properties

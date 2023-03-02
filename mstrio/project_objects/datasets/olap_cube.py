@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, Union
+from typing import Optional
 
 import pandas as pd
 
@@ -18,13 +18,13 @@ logger = logging.getLogger(__name__)
 def list_olap_cubes(
     connection: Connection,
     name: Optional[str] = None,
-    search_pattern: Union[SearchPattern, int] = SearchPattern.CONTAINS,
+    search_pattern: SearchPattern | int = SearchPattern.CONTAINS,
     project_id: Optional[str] = None,
     project_name: Optional[str] = None,
     to_dictionary: bool = False,
     limit: Optional[int] = None,
     **filters,
-) -> Union[list["OlapCube"], list[dict]]:
+) -> list["OlapCube"] | list[dict]:
     """Get list of OlapCube objects or dicts with them. Optionally filter cubes
     by specifying 'name'.
 
@@ -49,7 +49,7 @@ def list_olap_cubes(
             will be applied to the names of olap cubes being searched
         search_pattern (SearchPattern enum or int, optional): pattern to search
             for, such as Begin With or Contains. Possible values are available
-            in ENUM mstrio.browsing.SearchPattern.
+            in ENUM mstrio.object_management.SearchPattern.
             Default value is BEGIN WITH (4).
         project_id (str, optional): Project ID
         project_name (str, optional): Project name
@@ -155,7 +155,7 @@ class OlapCube(_Cube):
     @classmethod
     def available_metrics(
         cls, connection: Connection, basic_info_only: bool = True, to_dataframe: bool = False
-    ) -> Union[list[dict], list[pd.DataFrame]]:
+    ) -> list[dict] | list[pd.DataFrame]:
         """Get all metrics available on I-Server.
 
         Args:
@@ -179,7 +179,7 @@ class OlapCube(_Cube):
     @classmethod
     def available_attributes(
         cls, connection: Connection, basic_info_only: bool = True, to_dataframe: bool = False
-    ) -> Union[list[dict], list[pd.DataFrame]]:
+    ) -> list[dict] | list[pd.DataFrame]:
         """Get all attributes available on I-Server.
 
         Args:
@@ -203,7 +203,7 @@ class OlapCube(_Cube):
     @classmethod
     def available_attribute_forms(
         cls, connection: Connection, basic_info_only: bool = True, to_dataframe: bool = False
-    ) -> Union[list[dict], list[pd.DataFrame]]:
+    ) -> list[dict] | list[pd.DataFrame]:
         """Get all attribute forms available on I-Server.
 
         Args:
@@ -228,10 +228,10 @@ class OlapCube(_Cube):
     def __available_objects(
         cls,
         connection: Connection,
-        object_type=Union[ObjectTypes, ObjectSubTypes],
+        object_type: ObjectTypes | ObjectSubTypes,
         basic_info_only: bool = True,
         to_dataframe: bool = False
-    ) -> Union[list[dict], list[pd.DataFrame]]:
+    ) -> list[dict] | list[pd.DataFrame]:
         """Helper function to get available objects based on their type. It
         should be used to get only available attribute, metrics or attribute
         forms."""
@@ -267,11 +267,11 @@ class OlapCube(_Cube):
         connection: "Connection",
         name: str,
         folder_id: str,
-        description: str = None,
+        description: Optional[str] = None,
         overwrite: bool = False,
-        attributes: list[dict] = [],
-        metrics: list[dict] = []
-    ) -> Union['OlapCube', None]:
+        attributes: Optional[list[dict]] = None,
+        metrics: Optional[list[dict]] = None
+    ) -> "OlapCube | None":
         """Create an OLAP Cube by defining its name, description, destination
         folder, attributes and metrics.
 
@@ -301,6 +301,9 @@ class OlapCube(_Cube):
             `requests.exceptions.HTTPError` when response returned from request
             to I-Server to create new OLAP Cube was not ok.
         """
+        attributes = attributes or []
+        metrics = metrics or []
+
         if not OlapCube.__check_objects(attributes, 'attribute'):
             return None
         if not OlapCube.__check_objects(metrics, 'metric'):
@@ -327,10 +330,6 @@ class OlapCube(_Cube):
         `id` and `name`. When it has key `type` then it must be the same as
         value of parameter `obj_name`. When this key is missing its value will
         be set to value of parameter `obj_name`."""
-        if 'name' not in object_:
-            msg = f"Each element in dictionary with {obj_name}s must have key 'name'."
-            exception_handler(msg, Warning, True)
-            return False
 
         if 'id' not in object_:
             msg = f"{obj_name.capitalize()} '{object_['name']}' is missing key 'id'."

@@ -7,13 +7,15 @@ from pandas import concat, DataFrame
 from mstrio import config
 from mstrio.api import documents
 from mstrio.connection import Connection
-from mstrio.object_management import Folder
+from mstrio.object_management import Folder, search_operations, SearchPattern
 from mstrio.project_objects.document import Document
 from mstrio.server.environment import Environment
+from mstrio.types import ObjectSubTypes
 from mstrio.users_and_groups import UserOrGroup
 from mstrio.utils import helper
 from mstrio.utils.cache import CacheSource
 from mstrio.utils.helper import Dictable, get_valid_project_id
+from mstrio.utils.helper import is_dossier
 
 logger = logging.getLogger(__name__)
 
@@ -142,6 +144,19 @@ class Dossier(Document):
         )
     }
 
+    def __init__(
+        self, connection: Connection, name: Optional[str] = None, id: Optional[str] = None
+    ):
+        """Initialize Dossier object by passing name or id.
+
+        Args:
+            connection (object): MicroStrategy connection object returned
+                by `connection.Connection()`
+            name (string, optional): name of Dossier
+            id (string, optional): ID of Dossier
+        """
+        super().__init__(connection=connection, name=name, id=id)
+
     def _init_variables(self, **kwargs):
         super()._init_variables(**kwargs)
         self._current_chapter = kwargs.get('current_chapter')
@@ -151,7 +166,7 @@ class Dossier(Document):
     def _list_all(
         cls,
         connection: Connection,
-        search_pattern: Optional[str] = 'CONTAINS',
+        search_pattern: SearchPattern | int = SearchPattern.CONTAINS,
         name: Optional[str] = None,
         to_dictionary: bool = False,
         to_dataframe: bool = False,
@@ -161,7 +176,6 @@ class Dossier(Document):
         **filters
     ) -> list["Dossier"] | list[dict] | DataFrame:
 
-        msg = "Error retrieving dossiers from the environment."
         if to_dictionary and to_dataframe:
             helper.exception_handler(
                 "Please select either to_dictionary=True or to_dataframe=True, but not both.",
@@ -173,25 +187,26 @@ class Dossier(Document):
             project_name=project_name,
             with_fallback=False if project_name else True
         )
-        objects = helper.fetch_objects_async(
+
+        objects = search_operations.full_search(
             connection,
-            api=documents.get_dossiers,
-            async_api=documents.get_dossiers_async,
-            dict_unpack_value='result',
-            limit=limit,
-            chunk_size=1000,
-            error_msg=msg,
-            filters=filters,
-            search_term=name,
-            search_pattern=search_pattern,
-            project_id=project_id
+            object_types=ObjectSubTypes.REPORT_WRITING_DOCUMENT,
+            project=project_id,
+            name=name,
+            pattern=search_pattern,
+            **filters,
         )
+        dossiers = [
+            obj for obj in objects if is_dossier(obj['view_media'])
+        ]
+        dossiers = dossiers[:limit]
+
         if to_dictionary:
-            return objects
+            return dossiers
         elif to_dataframe:
-            return DataFrame(objects)
+            return DataFrame(dossiers)
         else:
-            return [cls.from_dict(source=obj, connection=connection) for obj in objects]
+            return [cls.from_dict(source=dossier, connection=connection) for dossier in dossiers]
 
     def list_properties(self) -> dict:
         """List properties for the dossier."""

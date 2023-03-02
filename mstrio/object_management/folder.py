@@ -1,5 +1,5 @@
 import logging
-from typing import List, Optional, TYPE_CHECKING, Union
+from typing import Optional, TYPE_CHECKING
 
 from mstrio import config
 from mstrio.api import folders, objects
@@ -8,7 +8,9 @@ from mstrio.types import ObjectTypes
 from mstrio.users_and_groups import User
 from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, MoveMixin
 from mstrio.utils.helper import (
-    fetch_objects_async, get_default_args_from_func, get_valid_project_id
+    fetch_objects_async,
+    get_default_args_from_func,
+    get_valid_project_id
 )
 
 if TYPE_CHECKING:
@@ -24,7 +26,7 @@ def list_folders(
     to_dictionary: bool = False,
     limit: Optional[int] = None,
     **filters
-) -> Union[List["Folder"], List[dict]]:
+) -> list["Folder"] | list[dict]:
     """Get a list of folders - either all folders in a specific project or all
     folders that are outside of projects, called configuration-level folders.
     The list of configuration-level folders includes folders such as users, user
@@ -84,7 +86,7 @@ def get_my_personal_objects_contents(
     project_id: Optional[str] = None,
     project_name: Optional[str] = None,
     to_dictionary: bool = False,
-) -> List:
+) -> list:
     """Get contents of `My Personal Objects` folder in a specific project.
 
     Specify either `project_id` or `project_name`.
@@ -128,7 +130,7 @@ def get_predefined_folder_contents(
     to_dictionary: bool = False,
     limit: Optional[int] = None,
     **filters
-) -> List:
+) -> list:
     """Get contents of a pre-defined MicroStrategy folder in a specific project.
     Available values for `folder_type` are stored in enum `PredefinedFolders`.
 
@@ -216,7 +218,10 @@ class Folder(Entity, CopyMixin, MoveMixin, DeleteMixin):
         contents: contents of folder
     """
 
-    _FROM_DICT_MAP = {'owner': User.from_dict}
+    _FROM_DICT_MAP = {
+        **Entity._FROM_DICT_MAP,
+        'owner': User.from_dict
+    }
 
     _API_PATCH: dict = {**Entity._API_PATCH, ('folder_id'): (objects.update_object, 'partial_put')}
 
@@ -282,7 +287,7 @@ class Folder(Entity, CopyMixin, MoveMixin, DeleteMixin):
                 properties[property_key] = local[property_key]
         self._alter_properties(**properties)
 
-    def get_contents(self, to_dictionary: bool = False, **filters) -> List:
+    def get_contents(self, to_dictionary: bool = False, **filters) -> list:
         """Get contents of folder. It can contains other folders or different
         kinds of objects.
 

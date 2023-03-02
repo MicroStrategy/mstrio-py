@@ -14,17 +14,32 @@ from mstrio.distribution_services import (
     TransmitterDeliveryType
 )
 
+# Define a variable which can be later used in a script
 PROJECT_NAME = $project_name  # Project to connect to
+
+conn = get_connection(workstationData, project_name=PROJECT_NAME)
+
+# Define variables which can be later used in a script
 SENDER_DISPLAY_NAME = $sender_display_name  # name of a sender
 SENDER_EMAIL_ADDRESS = $sender_email_address  # address of a sender
 REPLY_TO_DISPLAY_NAME = $reply_to_display_name  # name for destination for replies
 REPLY_TO_EMAIL_ADDRESS = $reply_to_email_address  # address for destination for replies
+
+# get list of transmitters
+transmitters = list_transmitters(conn)
+
+# Define variables which can be later used in a script
 TRANSMITTER_ID = $transmitter_id
 TRANSMITTER_NAME = $transmitter_name
-TRANSMITTER_DESCRIPTION = $transmitter_description
-NOTIFICATION_EMAIL_ADDRESS = $notification_email_address
 
-conn = get_connection(workstationData, project_name=PROJECT_NAME)
+# get transmitter by id
+transmitter = Transmitter(conn, id=TRANSMITTER_ID)
+
+# get transmitter by name
+transmitter = Transmitter(conn, name=TRANSMITTER_NAME)
+
+# list properties for transmitter
+transmitter.list_properties()
 
 # create email transmitter properties object
 # which is used when creating transmitter
@@ -44,6 +59,10 @@ etp = EmailTransmitterProperties(
     notify_on_failure=False,
     notification_email_address=None,
 )
+
+# Define variables which can be later used in a script
+TRANSMITTER_DESCRIPTION = $transmitter_description
+NOTIFICATION_EMAIL_ADDRESS = $notification_email_address
 
 # create a transmitter with delivery type as `email` (when type is `email` then
 # it is mandatory to provide `email_transmitter_properties`). Delivery type
@@ -76,8 +95,12 @@ new_file_t = Transmitter.create(
     description=TRANSMITTER_DESCRIPTION,
 )
 
+# Define variables which can be later used in a script
+TRANSMITTER_NEW_NAME = $transmitter_new_name
+TRANSMITTER_NEW_DESCRIPTION = $transmitter_new_description
+
 # alter file transmitter
-new_file_t.alter(name=TRANSMITTER_NAME, description=TRANSMITTER_DESCRIPTION)
+new_file_t.alter(name=TRANSMITTER_NEW_NAME, description=TRANSMITTER_NEW_DESCRIPTION)
 
 # create ipad transmitter
 new_ipad_t = Transmitter.create(
@@ -88,7 +111,7 @@ new_ipad_t = Transmitter.create(
 )
 
 # alter ipad transmitter
-new_ipad_t.alter(name=TRANSMITTER_NAME, description=TRANSMITTER_DESCRIPTION)
+new_ipad_t.alter(name=TRANSMITTER_NEW_NAME, description=TRANSMITTER_NEW_DESCRIPTION)
 
 # create iphone transmitter
 new_iphone_t = Transmitter.create(
@@ -99,7 +122,7 @@ new_iphone_t = Transmitter.create(
 )
 
 # alter iphone transmitter
-new_iphone_t.alter(name=TRANSMITTER_NAME, description=TRANSMITTER_DESCRIPTION)
+new_iphone_t.alter(name=TRANSMITTER_NEW_NAME, description=TRANSMITTER_NEW_DESCRIPTION)
 
 # create print transmitter
 new_print_t = Transmitter.create(
@@ -110,18 +133,8 @@ new_print_t = Transmitter.create(
 )
 
 # alter print transmitter
-new_print_t.alter(name=TRANSMITTER_NAME, description=TRANSMITTER_DESCRIPTION)
-
-# get list of transmitters
-transmitters = list_transmitters(conn)
-
-# get transmitter by ID. Transmitter can be also found by its name.
-t = Transmitter(conn, id=TRANSMITTER_ID)
-t_by_name = Transmitter(conn, name=TRANSMITTER_NAME)
-
-# list properties for transmitter
-t.list_properties()
+new_print_t.alter(name=TRANSMITTER_NEW_NAME, description=TRANSMITTER_NEW_DESCRIPTION)
 
 # Delete transmitter. When argument `force` is set to `False` (default value),
 # then deletion must be confirmed by selecting appropriate prompt value.
-t.delete(force=True)
+transmitter.delete(force=True)
