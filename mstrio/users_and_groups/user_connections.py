@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, List, Optional, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Any, Optional
 
 from packaging import version
 
@@ -35,14 +35,14 @@ class UserConnections:
                 by `connection.Connection()`
         """
         self.connection = connection
-        self.user_connections: List[Dict[str, Any]] = []
+        self.user_connections: list[dict[str, Any]] = []
 
     def fetch(self) -> None:
         """Populate the `UserConnections` object by retrieving all active user
         connections on the environment."""
         self.user_connections = self.list_connections()
 
-    def filter_connections(self, **filters) -> Union[List[Dict[str, Any]], None]:
+    def filter_connections(self, **filters) -> list[dict[str, Any]] | None:
         """Filter the user connections stored in the `UserConnections` object
         by specifying the `filters` keyword arguments.
 
@@ -56,16 +56,22 @@ class UserConnections:
         filtered_connections = None
         if not self.user_connections:
             helper.exception_handler(
-                "Populate the `UserConnections` object with `UserConnections.fetch` first.",
-                Warning
+                "Populate the `UserConnections` object with `UserConnections.fetch` "
+                "first.",
+                Warning,
             )
         else:
-            filtered_connections = helper.filter_list_of_dicts(self.user_connections, **filters)
+            filtered_connections = helper.filter_list_of_dicts(
+                self.user_connections, **filters
+            )
         return filtered_connections
 
     def list_connections(
-        self, nodes: Union[str, List[str]] = None, limit: Optional[int] = None, **filters
-    ) -> List[Dict[str, Any]]:
+        self,
+        nodes: Optional[str | list[str]] = None,
+        limit: Optional[int] = None,
+        **filters,
+    ) -> list[dict[str, Any]]:
         """Get all active user connections. Optionally filter the connections
         by specifying the `filters` keyword arguments.
 
@@ -77,7 +83,7 @@ class UserConnections:
                 'username', 'user_full_name', 'project_index', 'project_id',
                 'project_name', 'open_jobs_count', 'project_type',
                 'date_connection_created', 'duration', 'session_id', 'client',
-                'config_level']
+                'config_level', 'application_type', 'last_action']
         """
         all_nodes = Cluster(self.connection).list_nodes(to_dictionary=True)
         all_connections = []
@@ -98,19 +104,19 @@ class UserConnections:
                     chunk_size=1000,
                     error_msg=msg,
                     node_name=node,
-                    filters=filters
+                    filters=filters,
                 )
             )
         return all_connections
 
     def disconnect_users(
         self,
-        connection_ids: Union[str, List[str]] = None,
-        users: Optional[Union[List["User"], List[str]]] = None,
-        nodes: Union[str, List[str]] = None,
+        connection_ids: Optional[str | list[str]] = None,
+        users: Optional[list["User"] | list[str]] = None,
+        nodes: Optional[str | list[str]] = None,
         force: bool = False,
-        **filters
-    ) -> Union[List[dict], None]:
+        **filters,
+    ) -> list[dict] | None:
         """Disconnect user connections by passing in users (objects) or
         connection_ids. Optionally disconnect users by specifying the `filters`
         keyword arguments.
@@ -138,12 +144,19 @@ class UserConnections:
 
 
         """
-        from mstrio.users_and_groups.user import User  # import here to avoid circular imports
+        # import here to avoid circular imports
+        from mstrio.users_and_groups.user import User
 
-        if self.connection and not connection_ids and not users and not filters and not force:
+        if (
+            self.connection
+            and not connection_ids
+            and not users
+            and not filters
+            and not force
+        ):
             msg = (
-                "You need to pass connection_ids or users or specify filters. To disconnect "
-                "all connections use `disconnect_all_users()` method."
+                "You need to pass connection_ids or users or specify filters. To "
+                "disconnect all connections use `disconnect_all_users()` method."
             )
             helper.exception_handler(msg)
 
@@ -164,7 +177,7 @@ class UserConnections:
                     else:
                         helper.exception_handler(
                             "'user' param must be a list of User objects or usernames.",
-                            exception_type=TypeError
+                            exception_type=TypeError,
                         )
 
                 all_connections = list(
@@ -178,7 +191,7 @@ class UserConnections:
             elif config.verbose:
                 logger.info('No active user connections.')
 
-    def disconnect_all_users(self, force: bool = False) -> Union[List[dict], None]:
+    def disconnect_all_users(self, force: bool = False) -> list[dict] | None:
         """Disconnect all user connections.
 
         Args:
@@ -192,7 +205,8 @@ class UserConnections:
         """
         if not force:
             user_input = input(
-                "Are you sure you want to disconnect all users from the I-Server? [Y/N]: "
+                "Are you sure you want to disconnect all users from the I-Server? "
+                "[Y/N]: "
             )
             if user_input != "Y":
                 return None
@@ -202,30 +216,37 @@ class UserConnections:
         return self.disconnect_users(force=force)
 
     def __disconnect_by_connection_id(
-        self, connection_ids: Union[str, List[str]]
-    ) -> Union[List[dict], None]:
+        self, connection_ids: str | list[str]
+    ) -> list[dict] | None:
         """It disconnects connections which ids are provided in
         'connection_ids'. It prints information about executed operations.
         Returns list of statuses of for the given connection ids with the
         messages from the I-Server or `None` in case of an error.
         """
-        connection_ids = connection_ids if isinstance(connection_ids, list) else [connection_ids]
+        connection_ids = (
+            connection_ids if isinstance(connection_ids, list) else [connection_ids]
+        )
         server_version = helper.version_cut(self.connection.iserver_version)
 
         # use monitors.delete_user_connections
         # or monitors.delete_user_connection depending on the server version
         if version.parse(server_version) >= version.parse('11.3.1'):
-            res = monitors.delete_user_connections(connection=self.connection, ids=connection_ids)
-            if res.status_code in [200, 207] or (res.status_code == 403
-                                                 and not res.json().get('code', None)):
+            res = monitors.delete_user_connections(
+                connection=self.connection, ids=connection_ids
+            )
+            if res.status_code in [200, 207] or (
+                res.status_code == 403 and not res.json().get('code', None)
+            ):
                 return self._prepare_disconnect_by_id_message(
                     statuses=res.json()['deleteUserConnectionsStatus']
                 )
             else:
                 err_msg = f'Error disconnecting user sessions: {connection_ids}.'
-                return helper.response_handler(response=res, msg=err_msg, throw_error=False)
+                return helper.response_handler(
+                    response=res, msg=err_msg, throw_error=False
+                )
         else:
-            statuses: List[Dict[str, Union[str, int]]] = []
+            statuses: list[dict[str, str | int]] = []
             for connection_id in connection_ids:
                 response = monitors.delete_user_connection(
                     self.connection, connection_id, bulk=True
@@ -234,7 +255,7 @@ class UserConnections:
             return self._prepare_disconnect_by_id_message(statuses=statuses)
 
     @staticmethod
-    def _prepare_disconnect_by_id_message(statuses: List[dict]) -> List[dict]:
+    def _prepare_disconnect_by_id_message(statuses: list[dict]) -> list[dict]:
         succeeded = []
         failed = []
 
@@ -250,8 +271,8 @@ class UserConnections:
         if config.verbose:
             if succeeded:
                 logger.info(
-                    'User connections with ids below were successfully disconnected:\n\t'
-                    + ',\n\t'.join(succeeded)
+                    'User connections with ids below were successfully disconnected:'
+                    '\n\t' + ',\n\t'.join(succeeded)
                 )
             if failed:
                 logger.warning(

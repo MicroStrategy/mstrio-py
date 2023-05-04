@@ -6,6 +6,7 @@ from mstrio.utils.enum_helper import AutoName
 class Function(AutoName):
     """Enumeration constant used to specify the function used for calculation
     in expression nodes"""
+
     THIRD_PARTY = auto()
     CUSTOM = auto()
     PLUS = auto()
@@ -203,6 +204,7 @@ class Function(AutoName):
 
 class ExpressionType(AutoName):
     """Enumeration constant indicating the expression type of expression node"""
+
     DYNAMIC = auto()
     STATIC = auto()
     GENERIC = auto()
@@ -240,6 +242,7 @@ class ExpressionType(AutoName):
 
 class DimtyType(AutoName):
     """Enumeration constant  indicating the dimty type of expression node"""
+
     NONE = auto()
     CONTINUATION = auto()
     EXCLUSIVE_CONTINUATION = auto()
@@ -252,6 +255,7 @@ class DimtyType(AutoName):
 
 class DependenceType(AutoName):
     """Enumeration constant indicating the dependence type of expression node"""
+
     DEFAULT = auto()
     INDEPENDENT = auto()
     DEPENDENT = auto()
@@ -261,6 +265,7 @@ class NodeType(AutoName):
     """Enumeration constant indicating the type of node within
     the expression tree
     """
+
     OPERATOR = auto()
     OBJECT_REFERENCE = auto()
     COLUMN_REFERENCE = auto()
@@ -285,18 +290,20 @@ class NodeType(AutoName):
 
 class IsIndependent(Enum):
     """Flag that indicates whether a node will be evaluated independently
-     of other parts of the larger expression"""
+    of other parts of the larger expression"""
+
     YES = 1
     NO = 0
 
 
 class ExpressionFormat(AutoName):
-    """"Expression format to be fetched from server, it might be tree or token:
+    """ "Expression format to be fetched from server, it might be tree or token:
     - tree: tree data structure fully defining the expression. This format can
     be used if you want to examine and modify the expression programmatically.
     - tokens: list of parsed tokens. This format can be used if you want
     to examine and modify the expression using the parser component. Note that
     generating tokens requires additional time.
     """
+
     TREE = auto()
     TOKENS = auto()

@@ -92,9 +92,7 @@ def get_filter(
 
     return connection.get(
         url=f"{connection.base_url}/api/model/filters/{id}",
-        headers={
-            "X-MSTR-ProjectID": project_id, "X-MSTR-MS-Changeset": changeset_id
-        },
+        headers={"X-MSTR-ProjectID": project_id, "X-MSTR-MS-Changeset": changeset_id},
         params={
             "showExpressionAs": show_expression_as,
             "showFilterTokens": str(show_filter_tokens).lower(),

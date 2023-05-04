@@ -14,12 +14,16 @@ def read_fact(
     changeset_id: str = None,
     show_expression_as: Optional[str] = None,
     show_potential_tables: bool = False,
-    show_fields: Optional[str] = None
+    show_fields: Optional[str] = None,
 ):
     if project_id is None:
         connection._validate_project_selected()
         project_id = connection.project_id
-    spt = str(show_potential_tables).lower() if show_potential_tables is not None else None
+    spt = (
+        str(show_potential_tables).lower()
+        if show_potential_tables is not None
+        else None
+    )
     return connection.get(
         url=f"{connection.base_url}/api/model/facts/{id}",
         headers={
@@ -40,9 +44,13 @@ def create_fact(
     connection: "Connection",
     body: dict,
     show_expression_as: Optional[str] = None,
-    show_potential_tables: bool = False
+    show_potential_tables: bool = False,
 ):
-    spt = str(show_potential_tables).lower() if show_potential_tables is not None else None
+    spt = (
+        str(show_potential_tables).lower()
+        if show_potential_tables is not None
+        else None
+    )
     with changeset_manager(connection) as changeset_id:
         return connection.post(
             url=f"{connection.base_url}/api/model/facts",
@@ -62,9 +70,13 @@ def update_fact(
     id: str,
     body: dict,
     show_expression_as: Optional[str] = None,
-    show_potential_tables: bool = False
+    show_potential_tables: bool = False,
 ):
-    spt = str(show_potential_tables).lower() if show_potential_tables is not None else None
+    spt = (
+        str(show_potential_tables).lower()
+        if show_potential_tables is not None
+        else None
+    )
     with changeset_manager(connection) as changeset_id:
         return connection.put(
             url=f"{connection.base_url}/api/model/facts/{id}",

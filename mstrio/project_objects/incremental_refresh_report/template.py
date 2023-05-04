@@ -27,7 +27,6 @@ class TemplateUnitType(AutoName):
 
 @dataclass
 class TemplateUnit(Dictable):
-
     _TYPE = None
 
     @staticmethod

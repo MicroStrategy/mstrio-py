@@ -11,7 +11,7 @@ def create_metric(
     connection: Connection,
     body: dict,
     show_expression_as: Optional[list[str]] = None,
-    show_filter_tokens: bool = False
+    show_filter_tokens: bool = False,
 ):
     """Create a new metric in the changeset,
     based on the definition provided in request body.
@@ -39,7 +39,7 @@ def create_metric(
             headers={"X-MSTR-MS-Changeset": changeset_id},
             params={
                 'showExpressionAs': show_expression_as,
-                'showFilterTokens': str(show_filter_tokens).lower()
+                'showFilterTokens': str(show_filter_tokens).lower(),
             },
             json=body,
         )
@@ -52,7 +52,7 @@ def get_metric(
     id: str,
     changeset_id: Optional[str] = None,
     show_expression_as: Optional[list[str]] = None,
-    show_filter_tokens: bool = False
+    show_filter_tokens: bool = False,
 ):
     """Get definition of a single metric by id
 
@@ -80,8 +80,8 @@ def get_metric(
         headers={'X-MSTR-MS-Changeset': changeset_id},
         params={
             'showExpressionAs': show_expression_as,
-            'showFilterTokens': str(show_filter_tokens).lower()
-        }
+            'showFilterTokens': str(show_filter_tokens).lower(),
+        },
     )
 
 
@@ -92,7 +92,7 @@ def update_metric(
     id: str,
     body: dict,
     show_expression_as: Optional[list[str]] = None,
-    show_filter_tokens: bool = False
+    show_filter_tokens: bool = False,
 ):
     """Update a specific metric in the changeset,
     based on the definition provided in request body.
@@ -122,7 +122,7 @@ def update_metric(
             headers={'X-MSTR-MS-Changeset': changeset_id},
             params={
                 'showExpressionAs': show_expression_as,
-                'showFilterTokens': str(show_filter_tokens).lower()
+                'showFilterTokens': str(show_filter_tokens).lower(),
             },
-            json=body
+            json=body,
         )

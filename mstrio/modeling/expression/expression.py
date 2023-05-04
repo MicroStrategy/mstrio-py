@@ -8,7 +8,11 @@ from mstrio.object_management.search_enums import SearchPattern
 from mstrio.types import ObjectSubTypes, ObjectTypes
 from mstrio.utils.enum_helper import AutoName
 from mstrio.utils.helper import (
-    camel_to_snake, delete_none_values, Dictable, get_valid_project_id, snake_to_camel
+    camel_to_snake,
+    delete_none_values,
+    Dictable,
+    get_valid_project_id,
+    snake_to_camel,
 )
 
 from .enums import DependenceType, DimtyType, ExpressionType, NodeType
@@ -39,7 +43,9 @@ class ExpressionNode(Dictable):
         return result
 
     @staticmethod
-    def dispatch(source, connection: Optional['Connection'] = None) -> Type['ExpressionNode']:
+    def dispatch(
+        source, connection: Optional['Connection'] = None
+    ) -> Type['ExpressionNode']:
         """Method dispatching node data to appropriate class that represents
         this type of node.
         """
@@ -48,6 +54,7 @@ class ExpressionNode(Dictable):
 
         # this import is here due to circular imports issue
         from mstrio.modeling.expression.expression_nodes import NODE_TYPE_TO_CLASS_MAP
+
         cls = NODE_TYPE_TO_CLASS_MAP[node_type]
 
         return cls.from_dict(data, connection)
@@ -75,6 +82,7 @@ class Token(Dictable):
 
     class Type(AutoName):
         """Enumeration constant that classifies the text within a token"""
+
         END_OF_TEXT = auto()
         ERROR = auto()
         UNKNOWN = auto()
@@ -100,6 +108,7 @@ class Token(Dictable):
         """Enumeration constant describing the amount of processing performed
         on a parser token
         """
+
         CLIENT = auto()
         LEXED = auto()
         RESOLVED = auto()
@@ -107,6 +116,7 @@ class Token(Dictable):
 
     class State(AutoName):
         """Enumeration constant describing whether token in an error or not"""
+
         ERROR = auto()
         INITIAL = auto()
         OKAY = auto()
@@ -137,7 +147,10 @@ class Token(Dictable):
 
     @classmethod
     def from_dict(
-        cls, source: dict, connection: Optional['Connection'] = None, to_snake_case: bool = True
+        cls,
+        source: dict,
+        connection: Optional['Connection'] = None,
+        to_snake_case: bool = True,
     ):
         data = camel_to_snake(source) if to_snake_case else source.copy()
 
@@ -274,8 +287,10 @@ def list_functions(
             **obj,
             'object_id': obj.get('id'),
             'sub_type': ObjectSubType.FUNCTION
-            if obj.get('subtype') == ObjectSubTypes.FUNCTION.value else None,  # noqa
-        } for obj in objects
+            if obj.get('subtype') == ObjectSubTypes.FUNCTION.value
+            else None,  # noqa
+        }
+        for obj in objects
     ]
 
     return [SchemaObjectReference.from_dict(obj, connection) for obj in objects]

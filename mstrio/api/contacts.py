@@ -53,7 +53,9 @@ def delete_contact(connection: Connection, id: str, error_msg: Optional[str] = N
 
 
 @ErrorHandler(err_msg='Error updating Contact with ID {id}')
-def update_contact(connection: Connection, id: str, body: dict, error_msg: Optional[str] = None):
+def update_contact(
+    connection: Connection, id: str, body: dict, error_msg: Optional[str] = None
+):
     """Update a contact.
 
     Args:
@@ -75,7 +77,7 @@ def get_contacts(
     offset: int = 0,
     limit: int = -1,
     fields: Optional[str] = None,
-    error_msg: Optional[str] = None
+    error_msg: Optional[str] = None,
 ):
     """Get information for all contacts.
 

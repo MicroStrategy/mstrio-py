@@ -14,7 +14,7 @@ def get_user_hierarchies(
     changeset_id: Optional[str] = None,
     limit: int = 1000,
     offset: int = 0,
-    error_msg: Optional[str] = None
+    error_msg: Optional[str] = None,
 ):
     """Get a list of all user hierarchies.
     The project ID is required to return all user hierarchy definitions
@@ -50,7 +50,7 @@ def get_user_hierarchies(
         params={
             'limit': limit,
             'offset': offset,
-        }
+        },
     )
 
 
@@ -74,7 +74,7 @@ def create_user_hierarchy(
         return connection.post(
             url=f"{connection.base_url}/api/model/hierarchies",
             headers={'X-MSTR-MS-Changeset': changeset_id},
-            json=body
+            json=body,
         )
 
 
@@ -85,7 +85,7 @@ def get_user_hierarchy(
     id: str,
     project_id: Optional[str] = None,
     changeset_id: Optional[str] = None,
-    error_msg: Optional[str] = None
+    error_msg: Optional[str] = None,
 ):
     """Get the definition of a user hierarchy.
     The project ID is required to return a user hierarchy's definition
@@ -113,19 +113,14 @@ def get_user_hierarchy(
 
     return connection.get(
         url=f"{connection.base_url}/api/model/hierarchies/{id}",
-        headers={
-            'X-MSTR-ProjectID': project_id, 'X-MSTR-MS-Changeset': changeset_id
-        },
+        headers={'X-MSTR-ProjectID': project_id, 'X-MSTR-MS-Changeset': changeset_id},
     )
 
 
 @unpack_information
 @ErrorHandler(err_msg='Error updating the user hierarchy with ID: {id}.')
 def update_user_hierarchy(
-    connection: "Connection",
-    id: str,
-    body: dict,
-    error_msg: Optional[str] = None
+    connection: "Connection", id: str, body: dict, error_msg: Optional[str] = None
 ):
     """Updates a specific user hierarchy in the changeset,
     based on the definition provided in the request body.
@@ -146,7 +141,7 @@ def update_user_hierarchy(
         return connection.patch(
             url=f"{connection.base_url}/api/model/hierarchies/{id}",
             headers={'X-MSTR-MS-Changeset': changeset_id},
-            json=body
+            json=body,
         )
 
 

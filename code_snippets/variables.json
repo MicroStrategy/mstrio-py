@@ -397,6 +397,30 @@
     "connection_mapping_new_login": {
       "type": "text",
       "multiple": false
+    },
+    "driver_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "driver_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "gateway_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "gateway_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "gateway_type": {
+      "type": "text",
+      "multiple": false
+    },
+    "db_type": {
+      "type": "text",
+      "multiple": false
     }
   },
   "device_mgmt.py": {
@@ -791,6 +815,10 @@
     "csv_file_import": {
       "type": "text",
       "multiple": false
+    },
+    "new_data_engine_version": {
+      "type": "text",
+      "multiple": false
     }
   },
   "schedules.py": {
@@ -1054,6 +1082,10 @@
     },
     "delivery_expiration_date": {
       "type": "date",
+      "multiple": false
+    },
+    "delivery_expiration_time_zone": {
+      "type": "text",
       "multiple": false
     },
     "content_id": {
@@ -1561,6 +1593,52 @@
       "multiple": false
     },
     "wh_table_id": {
+      "type": "text",
+      "multiple": false
+    }
+  },
+  "vldb.py": {
+    "project_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "datasource_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "property_set": {
+      "type": "text",
+      "multiple": false
+    },
+    "group_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "group_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "setting_name1": {
+      "type": "text",
+      "multiple": false
+    },
+    "setting_name2": {
+      "type": "text",
+      "multiple": false
+    },
+    "setting_name3": {
+      "type": "text",
+      "multiple": false
+    },
+    "setting_value1": {
+      "type": "text",
+      "multiple": false
+    },
+    "setting_value2": {
+      "type": "text",
+      "multiple": false
+    },
+    "setting_value3": {
       "type": "text",
       "multiple": false
     }

@@ -23,6 +23,7 @@ class ObjectSubType(AutoName):
     different.
     Used across different modeling modules e.g. attributes, user hierarchies.
     """
+
     FILTER = auto()
     CUSTOM_GROUP = auto()
     FILTER_PARTITION = auto()
@@ -239,35 +240,40 @@ class SchemaObjectReference(Dictable):
 
     @classmethod
     def create_from(
-        cls, schema_object: Union["Attribute", "UserHierarchy"], is_embedded: bool = None
+        cls,
+        schema_object: Union["Attribute", "UserHierarchy"],
+        is_embedded: bool = None,
     ) -> "SchemaObjectReference":
         """Converts a schema object into a schema object reference
 
-            Args:
-                schema_object: a schema object
-                is_embeded: a boolean indicating whether the schema object
-                    is embedded or not
+        Args:
+            schema_object: a schema object
+            is_embeded: a boolean indicating whether the schema object
+                is embedded or not
 
-            Returns:
-                SchemaObjectReference of the given schema object
+        Returns:
+            SchemaObjectReference of the given schema object
         """
         reference_body = {
             "object_id": schema_object.id,
             "name": schema_object.name,
             "sub_type": schema_object.sub_type,
-            "is_embeded": is_embedded
+            "is_embeded": is_embedded,
         }
         return cls.from_dict(reference_body)
 
-    def to_object(self, connection: "Connection") -> Union["Attribute", "UserHierarchy"]:
+    def to_object(
+        self, connection: "Connection"
+    ) -> Union["Attribute", "UserHierarchy"]:
         """Converts a schema object reference into a schema object.
 
-            Args:
-                connection: a connection object required to fetch
-                    the schema object
+        Args:
+            connection: a connection object required to fetch
+                the schema object
         """
         if self.sub_type == ObjectSubType.ATTRIBUTE:
             from mstrio.modeling.schema.attribute import Attribute
+
             return Attribute(connection, id=self.object_id)
         else:
             raise NotSupportedError(
@@ -289,6 +295,7 @@ class DataType(Dictable):
     class Type(AutoName):
         """String literal used to identify the gross data type of an actual
         or proposed column in a database."""
+
         UNKNOWN = auto()
         RESERVED = auto()
         INTEGER = auto()
@@ -328,19 +335,21 @@ class DataType(Dictable):
 
 
 class FormReference(Dictable):
-    """	The reference that identifies a form object within the context of a
-        given attribute. When writing back an attribute, either id or name is
-        needed to identify a form, and if both are provided, id will take
-        the higher priority.
+    """The reference that identifies a form object within the context of a
+    given attribute. When writing back an attribute, either id or name is
+    needed to identify a form, and if both are provided, id will take
+    the higher priority.
 
-        Attributes:
-            id: id of the form
-            name: name of the form
+    Attributes:
+        id: id of the form
+        name: name of the form
     """
 
     def __init__(self, id: str = None, name: str = None) -> None:
         if id is None and name is None:
-            exception_handler("Provide either `id` or `name` of a form object.", AttributeError)
+            exception_handler(
+                "Provide either `id` or `name` of a form object.", AttributeError
+            )
         self.id = id
         self.name = name
 
@@ -355,12 +364,14 @@ class AttributeDisplays(Dictable):
 
     _FROM_DICT_MAP = {
         "report_displays": (
-            lambda source,
-            connection: [FormReference.from_dict(content, connection) for content in source]
+            lambda source, connection: [
+                FormReference.from_dict(content, connection) for content in source
+            ]
         ),
         "browse_displays": (
-            lambda source,
-            connection: [FormReference.from_dict(content, connection) for content in source]
+            lambda source, connection: [
+                FormReference.from_dict(content, connection) for content in source
+            ]
         ),
     }
 
@@ -396,19 +407,21 @@ class AttributeSorts(Dictable):
 
     _FROM_DICT_MAP = {
         "report_sorts": (
-            lambda source,
-            connection: [AttributeSort.from_dict(content, connection) for content in source]
+            lambda source, connection: [
+                AttributeSort.from_dict(content, connection) for content in source
+            ]
         ),
         "browse_sorts": (
-            lambda source,
-            connection: [AttributeSort.from_dict(content, connection) for content in source]
+            lambda source, connection: [
+                AttributeSort.from_dict(content, connection) for content in source
+            ]
         ),
     }
 
     def __init__(
         self,
         report_sorts: Optional[list[AttributeSort]] = None,
-        browse_sorts: Optional[list[AttributeSort]] = None
+        browse_sorts: Optional[list[AttributeSort]] = None,
     ) -> None:
         self.report_sorts = report_sorts
         self.browse_sorts = browse_sorts
@@ -417,11 +430,11 @@ class AttributeSorts(Dictable):
 @dataclass
 class TableColumn(Dictable):
     """An object representation of a physical column that might
-       appear in some data source. In addition to representing physical
-       columns, we also use this object to represent columns that do not
-       actually appear in any data source but which the engine should
-       create if it needs to make a column to contain data for some higher
-       level construct (e.g. a fact, an attribute form etc.)."""
+    appear in some data source. In addition to representing physical
+    columns, we also use this object to represent columns that do not
+    actually appear in any data source but which the engine should
+    create if it needs to make a column to contain data for some higher
+    level construct (e.g. a fact, an attribute form etc.)."""
 
     _FROM_DICT_MAP = {"data_type": DataType, "sub_type": ObjectSubType}
     data_type: DataType

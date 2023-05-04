@@ -12,8 +12,9 @@ from .exceptions import NotSupportedError
 from .. import __version__, config
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO, format='%(message)s', stream=sys.stderr)  # NOSONAR
-
+logging.basicConfig(  # NOSONAR
+    level=logging.INFO, format='%(message)s', stream=sys.stderr
+)
 current_version = Version(__version__)
 
 
@@ -35,7 +36,9 @@ message_templates = {
         "a Functionality Preview. It is subject to change until it is released "
         "as Generally Available."
     ),
-    WipLevels.INFO: "This {}functionality is a work-in-progress. It may change in future updates.",
+    WipLevels.INFO: (
+        "This {}functionality is a work-in-progress. It may change in future updates."
+    ),
     WipLevels.WARNING: (
         "This {}functionality is a work-in-progress. Use it only if you understand"
         " the underlying code. It may change in future updates."
@@ -68,7 +71,7 @@ def _get_message_template(level: WipLevels = WipLevels.WARNING):
 def _construct_message(
     name: Optional[str] = None,
     target_release: Optional[Union[Version, str]] = None,
-    level: WipLevels = WipLevels.WARNING
+    level: WipLevels = WipLevels.WARNING,
 ):
     template = _get_message_template(level)
     if name is None:
@@ -84,7 +87,7 @@ def _emit(
     name: Optional[str] = None,
     target_release: Optional[Union[Version, str]] = None,
     level: WipLevels = WipLevels.WARNING,
-    message: Optional[str] = None
+    message: Optional[str] = None,
 ):
     if level == WipLevels.SILENT or not config.wip_warnings_enabled:
         return None
@@ -107,7 +110,7 @@ def wip(
     level: WipLevels = WipLevels.WARNING,
     message: Optional[str] = None,
     prefix_doc: Union[bool, str] = True,
-    mark_attr: bool = True
+    mark_attr: bool = True,
 ):
     """Work-In-Progress wrapper
 
@@ -144,7 +147,6 @@ def wip(
         _wiplevel_error(level)
 
     def wrap_func(f):
-
         @functools.wraps(f)
         def wrapped(*args, **kwargs):
             _emit(wrapped.__name__, target_release, level, message)
@@ -175,7 +177,7 @@ def module_wip(
     level: WipLevels = WipLevels.WARNING,
     message: Optional[str] = None,
     prefix_doc: Union[bool, str] = True,
-    mark_attr: bool = True
+    mark_attr: bool = True,
 ):
     """Emit the WIP warning/error/info when the module is loaded."""
     if mark_attr:

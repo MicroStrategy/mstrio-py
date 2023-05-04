@@ -15,7 +15,6 @@ class ShortcutInfoFlags(IntFlag):
 
 
 class Shortcut(Entity, CopyMixin, MoveMixin):
-
     _OBJECT_TYPE = ObjectTypes.SHORTCUT_TYPE
     _API_GETTERS = {
         (
@@ -34,7 +33,7 @@ class Shortcut(Entity, CopyMixin, MoveMixin):
             'prompted',
             'datasets_cache_info_hash',
             'shortcut_info_flag',
-            'dossier_version_hash'
+            'dossier_version_hash',
         ): browsing.get_shortcut,
         (
             'abbreviation',
@@ -51,14 +50,17 @@ class Shortcut(Entity, CopyMixin, MoveMixin):
             'certified_info',
             'acg',
             'acl',
-            'target_info'
-        ): objects.get_object_info
+            'target_info',
+        ): objects.get_object_info,
     }
     _FROM_DICT_MAP = {
         **Entity._FROM_DICT_MAP,
         'shortcut_info_flag': ShortcutInfoFlags,
     }
-    _API_PATCH: dict = {**Entity._API_PATCH, ('folder_id'): (objects.update_object, 'partial_put')}
+    _API_PATCH: dict = {
+        **Entity._API_PATCH,
+        ('folder_id'): (objects.update_object, 'partial_put'),
+    }
 
     def __init__(
         self,
@@ -66,7 +68,8 @@ class Shortcut(Entity, CopyMixin, MoveMixin):
         id: str,
         project_id: str = None,
         project_name: str = None,
-        shortcut_info_flag: ShortcutInfoFlags | int = ShortcutInfoFlags.DssDossierShortcutInfoTOC
+        shortcut_info_flag: ShortcutInfoFlags
+        | int = ShortcutInfoFlags.DssDossierShortcutInfoTOC,
     ):
         """Initialize the Shortcut object and populate it with I-Server data.
 
@@ -99,7 +102,7 @@ class Shortcut(Entity, CopyMixin, MoveMixin):
                 connection=connection,
                 object_id=id,
                 project_id=project_id,
-                shortcut_info_flag=get_enum_val(shortcut_info_flag, ShortcutInfoFlags)
+                shortcut_info_flag=get_enum_val(shortcut_info_flag, ShortcutInfoFlags),
             )
 
     def _init_variables(self, **kwargs) -> None:
@@ -107,9 +110,11 @@ class Shortcut(Entity, CopyMixin, MoveMixin):
         self._owned_by_current_user = kwargs.get('owned_by_current_user')
         self._target = kwargs.get('target')
         self._encode_html_content = kwargs.get('encode_html_content')
-        self._shortcut_info_flag = ShortcutInfoFlags(
-            kwargs["shortcut_info_flag"]
-        ) if kwargs.get("shortcut_info_flag") else None
+        self._shortcut_info_flag = (
+            ShortcutInfoFlags(kwargs["shortcut_info_flag"])
+            if kwargs.get("shortcut_info_flag")
+            else None
+        )
         self._current_page_key = kwargs.get('current_page_key')
         self._shared_time = kwargs.get('shared_time')
         self._last_viewed_time = kwargs.get('last_viewed_time')
@@ -185,33 +190,35 @@ def get_shortcuts(
     shortcut_ids: list[str],
     project_id: str = None,
     project_name: str = None,
-    shortcut_info_flag: ShortcutInfoFlags | int = ShortcutInfoFlags.DssDossierShortcutInfoDefault,
+    shortcut_info_flag: ShortcutInfoFlags
+    | int = ShortcutInfoFlags.DssDossierShortcutInfoDefault,
     to_dictionary: bool = False,
     limit: Optional[int] = None,
-    **filters
+    **filters,
 ) -> list[dict] | list[Shortcut]:
     """Retrieve information about specific published shortcuts
-    in specific project.
+     in specific project.
 
-    Specify either `project_id` or `project_name`.
-    When `project_id` is provided (not `None`), `project_name` is omitted.
+     Specify either `project_id` or `project_name`.
+     When `project_id` is provided (not `None`), `project_name` is omitted.
 
-   Note:
-        When `project_id` is `None` and `project_name` is `None`,
-        then its value is overwritten by `project_id` from `connection` object.
+    Note:
+         When `project_id` is `None` and `project_name` is `None`,
+         then its value is overwritten by `project_id` from `connection`
+         object.
 
-    Args:
-        shortcut_ids: ids of target shortcuts
-        project_id: id of project that the shortcuts are in
-        project_name: Project name
-        shortcut_info_flag: a single ShortcutInfoFlags that describes what
-          exact info are to be fetched
-        to_dictionary: parameter describing output format
-        limit (int): limit the number of elements returned. If `None` (default),
-            all objects are returned.
-    Return:
-        list of dictionaries or Shortcut objects,
-          depending on `to_dictionary` parameter
+     Args:
+         shortcut_ids: ids of target shortcuts
+         project_id: id of project that the shortcuts are in
+         project_name: Project name
+         shortcut_info_flag: a single ShortcutInfoFlags that describes what
+           exact info are to be fetched
+         to_dictionary: parameter describing output format
+         limit (int): limit the number of elements returned.
+             If `None` (default), all objects are returned.
+     Return:
+         list of dictionaries or Shortcut objects,
+           depending on `to_dictionary` parameter
     """
     project_id = get_valid_project_id(
         connection=connection,
@@ -226,13 +233,14 @@ def get_shortcuts(
         dict_unpack_value="shortcuts",
         limit=limit,
         filters=filters,
-        body=[{
-            "projectId": project_id, "shortcutIds": shortcut_ids
-        }],
+        body=[{"projectId": project_id, "shortcutIds": shortcut_ids}],
         shortcut_info_flag=get_enum_val(shortcut_info_flag, ShortcutInfoFlags),
     )
 
     if to_dictionary:
         return shortcuts
     else:
-        return [Shortcut.from_dict(source=short, connection=connection) for short in shortcuts]
+        return [
+            Shortcut.from_dict(source=short, connection=connection)
+            for short in shortcuts
+        ]

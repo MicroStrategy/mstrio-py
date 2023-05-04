@@ -12,7 +12,6 @@ def _map_data_type(datatype):
 
 
 def formjson(df, table_name, as_metrics=None, as_attributes=None):
-
     def _form_column_headers(_col_names, _col_types):
         return [{'name': n, 'dataType': t} for n, t in zip(_col_names, _col_types)]
 
@@ -22,12 +21,12 @@ def formjson(df, table_name, as_metrics=None, as_attributes=None):
                 'name': n,
                 'attributeForms': [
                     {
-                        'category': 'ID', 'expressions': [{
-                            'formula': table_name + "." + n
-                        }]
+                        'category': 'ID',
+                        'expressions': [{'formula': table_name + "." + n}],
                     }
-                ]
-            } for n in _attributes
+                ],
+            }
+            for n in _attributes
         ]
 
     def _form_metric_list(_metrics):
@@ -35,10 +34,9 @@ def formjson(df, table_name, as_metrics=None, as_attributes=None):
             {
                 'name': n,
                 'dataType': 'number',
-                'expressions': [{
-                    'formula': table_name + "." + n
-                }]
-            } for n in _metrics
+                'expressions': [{'formula': table_name + "." + n}],
+            }
+            for n in _metrics
         ]
 
     col_names = list(df.columns)

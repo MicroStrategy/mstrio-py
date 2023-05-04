@@ -72,3 +72,20 @@ project.settings.import_from(file=CSV_FILE_IMPORT)
 # change a setting of a project
 project.settings.cubeIndexGrowthUpperBound = 501
 project.settings.update()
+
+# print currently set value of Unified Quoting Behavior VldbSetting
+print(project.vldb_settings['Quoting Behavior'].value)
+# enable Unified Quoting Behavior
+project.alter_vldb_settings(names_to_values={'Quoting Behavior': 1})
+# disable Unified Quoting Behavior
+project.alter_vldb_settings(names_to_values={'Quoting Behavior': 0})
+
+# print currently available data engine versions
+print(project.get_data_engine_versions())
+# print data engine versions connected to environment projects
+for project in env.list_projects():
+    print(project.vldb_settings['AEVersion'].value)
+# update data engine versions for all projects on environment
+NEW_DATA_ENGINE_VERSION = $new_data_engine_version # Insert number related to new data engine version
+for project in env.list_projects():
+    project.update_data_engine_version(NEW_DATA_ENGINE_VERSION)

@@ -19,7 +19,7 @@ def lock_schema(
     connection: "Connection",
     lock_type: str,
     project_id: Optional[str] = None,
-    throw_error: bool = True
+    throw_error: bool = True,
 ):
     """Places a lock on the schema."""
     project_id = project_id if project_id is not None else connection.project_id
@@ -35,7 +35,7 @@ def unlock_schema(
     connection: "Connection",
     lock_type: Optional[str] = None,
     project_id: Optional[str] = None,
-    throw_error: bool = True
+    throw_error: bool = True,
 ):
     """Unlocks the schema."""
     project_id = project_id if project_id is not None else connection.project_id
@@ -51,7 +51,7 @@ def reload_schema(
     connection: "Connection",
     project_id: Optional[str] = None,
     update_types: Optional[List[str]] = None,
-    prefer_async: bool = False
+    prefer_async: bool = False,
 ):
     """Reloads (updates) the schema."""
     project_id = project_id if project_id is not None else connection.project_id
@@ -68,7 +68,9 @@ def reload_schema(
 
 
 @ErrorHandler(err_msg='Error reading status of the task with ID: {task_id}.')
-def read_task_status(connection: "Connection", task_id: str, project_id: Optional[str] = None):
+def read_task_status(
+    connection: "Connection", task_id: str, project_id: Optional[str] = None
+):
     """Read the status of the task."""
     project_id = project_id if project_id is not None else connection.project_id
     return connection.get(

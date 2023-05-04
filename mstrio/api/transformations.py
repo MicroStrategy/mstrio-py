@@ -7,8 +7,12 @@ from mstrio.utils.error_handlers import ErrorHandler
 
 @unpack_information
 @ErrorHandler(err_msg='Error getting transformation with ID: {id}')
-def get_transformation(connection: Connection, id: str, changeset_id: Optional[str] = None,
-                       show_expression_as: Optional[list[str]] = None):
+def get_transformation(
+    connection: Connection,
+    id: str,
+    changeset_id: Optional[str] = None,
+    show_expression_as: Optional[list[str]] = None,
+):
     """Get definition of a single transformation by id
 
     Args:
@@ -26,16 +30,18 @@ def get_transformation(connection: Connection, id: str, changeset_id: Optional[s
     Return:
         HTTP response object. Expected status: 200
     """
-    return connection.get(url=f'{connection.base_url}/api/model/transformations/{id}',
-                          headers={'X-MSTR-MS-Changeset': changeset_id},
-                          params={'showExpressionAs': show_expression_as})
+    return connection.get(
+        url=f'{connection.base_url}/api/model/transformations/{id}',
+        headers={'X-MSTR-MS-Changeset': changeset_id},
+        params={'showExpressionAs': show_expression_as},
+    )
 
 
 @unpack_information
 @ErrorHandler(err_msg='Error creating a transformation')
-def create_transformation(connection: Connection, body: dict,
-                          show_expression_as: Optional[list[str]] = None):
-
+def create_transformation(
+    connection: Connection, body: dict, show_expression_as: Optional[list[str]] = None
+):
     """Create a new transformation in the changeset,
     based on the definition provided in request body.
 
@@ -54,15 +60,22 @@ def create_transformation(connection: Connection, body: dict,
         HTTP response object. Expected status: 200
     """
     with changeset_manager(connection) as changeset_id:
-        return connection.post(url=f'{connection.base_url}/api/model/transformations',
-                               headers={'X-MSTR-MS-Changeset': changeset_id},
-                               params={'showExpressionAs': show_expression_as}, json=body)
+        return connection.post(
+            url=f'{connection.base_url}/api/model/transformations',
+            headers={'X-MSTR-MS-Changeset': changeset_id},
+            params={'showExpressionAs': show_expression_as},
+            json=body,
+        )
 
 
 @unpack_information
 @ErrorHandler(err_msg='Error updating transformation with ID: {id}')
-def update_transformation(connection: Connection, id: str, body: dict,
-                          show_expression_as: Optional[list[str]] = None):
+def update_transformation(
+    connection: Connection,
+    id: str,
+    body: dict,
+    show_expression_as: Optional[list[str]] = None,
+):
     """Update a specific transformation in the changeset,
     based on the definition provided in the request body.
     It returns the transformation's updated definition in the changeset.
@@ -83,6 +96,9 @@ def update_transformation(connection: Connection, id: str, body: dict,
         HTTP response object. Expected status: 200
     """
     with changeset_manager(connection) as changeset_id:
-        return connection.patch(url=f'{connection.base_url}/api/model/transformations/{id}',
-                                headers={'X-MSTR-MS-Changeset': changeset_id},
-                                params={'showExpressionAs': show_expression_as}, json=body)
+        return connection.patch(
+            url=f'{connection.base_url}/api/model/transformations/{id}',
+            headers={'X-MSTR-MS-Changeset': changeset_id},
+            params={'showExpressionAs': show_expression_as},
+            json=body,
+        )

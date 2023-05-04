@@ -54,8 +54,9 @@ class Environment:
         """Fetch the current server settings from the environment."""
         self.server_settings.fetch()
 
-    def create_project(self, name: str, description: Optional[str] = None,
-                       force: bool = False) -> Optional["Project"]:
+    def create_project(
+        self, name: str, description: Optional[str] = None, force: bool = False
+    ) -> Optional["Project"]:
         """Create a new project on the environment.
 
         Args:
@@ -65,8 +66,9 @@ class Environment:
         """
         return Project._create(self.connection, name, description, force)
 
-    def list_projects(self, to_dictionary: bool = False, limit: Optional[int] = None,
-                      **filters) -> Union[List["Project"], List[dict]]:
+    def list_projects(
+        self, to_dictionary: bool = False, limit: Optional[int] = None, **filters
+    ) -> Union[List["Project"], List[dict]]:
         """Return list of project objects or project dicts if
         `to_dictionary=True`. Optionally filter the Projects by specifying
         the `filters` keyword arguments.
@@ -85,8 +87,9 @@ class Environment:
             **filters,
         )
 
-    def list_loaded_projects(self, to_dictionary: bool = False,
-                             **filters) -> Union[List["Project"], List[dict]]:
+    def list_loaded_projects(
+        self, to_dictionary: bool = False, **filters
+    ) -> Union[List["Project"], List[dict]]:
         """Return list of all loaded project objects or project dicts
         if `to_dictionary=True` that the user has access to. Optionally filter
         the Projects by specifying the `filters` keyword arguments.
@@ -104,7 +107,9 @@ class Environment:
         )
 
     def list_nodes(
-        self, project: Optional[Union[str, "Project"]] = None, node_name: Optional[str] = None
+        self,
+        project: Optional[Union[str, "Project"]] = None,
+        node_name: Optional[str] = None,
     ) -> List[dict]:
         """Return a list of I-Server nodes and their properties. Optionally
         filter by `project` or `node_name`.
@@ -149,7 +154,9 @@ class Environment:
         return loaded
 
     def compare_settings(
-        self, projects: Union[List[str], List["Project"]] = None, show_diff_only: bool = False
+        self,
+        projects: Union[List[str], List["Project"]] = None,
+        show_diff_only: bool = False,
     ) -> DataFrame:
         """Compare project' settings to the first project in the
         provided list.
@@ -169,11 +176,13 @@ class Environment:
         def not_exist_warning(wrong_name):
             helper.exception_handler(
                 f"Project '{wrong_name}' does not exist and will be skipped.",
-                exception_type=Warning
+                exception_type=Warning,
             )
 
         if projects:
-            just_objects = [project for project in projects if isinstance(project, Project)]
+            just_objects = [
+                project for project in projects if isinstance(project, Project)
+            ]
         else:
             just_objects = []
         if len(just_objects) == len(projects):
@@ -184,7 +193,7 @@ class Environment:
             if len(projects) < 2:
                 helper.exception_handler(
                     "Provide more than one project object or name in list",
-                    exception_type=TypeError
+                    exception_type=TypeError,
                 )
 
             # extract project names from either project object or strings
@@ -200,7 +209,9 @@ class Environment:
                 if a_name not in all_project_names
             ]
 
-            projects = list(filter(lambda project: project.name in project_names, all_projects))
+            projects = list(
+                filter(lambda project: project.name in project_names, all_projects)
+            )
             projects = sorted(projects, key=lambda x: project_names.index(x.name))
 
         elif projects is None:
@@ -208,7 +219,7 @@ class Environment:
         else:
             helper.exception_handler(
                 "The 'projects' parameter needs to be a list of len > 1 or None.",
-                exception_type=TypeError
+                exception_type=TypeError,
             )
 
         return compare_project_settings(projects, show_diff_only)

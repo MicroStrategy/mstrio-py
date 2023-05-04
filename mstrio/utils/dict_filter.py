@@ -30,7 +30,10 @@ def check_valid_param(dict_object: Dict[KT, VT], params: Iterable) -> None:
     """Check if filter parameters can be used with given dict."""
     # all keys from dict that are supported for filtering
     allowed = list(
-        filter(lambda el: not isinstance(dict_object[el], (list, tuple, set)), dict_object.keys())
+        filter(
+            lambda el: not isinstance(dict_object[el], (list, tuple, set)),
+            dict_object.keys(),
+        )
     )
 
     # check filter param is in the allowed
@@ -61,7 +64,7 @@ def parse_filter_expression(param: str, expression: SupportedExpression) -> tupl
             op = expression[0]
             if expression[0] in [SMALLER, LARGER, NOT] and expression[1] == EQUAL:
                 op += expression[1]
-        filter_value = expression[len(op):] if op is not None else expression
+        filter_value = expression[len(op) :] if op is not None else expression
 
         if filter_value.lower() == 'true':  # Support string bool values
             filter_value = True
@@ -115,7 +118,9 @@ def make_dict_filter(param: str, op: str, filter_value: Any) -> Callable:
             # check if all other types are not equal to value_type and cast
             if op in (DICT_COMPARE, IS):
                 # do not cast to bool or to dict
-                raise TypeError(f"'{param}' needs to be compatible with type {value_type}.")
+                raise TypeError(
+                    f"'{param}' needs to be compatible with type {value_type}."
+                )
 
             try:
                 # cast filter_value to dict element type
@@ -156,7 +161,12 @@ def make_dict_filter(param: str, op: str, filter_value: Any) -> Callable:
         elif op == IN:
             return value in filter_value
         elif op == DICT_COMPARE:
-            return all((value[k] == v if k in value else False for k, v in filter_value.items()))
+            return all(
+                (
+                    value[k] == v if k in value else False
+                    for k, v in filter_value.items()
+                )
+            )
 
     return my_filter
 

@@ -17,7 +17,7 @@ class HistoryListSubscription(Subscription):
         id: Optional[str] = None,
         subscription_id: Optional[str] = None,
         project_id: Optional[str] = None,
-        project_name: Optional[str] = None
+        project_name: Optional[str] = None,
     ):
         """Initializes HistoryListSubscription object and populates it with
         I-Server data if id or subscription_id is passed.
@@ -54,12 +54,13 @@ class HistoryListSubscription(Subscription):
         recipients: Optional[list[dict] | list[str]] = None,
         delivery: Optional[Delivery | dict] = None,
         delivery_expiration_date: Optional[str] = None,
+        delivery_expiration_timezone: Optional[str] = None,
         contact_security: bool = True,
         do_not_create_update_caches: bool = True,
         overwrite_older_version: bool = False,
         re_run_hl: bool = True,
         delivery_notification_enabled: bool = False,
-        delivery_personal_notification_address_id: Optional[str] = None
+        delivery_personal_notification_address_id: Optional[str] = None,
     ) -> "HistoryListSubscription":
         """Creates a new history list subscription.
         Args:
@@ -85,8 +86,10 @@ class HistoryListSubscription(Subscription):
             recipients (list[dict] | dict, optional): list of recipients IDs
                 or dicts
             delivery (dict | Delivery, optional): delivery object or dict
-            delivery_expiration_date (string, optional): expiration date
+            delivery_expiration_date (str, optional): expiration date
                 of the subscription, format should be yyyy - MM - dd
+            delivery_expiration_timezone (str, optional): expiration timezone
+                of the subscription, example value 'Europe/London'
             contact_security (bool): whether to use contact security for each
                 contact group member
             do_not_create_update_caches (bool): whether the current subscription
@@ -101,6 +104,8 @@ class HistoryListSubscription(Subscription):
             delivery_personal_notification_address_id (str, optional):
                 Notification details
         """
+        notification_address_id = delivery_personal_notification_address_id
+
         return super()._Subscription__create(
             connection=connection,
             name=name,
@@ -118,12 +123,13 @@ class HistoryListSubscription(Subscription):
             delivery=delivery,
             delivery_mode=Delivery.DeliveryMode.HISTORY_LIST,
             delivery_expiration_date=delivery_expiration_date,
+            delivery_expiration_timezone=delivery_expiration_timezone,
             contact_security=contact_security,
             do_not_create_update_caches=do_not_create_update_caches,
             overwrite_older_version=overwrite_older_version,
             re_run_hl=re_run_hl,
             delivery_notification_enabled=delivery_notification_enabled,
-            delivery_personal_notification_address_id=delivery_personal_notification_address_id
+            delivery_personal_notification_address_id=notification_address_id,
         )
 
     def alter(
@@ -140,12 +146,13 @@ class HistoryListSubscription(Subscription):
         delivery: Optional[Delivery | dict] = None,
         custom_msg: Optional[str] = None,
         delivery_expiration_date: Optional[str] = None,
+        delivery_expiration_timezone: Optional[str] = None,
         contact_security: bool = True,
         do_not_create_update_caches: bool = True,
         overwrite_older_version: bool = False,
         re_run_hl: bool = True,
         delivery_notification_enabled: bool = False,
-        delivery_personal_notification_address_id: Optional[str] = None
+        delivery_personal_notification_address_id: Optional[str] = None,
     ):
         """Alter the subscription.
         Args:
@@ -167,8 +174,10 @@ class HistoryListSubscription(Subscription):
             recipients (list[dict] | dict, optional): list of recipients IDs
                 or dicts
             delivery (dict | Delivery, optional): delivery object or dict
-            delivery_expiration_date (string, optional): expiration date
+            delivery_expiration_date (str, optional): expiration date
                 of the subscription, format should be yyyy - MM - dd
+            delivery_expiration_timezone (str, optional): expiration timezone
+                of the subscription
             contact_security (bool): whether to use contact security for each
                 contact group member
             do_not_create_update_caches (bool): whether the current subscription
@@ -184,6 +193,8 @@ class HistoryListSubscription(Subscription):
             delivery_personal_notification_address_id (str, optional):
                 Notification details
         """
+        notification_address_id = delivery_personal_notification_address_id
+
         return super().alter(
             name=name,
             multiple_contents=multiple_contents,
@@ -197,10 +208,11 @@ class HistoryListSubscription(Subscription):
             delivery=delivery,
             custom_msg=custom_msg,
             delivery_expiration_date=delivery_expiration_date,
+            delivery_expiration_timezone=delivery_expiration_timezone,
             contact_security=contact_security,
             do_not_create_update_caches=do_not_create_update_caches,
             overwrite_older_version=overwrite_older_version,
             re_run_hl=re_run_hl,
             delivery_notification_enabled=delivery_notification_enabled,
-            delivery_personal_notification_address_id=delivery_personal_notification_address_id
+            delivery_personal_notification_address_id=notification_address_id,
         )

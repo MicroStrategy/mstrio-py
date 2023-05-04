@@ -9,7 +9,13 @@ from mstrio.modeling.schema import ObjectSubType, SchemaObjectReference
 from mstrio.object_management.folder import Folder
 from mstrio.types import ObjectTypes
 from mstrio.users_and_groups import User, UserGroup
-from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, MoveMixin, ObjectSubTypes
+from mstrio.utils.entity import (
+    CopyMixin,
+    DeleteMixin,
+    Entity,
+    MoveMixin,
+    ObjectSubTypes,
+)
 from mstrio.utils.enum_helper import get_enum_val
 from mstrio.utils.helper import (
     delete_none_values,
@@ -17,7 +23,7 @@ from mstrio.utils.helper import (
     fetch_objects,
     filter_params_for_func,
     get_valid_project_id,
-    get_valid_project_name
+    get_valid_project_name,
 )
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
@@ -25,7 +31,6 @@ from mstrio.modeling.expression import Expression  # isort:skip
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
-
 
 logger = logging.getLogger(__name__)
 
@@ -91,8 +96,7 @@ def list_security_filters(
         user_group (str or object, optional): Id of user group or `UserGroup`
             object used to filter security filters
         **filters: Available filter parameters: ['id', 'name', 'description',
-            'type', 'subtype', 'date_created', 'date_modified', 'version',
-            'acg', 'icon_path', 'owner']
+            'date_created', 'date_modified', 'total_users', 'total_user_groups']
     Returns:
         list of security filter objects or list of security filter dictionaries.
     """
@@ -108,24 +112,27 @@ def list_security_filters(
     )
     if user and user_group:
         exception_handler(
-            "You cannot filter by both `user` and `user_group` at the same time.")
+            "You cannot filter by both `user` and `user_group` at the same time."
+        )
 
     if user:
         user = User(connection, id=user) if isinstance(user, str) else user
         # Filter security filters by user for project defined by
         # `project_name` - assigned based on valid `project_id`
-        objects = user.list_security_filters(
-            project_id, to_dictionary=True
-        ).get(project_name, [])
+        objects = user.list_security_filters(project_id, to_dictionary=True).get(
+            project_name, []
+        )
     elif user_group:
-        user_group = UserGroup(
-            connection, id=user_group
-        ) if isinstance(user_group, str) else user_group
+        user_group = (
+            UserGroup(connection, id=user_group)
+            if isinstance(user_group, str)
+            else user_group
+        )
         # filter security filters by the user group for project defined by
         # `project_name` - assigned based on valid `project_id`
-        objects = user_group.list_security_filters(
-            project_id, to_dictionary=True
-        ).get(project_name, [])
+        objects = user_group.list_security_filters(project_id, to_dictionary=True).get(
+            project_name, []
+        )
     else:
         objects = fetch_objects(
             connection=connection,
@@ -206,18 +213,47 @@ class SecurityFilter(Entity, CopyMixin, DeleteMixin, MoveMixin):
         'bottom_level': [SchemaObjectReference.from_dict],
     }
     _API_GETTERS = {
-        ('type', 'subtype', 'ext_type', 'date_created', 'date_modified', 'version', 'owner',
-         'ancestors', 'acg', 'acl'): objects.get_object_info,
-        ('id', 'name', 'description', 'sub_type', 'date_created', 'date_modified', 'path',
-         'version_id', 'is_embedded', 'primary_locale', 'qualification', 'destination_folder_id',
-         'top_level', 'bottom_level'): security_filters.get_security_filter,
+        (
+            'type',
+            'subtype',
+            'ext_type',
+            'date_created',
+            'date_modified',
+            'version',
+            'owner',
+            'ancestors',
+            'acg',
+            'acl',
+        ): objects.get_object_info,
+        (
+            'id',
+            'name',
+            'description',
+            'sub_type',
+            'date_created',
+            'date_modified',
+            'path',
+            'version_id',
+            'is_embedded',
+            'primary_locale',
+            'qualification',
+            'destination_folder_id',
+            'top_level',
+            'bottom_level',
+        ): security_filters.get_security_filter,
         ('users',): security_filters.get_security_filter_members,
     }
     _API_PATCH: dict = {
-        ('name', 'description', 'qualification', 'destination_folder_id', 'is_embedded',
-         'top_level', 'bottom_level'):
-        (security_filters.update_security_filter, "put"),
-        ('folder_id',): (objects.update_object, 'partial_put')
+        (
+            'name',
+            'description',
+            'qualification',
+            'destination_folder_id',
+            'is_embedded',
+            'top_level',
+            'bottom_level',
+        ): (security_filters.update_security_filter, "put"),
+        ('folder_id',): (objects.update_object, 'partial_put'),
     }
     _PATCH_PATH_TYPES = {
         'name': str,
@@ -274,22 +310,40 @@ class SecurityFilter(Entity, CopyMixin, DeleteMixin, MoveMixin):
         self.primary_locale = kwargs.get('primary_locale')
         self.is_embedded = kwargs.get('is_embedded')
         self.destination_folder_id = kwargs.get('destination_folder_id')
-        self.qualification = Expression.from_dict(
-            kwargs.get('qualification'), self.connection) if kwargs.get('qualification') else None
-        self._sub_type = ObjectSubType(kwargs.get('sub_type')) if kwargs.get('sub_type') else None
+        self.qualification = (
+            Expression.from_dict(kwargs.get('qualification'), self.connection)
+            if kwargs.get('qualification')
+            else None
+        )
+        self._sub_type = (
+            ObjectSubType(kwargs.get('sub_type')) if kwargs.get('sub_type') else None
+        )
         self._path = kwargs.get('path')
         show_expression_as = kwargs.get('show_expression_as', 'tree')
-        self.show_expression_as = show_expression_as if isinstance(
-            show_expression_as, ExpressionFormat) else ExpressionFormat(show_expression_as)
+        self.show_expression_as = (
+            show_expression_as
+            if isinstance(show_expression_as, ExpressionFormat)
+            else ExpressionFormat(show_expression_as)
+        )
         self.show_filter_tokens = kwargs.get('show_filter_tokens', False)
         top_level = kwargs.get('top_level')
-        self.top_level = [
-            SchemaObjectReference.from_dict(level, self.connection) for level in top_level
-        ] if top_level else None
+        self.top_level = (
+            [
+                SchemaObjectReference.from_dict(level, self.connection)
+                for level in top_level
+            ]
+            if top_level
+            else None
+        )
         bottom_level = kwargs.get('bottom_level')
-        self.bottom_level = [
-            SchemaObjectReference.from_dict(level, self.connection) for level in bottom_level
-        ] if bottom_level else None
+        self.bottom_level = (
+            [
+                SchemaObjectReference.from_dict(level, self.connection)
+                for level in bottom_level
+            ]
+            if bottom_level
+            else None
+        )
         self.users = None
         self._members = kwargs.get("members")
 
@@ -359,22 +413,23 @@ class SecurityFilter(Entity, CopyMixin, DeleteMixin, MoveMixin):
                 "primaryLocale": primary_locale,
                 "isEmbedded": is_embedded,
             },
-            "topLevel": [
-                SchemaObjectReference.to_dict(level) for
-                level in top_level
-            ] if top_level and all(
-                [isinstance(level, SchemaObjectReference) for level in top_level]
-            ) else top_level,
+            "topLevel": [SchemaObjectReference.to_dict(level) for level in top_level]
+            if top_level
+            and all([isinstance(level, SchemaObjectReference) for level in top_level])
+            else top_level,
             "bottomLevel": [
-                SchemaObjectReference.to_dict(level) for
-                level in bottom_level
-            ] if bottom_level and all(
+                SchemaObjectReference.to_dict(level) for level in bottom_level
+            ]
+            if bottom_level
+            and all(
                 [isinstance(level, SchemaObjectReference) for level in bottom_level]
-            ) else bottom_level,
+            )
+            else bottom_level,
         }
         body = delete_none_values(body, recursion=True)
         body["qualification"] = (
-            qualification.to_dict() if isinstance(qualification, Expression)
+            qualification.to_dict()
+            if isinstance(qualification, Expression)
             else qualification
         )
         response = security_filters.create_security_filter(
@@ -385,7 +440,8 @@ class SecurityFilter(Entity, CopyMixin, DeleteMixin, MoveMixin):
         ).json()
         if config.verbose:
             logger.info(
-                f"Successfully created security filter named: '{name}' with ID: '{response['id']}'"
+                f"Successfully created security filter named: '{name}' with ID: '"
+                f"{response['id']}'"
             )
         return cls.from_dict(
             source={
@@ -480,19 +536,21 @@ class SecurityFilter(Entity, CopyMixin, DeleteMixin, MoveMixin):
         users_or_groups = self._retrieve_ids_from_list(users_and_groups)
         body = {
             "operationList": [
-                {
-                    "op": op.value,
-                    "path": "/members",
-                    "value": users_or_groups
-                }
+                {"op": op.value, "path": "/members", "value": users_or_groups}
             ]
         }
         res = security_filters.update_security_filter_members(
-            self.connection, self.id, body, self.connection.project_id, throw_error=False
+            self.connection,
+            self.id,
+            body,
+            self.connection.project_id,
+            throw_error=False,
         )
         if res.ok:
             self._get_members()
-            logger.info(f"Successfully updated members for security filter '{self.name}'")
+            logger.info(
+                f"Successfully updated members for security filter '{self.name}'"
+            )
         return res.ok
 
     @staticmethod
@@ -506,10 +564,7 @@ class SecurityFilter(Entity, CopyMixin, DeleteMixin, MoveMixin):
 
         objects = objects if isinstance(objects, list) else [objects]
 
-        return [
-            obj if isinstance(obj, str) else obj.id
-            for obj in objects
-        ]
+        return [obj if isinstance(obj, str) else obj.id for obj in objects]
 
     def _get_members(self):
         """Get the users and user groups that the specified security filter is

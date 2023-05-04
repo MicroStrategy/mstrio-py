@@ -12,7 +12,12 @@ logger = logging.getLogger(__name__)
 
 @ErrorHandler(err_msg='Error getting information for the object with ID {id}')
 def get_object_info(
-    connection, id, object_type, project_id=None, error_msg=None, whitelist=[('ERR001 ', 500)]
+    connection,
+    id,
+    object_type,
+    project_id=None,
+    error_msg=None,
+    whitelist=[('ERR001 ', 500)],
 ):
     """Get information for a specific object in a specific project; if you do
     not specify a project ID, you get information for the object just in the
@@ -43,12 +48,14 @@ def get_object_info(
         headers = {'X-MSTR-ProjectID': connection.project_id}
 
     if not project_id and not connection.project_id:
-        logger.info('Project was not selected. Search is performed for the non-project area')
+        logger.info(
+            'Project was not selected. Search is performed for the non-project area'
+        )
 
     return connection.get(
         url=f'{connection.base_url}/api/objects/{id}',
         headers=headers,
-        params={'type': object_type}
+        params={'type': object_type},
     )
 
 
@@ -86,12 +93,14 @@ def get_object_info_async(
         headers = {'X-MSTR-ProjectID': connection.project_id}
 
     if not project_id and not connection.project_id:
-        logger.info('Project was not selected. Search is performed for the non-project area')
+        logger.info(
+            'Project was not selected. Search is performed for the non-project area'
+        )
 
     return futures_session.get(
         url=f'{connection.base_url}/api/objects/{id}',
         headers=headers,
-        params={'type': object_type}
+        params={'type': object_type},
     )
 
 
@@ -129,7 +138,7 @@ def delete_object(connection, id, object_type, project_id=None, error_msg=None):
     return connection.delete(
         url=f'{connection.base_url}/api/objects/{id}',
         headers=headers,
-        params={'type': object_type}
+        params={'type': object_type},
     )
 
 
@@ -170,12 +179,14 @@ def update_object(
         url=f'{connection.base_url}/api/objects/{id}',
         headers=headers,
         params={'type': object_type},
-        json=body
+        json=body,
     )
 
 
 @ErrorHandler(err_msg='Error creating a copy of object with ID {id}')
-def copy_object(connection, id, name, folder_id, object_type, project_id=None, error_msg=None):
+def copy_object(
+    connection, id, name, folder_id, object_type, project_id=None, error_msg=None
+):
     """Create a copy of a specific object.
 
     You identify the object with the object ID and object type. You obtain the
@@ -216,7 +227,7 @@ def copy_object(connection, id, name, folder_id, object_type, project_id=None, e
         url=f'{connection.base_url}/api/objects/{id}/copy',
         headers=headers,
         params={'type': object_type},
-        json=body
+        json=body,
     )
 
 
@@ -250,7 +261,9 @@ def get_vldb_settings(connection, id, object_type, project_id=None, error_msg=No
     )
 
 
-@ErrorHandler(err_msg='Error resetting all custom vldb settings for object with ID {id}')
+@ErrorHandler(
+    err_msg='Error resetting all custom vldb settings for object with ID {id}'
+)
 def delete_vldb_settings(connection, id, object_type, project_id=None, error_msg=None):
     """Delete all customized vldb settings in one object, this operation will
     reset all vldb settings to default.
@@ -281,8 +294,12 @@ def delete_vldb_settings(connection, id, object_type, project_id=None, error_msg
     )
 
 
-@ErrorHandler(err_msg='Error resetting all custom vldb settings for object with ID {id}')
-def set_vldb_settings(connection, id, object_type, name, body, project_id=None, error_msg=None):
+@ErrorHandler(
+    err_msg='Error resetting all custom vldb settings for object with ID {id}'
+)
+def set_vldb_settings(
+    connection, id, object_type, name, body, project_id=None, error_msg=None
+):
     """Set vldb settings for one property set in one object.
 
     Args:
@@ -317,7 +334,13 @@ def set_vldb_settings(connection, id, object_type, name, body, project_id=None, 
 
 @ErrorHandler(err_msg='Error getting objects.')
 def create_search_objects_instance(
-    connection, name=None, pattern=4, domain=2, root=None, object_type=None, error_msg=None
+    connection,
+    name=None,
+    pattern=4,
+    domain=2,
+    root=None,
+    object_type=None,
+    error_msg=None,
 ):
     """Create a search instance.
 
@@ -342,13 +365,19 @@ def create_search_objects_instance(
         url=f"{connection.base_url}/api/objects",
         headers={'X-MSTR-ProjectID': connection.project_id},
         params={
-            'name': name, 'pattern': pattern, 'domain': domain, 'root': root, 'type': object_type
+            'name': name,
+            'pattern': pattern,
+            'domain': domain,
+            'root': root,
+            'type': object_type,
         },
     )
 
 
 @ErrorHandler(err_msg='Error getting objects using search with ID {search_id}')
-def get_objects(connection, search_id, offset=0, limit=-1, get_tree=False, error_msg=None):
+def get_objects(
+    connection, search_id, offset=0, limit=-1, get_tree=False, error_msg=None
+):
     """Get list of objects from metadata.
 
     Args:
@@ -374,7 +403,10 @@ def get_objects(connection, search_id, offset=0, limit=-1, get_tree=False, error
         url=f"{connection.base_url}/api/objects",
         headers={'X-MSTR-ProjectID': connection.project_id},
         params={
-            'searchId': search_id, 'offset': offset, 'limit': limit, 'getTree': get_tree
+            'searchId': search_id,
+            'offset': offset,
+            'limit': limit,
+            'getTree': get_tree,
         },
     )
 
@@ -385,7 +417,7 @@ def get_objects_async(
     search_id,
     offset=0,
     limit=-1,
-    get_tree=False
+    get_tree=False,
 ):
     """Get list of objects from metadata asynchronously.
 
@@ -411,7 +443,12 @@ def get_objects_async(
     connection._validate_project_selected()
     url = connection.base_url + '/api/objects'
     headers = {'X-MSTR-ProjectID': connection.project_id}
-    params = {'searchId': search_id, 'offset': offset, 'limit': limit, 'getTree': get_tree}
+    params = {
+        'searchId': search_id,
+        'offset': offset,
+        'limit': limit,
+        'getTree': get_tree,
+    }
     future = future_session.get(url=url, headers=headers, params=params)
     return future
 
@@ -433,11 +470,11 @@ def toggle_certification(connection, id, object_type=3, certify=True):
     Returns:
         HTTP response object returned by the MicroStrategy REST server.
     """
-    url = f'{connection.base_url}/api/objects/{id}/certify/?type={str(object_type)}' \
-          f'&certify={str(certify)}'
+    url = (
+        f'{connection.base_url}/api/objects/{id}/certify/?type={str(object_type)}'
+        f'&certify={str(certify)}'
+    )
     return connection.put(
         url=url,
-        headers={
-            'Content-Type': 'application/json', 'Accept': 'application/json'
-        },
+        headers={'Content-Type': 'application/json', 'Accept': 'application/json'},
     )

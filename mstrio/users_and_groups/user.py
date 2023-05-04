@@ -1,11 +1,11 @@
-from datetime import datetime
-from enum import Enum, IntFlag
 import json
 import logging
-from typing import Optional, TYPE_CHECKING
+from datetime import datetime
+from enum import Enum, IntFlag
+from typing import TYPE_CHECKING, Optional
 
-from pandas import DataFrame, read_csv
 import pandas as pd
+from pandas import DataFrame, read_csv
 from requests.exceptions import HTTPError
 
 from mstrio import config
@@ -48,7 +48,7 @@ def list_users(
     abbreviation_begins: Optional[str] = None,
     to_dictionary: bool = False,
     limit: Optional[int] = None,
-    **filters
+    **filters,
 ) -> list["User"] | list[dict]:
     """Get list of user objects or user dicts. Optionally filter the users by
     specifying 'name_begins', 'abbreviation_begins' or other filters.
@@ -156,7 +156,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
             'acg',
             'acl',
             'trust_id',
-            'initials'
+            'initials',
         ): users.get_user_info,
         'addresses': users.get_addresses,
         'security_roles': users.get_user_security_roles,
@@ -181,7 +181,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
             'privileges',
             'memberships',
             'addresses',
-            'security_roles'
+            'security_roles',
         ): (users.update_user_info, 'patch')
     }
     _FROM_DICT_MAP = {
@@ -194,7 +194,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
         connection: Connection,
         username: Optional[str] = None,
         name: Optional[str] = None,
-        id: Optional[str] = None
+        id: Optional[str] = None,
     ) -> None:
         """Initialize User object by passing username, name, or id.
         When `id` is provided (not `None`), `username` and `name` are omitted.
@@ -210,18 +210,23 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
         """
         if id is None and name is None and username is None:
             helper.exception_handler(
-                "Please specify either 'id', 'username' or 'name' parameter in the constructor."
+                "Please specify either 'id', 'username' or 'name' parameter in the "
+                "constructor."
             )
 
         if id is None:
-            users = User._get_user_ids(
-                connection=connection,
-                abbreviation_begins=username,
-                abbreviation=username,
-            ) if username is not None else User._get_user_ids(
-                connection=connection,
-                name_begins=name,
-                name=name,
+            users = (
+                User._get_user_ids(
+                    connection=connection,
+                    abbreviation_begins=username,
+                    abbreviation=username,
+                )
+                if username is not None
+                else User._get_user_ids(
+                    connection=connection,
+                    name_begins=name,
+                    name=name,
+                )
             )
 
             if users:
@@ -232,7 +237,9 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
                     f"There is no user: '{temp_name}'", exception_type=ValueError
                 )
 
-        super().__init__(connection=connection, object_id=id, username=username, name=name)
+        super().__init__(
+            connection=connection, object_id=id, username=username, name=name
+        )
 
     def _init_variables(self, **kwargs) -> None:
         super()._init_variables(**kwargs)
@@ -268,7 +275,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
         ldapdn: Optional[str] = None,
         trust_id: Optional[str] = None,
         database_auth_login: Optional[str] = None,
-        memberships: Optional[list] = None
+        memberships: Optional[list] = None,
     ) -> "User":
         """Create a new user on the I-Server. Returns User object.
 
@@ -295,7 +302,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
         password_expiration_date = time_helper.map_datetime_to_str(
             name='password_expiration_date',
             date=password_expiration_date,
-            string_to_date_map=cls._FROM_DICT_MAP
+            string_to_date_map=cls._FROM_DICT_MAP,
         )
         body = {
             "username": username,
@@ -310,7 +317,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
             "ldapdn": ldapdn,
             "trustId": trust_id,
             "databaseAuthLogin": database_auth_login,
-            "memberships": memberships
+            "memberships": memberships,
         }
         body = helper.delete_none_values(body, recursion=True)
         response = users.create_user(connection, body, username).json()
@@ -322,7 +329,9 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
         return cls.from_dict(source=response, connection=connection)
 
     @classmethod
-    def _create_users_from_csv(cls, connection: Connection, csv_file: str) -> list["User"]:
+    def _create_users_from_csv(
+        cls, connection: Connection, csv_file: str
+    ) -> list["User"]:
         func = cls.create
         args = helper.get_args_from_func(func)
         df = read_csv(csv_file, na_filter=False, usecols=lambda x: x in args)
@@ -348,7 +357,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
         abbreviation_begins: Optional[str] = None,
         to_dictionary: bool = False,
         limit: Optional[int] = None,
-        **filters
+        **filters,
     ) -> list["User"] | list[dict]:
         msg = "Error getting information for a set of users."
         objects = helper.fetch_objects_async(
@@ -360,7 +369,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
             error_msg=msg,
             name_begins=name_begins,
             abbreviation_begins=abbreviation_begins,
-            filters=filters
+            filters=filters,
         )
         if to_dictionary:
             return objects
@@ -374,7 +383,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
         name_begins: Optional[str] = None,
         abbreviation_begins: Optional[str] = None,
         limit: Optional[int] = None,
-        **filters
+        **filters,
     ) -> list[str]:
         user_dicts = User._get_users(
             connection=connection,
@@ -399,7 +408,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
         require_new_password: Optional[bool] = None,
         ldapdn: Optional[str] = None,
         trust_id: Optional[str] = None,
-        database_auth_login: Optional[str] = None
+        database_auth_login: Optional[str] = None,
     ) -> None:
         """Alter user properties.
 
@@ -423,7 +432,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
         func = self.alter
         args = helper.get_args_from_func(func)
         defaults = helper.get_default_args_from_func(func)
-        default_dict = dict(zip(args[-len(defaults):], defaults)) if defaults else {}
+        default_dict = dict(zip(args[-len(defaults) :], defaults)) if defaults else {}
         local = locals()
         properties = {}
         for property_key in default_dict.keys():
@@ -433,7 +442,10 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
         self._alter_properties(**properties)
 
     def add_address(
-        self, name: Optional[str] = None, address: Optional[str] = None, default: bool = True
+        self,
+        name: Optional[str] = None,
+        address: Optional[str] = None,
+        default: bool = True,
     ) -> None:
         """Add new address to the user object.
 
@@ -445,7 +457,11 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
                 (change isDefault parameter). Default value is set to True.
         """
         helper.validate_param_value(
-            'address', address, str, regex=r"[^@]+@[^@]+\.[^@]+", valid_example="name@mail.com"
+            'address',
+            address,
+            str,
+            regex=r"[^@]+@[^@]+\.[^@]+",
+            valid_example="name@mail.com",
         )
         helper.validate_param_value('name', name, str)
         helper.validate_param_value('default', default, bool)
@@ -454,7 +470,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
             "deliveryMode": "EMAIL",
             "device": "GENERIC_EMAIL",
             "value": address,
-            "default": default
+            "default": default,
         }
         response = users.create_address(self.connection, self.id, body)
         if response.ok:
@@ -467,7 +483,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
         id: str,
         name: Optional[str] = None,
         address: Optional[str] = None,
-        default: Optional[bool] = None
+        default: Optional[bool] = None,
     ) -> None:
         """Update existing address. The address ID has to be specified
         as the name is not unique.
@@ -490,7 +506,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
                 address,
                 str,
                 regex=r"[^@]+@[^@]+\.[^@]+",
-                valid_example="name@mail.com"
+                valid_example="name@mail.com",
             )
             body["value"] = address
         if default is not None:
@@ -502,7 +518,10 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
             self.fetch("addresses")
 
     def remove_address(
-        self, name: Optional[str] = None, address: Optional[str] = None, id: Optional[str] = None
+        self,
+        name: Optional[str] = None,
+        address: Optional[str] = None,
+        id: Optional[str] = None,
     ) -> None:
         """Remove existing address from the user object. Specify either address
         ID or name. Warning, address names are not unique and can potentially
@@ -524,13 +543,19 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
             new_addresses = helper.filter_list_of_dicts(initial_addresses, id=f'!={id}')
         elif address is not None:
             addresses = helper.filter_list_of_dicts(initial_addresses, value=address)
-            new_addresses = helper.filter_list_of_dicts(initial_addresses, value=f'!={address}')
+            new_addresses = helper.filter_list_of_dicts(
+                initial_addresses, value=f'!={address}'
+            )
         elif name is not None:
             addresses = helper.filter_list_of_dicts(initial_addresses, name=name)
-            new_addresses = helper.filter_list_of_dicts(initial_addresses, name=f'!={name}')
+            new_addresses = helper.filter_list_of_dicts(
+                initial_addresses, name=f'!={name}'
+            )
 
         for addr in addresses:
-            response = users.delete_address(self.connection, id=self.id, address_id=addr['id'])
+            response = users.delete_address(
+                self.connection, id=self.id, address_id=addr['id']
+            )
             if response.ok:
                 if config.verbose:
                     logger.info(
@@ -547,7 +572,9 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
         Args:
             user_groups: list of `UserGroup` objects or IDs
         """
-        succeeded, failed = self._update_nested_properties(user_groups, "memberships", "add")
+        succeeded, failed = self._update_nested_properties(
+            user_groups, "memberships", "add"
+        )
         if succeeded and config.verbose:
             logger.info(f"Added user '{self.name}' to group(s): {succeeded}")
         elif failed and config.verbose:
@@ -561,7 +588,9 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
         Args:
             user_groups: list of `UserGroup` objects or IDs
         """
-        succeeded, failed = self._update_nested_properties(user_groups, "memberships", "remove")
+        succeeded, failed = self._update_nested_properties(
+            user_groups, "memberships", "remove"
+        )
         if succeeded and config.verbose:
             logger.info(f"Removed user '{self.name}' from group(s): {succeeded}")
         elif failed and config.verbose:
@@ -574,7 +603,9 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
         self.remove_from_user_groups(user_groups=existing_ids)
 
     def assign_security_role(
-        self, security_role: SecurityRole | str, project: Optional["Project | str"] = None
+        self,
+        security_role: SecurityRole | str,
+        project: Optional["Project | str"] = None,
     ) -> None:  # NOSONAR
         """Assigns a Security Role to the user for given project.
 
@@ -583,16 +614,22 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
             project: Project name or object
         """
 
-        security_role = security_role if isinstance(security_role, SecurityRole) else SecurityRole(
-            self.connection, id=str(security_role)
+        security_role = (
+            security_role
+            if isinstance(security_role, SecurityRole)
+            else SecurityRole(self.connection, id=str(security_role))
         )
 
         security_role.grant_to([self.id], project)
         if config.verbose:
-            logger.info(f"Assigned Security Role '{security_role.name}' to user: '{self.name}'")
+            logger.info(
+                f"Assigned Security Role '{security_role.name}' to user: '{self.name}'"
+            )
 
     def revoke_security_role(
-        self, security_role: SecurityRole | str, project: Optional["Project | str"] = None
+        self,
+        security_role: SecurityRole | str,
+        project: Optional["Project | str"] = None,
     ) -> None:  # NOSONAR
         """Removes a Security Role from the user for given project.
 
@@ -601,13 +638,17 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
             project: Project name or object
         """
 
-        security_role = security_role if isinstance(security_role, SecurityRole) else SecurityRole(
-            self.connection, id=str(security_role)
+        security_role = (
+            security_role
+            if isinstance(security_role, SecurityRole)
+            else SecurityRole(self.connection, id=str(security_role))
         )
 
         security_role.revoke_from([self.id], project)
         if config.verbose:
-            logger.info(f"Revoked Security Role '{security_role.name}' from user: '{self.name}'")
+            logger.info(
+                f"Revoked Security Role '{security_role.name}' from user: '{self.name}'"
+            )
 
     @method_version_handler('11.3.0200')
     def list_security_filters(
@@ -629,6 +670,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
             the dictionary.
         """
         from mstrio.modeling.security_filter import SecurityFilter
+
         objects_ = users.get_security_filters(self.connection, self.id, projects).json()
         projects_ = objects_.get("projects")
 
@@ -638,14 +680,16 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
             if project_.get("securityFilters")
         }
 
-        self._security_filters = {
-            name:
-            [SecurityFilter.from_dict(sec_filter, self.connection) for sec_filter in sec_filters]
+        security_filters = {
+            name: [
+                SecurityFilter.from_dict(sec_filter, self.connection)
+                for sec_filter in sec_filters
+            ]
             for (name, sec_filters) in objects_.items()
         }
         if to_dictionary:
             return objects_
-        return self._security_filters
+        return security_filters
 
     def apply_security_filter(self, security_filter: "SecurityFilter | str") -> bool:
         """Apply a security filter to the user.
@@ -658,7 +702,10 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
         """
         if isinstance(security_filter, str):
             from mstrio.modeling.security_filter import SecurityFilter
-            security_filter = SecurityFilter.from_dict({"id": security_filter}, self.connection)
+
+            security_filter = SecurityFilter.from_dict(
+                {"id": security_filter}, self.connection
+            )
         return security_filter.apply(self.id)
 
     def revoke_security_filter(self, security_filter: "SecurityFilter | str") -> bool:
@@ -673,7 +720,10 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
         """
         if isinstance(security_filter, str):
             from mstrio.modeling.security_filter import SecurityFilter
-            security_filter = SecurityFilter.from_dict({"id": security_filter}, self.connection)
+
+            security_filter = SecurityFilter.from_dict(
+                {"id": security_filter}, self.connection
+            )
         return security_filter.revoke(self.id)
 
     def grant_privilege(
@@ -685,17 +735,23 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
             privilege: list of privilege objects, ids or names
         """
         from mstrio.access_and_security.privilege import Privilege
+
         privileges = [
-            priv['id'] for priv in Privilege._validate_privileges(self.connection, privilege)
+            priv['id']
+            for priv in Privilege._validate_privileges(self.connection, privilege)
         ]
         existing_ids = [
-            privilege['privilege']['id'] for privilege in self.list_privileges(mode='GRANTED')
+            privilege['privilege']['id']
+            for privilege in self.list_privileges(mode='GRANTED')
         ]
-        succeeded, failed = self._update_nested_properties(privileges, "privileges", "add",
-                                                           existing_ids)
+        succeeded, failed = self._update_nested_properties(
+            privileges, "privileges", "add", existing_ids
+        )
 
         if succeeded:
-            self.fetch('privileges')  # fetch the object properties and set object attributes
+            self.fetch(
+                'privileges'
+            )  # fetch the object properties and set object attributes
             if config.verbose:
                 logger.info(f"Granted privilege(s) {succeeded} to '{self.name}'")
         if failed and config.verbose:
@@ -710,12 +766,14 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
             privilege: list of privilege objects, ids or names
         """
         from mstrio.access_and_security.privilege import Privilege
+
         privileges = {
             priv['id']
             for priv in Privilege._validate_privileges(self.connection, privilege)
         }
         existing_ids = [
-            privilege['privilege']['id'] for privilege in self.list_privileges(mode='ALL')
+            privilege['privilege']['id']
+            for privilege in self.list_privileges(mode='ALL')
         ]
         directly_granted = {
             privilege['privilege']['id']
@@ -728,15 +786,19 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
 
         if not_directly_granted:
             msg = (
-                f"Privileges {sorted(not_directly_granted)} are inherited and will be omitted. "
-                "Only directly granted privileges can be revoked by this method."
+                f"Privileges {sorted(not_directly_granted)} are inherited and will be "
+                "omitted. Only directly granted privileges can be revoked by this "
+                "method."
             )
             helper.exception_handler(msg, exception_type=Warning)
 
-        succeeded, failed = self._update_nested_properties(to_revoke, "privileges", "remove",
-                                                           existing_ids)
+        succeeded, failed = self._update_nested_properties(
+            to_revoke, "privileges", "remove", existing_ids
+        )
         if succeeded:
-            self.fetch('privileges')  # fetch the object properties and set object attributes
+            self.fetch(
+                'privileges'
+            )  # fetch the object properties and set object attributes
             if config.verbose:
                 logger.info(f"Revoked privilege(s) {succeeded} from '{self.name}'")
         if failed and config.verbose:
@@ -752,18 +814,20 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
         user_input = 'N'
         if not force:
             user_input = input(
-                "Are you sure you want to revoke all privileges from user '{}'? [Y/N]: ".format(
-                    self.name
-                )
+                f"Are you sure you want to revoke all privileges from user "
+                f"'{self.name}'? [Y/N]: "
             )
         if force or user_input == 'Y':
             to_revoke = [
-                privilege['privilege']['id'] for privilege in self.list_privileges(mode='GRANTED')
+                privilege['privilege']['id']
+                for privilege in self.list_privileges(mode='GRANTED')
             ]
             if to_revoke:
                 self.revoke_privilege(privilege=to_revoke)
             else:
-                logger.info(f"User '{self.name}' does not have any directly granted privileges")
+                logger.info(
+                    f"User '{self.name}' does not have any directly granted privileges"
+                )
 
     def list_privileges(
         self, mode: PrivilegeMode | str = PrivilegeMode.ALL, to_dataframe: bool = False
@@ -791,8 +855,8 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
                 mode = PrivilegeMode(mode)
             except ValueError:
                 msg = (
-                    "Wrong privilege mode has been passed, allowed modes are "
-                    "['ALL'/'INHERITED'/'GRANTED']. See: `privilege.PrivilegeMode` enum."
+                    "Wrong privilege mode has been passed, allowed modes are ['ALL'/"
+                    "'INHERITED'/'GRANTED']. See: `privilege.PrivilegeMode` enum."
                 )
                 helper.exception_handler(msg, ValueError)
 
@@ -838,7 +902,9 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
         """
         return super().delete(force=force)
 
-    def _to_dataframe_as_columns(self, properties: Optional[list[str]] = None) -> pd.DataFrame:
+    def _to_dataframe_as_columns(
+        self, properties: Optional[list[str]] = None
+    ) -> pd.DataFrame:
         """Exports user object to dataframe, with properties as columns
 
         Args:
@@ -850,7 +916,6 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
         selected_keys = properties or (self.list_properties().keys() - excluded_keys)
 
         def convert(obj, inside=False):
-
             if isinstance(obj, IntFlag):
                 return obj.value
             if isinstance(obj, (str, int)):
@@ -867,7 +932,9 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
             if isinstance(obj, Dictable):
                 result = dict(sorted(obj.to_dict().items()))
             if isinstance(obj, dict):
-                result = {key: convert(value, inside=True) for key, value in obj.items()}
+                result = {
+                    key: convert(value, inside=True) for key, value in obj.items()
+                }
 
             return result if inside else json.dumps(result)
 
@@ -880,9 +947,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
 
     @classmethod
     def to_datafame_from_list(
-        cls,
-        objects: list['User'],
-        properties: Optional[list[str]] = None
+        cls, objects: list['User'], properties: Optional[list[str]] = None
     ) -> pd.DataFrame:
         """Exports list of user objects to dataframe.
         The properties that are lists, dictionaries, or objects of
@@ -962,5 +1027,5 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
     @property
     def security_filters(self):
         if not self._security_filters:
-            self.list_security_filters()
+            self._security_filters = self.list_security_filters()
         return self._security_filters

@@ -37,8 +37,10 @@ def delete_inactive_caches(
     deleted_caches = []
     for cache in caches:
         today = datetime.now(timezone.utc)
-        if (cache.hit_count == 0
-                and (today - _get_datetime(cache.last_update_time)).days > days_diff):
+        if (
+            cache.hit_count == 0
+            and (today - _get_datetime(cache.last_update_time)).days > days_diff
+        ):
             cache.delete(force=True)
             deleted_caches.append(cache)
 

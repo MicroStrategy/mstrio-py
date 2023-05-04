@@ -6,7 +6,12 @@ from packaging import version
 
 from mstrio import config
 from mstrio.api import monitors
-from mstrio.api.exceptions import MstrException, PartialSuccess, Success, VersionException
+from mstrio.api.exceptions import (
+    MstrException,
+    PartialSuccess,
+    Success,
+    VersionException,
+)
 from mstrio.connection import Connection
 from mstrio.server import Node, Project
 from mstrio.utils.entity import Entity, EntityBase
@@ -169,7 +174,9 @@ class SortBy(Enum):
 
 @method_version_handler('11.3.0200')
 def _set_api_wrappers(connection) -> dict:
-    if version.parse(connection.iserver_version) == version.parse(ISERVER_VERSION_11_3_2):
+    if version.parse(connection.iserver_version) == version.parse(
+        ISERVER_VERSION_11_3_2
+    ):
         return {
             (
                 'id',
@@ -190,7 +197,7 @@ def _set_api_wrappers(connection) -> dict:
                 'sql',
                 'subscription_owner',
                 'subscription_recipient',
-                'destination'
+                'destination',
             ): monitors.get_job
         }
     else:
@@ -223,7 +230,7 @@ def _set_api_wrappers(connection) -> dict:
                 'subscription_owner',
                 'error_time',
                 'error_message',
-                'step_statistics'
+                'step_statistics',
             ): monitors.get_job_v2
         }
 
@@ -247,7 +254,7 @@ def list_jobs(
     sort_by: Optional[Union[SortBy, str]] = None,
     to_dictionary: bool = False,
     limit: Optional[int] = None,
-    **filters
+    **filters,
 ) -> Union[List["Job"], List[dict]]:
     """List jobs objects or job dictionaires.
     Args:
@@ -299,14 +306,22 @@ def list_jobs(
         Union[List["Job"], List[dict]]: list of Job objects or dictionaries.
     """
     user = user.full_name if isinstance(user, Entity) else user
-    subscription_recipient = subscription_recipient.full_name if isinstance(
-        user, Entity
-    ) else subscription_recipient
+    subscription_recipient = (
+        subscription_recipient.full_name
+        if isinstance(user, Entity)
+        else subscription_recipient
+    )
     if project:
-        project = project if isinstance(project, Project) else Project(connection, name=project)
+        project = (
+            project
+            if isinstance(project, Project)
+            else Project(connection, name=project)
+        )
 
     # depending on version call either one or the other
-    if version.parse(connection.iserver_version) == version.parse(ISERVER_VERSION_11_3_2):
+    if version.parse(connection.iserver_version) == version.parse(
+        ISERVER_VERSION_11_3_2
+    ):
         filters = __prepare_v1_request(
             description,
             object_type,
@@ -315,7 +330,7 @@ def list_jobs(
             subscription_recipient,
             memory_usage,
             elapsed_time,
-            filters
+            filters,
         )
         return list_jobs_v1(
             connection=connection,
@@ -326,7 +341,7 @@ def list_jobs(
             user=user,
             limit=limit,
             to_dictionary=to_dictionary,
-            **filters
+            **filters,
         )
     else:
         project_name = project.name if project else None
@@ -353,7 +368,7 @@ def list_jobs(
             memory_usage=memory_usage,
             elapsed_time=elapsed_time,
             sort_by=sort_by,
-            fields=['jobs']
+            fields=['jobs'],
         )
 
     if to_dictionary:
@@ -374,7 +389,7 @@ def list_jobs_v1(
     sort_by: Optional[Union[SortBy, str]] = None,
     to_dictionary: bool = False,
     limit: Optional[int] = None,
-    **filters
+    **filters,
 ) -> Union[List["Job"], List[dict]]:
     """List job objects or job dictionaries. Optionally filter list.
     NOTE: list_jobs can return up to 1024 jobs per request.
@@ -428,7 +443,7 @@ def list_jobs_v1(
         job_type=job_type,
         user_full_name=user_full_name,
         object_id=object_id,
-        sort_by=sort_by
+        sort_by=sort_by,
     )
 
     if to_dictionary:
@@ -438,8 +453,9 @@ def list_jobs_v1(
 
 
 @method_version_handler('11.3.0200')
-def kill_jobs(connection: Connection,
-              jobs: List[Union["Job", str]]) -> Union[Success, PartialSuccess, MstrException]:
+def kill_jobs(
+    connection: Connection, jobs: List[Union["Job", str]]
+) -> Union[Success, PartialSuccess, MstrException]:
     """Kill existing jobs by Job objects or job ids.
 
     Args:
@@ -473,7 +489,7 @@ def kill_all_jobs(
     memory_usage: Optional[str] = None,
     elapsed_time: Optional[str] = None,
     force: bool = False,
-    **filters
+    **filters,
 ) -> Union[Success, PartialSuccess, MstrException]:
     """Kill jobs filtered by passed fields
 
@@ -532,7 +548,7 @@ def kill_all_jobs(
         subscription_recipient,
         memory_usage,
         elapsed_time,
-        filters
+        filters,
     )
     assert jobs, "No jobs to kill"
 
@@ -552,11 +568,16 @@ def __prepare_v1_request(
     subscription_recipient: str,
     memory_usage: str,
     elapsed_time: str,
-    filters: dict
+    filters: dict,
 ) -> dict:
     # raise VersionException if parameter not supported in v1
     unsupported_parameters = [
-        description, object_type, pu_name, subscription_type, subscription_recipient, memory_usage
+        description,
+        object_type,
+        pu_name,
+        subscription_type,
+        subscription_recipient,
+        memory_usage,
     ]
     params_str = (
         "description, object_type, pu_name, subscription_type, "
@@ -576,8 +597,11 @@ def __prepare_v1_request(
 
 
 def __elapsed_filtering(elapsed: str) -> str:
-    if isinstance(elapsed, str) and len(elapsed) > 3 and (elapsed.startswith('gt:')
-                                                          or elapsed.startswith('lt:')):
+    if (
+        isinstance(elapsed, str)
+        and len(elapsed) > 3
+        and (elapsed.startswith('gt:') or elapsed.startswith('lt:'))
+    ):
         if elapsed.startswith('gt'):
             return f'>{elapsed[3:]}'
         elif elapsed.startswith('lt'):
@@ -670,7 +694,7 @@ class Job(EntityBase):
             'subscription_owner',
             'error_time',
             'error_message',
-            'step_statistics'
+            'step_statistics',
         ): monitors.get_job_v2
     }
     _REST_ATTR_MAP = {
@@ -710,7 +734,9 @@ class Job(EntityBase):
         """
         kwargs = self._rest_to_python(kwargs)
         # create _AVAILABLE_ATTRIBUTES map
-        self._AVAILABLE_ATTRIBUTES.update({key: type(val) for key, val in kwargs.items()})
+        self._AVAILABLE_ATTRIBUTES.update(
+            {key: type(val) for key, val in kwargs.items()}
+        )
 
         self._connection = kwargs.get('connection')
         self._id = kwargs.get('id')
@@ -723,8 +749,9 @@ class Job(EntityBase):
         self._elapsed_time = kwargs.get('elapsed_time')
         self._project_name = kwargs.get('project_name')
         self._object_id = kwargs.get('object_id')
-        self._object_type = ObjectType(kwargs.get('object_type')
-                                       ) if kwargs.get('object_type') else None
+        self._object_type = (
+            ObjectType(kwargs.get('object_type')) if kwargs.get('object_type') else None
+        )
         self._sql = kwargs.get('sql')
         self._subscription_owner = kwargs.get('subscription_owner')
         self._subscription_recipient = kwargs.get('subscription_recipient')
@@ -735,18 +762,24 @@ class Job(EntityBase):
         self._completed_tasks = kwargs.get('completed_tasks')
         self._parent_id = kwargs.get('parent_id')
         self._child_ids = kwargs.get('child_ids')
-        self._subscription_type = SubscriptionType(
-            kwargs.get('subscription_type')
-        ) if kwargs.get('subscription_type') else kwargs.get('subscription_type')
+        self._subscription_type = (
+            SubscriptionType(kwargs.get('subscription_type'))
+            if kwargs.get('subscription_type')
+            else kwargs.get('subscription_type')
+        )
         self._step_id = kwargs.get('step_id')
         self._pu_name = PUName(kwargs.get('pu_name')) if kwargs.get('pu_name') else None
         self._memory_usage = kwargs.get('memory_usage')
         self._step_elapsed_time = kwargs.get('step_elapsed_time')
         self._filter_name = kwargs.get('filter_name')
         self._template_name = kwargs.get('template_name')
-        self._error_time = map_str_to_datetime(
-            "error_time", kwargs.get("error_time"), self._FROM_DICT_MAP
-        ) if kwargs.get("error_time") else None
+        self._error_time = (
+            map_str_to_datetime(
+                "error_time", kwargs.get("error_time"), self._FROM_DICT_MAP
+            )
+            if kwargs.get("error_time")
+            else None
+        )
         self._error_message = kwargs.get('error_message')
         self._step_statistics = kwargs.get('step_statistics')
 

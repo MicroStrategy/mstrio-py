@@ -1,5 +1,6 @@
 import logging
 import time
+from dataclasses import dataclass
 from typing import Optional
 
 import pandas as pd
@@ -8,7 +9,11 @@ from tqdm.auto import tqdm
 from mstrio import config
 from mstrio.api import cubes, datasets
 from mstrio.connection import Connection
-from mstrio.object_management import Folder, get_predefined_folder_contents, PredefinedFolders
+from mstrio.object_management import (
+    Folder,
+    get_predefined_folder_contents,
+    PredefinedFolders,
+)
 from mstrio.object_management.search_operations import full_search, SearchPattern
 from mstrio.utils import helper
 from mstrio.utils.encoder import Encoder
@@ -90,6 +95,66 @@ def list_super_cubes(
     return [SuperCube.from_dict(obj_, connection) for obj_ in objects_]
 
 
+@dataclass
+class SuperCubeFormExpression:
+    """A class representing a form expression used to define multiform
+    attributes for Super Cubes. Links an attribute form to the column
+    in the table.
+
+    Attributes:
+        table (str): name of a table
+        column (str): name of a column
+    """
+
+    table: str
+    column: str
+
+    def to_dict(self):
+        return {
+            'tableName': self.table,
+            'columnName': self.column,
+        }
+
+
+@dataclass
+class SuperCubeAttributeForm:
+    """A class representing an attribute form for used to define multiform
+    attributes for Super Cubes.
+
+    Attributes:
+        category (str): form's category
+        expressions (list[SuperCubeFormExpressions]): list of form expressions
+    """
+
+    category: str
+    expressions: list[SuperCubeFormExpression]
+
+    def to_dict(self):
+        return {
+            'category': self.category,
+            'expressions': [expr.to_dict() for expr in self.expressions],
+        }
+
+
+@dataclass
+class SuperCubeAttribute:
+    """A class representing a multiform attribute for Super Cubes.
+
+    Attributes:
+        name (str): a name of multiform attribute
+        forms (list[SuperCubeAttributeForm]): a list of attribute forms
+    """
+
+    name: str
+    forms: list[SuperCubeAttributeForm]
+
+    def to_dict(self):
+        return {
+            'name': self.name,
+            'attributeForms': [form.to_dict() for form in self.forms],
+        }
+
+
 class SuperCube(_Cube, CertifyMixin):
     """Manage multiple table cube (MTDI aka Super Cube) - according to
     EnumDSSXMLObjectSubTypes its subtype is 779 (DssXmlSubTypeReportEmmaCube).
@@ -123,6 +188,7 @@ class SuperCube(_Cube, CertifyMixin):
             Pandas `DataFrame`
         table_definition
     """
+
     _OBJECT_SUBTYPE = ObjectSubTypes.SUPER_CUBE.value
     __VALID_POLICY = ['add', 'update', 'replace', 'upsert']
     __MAX_DESC_LEN = 250
@@ -135,7 +201,7 @@ class SuperCube(_Cube, CertifyMixin):
         description: Optional[str] = None,
         instance_id: Optional[str] = None,
         progress_bar: bool = True,
-        parallel: bool = True
+        parallel: bool = True,
     ):
         """Initialize super cube.
 
@@ -165,17 +231,19 @@ class SuperCube(_Cube, CertifyMixin):
             self.__check_param_len(
                 name,
                 msg=f"Super cube name should be <= {self.__MAX_DESC_LEN} characters.",
-                max_length=self.__MAX_DESC_LEN
+                max_length=self.__MAX_DESC_LEN,
             )
 
         if description is not None:
-            self.__check_param_str(description, msg="Super cube description should be a string.")
+            self.__check_param_str(
+                description, msg="Super cube description should be a string."
+            )
             self.__check_param_len(
                 description,
                 msg="Super cube description should be <= {} characters.".format(
                     self.__MAX_DESC_LEN
                 ),
-                max_length=self.__MAX_DESC_LEN
+                max_length=self.__MAX_DESC_LEN,
             )
 
         connection._validate_project_selected()
@@ -186,7 +254,7 @@ class SuperCube(_Cube, CertifyMixin):
                 id=id,
                 instance_id=instance_id,
                 parallel=parallel,
-                progress_bar=progress_bar
+                progress_bar=progress_bar,
             )
         else:
             self._init_variables(
@@ -194,7 +262,7 @@ class SuperCube(_Cube, CertifyMixin):
                 name=name,
                 description=description,
                 progress_bar=progress_bar,
-                parallel=parallel
+                parallel=parallel,
             )
 
     def _init_variables(self, **kwargs):
@@ -209,7 +277,9 @@ class SuperCube(_Cube, CertifyMixin):
         # index in case of doing multiple updates without publish
         self.__update_indexes = {}
 
-    def add_table(self, name, data_frame, update_policy, to_metric=None, to_attribute=None):
+    def add_table(
+        self, name, data_frame, update_policy, to_metric=None, to_attribute=None
+    ):
         """Add a `Pandas.DataFrame` to a collection of tables which are later
         used to populate the MicroStrategy super cube with data.
 
@@ -237,10 +307,13 @@ class SuperCube(_Cube, CertifyMixin):
         update_policy = update_policy.lower()
 
         if not isinstance(data_frame, pd.DataFrame):
-            raise TypeError("`data_frame` parameter must be a valid `Pandas.DataFrame`.")
+            raise TypeError(
+                "`data_frame` parameter must be a valid `Pandas.DataFrame`."
+            )
         if not helper.check_duplicated_column_names(data_frame):
             raise ValueError(
-                "`DataFrame` column names need to be unique for each table in the super cube."
+                "`DataFrame` column names need to be unique for each table in the super"
+                " cube."
             )
         self.__check_update_policy(update_policy)
         if to_attribute and to_metric and any(col in to_attribute for col in to_metric):
@@ -248,12 +321,17 @@ class SuperCube(_Cube, CertifyMixin):
                 "Column name(s) present in `to_attribute` also present in `to_metric`."
             )
 
-        table = {"table_name": name, "data_frame": data_frame, "update_policy": update_policy}
+        table = {
+            "table_name": name,
+            "data_frame": data_frame,
+            "update_policy": update_policy,
+        }
 
         if to_attribute is not None:
             if any(col for col in to_attribute if col not in data_frame.columns):
                 raise ValueError(
-                    "Column name(s) in `to_attribute` were not found in `DataFrame.columns`."
+                    "Column name(s) in `to_attribute` were not found in"
+                    " `DataFrame.columns`."
                 )
             else:
                 table["to_attribute"] = to_attribute
@@ -261,7 +339,8 @@ class SuperCube(_Cube, CertifyMixin):
         if to_metric is not None:
             if any(col for col in to_metric if col not in data_frame.columns):
                 raise ValueError(
-                    "Column name(s) in `to_metric` were not found in `DataFrame.columns`."
+                    "Column name(s) in `to_metric` were not found in"
+                    " `DataFrame.columns`."
                 )
             else:
                 table["to_metric"] = to_metric
@@ -303,9 +382,10 @@ class SuperCube(_Cube, CertifyMixin):
 
         if contents:
             raise ValueError(
-                f"Super Cube with name {self.name} already exist in {folder_id or 'My Reports'} "
-                "folder. If you want to override already existing cube, add tables with "
-                "update policy `replace` and call 'create()' method with argument 'force=True'."
+                f"Super Cube with name {self.name} already exist in"
+                f" {folder_id or 'My Reports'} folder. If you want to override already"
+                " existing cube, add tables with update policy `replace` and call"
+                " 'create()' method with argument 'force=True'."
             )
 
     def __are_all_tables_with_replace_policy(self):
@@ -317,7 +397,8 @@ class SuperCube(_Cube, CertifyMixin):
         auto_upload: bool = True,
         auto_publish: bool = True,
         chunksize: int = 100000,
-        force: bool = False
+        force: bool = False,
+        attribute_forms: Optional[list[SuperCubeAttribute]] = None,
     ) -> None:
         """Create a new super cube and initialize cube object after successful
         creation. This function does not return new super cube, but it updates
@@ -339,10 +420,19 @@ class SuperCube(_Cube, CertifyMixin):
             force (bool, optional): If True, skip checking if a super cube
                 already exist in the folder with the given name.
                 Defaults to False.
+            attribute_forms (list[SuperCubeAttribute], optional): list
+            of instances of SuperCubeAttribute, that links tables' columns to
+            different forms of the same attribute. If this argugment is not
+            provided, a separate attribute is created for every distinct column
+            name. If it is proveded, it contain mapping of columns to
+            attributes as different form of an attribute. For all columns that
+            are not part of any attribute's form expression, seprate attribute
+            will be created.
         """
         if auto_publish and not auto_upload:
             raise ValueError(
-                "Data needs to be uploaded to the I-Server before the super cube can be published."
+                "Data needs to be uploaded to the I-Server before the super cube can be"
+                " published."
             )
 
         if folder_id is not None:
@@ -359,12 +449,12 @@ class SuperCube(_Cube, CertifyMixin):
             and not self.__are_all_tables_with_replace_policy()
         ):
             raise ValueError(
-                "All the tables must be added with update policy 'replace', when trying to "
-                "override existing Super Cube with 'force=True'."
+                "All the tables must be added with update policy 'replace', when trying"
+                " to override existing Super Cube with 'force=True'."
             )
 
         # generate model of the super cube
-        self.__build_model()
+        self.__build_model(attribute_forms)
 
         # makes request to create the super cube
         response = datasets.create_multitable_dataset(
@@ -373,7 +463,9 @@ class SuperCube(_Cube, CertifyMixin):
         self._set_object_attributes(**response.json())
 
         if config.verbose:
-            logger.info("Created super cube '{}' with ID: '{}'.".format(*[self.name, self._id]))
+            logger.info(
+                "Created super cube '{}' with ID: '{}'.".format(*[self.name, self._id])
+            )
 
         if auto_upload:
             self.update(chunksize=chunksize, auto_publish=auto_publish)
@@ -405,11 +497,10 @@ class SuperCube(_Cube, CertifyMixin):
 
         # upload each table
         for ix, _table in enumerate(self._tables):
-
             _df, _name = _table["data_frame"], _table["table_name"]
 
             # break the data up into chunks using a generator
-            chunks = (_df[i:i + chunksize] for i in range(0, _df.shape[0], chunksize))
+            chunks = (_df[i : i + chunksize] for i in range(0, _df.shape[0], chunksize))
 
             total = _df.shape[0]
 
@@ -437,13 +528,15 @@ class SuperCube(_Cube, CertifyMixin):
                     id=self._id,
                     session_id=self._session_id,
                     body=body,
-                    throw_error=False
+                    throw_error=False,
                 )
 
                 if not response.ok:
                     # on error, cancel the previously uploaded data
                     datasets.publish_cancel(
-                        connection=self._connection, id=self._id, session_id=self._session_id
+                        connection=self._connection,
+                        id=self._id,
+                        session_id=self._session_id,
                     )
                     self.reset_session()
                     pbar.close()
@@ -466,7 +559,7 @@ class SuperCube(_Cube, CertifyMixin):
         name: str,
         description: Optional[str] = None,
         folder_id: Optional[str] = None,
-        table_name: Optional[str] = None
+        table_name: Optional[str] = None,
     ) -> "SuperCube":
         """Creates a new single-table cube with the data frame stored in the
         SuperCube instance `SuperCube.dataframe`.
@@ -482,18 +575,21 @@ class SuperCube(_Cube, CertifyMixin):
         """
         if len(self._table_names) > 1:
             helper.exception_handler(
-                msg="""This feature works only for the single-table cubes.
-                                            \rTo export multi-table cube use `create` method."""
+                msg="This feature works only for the single-table cubes. "
+                "To export multi-table cube use `create` method."
             )
         elif self._dataframe is None:
             raise ValueError(
-                "Current cube has to be fetched with `to_dataframe` method first to create a copy."
+                "Current cube has to be fetched with `to_dataframe` method first to"
+                " create a copy."
             )
         else:
             if table_name is None:
                 table_name = self._table_names[0]["name"]
             new_cube = SuperCube(self._connection, name=name, description=description)
-            new_cube.add_table(name=table_name, data_frame=self.dataframe, update_policy="replace")
+            new_cube.add_table(
+                name=table_name, data_frame=self.dataframe, update_policy="replace"
+            )
             new_cube.create(folder_id=folder_id)
             return new_cube
 
@@ -541,7 +637,9 @@ class SuperCube(_Cube, CertifyMixin):
         # `self.__last_session_id`
         session_id = self._session_id if self._session_id else self.__last_session_id
 
-        return self.upload_status(connection=self.connection, id=self.id, session_id=session_id)
+        return self.upload_status(
+            connection=self.connection, id=self.id, session_id=session_id
+        )
 
     def reset_session(self):
         """Reset upload session."""
@@ -562,7 +660,7 @@ class SuperCube(_Cube, CertifyMixin):
         sql_statement = res.json()['sqlStatement']
         return sql_statement
 
-    def __build_model(self):
+    def __build_model(self, attr_forms_mapping: list[SuperCubeAttribute] = None):
         """Create json representation of the super cube."""
 
         # generate model
@@ -570,7 +668,8 @@ class SuperCube(_Cube, CertifyMixin):
             tables=self._tables,
             name=self.name,
             description=self.description,
-            folder_id=self._folder_id
+            folder_id=self._folder_id,
+            attr_forms_mapping=attr_forms_mapping,
         )
         self.__model = model.get_model()
 
@@ -584,8 +683,9 @@ class SuperCube(_Cube, CertifyMixin):
                 {
                     "name": tbl["table_name"],
                     "updatePolicy": tbl["update_policy"],
-                    "columnHeaders": list(tbl["data_frame"].columns)
-                } for tbl in self._tables
+                    "columnHeaders": list(tbl["data_frame"].columns),
+                }
+                for tbl in self._tables
             ]
         }
         self.__upload_body = body
@@ -608,7 +708,9 @@ class SuperCube(_Cube, CertifyMixin):
         if not session_id:
             raise AttributeError("No upload session created.")
         else:
-            response = datasets.publish_status(connection=connection, id=id, session_id=session_id)
+            response = datasets.publish_status(
+                connection=connection, id=id, session_id=session_id
+            )
             return response.json()
 
     @staticmethod

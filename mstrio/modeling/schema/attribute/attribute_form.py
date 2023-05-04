@@ -1,14 +1,22 @@
 from enum import auto
-from typing import List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from mstrio.api import objects
 from mstrio.connection import Connection
 from mstrio.modeling.expression import Expression, FactExpression
-from mstrio.modeling.schema.helpers import DataType, FormReference, SchemaObjectReference
+from mstrio.modeling.schema.helpers import (
+    DataType,
+    FormReference,
+    SchemaObjectReference,
+)
 from mstrio.types import ObjectTypes
 from mstrio.utils.entity import Entity
 from mstrio.utils.enum_helper import AutoName
-from mstrio.utils.helper import delete_none_values, exception_handler, filter_params_for_func
+from mstrio.utils.helper import (
+    delete_none_values,
+    exception_handler,
+    filter_params_for_func,
+)
 
 if TYPE_CHECKING:
     from mstrio.modeling.schema.attribute.attribute_form import AttributeForm
@@ -59,12 +67,14 @@ class AttributeForm(Entity):  # noqa
 
     class FormType(AutoName):
         """Enumeration constants used to specify a type of this form."""
+
         CUSTOM = auto()
         SYSTEM = auto()
 
     class DisplayFormat(AutoName):
         """Enumeration constants used to specify display format of
         the attribute form."""
+
         NUMBER = auto()
         TEXT = auto()
         PICTURE = auto()
@@ -81,6 +91,7 @@ class AttributeForm(Entity):  # noqa
     class GeographicalRole(AutoName):
         """Enumeration constants used to specify geographical role of
         the attribute form."""
+
         NONE = auto()
         CITY = auto()
         STATE = auto()
@@ -97,6 +108,7 @@ class AttributeForm(Entity):  # noqa
     class TimeRole(AutoName):
         """Enumeration constants used to specify time role of
         the attribute form."""
+
         NONE = auto()
         DATE = auto()
         TIME = auto()
@@ -147,7 +159,7 @@ class AttributeForm(Entity):  # noqa
             'certified_info',
             'acg',
             'acl',
-            'target_info'
+            'target_info',
         ): objects.get_object_info
     }
 
@@ -156,9 +168,6 @@ class AttributeForm(Entity):  # noqa
 
     def _init_variables(self, **kwargs) -> None:
         super()._init_variables(**kwargs)
-        self._id = kwargs.get('id')
-        self.name = kwargs.get('name')
-        self.description = kwargs.get('description')
         self.category = kwargs.get('category')
         if self.FormType.has_value(kwargs.get('type')):
             self.form_type = self.FormType(kwargs.get('type'))
@@ -167,28 +176,49 @@ class AttributeForm(Entity):  # noqa
 
         self.is_multilingual = kwargs.get('is_multilingual', False)
         self.is_form_group = kwargs.get('is_form_group', False)
-        self.geographical_role = self.GeographicalRole(
-            kwargs.get('geographical_role')
-        ) if kwargs.get('geographical_role') else None
-        self.time_role = self.TimeRole(kwargs.get('time_role')
-                                       ) if kwargs.get('time_role') else None
-        self.display_format = self.DisplayFormat(kwargs.get('display_format')
-                                                 ) if kwargs.get('display_format') else None
-        self.data_type = DataType.from_dict(kwargs.get('data_type')
-                                            ) if kwargs.get('data_type') else None
+        self.geographical_role = (
+            self.GeographicalRole(kwargs.get('geographical_role'))
+            if kwargs.get('geographical_role')
+            else None
+        )
+        self.time_role = (
+            self.TimeRole(kwargs.get('time_role')) if kwargs.get('time_role') else None
+        )
+        self.display_format = (
+            self.DisplayFormat(kwargs.get('display_format'))
+            if kwargs.get('display_format')
+            else None
+        )
+        self.data_type = (
+            DataType.from_dict(kwargs.get('data_type'))
+            if kwargs.get('data_type')
+            else None
+        )
 
-        self.expressions = [
-            FactExpression.from_dict(expr, self._connection) for expr in kwargs.get('expressions')
-        ] if kwargs.get('expressions') else None
+        self.expressions = (
+            [
+                FactExpression.from_dict(expr, self._connection)
+                for expr in kwargs.get('expressions')
+            ]
+            if kwargs.get('expressions')
+            else None
+        )
 
         self.alias = kwargs.get('alias')
-        self.lookup_table = SchemaObjectReference.from_dict(
-            kwargs.get('lookup_table')
-        ) if kwargs.get('lookup_table') else None
+        self.lookup_table = (
+            SchemaObjectReference.from_dict(kwargs.get('lookup_table'))
+            if kwargs.get('lookup_table')
+            else None
+        )
 
-        self.child_forms = [
-            FormReference.from_dict(expr, self._connection) for expr in kwargs.get('child_forms')
-        ] if kwargs.get('child_forms') else None
+        self.child_forms = (
+            [
+                FormReference.from_dict(expr, self._connection)
+                for expr in kwargs.get('child_forms')
+            ]
+            if kwargs.get('child_forms')
+            else None
+        )
 
     @classmethod
     def local_create(
@@ -199,10 +229,10 @@ class AttributeForm(Entity):  # noqa
         category: Optional[str] = None,
         display_format: Optional[DisplayFormat] = None,
         data_type: Optional[DataType] = None,
-        expressions: Optional[List[FactExpression]] = None,
+        expressions: Optional[list[FactExpression]] = None,
         alias: Optional[str] = None,
         lookup_table: Optional[SchemaObjectReference] = None,
-        child_forms: Optional[List[FormReference]] = None,
+        child_forms: Optional[list[FormReference]] = None,
         geographical_role: Optional[GeographicalRole] = None,
         time_role: Optional[TimeRole] = None,
         is_form_group: bool = False,
@@ -212,7 +242,9 @@ class AttributeForm(Entity):  # noqa
         In order to create an AttributeForm object on the server,
         use `Attribute.add_form()` method of a corresponding Attribute object.
         """
-        properties = filter_params_for_func(cls.local_create, locals(), exclude=['connection'])
+        properties = filter_params_for_func(
+            cls.local_create, locals(), exclude=['connection']
+        )
         properties = delete_none_values(properties, recursion=True)
 
         obj = cls.__new__(cls)
@@ -227,12 +259,11 @@ class AttributeForm(Entity):  # noqa
         return super().to_dict(camel_case=camel_case)
 
     def to_dict(self, camel_case=True) -> dict:
-
         return {
             key: val
-            for key,
-            val in self.list_properties(camel_case).items()
-            if key not in [
+            for key, val in self.list_properties(camel_case).items()
+            if key
+            not in [
                 'id',
                 'abbreviation',
                 'type',
@@ -249,7 +280,7 @@ class AttributeForm(Entity):  # noqa
                 'acg',
                 'acl',
                 'target_info',
-                'formType'
+                'formType',
             ]
         }
 
@@ -259,10 +290,10 @@ class AttributeForm(Entity):  # noqa
         description: Optional[str] = None,
         display_format: Optional[DisplayFormat] = None,
         data_type: Optional[DataType] = None,
-        expressions: Optional[List[FactExpression]] = None,
+        expressions: Optional[list[FactExpression]] = None,
         alias: Optional[str] = None,
         lookup_table: Optional[SchemaObjectReference] = None,
-        child_forms: Optional[List[FormReference]] = None,
+        child_forms: Optional[list[FormReference]] = None,
         geographical_role: Optional[GeographicalRole] = None,
         time_role: Optional[TimeRole] = None,
         is_form_group: Optional[bool] = None,
@@ -307,7 +338,9 @@ class AttributeForm(Entity):  # noqa
         self.expressions.append(expression)
 
     def _remove_fact_expression(
-        self, fact_expression_id: str, new_lookup_table: Optional[SchemaObjectReference] = None
+        self,
+        fact_expression_id: str,
+        new_lookup_table: Optional[SchemaObjectReference] = None,
     ):
         """
         Internal method that affects ONLY LOCAL AttributeForm object.
@@ -328,16 +361,17 @@ class AttributeForm(Entity):  # noqa
             exception_handler(
                 "You can't remove the only expression "
                 f"from the attribute form with id: {self.id}.",
-                ValueError
+                ValueError,
             )
         ex_postition = next(
-            (i for i, ex in enumerate(self.expressions) if ex.id == fact_expression_id), None
+            (i for i, ex in enumerate(self.expressions) if ex.id == fact_expression_id),
+            None,
         )
         if ex_postition is None:
             exception_handler(
                 f"The form with id: {self.id}, don't use "
                 f"expression with id: {fact_expression_id}.",
-                ValueError
+                ValueError,
             )
         removed_ex = self.expressions.pop(ex_postition)
 
@@ -350,7 +384,7 @@ class AttributeForm(Entity):  # noqa
                 exception_handler(
                     "Please provide new lookup_table for the attribute form "
                     f"with id: {self.id}.",
-                    AttributeError
+                    AttributeError,
                 )
             else:
                 self.lookup_table = new_lookup_table
@@ -359,7 +393,7 @@ class AttributeForm(Entity):  # noqa
         self,
         fact_expression_id: str,
         expression: Optional[Expression] = None,
-        tables: Optional[List[SchemaObjectReference]] = None,
+        tables: Optional[list[SchemaObjectReference]] = None,
     ):
         """Internal method that affects ONLY LOCAL AttributeForm object.
         To make changes on the server, use `Attribute.alter_fact_expression()`
@@ -372,25 +406,29 @@ class AttributeForm(Entity):  # noqa
         """
         self.verify_is_simple_form(method_name_if_error='Altering expressions')
         try:
-            fact_expr = next(expr for expr in self.expressions if expr.id == fact_expression_id)
+            fact_expr = next(
+                expr for expr in self.expressions if expr.id == fact_expression_id
+            )
             fact_expr.local_alter(expression, tables)
         except StopIteration:
             exception_handler(
                 f"Attribute Form: {self.id} does not have Fact Expression"
                 f" with ID: {fact_expression_id}.",
-                ValueError
+                ValueError,
             )
 
     def verify_is_simple_form(self, method_name_if_error: str):
         """Verify whether the form is a simple form and not a group form"""
         if self.is_form_group:
             exception_handler(
-                f"{method_name_if_error} is not available for the form group.", AttributeError
+                f"{method_name_if_error} is not available for the form group.",
+                AttributeError,
             )
 
     def is_referenced_by(self, form_reference: FormReference) -> bool:
         """Check if attribute form is referenced in `form_reference`."""
-        if ((self.id is not None and self.id == form_reference.id)
-                or (self.name is not None and self.name == form_reference.name)):
+        if (self.id is not None and self.id == form_reference.id) or (
+            self.name is not None and self.name == form_reference.name
+        ):
             return True
         return False

@@ -15,7 +15,7 @@ from . import (
     FileSubscription,
     FTPSubscription,
     HistoryListSubscription,
-    Subscription
+    Subscription,
 )
 from .content import Content
 from .delivery import Delivery
@@ -30,7 +30,7 @@ def list_subscriptions(
     project_name: Optional[str] = None,
     to_dictionary: bool = False,
     limit: Optional[int] = None,
-    **filters
+    **filters,
 ) -> list["Subscription"] | list[dict]:
     """Get all subscriptions per project as list of Subscription objects or
     dictionaries.
@@ -47,18 +47,21 @@ def list_subscriptions(
             otherwise (default) returns a list of subscription objects
         limit: limit the number of elements returned. If `None` (default), all
             objects are returned.
-        **filters: Available filter parameters: ['id', 'name', 'editable',
-            'allowDeliveryChanges', 'allowPersonalizationChanges',
-            'allowUnsubscribe', 'dateCreated', 'dateModified', 'owner',
-            'schedules', 'contents', 'recipients', 'delivery']
+        **filters: Available filter parameters: ['id', 'multiple_contents',
+            'name', 'editable', 'allow_delivery_changes'
+            'allow_personalization_changes', 'allow_unsubscribe',
+            'date_created', 'date_modified', 'owner', 'delivery']
     """
     project_id = helper.get_valid_project_id(
         connection=connection,
         project_id=project_id,
         project_name=project_name,
     )
-    chunk_size = 1000 if version.parse(connection.iserver_version
-                                       ) >= version.parse('11.3.0300') else 1000000
+    chunk_size = (
+        1000
+        if version.parse(connection.iserver_version) >= version.parse('11.3.0300')
+        else 1000000
+    )
     msg = 'Error getting subscription list.'
     objects = helper.fetch_objects_async(
         connection=connection,
@@ -80,7 +83,8 @@ def list_subscriptions(
                 source=obj,
                 connection=connection,
                 project_id=project_id,
-            ) for obj in objects
+            )
+            for obj in objects
         ]
 
 
@@ -90,7 +94,7 @@ subscription_type_from_delivery_mode_dict = {
     DeliveryMode.EMAIL: EmailSubscription,
     DeliveryMode.FILE: FileSubscription,
     DeliveryMode.FTP: FTPSubscription,
-    DeliveryMode.HISTORY_LIST: HistoryListSubscription
+    DeliveryMode.HISTORY_LIST: HistoryListSubscription,
 }
 
 
@@ -124,7 +128,7 @@ class SubscriptionManager:
         self,
         connection: Connection,
         project_id: Optional[str] = None,
-        project_name: Optional[str] = None
+        project_name: Optional[str] = None,
     ):
         """Initialize the SubscriptionManager object.
         Specify either `project_id` or `project_name`.
@@ -166,17 +170,21 @@ class SubscriptionManager:
             project_id=self.project_id,
             to_dictionary=to_dictionary,
             limit=limit,
-            **filters
+            **filters,
         )
 
-    def delete(self, subscriptions: list[Subscription] | list[str], force=False) -> bool:
+    def delete(
+        self, subscriptions: list[Subscription] | list[str], force=False
+    ) -> bool:
         """Deletes all passed subscriptions. Returns True if successfully
         removed all subscriptions.
 
         Args:
             subscriptions: list of subscriptions to be deleted
         """
-        subscriptions = subscriptions if isinstance(subscriptions, list) else [subscriptions]
+        subscriptions = (
+            subscriptions if isinstance(subscriptions, list) else [subscriptions]
+        )
         if not subscriptions and config.verbose:
             logger.info('No subscriptions passed.')
         else:
@@ -184,7 +192,9 @@ class SubscriptionManager:
             for subscription in subscriptions:
                 if not isinstance(subscription, Subscription):
                     subscription = Subscription(
-                        connection=self.connection, id=subscription, project_id=self.project_id
+                        connection=self.connection,
+                        id=subscription,
+                        project_id=self.project_id,
                     )
                 temp_subs.append(subscription)
             subscriptions = temp_subs
@@ -192,12 +202,15 @@ class SubscriptionManager:
             user_input = 'N'
             if not force:
                 to_be_deleted = [
-                    f"Subscription '{sub.name}' with ID: '{sub.id}'" for sub in subscriptions
+                    f"Subscription '{sub.name}' with ID: '{sub.id}'"
+                    for sub in subscriptions
                 ]
                 print("Found subscriptions:")
                 for sub in to_be_deleted:
                     print(sub)
-                user_input = input("Are you sure you want to delete all of them? [Y/N]: ")
+                user_input = input(
+                    "Are you sure you want to delete all of them? [Y/N]: "
+                )
             if force or user_input == 'Y':
                 succeeded = 0
                 for subscription in subscriptions:
@@ -205,8 +218,9 @@ class SubscriptionManager:
                         self.connection,
                         subscription.id,
                         self.project_id,
-                        error_msg="Subscription '{}' with id '{}'' could not be deleted.".format(
-                            subscription.name, subscription.id
+                        error_msg=(
+                            f"Subscription '{subscription.name}' with id "
+                            f"'{subscription.id}' could not be deleted."
                         ),
                         exception_type=UserWarning,
                     )
@@ -229,19 +243,28 @@ class SubscriptionManager:
         if not subscriptions and config.verbose:
             logger.info('No subscriptions passed.')
         else:
-            subscriptions = subscriptions if isinstance(subscriptions, list) else [subscriptions]
+            subscriptions = (
+                subscriptions if isinstance(subscriptions, list) else [subscriptions]
+            )
             for subscription in subscriptions:
                 if not isinstance(subscription, Subscription):
                     subscription = Subscription(
-                        connection=self.connection, id=subscription, project_id=self.project_id
+                        connection=self.connection,
+                        id=subscription,
+                        project_id=self.project_id,
                     )
-                if subscription.delivery.mode in ('EMAIL', 'FILE', 'HISTORY_LIST', 'FTP'):
+                if subscription.delivery.mode in (
+                    'EMAIL',
+                    'FILE',
+                    'HISTORY_LIST',
+                    'FTP',
+                ):
                     subscription.execute()
                 else:
                     msg = (
-                        f"Subscription '{subscription.name}' with ID '{subscription.id}' "
-                        f"could not be executed. Delivery mode '{subscription.delivery.mode}'"
-                        " is not supported."
+                        f"Subscription '{subscription.name}' with ID "
+                        f"'{subscription.id}' could not be executed. Delivery mode "
+                        f"'{subscription.delivery.mode}' is not supported."
                     )
                     helper.exception_handler(msg, UserWarning)
 
@@ -270,7 +293,7 @@ class SubscriptionManager:
         content_id: Optional[str] = None,
         content_type: Optional[str] = None,
         content: Optional["Content"] = None,
-        delivery_type='EMAIL'
+        delivery_type='EMAIL',
     ) -> list[dict]:
         """List available recipients for a subscription contents.
         Specify either both `content_id` and `content_type` or just `content`
@@ -294,9 +317,7 @@ class SubscriptionManager:
             )
 
         body = {
-            "contents": [{
-                "id": content_id, "type": content_type
-            }],
+            "contents": [{"id": content_id, "type": content_type}],
         }
 
         response = subscriptions_.available_recipients(

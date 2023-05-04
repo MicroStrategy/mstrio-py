@@ -2,7 +2,8 @@ from mstrio.utils.error_handlers import ErrorHandler
 
 
 @ErrorHandler(
-    err_msg='Error obtaining the list of registered nodes from the MicroStrategy deployment.'
+    err_msg='Error obtaining the list of registered nodes from the MicroStrategy '
+    'deployment.'
 )
 def get_nodes(connection, error_msg=None):
     """Obtain the list of registered nodes from the MicroStrategy deployment.
@@ -44,7 +45,9 @@ def get_services_metadata(connection, error_msg=None):
             'connection.Connection().
         error_msg (string, optional): Custom Error Message for Error Handling
     """
-    return connection.get(url=f'{connection.base_url}/api/registrations/services/metadata')
+    return connection.get(
+        url=f'{connection.base_url}/api/registrations/services/metadata'
+    )
 
 
 @ErrorHandler(err_msg='Error to start/stop service')
@@ -72,7 +75,7 @@ def start_stop_service(
         "action": action,
         "address": address,
         "login": login,
-        "password": password
+        "password": password,
     }
     url = f'{connection.base_url}/api/registrations/services/control'
     response = connection.post(url=url, json=body)

@@ -33,8 +33,9 @@ def list_schedules(connection, fields=None, error_msg=None):
                 schedule['event']['id'] = schedule['event'].pop('eventId')
                 event_based_in_list = True
         if event_based_in_list:
-            response.encoding, response._content = 'utf-8', json.dumps(response_json).encode(
-                'utf-8')
+            response.encoding, response._content = 'utf-8', json.dumps(
+                response_json
+            ).encode('utf-8')
 
     return response
 
@@ -62,8 +63,9 @@ def get_schedule(connection, id, fields=None, error_msg=None):
         response_json = response.json()
         if 'event' in response_json.keys():
             response_json['event']['id'] = response_json['event'].pop('eventId')
-            response.encoding, response._content = 'utf-8', json.dumps(response_json).encode(
-                'utf-8')
+            response.encoding, response._content = 'utf-8', json.dumps(
+                response_json
+            ).encode('utf-8')
 
     return response
 
@@ -95,8 +97,9 @@ def create_schedule(connection, body, fields=None, error_msg=None):
         response_json = response.json()
         if 'event' in response_json.keys():
             response_json['event']['id'] = response_json['event'].pop('eventId')
-            response.encoding, response._content = 'utf-8', json.dumps(response_json).encode(
-                'utf-8')
+            response.encoding, response._content = 'utf-8', json.dumps(
+                response_json
+            ).encode('utf-8')
 
     return response
 
@@ -122,14 +125,18 @@ def update_schedule(connection, id, body, fields=None, error_msg=None):
         body['event']['eventId'] = body['event'].pop('id')
 
     response = connection.put(
-        url=f'{connection.base_url}/api/schedules/{id}', json=body, params={'fields': fields}
+        url=f'{connection.base_url}/api/schedules/{id}',
+        json=body,
+        params={'fields': fields},
     )
     if response.ok:
         # Fix for incorrect 'eventId' (expecting 'id')
         response_json = response.json()
         if 'event' in response_json.keys():
             response_json['event']['id'] = response_json['event'].pop('eventId')
-        response.encoding, response._content = 'utf-8', json.dumps(response_json).encode('utf-8')
+        response.encoding, response._content = 'utf-8', json.dumps(
+            response_json
+        ).encode('utf-8')
 
     return response
 
@@ -155,10 +162,7 @@ def delete_schedule(connection, id, fields=None, error_msg=None):
 
 @ErrorHandler(err_msg='Error getting schedule information')
 def get_contents_schedule(
-        connection: "Connection",
-        project_id: str,
-        body: dict,
-        fields: Optional[str] = None
+    connection: "Connection", project_id: str, body: dict, fields: Optional[str] = None
 ) -> Response:
     """Get a list of available schedules for a list of contents within a given
         project.
@@ -178,5 +182,5 @@ def get_contents_schedule(
         url=f'{connection.base_url}/api/schedules/results',
         headers={'X-MSTR-ProjectID': project_id},
         params={'fields': fields},
-        json=body
+        json=body,
     )

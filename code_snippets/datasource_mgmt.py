@@ -11,15 +11,21 @@ from mstrio.datasources import (
     DatasourceLogin,
     DatasourceMap,
     DatasourceType,
+    Dbms,
+    DBType,
+    Driver,
     ExecutionMode,
+    Gateway,
+    GatewayType,
     Locale,
     list_available_dbms,
     list_datasource_connections,
     list_datasource_instances,
     list_datasource_logins,
     list_datasource_mappings,
+    list_drivers,
+    list_gateways,
     list_locales,
-    Dbms
 )
 from mstrio.connection import get_connection
 
@@ -36,8 +42,10 @@ datasource_login_list = list_datasource_logins(connection=conn)
 print(datasource_login_list)
 
 # Define variables which can be later used in a script
-DATASOURCE_LOGIN_ID = $datasource_login_id  # Insert ID for login to datasource here
-DATASOURCE_LOGIN_NAME = $datasource_login_name  # Insert name for login to datasource here
+# Insert ID for login to datasource here
+DATASOURCE_LOGIN_ID = $datasource_login_id
+# Insert name for login to datasource here
+DATASOURCE_LOGIN_NAME = $datasource_login_name
 
 # Get datasource login by id
 datasource_login = DatasourceLogin(conn, id=DATASOURCE_LOGIN_ID)
@@ -48,10 +56,14 @@ datasource_login = DatasourceLogin(conn, name=DATASOURCE_LOGIN_NAME)
 print(datasource_login)
 
 # Define variables which can be later used in a script
-NEW_DATASOURCE_LOGIN_NAME = $new_datasource_login_name  # Insert name for new login to datasource here
-NEW_DATASOURCE_USERNAME = $new_datasource_username  # Insert name of user in Datasource here
-NEW_DATASOURCE_PASSWORD = $new_datasource_password  # Insert datasource password here
-NEW_DATASOURCE_LOGIN_DESCRIPTION = $new_datasource_login_description  # Insert new datasource login description
+# Insert a new name for new login to datasource here
+NEW_DATASOURCE_LOGIN_NAME = $new_datasource_login_name
+# Insert a new name of user in Datasource here
+NEW_DATASOURCE_USERNAME = $new_datasource_username
+# Insert a new datasource password here
+NEW_DATASOURCE_PASSWORD = $new_datasource_password
+# Insert a new datasource login description
+NEW_DATASOURCE_LOGIN_DESCRIPTION = $new_datasource_login_description
 
 # Create new datasource login
 datasource_login = DatasourceLogin.create(
@@ -64,8 +76,10 @@ datasource_login = DatasourceLogin.create(
 print(datasource_login)
 
 # Define variables which can be later used in a script
-DATASOURCE_LOGIN_NEW_NAME = $datasource_login_new_name  # Insert new name for login to datasource here
-DATASOURCE_LOGIN_NEW_DESCRIPTION = $datasource_login_new_description  # Insert new datasource login description
+# Insert new name for login to datasource here
+DATASOURCE_LOGIN_NEW_NAME = $datasource_login_new_name
+# Insert new datasource login description
+DATASOURCE_LOGIN_NEW_DESCRIPTION = $datasource_login_new_description
 
 # Update a datasource login
 datasource_login.alter(
@@ -86,8 +100,10 @@ datasource_conn_list = list_datasource_connections(connection=conn)
 print(datasource_conn_list)
 
 # Define variables which can be later used in a script
-DATASOURCE_CONNECTION_ID = $datasource_connection_id  # Insert ID of datasource connection here
-DATASOURCE_CONNECTION_NAME = $datasource_connection_name  # Insert name of datasource connection here
+# Insert ID of datasource connection here
+DATASOURCE_CONNECTION_ID = $datasource_connection_id
+# Insert name of datasource connection here
+DATASOURCE_CONNECTION_NAME = $datasource_connection_name
 
 # Get datasource connection by id
 datasource_connection = DatasourceConnection(conn, id=DATASOURCE_CONNECTION_ID)
@@ -98,8 +114,10 @@ datasource_connection = DatasourceConnection(conn, name=DATASOURCE_CONNECTION_NA
 print(datasource_connection)
 
 # Define variables which can be later used in a script
-NEW_DATASOURCE_CONNECTION_NAME = $new_datasource_connection_name  # Insert new name of datasource connection here
-NEW_DATASOURCE_CONNECTION_DESCRIPTION = $new_datasource_connection_description  # Insert new description of datasource connection here
+# Insert new name of datasource connection here
+NEW_DATASOURCE_CONNECTION_NAME = $new_datasource_connection_name
+# Insert new description of datasource connection here
+NEW_DATASOURCE_CONNECTION_DESCRIPTION = $new_datasource_connection_description
 
 # Create a new datasource connection
 datasource_connection = DatasourceConnection.create(
@@ -112,8 +130,10 @@ datasource_connection = DatasourceConnection.create(
 )
 
 # Define variables which can be later used in a script
-DATASOURCE_CONNECTION_NEW_NAME = $datasource_connection_new_name  # Insert new name of datasource connection
-DATASOURCE_CONNECTION_NEW_DESCRIPTION = $datasource_connection_new_description  # Insert new description of datasource connection
+# Insert new name of datasource connection
+DATASOURCE_CONNECTION_NEW_NAME = $datasource_connection_new_name
+# Insert new description of datasource connection
+DATASOURCE_CONNECTION_NEW_DESCRIPTION = $datasource_connection_new_description
 
 # Update a datasource connection
 datasource_connection.alter(
@@ -136,7 +156,8 @@ datasource_connection.delete(force=True)
 # SAP HANA; Snowflake; SQL Server; Teradata
 
 # Define variables which can be later used in a script
-DATASOURCE_CONNECTION_ID_DSN = $datasource_connection_id_dsn  # Insert id of datasource connection that had DSN connection string
+# Insert ID of datasource connection that had DSN connection string
+DATASOURCE_CONNECTION_ID_DSN = $datasource_connection_id_dsn
 
 # Initialize datasource connection object
 ds_conn = DatasourceConnection(conn, id=DATASOURCE_CONNECTION_ID_DSN)
@@ -152,7 +173,8 @@ ds_conn.convert_to_dsn_less()
 print(ds_conn.list_properties())
 
 # Define variables which can be later used in a script
-DATASOURCE_CONNECTION_ID_DSN_LIST = $datasource_connection_id_dsn_list  # Insert IDs for datasource connections here
+# Insert IDs for datasource connections here
+DATASOURCE_CONNECTION_ID_DSN_LIST = $datasource_connection_id_dsn_list
 
 # Convert datasource connections one by one from list
 for ds_conn_id in DATASOURCE_CONNECTION_ID_DSN_LIST:
@@ -177,8 +199,10 @@ datasources = list_datasource_instances(
 print(datasources)
 
 # Define variables which can be later used in a script
-DATASOURCE_INSTANCE_ID = $datasource_instance_id  # Insert ID for datasource instance here
-DATASOURCE_INSTANCE_NAME = $datasource_instance_name  # Insert name for datasource instance here
+# Insert ID for datasource instance here
+DATASOURCE_INSTANCE_ID = $datasource_instance_id
+# Insert name for datasource instance here
+DATASOURCE_INSTANCE_NAME = $datasource_instance_name
 
 # Get datasource instance by id
 datasource_instance = DatasourceInstance(conn, id=DATASOURCE_INSTANCE_ID)
@@ -205,9 +229,12 @@ dbms = Dbms(conn, name=DBMS_NAME)
 print(dbms)
 
 # Define variables which can be later used in a script
-NEW_DATASOURCE_INSTANCE_NAME = $new_datasource_instance_name  # Insert name for datasource instance here
-NEW_DATASOURCE_INSTANCE_DESCRIPTION = $new_datasource_instance_description  # Insert description for datasource instance here
-NEW_DATASOURCE_INSTANCE_TABLE_PREFIX = $new_datasource_instance_table_prefix  # Insert table prefix for datasource instance here
+# Insert a new name for datasource instance here
+NEW_DATASOURCE_INSTANCE_NAME = $new_datasource_instance_name
+# Insert a new description for datasource instance here
+NEW_DATASOURCE_INSTANCE_DESCRIPTION = $new_datasource_instance_description
+# Insert a new table prefix for datasource instance here
+NEW_DATASOURCE_INSTANCE_TABLE_PREFIX = $new_datasource_instance_table_prefix
 
 # Create a datasource instance
 datasource_instance = DatasourceInstance.create(
@@ -223,9 +250,12 @@ datasource_instance = DatasourceInstance.create(
 print(datasource_instance)
 
 # Define variables which can be later used in a script
-DATASOURCE_INSTANCE_NEW_NAME = $datasource_instance_new_name  # Insert new name for edited datasource instance here
-DATASOURCE_INSTANCE_NEW_DESCRIPTION = $datasource_instance_new_description  # Insert new description for edited datasource instance here
-DATASOURCE_INSTANCE_TABLE_NEW_PREFIX = $datasource_instance_table_new_prefix  # Insert new table prefix for edited datasource instance here
+# Insert new name for edited datasource instance here
+DATASOURCE_INSTANCE_NEW_NAME = $datasource_instance_new_name
+# Insert new description for edited datasource instance here
+DATASOURCE_INSTANCE_NEW_DESCRIPTION = $datasource_instance_new_description
+# Insert new table prefix for edited datasource instance here
+DATASOURCE_INSTANCE_TABLE_NEW_PREFIX = $datasource_instance_table_new_prefix
 
 # Update a datasource instance
 datasource_instance.alter(
@@ -249,7 +279,8 @@ datasource_instance.delete(force=True)
 # SAP HANA; Snowflake; SQL Server; Teradata
 
 # Define variables which can be later used in a script
-DATASOURCE_INSTANCE_ID_DSN = $datasource_instance_id_dsn  # Insert ID for datasource instance here
+# Insert ID for datasource instance here
+DATASOURCE_INSTANCE_ID_DSN = $datasource_instance_id_dsn
 
 # Get datasource instance by id
 ds_instance = DatasourceInstance(conn, id=DATASOURCE_INSTANCE_ID_DSN)
@@ -259,7 +290,8 @@ ds_instance = DatasourceInstance(conn, id=DATASOURCE_INSTANCE_ID_DSN)
 ds_instance.convert_ds_connection_to_dsn_less()
 
 # Define variables which can be later used in a script
-DATASOURCE_INSTANCE_ID_DSN_LIST = $datasource_instance_id_dsn_list  # Insert IDs for datasource instances here
+# Insert IDs for datasource instances here
+DATASOURCE_INSTANCE_ID_DSN_LIST = $datasource_instance_id_dsn_list
 
 # Convert datasource instance embedded connection one by one from list
 for ds_id in DATASOURCE_INSTANCE_ID_DSN_LIST:
@@ -373,8 +405,8 @@ connection_mapping = DatasourceMap(
 )
 print(connection_mapping)
 
-# Initialise a default connection mapping for a project if only one default connection mapping
-# exists for a project
+# Initialise a default connection mapping for a project if only one default
+# connection mapping exists for a project
 connection_mapping = DatasourceMap(
     connection=conn,
     default_connection_map=True,
@@ -404,6 +436,7 @@ connection_mapping = DatasourceMap.create(
     locale=LOCALE_ID
 )
 print(connection_mapping)
+
 # Create a connection mapping with locale's name
 connection_mapping = DatasourceMap.create(
     connection=conn,
@@ -429,8 +462,10 @@ connection_mapping = DatasourceMap.create(
 print(connection_mapping)
 
 # Define variables which can be later used in a script
-CONNECTION_MAPPING_NEW_USER_OR_USER_GROUP = $connection_mapping_new_user_or_user_group  # Insert new user or usergroup ID for connection mapping
-CONNECTION_MAPPING_NEW_LOGIN = $connection_mapping_new_login  # Insert new login ID for connection mapping
+# Insert new user or usergroup ID for connection mapping
+CONNECTION_MAPPING_NEW_USER_OR_USER_GROUP = $connection_mapping_new_user_or_user_group
+# Insert new login ID for connection mapping
+CONNECTION_MAPPING_NEW_LOGIN = $connection_mapping_new_login
 
 # Alter connection mapping
 # NOTE: Altering connection mapping will change its ID
@@ -454,3 +489,108 @@ print(connection_mapping)
 
 # Delete a connection mapping
 connection_mapping.delete(force=True)
+
+
+# Manage Drivers
+
+# List all drivers
+drivers = list_drivers(conn)
+print(drivers)
+
+# Define variables which can be later used in a script
+DRIVER_ID = $driver_id
+
+# List drivers by id
+drivers = list_drivers(conn, id=DRIVER_ID)
+print(drivers)
+
+# Define variables which can be later used in a script
+DRIVER_NAME = $driver_name
+
+# List drivers by name
+drivers = list_drivers(conn, name=DRIVER_NAME)
+print(drivers)
+
+# List enabled drivers
+drivers = list_drivers(conn, is_enabled=True)
+print(drivers)
+
+# List disabled drivers
+drivers = list_drivers(conn, is_enabled=False)
+print(drivers)
+
+# List ODBC drivers
+drivers = list_drivers(conn, is_odbc=True)
+print(drivers)
+
+# List non-ODBC drivers
+drivers = list_drivers(conn, is_odbc=False)
+print(drivers)
+
+# Initialize driver by id
+driver = Driver(conn, id=DRIVER_ID)
+print(driver)
+
+# Initialize driver by name
+driver = Driver(conn, name=DRIVER_NAME)
+print(driver)
+
+# Enable driver
+driver.enable()
+
+# Disable driver
+driver.disable()
+
+# Alter driver
+driver.alter(is_enabled=True)
+
+
+# Managing Gateways
+
+# List all gateways
+gateways = list_gateways(conn)
+print(gateways)
+
+# Define variables which can be later used in a script
+GATEWAY_ID = $gateway_id
+
+# List gateways by id
+gateways = list_gateways(conn, id=GATEWAY_ID)
+print(gateways)
+
+# Define variables which can be later used in a script
+GATEWAY_NAME = $gateway_name
+
+# List gateways by name
+gateways = list_gateways(conn, name=GATEWAY_NAME)
+print(gateways)
+
+# Define variables which can be later used in a script
+GATEWAY_TYPE = $gateway_type
+
+# List gateways by gateway type
+gateways = list_gateways(conn, gateway_type=GATEWAY_TYPE)
+print(gateways)
+
+# Define variables which can be later used in a script
+DB_TYPE = $db_type
+
+# List gateways by database type
+gateways = list_gateways(conn, db_type=DB_TYPE)
+print(gateways)
+
+# List certified gateways
+gateways = list_gateways(conn, is_certified=True)
+print(gateways)
+
+# List not certified gateways
+gateways = list_gateways(conn, is_certified=False)
+print(gateways)
+
+# Initialize gateway by id
+gateway = Gateway(conn, id=GATEWAY_ID)
+print(gateway)
+
+# Initialize gateway by name
+gateway = Gateway(conn, name=GATEWAY_NAME)
+print(gateway)

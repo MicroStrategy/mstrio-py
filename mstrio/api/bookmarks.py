@@ -69,7 +69,9 @@ def delete_bookmarks(connection, shortcut_id: str, bookmark_ids: List, error_msg
 
 
 @ErrorHandler(err_msg='Error deleting bookmark with ID {bookmark_id}')
-def delete_single_bookmark(connection, shortcut_id: str, bookmark_id: str, error_msg=None):
+def delete_single_bookmark(
+    connection, shortcut_id: str, bookmark_id: str, error_msg=None
+):
     """Delete a bookmark.
 
     Args:

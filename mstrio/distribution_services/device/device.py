@@ -11,7 +11,7 @@ from mstrio.distribution_services.device.device_properties import (
     FileDeviceProperties,
     FtpDeviceProperties,
     IOSDeviceProperties,
-    PrinterDeviceProperties
+    PrinterDeviceProperties,
 )
 from mstrio.distribution_services.transmitter import Transmitter
 from mstrio.types import ObjectTypes
@@ -24,7 +24,7 @@ from mstrio.utils.helper import (
     fetch_objects,
     get_args_from_func,
     get_default_args_from_func,
-    get_objects_id
+    get_objects_id,
 )
 from mstrio.utils.version_helper import class_version_handler
 
@@ -60,7 +60,8 @@ def list_devices(
         limit: limit the number of elements returned. If `None` (default), all
             objects are returned.
         **filters: Available filter parameters: ['id', 'name', 'description',
-            'date_created', 'date_modified', 'acg']
+            'date_created', 'date_modified', 'device_type', 'transmitter',
+            'device_properties']
 
     Examples:
         >>> list_devices(connection, name='device_name')
@@ -108,17 +109,24 @@ class Device(Entity, DeleteMixin):
         "ftp": FtpDeviceProperties,
         "ipad": IOSDeviceProperties,
         "iphone": IOSDeviceProperties,
-        "printer": PrinterDeviceProperties
+        "printer": PrinterDeviceProperties,
     }
+
+    @staticmethod
+    def _map_device_properties(source, connection):
+        device_type = next(iter(source))
+        device_properties = source[device_type]
+
+        return Device._DEVICE_TYPE_MAP[device_type].from_dict(
+            device_properties, connection
+        )
+
     _FROM_DICT_MAP = {
         **Entity._FROM_DICT_MAP,
         'device_type': DeviceType,
         'owner': User.from_dict,
         'transmitter': Transmitter.from_dict,
-        'device_properties': lambda source,
-        connection,
-        device_type_map=_DEVICE_TYPE_MAP: device_type_map[next(iter(source))].
-        from_dict(source[next(iter(source))], connection)
+        'device_properties': _map_device_properties,
     }
     _API_GETTERS = {
         (
@@ -135,10 +143,16 @@ class Device(Entity, DeleteMixin):
             'ancestors',
             'certified_info',
             'acg',
-            'acl'
+            'acl',
         ): objects.get_object_info,
-        ('id', 'name', 'description', 'device_type', 'transmitter',
-         'device_properties'): devices.get_device
+        (
+            'id',
+            'name',
+            'description',
+            'device_type',
+            'transmitter',
+            'device_properties',
+        ): devices.get_device,
     }
     _API_DELETE = staticmethod(devices.delete_device)
     _API_PATCH: dict = {
@@ -150,7 +164,9 @@ class Device(Entity, DeleteMixin):
         """Initialize Device object."""
 
         if id is None and name is None:
-            raise ValueError("Please specify either 'id' or 'name' parameter in the constructor.")
+            raise ValueError(
+                "Please specify either 'id' or 'name' parameter in the constructor."
+            )
 
         if id is None:
             objects_info = Device._list_devices(
@@ -170,13 +186,20 @@ class Device(Entity, DeleteMixin):
         super()._init_variables(**kwargs)
         device_type = kwargs.get("device_type")
         self._device_type = DeviceType(device_type) if device_type else None
-        self._transmitter = Transmitter.from_dict(kwargs.get("transmitter"), self.connection
-                                                  ) if kwargs.get("transmitter") else None
+        self._transmitter = (
+            Transmitter.from_dict(kwargs.get("transmitter"), self.connection)
+            if kwargs.get("transmitter")
+            else None
+        )
         device_properties = kwargs.get("device_properties")
-        self.device_properties = self._DEVICE_TYPE_MAP[device_type].from_dict(
-            device_properties[device_type],
-            self.connection,
-        ) if device_properties and device_type else None
+        self.device_properties = (
+            self._DEVICE_TYPE_MAP[device_type].from_dict(
+                device_properties[device_type],
+                self.connection,
+            )
+            if device_properties and device_type
+            else None
+        )
 
     @classmethod
     def create(
@@ -186,7 +209,7 @@ class Device(Entity, DeleteMixin):
         device_type: Union[DeviceType, str],
         transmitter: Union[Transmitter, str],
         device_properties: Union[dict, Dictable],
-        description: str = None
+        description: str = None,
     ) -> "Device":
         """Create a new device.
 
@@ -202,8 +225,11 @@ class Device(Entity, DeleteMixin):
             Device object.
         """
         device_type = get_enum_val(device_type, DeviceType)
-        device_properties = device_properties.to_dict(
-        ) if isinstance(device_properties, Dictable) else device_properties
+        device_properties = (
+            device_properties.to_dict()
+            if isinstance(device_properties, Dictable)
+            else device_properties
+        )
         transmitter_id = get_objects_id(transmitter, Transmitter)
         body = {
             "name": name,
@@ -212,15 +238,14 @@ class Device(Entity, DeleteMixin):
             "transmitter": {
                 "id": transmitter_id,
             },
-            "deviceProperties": {
-                device_type: device_properties
-            }
+            "deviceProperties": {device_type: device_properties},
         }
         body = delete_none_values(body, recursion=True)
         response = devices.create_device(connection, body).json()
         if config.verbose:
             logger.info(
-                f"Successfully created device named: '{name}' with ID: '{response['id']}'."
+                f"Successfully created device named: '{name}' with ID: '"
+                f"{response['id']}'."
             )
         return cls.from_dict(source=response, connection=connection)
 
@@ -228,7 +253,7 @@ class Device(Entity, DeleteMixin):
         self,
         name: Optional[str] = None,
         description: Optional[str] = None,
-        device_properties: Optional[Union[Dictable, dict]] = None
+        device_properties: Optional[Union[Dictable, dict]] = None,
     ):
         """Alter the device object properties.
 
@@ -238,13 +263,18 @@ class Device(Entity, DeleteMixin):
             device_properties: properties of the device, specific for each
                 device type
         """
-        device_properties = self.device_properties if not device_properties else device_properties
-        device_properties = device_properties.to_dict(
-        ) if isinstance(device_properties, Dictable) else device_properties
+        device_properties = (
+            self.device_properties if not device_properties else device_properties
+        )
+        device_properties = (
+            device_properties.to_dict()
+            if isinstance(device_properties, Dictable)
+            else device_properties
+        )
         func = self.alter
         args = get_args_from_func(func)
         defaults = get_default_args_from_func(func)
-        defaults_dict = dict(zip(args[-len(defaults):], defaults)) if defaults else {}
+        defaults_dict = dict(zip(args[-len(defaults) :], defaults)) if defaults else {}
         local = locals()
         properties = defaultdict(dict)
         for property_key in defaults_dict.keys():
@@ -268,14 +298,21 @@ class Device(Entity, DeleteMixin):
         else:
             device_properties = self.device_properties
         changes["device_properties"] = {}
-        changes["device_properties"][self.device_type.value] = device_properties.to_dict(
-        ) if not isinstance(device_properties, dict) else device_properties
+        changes["device_properties"][self.device_type.value] = (
+            device_properties.to_dict()
+            if not isinstance(device_properties, dict)
+            else device_properties
+        )
         self._alter_properties(**changes)
         self._altered_properties.clear()
 
     @classmethod
     def _list_devices(
-        cls, connection: "Connection", to_dictionary: bool = False, limit: int = None, **filters
+        cls,
+        connection: "Connection",
+        to_dictionary: bool = False,
+        limit: int = None,
+        **filters,
     ) -> Union[List["Device"], List[dict]]:
         objects = fetch_objects(
             connection=connection,

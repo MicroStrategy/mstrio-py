@@ -29,7 +29,7 @@ def list_physical_tables(
     filters: Optional[dict] = None,
     limit: Optional[int] = None,
     to_dictionary: bool = False,
-    include_unassigned_tables: bool = False
+    include_unassigned_tables: bool = False,
 ) -> Union[list["PhysicalTable"], list[dict]]:
     """List all physical tables in a project.
 
@@ -63,7 +63,7 @@ def list_physical_tables(
         connection=connection,
         project_id=project_id,
         project_name=project_name,
-        with_fallback=False if project_name else True
+        with_fallback=False if project_name else True,
     )
     if include_unassigned_tables:
         tables = full_search(
@@ -71,7 +71,7 @@ def list_physical_tables(
             project=project_id,
             object_types=ObjectTypes.DBTABLE,
             limit=limit,
-            **(filters or {})
+            **(filters or {}),
         )
     else:
         tables = fetch_objects(
@@ -87,16 +87,17 @@ def list_physical_tables(
         tables = list({item['id']: item for item in tables}.values())
 
     return (
-        tables if to_dictionary else
-        PhysicalTable.bulk_from_dict(source_list=tables, connection=connection)
+        tables
+        if to_dictionary
+        else PhysicalTable.bulk_from_dict(source_list=tables, connection=connection)
     )
 
 
 @method_version_handler('11.3.0100')
 def list_tables_prefixes(
-        connection: Connection,
-        project_id: Optional[str] = None,
-        project_name: Optional[str] = None,
+    connection: Connection,
+    project_id: Optional[str] = None,
+    project_name: Optional[str] = None,
 ):
     """Returns the prefixes for the physical tables
 
@@ -109,12 +110,16 @@ def list_tables_prefixes(
     Returns:
         A dictionary of prefixes for all the physical tables
     """
-    project_id = get_valid_project_id(connection=connection,
-                                      project_id=project_id,
-                                      project_name=project_name,
-                                      with_fallback=False if project_name else True)
+    project_id = get_valid_project_id(
+        connection=connection,
+        project_id=project_id,
+        project_name=project_name,
+        with_fallback=False if project_name else True,
+    )
 
-    physical_tables = list_physical_tables(connection, project_id=project_id, to_dictionary=True)
+    physical_tables = list_physical_tables(
+        connection, project_id=project_id, to_dictionary=True
+    )
     return {table.get("table_prefix") for table in physical_tables}
 
 
@@ -194,7 +199,7 @@ class PhysicalTable(Entity):
         id: str,
         name: Optional[str] = None,
         project_id: Optional[str] = None,
-        project_name: Optional[str] = None
+        project_name: Optional[str] = None,
     ):
         """Initializes a PhysicalTable object. You have to provide ID of a
             physical table object. You can get this ID e.g. using
@@ -229,16 +234,16 @@ class PhysicalTable(Entity):
             connection=connection,
             project_id=project_id,
             project_name=project_name,
-            with_fallback=False if project_name else True
+            with_fallback=False if project_name else True,
         )
 
         super().__init__(connection=connection, object_id=id)
         try:
             # If the physical table is included in a project, more info can be
             # fetched.
-            physical_tables: list[dict] = list_physical_tables(connection, project_id,
-                                                               to_dictionary=True,
-                                                               filters={'id': id})
+            physical_tables: list[dict] = list_physical_tables(
+                connection, project_id, to_dictionary=True, filters={'id': id}
+            )
             table = physical_tables[0]
             table.update({"table_type": table.pop("type", None)})
             self._set_object_attributes(**table)
@@ -262,8 +267,11 @@ class PhysicalTable(Entity):
 
             columns = kwargs.get("columns")
             self.columns = (
-                TableColumn.bulk_from_dict(source_list=columns, connection=self.connection)
-                if columns else None
+                TableColumn.bulk_from_dict(
+                    source_list=columns, connection=self.connection
+                )
+                if columns
+                else None
             )
             self.namespace = kwargs.get("namespace")
             self.primary_locale = kwargs.get("primary_locale")
@@ -309,7 +317,9 @@ class PhysicalTable(Entity):
         if dependent_logical_tables:
             logger.warning("Following dependent logical tables will be deleted: ")
             logger.warning(",".join(str(table) for table in dependent_logical_tables))
-            confirmed_delete = (force or input("Do you want to continue? [Y/n]: ").lower() == "y")
+            confirmed_delete = (
+                force or input("Do you want to continue? [Y/n]: ").lower() == "y"
+            )
             if confirmed_delete:
                 [table.delete(force=True) for table in dependent_logical_tables]
                 logger.info(f"Successfully removed Warehouse Table with id: {self.id}")

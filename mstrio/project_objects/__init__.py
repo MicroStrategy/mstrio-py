@@ -9,7 +9,7 @@ from .dossier import (
     list_dossiers_across_projects,
     PageSelector,
     PageVisualization,
-    VisualizationSelector
+    VisualizationSelector,
 )
 from .library import Library
 from .report import list_reports, Report

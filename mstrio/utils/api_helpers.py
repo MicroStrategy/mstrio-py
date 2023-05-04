@@ -2,18 +2,26 @@ from concurrent.futures import as_completed
 from contextlib import contextmanager
 from functools import wraps
 from json import dumps
-from typing import List, Optional
+from typing import TYPE_CHECKING, Optional
 
-from mstrio.api.changesets import commit_changeset_changes, create_changeset, delete_changeset
-from mstrio.connection import Connection
+from mstrio.api.changesets import (
+    commit_changeset_changes,
+    create_changeset,
+    delete_changeset,
+)
 from mstrio.utils.helper import (
-    auto_match_args, delete_none_values, get_parallel_number, response_handler
+    auto_match_args,
+    delete_none_values,
+    get_parallel_number,
+    response_handler,
 )
 from mstrio.utils.sessions import FuturesSessionWithRenewal
 
+if TYPE_CHECKING:
+    from mstrio.connection import Connection
+
 
 def unpack_information(func):
-
     @wraps(func)
     def unpack_information_inner(*args, **kwargs):
         if kwargs.get('body'):
@@ -26,7 +34,9 @@ def unpack_information(func):
                     "description": kwargs['body'].pop('description', None),
                     "dateCreated": kwargs['body'].pop('dateCreated', None),
                     "dateModified": kwargs['body'].pop('dateModified', None),
-                    "destinationFolderId": kwargs['body'].pop('destinationFolderId', None),
+                    "destinationFolderId": kwargs['body'].pop(
+                        'destinationFolderId', None
+                    ),
                     "versionId": kwargs['body'].pop('versionId', None),
                     "path": kwargs['body'].pop('path', None),
                     "primaryLocale": kwargs['body'].pop('primaryLocale', None),
@@ -44,7 +54,10 @@ def unpack_information(func):
             response_json['id'] = response_json.pop('objectId', None)
         if response_json.get('tables'):
             response_json = unpack_tables(response_json)
-        if isinstance(response_json, dict) and response_json.get('subType') == 'logical_table':
+        if (
+            isinstance(response_json, dict)
+            and response_json.get('subType') == 'logical_table'
+        ):
             response_json = unpack_table(response_json)
         resp.encoding, resp._content = 'utf-8', dumps(response_json).encode('utf-8')
         return resp
@@ -74,9 +87,9 @@ def unpack_table(response_json):
 def unpack_tables(response_json):
     copy = response_json.get('tables').copy()
     for table in copy:
-        PHYSICAL_TABLE_FIELD_SET = table.get('physicalTable') and len(
-            table.keys()
-        ) == 1  # if retrieved with tables.get_tables(...,fields='physicalTable')
+        PHYSICAL_TABLE_FIELD_SET = (
+            table.get('physicalTable') and len(table.keys()) == 1
+        )  # if retrieved with tables.get_tables(...,fields='physicalTable')
         if PHYSICAL_TABLE_FIELD_SET:
             table.update(table.pop('physicalTable'))
         if table.get('information'):
@@ -98,11 +111,11 @@ def changeset_manager(connection):
 
 def async_get(
     async_wrapper: callable,
-    connection: Connection,
-    ids: List[str],
+    connection: 'Connection',
+    ids: list[str],
     error_msg: Optional[str] = None,
-    **kwargs
-) -> List[dict]:
+    **kwargs,
+) -> list[dict]:
     """Asynchronously get results of single object GET requests. GET requests
     requires to have future session param to be used with this function. Threads
     number is set automatically.
@@ -124,13 +137,17 @@ def async_get(
     kwargs['project_id'] = project_id
     threads = get_parallel_number(len(ids))
     all_objects = []
-    with FuturesSessionWithRenewal(connection=connection, max_workers=threads) as session:
+    with FuturesSessionWithRenewal(
+        connection=connection, max_workers=threads
+    ) as session:
         # Extract parameters of the api wrapper and set them using kwargs
         param_value_dict = auto_match_args(
             async_wrapper, kwargs, exclude=['connection', 'session', 'error_msg', 'id']
         )
         futures = [
-            async_wrapper(session=session, connection=connection, id=id, **param_value_dict)
+            async_wrapper(
+                session=session, connection=connection, id=id, **param_value_dict
+            )
             for id in ids
         ]
         for f in as_completed(futures):

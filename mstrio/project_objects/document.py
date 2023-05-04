@@ -1,14 +1,15 @@
 import logging
+from functools import partial
 from typing import Optional
 
-from pandas import concat, DataFrame
+from pandas import DataFrame, concat
 
 from mstrio import config
 from mstrio.api import documents, library, objects
 from mstrio.api.schedules import get_contents_schedule
 from mstrio.connection import Connection
 from mstrio.distribution_services.schedule import Schedule
-from mstrio.object_management import Folder, search_operations, SearchPattern
+from mstrio.object_management import Folder, SearchPattern, search_operations
 from mstrio.project_objects import OlapCube, SuperCube
 from mstrio.server.environment import Environment
 from mstrio.types import ObjectSubTypes
@@ -16,9 +17,20 @@ from mstrio.users_and_groups import User, UserGroup, UserOrGroup
 from mstrio.utils import helper
 from mstrio.utils.cache import CacheSource, ContentCacheMixin
 from mstrio.utils.certified_info import CertifiedInfo
-from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, MoveMixin, ObjectTypes, VldbMixin
-from mstrio.utils.helper import filter_params_for_func, get_valid_project_id, IServerError
-from mstrio.utils.helper import is_document
+from mstrio.utils.entity import (
+    CopyMixin,
+    DeleteMixin,
+    Entity,
+    MoveMixin,
+    ObjectTypes,
+    VldbMixin,
+)
+from mstrio.utils.helper import (
+    IServerError,
+    filter_params_for_func,
+    get_valid_project_id,
+    is_document,
+)
 from mstrio.utils.version_helper import method_version_handler
 
 logger = logging.getLogger(__name__)
@@ -32,7 +44,7 @@ def list_documents(
     name: Optional[str] = None,
     project_id: Optional[str] = None,
     project_name: Optional[str] = None,
-    **filters
+    **filters,
 ) -> list["Document"] | list[dict] | DataFrame:
     """Get all Documents available in the project specified within the
     `connection` object.
@@ -68,7 +80,7 @@ def list_documents(
         to_dataframe=to_dataframe,
         project_id=project_id,
         project_name=project_name,
-        **filters
+        **filters,
     )
 
 
@@ -78,7 +90,7 @@ def list_documents_across_projects(
     to_dictionary: bool = False,
     to_dataframe: bool = False,
     limit: Optional[int] = None,
-    **filters
+    **filters,
 ) -> list["Document"] | list[dict] | DataFrame:
     """Get all Documents stored on the server.
 
@@ -124,7 +136,7 @@ def list_documents_across_projects(
             name=name,
             limit=limit,
             to_dataframe=to_dataframe,
-            **filters
+            **filters,
         )
         if to_dataframe:
             output = concat([output, docs], ignore_index=True)
@@ -136,7 +148,7 @@ def list_documents_across_projects(
 
 
 class Document(Entity, VldbMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCacheMixin):
-    """ Python representation of MicroStrategy Document object
+    """Python representation of MicroStrategy Document object
 
     _CACHE_TYPE is a variable used by ContentCache class for cache filtering
     purposes.
@@ -145,16 +157,21 @@ class Document(Entity, VldbMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCach
     _OBJECT_TYPE = ObjectTypes.DOCUMENT_DEFINITION
     _CACHE_TYPE = CacheSource.Type.DOCUMENT
     _API_GETTERS = {**Entity._API_GETTERS, 'recipients': library.get_document}
-    _API_PATCH = {('name', 'description', 'folder_id'): (objects.update_object, 'partial_put')}
+    _API_PATCH = {
+        ('name', 'description', 'folder_id'): (objects.update_object, 'partial_put')
+    }
     _FROM_DICT_MAP = {
         **Entity._FROM_DICT_MAP,
         'owner': User.from_dict,
         'certified_info': CertifiedInfo.from_dict,
-        'recipients': [User.from_dict]
+        'recipients': [User.from_dict],
     }
 
     def __init__(
-        self, connection: Connection, name: Optional[str] = None, id: Optional[str] = None
+        self,
+        connection: Connection,
+        name: Optional[str] = None,
+        id: Optional[str] = None,
     ):
         """Initialize Document object by passing name or id.
 
@@ -166,7 +183,11 @@ class Document(Entity, VldbMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCach
         """
         if id is None:
             document = super()._find_object_with_name(
-                connection=connection, name=name, listing_function=self._list_all
+                connection=connection,
+                name=name,
+                listing_function=partial(
+                    self._list_all, search_pattern=SearchPattern.EXACTLY
+                ),
             )
             id = document['id']
         super().__init__(connection=connection, object_id=id, name=name)
@@ -202,7 +223,7 @@ class Document(Entity, VldbMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCach
             'version': self.version,
             'template_info': self.template_info,
             'acg': self.acg,
-            'acl': self.acl
+            'acl': self.acl,
         }
         return properties
 
@@ -210,7 +231,7 @@ class Document(Entity, VldbMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCach
         self,
         name: Optional[str] = None,
         description: Optional[str] = None,
-        folder_id: Optional[Folder | str] = None
+        folder_id: Optional[Folder | str] = None,
     ):
         """Alter Document name, description and/or folder id.
 
@@ -257,7 +278,9 @@ class Document(Entity, VldbMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCach
             users = [user for group in recipients for user in group.members]
             recipients = [user["id"] for user in users]
         elif any([not isinstance(el, str) for el in recipients]):
-            raise ValueError('Please provide either list of User, UserGroup or str elements.')
+            raise ValueError(
+                'Please provide either list of User, UserGroup or str elements.'
+            )
         for recipient in recipients:
             if not self.__validate_user(recipient):
                 recipients.remove(recipient)
@@ -288,7 +311,8 @@ class Document(Entity, VldbMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCach
                 recipients = [user["id"] for user in users]
             elif any([not isinstance(el, str) for el in recipients]):
                 raise ValueError(
-                    'Please provide either list User and UserGroup elements or str elements.'
+                    'Please provide either list User and UserGroup elements or str '
+                    'elements.'
                 )
             for user_id in recipients:
                 if self.__validate_user(user_id):
@@ -298,8 +322,9 @@ class Document(Entity, VldbMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCach
         self.fetch(attr='recipients')
 
     @method_version_handler('11.3.0600')
-    def list_available_schedules(self,
-                                 to_dictionary: bool = False) -> list["Schedule"] | list[dict]:
+    def list_available_schedules(
+        self, to_dictionary: bool = False
+    ) -> list["Schedule"] | list[dict]:
         """Get a list of schedules available for the object instance.
 
         Args:
@@ -314,9 +339,7 @@ class Document(Entity, VldbMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCach
             get_contents_schedule(
                 connection=self.connection,
                 project_id=self.connection.project_id,
-                body={
-                    'id': self.id, 'type': 'document'
-                }
+                body={'id': self.id, 'type': 'document'},
             ).json()
         ).get('schedules')
         if to_dictionary:
@@ -348,13 +371,13 @@ class Document(Entity, VldbMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCach
         limit: Optional[int] = None,
         project_id: Optional[str] = None,
         project_name: Optional[str] = None,
-        **filters
+        **filters,
     ) -> list["Document"] | list[dict] | DataFrame:
-
         if to_dictionary and to_dataframe:
             helper.exception_handler(
-                "Please select either `to_dictionary=True` or `to_dataframe=True`, but not both.",
-                ValueError
+                "Please select either `to_dictionary=True` or `to_dataframe=True`, but "
+                "not both.",
+                ValueError,
             )
         project_id = get_valid_project_id(
             connection=connection,
@@ -371,9 +394,7 @@ class Document(Entity, VldbMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCach
             pattern=search_pattern,
             **filters,
         )
-        documents = [
-            obj for obj in objects if is_document(obj['view_media'])
-        ]
+        documents = [obj for obj in objects if is_document(obj['view_media'])]
 
         documents = documents[:limit] if limit else documents
 
@@ -409,9 +430,11 @@ class Document(Entity, VldbMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCach
     @property
     def folder_id(self):
         if not self._folder_id:
-            self._folder_id = next(
-                folder['id'] for folder in self.ancestors if folder['level'] == 1
-            ) if self.ancestors else None
+            self._folder_id = (
+                next(folder['id'] for folder in self.ancestors if folder['level'] == 1)
+                if self.ancestors
+                else None
+            )
         return self._folder_id
 
     @property

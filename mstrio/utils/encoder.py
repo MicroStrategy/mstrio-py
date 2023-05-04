@@ -50,8 +50,9 @@ class Encoder:
     def encode(self):
         """Encode data in base 64."""
         self.__b64_data = b64encode(
-            self.__data_frame.to_json(orient=self.__orientation,
-                                      date_format='iso').encode('utf-8')
+            self.__data_frame.to_json(
+                orient=self.__orientation, date_format='iso'
+            ).encode('utf-8')
         ).decode('utf-8')
         # return base 64 encoded data to calling environment
         return self.__b64_data

@@ -51,7 +51,9 @@ class Success(Exception):
         assert isinstance(data, list)
 
         self.succeeded = data
-        self.full_message = (f"Operation successful:\n{len(self.succeeded)} succeeded requests")
+        self.full_message = (
+            f"Operation successful:\n{len(self.succeeded)} succeeded requests"
+        )
         super().__init__(self.full_message)
 
     def __bool__(self):

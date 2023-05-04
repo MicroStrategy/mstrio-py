@@ -11,7 +11,6 @@ if TYPE_CHECKING:
 
 
 class Library:
-
     def __init__(
         self,
         connection: Connection,

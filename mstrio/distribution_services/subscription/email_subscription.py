@@ -16,7 +16,7 @@ class EmailSubscription(Subscription):
         id: Optional[str] = None,
         subscription_id: Optional[str] = None,
         project_id: Optional[str] = None,
-        project_name: Optional[str] = None
+        project_name: Optional[str] = None,
     ):
         """Initialize EmailSubscription object, populates it with I-Server data
         if id or subscription_id is passed.
@@ -52,6 +52,7 @@ class EmailSubscription(Subscription):
         contents: Optional[Content] = None,
         recipients: list[str] | list[dict] = None,
         delivery_expiration_date: Optional[str] = None,
+        delivery_expiration_timezone: Optional[str] = None,
         contact_security: Optional[bool] = None,
         space_delimiter: Optional[str] = None,
         email_subject: Optional[str] = None,
@@ -62,7 +63,7 @@ class EmailSubscription(Subscription):
         compress: bool = False,
         zip_filename: Optional[str] = None,
         zip_password_protect: Optional[bool] = None,
-        zip_password: Optional[str] = None
+        zip_password: Optional[str] = None,
     ):
         """Creates a new email subscription.
 
@@ -88,6 +89,8 @@ class EmailSubscription(Subscription):
                 IDs or dicts,
             delivery_expiration_date (str, optional): expiration date of the
                 subscription, format should be yyyy - MM - dd,
+            delivery_expiration_timezone (str, optional): expiration timezone
+                of the subscription, example value 'Europe/London'
             contact_security (bool): whether to use contact security for each
                 contact group member
             filename (str, optional): the filename that will be delivered when
@@ -123,6 +126,7 @@ class EmailSubscription(Subscription):
             recipients=recipients,
             delivery_mode='EMAIL',
             delivery_expiration_date=delivery_expiration_date,
+            delivery_expiration_timezone=delivery_expiration_timezone,
             contact_security=contact_security,
             email_subject=email_subject,
             email_message=email_message,
@@ -133,5 +137,5 @@ class EmailSubscription(Subscription):
             overwrite_older_version=overwrite_older_version,
             zip_filename=zip_filename,
             zip_password_protect=zip_password_protect,
-            zip_password=zip_password
+            zip_password=zip_password,
         )

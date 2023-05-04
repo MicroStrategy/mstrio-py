@@ -1,21 +1,29 @@
-from dataclasses import dataclass
-from enum import auto, Enum
 import logging
-from typing import Optional, TYPE_CHECKING
+from dataclasses import dataclass
+from enum import Enum, auto
+from functools import partial
+from typing import TYPE_CHECKING, Optional
 
 from mstrio import config
 from mstrio.api import metrics, objects
 from mstrio.connection import Connection
 from mstrio.modeling.expression import Expression, ExpressionFormat
 from mstrio.modeling.metric import Dimensionality, FormatProperty, MetricFormat
-from mstrio.modeling.schema.helpers import DataType, ObjectSubType, SchemaObjectReference
-from mstrio.object_management import Folder, search_operations, SearchPattern
+from mstrio.modeling.schema.helpers import (
+    DataType,
+    ObjectSubType,
+    SchemaObjectReference,
+)
+from mstrio.object_management import Folder, SearchPattern, search_operations
 from mstrio.types import ObjectTypes
 from mstrio.users_and_groups.user import User
 from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, MoveMixin
 from mstrio.utils.enum_helper import AutoName, get_enum_val
 from mstrio.utils.helper import (
-    delete_none_values, Dictable, filter_params_for_func, get_valid_project_id
+    Dictable,
+    delete_none_values,
+    filter_params_for_func,
+    get_valid_project_id,
 )
 from mstrio.utils.version_helper import method_version_handler
 
@@ -36,7 +44,7 @@ def list_metrics(
     limit: Optional[int] = None,
     search_pattern: SearchPattern | int = SearchPattern.CONTAINS,
     show_expression_as: ExpressionFormat | str = ExpressionFormat.TOKENS,
-    **filters
+    **filters,
 ) -> list["Metric"] | list[dict]:
     """Get list of Metric objects or dicts with them.
 
@@ -84,8 +92,6 @@ def list_metrics(
             owner dict: e.g. {'id': <user's id>, 'name': <user's name>},
                 with one or both of the keys: id, name
             acg (str | int): access control group
-            root (str): Folder ID of the root folder where the search
-                will be performed.
 
     Returns:
         list with Metric objects or list of dictionaries
@@ -104,66 +110,87 @@ def list_metrics(
         name=name,
         pattern=search_pattern,
         limit=limit,
-        **filters
+        **filters,
     )
+    for obj_ in objects_:
+        obj_['project_id'] = project_id
+
     if to_dictionary:
         return objects_
     else:
-        show_expression_as = show_expression_as if isinstance(
-            show_expression_as, ExpressionFormat
-        ) else ExpressionFormat(show_expression_as)
+        show_expression_as = (
+            show_expression_as
+            if isinstance(show_expression_as, ExpressionFormat)
+            else ExpressionFormat(show_expression_as)
+        )
         return [
-            Metric.from_dict({
-                **obj_, 'show_expression_as': show_expression_as
-            }, connection) for obj_ in objects_
+            Metric.from_dict(
+                {**obj_, 'show_expression_as': show_expression_as}, connection
+            )
+            for obj_ in objects_
         ]
 
 
 class DefaultSubtotals(Enum):
     AGGREGATION = SchemaObjectReference(
-        sub_type=ObjectSubType.SYSTEM_SUBTOTAL, object_id='F225147A4CA0BB97368A5689D9675E73'
+        sub_type=ObjectSubType.SYSTEM_SUBTOTAL,
+        object_id='F225147A4CA0BB97368A5689D9675E73',
     )
     AVERAGE = SchemaObjectReference(
-        sub_type=ObjectSubType.SYSTEM_SUBTOTAL, object_id='B328C60462634223B2387D4ADABEEB53'
+        sub_type=ObjectSubType.SYSTEM_SUBTOTAL,
+        object_id='B328C60462634223B2387D4ADABEEB53',
     )
     COUNT = SchemaObjectReference(
-        sub_type=ObjectSubType.SYSTEM_SUBTOTAL, object_id='078C50834B484EE29948FA9DD5300ADF'
+        sub_type=ObjectSubType.SYSTEM_SUBTOTAL,
+        object_id='078C50834B484EE29948FA9DD5300ADF',
     )
     GEOMETRIC_MEAN = SchemaObjectReference(
-        sub_type=ObjectSubType.SYSTEM_SUBTOTAL, object_id='E1853D5A36C74F59A9F8DEFB3F9527A1'
+        sub_type=ObjectSubType.SYSTEM_SUBTOTAL,
+        object_id='E1853D5A36C74F59A9F8DEFB3F9527A1',
     )
     MAXIMUM = SchemaObjectReference(
-        sub_type=ObjectSubType.SYSTEM_SUBTOTAL, object_id='B1F4AA7DE683441BA559AA6453C5113E'
+        sub_type=ObjectSubType.SYSTEM_SUBTOTAL,
+        object_id='B1F4AA7DE683441BA559AA6453C5113E',
     )
     MEDIAN = SchemaObjectReference(
-        sub_type=ObjectSubType.SYSTEM_SUBTOTAL, object_id='83A663067F7E43B2ABF67FD38ECDC7FE'
+        sub_type=ObjectSubType.SYSTEM_SUBTOTAL,
+        object_id='83A663067F7E43B2ABF67FD38ECDC7FE',
     )
     MINIMUM = SchemaObjectReference(
-        sub_type=ObjectSubType.SYSTEM_SUBTOTAL, object_id='00B7BFFF967F42C4B71A4B53D90FB095'
+        sub_type=ObjectSubType.SYSTEM_SUBTOTAL,
+        object_id='00B7BFFF967F42C4B71A4B53D90FB095',
     )
     MODE = SchemaObjectReference(
-        sub_type=ObjectSubType.SYSTEM_SUBTOTAL, object_id='36226A4048A546139BE0AF5F24737BA8'
+        sub_type=ObjectSubType.SYSTEM_SUBTOTAL,
+        object_id='36226A4048A546139BE0AF5F24737BA8',
     )
     PRODUCT = SchemaObjectReference(
-        sub_type=ObjectSubType.SYSTEM_SUBTOTAL, object_id='54E7BFD129514717A92BC44CF1FE5A32'
+        sub_type=ObjectSubType.SYSTEM_SUBTOTAL,
+        object_id='54E7BFD129514717A92BC44CF1FE5A32',
     )
     RESERVED = SchemaObjectReference(
-        sub_type=ObjectSubType.SYSTEM_SUBTOTAL, object_id='F341109B11D5D528C00084916B98494F'
+        sub_type=ObjectSubType.SYSTEM_SUBTOTAL,
+        object_id='F341109B11D5D528C00084916B98494F',
     )
     STANDARD_DEVIATION = SchemaObjectReference(
-        sub_type=ObjectSubType.SYSTEM_SUBTOTAL, object_id='7FBA414995194BBAB2CF1BB599209824'
+        sub_type=ObjectSubType.SYSTEM_SUBTOTAL,
+        object_id='7FBA414995194BBAB2CF1BB599209824',
     )
     SUM_OF_WYA = SchemaObjectReference(
-        sub_type=ObjectSubType.SYSTEM_SUBTOTAL, object_id='F7AE84A511D78008B00092BE4E571AD0'
+        sub_type=ObjectSubType.SYSTEM_SUBTOTAL,
+        object_id='F7AE84A511D78008B00092BE4E571AD0',
     )
     TOTAL = SchemaObjectReference(
-        sub_type=ObjectSubType.SYSTEM_SUBTOTAL, object_id='96C487AF4D12472A910C1ACACFB56EFB'
+        sub_type=ObjectSubType.SYSTEM_SUBTOTAL,
+        object_id='96C487AF4D12472A910C1ACACFB56EFB',
     )
     VARIANCE = SchemaObjectReference(
-        sub_type=ObjectSubType.SYSTEM_SUBTOTAL, object_id='1769DBFCCF2D4392938E40418C6E065E'
+        sub_type=ObjectSubType.SYSTEM_SUBTOTAL,
+        object_id='1769DBFCCF2D4392938E40418C6E065E',
     )
     WEIGHTED_YEARLY_AVERAGE = SchemaObjectReference(
-        sub_type=ObjectSubType.SYSTEM_SUBTOTAL, object_id='F7AE852A11D78008B00092BE4E571AD0'
+        sub_type=ObjectSubType.SYSTEM_SUBTOTAL,
+        object_id='F7AE852A11D78008B00092BE4E571AD0',
     )
 
 
@@ -255,7 +282,7 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa: F811
         metric_format_type: specifies whether the metric has HTML content,
             MetricFormatType enumerator
         thresholds: list of Threshold for the metric
-        """
+    """
 
     @dataclass
     class Conditionality(Dictable):
@@ -318,12 +345,16 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa: F811
             definition: SchemaObjectReference | DefaultSubtotals | None = None,
             implementation: SchemaObjectReference | DefaultSubtotals | None = None,
         ) -> None:
-            self.definition = definition.value if isinstance(
-                definition, DefaultSubtotals
-            ) else definition
-            self.implementation = implementation.value if isinstance(
-                implementation, DefaultSubtotals
-            ) else implementation
+            self.definition = (
+                definition.value
+                if isinstance(definition, DefaultSubtotals)
+                else definition
+            )
+            self.implementation = (
+                implementation.value
+                if isinstance(implementation, DefaultSubtotals)
+                else implementation
+            )
 
     class MetricFormatType(AutoName):
         RESERVED = auto()
@@ -360,7 +391,7 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa: F811
             'subtotal_from_base',
             'column_name_alias',
             'metric_format_type',
-            'thresholds'
+            'thresholds',
         ): metrics.get_metric,
         (
             'abbreviation',
@@ -376,8 +407,8 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa: F811
             'certified_info',
             'acg',
             'acl',
-            'target_info'
-        ): objects.get_object_info
+            'target_info',
+        ): objects.get_object_info,
     }
     _API_PATCH = {
         (
@@ -399,9 +430,9 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa: F811
             'subtotal_from_base',
             'column_name_alias',
             'metric_format_type',
-            'thresholds'
-        ): (metrics.update_metric, 'partial_put'),  # noqa: E131
-        ('folder_id'): (objects.update_object, 'partial_put')
+            'thresholds',
+        ): (metrics.update_metric, 'partial_put'),
+        'folder_id': (objects.update_object, 'partial_put'),
     }
     _FROM_DICT_MAP = {
         **Entity._FROM_DICT_MAP,
@@ -410,20 +441,17 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa: F811
         'expression': Expression.from_dict,
         'dimensionality': Dimensionality.from_dict,
         'conditionality': Conditionality.from_dict,
-        'metric_subtotals': (
-            lambda source,
-            connection:
-            [Metric.MetricSubtotal.from_dict(content, connection) for content in source]
-        ),
+        'metric_subtotals': lambda source, connection: [
+            Metric.MetricSubtotal.from_dict(content, connection) for content in source
+        ],
         'formula_join_type': FormulaJoinType,
         'data_type': DataType.from_dict,
         'smart_total': SmartTotal,
         'format': MetricFormat.from_dict,
         'metric_format_type': MetricFormatType,
-        'thresholds': (
-            lambda source,
-            connection: [Threshold.from_dict(content, connection) for content in source]
-        ),
+        'thresholds': lambda source, connection: [
+            Threshold.from_dict(content, connection) for content in source
+        ],
     }
     _REST_ATTR_MAP = {
         'dimty': 'dimensionality',
@@ -442,7 +470,7 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa: F811
         connection: Connection,
         id: Optional[str] = None,
         name: Optional[str] = None,
-        show_expression_as: ExpressionFormat | str = ExpressionFormat.TOKENS
+        show_expression_as: ExpressionFormat | str = ExpressionFormat.TOKENS,
     ) -> None:
         """Initializes a new instance of Metric class
 
@@ -468,52 +496,81 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa: F811
         """
         if id is None:
             metric = super()._find_object_with_name(
-                connection=connection, name=name, listing_function=list_metrics
+                connection=connection,
+                name=name,
+                listing_function=partial(
+                    list_metrics, search_pattern=SearchPattern.EXACTLY
+                ),
             )
             id = metric['id']
         super().__init__(
-            connection=connection, object_id=id, name=name, show_expression_as=show_expression_as
+            connection=connection,
+            object_id=id,
+            name=name,
+            show_expression_as=show_expression_as,
         )
 
     @method_version_handler('11.3.0500')
     def _init_variables(self, **kwargs) -> None:
         super()._init_variables(**kwargs)
-        self._id = kwargs.get('id')
-        self._sub_type = ObjectSubType(kwargs.get('sub_type')) if kwargs.get('sub_type') else None
-        self.name = kwargs.get('name')
+        self._sub_type = (
+            ObjectSubType(kwargs.get('sub_type')) if kwargs.get('sub_type') else None
+        )
         self._is_embedded = kwargs.get('is_embedded')
-        self.description = kwargs.get('description')
         self.destination_folder_id = kwargs.get('destination_folder_id')
 
-        self.expression = Expression.from_dict(exp) if (exp := kwargs.get('expression')) else None
-        self.dimensionality = Dimensionality.from_dict(dimty) if (
-            dimty := kwargs.get('dimensionality')
-        ) else None
-        self.conditionality = Metric.Conditionality.from_dict(cond) if (
-            cond := kwargs.get('conditionality')
-        ) else None
-        self.metric_subtotals = [
-            Metric.MetricSubtotal.from_dict(subtotal) for subtotal in subtotals
-        ] if (subtotals := kwargs.get('metric_subtotals')) else None
+        self.expression = (
+            Expression.from_dict(exp) if (exp := kwargs.get('expression')) else None
+        )
+        self.dimensionality = (
+            Dimensionality.from_dict(dimty)
+            if (dimty := kwargs.get('dimensionality'))
+            else None
+        )
+        self.conditionality = (
+            Metric.Conditionality.from_dict(cond)
+            if (cond := kwargs.get('conditionality'))
+            else None
+        )
+        self.metric_subtotals = (
+            [Metric.MetricSubtotal.from_dict(subtotal) for subtotal in subtotals]
+            if (subtotals := kwargs.get('metric_subtotals'))
+            else None
+        )
         self.aggregate_from_base = kwargs.get('aggregate_from_base')
-        self.formula_join_type = Metric.FormulaJoinType(join_type) if (
-            join_type := kwargs.get('formula_join_type')
-        ) else None
-        self.smart_total = Metric.SmartTotal(tot) if (tot := kwargs.get('smart_total')) else None
-        self.data_type = DataType.from_dict(dtype) if (dtype := kwargs.get('data_type')) else None
-        self.format = MetricFormat.from_dict(form) if (form := kwargs.get('format')) else None
+        self.formula_join_type = (
+            Metric.FormulaJoinType(join_type)
+            if (join_type := kwargs.get('formula_join_type'))
+            else None
+        )
+        self.smart_total = (
+            Metric.SmartTotal(tot) if (tot := kwargs.get('smart_total')) else None
+        )
+        self.data_type = (
+            DataType.from_dict(dtype) if (dtype := kwargs.get('data_type')) else None
+        )
+        self.format = (
+            MetricFormat.from_dict(form) if (form := kwargs.get('format')) else None
+        )
         self.subtotal_from_base = kwargs.get('subtotal_from_base')
         self.column_name_alias = kwargs.get('column_name_alias')
-        self.metric_format_type = Metric.MetricFormatType(fromat_type) if (
-            fromat_type := kwargs.get('metric_format_type')
-        ) else None
-        self.thresholds = [Threshold.from_dict(threshold) for threshold in thresholds
-                           ] if (thresholds := kwargs.get('thresholds')) else None  # noqa: E124
+        self.metric_format_type = (
+            Metric.MetricFormatType(fromat_type)
+            if (fromat_type := kwargs.get('metric_format_type'))
+            else None
+        )
+        self.thresholds = (
+            [Threshold.from_dict(threshold) for threshold in thresholds]
+            if (thresholds := kwargs.get('thresholds'))
+            else None
+        )
 
         show_expression_as = kwargs.get('show_expression_as', 'tree')
-        self.show_expression_as = show_expression_as if isinstance(
-            show_expression_as, ExpressionFormat
-        ) else ExpressionFormat(show_expression_as)
+        self.show_expression_as = (
+            show_expression_as
+            if isinstance(show_expression_as, ExpressionFormat)
+            else ExpressionFormat(show_expression_as)
+        )
 
     @classmethod
     @method_version_handler('11.3.0500')
@@ -589,14 +646,20 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa: F811
                 'subType': get_enum_val(sub_type, ObjectSubType),
                 'isEmbedded': is_embedded,
                 'description': description,
-                'destinationFolderId': destination_folder.id
-                if isinstance(destination_folder, Folder) else destination_folder,
+                'destinationFolderId': (
+                    destination_folder.id
+                    if isinstance(destination_folder, Folder)
+                    else destination_folder
+                ),
             },
             'expression': expression.to_dict() if expression else None,
             'dimty': dimensionality.to_dict() if dimensionality else None,
             'conditionality': conditionality.to_dict() if conditionality else None,
-            'metricSubtotals': [sub.to_dict() for sub in metric_subtotals]
-            if metric_subtotals else None,  # noqa: E131
+            'metricSubtotals': (
+                [sub.to_dict() for sub in metric_subtotals]
+                if metric_subtotals
+                else None
+            ),
             'aggregateFromBase': aggregate_from_base,
             'formulaJoinType': formula_join_type.value if formula_join_type else None,
             'smartTotal': smart_total.value if smart_total else None,
@@ -604,23 +667,27 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa: F811
             'format': format.to_dict() if format else None,
             'subtotalFromBase': subtotal_from_base,
             'columnNameAlias': column_name_alias,
-            'metricFormatType': metric_format_type.value if metric_format_type else None,
+            'metricFormatType': (
+                metric_format_type.value if metric_format_type else None
+            ),
             'thresholds': [x.to_dict() for x in thresholds] if thresholds else None,
         }
         body = delete_none_values(body, recursion=True)
         response = metrics.create_metric(
             connection,
             body=body,
-            show_expression_as=get_enum_val(show_expression_as, ExpressionFormat)
+            show_expression_as=get_enum_val(show_expression_as, ExpressionFormat),
         ).json()
 
         if config.verbose:
-            logger.info(f"Successfully created metric named: '{name}' with ID: '{response['id']}'")
+            logger.info(
+                f"Successfully created metric named: '{name}' with ID:"
+                f" '{response['id']}'"
+            )
 
         return cls.from_dict(
-            source={
-                **response, 'show_expression_as': show_expression_as
-            }, connection=connection
+            source={**response, 'show_expression_as': show_expression_as},
+            connection=connection,
         )
 
     @method_version_handler('11.3.0500')
@@ -697,3 +764,7 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa: F811
     @property
     def is_embedded(self):
         return self._is_embedded
+
+    @property
+    def project_id(self):
+        return self._project_id if self._project_id else self.connection.project_id

@@ -13,7 +13,7 @@ def create_folder(
     name: str,
     parent_id: str,
     description: Optional[str] = None,
-    project_id: Optional[str] = None
+    project_id: Optional[str] = None,
 ):
     """Create a folder.
 
@@ -41,7 +41,7 @@ def create_folder(
     return connection.post(
         url=connection.base_url + '/api/folders',
         headers={'X-MSTR-ProjectID': project_id},
-        json=body
+        json=body,
     )
 
 
@@ -59,7 +59,8 @@ def delete_folder(connection: Connection, id: str, project_id: Optional[str] = N
     """
     project_id = project_id if project_id is not None else connection.project_id
     return connection.delete(
-        url=f"{connection.base_url}/api/folders/{id}", headers={'X-MSTR-ProjectID': project_id}
+        url=f"{connection.base_url}/api/folders/{id}",
+        headers={'X-MSTR-ProjectID': project_id},
     )
 
 
@@ -69,7 +70,7 @@ def list_folders(
     project_id: Optional[str] = None,
     offset: int = 0,
     limit: int = 5000,
-    error_msg: Optional[str] = None
+    error_msg: Optional[str] = None,
 ):
     """Get a list of folders.
 
@@ -88,9 +89,7 @@ def list_folders(
     return connection.get(
         url=f"{connection.base_url}/api/folders",
         headers={'X-MSTR-ProjectID': project_id},
-        params={
-            'offset': offset, 'limit': limit
-        }
+        params={'offset': offset, 'limit': limit},
     )
 
 
@@ -99,7 +98,7 @@ def list_folders_async(
     connection: Connection,
     project_id: Optional[str] = None,
     offset: int = 0,
-    limit: int = 5000
+    limit: int = 5000,
 ):
     """Get a list of folders asynchronously.
 
@@ -130,7 +129,7 @@ def get_folder_contents(
     project_id: Optional[str] = None,
     offset: int = 0,
     limit: int = 5000,
-    error_msg: Optional[str] = None
+    error_msg: Optional[str] = None,
 ):
     """Get contents of a folder.
 
@@ -151,9 +150,7 @@ def get_folder_contents(
     return connection.get(
         url=f"{connection.base_url}/api/folders/{id}",
         headers={'X-MSTR-ProjectID': project_id},
-        params={
-            'offset': offset, 'limit': limit
-        }
+        params={'offset': offset, 'limit': limit},
     )
 
 
@@ -163,7 +160,7 @@ def get_folder_contents_async(
     id: str,
     project_id: Optional[str] = None,
     offset: int = 0,
-    limit: int = 5000
+    limit: int = 5000,
 ):
     """Get contents of a folder asynchronously.
 
@@ -196,7 +193,7 @@ def get_predefined_folder_contents(
     project_id: Optional[str] = None,
     offset: int = 0,
     limit: int = 5000,
-    error_msg: Optional[str] = None
+    error_msg: Optional[str] = None,
 ):
     """Get contents of a pre-defined folder.
 
@@ -216,9 +213,7 @@ def get_predefined_folder_contents(
     return connection.get(
         url=f"{connection.base_url}/api/folders/preDefined/{folder_type}",
         headers={'X-MSTR-ProjectID': project_id},
-        params={
-            'offset': offset, 'limit': limit
-        }
+        params={'offset': offset, 'limit': limit},
     )
 
 
@@ -228,7 +223,7 @@ def get_predefined_folder_contents_async(
     folder_type: int,
     project_id: Optional[str] = None,
     offset: int = 0,
-    limit: int = 5000
+    limit: int = 5000,
 ):
     """Get contents of a pre-defined folder.
 
@@ -254,7 +249,9 @@ def get_predefined_folder_contents_async(
 
 
 @ErrorHandler(err_msg='Error while getting contents of My Personal Objects folder.')
-def get_my_personal_objects_contents(connection: Connection, project_id: Optional[str] = None):
+def get_my_personal_objects_contents(
+    connection: Connection, project_id: Optional[str] = None
+):
     """Get contents of My Personal Objects folder.
 
     Args:
@@ -266,5 +263,5 @@ def get_my_personal_objects_contents(connection: Connection, project_id: Optiona
     """
     return connection.get(
         url=f"{connection.base_url}/api/folders/myPersonalObjects",
-        headers={'X-MSTR-ProjectID': project_id}
+        headers={'X-MSTR-ProjectID': project_id},
     )

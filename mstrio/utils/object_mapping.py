@@ -13,7 +13,7 @@ from mstrio.modeling.schema import (  # noqa: F401
     Fact,
     LogicalTable,
     Transformation,
-    UserHierarchy
+    UserHierarchy,
 )
 from mstrio.modeling.security_filter import SecurityFilter  # noqa: F401
 from mstrio.object_management.folder import Folder  # noqa: F401
@@ -64,7 +64,9 @@ def __str_to_class(classname):
     return getattr(sys.modules[__name__], classname)
 
 
-def map_to_object(object_type: int | ObjectTypes, subtype: Optional[int | ObjectSubTypes] = None):
+def map_to_object(
+    object_type: int | ObjectTypes, subtype: Optional[int | ObjectSubTypes] = None
+):
     if not isinstance(object_type, ObjectTypes):
         try:
             object_type = ObjectTypes(object_type)
@@ -76,10 +78,13 @@ def map_to_object(object_type: int | ObjectTypes, subtype: Optional[int | Object
         except ValueError:
             subtype = None
 
-    if ((object_type == ObjectTypes.REPORT_DEFINITION
-         and subtype in (ObjectSubTypes.OLAP_CUBE, ObjectSubTypes.SUPER_CUBE))
-            or (object_type == ObjectTypes.USER
-                and subtype in (ObjectSubTypes.USER, ObjectSubTypes.USER_GROUP))):
+    if (
+        object_type == ObjectTypes.REPORT_DEFINITION
+        and subtype in (ObjectSubTypes.OLAP_CUBE, ObjectSubTypes.SUPER_CUBE)
+    ) or (
+        object_type == ObjectTypes.USER
+        and subtype in (ObjectSubTypes.USER, ObjectSubTypes.USER_GROUP)
+    ):
         return __str_to_class(SubTypeObjectMapping(subtype).name)
     elif object_type in [v.value for v in TypeObjectMapping]:
         return __str_to_class(TypeObjectMapping(object_type).name)
@@ -89,21 +94,17 @@ def map_to_object(object_type: int | ObjectTypes, subtype: Optional[int | Object
 
 def map_object(connection: "Connection", obj: dict):
     """Map a dict that represents an object to an instance of the corresponding
-        mstrio class.
+    mstrio class.
     """
 
-    return map_to_object(
-        obj.get('type'),
-        obj.get('subtype')
-    ).from_dict(source=obj, connection=connection)
+    return map_to_object(obj.get('type'), obj.get('subtype')).from_dict(
+        source=obj, connection=connection
+    )
 
 
 def map_objects_list(connection: "Connection", objects_list: list):
     """Map a list of dict that represent objects to instances of
-        the corresponding mstrio classes.
+    the corresponding mstrio classes.
     """
 
-    return [
-        map_object(connection, obj)
-        for obj in objects_list
-    ]
+    return [map_object(connection, obj) for obj in objects_list]

@@ -2,7 +2,13 @@
 from .cluster import Cluster, GroupBy, ServiceAction
 from .environment import Environment
 from .node import Node
-from .project import compare_project_settings, IdleMode, Project, ProjectSettings, ProjectStatus
+from .project import (
+    compare_project_settings,
+    IdleMode,
+    Project,
+    ProjectSettings,
+    ProjectStatus,
+)
 from .server import ServerSettings
 
 # isort: off
@@ -15,6 +21,7 @@ from .job_monitor import (
     list_jobs,
     ObjectType,
     PUName,
-    SubscriptionType
+    SubscriptionType,
 )
+
 # isort: on

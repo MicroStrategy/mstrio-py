@@ -14,7 +14,7 @@ class ProgressBarMixin:
         initial: Union[int, float] = 0,
         bar_format: Optional[str] = None,
         leave: bool = True,
-        **kwargs
+        **kwargs,
     ):
         """Create and display progress bar. Needs to be closed with
         `close_progress_bar`, when updates no longer needed.
@@ -47,7 +47,7 @@ class ProgressBarMixin:
                 The initial counter value. Useful when restarting a progress
                 bar [default: 0]. If using float, consider specifying {n:.3f} or
                 similar in bar_format, or specifying unit_scale.
-            """
+        """
         self._progress_bar = tqdm(
             total=total,
             desc=desc,
@@ -55,7 +55,7 @@ class ProgressBarMixin:
             bar_format=bar_format,
             initial=initial,
             leave=leave,
-            **kwargs
+            **kwargs,
         )
 
     def _close_progress_bar(self):
@@ -65,7 +65,9 @@ class ProgressBarMixin:
         self._progress_bar = None
 
     def _update_progress_bar_if_needed(
-        self, new_description: Optional[str] = None, update_increment: Union[int, float] = 1
+        self,
+        new_description: Optional[str] = None,
+        update_increment: Union[int, float] = 1,
     ):
         """Updates the state of the progress bar.
         Use it after `display_progress_bar`.

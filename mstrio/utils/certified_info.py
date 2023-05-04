@@ -26,12 +26,14 @@ class CertifiedInfo(Dictable):
         connection: Connection,
         certified: bool,
         date_certified: Optional[str] = None,
-        certifier: Optional[dict] = None
+        certifier: Optional[dict] = None,
     ):
         self._connection = connection
         self._certified = certified
         self._date_certified = date_certified
-        self._certifier = User.from_dict(certifier, self._connection) if certifier else None
+        self._certifier = (
+            User.from_dict(certifier, self._connection) if certifier else None
+        )
 
     def __str__(self):
         if not self.certified:

@@ -1,22 +1,32 @@
+import logging
 from enum import Enum, IntFlag
-from typing import Any, Optional, TYPE_CHECKING, TypeVar
+from typing import TYPE_CHECKING, Any, Optional, TypeVar
 
 import pandas as pd
 
+from mstrio import config
 from mstrio.api import objects
 from mstrio.connection import Connection
 from mstrio.types import ObjectTypes
-from mstrio.utils.helper import Dictable, exception_handler, filter_obj_list, IServerError
+from mstrio.utils.helper import (
+    Dictable,
+    IServerError,
+    exception_handler,
+    filter_obj_list,
+)
 
 if TYPE_CHECKING:
     from mstrio.server import Project
     from mstrio.users_and_groups import UserOrGroup
     from mstrio.utils.entity import Entity
 
+logger = logging.getLogger(__name__)
+
 
 class Rights(IntFlag):
-    """"Enumeration constants used to specify the access granted attribute of
-    the DSS objects. """
+    """ "Enumeration constants used to specify the access granted attribute of
+    the DSS objects."""
+
     EXECUTE = 0b10000000
     USE = 0b01000000
     CONTROL = 0b00100000
@@ -35,6 +45,7 @@ class Permissions(Enum):
     TODO: This has to be string-based to discern between 'Denied All'
     and 'Full Control', which have the same mask.
     """
+
     DENIED_ALL = 'Denied All'
     DEFAULT_ALL = 'Default All'
     CONSUME = 'Consume'
@@ -45,6 +56,7 @@ class Permissions(Enum):
 
 class AggregatedRights(IntFlag):
     """Enumeration constants used to specify combination of Rights values."""
+
     NONE = 0b00000000
     CONSUME = 0b01000101
     VIEW = 0b11000101
@@ -65,7 +77,6 @@ T = TypeVar("T")
 
 
 class ACE(Dictable):
-
     _FROM_DICT_MAP = {
         'rights': Rights,
     }
@@ -79,7 +90,7 @@ class ACE(Dictable):
         trustee_name: str,
         trustee_type: int,
         trustee_subtype: int,
-        inheritable: bool
+        inheritable: bool,
     ):
         """Set ACL object.
 
@@ -96,10 +107,12 @@ class ACE(Dictable):
         """
 
         self.rights = rights if isinstance(rights, Rights) else Rights(rights)
-        if self.rights not in range(256) and self.rights not in range(536_870_912, 536_871_167):
+        if self.rights not in range(256) and self.rights not in range(
+            536_870_912, 536_871_167
+        ):
             msg = (
-                "Wrong `rights` value, please provide value in range 0-255 or combination of "
-                "Rights enums"
+                "Wrong `rights` value, please provide value in range 0-255 or "
+                "combination of Rights enums"
             )
             exception_handler(msg)
         self.deny = deny
@@ -120,7 +133,6 @@ class ACE(Dictable):
 
     @classmethod
     def from_dict(cls, source: dict[str, Any], connection: Connection):
-
         def translate_names(name: str):
             if name == "type":
                 return "entry_type"
@@ -130,7 +142,6 @@ class ACE(Dictable):
         return super().from_dict(modified_source, connection)
 
     def to_dict(self, camel_case=True):
-
         def translate_names(name: str):
             if name == "entry_type" or name == "entryType":
                 return "type"
@@ -146,7 +157,7 @@ class ACE(Dictable):
             "rights": self.rights.value,
             "type": self.entry_type,
             "denied": self.deny,
-            "inheritable": self.inheritable
+            "inheritable": self.inheritable,
         }
         return result_dict
 
@@ -165,8 +176,9 @@ class ACLMixin:
     NOTE: Must be mixedin with Entity or its subclasses.
     """
 
-    def list_acl(self, to_dataframe: bool = False, to_dictionary: bool = False,
-                 **filters) -> pd.DataFrame | list[dict | ACE]:
+    def list_acl(
+        self, to_dataframe: bool = False, to_dictionary: bool = False, **filters
+    ) -> pd.DataFrame | list[dict | ACE]:
         """Get Access Control List (ACL) for this object. Optionally filter
         ACLs by specifying filters.
 
@@ -195,7 +207,7 @@ class ACLMixin:
         trustees: "list[UserOrGroup] | UserOrGroup",
         denied: bool = False,
         inheritable: Optional[bool] = None,
-        propagate_to_children: Optional[bool] = None
+        propagate_to_children: Optional[bool] = None,
     ) -> None:
         """Add Access Control Element (ACE) to the object ACL.
 
@@ -226,7 +238,7 @@ class ACLMixin:
             trustees=trustees,
             denied=denied,
             inheritable=inheritable,
-            propagate_to_children=propagate_to_children
+            propagate_to_children=propagate_to_children,
         )
 
     def acl_remove(
@@ -235,7 +247,7 @@ class ACLMixin:
         trustees: "list[UserOrGroup] | UserOrGroup",
         denied: bool = False,
         inheritable: Optional[bool] = None,
-        propagate_to_children: Optional[bool] = None
+        propagate_to_children: Optional[bool] = None,
     ) -> None:
         """Remove Access Control Element (ACE) from the object ACL.
 
@@ -266,7 +278,7 @@ class ACLMixin:
             trustees=trustees,
             denied=denied,
             inheritable=inheritable,
-            propagate_to_children=propagate_to_children
+            propagate_to_children=propagate_to_children,
         )
 
     def acl_alter(
@@ -275,7 +287,7 @@ class ACLMixin:
         trustees: "list[UserOrGroup] | UserOrGroup",
         denied: bool = False,
         inheritable: Optional[bool] = None,
-        propagate_to_children: Optional[bool] = None
+        propagate_to_children: Optional[bool] = None,
     ) -> None:
         """Alter an existing Access Control Element (ACE) of the object ACL.
 
@@ -306,7 +318,7 @@ class ACLMixin:
             trustees=trustees,
             denied=denied,
             inheritable=inheritable,
-            propagate_to_children=propagate_to_children
+            propagate_to_children=propagate_to_children,
         )
 
     def _update_acl(
@@ -347,7 +359,7 @@ class ACLMixin:
             trustees=trustees,
             denied=denied,
             inheritable=inheritable,
-            propagate_to_children=propagate_to_children
+            propagate_to_children=propagate_to_children,
         )
 
         self._set_object_attributes(**response)
@@ -365,7 +377,7 @@ class TrusteeACLMixin:
         to_objects: str | list[str],
         object_type: "ObjectTypes | int",
         project: "Optional[Project | str]" = None,
-        propagate_to_children: Optional[bool] = None
+        propagate_to_children: Optional[bool] = None,
     ) -> None:
         """Set permission to perform actions on given object(s).
 
@@ -406,47 +418,52 @@ class TrusteeACLMixin:
         denied = permission is Permissions.DENIED_ALL
 
         # those 2 tries are for clearing current rights (set to default values)
-        try:
-            modify_rights(
-                connection=self.connection,
-                object_type=object_type,
-                trustees=self.id,
-                op='REMOVE',
-                rights=AggregatedRights.ALL.value,
-                ids=to_objects,
-                denied=(not denied),
-                propagate_to_children=propagate_to_children,
-                project=project
-            )
-        except IServerError:
-            pass
-        try:
-            modify_rights(
-                connection=self.connection,
-                object_type=object_type,
-                trustees=self.id,
-                op='REMOVE',
-                rights=AggregatedRights.ALL.value,
-                ids=to_objects,
-                denied=denied,
-                propagate_to_children=propagate_to_children,
-                project=project
-            )
-        except IServerError:
-            pass
+        for is_denied in True, False:
+            try:
+                current_permission = (
+                    Permissions.DENIED_ALL if is_denied else Permissions.FULL_CONTROL
+                ).value
+                if config.verbose:
+                    logger.info(
+                        f"Attempting to remove default permission: {current_permission}"
+                    )
+                modify_rights(
+                    connection=self.connection,
+                    object_type=object_type,
+                    trustees=self.id,
+                    op='REMOVE',
+                    rights=AggregatedRights.ALL.value,
+                    ids=to_objects,
+                    denied=is_denied,
+                    propagate_to_children=propagate_to_children,
+                    project=project,
+                )
+                if config.verbose:
+                    logger.info(
+                        f"Successfully removed permission: {current_permission}"
+                    )
+            except IServerError:
+                pass
 
         if permission != Permissions.DEFAULT_ALL:
-            modify_rights(
-                connection=self.connection,
-                object_type=object_type,
-                trustees=self.id,
-                op='ADD',
-                rights=right_value,
-                ids=to_objects,
-                denied=denied,
-                propagate_to_children=propagate_to_children,
-                project=project
-            )
+            try:
+                if config.verbose:
+                    logger.info(f"Attempting to add permission: {permission.value}")
+                modify_rights(
+                    connection=self.connection,
+                    object_type=object_type,
+                    trustees=self.id,
+                    op='ADD',
+                    rights=right_value,
+                    ids=to_objects,
+                    denied=denied,
+                    propagate_to_children=propagate_to_children,
+                    project=project,
+                )
+                if config.verbose:
+                    logger.info(f"Successfully added permission: {permission.value}")
+            except IServerError:
+                pass
 
     def set_custom_permissions(
         self,
@@ -459,7 +476,7 @@ class TrusteeACLMixin:
         delete: Optional[str] = None,
         write: Optional[str] = None,
         read: Optional[str] = None,
-        browse: Optional[str] = None
+        browse: Optional[str] = None,
     ) -> None:
         """Set custom permissions to perform actions on given object(s).
 
@@ -506,9 +523,8 @@ class TrusteeACLMixin:
             denied: bool,
             default: bool = False,
             propagate_to_children: Optional[bool] = None,
-            project: "Optional[Project | str]" = None
+            project: "Optional[Project | str]" = None,
         ) -> None:
-
             right_value = _get_custom_right_value(right)
             try:
                 modify_rights(
@@ -520,7 +536,7 @@ class TrusteeACLMixin:
                     object_type=object_type,
                     project=project,
                     denied=(not denied),
-                    propagate_to_children=propagate_to_children
+                    propagate_to_children=propagate_to_children,
                 )
             except IServerError:
                 pass
@@ -536,7 +552,7 @@ class TrusteeACLMixin:
                     object_type=object_type,
                     project=project,
                     denied=denied,
-                    propagate_to_children=propagate_to_children
+                    propagate_to_children=propagate_to_children,
                 )
             except IServerError:
                 pass
@@ -548,7 +564,7 @@ class TrusteeACLMixin:
             Rights.DELETE: delete,
             Rights.WRITE: write,
             Rights.READ: read,
-            Rights.BROWSE: browse
+            Rights.BROWSE: browse,
         }
         if not set(rights_dict.values()).issubset({'grant', 'deny', 'default', None}):
             msg = (
@@ -559,7 +575,9 @@ class TrusteeACLMixin:
 
         grant_list = [right for right, value in rights_dict.items() if value == 'grant']
         deny_list = [right for right, value in rights_dict.items() if value == 'deny']
-        default_list = [right for right, value in rights_dict.items() if value == 'default']
+        default_list = [
+            right for right, value in rights_dict.items() if value == 'default'
+        ]
 
         modify_custom_rights(
             connection=self.connection,
@@ -568,7 +586,7 @@ class TrusteeACLMixin:
             to_objects=to_objects,
             object_type=object_type,
             denied=False,
-            project=project
+            project=project,
         )
         modify_custom_rights(
             connection=self.connection,
@@ -577,7 +595,7 @@ class TrusteeACLMixin:
             to_objects=to_objects,
             object_type=object_type,
             denied=True,
-            project=project
+            project=project,
         )
         modify_custom_rights(
             connection=self.connection,
@@ -587,7 +605,7 @@ class TrusteeACLMixin:
             object_type=object_type,
             denied=True,
             project=project,
-            default=True
+            default=True,
         )
 
 
@@ -646,7 +664,9 @@ def modify_rights(
     if not isinstance(object_type, ObjectTypes):
         object_type = ObjectTypes(object_type)
 
-    trustees = [trustee if isinstance(trustee, str) else trustee.id for trustee in trustees]
+    trustees = [
+        trustee if isinstance(trustee, str) else trustee.id for trustee in trustees
+    ]
     project = project.id if project and not isinstance(project, str) else project
     if op not in ["ADD", "REMOVE", "REPLACE"]:
         raise ValueError("Wrong ACL operator passed. Please use ADD, REMOVE or REPLACE")
@@ -658,7 +678,7 @@ def modify_rights(
                     connection=connection,
                     id=id,
                     object_type=object_type.value,
-                    project_id=project
+                    project_id=project,
                 ).json()
                 tmp = [
                     ace['inheritable']
@@ -677,7 +697,7 @@ def modify_rights(
                         trustee_name=None,
                         trustee_type=None,
                         trustee_subtype=None,
-                        entry_type=1
+                        entry_type=1,
                     )._get_request_body(op=op)
                 ]
             }
@@ -691,7 +711,7 @@ def modify_rights(
                 id=id,
                 body=body,
                 object_type=object_type.value,
-                project_id=project
+                project_id=project,
             )
         if len(ids) == 1 and response.ok:
             return response.json()
@@ -719,8 +739,8 @@ def _get_custom_right_value(right: Rights | list[Rights]) -> int:
                 r = Rights[r.upper()]
             except ValueError:
                 msg = (
-                    f"Invalid custom `right` value: {r}. Available values are: EXECUTE, USE, "
-                    "CONTROL, DELETE, WRITE, READ, BROWSE. See: the Rights enum."
+                    f"Invalid custom `right` value: {r}. Available values are: EXECUTE,"
+                    f" USE, CONTROL, DELETE, WRITE, READ, BROWSE. See: the Rights enum."
                 )
                 raise ValueError(msg)
         right_value |= r.value

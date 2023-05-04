@@ -58,13 +58,13 @@ class Dbms(EntityBase):
         name: str = None,
         id: str = None,
         type: str = None,
-        version: str = None
+        version: str = None,
     ):
         """Initialize Dbms object."""
         if name is None and id is None:
             helper.exception_handler(
                 "Please specify either 'name' or 'id' parameter in the constructor.",
-                exception_type=ValueError
+                exception_type=ValueError,
             )
         temp_dbms = None
 
@@ -76,14 +76,18 @@ class Dbms(EntityBase):
                     object_id=temp_dbms.id,
                     name=temp_dbms.name,
                     type=temp_dbms.type,
-                    version=temp_dbms.version
+                    version=temp_dbms.version,
                 )
 
         if not temp_dbms:
             if id:
-                temp_dbms = Dbms._list_available_dbms(connection, id=id, to_dictionary=True)
+                temp_dbms = Dbms._list_available_dbms(
+                    connection, id=id, to_dictionary=True
+                )
             elif name:
-                temp_dbms = Dbms._list_available_dbms(connection, name=name, to_dictionary=True)
+                temp_dbms = Dbms._list_available_dbms(
+                    connection, name=name, to_dictionary=True
+                )
 
             if temp_dbms:
                 [temp_dbms] = temp_dbms
@@ -92,7 +96,7 @@ class Dbms(EntityBase):
                     object_id=temp_dbms["id"],
                     name=temp_dbms["name"],
                     type=temp_dbms["type"],
-                    version=temp_dbms["version"]
+                    version=temp_dbms["version"],
                 )
             else:
                 identifier = name if name else id
@@ -105,11 +109,17 @@ class Dbms(EntityBase):
 
     @classmethod
     def _list_available_dbms(
-        cls, connection: "Connection", to_dictionary: bool = False, limit: int = None, **filters
+        cls,
+        connection: "Connection",
+        to_dictionary: bool = False,
+        limit: int = None,
+        **filters,
     ) -> Union[List["Dbms"], List[dict]]:
-
         objects = helper.fetch_objects(
-            connection=connection, api=datasources.get_available_dbms, limit=None, filters=None
+            connection=connection,
+            api=datasources.get_available_dbms,
+            limit=None,
+            filters=None,
         )
         cls._DBMS_CACHE.update(
             [cls.from_dict(source=obj, connection=connection) for obj in objects]

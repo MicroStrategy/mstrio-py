@@ -21,7 +21,7 @@ from mstrio.utils.entity import (
     Entity,
     MoveMixin,
     ObjectTypes,
-    ObjectSubTypes
+    ObjectSubTypes,
 )
 from mstrio.utils.filter import Filter
 from mstrio.utils.helper import (
@@ -30,7 +30,7 @@ from mstrio.utils.helper import (
     get_parallel_number,
     get_valid_project_id,
     response_handler,
-    sort_object_properties
+    sort_object_properties,
 )
 from mstrio.utils.parser import Parser
 from mstrio.utils.sessions import FuturesSessionWithRenewal
@@ -106,15 +106,16 @@ def list_reports(
         **filters,
     )
     reports = [
-        item for item in objects_
-        if Report._is_subtype_supported(item['subtype'])
+        item for item in objects_ if Report._is_subtype_supported(item['subtype'])
     ]
     if to_dictionary:
         return reports
     return [Report.from_dict(report_dict, connection) for report_dict in reports]
 
 
-class Report(Entity, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCacheMixin):
+class Report(
+    Entity, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCacheMixin
+):
     """Access, filter, publish, and extract data from in-memory reports.
 
     Create a Report object to load basic information on a report dataset.
@@ -156,6 +157,7 @@ class Report(Entity, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCac
         acg: Access rights (See EnumDSSXMLAccessRightFlags for possible values)
         acl: Object access control list
     """
+
     _OBJECT_TYPE = ObjectTypes.REPORT_DEFINITION
     _OBJECT_SUBTYPES = [
         ObjectSubTypes.REPORT_GRID,
@@ -175,7 +177,7 @@ class Report(Entity, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCac
 
     _API_PATCH: dict = {
         **Entity._API_PATCH,
-        ('folder_id',): (objects.update_object, 'partial_put')
+        ('folder_id',): (objects.update_object, 'partial_put'),
     }
 
     def __init__(
@@ -184,7 +186,7 @@ class Report(Entity, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCac
         id: str,
         instance_id: Optional[str] = None,
         parallel: bool = True,
-        progress_bar: bool = True
+        progress_bar: bool = True,
     ):
         """Initialize an instance of a report.
 
@@ -203,7 +205,11 @@ class Report(Entity, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCac
         """
         connection._validate_project_selected()
         super().__init__(
-            connection, id, instance_id=instance_id, parallel=parallel, progress_bar=progress_bar
+            connection,
+            id,
+            instance_id=instance_id,
+            parallel=parallel,
+            progress_bar=progress_bar,
         )
 
     def _init_variables(self, **kwargs):
@@ -227,7 +233,7 @@ class Report(Entity, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCac
         self,
         name: Optional[str] = None,
         description: Optional[str] = None,
-        abbreviation: Optional[str] = None
+        abbreviation: Optional[str] = None,
     ):
         """Alter Report properties.
 
@@ -237,9 +243,9 @@ class Report(Entity, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCac
             abbreviation: new abbreviation of the Report
         """
         func = self.alter
-        args = func.__code__.co_varnames[:func.__code__.co_argcount]
+        args = func.__code__.co_varnames[: func.__code__.co_argcount]
         defaults = func.__defaults__  # type: ignore
-        default_dict = dict(zip(args[-len(defaults):], defaults)) if defaults else {}
+        default_dict = dict(zip(args[-len(defaults) :], defaults)) if defaults else {}
         local = locals()
         properties = {}
         for property_key in default_dict.keys():
@@ -288,19 +294,28 @@ class Report(Entity, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCac
         # If there are more rows to fetch, fetch them
         if paging['current'] != paging['total']:
             if not limit:
-                limit = max(1000, int((self._initial_limit * self._SIZE_LIMIT) / len(res.content)))
+                limit = max(
+                    1000,
+                    int((self._initial_limit * self._SIZE_LIMIT) / len(res.content)),
+                )
             # Count the number of additional iterations
-            it_total = int((paging['total'] - self._initial_limit) / limit) + \
-                ((paging['total'] - self._initial_limit) % limit != 0)
+            it_total = int((paging['total'] - self._initial_limit) / limit) + (
+                (paging['total'] - self._initial_limit) % limit != 0
+            )
 
             if self._parallel and it_total > 1:
                 threads = get_parallel_number(it_total)
-                with FuturesSessionWithRenewal(connection=self._connection,
-                                               max_workers=threads) as session:
+                with FuturesSessionWithRenewal(
+                    connection=self._connection, max_workers=threads
+                ) as session:
                     fetch_pbar = tqdm(
-                        desc="Downloading", total=it_total + 1, disable=(not self._progress_bar)
+                        desc="Downloading",
+                        total=it_total + 1,
+                        disable=(not self._progress_bar),
                     )
-                    future = self.__fetch_chunks_future(session, paging, self.instance_id, limit)
+                    future = self.__fetch_chunks_future(
+                        session, paging, self.instance_id, limit
+                    )
                     fetch_pbar.update()
                     for i, f in enumerate(future, start=1):
                         response = f.result()
@@ -308,7 +323,9 @@ class Report(Entity, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCac
                             response_handler(response, "Error getting report contents.")
                         fetch_pbar.update()
                         fetch_pbar.set_postfix(
-                            rows=str(min(self._initial_limit + i * limit, paging['total']))
+                            rows=str(
+                                min(self._initial_limit + i * limit, paging['total'])
+                            )
                         )
                         p.parse(response.json())
                     fetch_pbar.close()
@@ -323,10 +340,11 @@ class Report(Entity, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCac
             if self._cross_tab_filter['metrics'] is not None:
                 # drop metrics columns from dataframe
                 metr_names = [
-                    el['name'] for el in list(
+                    el['name']
+                    for el in list(
                         filter(
                             lambda x: x['id'] not in self._cross_tab_filter['metrics'],
-                            self.metrics
+                            self.metrics,
                         )
                     )
                 ]
@@ -343,8 +361,11 @@ class Report(Entity, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCac
 
                 # logical OR for filtered attribute elements
                 for attribute in attr_dict:
-                    attr_name = list(filter(lambda x, attr=attribute: x['id'] in attr,
-                                            self.attributes))[0]['name']
+                    attr_name = list(
+                        filter(
+                            lambda x, attr=attribute: x['id'] in attr, self.attributes
+                        )
+                    )[0]['name']
                     elements = attr_dict[attribute]
                     indexes = indexes | self._dataframe[attr_name].isin(elements)
                 # select dataframe indexes with
@@ -352,10 +373,12 @@ class Report(Entity, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCac
 
             if self._cross_tab_filter['attributes'] is not None:
                 attr_names = [
-                    el['name'] for el in list(
+                    el['name']
+                    for el in list(
                         filter(
-                            lambda x: x['id'] not in self._cross_tab_filter['attributes'],
-                            self.attributes
+                            lambda x: x['id']
+                            not in self._cross_tab_filter['attributes'],
+                            self.attributes,
                         )
                     )
                 ]
@@ -364,7 +387,8 @@ class Report(Entity, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCac
                 to_be_added = []
                 for attr in attr_names:
                     forms = [
-                        column for column in self._dataframe.columns
+                        column
+                        for column in self._dataframe.columns
                         if column.startswith(attr + '@')
                     ]
                     if forms:
@@ -388,19 +412,25 @@ class Report(Entity, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCac
                 instance_id=instance_id,
                 offset=_offset,
                 limit=limit,
-            ) for _offset in range(self._initial_limit, pagination['total'], limit)
+            )
+            for _offset in range(self._initial_limit, pagination['total'], limit)
         ]
 
     def __fetch_chunks(self, parser, pagination, it_total, instance_id, limit):
         """Fetch added rows from this object instance from the Intelligence
         Server."""
-        with tqdm(desc="Downloading", total=it_total + 1,
-                  disable=(not self._progress_bar)) as fetch_pbar:
+        with tqdm(
+            desc="Downloading", total=it_total + 1, disable=(not self._progress_bar)
+        ) as fetch_pbar:
             fetch_pbar.update()
             for _offset in range(self._initial_limit, pagination['total'], limit):
-                response = self.__get_chunk(instance_id=instance_id, offset=_offset, limit=limit)
+                response = self.__get_chunk(
+                    instance_id=instance_id, offset=_offset, limit=limit
+                )
                 fetch_pbar.update()
-                fetch_pbar.set_postfix(rows=str(min(_offset + limit, pagination['total'])))
+                fetch_pbar.set_postfix(
+                    rows=str(min(_offset + limit, pagination['total']))
+                )
                 parser.parse(response=response.json())
 
     def __initialize_report(self, limit: int) -> requests.Response:
@@ -409,12 +439,14 @@ class Report(Entity, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCac
             bar_format='{desc}',
             leave=False,
             ncols=285,
-            disable=(not self._progress_bar)
+            disable=(not self._progress_bar),
         )
 
         # Switch off subtotals if I-Server version is higher than 11.2.1
         body = self._filter._filter_body()
-        if version.parse(self._connection.iserver_version) >= version.parse("11.2.0100"):
+        if version.parse(self._connection.iserver_version) >= version.parse(
+            "11.2.0100"
+        ):
             self._subtotals["visible"] = False
             body["subtotals"] = {"visible": self._subtotals["visible"]}
 
@@ -429,7 +461,9 @@ class Report(Entity, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCac
         inst_pbar.close()
         return response
 
-    def __get_chunk(self, instance_id: str, offset: int, limit: int) -> requests.Response:
+    def __get_chunk(
+        self, instance_id: str, offset: int, limit: int
+    ) -> requests.Response:
         return reports_api.report_instance_id(
             connection=self._connection,
             report_id=self._id,
@@ -443,7 +477,7 @@ class Report(Entity, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCac
         attributes: Optional[list] = None,
         metrics: Optional[list] = None,
         attr_elements: Optional[list] = None,
-        operator: str = 'In'
+        operator: str = 'In',
     ) -> None:
         """Apply filters on the reports's objects.
 
@@ -467,7 +501,9 @@ class Report(Entity, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCac
 
         if self._cross_tab:
             self._cross_tab_filter = {
-                'attributes': attributes, 'metrics': metrics, 'attr_elements': attr_elements
+                'attributes': attributes,
+                'metrics': metrics,
+                'attr_elements': attr_elements,
             }
         elif filtering_is_requested:
             self._filter._clear(
@@ -513,14 +549,15 @@ class Report(Entity, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCac
         Implements GET /v2/reports/<report_id>.
         """
         response = reports_api.report_definition(
-            connection=self._connection,
-            report_id=self._id
+            connection=self._connection, report_id=self._id
         ).json()
 
         grid = response["definition"]["grid"]
         available_objects = response['definition']['availableObjects']
 
-        if version.parse(self._connection.iserver_version) >= version.parse("11.2.0100"):
+        if version.parse(self._connection.iserver_version) >= version.parse(
+            "11.2.0100"
+        ):
             self._subtotals = grid["subtotals"]
         self.name = response["name"]
         self._cross_tab = grid["crossTab"]
@@ -544,15 +581,21 @@ class Report(Entity, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCac
         for column in grid["columns"]:
             if column["type"] == "attribute":
                 full_attributes.append(column)
-        self._attributes = [{'name': attr['name'], 'id': attr['id']} for attr in full_attributes]
+        self._attributes = [
+            {'name': attr['name'], 'id': attr['id']} for attr in full_attributes
+        ]
 
         # Retrieve metrics from the report grid (only selected metrics)
         metrics_position = grid.get("metricsPosition")
         if metrics_position is None:
             self._metrics = []
         else:
-            full_metrics = grid[metrics_position["axis"]][metrics_position["index"]]["elements"]
-            self._metrics = [{'name': metr['name'], 'id': metr['id']} for metr in full_metrics]
+            full_metrics = grid[metrics_position["axis"]][metrics_position["index"]][
+                "elements"
+            ]
+            self._metrics = [
+                {'name': metr['name'], 'id': metr['id']} for metr in full_metrics
+            ]
 
         self.__definition_retrieved = True
 
@@ -563,7 +606,6 @@ class Report(Entity, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCac
         """
 
         def fetch_for_attribute(attribute):
-
             @fallback_on_timeout()
             def fetch_for_attribute_given_limit(limit):
                 response = reports_api.report_single_attribute_elements(
@@ -594,7 +636,7 @@ class Report(Entity, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCac
                 return {
                     "attribute_name": attribute['name'],
                     "attribute_id": attribute['id'],
-                    "elements": elements
+                    "elements": elements,
                 }
 
             return fetch_for_attribute_given_limit(limit)[0]
@@ -605,7 +647,7 @@ class Report(Entity, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCac
                 self.attributes,
                 desc="Loading attribute elements",
                 leave=False,
-                disable=(not self._progress_bar)
+                disable=(not self._progress_bar),
             )
             attr_elements = [fetch_for_attribute(attribute) for attribute in pbar]
             pbar.close()
@@ -621,15 +663,16 @@ class Report(Entity, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCac
         attr_elements = []
         if self.attributes:
             threads = get_parallel_number(len(self.attributes))
-            with FuturesSessionWithRenewal(connection=self._connection,
-                                           max_workers=threads) as session:
+            with FuturesSessionWithRenewal(
+                connection=self._connection, max_workers=threads
+            ) as session:
                 # Fetch first chunk of attribute elements.
                 futures = self.__fetch_attribute_elements_chunks(session, limit)
                 pbar = tqdm(
                     futures,
                     desc="Loading attribute elements",
                     leave=False,
-                    disable=(not self._progress_bar)
+                    disable=(not self._progress_bar),
                 )
                 for i, future in enumerate(pbar):
                     attr = self.attributes[i]
@@ -655,7 +698,7 @@ class Report(Entity, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCac
                         {
                             "attribute_name": attr['name'],
                             "attribute_id": attr['id'],
-                            "elements": elements
+                            "elements": elements,
                         }
                     )
                 pbar.close()
@@ -672,13 +715,16 @@ class Report(Entity, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCac
                 attribute_id=attribute['id'],
                 offset=0,
                 limit=limit,
-            ) for attribute in self.attributes
+            )
+            for attribute in self.attributes
         ]
 
     def list_properties(self):
         """List all properties of the object."""
 
-        attributes = {key: self.__dict__[key] for key in self.__dict__ if not key.startswith('_')}
+        attributes = {
+            key: self.__dict__[key] for key in self.__dict__ if not key.startswith('_')
+        }
         attributes = {
             **attributes,
             "id": self.id,
@@ -696,13 +742,15 @@ class Report(Entity, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCac
             "acg": self.acg,
             "acl": self.acl,
             "attributes": self.attributes,
-            "metrics": self.metrics
+            "metrics": self.metrics,
         }
-        return {key: attributes[key] for key in sorted(attributes, key=sort_object_properties)}
+        return {
+            key: attributes[key]
+            for key in sorted(attributes, key=sort_object_properties)
+        }
 
     def list_available_schedules(
-        self,
-        to_dictionary: bool = False
+        self, to_dictionary: bool = False
     ) -> list["Schedule"] | list[dict]:
         """Get a list of schedules available for the report.
 
@@ -714,11 +762,15 @@ class Report(Entity, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCac
         Returns:
             List of Schedule objects or list of dictionaries.
         """
-        schedules_list_response = get_contents_schedule(
-            connection=self.connection,
-            project_id=self.connection.project_id,
-            body={'id': self.id, 'type': 'report'}
-        ).json().get('schedules')
+        schedules_list_response = (
+            get_contents_schedule(
+                connection=self.connection,
+                project_id=self.connection.project_id,
+                body={'id': self.id, 'type': 'report'},
+            )
+            .json()
+            .get('schedules')
+        )
         if to_dictionary:
             return schedules_list_response
         return [
@@ -746,8 +798,9 @@ class Report(Entity, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCac
             if self._parallel is True:
                 # TODO: move the fallback inside the function to apply
                 # per-attribute, like with non-async version.
-                self._attr_elements = fallback_on_timeout()(self.__get_attr_elements_async
-                                                            )(50000)[0]
+                self._attr_elements = fallback_on_timeout()(
+                    self.__get_attr_elements_async
+                )(50000)[0]
             else:
                 self._attr_elements = self.__get_attr_elements()
             self._filter._populate_attr_elements(self._attr_elements)
@@ -761,7 +814,7 @@ class Report(Entity, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCac
             self.__filter = Filter(
                 attributes=self._attributes,
                 metrics=self._metrics,
-                attr_elements=self._attr_elements
+                attr_elements=self._attr_elements,
             )
         return self.__filter
 

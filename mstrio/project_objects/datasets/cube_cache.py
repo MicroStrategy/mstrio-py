@@ -23,7 +23,7 @@ def list_cube_caches(
     db_connection_id: Optional[str] = None,
     project_ids: Optional[list[str]] = None,
     to_dictionary: Optional[bool] = False,
-    limit: Optional[int] = None
+    limit: Optional[int] = None,
 ) -> list["CubeCache"] | list[dict]:
     """List cube caches. You can filter them by cube (`cube_id`), database
     connection (`db_connection_id`) and projects (`project_ids`). You can also
@@ -76,14 +76,20 @@ def list_cube_caches(
             project_ids=project_ids,
             chunk_size=1000,
             loaded=loaded,
-            filters={}
+            filters={},
         )
     if cube_id:
-        caches = [cache for cache in caches if cache.get('source', {}).get('id', '') == cube_id]
+        caches = [
+            cache
+            for cache in caches
+            if cache.get('source', {}).get('id', '') == cube_id
+        ]
     if db_connection_id:
         caches = [
-            cache for cache in caches if db_connection_id in
-            [db.get('id', '') for db in cache.get('databaseConnections', [])]
+            cache
+            for cache in caches
+            if db_connection_id
+            in [db.get('id', '') for db in cache.get('databaseConnections', [])]
         ]
     if to_dictionary:
         return caches
@@ -97,7 +103,7 @@ def delete_cube_caches(
     force: bool = False,
     nodes: Optional[list[str] | str] = None,
     cube_id: Optional[str] = None,
-    db_connection_id: Optional[str] = None
+    db_connection_id: Optional[str] = None,
 ) -> Optional[dict]:
     """Delete all cube caches on a given node.
 
@@ -182,7 +188,7 @@ class CubeCache(Cache):
         self,
         connection: "Connection",
         cache_id: str,
-        cube_cache_dict: Optional[dict] = None
+        cube_cache_dict: Optional[dict] = None,
     ):
         """Initialize the CubeCache object. If cube_cache_dict provided
         no I-Server request will be sent.
@@ -222,8 +228,12 @@ class CubeCache(Cache):
         self._init_variables(**res.json())
 
     @classmethod
-    def from_dict(cls, connection: "Connection", caches: list[dict]) -> list["CubeCache"]:
-        return [CubeCache(connection, cache_dict['id'], cache_dict) for cache_dict in caches]
+    def from_dict(
+        cls, connection: "Connection", caches: list[dict]
+    ) -> list["CubeCache"]:
+        return [
+            CubeCache(connection, cache_dict['id'], cache_dict) for cache_dict in caches
+        ]
 
     def __alter_status(self, active: bool = None, loaded: bool = None) -> str | None:
         if active is not None and loaded is not None:
@@ -267,10 +277,13 @@ class CubeCache(Cache):
     def _delete(connection: "Connection", id: str, force: bool = False):
         user_input = 'N'
         if not force:
-            user_input = input(
-                f"Are you sure you want to delete cube cache"
-                f"with ID: '{id}'? [Y/N]: "
-            ) or 'N'
+            user_input = (
+                input(
+                    f"Are you sure you want to delete cube cache"
+                    f"with ID: '{id}'? [Y/N]: "
+                )
+                or 'N'
+            )
         if force or user_input == 'Y':
             response = monitors.delete_cube_cache(connection, id, False)
             if response.status_code == 204:
@@ -296,7 +309,9 @@ class CubeCache(Cache):
 
     def get_manipulation_status(self, manipulation_id: str) -> dict:
         """Get manipulation status of cube cache."""
-        res = monitors.get_cube_cache_manipulation_status(self._connection, manipulation_id, False)
+        res = monitors.get_cube_cache_manipulation_status(
+            self._connection, manipulation_id, False
+        )
         return res.json()['status']
 
     @property

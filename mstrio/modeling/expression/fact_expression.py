@@ -68,7 +68,10 @@ class FactExpression(Dictable):
 
     @classmethod
     def from_dict(
-        cls, source: dict, connection: Optional['Connection'] = None, to_snake_case: bool = True
+        cls,
+        source: dict,
+        connection: Optional['Connection'] = None,
+        to_snake_case: bool = True,
     ) -> 'FactExpression':
         data = source.copy()
         data['id'] = data.get('expressionId', None)

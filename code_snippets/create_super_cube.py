@@ -17,6 +17,11 @@ its usage.
 
 import pandas as pd
 
+from mstrio.project_objects import (
+    SuperCubeAttribute,
+    SuperCubeAttributeForm,
+    SuperCubeFormExpression
+)
 from mstrio.project_objects.datasets import SuperCube
 from mstrio.connection import get_connection
 
@@ -47,6 +52,41 @@ ds = SuperCube(connection=conn, name=SUPER_CUBE_NAME)
 ds.add_table(name="Stores", data_frame=stores_df, update_policy="add")
 ds.add_table(name="Sales", data_frame=sales_df, update_policy="add")
 ds.create()
+
+# Add tables to super cube and map columns to attribute forms
+ds = SuperCube(connection=conn, name=SUPER_CUBE_NAME)
+ds.add_table(name="Stores", data_frame=stores_df, update_policy="add")
+ds.add_table(name="Sales", data_frame=sales_df, update_policy="add")
+
+attribute_form_mapping = SuperCubeAttribute(
+    name='store',
+    forms=[
+        SuperCubeAttributeForm(
+            category='ID',
+            expressions=[
+                SuperCubeFormExpression(
+                    table='Stores',
+                    column='store_id'
+                ),
+                SuperCubeFormExpression(
+                    table='Sales',
+                    column='store_id'
+                )
+            ]
+        ),
+        SuperCubeAttributeForm(
+            category='DESC',
+            expressions=[
+                SuperCubeFormExpression(
+                    table='Stores',
+                    column='name'
+                )
+            ]
+        )
+    ]
+)
+
+ds.create(attribute_forms=[attribute_form_mapping])
 
 # When using `SuperCube.add_table()`, Pandas data types are mapped to
 # MicroStrategy data types. By default, numeric data is modeled as MSTR metrics

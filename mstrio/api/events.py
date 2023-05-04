@@ -30,7 +30,9 @@ def list_events(connection, fields=None, error_msg=None):
     Returns:
         HTTP response object returned by the MicroStrategy REST server.
     """
-    return connection.get(url=f'{connection.base_url}/api/events', params={'fields': fields})
+    return connection.get(
+        url=f'{connection.base_url}/api/events', params={'fields': fields}
+    )
 
 
 @ErrorHandler(err_msg='Error getting event {id} information.')

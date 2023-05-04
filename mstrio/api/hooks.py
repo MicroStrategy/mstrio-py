@@ -7,19 +7,22 @@ from mstrio.utils.helper import exception_handler
 logger = logging.getLogger(__name__)
 
 
-def print_url(response, *args, **kwargs):  # NOSONAR required for hook to session objects
+def print_url(
+    response, *args, **kwargs  # NOSONAR required for hook to session objects
+):
     """Response hook to print url for debugging."""
     logger.debug(response.url)
 
 
-def save_response(response, *args, **kwargs):  # NOSONAR required for hook to session objects
+def save_response(
+    response, *args, **kwargs  # NOSONAR required for hook to session objects
+):
     """Response hook to save REST API responses to files structured by the API
     family."""
     import json
     from pathlib import Path
 
     if response.status_code != 204:
-
         # Generate file name
         base_path = Path(__file__).parents[2] / 'tests/resources/auto-api-responses/'
         url = response.url.rsplit('api/', 1)[1]

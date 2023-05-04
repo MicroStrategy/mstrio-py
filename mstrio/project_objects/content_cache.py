@@ -38,10 +38,14 @@ class ContentCache(Cache, ContentCacheMixin):
     _CACHE_TYPE is a variable used by ContentCache class for cache filtering
     purposes.
     """
+
     _CACHE_TYPE = None
 
     def __init__(
-        self, connection: "Connection", id: str, content_cache_dict: Optional[dict] = None
+        self,
+        connection: "Connection",
+        id: str,
+        content_cache_dict: Optional[dict] = None,
     ):
         """Initialize the ContentCache object. If content_cache_dict is provided
         no I-Server request will be sent.
@@ -65,11 +69,17 @@ class ContentCache(Cache, ContentCacheMixin):
     def _init_variables(self, **kwargs) -> None:
         kwargs = camel_to_snake(kwargs)
         super()._init_variables(**kwargs)
-        self._status = ContentCacheStatus.from_dict(status) if (
-            status := kwargs.get('status')
-        ) else None
-        self._format = ContentCacheFormat(format_) if (format_ := kwargs.get('format')) else None
-        self._combined_id = combined_id if (combined_id := kwargs.get('combined_id')) else None
+        self._status = (
+            ContentCacheStatus.from_dict(status)
+            if (status := kwargs.get('status'))
+            else None
+        )
+        self._format = (
+            ContentCacheFormat(format_) if (format_ := kwargs.get('format')) else None
+        )
+        self._combined_id = (
+            combined_id if (combined_id := kwargs.get('combined_id')) else None
+        )
         self._chapter = kwargs.get('chapter')
         self._report_caches_used = kwargs.get('report_caches_used')
         self._host = kwargs.get('host')
@@ -99,7 +109,7 @@ class ContentCache(Cache, ContentCacheMixin):
             project_id=self._project_id,
             nodes=self._nodes,
             id=self.id,
-            to_dictionary=True
+            to_dictionary=True,
         )
         if res:
             self._init_variables(**res[0])
@@ -109,7 +119,7 @@ class ContentCache(Cache, ContentCacheMixin):
         op: str,
         value: Optional[bool] = None,
         status: Optional[str] = None,
-        nodes: Optional[list[str]] = None
+        nodes: Optional[list[str]] = None,
     ) -> Response:
         """Engine for altering ContentCache status
 
@@ -124,25 +134,27 @@ class ContentCache(Cache, ContentCacheMixin):
             Response object
         """
         if not nodes:
-            nodes = ContentCacheMixin.fetch_nodes(self._connection, self._connection.project_id)
-        body = {'operationList': [
-            {
-                'op': op,
-                'path': f'/contentCaches/{self.combined_id}/status/{status}'
-                if status else f'/contentCaches/{self.combined_id}',
-                'value': value
-            }
-        ]}
+            nodes = ContentCacheMixin.fetch_nodes(
+                self._connection, self._connection.project_id
+            )
+        body = {
+            'operationList': [
+                {
+                    'op': op,
+                    'path': f'/contentCaches/{self.combined_id}/status/{status}'
+                    if status
+                    else f'/contentCaches/{self.combined_id}',
+                    'value': value,
+                }
+            ]
+        }
         return monitors.update_contents_caches(self._connection, nodes, body)
 
     def load(self):
         """Load content cache."""
         nodes = self._nodes
         response = self.__alter_status(
-            op='replace',
-            value=True,
-            status='loaded',
-            nodes=nodes
+            op='replace', value=True, status='loaded', nodes=nodes
         )
 
         if config.verbose and response.ok:
@@ -156,10 +168,7 @@ class ContentCache(Cache, ContentCacheMixin):
         """Unload content cache."""
         nodes = self._nodes
         response = self.__alter_status(
-            op='replace',
-            value=False,
-            status='loaded',
-            nodes=nodes
+            op='replace', value=False, status='loaded', nodes=nodes
         )
         if config.verbose and response:
             logger.info(f'Successfully unloaded content cache with id: {self.id}')
@@ -178,21 +187,24 @@ class ContentCache(Cache, ContentCacheMixin):
         Returns:
             Response object."""
         if not force:
-            user_input = input(
-                f"Are you sure you want to delete content cache"
-                f"with ID: '{self.id}'? [Y/N]: "
-            ) or 'N'
+            user_input = (
+                input(
+                    f"Are you sure you want to delete content cache"
+                    f"with ID: '{self.id}'? [Y/N]: "
+                )
+                or 'N'
+            )
         if force or user_input == 'Y':
             nodes = self._nodes
-            response = self.__alter_status(
-                op='remove', nodes=nodes
-            )
+            response = self.__alter_status(op='remove', nodes=nodes)
             if config.verbose and response:
                 logger.info(f"Successfully deleted content cache with ID: '{self.id}'.")
             return response
 
     @classmethod
-    def from_dict(cls, connection: "Connection", caches: list[dict]) -> list["ContentCache"]:
+    def from_dict(
+        cls, connection: "Connection", caches: list[dict]
+    ) -> list["ContentCache"]:
         """Creates Caches from a provided dictionary.
 
         Args:
@@ -204,7 +216,10 @@ class ContentCache(Cache, ContentCacheMixin):
 
         Returns:
             List of Caches created from the provided dictionaries."""
-        return [ContentCache(connection, cache_dict['id'], cache_dict) for cache_dict in caches]
+        return [
+            ContentCache(connection, cache_dict['id'], cache_dict)
+            for cache_dict in caches
+        ]
 
     def list_properties(self):
         """List properties for content cache."""
@@ -314,7 +329,6 @@ class ContentCache(Cache, ContentCacheMixin):
 
 @dataclass
 class ContentCacheStatus(Dictable):
-
     ready: bool
     processing: bool
     invalid: bool

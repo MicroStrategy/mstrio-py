@@ -13,7 +13,8 @@ def get_privileges(connection, error_msg=None):
         Complete HTTP response object.
     """
     return connection.get(
-        url=f'{connection.base_url}/api/iserver/privileges', headers={'X-MSTR-ProjectID': None}
+        url=f'{connection.base_url}/api/iserver/privileges',
+        headers={'X-MSTR-ProjectID': None},
     )
 
 
@@ -49,7 +50,7 @@ def get_ldap_info(connection, error_msg=None):
     """
     return connection.get(
         url=f'{connection.base_url}/api/iserver/ldap/configuration',
-        headers={'X-MSTR-ProjectID': None}
+        headers={'X-MSTR-ProjectID': None},
     )
 
 
@@ -132,7 +133,7 @@ def get_ldap_attributes(connection, error_msg=None):
     """
     return connection.get(
         url=f'{connection.base_url}/api/iserver/ldap/attributes',
-        headers={'X-MSTR-ProjectID': None}
+        headers={'X-MSTR-ProjectID': None},
     )
 
 
@@ -151,7 +152,7 @@ def get_ldap_certificate_info(connection, error_msg=None):
     """
     return connection.get(
         url=f'{connection.base_url}/api/iserver/ldap/certificate',
-        headers={'X-MSTR-ProjectID': None}
+        headers={'X-MSTR-ProjectID': None},
     )
 
 
@@ -192,7 +193,7 @@ def verify_ldap_binding(connection, error_msg=None):
     """
     return connection.get(
         url=f'{connection.base_url}/api/iserver/ldap/authuserbinds',
-        headers={'X-MSTR-ProjectID': None}
+        headers={'X-MSTR-ProjectID': None},
     )
 
 
@@ -211,7 +212,8 @@ def get_ldap_batch_import_status(connection, error_msg=None):
         Complete HTTP response object.
     """
     return connection.get(
-        url=f'{connection.base_url}/api/iserver/ldap/import', headers={'X-MSTR-ProjectID': None}
+        url=f'{connection.base_url}/api/iserver/ldap/import',
+        headers={'X-MSTR-ProjectID': None},
     )
 
 
@@ -230,7 +232,8 @@ def stop_ldap_batch_import(connection, error_msg=None):
         Complete HTTP response object.
     """
     return connection.put(
-        url=f'{connection.base_url}/api/iserver/ldap/import', headers={'X-MSTR-ProjectID': None}
+        url=f'{connection.base_url}/api/iserver/ldap/import',
+        headers={'X-MSTR-ProjectID': None},
     )
 
 
@@ -248,7 +251,8 @@ def do_ldap_batch_import(connection, error_msg=None):
         Complete HTTP response object.
     """
     return connection.post(
-        url=f'{connection.base_url}/api/iserver/ldap/import', headers={'X-MSTR-ProjectID': None}
+        url=f'{connection.base_url}/api/iserver/ldap/import',
+        headers={'X-MSTR-ProjectID': None},
     )
 
 
@@ -272,7 +276,8 @@ def update_authentication_configs(connection, body, error_msg=None):
     return connection.put(
         url=f'{connection.base_url}/api/admin/restServerSettings/auth',
         headers={
-            'X-MSTR-ProjectID': None, 'Authorization': connection._get_authorization()
+            'X-MSTR-ProjectID': None,
+            'Authorization': connection._get_authorization(),
         },
         json=body,
     )
@@ -298,7 +303,8 @@ def update_collaboration_server_configs(connection, body, error_msg=None):
     return connection.put(
         url=f'{connection.base_url}/api/admin/restServerSettings/collaboration',
         headers={
-            'X-MSTR-ProjectID': None, 'Authorization': connection._get_authorization()
+            'X-MSTR-ProjectID': None,
+            'Authorization': connection._get_authorization(),
         },
         json=body,
     )
@@ -322,7 +328,8 @@ def update_web_configs(connection, body, error_msg=None):
     return connection.put(
         url=f'{connection.base_url}/api/admin/restServerSettings/microStrategyWeb',
         headers={
-            'X-MSTR-ProjectID': None, 'Authorization': connection._get_authorization()
+            'X-MSTR-ProjectID': None,
+            'Authorization': connection._get_authorization(),
         },
         json=body,
     )
@@ -346,9 +353,11 @@ def test_collaboration_connection(connection, body, error_msg=None):
         Complete HTTP response object.
     """
     return connection.post(
-        url=f'{connection.base_url}/api/admin/restServerSettings/collaboration/connectionTest',
+        url=f'{connection.base_url}/api/admin/restServerSettings/collaboration'
+        f'/connectionTest',
         headers={
-            'X-MSTR-ProjectID': None, 'Authorization': connection._get_authorization()
+            'X-MSTR-ProjectID': None,
+            'Authorization': connection._get_authorization(),
         },
         json=body,
     )
@@ -374,7 +383,8 @@ def update_iserver_configs(connection, body, error_msg=None):
     return connection.put(
         url=f'{connection.base_url}/api/admin/restServerSettings/iServer',
         headers={
-            'X-MSTR-ProjectID': None, 'Authorization': connection._get_authorization()
+            'X-MSTR-ProjectID': None,
+            'Authorization': connection._get_authorization(),
         },
         json=body,
     )
@@ -396,12 +406,15 @@ def get_rest_configs(connection, error_msg=None):
     return connection.get(
         url=f'{connection.base_url}/api/admin/restServerSettings',
         headers={
-            'X-MSTR-ProjectID': None, 'Authorization': connection._get_authorization()
+            'X-MSTR-ProjectID': None,
+            'Authorization': connection._get_authorization(),
         },
     )
 
 
-@ErrorHandler(err_msg='Error checking intelligence server - web server trust relationship.')
+@ErrorHandler(
+    err_msg='Error checking intelligence server - web server trust relationship.'
+)
 def check_iserver_web_trust(connection, error_msg=None):
     """Check to see if there is a trust relationship between the Web Server and
     the Intelligence Server.
@@ -414,14 +427,18 @@ def check_iserver_web_trust(connection, error_msg=None):
         Complete HTTP response object.
     """
     return connection.get(
-        url=f'{connection.base_url}/api/admin/restServerSettings/iServer/trustRelationship',
+        url=f'{connection.base_url}/api/admin/restServerSettings/iServer'
+        f'/trustRelationship',
         headers={
-            'X-MSTR-ProjectID': None, 'Authorization': connection._get_authorization()
+            'X-MSTR-ProjectID': None,
+            'Authorization': connection._get_authorization(),
         },
     )
 
 
-@ErrorHandler(err_msg='Error setting intelligence server - web server trust relationship.')
+@ErrorHandler(
+    err_msg='Error setting intelligence server - web server trust relationship.'
+)
 def set_iserver_web_trust(connection, body, error_msg=None):
     """Set up a trust relationship between the Web Server and the Intelligence
     Server. You obtain the authorization token needed to execute the request
@@ -439,15 +456,19 @@ def set_iserver_web_trust(connection, body, error_msg=None):
         Complete HTTP response object.
     """
     return connection.post(
-        url=f'{connection.base_url}/api/admin/restServerSettings/iServer/trustRelationship',
+        url=f'{connection.base_url}/api/admin/restServerSettings/iServer'
+        f'/trustRelationship',
         headers={
-            'X-MSTR-ProjectID': None, 'Authorization': connection._get_authorization()
+            'X-MSTR-ProjectID': None,
+            'Authorization': connection._get_authorization(),
         },
         json=body,
     )
 
 
-@ErrorHandler(err_msg='Error deleting intelligence server - web server trust relationship.')
+@ErrorHandler(
+    err_msg='Error deleting intelligence server - web server trust relationship.'
+)
 def delete_iserver_web_trust(connection, error_msg=None):
     """Delete a trust relationship between the Web Server and the Intelligence
     Server. You obtain the authorization token needed to execute the request
@@ -462,9 +483,11 @@ def delete_iserver_web_trust(connection, error_msg=None):
         Complete HTTP response object.
     """
     return connection.delete(
-        url=f'{connection.base_url}/api/admin/restServerSettings/iServer/trustRelationship',
+        url=f'{connection.base_url}/api/admin/restServerSettings/iServer'
+        f'/trustRelationship',
         headers={
-            'X-MSTR-ProjectID': None, 'Authorization': connection._get_authorization()
+            'X-MSTR-ProjectID': None,
+            'Authorization': connection._get_authorization(),
         },
     )
 
@@ -483,9 +506,11 @@ def test_iserver_connection(connection, error_msg=None):
         Complete HTTP response object.
     """
     return connection.post(
-        url=f'{connection.base_url}/api/admin/restServerSettings/iServer/connectionTest',
+        url=f'{connection.base_url}/api/admin/restServerSettings/iServer'
+        f'/connectionTest',
         headers={
-            'X-MSTR-ProjectID': None, 'Authorization': connection._get_authorization()
+            'X-MSTR-ProjectID': None,
+            'Authorization': connection._get_authorization(),
         },
     )
 
@@ -506,7 +531,8 @@ def get_security_settings(connection, error_msg=None):
     return connection.get(
         url=f'{connection.base_url}/api/admin/restServerSettings/security',
         headers={
-            'X-MSTR-ProjectID': None, 'Authorization': connection._get_authorization()
+            'X-MSTR-ProjectID': None,
+            'Authorization': connection._get_authorization(),
         },
     )
 
@@ -530,7 +556,8 @@ def update_security_settings(connection, body, error_msg=None):
     return connection.put(
         url=f'{connection.base_url}/api/admin/restServerSettings/security',
         headers={
-            'X-MSTR-ProjectID': None, 'Authorization': connection._get_authorization()
+            'X-MSTR-ProjectID': None,
+            'Authorization': connection._get_authorization(),
         },
         json=body,
     )
@@ -550,7 +577,7 @@ def get_iserver_settings_config(connection, error_msg=None):
     """
     return connection.get(
         url=f'{connection.base_url}/api/v2/iserver/settings/config',
-        headers={'X-MSTR-ProjectID': None}
+        headers={'X-MSTR-ProjectID': None},
     )
 
 
@@ -567,12 +594,15 @@ def get_iserver_settings(connection, error_msg=None):
         Complete HTTP response object.
     """
     return connection.get(
-        url=f'{connection.base_url}/api/v2/iserver/settings', headers={'X-MSTR-ProjectID': None}
+        url=f'{connection.base_url}/api/v2/iserver/settings',
+        headers={'X-MSTR-ProjectID': None},
     )
 
 
 @ErrorHandler(err_msg='Error updating I-Server settings.')
-def create_iserver_settings(connection, body, error_msg=None, whitelist=('ERR001', 400)):
+def create_iserver_settings(
+    connection, body, error_msg=None, whitelist=('ERR001', 400)
+):
     """Create some IServer governing settings.
 
     Example:
@@ -596,7 +626,9 @@ def create_iserver_settings(connection, body, error_msg=None, whitelist=('ERR001
 
 
 @ErrorHandler(err_msg='Error updating I-Server settings.')
-def update_iserver_settings(connection, body, error_msg=None, whitelist=('ERR001', 400)):
+def update_iserver_settings(
+    connection, body, error_msg=None, whitelist=('ERR001', 400)
+):
     """Update some IServer governing settings.
 
     Example:
@@ -633,7 +665,8 @@ def get_cluster_membership(connection, error_msg=None):
     return connection.get(
         url=f'{connection.base_url}/api/admin/iServer/clusterMembership',
         headers={
-            'X-MSTR-ProjectID': None, 'Authorization': connection._get_authorization()
+            'X-MSTR-ProjectID': None,
+            'Authorization': connection._get_authorization(),
         },
     )
 
@@ -654,7 +687,8 @@ def get_iserver_node_settings(connection, node, error_msg=None):
     return connection.get(
         url=f'{connection.base_url}/api/admin/restServerSettings/iServer/{node}',
         headers={
-            'X-MSTR-ProjectID': None, 'Authorization': connection._get_authorization()
+            'X-MSTR-ProjectID': None,
+            'Authorization': connection._get_authorization(),
         },
     )
 
@@ -674,7 +708,8 @@ def update_iserver_configuration_settings(connection, body, error_msg=None):
     return connection.put(
         url=f'{connection.base_url}/api/admin/restServerSettings/iServer',
         headers={
-            'X-MSTR-ProjectID': None, 'Authorization': connection._get_authorization()
+            'X-MSTR-ProjectID': None,
+            'Authorization': connection._get_authorization(),
         },
         json=body,
     )
@@ -699,7 +734,8 @@ def update_iserver_node_settings(connection, body, node, error_msg=None):
     return connection.put(
         url=f'{connection.base_url}/api/admin/restServerSettings/iServer/{node}',
         headers={
-            'X-MSTR-ProjectID': None, 'Authorization': connection._get_authorization()
+            'X-MSTR-ProjectID': None,
+            'Authorization': connection._get_authorization(),
         },
         json=body,
     )
@@ -719,6 +755,7 @@ def delete_iserver_node_settings(connection, node, error_msg=None):
     return connection.delete(
         url=f'{connection.base_url}/api/admin/restServerSettings/iServer/{node}',
         headers={
-            'X-MSTR-ProjectID': None, 'Authorization': connection._get_authorization()
+            'X-MSTR-ProjectID': None,
+            'Authorization': connection._get_authorization(),
         },
     )

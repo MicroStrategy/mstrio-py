@@ -123,15 +123,21 @@ class AdvancedProperties(Dictable):
             'vldb_properties': {
                 key: value.to_dict(camel_case)
                 for key, value in self.vldb_properties.items()
-            } if self.vldb_properties else None,
+            }
+            if self.vldb_properties
+            else None,
             'metric_join_types': {
                 key: value.to_dict(camel_case)
                 for key, value in self.metric_join_types.items()
-            } if self.metric_join_types else None,
+            }
+            if self.metric_join_types
+            else None,
             'attribute_join_types': {
                 key: value.to_dict(camel_case)
                 for key, value in self.attribute_join_types.items()
-            } if self.attribute_join_types else None,
+            }
+            if self.attribute_join_types
+            else None,
         }
 
         return (

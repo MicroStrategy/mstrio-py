@@ -13,7 +13,8 @@ def get_privileges(connection, error_msg=None):
         Complete HTTP response object.
     """
     return connection.get(
-        url=f'{connection.base_url}/api/iserver/privileges', headers={'X-MSTR-ProjectID': None}
+        url=f'{connection.base_url}/api/iserver/privileges',
+        headers={'X-MSTR-ProjectID': None},
     )
 
 
@@ -53,7 +54,7 @@ def get_security_roles(connection, fields=None, error_msg=None):
     return connection.get(
         url=f'{connection.base_url}/api/securityRoles',
         headers={'X-MSTR-ProjectID': None},
-        params={'fields': fields}
+        params={'fields': fields},
     )
 
 
@@ -90,7 +91,8 @@ def get_security_role(connection, id, error_msg=None):
         Complete HTTP response object.
     """
     return connection.get(
-        url=f'{connection.base_url}/api/securityRoles/{id}', headers={'X-MSTR-ProjectID': None}
+        url=f'{connection.base_url}/api/securityRoles/{id}',
+        headers={'X-MSTR-ProjectID': None},
     )
 
 
@@ -107,7 +109,8 @@ def delete_security_role(connection, id, error_msg=None):
         Complete HTTP response object.
     """
     return connection.delete(
-        url=f'{connection.base_url}/api/securityRoles/{id}', headers={'X-MSTR-ProjectID': None}
+        url=f'{connection.base_url}/api/securityRoles/{id}',
+        headers={'X-MSTR-ProjectID': None},
     )
 
 
@@ -132,7 +135,9 @@ def update_security_role(connection, id, body, error_msg=None):
     )
 
 
-@ErrorHandler(err_msg='Error getting security role with ID {id} for project with ID {project_id}')
+@ErrorHandler(
+    err_msg='Error getting security role with ID {id} for project with ID {project_id}'
+)
 def get_security_role_for_project(connection, id, project_id, error_msg=None):
     """Get all users and user groups that are linked to a specific security
     role.
@@ -147,6 +152,9 @@ def get_security_role_for_project(connection, id, project_id, error_msg=None):
         Complete HTTP response object.
     """
     return connection.get(
-        url=f'{connection.base_url}/api/securityRoles/{id}/projects/{project_id}/members',
+        url=(
+            f'{connection.base_url}/api/securityRoles/{id}/projects/'
+            f'{project_id}/members'
+        ),
         headers={'X-MSTR-ProjectID': None},
     )

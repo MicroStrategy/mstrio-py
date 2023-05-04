@@ -8,7 +8,11 @@ from requests.adapters import Response
 
 from mstrio.api.exceptions import MstrException, PartialSuccess, Success
 from mstrio.utils.error_handlers import bulk_operation_response_handler, ErrorHandler
-from mstrio.utils.helper import delete_none_values, filter_list_of_dicts, response_handler
+from mstrio.utils.helper import (
+    delete_none_values,
+    filter_list_of_dicts,
+    response_handler,
+)
 from mstrio.utils.sessions import FuturesSessionWithRenewal
 
 if TYPE_CHECKING:
@@ -41,9 +45,7 @@ def get_projects(
     return connection.get(
         url=f'{connection.base_url}/api/monitors/projects',
         headers={'X-MSTR-ProjectID': None},
-        params={
-            'offset': offset, 'limit': limit
-        },
+        params={'offset': offset, 'limit': limit},
     )
 
 
@@ -75,10 +77,14 @@ def get_projects_async(
 
 
 @ErrorHandler(
-    err_msg='Error getting information about nodes in the connected Intelligence Server cluster.'
+    err_msg='Error getting information about nodes in the connected Intelligence '
+    'Server cluster.'
 )
 def get_node_info(
-    connection: "Connection", id: str = None, node_name: str = None, error_msg: str = None
+    connection: "Connection",
+    id: str = None,
+    node_name: str = None,
+    error_msg: str = None,
 ):
     """Get information about nodes in the connected Intelligence Server
     cluster.
@@ -96,14 +102,13 @@ def get_node_info(
     return connection.get(
         url=f'{connection.base_url}/api/monitors/iServer/nodes',
         headers={'X-MSTR-ProjectID': None},
-        params={
-            'projects.id': id, 'name': node_name
-        },
+        params={'projects.id': id, 'name': node_name},
     )
 
 
 @ErrorHandler(
-    err_msg='Error updating properties for a project {project_id} for cluster node {node_name}.'
+    err_msg='Error updating properties for a project {project_id} for cluster node {'
+    'node_name}.'
 )
 def update_node_properties(
     connection: "Connection",
@@ -111,7 +116,7 @@ def update_node_properties(
     project_id: str,
     body: dict,
     error_msg: str = None,
-    whitelist: Optional[list[tuple]] = None
+    whitelist: Optional[list[tuple]] = None,
 ):
     """Update properties such as project status for a specific project for
     respective cluster node. You obtain cluster node name and project id from
@@ -143,18 +148,23 @@ def update_node_properties(
     """
 
     return connection.patch(
-        url=f'{connection.base_url}/api/monitors/iServer/nodes/{node_name}/projects/{project_id}',
+        url=(
+            f'{connection.base_url}/api/monitors/iServer/nodes/{node_name}/projects'
+            f'/{project_id}'
+        ),
         headers={'X-MSTR-ProjectID': None},
         json=body,
     )
 
 
-@ErrorHandler(err_msg='Error adding node {node_name} to connected Intelligence Server cluster.')
+@ErrorHandler(
+    err_msg='Error adding node {node_name} to connected Intelligence Server cluster.'
+)
 def add_node(
     connection: "Connection",
     node_name: str,
     error_msg: str = None,
-    whitelist: Optional[list[tuple]] = None
+    whitelist: Optional[list[tuple]] = None,
 ):
     """Add a node to the connected Intelligence Server cluster. The node must
     meet I-Server clustering requirements. If the node is part of a multi-node
@@ -183,13 +193,14 @@ def add_node(
 
 
 @ErrorHandler(
-    err_msg='Error removing node {node_name} from the connected Intelligence Server cluster.'
+    err_msg='Error removing node {node_name} from the connected Intelligence Server '
+    'cluster.'
 )
 def remove_node(
     connection: "Connection",
     node_name: str,
     error_msg: str = None,
-    whitelist: Optional[list[tuple]] = None
+    whitelist: Optional[list[tuple]] = None,
 ):
     """Remove a node from the connected Intelligence Server cluster. After a
     successful removal, some existing authorization tokens may become
@@ -223,7 +234,7 @@ def get_user_connections(
     node_name: str,
     offset: int = 0,
     limit: int = 100,
-    error_msg: str = None
+    error_msg: str = None,
 ):
     """Get user connections information on specific intelligence server node.
 
@@ -244,9 +255,7 @@ def get_user_connections(
     return connection.get(
         url=f'{connection.base_url}/api/monitors/userConnections',
         headers={'X-MSTR-ProjectID': None},
-        params={
-            'clusterNode': node_name, 'offset': offset, 'limit': limit
-        },
+        params={'clusterNode': node_name, 'offset': offset, 'limit': limit},
     )
 
 
@@ -255,7 +264,7 @@ def get_user_connections_async(
     connection: "Connection",
     node_name: str,
     offset: int = 0,
-    limit: int = 100
+    limit: int = 100,
 ):
     """Get user connections information on specific intelligence server node.
 
@@ -369,7 +378,9 @@ def delete_cube_cache(connection: "Connection", id: str, throw_error: bool = Tru
     Returns:
         Complete HTTP response object.
     """
-    return connection.delete(url=f'{connection.base_url}/api/monitors/caches/cubes/{id}')
+    return connection.delete(
+        url=f'{connection.base_url}/api/monitors/caches/cubes/{id}'
+    )
 
 
 @ErrorHandler(err_msg='Error altering cube cache {id} status.')
@@ -378,7 +389,7 @@ def alter_cube_cache_status(
     id: str,
     active: bool = None,
     loaded: bool = None,
-    throw_error: bool = True
+    throw_error: bool = True,
 ):
     """Alter an cube cache status. In one request it is possible to set either
     'active' or 'loaded', never both.
@@ -404,7 +415,7 @@ def alter_cube_cache_status(
     return connection.patch(
         url=f'{connection.base_url}/api/monitors/caches/cubes/{id}',
         headers={'Prefer': 'respond-async'},
-        json=body
+        json=body,
     )
 
 
@@ -417,7 +428,7 @@ def get_cube_caches(
     project_ids: str = None,
     loaded: bool = False,
     sort_by: str = None,
-    error_msg: str = None
+    error_msg: str = None,
 ):
     """Get the list of cube caches on a specific cluster node.
 
@@ -452,7 +463,7 @@ def get_cube_caches(
             'limit': limit,
             'projectIds': project_ids,
             'state.loadedState': loaded,
-            'sortBy': sort_by
+            'sortBy': sort_by,
         },
     )
 
@@ -465,7 +476,7 @@ def get_cube_caches_async(
     limit: int = 1000,
     project_ids: str = None,
     loaded: bool = False,
-    sort_by: str = None
+    sort_by: str = None,
 ):
     """Get the list of cube caches on a specific cluster node asynchronously.
 
@@ -499,7 +510,7 @@ def get_cube_caches_async(
         'limit': limit,
         'projectIds': project_ids,
         'state.loadedState': loaded,
-        'sortBy': sort_by
+        'sortBy': sort_by,
     }
     future = future_session.get(url=url, params=params)
     return future
@@ -521,12 +532,19 @@ def get_cube_cache_manipulation_status(
     Returns:
         Complete HTTP response object.
     """
-    url = f'{connection.base_url}/api/monitors/caches/cubes/manipulations/{manipulation_id}/status'
+    url = (
+        f'{connection.base_url}/api/monitors/caches/cubes/'
+        f'manipulations/{manipulation_id}/status'
+    )
     return connection.get(url=url)
 
 
-@ErrorHandler(err_msg='Error getting database connections for {nodes_names} cluster node.')
-def get_database_connections(connection: "Connection", nodes_names: str, error_msg: str = None):
+@ErrorHandler(
+    err_msg='Error getting database connections for {nodes_names} cluster node.'
+)
+def get_database_connections(
+    connection: "Connection", nodes_names: str, error_msg: str = None
+):
     """Get database connections information on specific intelligence
         server node.
 
@@ -582,7 +600,7 @@ def get_job(
     id: str,
     node_name: str = None,
     fields: list[str] = None,
-    error_msg: str = None
+    error_msg: str = None,
 ):
     """Get job information.
 
@@ -611,8 +629,12 @@ def get_job(
     with FuturesSessionWithRenewal(connection=connection, max_workers=8) as session:
         futures = [
             get_jobs_async(
-                future_session=session, connection=connection, node_name=node, fields=fields
-            ) for node in node_names
+                future_session=session,
+                connection=connection,
+                node_name=node,
+                fields=fields,
+            )
+            for node in node_names
         ]
         jobs = []
         for f in futures:
@@ -640,7 +662,9 @@ def get_job(
 
 
 @ErrorHandler(err_msg="Error getting job {id}.")
-def get_job_v2(connection: "Connection", id: str, fields: list[str] = None, error_msg: str = None):
+def get_job_v2(
+    connection: "Connection", id: str, fields: list[str] = None, error_msg: str = None
+):
     """Get job information.
 
     Args:
@@ -671,7 +695,7 @@ def get_jobs(
     object_id: str = None,
     sort_by: str = None,
     fields: list[str] = None,
-    error_msg: str = None
+    error_msg: str = None,
 ) -> Response:
     """Get list of a jobs.
 
@@ -720,7 +744,7 @@ def get_jobs_async(
     user_full_name: str = None,
     object_id: str = None,
     sort_by: str = None,
-    fields: list[str] = None
+    fields: list[str] = None,
 ) -> Response:
     """Get list of a jobs asynchronously.
 
@@ -779,7 +803,7 @@ def get_jobs_v2(
     elapsed_time: str = None,
     sort_by: str = None,
     fields: list[str] = None,
-    error_msg: str = None
+    error_msg: str = None,
 ):
     """Get list of a jobs.
 
@@ -871,7 +895,7 @@ def get_jobs_v2_async(
     memory_usage: str = None,
     elapsed_time: str = None,
     sort_by: str = None,
-    fields: list[str] = None
+    fields: list[str] = None,
 ) -> Response:
     """Get list of a jobs asynchronously.
 
@@ -948,7 +972,9 @@ def get_jobs_v2_async(
 
 
 @ErrorHandler(err_msg="Error killing job {id}")
-def cancel_job(connection: "Connection", id: str, fields: list[str] = None, error_msg: str = None):
+def cancel_job(
+    connection: "Connection", id: str, fields: list[str] = None, error_msg: str = None
+):
     """Cancel a job specified by `id`. Use cancel_job_v1 if I-Server version
     is 11.3.2 or cancel_job_v2 otherwise.
 
@@ -962,7 +988,9 @@ def cancel_job(connection: "Connection", id: str, fields: list[str] = None, erro
     Returns:
         HTTP response object returned by the MicroStrategy REST server
     """
-    if version.parse(connection.iserver_version) == version.parse(ISERVER_VERSION_11_3_2):
+    if version.parse(connection.iserver_version) == version.parse(
+        ISERVER_VERSION_11_3_2
+    ):
         return cancel_job_v1(connection, id, fields, error_msg)
     else:
         return cancel_job_v2(connection, id, fields, error_msg)
@@ -986,7 +1014,9 @@ def cancel_job_v1(
     """
     params = {'fields': ",".join(fields) if fields else None}
 
-    return connection.delete(url=f'{connection.base_url}/api/monitors/jobs/{id}', params=params)
+    return connection.delete(
+        url=f'{connection.base_url}/api/monitors/jobs/{id}', params=params
+    )
 
 
 @ErrorHandler(err_msg="Error killing job {id}")
@@ -1007,11 +1037,14 @@ def cancel_job_v2(
     """
     params = {'fields': ",".join(fields) if fields else None}
 
-    return connection.delete(url=f'{connection.base_url}/api/v2/monitors/jobs/{id}', params=params)
+    return connection.delete(
+        url=f'{connection.base_url}/api/v2/monitors/jobs/{id}', params=params
+    )
 
 
-def cancel_jobs(connection: "Connection", ids: list[str],
-                fields: list[str] = None) -> Union[Success, PartialSuccess, MstrException]:
+def cancel_jobs(
+    connection: "Connection", ids: list[str], fields: list[str] = None
+) -> Union[Success, PartialSuccess, MstrException]:
     """Cancel jobs specified by `ids`. Use cancel_jobs_v1 if I-Server version
     is 11.3.2 or cancel_jobs_v2 otherwise.
 
@@ -1026,7 +1059,9 @@ def cancel_jobs(connection: "Connection", ids: list[str],
         PartialSuccess: if not all jobs were killed
         MstrException: otherwise
     """
-    if version.parse(connection.iserver_version) == version.parse(ISERVER_VERSION_11_3_2):
+    if version.parse(connection.iserver_version) == version.parse(
+        ISERVER_VERSION_11_3_2
+    ):
         response = cancel_jobs_v1(connection, ids, fields)
     else:
         response = cancel_jobs_v2(connection, ids, fields)
@@ -1051,7 +1086,9 @@ def cancel_jobs_v1(connection: "Connection", ids: list[str], fields: list[str] =
     if ids:
         body = {'jobIds': ids}
         return connection.post(
-            url=f'{connection.base_url}/api/monitors/cancelJobs', params=params, json=body
+            url=f'{connection.base_url}/api/monitors/cancelJobs',
+            params=params,
+            json=body,
         )
     else:
         raise ValueError("No ids have been passed.")
@@ -1074,7 +1111,9 @@ def cancel_jobs_v2(connection: "Connection", ids: list[str], fields: list[str] =
     if ids:
         body = {'jobIds': ids}
         return connection.post(
-            url=f'{connection.base_url}/api/v2/monitors/cancelJobs', params=params, json=body
+            url=f'{connection.base_url}/api/v2/monitors/cancelJobs',
+            params=params,
+            json=body,
         )
     else:
         raise ValueError("No ids have been passed.")
@@ -1097,7 +1136,7 @@ def get_contents_caches(
     hit_count: Optional[str] = None,
     sort_by: Optional[str] = None,
     fields: Optional[str] = None,
-    error_msg: Optional[str] = None
+    error_msg: Optional[str] = None,
 ) -> Response:
     """Get cache objects
 
@@ -1143,7 +1182,7 @@ def get_contents_caches(
         'lastUpdated': last_updated,
         'hitCount': hit_count,
         'sortBy': sort_by,
-        'fields': fields
+        'fields': fields,
     }
     params_delete_none = delete_none_values(params, recursion=True)
     params_encoded = urlencode(params_delete_none, True, quote_via=quote)
@@ -1173,8 +1212,6 @@ def update_contents_caches(
     """
     return connection.patch(
         url=f'{connection.base_url}/api/v2/monitors/caches/contents',
-        params={
-            'clusterNode': node, 'fields': fields
-        },
-        json=body
+        params={'clusterNode': node, 'fields': fields},
+        json=body,
     )

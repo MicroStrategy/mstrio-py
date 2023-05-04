@@ -1,5 +1,9 @@
-from mstrio.connection import Connection
+from typing import TYPE_CHECKING
+
 from mstrio.utils.error_handlers import ErrorHandler
+
+if TYPE_CHECKING:
+    from mstrio.connection import Connection
 
 
 @ErrorHandler(err_msg='Error creating a new changeset.')
@@ -7,7 +11,7 @@ def create_changeset(
     connection: "Connection",
     project_id: str = None,
     schema_edit: bool = False,
-    error_msg: str = None
+    error_msg: str = None,
 ):
     """Create a new changeset for modelling manipulations."""
     if project_id is None:
@@ -16,7 +20,7 @@ def create_changeset(
     return connection.post(
         url=f"{connection.base_url}/api/model/changesets",
         headers={'X-MSTR-ProjectID': project_id},
-        params={'schemaEdit': str(schema_edit).lower()}
+        params={'schemaEdit': str(schema_edit).lower()},
     )
 
 
@@ -28,7 +32,7 @@ def commit_changeset_changes(
     return connection.post(
         url=f"{connection.base_url}/api/model/changesets/{id}/commit",
         headers={'X-MSTR-MSChanget': id},
-        params={'changesetId': id}
+        params={'changesetId': id},
     )
 
 
@@ -38,5 +42,5 @@ def delete_changeset(connection: "Connection", id: str, error_msg: str = None):
     return connection.delete(
         url=f"{connection.base_url}/api/model/changesets/{id}",
         headers={'X-MSTR-MSChanget': id},
-        params={'changesetId': id}
+        params={'changesetId': id},
     )

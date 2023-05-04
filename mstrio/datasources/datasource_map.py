@@ -88,7 +88,8 @@ class Locale(Entity):
         """
         if not (id or name or abbreviation):
             raise ValueError(
-                "Please specify 'id' or 'name' or 'abbreviation' parameter in the constructor."
+                "Please specify 'id' or 'name' or 'abbreviation' parameter in the "
+                "constructor."
             )
         elif not (locale_id := id):
             if name:
@@ -167,7 +168,8 @@ class Locale(Entity):
 
     def __repr__(self):
         return (
-            f"Locale(connection, name='{self.name}', abbreviation='{self.abbreviation}',"
+            f"Locale(connection, name='{self.name}', abbreviation='"
+            f"{self.abbreviation}',"
             f" id='{self.id}')"
         )
 
@@ -355,7 +357,8 @@ class DatasourceMap(EntityBase, DeleteMixin):
                 project_id = get_objects_id(project, Project)
 
                 raise ValueError(
-                    f"The project: {project_id} has more than one default connection mapping."
+                    f"The project: {project_id} has more than one default connection "
+                    f"mapping."
                 )
             else:
                 data = mappings[0]
@@ -415,7 +418,6 @@ class DatasourceMap(EntityBase, DeleteMixin):
         locale: Optional[Locale | str] = None,
         default_connection_map: bool = False,
     ) -> list['DatasourceMap'] | list[dict]:
-
         project_id = get_objects_id(project, Project)
 
         if isinstance(locale, Locale):
@@ -576,7 +578,8 @@ class DatasourceMap(EntityBase, DeleteMixin):
         ):
             if config.verbose:
                 logger.info(
-                    f"No changes specified for {type(self).__name__} with ID:'{self.id}'."
+                    f"No changes specified for {type(self).__name__} with ID:'"
+                    f"{self.id}'."
                 )
             return
 

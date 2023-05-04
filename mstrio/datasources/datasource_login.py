@@ -30,7 +30,7 @@ def list_datasource_logins(
         limit: limit the number of elements returned. If `None` (default), all
             objects are returned.
         **filters: Available filter parameters: ['id', 'name', 'description',
-            'date_created', 'date_modified', 'acg']
+            'date_created', 'date_modified', 'acg', 'username']
 
     Examples:
         >>> list_db_logins(connection, name='db_login_name')
@@ -79,23 +79,39 @@ class DatasourceLogin(Entity, CopyMixin, DeleteMixin):
             'view_media',
             'ancestors',
             'certified_info',
-            'acl'
+            'acl',
         ): objects.get_object_info,
-        ('id', 'name', 'description', 'username', 'date_created', 'date_modified',
-         'acg'): datasources.get_datasource_login
+        (
+            'id',
+            'name',
+            'description',
+            'username',
+            'date_created',
+            'date_modified',
+            'acg',
+        ): datasources.get_datasource_login,
     }
     _API_PATCH: dict = {
         ("abbreviation"): (objects.update_object, "partial_put"),
-        ("name", "username", "description",
-         "password"): (datasources.update_datasource_login, "patch")
+        ("name", "username", "description", "password"): (
+            datasources.update_datasource_login,
+            "patch",
+        ),
     }
-    _PATCH_PATH_TYPES = {"name": str, "username": str, "description": str, "password": str}
+    _PATCH_PATH_TYPES = {
+        "name": str,
+        "username": str,
+        "description": str,
+        "password": str,
+    }
 
     def __init__(self, connection: "Connection", name: str = None, id: str = None):
         """Initialize DatasourceLogin object."""
 
         if id is None and name is None:
-            raise ValueError("Please specify either 'id' or 'name' parameter in the constructor.")
+            raise ValueError(
+                "Please specify either 'id' or 'name' parameter in the constructor."
+            )
 
         if id is None:
             objects_info = DatasourceLogin._list_datasource_logins(
@@ -118,7 +134,7 @@ class DatasourceLogin(Entity, CopyMixin, DeleteMixin):
         name: str = None,
         username: str = None,
         description: str = None,
-        password: str = None
+        password: str = None,
     ) -> None:
         """Alter the datasource login properties.
 
@@ -131,7 +147,7 @@ class DatasourceLogin(Entity, CopyMixin, DeleteMixin):
         func = self.alter
         args = get_args_from_func(func)
         defaults = get_default_args_from_func(func)
-        default_dict = dict(zip(args[-len(defaults):], defaults)) if defaults else {}
+        default_dict = dict(zip(args[-len(defaults) :], defaults)) if defaults else {}
         local = locals()
         properties = {}
         for property_key in default_dict.keys():
@@ -146,7 +162,7 @@ class DatasourceLogin(Entity, CopyMixin, DeleteMixin):
         name: str,
         username: str,
         password: str,
-        description: str = None
+        description: str = None,
     ) -> "DatasourceLogin":
         """Create a new datasource login.
 
@@ -161,27 +177,35 @@ class DatasourceLogin(Entity, CopyMixin, DeleteMixin):
             DatasourceConnection object.
         """
         body = {
-            "name": name, "description": description, "username": username, "password": password
+            "name": name,
+            "description": description,
+            "username": username,
+            "password": password,
         }
         body = helper.delete_none_values(body, recursion=True)
         response = datasources.create_datasource_login(connection, body).json()
         if config.verbose:
             logger.info(
-                f"Successfully created datasource login named: '{response.get('name')}' "
+                f"Successfully created datasource login named: '"
+                f"{response.get('name')}' "
                 f"with ID: '{response.get('id')}'"
             )
         return cls.from_dict(source=response, connection=connection)
 
     @classmethod
     def _list_datasource_logins(
-        cls, connection: "Connection", to_dictionary: bool = False, limit: int = None, **filters
+        cls,
+        connection: "Connection",
+        to_dictionary: bool = False,
+        limit: int = None,
+        **filters,
     ) -> Union[List["DatasourceLogin"], List[dict]]:
         objects = helper.fetch_objects(
             connection=connection,
             api=datasources.get_datasource_logins,
             dict_unpack_value="logins",
             limit=limit,
-            filters=filters
+            filters=filters,
         )
         if to_dictionary:
             return objects

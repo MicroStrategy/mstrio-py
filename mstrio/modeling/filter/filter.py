@@ -1,16 +1,21 @@
 import logging
-from typing import Optional, TYPE_CHECKING
+from functools import partial
+from typing import TYPE_CHECKING, Optional
 
 from mstrio import config
 from mstrio.api import filters, objects
 from mstrio.modeling.schema import ObjectSubType
-from mstrio.object_management import search_operations, SearchPattern
+from mstrio.object_management import SearchPattern, search_operations
 from mstrio.object_management.folder import Folder
 from mstrio.types import ObjectSubTypes, ObjectTypes
 from mstrio.users_and_groups import User
 from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, MoveMixin
 from mstrio.utils.enum_helper import get_enum_val
-from mstrio.utils.helper import delete_none_values, filter_params_for_func, get_valid_project_id
+from mstrio.utils.helper import (
+    delete_none_values,
+    filter_params_for_func,
+    get_valid_project_id,
+)
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
 from mstrio.modeling.expression import Expression, ExpressionFormat  # isort:skip
@@ -32,7 +37,7 @@ def list_filters(
     search_pattern: SearchPattern | int = SearchPattern.CONTAINS,
     show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
     show_filter_tokens: bool = False,
-    **filters
+    **filters,
 ) -> list["Filter"] | list[dict]:
     """Get a list of Filter objects or dicts. Optionally filter the
     objects by specifying filters parameter.
@@ -74,9 +79,9 @@ def list_filters(
             - If omitted or false, only `text` and `tree`
             formats are returned.
             - If true, all `text`, `tree` and `tokens` formats are returned.
-        **filters: Available filter parameters: ['id', 'name', 'description',
+        **filters: Available filter parameters: ['id', 'name',
             'type', 'subtype', 'date_created', 'date_modified', 'version',
-            'acg', 'icon_path', 'owner']
+            'acg', 'owner', 'ext_type']
     Returns:
         list of filter objects or list of filter dictionaries.
     """
@@ -102,13 +107,14 @@ def list_filters(
         Filter.from_dict(
             {
                 "show_expression_as": show_expression_as
-                if isinstance(show_expression_as, ExpressionFormat) else
-                ExpressionFormat(show_expression_as),
+                if isinstance(show_expression_as, ExpressionFormat)
+                else ExpressionFormat(show_expression_as),
                 "show_filter_tokens": show_filter_tokens,
                 **obj,
             },
             connection,
-        ) for obj in objects
+        )
+        for obj in objects
     ]
 
 
@@ -162,7 +168,7 @@ class Filter(Entity, CopyMixin, DeleteMixin, MoveMixin):
             'owner',
             'ancestors',
             'acg',
-            'acl'
+            'acl',
         ): objects.get_object_info,
         (
             'id',
@@ -176,13 +182,18 @@ class Filter(Entity, CopyMixin, DeleteMixin, MoveMixin):
             'is_embedded',
             'primary_locale',
             'qualification',
-            'destination_folder_id'
-        ): filters.get_filter
+            'destination_folder_id',
+        ): filters.get_filter,
     }
     _API_PATCH: dict = {
-        ('name', 'description', 'qualification', 'destination_folder_id',
-         'is_embedded'): (filters.update_filter, "put"),
-        ('folder_id'): (objects.update_object, 'partial_put')
+        (
+            'name',
+            'description',
+            'qualification',
+            'destination_folder_id',
+            'is_embedded',
+        ): (filters.update_filter, "put"),
+        ('folder_id'): (objects.update_object, 'partial_put'),
     }
     _PATCH_PATH_TYPES = {
         'name': str,
@@ -200,7 +211,7 @@ class Filter(Entity, CopyMixin, DeleteMixin, MoveMixin):
         id: Optional[str] = None,
         name: Optional[str] = None,
         show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
-        show_filter_tokens: bool = False
+        show_filter_tokens: bool = False,
     ):
         """Initialize filter object by its identifier.
 
@@ -223,7 +234,11 @@ class Filter(Entity, CopyMixin, DeleteMixin, MoveMixin):
         connection._validate_project_selected()
         if id is None:
             found_filter = super()._find_object_with_name(
-                connection=connection, name=name, listing_function=list_filters
+                connection=connection,
+                name=name,
+                listing_function=partial(
+                    list_filters, search_pattern=SearchPattern.EXACTLY
+                ),
             )
             id = found_filter['id']
         super().__init__(
@@ -238,14 +253,21 @@ class Filter(Entity, CopyMixin, DeleteMixin, MoveMixin):
         self.primary_locale = kwargs.get('primary_locale')
         self.is_embedded = kwargs.get('is_embedded')
         self.destination_folder_id = kwargs.get('destination_folder_id')
-        self.qualification = Expression.from_dict(kwargs.get('qualification'), self.connection
-                                                  ) if kwargs.get('qualification') else None
-        self._sub_type = ObjectSubType(kwargs.get('sub_type')) if kwargs.get('sub_type') else None
+        self.qualification = (
+            Expression.from_dict(kwargs.get('qualification'), self.connection)
+            if kwargs.get('qualification')
+            else None
+        )
+        self._sub_type = (
+            ObjectSubType(kwargs.get('sub_type')) if kwargs.get('sub_type') else None
+        )
         self._path = kwargs.get('path')
         show_expression_as = kwargs.get('show_expression_as', 'tree')
-        self._show_expression_as = show_expression_as if isinstance(
-            show_expression_as, ExpressionFormat
-        ) else ExpressionFormat(show_expression_as)
+        self._show_expression_as = (
+            show_expression_as
+            if isinstance(show_expression_as, ExpressionFormat)
+            else ExpressionFormat(show_expression_as)
+        )
         self._show_filter_tokens = kwargs.get('show_filter_tokens', False)
 
     @classmethod
@@ -304,14 +326,17 @@ class Filter(Entity, CopyMixin, DeleteMixin, MoveMixin):
                 "name": name,
                 "description": description,
                 "destinationFolderId": destination_folder.id
-                if isinstance(destination_folder, Folder) else destination_folder,
+                if isinstance(destination_folder, Folder)
+                else destination_folder,
                 "primaryLocale": primary_locale,
                 "isEmbedded": is_embedded,
             }
         }
         body = delete_none_values(body, recursion=True)
         body["qualification"] = (
-            qualification.to_dict() if isinstance(qualification, Expression) else qualification
+            qualification.to_dict()
+            if isinstance(qualification, Expression)
+            else qualification
         )
         response = filters.create_filter(
             connection=connection,
@@ -320,7 +345,10 @@ class Filter(Entity, CopyMixin, DeleteMixin, MoveMixin):
             show_filter_tokens=show_filter_tokens,
         ).json()
         if config.verbose:
-            logger.info(f"Successfully created filter named: '{name}' with ID: '{response['id']}'")
+            logger.info(
+                f"Successfully created filter named: '{name}' with ID: '"
+                f"{response['id']}'"
+            )
         return cls.from_dict(
             source={
                 **response,
@@ -351,7 +379,9 @@ class Filter(Entity, CopyMixin, DeleteMixin, MoveMixin):
                 object of this reference is embedded within this object
         """
         qualification = (
-            {} if self.qualification is None and qualification is None else qualification
+            {}
+            if self.qualification is None and qualification is None
+            else qualification
         )
         properties = filter_params_for_func(self.alter, locals(), exclude=['self'])
         self._alter_properties(**properties)

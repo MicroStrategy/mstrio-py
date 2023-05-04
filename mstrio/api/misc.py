@@ -23,7 +23,7 @@ def server_status(connection):
                 "provided please specify parameter 'ssl_verify' to 'False' in the "
                 "'Connection' class.\n\nCheck readme for more details."
             ),
-            SSLError
+            SSLError,
         )
 
     if not response.ok:

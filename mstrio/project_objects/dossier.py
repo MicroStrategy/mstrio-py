@@ -1,21 +1,20 @@
-from dataclasses import dataclass
 import logging
+from dataclasses import dataclass
 from typing import Optional
 
-from pandas import concat, DataFrame
+from pandas import DataFrame, concat
 
 from mstrio import config
 from mstrio.api import documents
 from mstrio.connection import Connection
-from mstrio.object_management import Folder, search_operations, SearchPattern
+from mstrio.object_management import Folder, SearchPattern, search_operations
 from mstrio.project_objects.document import Document
 from mstrio.server.environment import Environment
 from mstrio.types import ObjectSubTypes
 from mstrio.users_and_groups import UserOrGroup
 from mstrio.utils import helper
 from mstrio.utils.cache import CacheSource
-from mstrio.utils.helper import Dictable, get_valid_project_id
-from mstrio.utils.helper import is_dossier
+from mstrio.utils.helper import Dictable, get_valid_project_id, is_dossier
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +27,7 @@ def list_dossiers(
     limit: Optional[int] = None,
     project_id: Optional[str] = None,
     project_name: Optional[str] = None,
-    **filters
+    **filters,
 ) -> list["Dossier"] | list[dict] | DataFrame:
     """Get all Dossiers stored on the server.
 
@@ -63,7 +62,7 @@ def list_dossiers(
         to_dataframe=to_dataframe,
         project_id=project_id,
         project_name=project_name,
-        **filters
+        **filters,
     )
 
 
@@ -73,7 +72,7 @@ def list_dossiers_across_projects(
     to_dictionary: bool = False,
     to_dataframe: bool = False,
     limit: Optional[int] = None,
-    **filters
+    **filters,
 ) -> list["Dossier"] | list[dict] | DataFrame:
     """Get all Dossiers stored on the server.
 
@@ -118,7 +117,7 @@ def list_dossiers_across_projects(
             name=name,
             limit=limit,
             to_dataframe=to_dataframe,
-            **filters
+            **filters,
         )
 
         if to_dataframe:
@@ -134,18 +133,23 @@ class Dossier(Document):
     _CACHE_TYPE = CacheSource.Type.DOSSIER
 
     _API_GETTERS = {
-        **Document._API_GETTERS, ('chapters', 'current_chapter'): documents.get_dossier_hierarchy
+        **Document._API_GETTERS,
+        ('chapters', 'current_chapter'): documents.get_dossier_hierarchy,
     }
     _FROM_DICT_MAP = {
         **Document._FROM_DICT_MAP,
         'chapters': (
-            lambda source,
-            connection: [DossierChapter.from_dict(content, connection) for content in source]
-        )
+            lambda source, connection: [
+                DossierChapter.from_dict(content, connection) for content in source
+            ]
+        ),
     }
 
     def __init__(
-        self, connection: Connection, name: Optional[str] = None, id: Optional[str] = None
+        self,
+        connection: Connection,
+        name: Optional[str] = None,
+        id: Optional[str] = None,
     ):
         """Initialize Dossier object by passing name or id.
 
@@ -173,19 +177,19 @@ class Dossier(Document):
         limit: Optional[int] = None,
         project_id: Optional[str] = None,
         project_name: Optional[str] = None,
-        **filters
+        **filters,
     ) -> list["Dossier"] | list[dict] | DataFrame:
-
         if to_dictionary and to_dataframe:
             helper.exception_handler(
-                "Please select either to_dictionary=True or to_dataframe=True, but not both.",
-                ValueError
+                "Please select either to_dictionary=True or to_dataframe=True, but not "
+                "both.",
+                ValueError,
             )
         project_id = get_valid_project_id(
             connection=connection,
             project_id=project_id,
             project_name=project_name,
-            with_fallback=False if project_name else True
+            with_fallback=False if project_name else True,
         )
 
         objects = search_operations.full_search(
@@ -196,9 +200,7 @@ class Dossier(Document):
             pattern=search_pattern,
             **filters,
         )
-        dossiers = [
-            obj for obj in objects if is_dossier(obj['view_media'])
-        ]
+        dossiers = [obj for obj in objects if is_dossier(obj['view_media'])]
         dossiers = dossiers[:limit]
 
         if to_dictionary:
@@ -206,12 +208,18 @@ class Dossier(Document):
         elif to_dataframe:
             return DataFrame(dossiers)
         else:
-            return [cls.from_dict(source=dossier, connection=connection) for dossier in dossiers]
+            return [
+                cls.from_dict(source=dossier, connection=connection)
+                for dossier in dossiers
+            ]
 
     def list_properties(self) -> dict:
         """List properties for the dossier."""
         properties = super().list_properties()
-        additional_values = {'chapters': self.chapters, 'current_chapter': self.current_chapter}
+        additional_values = {
+            'chapters': self.chapters,
+            'current_chapter': self.current_chapter,
+        }
         properties.update(additional_values)
         return properties
 
@@ -219,7 +227,7 @@ class Dossier(Document):
         self,
         name: Optional[str] = None,
         description: Optional[str] = None,
-        folder_id: Optional[Folder | str] = None
+        folder_id: Optional[Folder | str] = None,
     ):
         """Alter Dossier name, description and/or folder id.
 
@@ -284,6 +292,7 @@ class VisualizationSelector(Dictable):
         selector_type (string): type of the selector
         current_selection (dict): current selection of the selector
         targets (list[dict], optional): list of the selector's targets"""
+
     visualization_key: str
     selector_type: str
     current_selection: dict
@@ -313,6 +322,7 @@ class PageSelector(Dictable):
         targets (list[dict], optional): list of targets of the selector
         name (string, optional): name of the selector
         summary (string, optional): summary of the selector"""
+
     key: str
     selector_type: str
     current_selection: dict
@@ -366,7 +376,8 @@ class ChapterPage(Dictable):
             page"""
 
     _FROM_DICT_MAP = {
-        'visualizations': [PageVisualization.from_dict], 'selectors': [PageSelector.from_dict]
+        'visualizations': [PageVisualization.from_dict],
+        'selectors': [PageSelector.from_dict],
     }
 
     key: str
