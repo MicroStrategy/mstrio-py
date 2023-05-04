@@ -1,5 +1,6 @@
-from enum import auto
 import logging
+from enum import auto
+from functools import partial
 from typing import Optional, Type
 
 import pandas as pd
@@ -13,7 +14,7 @@ from mstrio.modeling import (
     ObjectSubType,
     SchemaObjectReference,
 )
-from mstrio.object_management import Folder, full_search
+from mstrio.object_management import Folder, SearchPattern, full_search
 from mstrio.project_objects import OlapCube
 from mstrio.project_objects.incremental_refresh_report import (
     AdvancedProperties,
@@ -30,7 +31,7 @@ from mstrio.utils.helper import (
 )
 from mstrio.utils.parser import Parser
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
-from mstrio.utils.wip import module_wip, WipLevels
+from mstrio.utils.wip import WipLevels, module_wip
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +42,7 @@ module_wip(globals(), level=WipLevels.WARNING)
 def list_incremental_refresh_reports(
     connection: Connection,
     name: Optional[str] = None,
+    pattern: SearchPattern | int = SearchPattern.CONTAINS,
     project_id: Optional[str] = None,
     project_name: Optional[str] = None,
     to_dictionary: bool = False,
@@ -54,6 +56,7 @@ def list_incremental_refresh_reports(
     return IncrementalRefreshReport.list(
         connection,
         name,
+        pattern,
         project_id,
         project_name,
         to_dictionary,
@@ -170,7 +173,9 @@ class IncrementalRefreshReport(Entity, CopyMixin, MoveMixin, DeleteMixin):
 
         if id is None:
             reports = super()._find_object_with_name(
-                connection=connection, name=name, listing_function=self.list
+                connection=connection,
+                name=name,
+                listing_function=partial(self.list, pattern=SearchPattern.EXACTLY),
             )
             id = reports['id']
 
@@ -255,8 +260,8 @@ class IncrementalRefreshReport(Entity, CopyMixin, MoveMixin, DeleteMixin):
 
         if response.ok:
             logger.info(
-                f"Execution of Incremental Refresh Report: '{self.name}' has been successfully "
-                f"scheduled under job: {response.json()}."
+                f"Execution of Incremental Refresh Report: '{self.name}' has been "
+                f"successfully scheduled under job: {response.json()}."
             )
 
     @classmethod
@@ -264,6 +269,7 @@ class IncrementalRefreshReport(Entity, CopyMixin, MoveMixin, DeleteMixin):
         cls,
         connection: Connection,
         name: Optional[str] = None,
+        pattern: SearchPattern | int = SearchPattern.CONTAINS,
         project_id: Optional[str] = None,
         project_name: Optional[str] = None,
         to_dictionary: bool = False,
@@ -290,6 +296,7 @@ class IncrementalRefreshReport(Entity, CopyMixin, MoveMixin, DeleteMixin):
             object_types=ObjectSubTypes.INCREMENTAL_REFRESH_REPORT,
             project=project_id,
             name=name,
+            pattern=pattern,
             limit=limit,
             **filters,
         )

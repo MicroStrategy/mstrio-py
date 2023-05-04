@@ -27,7 +27,10 @@ def list_active_user_privileges(connection: "Connection") -> List[dict]:
     privileges_list = []
     for usr in active_users:
         p = {
-            'id': usr.id, 'name': usr.name, 'username': usr.username, 'privileges': usr.privileges
+            'id': usr.id,
+            'name': usr.name,
+            'username': usr.username,
+            'privileges': usr.privileges,
         }
         print(f"{p['name']} ({p['username']}) ", flush=True)
         for prvlg in p['privileges']:

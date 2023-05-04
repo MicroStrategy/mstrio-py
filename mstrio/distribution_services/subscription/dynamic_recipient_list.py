@@ -14,7 +14,7 @@ from mstrio.utils.helper import (
     exception_handler,
     fetch_objects_async,
     filter_params_for_func,
-    get_valid_project_id
+    get_valid_project_id,
 )
 from mstrio.utils.version_helper import class_version_handler
 
@@ -27,7 +27,7 @@ def list_dynamic_recipient_lists(
     project_name: Optional[str] = None,
     to_dictionary: bool = False,
     limit: Optional[int] = None,
-    **filters
+    **filters,
 ) -> list["DynamicRecipientList"] | list[dict]:
     """Get list of Dynamic Recipient List objects or dicts with them.
 
@@ -45,7 +45,8 @@ def list_dynamic_recipient_lists(
             by default (False) returns DynamicRecipientList objects
         limit (integer, optional): limit the number of elements returned. If
             None all object are returned
-        **filters: parameters to filter the search on, for example `name`
+        **filters: Available filter parameters: ['name', 'id', 'description',
+            'source_report_id', 'physical_address', 'linked_user', 'device']
 
     Returns:
         list with DynamicRecipientList objects or list of dictionaries
@@ -54,12 +55,15 @@ def list_dynamic_recipient_lists(
         connection=connection,
         project_id=project_id,
         project_name=project_name,
-        with_fallback=False if project_name else True
+        with_fallback=False if project_name else True,
     )
 
     msg = "Error getting Dynamic Recipient List list."
-    chunk_size = 1000 if version.parse(connection.iserver_version
-                                       ) >= version.parse('11.3.0300') else 1000000
+    chunk_size = (
+        1000
+        if version.parse(connection.iserver_version) >= version.parse('11.3.0300')
+        else 1000000
+    )
 
     objects = fetch_objects_async(
         connection=connection,
@@ -70,14 +74,15 @@ def list_dynamic_recipient_lists(
         filters=filters,
         error_msg=msg,
         dict_unpack_value='listOfDynamicRecipientLists',
-        project_id=project_id
+        project_id=project_id,
     )
 
     if to_dictionary:
         return objects
     else:
         return [
-            DynamicRecipientList.from_dict(connection=connection, source=obj) for obj in objects
+            DynamicRecipientList.from_dict(connection=connection, source=obj)
+            for obj in objects
         ]
 
 
@@ -98,7 +103,7 @@ class DynamicRecipientList(EntityBase, DeleteMixin):
         notification_address: Notification Address for the DynamicRecipientList
         notification_device: Notification Device for the DynamicRecipientList
         personalization: Personalization for the DynamicRecipientList
-        """
+    """
 
     @dataclass
     class MappingField(Dictable):
@@ -107,7 +112,8 @@ class DynamicRecipientList(EntityBase, DeleteMixin):
         Attributes:
             attribute_id: ID of the mapped attribute
             attribute_form_id: ID of the mapped attribute's form
-            """
+        """
+
         attribute_id: str
         attribute_form_id: str
 
@@ -123,7 +129,7 @@ class DynamicRecipientList(EntityBase, DeleteMixin):
             'recipient_name',
             'notification_address',
             'notification_device',
-            'personalization'
+            'personalization',
         ): subscriptions.get_dynamic_recipient_list
     }
     _API_PATCH = {
@@ -138,7 +144,7 @@ class DynamicRecipientList(EntityBase, DeleteMixin):
             'recipient_name',
             'notification_address',
             'notification_device',
-            'personalization'
+            'personalization',
         ): (subscriptions.update_dynamic_recipient_list, 'partial_put')
     }
     _API_DELETE = staticmethod(subscriptions.remove_dynamic_recipient_list)
@@ -150,7 +156,7 @@ class DynamicRecipientList(EntityBase, DeleteMixin):
         'recipient_name': MappingField.from_dict,
         'notification_address': MappingField.from_dict,
         'notification_device': MappingField.from_dict,
-        'personalization': MappingField.from_dict
+        'personalization': MappingField.from_dict,
     }
 
     def __init__(
@@ -159,7 +165,7 @@ class DynamicRecipientList(EntityBase, DeleteMixin):
         id: Optional[str] = None,
         name: Optional[str] = None,
         project_id: Optional[str] = None,
-        project_name: Optional[str] = None
+        project_name: Optional[str] = None,
     ) -> None:
         """Initializes a new instance of a DynamicRecipientList class
 
@@ -184,14 +190,18 @@ class DynamicRecipientList(EntityBase, DeleteMixin):
                 )
                 id = dynamic_recipient_list['id']
             else:
-                exception_handler(msg='Must provide valid id or name', exception_type=ValueError)
+                exception_handler(
+                    msg='Must provide valid id or name', exception_type=ValueError
+                )
         project_id = get_valid_project_id(
             connection=connection,
             project_id=project_id,
             project_name=project_name,
-            with_fallback=False if project_name else True
+            with_fallback=False if project_name else True,
         )
-        super().__init__(connection=connection, object_id=id, name=name, project_id=project_id)
+        super().__init__(
+            connection=connection, object_id=id, name=name, project_id=project_id
+        )
 
     def _init_variables(self, **kwargs) -> None:
         super()._init_variables(**kwargs)
@@ -199,27 +209,41 @@ class DynamicRecipientList(EntityBase, DeleteMixin):
         self.project_id = kwargs.get('project_id')
         self.description = kwargs.get('description')
         self.source_report_id = kwargs.get('source_report_id')
-        self.physical_address = DynamicRecipientList.MappingField.from_dict(paddress) if (
-            paddress := kwargs.get('physical_address')
-        ) else None
-        self.linked_user = DynamicRecipientList.MappingField.from_dict(luser) if (
-            luser := kwargs.get('linked_user')
-        ) else None
-        self.device = DynamicRecipientList.MappingField.from_dict(dvc) if (
-            dvc := kwargs.get('device')
-        ) else None
-        self.recipient_name = DynamicRecipientList.MappingField.from_dict(rname) if (
-            rname := kwargs.get('recipient_name')
-        ) else None
-        self.notification_address = DynamicRecipientList.MappingField.from_dict(naddress) if (
-            naddress := kwargs.get('notification_address')
-        ) else None
-        self.notification_device = DynamicRecipientList.MappingField.from_dict(ndevice) if (
-            ndevice := kwargs.get('notification_device')
-        ) else None
-        self.personalization = DynamicRecipientList.MappingField.from_dict(prsnlz) if (
-            prsnlz := kwargs.get('personalization')
-        ) else None
+        self.physical_address = (
+            DynamicRecipientList.MappingField.from_dict(paddress)
+            if (paddress := kwargs.get('physical_address'))
+            else None
+        )
+        self.linked_user = (
+            DynamicRecipientList.MappingField.from_dict(luser)
+            if (luser := kwargs.get('linked_user'))
+            else None
+        )
+        self.device = (
+            DynamicRecipientList.MappingField.from_dict(dvc)
+            if (dvc := kwargs.get('device'))
+            else None
+        )
+        self.recipient_name = (
+            DynamicRecipientList.MappingField.from_dict(rname)
+            if (rname := kwargs.get('recipient_name'))
+            else None
+        )
+        self.notification_address = (
+            DynamicRecipientList.MappingField.from_dict(naddress)
+            if (naddress := kwargs.get('notification_address'))
+            else None
+        )
+        self.notification_device = (
+            DynamicRecipientList.MappingField.from_dict(ndevice)
+            if (ndevice := kwargs.get('notification_device'))
+            else None
+        )
+        self.personalization = (
+            DynamicRecipientList.MappingField.from_dict(prsnlz)
+            if (prsnlz := kwargs.get('personalization'))
+            else None
+        )
 
     @classmethod
     def create(
@@ -236,7 +260,7 @@ class DynamicRecipientList(EntityBase, DeleteMixin):
         recipient_name: Optional[MappingField] = None,
         notification_address: Optional[MappingField] = None,
         notification_device: Optional[MappingField] = None,
-        personalization: Optional[MappingField] = None
+        personalization: Optional[MappingField] = None,
     ) -> "DynamicRecipientList":
         """Create a new DynamicRecipientList with specified properties.
 
@@ -282,15 +306,17 @@ class DynamicRecipientList(EntityBase, DeleteMixin):
             'notificationAddress': (
                 notification_address.to_dict() if notification_address else None
             ),
-            'notificationDevice': (notification_device.to_dict() if notification_device else None),
-            'personalization': personalization.to_dict() if personalization else None
+            'notificationDevice': (
+                notification_device.to_dict() if notification_device else None
+            ),
+            'personalization': personalization.to_dict() if personalization else None,
         }
         body = delete_none_values(source=body, recursion=True)
         project_id = get_valid_project_id(
             connection=connection,
             project_id=project_id,
             project_name=project_name,
-            with_fallback=False if project_name else True
+            with_fallback=False if project_name else True,
         )
         response = subscriptions.create_dynamic_recipient_list(
             connection=connection, project_id=project_id, body=body
@@ -298,7 +324,8 @@ class DynamicRecipientList(EntityBase, DeleteMixin):
 
         if config.verbose:
             logger.info(
-                f"Created Dynamic Recipient List named: '{name}' with ID: '{response['id']}'"
+                f"Created Dynamic Recipient List named: '{name}' with ID: '"
+                f"{response['id']}'"
             )
 
         return cls.from_dict(source={**response}, connection=connection)
@@ -314,7 +341,7 @@ class DynamicRecipientList(EntityBase, DeleteMixin):
         recipient_name: Optional[MappingField] = None,
         notification_address: Optional[MappingField] = None,
         notification_device: Optional[MappingField] = None,
-        personalization: Optional[MappingField] = None
+        personalization: Optional[MappingField] = None,
     ) -> None:
         """Alter a DynamicRecipientList's specified properties
 
@@ -359,7 +386,9 @@ class DynamicRecipientList(EntityBase, DeleteMixin):
 
     @staticmethod
     def __find_dynamic_recipient_list_by_name(connection: "Connection", name: str):
-        dynamic_recipient_lists = list_dynamic_recipient_lists(connection=connection, name=name)
+        dynamic_recipient_lists = list_dynamic_recipient_lists(
+            connection=connection, name=name
+        )
 
         if dynamic_recipient_lists:
             number_of_drls = len(dynamic_recipient_lists)
@@ -371,4 +400,6 @@ class DynamicRecipientList(EntityBase, DeleteMixin):
             else:
                 return dynamic_recipient_lists[0].to_dict()
         else:
-            raise ValueError(f"There is no DynamicRecipientList with the given name: '{name}'")
+            raise ValueError(
+                f"There is no DynamicRecipientList with the given name: '{name}'"
+            )

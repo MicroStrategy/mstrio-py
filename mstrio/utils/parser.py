@@ -15,7 +15,6 @@ class Parser:
     total_rows = None
 
     def __init__(self, response, parse_cube=True):
-
         self.parse_cube = parse_cube
         # row-level metric data
         self._metric_values_raw = []
@@ -28,15 +27,20 @@ class Parser:
         self._attribute_names = self.__extract_attribute_names(response=response)
 
         # extract attribute form names
-        self._attribute_elem_form_names = self.__extract_attribute_form_names(response=response)
+        self._attribute_elem_form_names = self.__extract_attribute_form_names(
+            response=response
+        )
 
-        # parse attribute column names including attribute form names into final column names  # noqa
+        # parse attribute column names including attribute form names
+        # into final column names
         self._attribute_col_names = self.__get_attribute_col_names()
 
         self.__extract_paging_info(response)
 
         # attribute data
-        self._mapped_attributes = np.zeros((0, len(self._attribute_col_names)), dtype=object)
+        self._mapped_attributes = np.zeros(
+            (0, len(self._attribute_col_names)), dtype=object
+        )
 
     def parse(self, response):
         """
@@ -44,7 +48,8 @@ class Parser:
             response: JSON-formatted content of API response.
         """
         if self.total_rows > 0:
-            # extract attribute values into numpy 2D array if attributes exist in the response  # noqa
+            # extract attribute values into numpy 2D array if attributes exist
+            # in the response
             if self._attribute_names:
                 self._mapped_attributes = np.vstack(
                     (self._mapped_attributes, self.__map_attributes(response=response))
@@ -52,17 +57,21 @@ class Parser:
 
             # extract metric values if metrics exist in the response
             if self._metric_col_names:
-                self._metric_values_raw.extend(self.__extract_metric_values(response=response))
+                self._metric_values_raw.extend(
+                    self.__extract_metric_values(response=response)
+                )
 
     def __to_dataframe(self):
-
-        # create attribute data frame, then re-map integer array with corresponding attribute element values  # noqa
+        # create attribute data frame, then re-map integer array with
+        # corresponding attribute element values
         attribute_df = pd.DataFrame(
             data=self._mapped_attributes, columns=self._attribute_col_names
         )
 
         # create metric values data frame
-        metric_df = pd.DataFrame(data=self._metric_values_raw, columns=self._metric_col_names)
+        metric_df = pd.DataFrame(
+            data=self._metric_values_raw, columns=self._metric_col_names
+        )
 
         return pd.concat([attribute_df, metric_df], axis=1)
 
@@ -88,7 +97,9 @@ class Parser:
 
         # extract attribute form and attribute elements labels
         rows = response["definition"]["grid"]["rows"]
-        form_values_rows = [[el['formValues'] for el in row['elements']] for row in rows]
+        form_values_rows = [
+            [el['formValues'] for el in row['elements']] for row in rows
+        ]
 
         def replicate_form_values(form_values):
             """Replicate attribute element values for total, count, etc. to fill
@@ -113,12 +124,14 @@ class Parser:
                 for attr in form_values:
                     row = len(attr[0])
                     col = len(attr)
-                    final_list.extend(np.array(attr).reshape(col, row).transpose().tolist())
+                    final_list.extend(
+                        np.array(attr).reshape(col, row).transpose().tolist()
+                    )
                 return final_list
             except IndexError:
                 msg = (
-                    "Missing attribute elements, please check if attribute elements IDs are "
-                    "valid and if they exist in report."
+                    "Missing attribute elements, please check if attribute elements IDs"
+                    " are valid and if they exist in report."
                 )
                 exception_handler(msg, IndexError)
 
@@ -132,9 +145,13 @@ class Parser:
         return [
             list(
                 chain.from_iterable(
-                    [[r for _ in f] for r, f in zip(row, self._attribute_elem_form_names)]
+                    [
+                        [r for _ in f]
+                        for r, f in zip(row, self._attribute_elem_form_names)
+                    ]
                 )
-            ) for row in response["data"]["headers"]["rows"]
+            )
+            for row in response["data"]["headers"]["rows"]
         ]
 
     def __extract_paging_info(self, response):
@@ -149,32 +166,45 @@ class Parser:
     @staticmethod
     def __extract_metric_col_names(response):
         if response["definition"]["grid"]["columns"]:
-            return [i['name'] for i in response["definition"]["grid"]["columns"][-1]["elements"]]
+            return [
+                i['name']
+                for i in response["definition"]["grid"]["columns"][-1]["elements"]
+            ]
         else:
             return []
 
     @staticmethod
     def __extract_attribute_form_names(response):
         # extract attribute form names
-        return [[e["name"] for e in i["forms"]] for i in response["definition"]["grid"]["rows"]]
+        return [
+            [form["name"] for form in attribute["forms"]]
+            for attribute in response["definition"]["grid"]["rows"]
+        ]
 
     @staticmethod
     def __extract_attribute_names(response):
-        return [i["name"] for i in response["definition"]["grid"]["rows"]]
+        return [
+            attribute["name"] for attribute in response["definition"]["grid"]["rows"]
+        ]
 
     def __get_attribute_col_names(self):
         # extract and format attribute form column labels
         col_names = []
         for attr, forms in zip(self._attribute_names, self._attribute_elem_form_names):
             if len(forms) == 1:
-                # if only one form, do not display the attribute form type in the column headers  # noqa
+                # if only one form, do not display the attribute form type
+                # in the column headers
                 col_names.append(attr)
             else:
-                # otherwise concatenate the attribute name, separator, and form type  # noqa
+                # otherwise concatenate the attribute name, separator,
+                # and form type
                 for form in forms:
                     col_names.append(attr + self.AF_COL_SEP + form)
 
         return col_names
+
+    def has_multiform_attributes(self):
+        return any(len(item) > 1 for item in self._attribute_elem_form_names)
 
     @property
     def dataframe(self):

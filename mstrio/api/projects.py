@@ -1,5 +1,11 @@
+from typing import TYPE_CHECKING
+
+from mstrio.utils.api_helpers import changeset_manager
 from mstrio.utils.error_handlers import ErrorHandler
 from mstrio.utils.helper import response_handler
+
+if TYPE_CHECKING:
+    from mstrio.connection import Connection
 
 
 @ErrorHandler(
@@ -12,7 +18,7 @@ def get_project(
     name,
     error_msg=None,
     throw_error=True,
-    whitelist=[('ERR001', 500), ('ERR014', 403)]
+    whitelist=[('ERR001', 500), ('ERR014', 403)],
 ):
     """Get a specific project that the authenticated user has access to.
 
@@ -113,7 +119,9 @@ def set_project_import_quota(connection, id, body, error_msg=None):
     )
 
 
-@ErrorHandler(err_msg='Error setting user {user_id} import quota for project with ID {id}')
+@ErrorHandler(
+    err_msg='Error setting user {user_id} import quota for project with ID {id}'
+)
 def set_user_import_quota(connection, id, user_id, body, error_msg=None):
     """Set the amount of space, in MB, that can be used for the Data Import
     function for a specific user. The value provided is rounded to an integer.
@@ -270,7 +278,7 @@ def get_projects_on_startup(connection, error_msg=None, whitelist=None):
     """
     return connection.get(
         url=f'{connection.base_url}/api/projects/settings/onStartup',
-        headers={'X-MSTR-ProjectID': None}
+        headers={'X-MSTR-ProjectID': None},
     )
 
 
@@ -301,4 +309,66 @@ def update_projects_on_startup(connection, body, error_msg=None, whitelist=None)
         url=f'{connection.base_url}/api/projects/settings/onStartup',
         headers={'X-MSTR-ProjectID': None},
         json=body,
+    )
+
+
+@ErrorHandler(err_msg='Error getting VLDB settings for project with ID {id}')
+def get_vldb_settings(connection: 'Connection', id: str, error_msg: str = None):
+    """Get advanced VLDB settings for a project.
+
+    Args:
+        connection (Connection): MicroStrategy REST API connection object
+        id (string): Project ID
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object.
+    """
+    return connection.get(
+        url=f'{connection.base_url}/api/model/projects/{id}?showAdvancedProperties=true'
+    )
+
+
+@ErrorHandler(err_msg='Error updating VLDB settings for project with ID {id}')
+def update_vldb_settings(
+    connection: 'Connection', id: str, body: dict, error_msg: str = None
+):
+    """Update metadata of advanced VLDB settings for a project.
+
+    Args:
+        connection (Connection): MicroStrategy REST API connection object
+        id (string): Project ID
+        body (dict): JSON-formatted data used to update VLDB settings
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object.
+    """
+    with changeset_manager(connection) as changeset_id:
+        return connection.put(
+            url=f'{connection.base_url}/api/model/projects/{id}',
+            headers={'X-MSTR-MS-Changeset': changeset_id},
+            json=body,
+        )
+
+
+@ErrorHandler(
+    err_msg='Error getting metadata of VLDB settings for project with ID {id}'
+)
+def get_applicable_vldb_settings(
+    connection: 'Connection', id: str, error_msg: str = None
+):
+    """Get metadata of advanced VLDB settings for a project.
+
+    Args:
+        connection (Connection): MicroStrategy REST API connection object
+        id (string): Project ID
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object.
+    """
+    return connection.get(
+        url=f'{connection.base_url}/api/model/projects/{id}'
+        '/applicableAdvancedProperties'
     )

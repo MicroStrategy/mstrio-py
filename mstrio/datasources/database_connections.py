@@ -30,7 +30,10 @@ class DatabaseConnections:
         self.connection = connection
 
     def list_connections(
-        self, nodes: Union[str, List[str]] = None, limit: Optional[int] = None, **filters
+        self,
+        nodes: Union[str, List[str]] = None,
+        limit: Optional[int] = None,
+        **filters,
     ) -> List[Dict[str, Any]]:
         """Get all active database connections. Optionally filter the
          connections by specifying the `filters` keyword arguments.
@@ -54,7 +57,7 @@ class DatabaseConnections:
             nodes_names=nodes_names,
             dict_unpack_value="dbConnectionInstances",
             limit=limit,
-            filters=filters
+            filters=filters,
         )
         return all_databases
 
@@ -75,10 +78,13 @@ class DatabaseConnections:
                 f"'with ID:{connection_id}? [Y/N]: "
             )
         if force or user_input == 'Y':
-            response = monitors.delete_database_connection(self.connection, connection_id)
+            response = monitors.delete_database_connection(
+                self.connection, connection_id
+            )
             if response.status_code == 204 and config.verbose:
                 logger.info(
-                    f'Successfully disconnected database connection instance {connection_id}.'
+                    f'Successfully disconnected database connection instance '
+                    f'{connection_id}.'
                 )
             return response.ok
         else:
@@ -107,10 +113,13 @@ class DatabaseConnections:
 
         connections = self.list_connections()
         threads = helper.get_parallel_number(len(connections))
-        with FuturesSessionWithRenewal(connection=self.connection, max_workers=threads) as session:
-
+        with FuturesSessionWithRenewal(
+            connection=self.connection, max_workers=threads
+        ) as session:
             futures = [
-                monitors.delete_database_connection_async(session, self.connection, conn["id"])
+                monitors.delete_database_connection_async(
+                    session, self.connection, conn["id"]
+                )
                 for conn in connections
             ]
             statuses: List[Dict[str, Union[str, int]]] = []
@@ -118,7 +127,8 @@ class DatabaseConnections:
                 response = f.result()
                 statuses.append(
                     {
-                        'id': response.url.rsplit("/").pop(-1), 'status': response.status_code
+                        'id': response.url.rsplit("/").pop(-1),
+                        'status': response.status_code,
                     }
                 )
         return self._prepare_disconnect_by_id_message(statuses=statuses)
@@ -144,7 +154,7 @@ class DatabaseConnections:
                 )
             if failed:
                 logger.warning(
-                    'Database connections with ids listed below were not disconnected:\n\t'
-                    + ',\n\t'.join(failed)
+                    'Database connections with ids listed below were not '
+                    'disconnected:\n\t' + ',\n\t'.join(failed)
                 )
         return statuses

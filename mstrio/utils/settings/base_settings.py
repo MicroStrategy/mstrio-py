@@ -13,7 +13,12 @@ import mstrio.utils.helper as helper
 
 from .setting_types import DeprecatedSetting, SettingValue, SettingValueFactory
 from .settings_helper import convert_settings_to_byte, convert_settings_to_mega_byte
-from .settings_io import CSVSettingsIO, JSONSettingsIO, PickleSettingsIO, SettingsSerializerFactory
+from .settings_io import (
+    CSVSettingsIO,
+    JSONSettingsIO,
+    PickleSettingsIO,
+    SettingsSerializerFactory,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +35,7 @@ class BaseSettings(metaclass=ABCMeta):
     Attributes:
         settings: settings
     """
+
     _CONFIG: Dict = {}
     # !NOTE define in child classes
     _TYPE: Union[str, None] = None
@@ -69,7 +75,9 @@ class BaseSettings(metaclass=ABCMeta):
                 self._READ_ONLY.append(setting)
             cfg.update({'name': setting})
 
-    def compare_with_files(self, files: List[str], show_diff_only: bool = False) -> DataFrame:
+    def compare_with_files(
+        self, files: List[str], show_diff_only: bool = False
+    ) -> DataFrame:
         """Compare the current project settings to settings in file/files
         Args:
             files (str): List of paths to the settings files. Supported settings
@@ -95,7 +103,8 @@ class BaseSettings(metaclass=ABCMeta):
             current = current[~index]
             if current.empty and config.verbose:
                 logger.info(
-                    'There is no difference between current settings and settings from files.'
+                    'There is no difference between current settings and settings '
+                    'from files.'
                 )
         return current
 
@@ -136,7 +145,7 @@ class BaseSettings(metaclass=ABCMeta):
         self._validate_settings(settings_dict)
 
         # If no Exception was raised, assign the settings to the object
-        for (setting, value) in settings_dict.items():
+        for setting, value in settings_dict.items():
             setattr(self, setting, value)
         if config.verbose:
             logger.info(f"Settings imported from '{file}'")
@@ -164,7 +173,9 @@ class BaseSettings(metaclass=ABCMeta):
     def to_dataframe(self) -> DataFrame:
         """Return a `DataFrame` object containing settings and their values."""
 
-        df = DataFrame.from_dict(self.list_properties(), orient='index', columns=['value'])
+        df = DataFrame.from_dict(
+            self.list_properties(), orient='index', columns=['value']
+        )
         df.reset_index(inplace=True)
         df.rename({'index': 'setting'}, axis=1, inplace=True)
         return df
@@ -183,15 +194,12 @@ class BaseSettings(metaclass=ABCMeta):
             ['name', 'read_only', 'reboot_rule', 'deprecated'],
             axis='columns',
             inplace=True,
-            errors='ignore'
+            errors='ignore',
         )
         return df
 
     def _validate_settings(
-        self,
-        settings: Optional[dict] = None,
-        bad_setting=Warning,
-        bulk_error=True
+        self, settings: Optional[dict] = None, bad_setting=Warning, bulk_error=True
     ) -> None:
         """Validate setting-value pairs and raise AttributeError or TypeError
         if invalid. If `bad_setting` or `bad_type` is of type Exception, then
@@ -222,13 +230,14 @@ class BaseSettings(metaclass=ABCMeta):
                 "Invalid settings: {}".format(
                     [item[0] + ': ' + str(item[1]) for item in bad_settings_keys]
                 ),
-                exception_type=ValueError
+                exception_type=ValueError,
             )
 
     def _prepare_settings_push(self) -> dict:
-
         def to_rest_format(settings: dict) -> dict:
-            return {k: {'value': v} for k, v in settings.items() if k not in self._READ_ONLY}
+            return {
+                k: {'value': v} for k, v in settings.items() if k not in self._READ_ONLY
+            }
 
         settings = self.list_properties(show_names=False)
         settings = convert_settings_to_byte(settings, self._CONVERSION_MAP)
@@ -236,7 +245,6 @@ class BaseSettings(metaclass=ABCMeta):
         return settings
 
     def _prepare_settings_fetch(self, settings: dict) -> dict:
-
         def from_rest_format(settings: dict) -> dict:
             return {k: v['value'] for k, v in settings.items()}
 

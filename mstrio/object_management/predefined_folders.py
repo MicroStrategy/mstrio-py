@@ -4,6 +4,7 @@ from enum import Enum
 class PredefinedFolders(Enum):
     """Enumeration constants used to specify names of pre-defined folders.
     Values are specified according to `EnumDSSXMLFolderNames`."""
+
     AUTO_STYLES = 57
     BLACK_LISTED = 1000
     CONFIGURE_DB_ROLES = 73

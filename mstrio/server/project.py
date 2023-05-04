@@ -1,18 +1,19 @@
-from enum import Enum, IntEnum
 import logging
 import time
-from typing import Optional, Union
+from enum import Enum, IntEnum
+from typing import Optional
 
 from pandas import DataFrame, Series
 from tqdm import tqdm
 
+import mstrio.utils.helper as helper
 from mstrio import config
 from mstrio.api import monitors, projects
 from mstrio.connection import Connection
 from mstrio.utils.entity import Entity, ObjectTypes
-import mstrio.utils.helper as helper
 from mstrio.utils.settings.base_settings import BaseSettings
 from mstrio.utils.version_helper import method_version_handler
+from mstrio.utils.vldb_mixin import ModelVldbMixin
 from mstrio.utils.wip import wip
 
 logger = logging.getLogger(__name__)
@@ -51,6 +52,7 @@ class IdleMode(Enum):
         Any currently executing and queued jobs that do not require SQL to
         be executed against the data warehouse are executed.
     """
+
     REQUEST = "request_idle"
     EXECUTION = "exec_idle"
     WAREHOUSEEXEC = "wh_exec_idle"
@@ -58,7 +60,9 @@ class IdleMode(Enum):
     PARTIAL = "full_idle"
 
 
-def compare_project_settings(projects: list["Project"], show_diff_only: bool = False) -> DataFrame:
+def compare_project_settings(
+    projects: list["Project"], show_diff_only: bool = False
+) -> DataFrame:
     """Compares settings of project objects.
 
     Args:
@@ -95,7 +99,7 @@ def compare_project_settings(projects: list["Project"], show_diff_only: bool = F
     return df
 
 
-class Project(Entity):
+class Project(Entity, ModelVldbMixin):
     """Object representation of MicroStrategy Project (Project) object.
 
     Attributes:
@@ -118,16 +122,26 @@ class Project(Entity):
         status: Project
         ancestors: List of ancestor folders
     """
+
     _OBJECT_TYPE = ObjectTypes.PROJECT
     _API_GETTERS = {
-        **Entity._API_GETTERS, ('status', 'alias'): projects.get_project,
-        'nodes': monitors.get_node_info
+        **Entity._API_GETTERS,
+        ('status', 'alias'): projects.get_project,
+        'nodes': monitors.get_node_info,
     }
     _FROM_DICT_MAP = {**Entity._FROM_DICT_MAP, 'status': ProjectStatus}
     _STATUS_PATH = "/status"
+    _MODEL_VLDB_API = {
+        'GET_ADVANCED': projects.get_vldb_settings,
+        'PUT_ADVANCED': projects.update_vldb_settings,
+        'GET_APPLICABLE': projects.get_applicable_vldb_settings,
+    }
 
     def __init__(
-        self, connection: Connection, name: Optional[str] = None, id: Optional[str] = None
+        self,
+        connection: Connection,
+        name: Optional[str] = None,
+        id: Optional[str] = None,
     ) -> None:
         """Initialize Project object by passing `name` or `id`. When `id` is
         provided (not `None`), `name` is omitted.
@@ -143,7 +157,7 @@ class Project(Entity):
         if id is None and name is None:
             helper.exception_handler(
                 "Please specify either 'name' or 'id' parameter in the constructor.",
-                exception_type=ValueError
+                exception_type=ValueError,
             )
 
         if id is None:
@@ -153,7 +167,7 @@ class Project(Entity):
             else:
                 helper.exception_handler(
                     f"There is no project with the given name: '{name}'",
-                    exception_type=ValueError
+                    exception_type=ValueError,
                 )
 
         try:
@@ -166,7 +180,7 @@ class Project(Entity):
                         "status using the 'load()' or 'resume()' method to use "
                         "all functionality."
                     ),
-                    exception_type=UserWarning
+                    exception_type=UserWarning,
                 )
             else:
                 raise e
@@ -183,23 +197,31 @@ class Project(Entity):
         connection: Connection,
         name: str,
         description: Optional[str] = None,
-        force: bool = False
+        force: bool = False,
     ) -> Optional["Project"]:
         user_input = 'N'
         if not force:
-            user_input = input(f"Are you sure you want to create new project '{name}'? [Y/N]: ")
+            user_input = input(
+                f"Are you sure you want to create new project '{name}'? [Y/N]: "
+            )
 
         if force or user_input == 'Y':
             # Create new project
-            with tqdm(desc=f"Please wait while Project '{name}' is being created.",
-                      bar_format='{desc}',
-                      leave=False,
-                      disable=config.verbose):
-                projects.create_project(connection, {"name": name, "description": description})
+            with tqdm(
+                desc=f"Please wait while Project '{name}' is being created.",
+                bar_format='{desc}',
+                leave=False,
+                disable=config.verbose,
+            ):
+                projects.create_project(
+                    connection, {"name": name, "description": description}
+                )
                 http_status, i_server_status = 500, 'ERR001'
                 while http_status == 500 and i_server_status == 'ERR001':
                     time.sleep(1)
-                    response = projects.get_project(connection, name, whitelist=[('ERR001', 500)])
+                    response = projects.get_project(
+                        connection, name, whitelist=[('ERR001', 500)]
+                    )
                     http_status = response.status_code
                     i_server_status = response.json().get('code')
                     id_ = response.json().get('id')
@@ -216,8 +238,8 @@ class Project(Entity):
         connection: Connection,
         to_dictionary: bool = False,
         limit: Optional[int] = None,
-        **filters
-    ) -> Union[list["Project"], list[dict]]:
+        **filters,
+    ) -> list["Project"] | list[dict]:
         msg = "Error getting information for a set of Projects."
         objects = helper.fetch_objects_async(
             connection,
@@ -227,28 +249,35 @@ class Project(Entity):
             limit=limit,
             chunk_size=1000,
             error_msg=msg,
-            filters=filters
+            filters=filters,
         )
         if to_dictionary:
             return objects
         else:
-            projects = [cls.from_dict(source=obj, connection=connection) for obj in objects]
-            projects_loaded = Project._list_loaded_projects(connection, to_dictionary=True)
+            projects = [
+                cls.from_dict(source=obj, connection=connection) for obj in objects
+            ]
+            projects_loaded = Project._list_loaded_projects(
+                connection, to_dictionary=True
+            )
             projects_loaded_ids = [project['id'] for project in projects_loaded]
-            unloaded = [project for project in projects if project.id not in projects_loaded_ids]
+            unloaded = [
+                project for project in projects if project.id not in projects_loaded_ids
+            ]
 
             if unloaded:
                 msg = (
-                    f"Projects {[project.name for project in unloaded]} are either unloaded or "
-                    "idled. Change status using the 'load()' or 'resume()' method to use all "
-                    "functionality."
+                    f"Projects {[project.name for project in unloaded]} are either "
+                    f"unloaded or idled. Change status using the 'load()' or 'resume()'"
+                    f" method to use all functionality."
                 )
                 helper.exception_handler(msg, exception_type=UserWarning)
             return projects
 
     @classmethod
-    def _list_project_ids(cls, connection: Connection, limit: Optional[int] = None,
-                          **filters) -> list[str]:
+    def _list_project_ids(
+        cls, connection: Connection, limit: Optional[int] = None, **filters
+    ) -> list[str]:
         project_dicts = Project._list_projects(
             connection=connection,
             to_dictionary=True,
@@ -258,8 +287,9 @@ class Project(Entity):
         return [project['id'] for project in project_dicts]
 
     @classmethod
-    def _list_loaded_projects(cls, connection: Connection, to_dictionary: bool = False,
-                              **filters) -> Union[list["Project"], list[dict]]:
+    def _list_loaded_projects(
+        cls, connection: Connection, to_dictionary: bool = False, **filters
+    ) -> list["Project"] | list[dict]:
         response = projects.get_projects(connection, whitelist=[('ERR014', 403)])
         list_of_dicts = response.json() if response.ok else []
         list_of_dicts = helper.camel_to_snake(list_of_dicts)  # Convert keys
@@ -270,7 +300,9 @@ class Project(Entity):
             return raw_project
         else:
             # return list of Project objects
-            return [cls.from_dict(source=obj, connection=connection) for obj in raw_project]
+            return [
+                cls.from_dict(source=obj, connection=connection) for obj in raw_project
+            ]
 
     def alter(self, name: Optional[str] = None, description: Optional[str] = None):
         """Alter project name or/and description.
@@ -279,11 +311,15 @@ class Project(Entity):
             name: new name of the project.
             description: new description of the project.
         """
-        properties = helper.filter_params_for_func(self.alter, locals(), exclude=['self'])
+        properties = helper.filter_params_for_func(
+            self.alter, locals(), exclude=['self']
+        )
 
         self._alter_properties(**properties)
 
-    def __change_project_state(self, func, on_nodes: Union[str, list[str]] = None, **mode):
+    def __change_project_state(
+        self, func, on_nodes: Optional[str | list[str]] = None, **mode
+    ):
         if type(on_nodes) is list:
             for node in on_nodes:
                 func(node, **mode)
@@ -295,14 +331,14 @@ class Project(Entity):
         else:
             helper.exception_handler(
                 "'on_nodes' argument needs to be of type: [list[str], str, NoneType]",
-                exception_type=TypeError
+                exception_type=TypeError,
             )
 
     @method_version_handler('11.2.0000')
     def idle(
         self,
-        on_nodes: Optional[Union[str, list[str]]] = None,
-        mode: Union[IdleMode, str] = IdleMode.REQUEST
+        on_nodes: Optional[str | list[str]] = None,
+        mode: IdleMode | str = IdleMode.REQUEST,
     ) -> None:
         """Request to idle a specific cluster node. Idle project with mode
         options.
@@ -316,12 +352,12 @@ class Project(Entity):
         def idle_project(node: str, mode: IdleMode):
             body = {
                 "operationList": [
-                    {
-                        "op": "replace", "path": self._STATUS_PATH, "value": mode.value
-                    }
+                    {"op": "replace", "path": self._STATUS_PATH, "value": mode.value}
                 ]
             }
-            response = monitors.update_node_properties(self.connection, node, self.id, body)
+            response = monitors.update_node_properties(
+                self.connection, node, self.id, body
+            )
             if response.status_code == 202:
                 tmp = helper.filter_list_of_dicts(self.nodes, name=node)
                 tmp[0]['projects'] = [response.json()['project']]
@@ -330,7 +366,8 @@ class Project(Entity):
                     self.fetch('nodes')
                 if config.verbose:
                     logger.info(
-                        f"Project '{self.id}' changed status to '{mode}' on node '{node}'."
+                        f"Project '{self.id}' changed status to '{mode}' on node "
+                        f"'{node}'."
                     )
 
         if not isinstance(mode, IdleMode):
@@ -343,13 +380,14 @@ class Project(Entity):
                 mode = IdleMode[mode]
             else:
                 helper.exception_handler(
-                    "Unsupported mode, please provide a valid `IdleMode` value.", KeyError
+                    "Unsupported mode, please provide a valid `IdleMode` value.",
+                    KeyError,
                 )
 
         self.__change_project_state(func=idle_project, on_nodes=on_nodes, mode=mode)
 
     @method_version_handler('11.2.0000')
-    def resume(self, on_nodes: Optional[Union[str, list[str]]] = None) -> None:
+    def resume(self, on_nodes: Optional[str | list[str]] = None) -> None:
         """Request to resume the project on the chosen cluster nodes. If
         nodes are not specified, the project will be loaded on all nodes.
 
@@ -360,11 +398,13 @@ class Project(Entity):
 
         def resume_project(node):
             body = {
-                "operationList": [{
-                    "op": "replace", "path": self._STATUS_PATH, "value": "loaded"
-                }]
+                "operationList": [
+                    {"op": "replace", "path": self._STATUS_PATH, "value": "loaded"}
+                ]
             }
-            response = monitors.update_node_properties(self.connection, node, self.id, body)
+            response = monitors.update_node_properties(
+                self.connection, node, self.id, body
+            )
             if response.status_code == 202:
                 tmp = helper.filter_list_of_dicts(self.nodes, name=node)
                 tmp[0]['projects'] = [response.json()['project']]
@@ -377,7 +417,7 @@ class Project(Entity):
         self.__change_project_state(func=resume_project, on_nodes=on_nodes)
 
     @method_version_handler('11.2.0000')
-    def load(self, on_nodes: Optional[Union[str, list[str]]] = None) -> None:
+    def load(self, on_nodes: Optional[str | list[str]] = None) -> None:
         """Request to load the project onto the chosen cluster nodes. If
         nodes are not specified, the project will be loaded on all nodes.
 
@@ -388,11 +428,13 @@ class Project(Entity):
 
         def load_project(node):
             body = {
-                "operationList": [{
-                    "op": "replace", "path": self._STATUS_PATH, "value": "loaded"
-                }]
+                "operationList": [
+                    {"op": "replace", "path": self._STATUS_PATH, "value": "loaded"}
+                ]
             }
-            response = monitors.update_node_properties(self.connection, node, self.id, body)
+            response = monitors.update_node_properties(
+                self.connection, node, self.id, body
+            )
             if response.status_code == 202:
                 tmp = helper.filter_list_of_dicts(self.nodes, name=node)
                 tmp[0]['projects'] = [response.json()['project']]
@@ -405,7 +447,7 @@ class Project(Entity):
         self.__change_project_state(func=load_project, on_nodes=on_nodes)
 
     @method_version_handler('11.2.0000')
-    def unload(self, on_nodes: Optional[Union[str, list[str]]] = None) -> None:
+    def unload(self, on_nodes: Optional[str | list[str]] = None) -> None:
         """Request to unload the project from the chosen cluster nodes. If
         nodes are not specified, the project will be unloaded on all nodes.
         The unload action cannot be performed until all jobs and connections
@@ -420,9 +462,7 @@ class Project(Entity):
         def unload_project(node):
             body = {
                 "operationList": [
-                    {
-                        "op": "replace", "path": self._STATUS_PATH, "value": "unloaded"
-                    }
+                    {"op": "replace", "path": self._STATUS_PATH, "value": "unloaded"}
                 ]
             }
             response = monitors.update_node_properties(
@@ -437,12 +477,14 @@ class Project(Entity):
                 if config.verbose:
                     logger.info(f"Project '{self.id}' unloaded on node '{node}'.")
             if response.status_code == 500 and config.verbose:  # handle whitelisted
-                logger.warning(f"Project '{self.id}' already unloaded on node '{node}'.")
+                logger.warning(
+                    f"Project '{self.id}' already unloaded on node '{node}'."
+                )
 
         self.__change_project_state(func=unload_project, on_nodes=on_nodes)
 
     @method_version_handler('11.3.0000')
-    def register(self, on_nodes: Optional[Union[str, list]] = None) -> None:
+    def register(self, on_nodes: Optional[str | list] = None) -> None:
         """Register project on nodes.
 
         A registered project will load on node (server) startup.
@@ -459,7 +501,7 @@ class Project(Entity):
         self._register(on_nodes=value)
 
     @method_version_handler('11.3.0000')
-    def unregister(self, on_nodes: Optional[Union[str, list]] = None) -> None:
+    def unregister(self, on_nodes: Optional[str | list] = None) -> None:
         """Unregister project on nodes.
 
         An unregistered project will not load on node (server) startup.
@@ -505,7 +547,8 @@ class Project(Entity):
         self.fetch('nodes')
         if not isinstance(self.nodes, list):
             helper.exception_handler(
-                "Could not retrieve current project status.", exception_type=ConnectionError
+                "Could not retrieve current project status.",
+                exception_type=ConnectionError,
             )
         for node in self.nodes:
             projects = node.get('projects')
@@ -516,7 +559,19 @@ class Project(Entity):
                     break
         return loaded
 
-    def _register(self, on_nodes: Union[list]) -> None:
+    def get_data_engine_versions(self) -> dict:
+        """Fetch the currently available data engine versions for project."""
+
+        return projects.get_engine_settings(self.connection, self.id).json()['engine'][
+            'versions'
+        ]
+
+    def update_data_engine_version(self, new_version: int) -> None:
+        """Update data engine version for project."""
+
+        self.alter_vldb_settings(names_to_values={'AEVersion': new_version})
+
+    def _register(self, on_nodes: list) -> None:
         path = f"/projects/{self.id}/nodes"
         body = {"operationList": [{"op": "replace", "path": path, "value": on_nodes}]}
         projects.update_projects_on_startup(self.connection, body)
@@ -542,7 +597,9 @@ class Project(Entity):
         """
 
         if not hasattr(self, "_settings"):
-            super(Entity, self).__setattr__("_settings", ProjectSettings(self.connection, self.id))
+            super(Entity, self).__setattr__(
+                "_settings", ProjectSettings(self.connection, self.id)
+            )
         return self._settings
 
     @settings.setter
@@ -599,7 +656,7 @@ class ProjectSettings(BaseSettings):
         'statisticsPurgeTimeout': 'sec',
         'maxPromptWaitingTime': 'sec',
         'maxRAMForReportRWDCacheIndex': '%',
-        'cubeIndexGrowthUpperBound': '%'
+        'cubeIndexGrowthUpperBound': '%',
     }
     _CACHING_SETTINGS_TO_ENABLE = (
         "enableReportServerCaching",
@@ -612,7 +669,7 @@ class ProjectSettings(BaseSettings):
         "enableDocumentOutputCachingInXml",
         "enableDocumentOutputCachingInHtml",
         "enableDocumentOutputCachingInPdf",
-        "enableDocumentOutputCachingInExcel"
+        "enableDocumentOutputCachingInExcel",
     )
 
     def __init__(self, connection: Connection, project_id: Optional[str] = None):
@@ -649,7 +706,9 @@ class ProjectSettings(BaseSettings):
         """
         self._check_params(project_id)
         set_dict = self._prepare_settings_push()
-        response = projects.update_project_settings(self._connection, self._project_id, set_dict)
+        response = projects.update_project_settings(
+            self._connection, self._project_id, set_dict
+        )
         if config.verbose:
             if response.status_code == 200:
                 logger.info('Project settings updated.')
@@ -694,9 +753,12 @@ class ProjectSettings(BaseSettings):
         if not ProjectSettings._CONFIG:
             project_id = self._project_id
             if not project_id:
-                project_id = Project._list_loaded_projects(self._connection,
-                                                           to_dictionary=True)['id'][0]
-            response = projects.get_project_settings_config(self._connection, project_id)
+                project_id = Project._list_loaded_projects(
+                    self._connection, to_dictionary=True
+                )['id'][0]
+            response = projects.get_project_settings_config(
+                self._connection, project_id
+            )
             ProjectSettings._CONFIG = response.json()
             super()._get_config()
 
@@ -704,7 +766,9 @@ class ProjectSettings(BaseSettings):
         if project_id:
             super(BaseSettings, self).__setattr__('_project_id', project_id)
         if not self._connection or not self._project_id:
-            raise AttributeError("Please provide `connection` and `project_id` parameter")
+            raise AttributeError(
+                "Please provide `connection` and `project_id` parameter"
+            )
 
     @wip()
     def list_caching_properties(self) -> dict:
@@ -713,6 +777,7 @@ class ProjectSettings(BaseSettings):
         """
         self.fetch()
         return {
-            k: v for (k, v) in self.list_properties().items()
+            k: v
+            for (k, v) in self.list_properties().items()
             if any(word in k.lower() for word in ("cache", "caching"))
         }

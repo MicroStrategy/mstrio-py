@@ -1,6 +1,7 @@
+import logging
 from dataclasses import dataclass
 from enum import auto
-import logging
+from functools import partial
 from typing import Optional
 
 from mstrio import config
@@ -16,10 +17,10 @@ from mstrio.types import ObjectTypes
 from mstrio.utils.entity import DeleteMixin, Entity, MoveMixin
 from mstrio.utils.enum_helper import AutoName, get_enum_val
 from mstrio.utils.helper import (
-    delete_none_values,
     Dictable,
+    delete_none_values,
     filter_params_for_func,
-    get_valid_project_id
+    get_valid_project_id,
 )
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
@@ -36,7 +37,7 @@ def list_transformations(
     project_name: Optional[str] = None,
     search_pattern: SearchPattern | int = SearchPattern.CONTAINS,
     show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
-    **filters
+    **filters,
 ) -> list["Transformation"] | list[dict]:
     """Get list of Transformation objects or dicts with them.
 
@@ -78,12 +79,15 @@ def list_transformations(
         **filters: Available filter parameters:
             id str: Transformation's ID
             name str: Transformation's name
+            description str: Transformation's description
             date_created str: format: 2001-01-02T20:48:05.000+0000
             date_modified str: format: 2001-01-02T20:48:05.000+0000
             version str: Transformation's version
             owner dict: e.g. {'id': <user's id>, 'name': <user's name>},
                 with one or both of the keys: id, name
             acg str | int: access control group
+            subtype str: object's subtype
+            ext_type str: object's extended type
 
     Returns:
         list with Transformation objects or list of dictionaries
@@ -102,25 +106,27 @@ def list_transformations(
         name=name,
         pattern=search_pattern,
         limit=limit,
-        **filters
+        **filters,
     )
     if to_dictionary:
         return objects_
     else:
-        show_expression_as = show_expression_as if isinstance(
-            show_expression_as, ExpressionFormat
-        ) else ExpressionFormat(show_expression_as)
+        show_expression_as = (
+            show_expression_as
+            if isinstance(show_expression_as, ExpressionFormat)
+            else ExpressionFormat(show_expression_as)
+        )
         return [
             Transformation.from_dict(
-                {
-                    **obj_, 'show_expression_as': show_expression_as
-                }, connection
-            ) for obj_ in objects_
+                {**obj_, 'show_expression_as': show_expression_as}, connection
+            )
+            for obj_ in objects_
         ]
 
 
 class MappingType(AutoName):
     """Enumeration constants used to specify mapping type"""
+
     ONE_TO_ONE = auto()
     MANY_TO_MANY = auto()
 
@@ -150,6 +156,7 @@ class Transformation(Entity, MoveMixin, DeleteMixin):
         acg: access rights (See EnumDSSXMLAccessRightFlags for possible values)
         acl: object access control list
     """
+
     _OBJECT_TYPE = ObjectTypes.ROLE
     _API_GETTERS = {
         (
@@ -162,26 +169,44 @@ class Transformation(Entity, MoveMixin, DeleteMixin):
             'primary_locale',
             'mapping_type',
             'attributes',
-            'is_embedded'
+            'is_embedded',
         ): transformations.get_transformation,
-        ('type', 'subtype', 'version', 'owner', 'acg', 'acl', 'ext_type'): objects.get_object_info
+        (
+            'type',
+            'subtype',
+            'version',
+            'owner',
+            'acg',
+            'acl',
+            'ext_type',
+        ): objects.get_object_info,
     }
     _API_PATCH = {
-        ('name', 'description', 'mapping_type', 'attributes',
-         'destination_folder_id'): (transformations.update_transformation, 'partial_put'),
+        (
+            'name',
+            'description',
+            'mapping_type',
+            'attributes',
+            'destination_folder_id',
+        ): (transformations.update_transformation, 'partial_put'),
     }
     _FROM_DICT_MAP = {
         **Entity._FROM_DICT_MAP,
         "attributes": (
-            lambda source,
-            connection:
-            [TransformationAttribute.from_dict(content, connection) for content in source]
+            lambda source, connection: [
+                TransformationAttribute.from_dict(content, connection)
+                for content in source
+            ]
         ),
         "mapping_type": MappingType,
     }
 
     def __init__(
-        self, connection: Connection, id=None, name=None, show_expression_as=ExpressionFormat.TREE
+        self,
+        connection: Connection,
+        id=None,
+        name=None,
+        show_expression_as=ExpressionFormat.TREE,
     ):
         """Initializes a new instance of Transformation class
 
@@ -204,28 +229,41 @@ class Transformation(Entity, MoveMixin, DeleteMixin):
         """
         if id is None:
             transformation = super()._find_object_with_name(
-                connection=connection, name=name, listing_function=list_transformations
+                connection=connection,
+                name=name,
+                listing_function=partial(
+                    list_transformations, search_pattern=SearchPattern.EXACTLY
+                ),
             )
             id = transformation['id']
         super().__init__(
-            connection=connection, object_id=id, name=name, show_expression_as=show_expression_as
+            connection=connection,
+            object_id=id,
+            name=name,
+            show_expression_as=show_expression_as,
         )
 
     def _init_variables(self, **kwargs) -> None:
         super()._init_variables(**kwargs)
         self._sub_type = kwargs.get('sub_type')
         self._is_embedded = kwargs.get('is_embedded')
-        self._attributes = [
-            TransformationAttribute.from_dict(attr, self._connection)
-            for attr in kwargs.get('attributes')
-        ] if kwargs.get('attributes') else None
+        self._attributes = (
+            [
+                TransformationAttribute.from_dict(attr, self._connection)
+                for attr in kwargs.get('attributes')
+            ]
+            if kwargs.get('attributes')
+            else None
+        )
         self._mapping_type = kwargs.get('mapping_type')
         self._version_id = kwargs.get('version_id')
         self._primary_locale = kwargs.get('primary_locale')
         show_expression_as = kwargs.get('show_expression_as', 'tree')
-        self._show_expression_as = show_expression_as if isinstance(
-            show_expression_as, ExpressionFormat
-        ) else ExpressionFormat(show_expression_as)
+        self._show_expression_as = (
+            show_expression_as
+            if isinstance(show_expression_as, ExpressionFormat)
+            else ExpressionFormat(show_expression_as)
+        )
 
     def list_properties(self):
         properties = super().list_properties()
@@ -237,7 +275,7 @@ class Transformation(Entity, MoveMixin, DeleteMixin):
             'project_id',
             'target_info',
             'view_media',
-            'abbreviation'
+            'abbreviation',
         ]
         [properties.pop(key, None) for key in redundant_keys]
         return properties
@@ -254,7 +292,7 @@ class Transformation(Entity, MoveMixin, DeleteMixin):
         mapping_type: MappingType | str,
         is_embedded: bool = False,
         description: Optional[str] = None,
-        show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE
+        show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
     ) -> 'Transformation':
         """Create Transformation object.
 
@@ -289,27 +327,27 @@ class Transformation(Entity, MoveMixin, DeleteMixin):
                 'name': name,
                 'isEmbedded': is_embedded,
                 'description': description,
-                'destinationFolderId': destination_folder
+                'destinationFolderId': destination_folder,
             },
             'attributes': [attribute.to_dict() for attribute in attributes],
-            'mappingType': mapping_type
+            'mappingType': mapping_type,
         }
         body = delete_none_values(body, recursion=True)
         response = transformations.create_transformation(
             connection=connection,
             body=body,
-            show_expression_as=get_enum_val(show_expression_as, ExpressionFormat)
+            show_expression_as=get_enum_val(show_expression_as, ExpressionFormat),
         ).json()
 
         if config.verbose:
             logger.info(
-                f"Successfully created transformation named: '{name}' with ID: '{response['id']}'"
+                f"Successfully created transformation named: '{name}' with ID: '"
+                f"{response['id']}'"
             )
 
         return cls.from_dict(
-            source={
-                **response, 'show_expression_as': show_expression_as
-            }, connection=connection
+            source={**response, 'show_expression_as': show_expression_as},
+            connection=connection,
         )
 
     def alter(
@@ -318,7 +356,7 @@ class Transformation(Entity, MoveMixin, DeleteMixin):
         destination_folder_id: Optional[Folder | str] = None,
         attributes: Optional[list] = None,
         mapping_type: Optional[MappingType] = None,
-        description: Optional[str] = None
+        description: Optional[str] = None,
     ):
         """Alter transformation properties.
 
@@ -408,7 +446,7 @@ class TransformationAttribute(Dictable):
 
     _FROM_DICT_MAP = {
         "base_attribute": SchemaObjectReference,
-        "forms": ([TransformationAttributeForm.from_dict])
+        "forms": ([TransformationAttributeForm.from_dict]),
     }
 
     id: str

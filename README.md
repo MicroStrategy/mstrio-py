@@ -51,6 +51,7 @@ Main features of **mstrio-py** allows to access MicroStrategy data:
 Since version **11.3.0.1**, **mstrio-py** includes also administration modules:
 
 - **Project** management module (see [code_snippets][code_snippet_project])
+with **VLDB settings** management (see [code_snippets][code_snippet_vldb])
 - **Server** management module (see [code_snippets][code_snippet_server])
 - **User** and **User Group** management modules (see [code_snippets][code_snippet_user])
 - **Schedules** management module (see [code_snippets][code_snippet_schedules])
@@ -62,6 +63,7 @@ Since version **11.3.0.1**, **mstrio-py** includes also administration modules:
 - **Intelligent Cube** management modules (see [code_snippets][code_snippet_olap])
 - **Security filter** module (see [code_snippets][code_snippet_security_filter])
 - **Datasources and Connection Mapping** subpackage for database management (see [code_snippets][code_snippet_datasource])
+with **VLDB settings** management (see [code_snippets][code_snippet_vldb])
 - **Job Monitor** module for job monitoring (see [code_snippets][code_snippet_job_monitor])
 - **Object management** module (see [code_snippets][code_snippet_object_mgmt])
 - **Contact** module (see [code_snippets][code_snippet_contact])
@@ -83,6 +85,9 @@ It is subject to change until it is released as Generally Available.
 - **Dossier** module (see [code_snippets][code_snippet_dossier])
 - **Content Cache** module (see [code_snippets][code_snippet_content_cache])
 - **Dynamic Recipient List** module (see [code_snippets][code_snippet_dynamic_recipient_list])
+- **Driver** module (see [code_snippets][code_snippet_datasource])
+- **Gateway** module (see [code_snippets][code_snippet_datasource])
+
 
 <a id="documentation" name="documentation"></a>
 # Documentation
@@ -176,7 +181,7 @@ jupyter nbextension enable connector-jupyter --py --sys-prefix
 <a id="versioning--changelog" name="versioning--changelog"></a>
 # Versioning & Changelog
 
-Current version: **11.3.9.101** (3 March 2023). Check out [**Changelog**][release_notes] to see what's new.
+Current version: **11.3.9.103** (5 May 2023). Check out [**Changelog**][release_notes] to see what's new.
 
 mstrio-py is constantly developed to support newest MicroStrategy REST APIs. Functionalities may be added to mstrio on monthly basis. It is **recommended** to always install the newest version of mstrio-py, as it will be most stable and still maintain backwards compatibility with various MicroStrategy installations, dating back to 11.1.4.
 
@@ -267,3 +272,4 @@ When features (modules, parameters, attributes, methods etc.) are marked for dep
 [code_snippet_document]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/document.py
 [code_snippet_dossier]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/dossier.py
 [code_snippet_dynamic_recipient_list]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/dynamic_recipient_list.py
+[code_snippet_vldb]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/vldb.py

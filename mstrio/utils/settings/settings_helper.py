@@ -1,5 +1,4 @@
 def convert_settings_to_byte(settings: dict, mapping: dict) -> dict:
-
     def convert(setting, value):
         unit = mapping.get(setting)
         if unit is not None:
@@ -13,7 +12,6 @@ def convert_settings_to_byte(settings: dict, mapping: dict) -> dict:
 
 
 def convert_settings_to_mega_byte(settings: dict, mapping: dict) -> dict:
-
     def convert(setting, value):
         unit = mapping.get(setting)
         if unit is not None:

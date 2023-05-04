@@ -7,7 +7,8 @@ from mstrio.utils.helper import Dictable
 
 
 class ScheduleEnums:
-    """Object representations of recurrence information of a time-based schedule
+    """
+    Object representations of recurrence information of a time-based schedule
     """
 
     class DaysOfWeek(AutoName):
@@ -74,12 +75,13 @@ class ScheduleTime(Dictable):
 
         def __init__(
             self,
-            execution_pattern: Union[ScheduleEnums.ExecutionPattern,
-                                     str] = ScheduleEnums.ExecutionPattern.ONCE,
+            execution_pattern: Union[
+                ScheduleEnums.ExecutionPattern, str
+            ] = ScheduleEnums.ExecutionPattern.ONCE,
             execution_time: Optional[str] = None,
             start_time: Optional[str] = None,
             stop_time: Optional[str] = None,
-            repeat_interval: Optional[int] = 1
+            repeat_interval: Optional[int] = 1,
         ):
             """Set attributes representing execution information of the schedule
 
@@ -105,15 +107,17 @@ class ScheduleTime(Dictable):
                 ValueError: when execution_repeat_interval = None if
                 execution_pattern == REPEAT
             """
-            if (execution_pattern == ScheduleEnums.ExecutionPattern.REPEAT
-                    and repeat_interval is None):
+            if (
+                execution_pattern == ScheduleEnums.ExecutionPattern.REPEAT
+                and repeat_interval is None
+            ):
                 helper.exception_handler(
                     msg=(
                         'Value error: execution_repeat_interval '
                         'cannot be None, '
                         'for execution_pattern == ExecutionPattern.Repeat'
                     ),
-                    exception_type=ValueError
+                    exception_type=ValueError,
                 )
             if execution_pattern == ScheduleEnums.ExecutionPattern.REPEAT:
                 self.start_time = start_time
@@ -121,20 +125,25 @@ class ScheduleTime(Dictable):
                 self.repeat_interval = repeat_interval
             else:
                 self.execution_time = execution_time
-            self.execution_pattern = execution_pattern if isinstance(
-                execution_pattern, ScheduleEnums.ExecutionPattern
-            ) else ScheduleEnums.ExecutionPattern(execution_pattern)
+            self.execution_pattern = (
+                execution_pattern
+                if isinstance(execution_pattern, ScheduleEnums.ExecutionPattern)
+                else ScheduleEnums.ExecutionPattern(execution_pattern)
+            )
 
     class Daily(Dictable):
-        """Object representation of daily recurrence information of the schedule
+        """
+        Object representation of daily recurrence information of the schedule
         """
 
         _FROM_DICT_MAP = {'daily_pattern': ScheduleEnums.DailyPattern}
 
         def __init__(
             self,
-            daily_pattern: Union[ScheduleEnums.DailyPattern, str] = ScheduleEnums.DailyPattern.DAY,
-            repeat_interval: int = 1
+            daily_pattern: Union[
+                ScheduleEnums.DailyPattern, str
+            ] = ScheduleEnums.DailyPattern.DAY,
+            repeat_interval: int = 1,
         ):
             """Set attributes representing daily recurrence information of the
             schedule
@@ -147,9 +156,11 @@ class ScheduleTime(Dictable):
                     The repeat interval of days of daily schedule,
                     if daily_pattern is DAY. Defaults to 1.
             """
-            self.daily_pattern = daily_pattern if isinstance(
-                daily_pattern, ScheduleEnums.DailyPattern
-            ) else ScheduleEnums.DailyPattern(daily_pattern)
+            self.daily_pattern = (
+                daily_pattern
+                if isinstance(daily_pattern, ScheduleEnums.DailyPattern)
+                else ScheduleEnums.DailyPattern(daily_pattern)
+            )
             if daily_pattern == ScheduleEnums.DailyPattern.DAY:
                 self.repeat_interval = repeat_interval
 
@@ -161,8 +172,10 @@ class ScheduleTime(Dictable):
 
         def __init__(
             self,
-            days_of_week: Optional[Union[List[ScheduleEnums.DaysOfWeek], List[str]]] = None,
-            repeat_interval: int = 1
+            days_of_week: Optional[
+                Union[List[ScheduleEnums.DaysOfWeek], List[str]]
+            ] = None,
+            repeat_interval: int = 1,
         ):
             """Set attributes representing weekly recurrence information of the
             schedule.
@@ -181,7 +194,8 @@ class ScheduleTime(Dictable):
             else:
                 days_of_week = [
                     ScheduleEnums.DaysOfWeek(item)
-                    if not isinstance(item, ScheduleEnums.DaysOfWeek) else item
+                    if not isinstance(item, ScheduleEnums.DaysOfWeek)
+                    else item
                     for item in days_of_week
                 ]
                 self.days_of_week = days_of_week
@@ -196,7 +210,7 @@ class ScheduleTime(Dictable):
             'monthly_pattern': ScheduleEnums.MonthlyPattern,
             'week_offset': ScheduleEnums.WeekOffset,
             'day_of_week': ScheduleEnums.DaysOfWeek,
-            'weekday_offset': ScheduleEnums.WeekdayOffset
+            'weekday_offset': ScheduleEnums.WeekdayOffset,
         }
 
         def __init__(
@@ -207,7 +221,7 @@ class ScheduleTime(Dictable):
             week_offset: Optional[Union[ScheduleEnums.WeekOffset, str]] = None,
             day_of_week: Optional[Union[ScheduleEnums.DaysOfWeek, str]] = None,
             weekday_offset: Optional[Union[ScheduleEnums.WeekdayOffset, str]] = None,
-            days_of_month: Optional[str] = None
+            days_of_month: Optional[str] = None,
         ):
             """Set attributes representing monthly recurrence information of the
             schedule.
@@ -241,24 +255,32 @@ class ScheduleTime(Dictable):
                     stringified digits (from '1' to '31'). Defaults to None.
             """
 
-            self.monthly_pattern = monthly_pattern if isinstance(
-                monthly_pattern, ScheduleEnums.MonthlyPattern
-            ) else ScheduleEnums.MonthlyPattern(monthly_pattern)
+            self.monthly_pattern = (
+                monthly_pattern
+                if isinstance(monthly_pattern, ScheduleEnums.MonthlyPattern)
+                else ScheduleEnums.MonthlyPattern(monthly_pattern)
+            )
             self.repeat_interval = repeat_interval
 
             if monthly_pattern == ScheduleEnums.MonthlyPattern.DAY:
                 self.day = day
             elif monthly_pattern == ScheduleEnums.MonthlyPattern.DAY_OF_WEEK:
-                self.week_offset = week_offset if isinstance(
-                    week_offset, ScheduleEnums.WeekOffset
-                ) else ScheduleEnums.WeekOffset(week_offset)
-                self.day_of_week = day_of_week if isinstance(
-                    day_of_week, ScheduleEnums.DaysOfWeek
-                ) else ScheduleEnums.DaysOfWeek(day_of_week)
+                self.week_offset = (
+                    week_offset
+                    if isinstance(week_offset, ScheduleEnums.WeekOffset)
+                    else ScheduleEnums.WeekOffset(week_offset)
+                )
+                self.day_of_week = (
+                    day_of_week
+                    if isinstance(day_of_week, ScheduleEnums.DaysOfWeek)
+                    else ScheduleEnums.DaysOfWeek(day_of_week)
+                )
             elif monthly_pattern == ScheduleEnums.MonthlyPattern.WEEKDAY:
-                self.weekday_offset = weekday_offset if isinstance(
-                    weekday_offset, ScheduleEnums.WeekdayOffset
-                ) else ScheduleEnums.WeekdayOffset(weekday_offset)
+                self.weekday_offset = (
+                    weekday_offset
+                    if isinstance(weekday_offset, ScheduleEnums.WeekdayOffset)
+                    else ScheduleEnums.WeekdayOffset(weekday_offset)
+                )
             elif monthly_pattern == ScheduleEnums.MonthlyPattern.DAYS_OF_MONTH:
                 self.days_of_month = days_of_month
 
@@ -269,17 +291,18 @@ class ScheduleTime(Dictable):
         _FROM_DICT_MAP = {
             'yearly_pattern': ScheduleEnums.YearlyPattern,
             'week_offset': ScheduleEnums.WeekOffset,
-            'day_of_week': ScheduleEnums.DaysOfWeek
+            'day_of_week': ScheduleEnums.DaysOfWeek,
         }
 
         def __init__(
             self,
-            yearly_pattern: Union[ScheduleEnums.YearlyPattern,
-                                  str] = ScheduleEnums.YearlyPattern.DAY,
+            yearly_pattern: Union[
+                ScheduleEnums.YearlyPattern, str
+            ] = ScheduleEnums.YearlyPattern.DAY,
             month: int = 1,
             day: int = 1,
             week_offset: Optional[Union[ScheduleEnums.WeekOffset, str]] = None,
-            day_of_week: Optional[Union[ScheduleEnums.DaysOfWeek, str]] = None
+            day_of_week: Optional[Union[ScheduleEnums.DaysOfWeek, str]] = None,
         ):
             """Set attributes representing yearly recurrence information of the
             schedule
@@ -304,19 +327,25 @@ class ScheduleTime(Dictable):
                     MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY,
                     SUNDAY. Defaults to None.
             """
-            self.yearly_pattern = yearly_pattern if isinstance(
-                yearly_pattern, ScheduleEnums.YearlyPattern
-            ) else ScheduleEnums.YearlyPattern(yearly_pattern)
+            self.yearly_pattern = (
+                yearly_pattern
+                if isinstance(yearly_pattern, ScheduleEnums.YearlyPattern)
+                else ScheduleEnums.YearlyPattern(yearly_pattern)
+            )
             self.month = month
             if yearly_pattern == ScheduleEnums.YearlyPattern.DAY:
                 self.day = day
             if yearly_pattern == ScheduleEnums.YearlyPattern.DAYOFWEEK:
-                self.week_offset = week_offset if isinstance(
-                    week_offset, ScheduleEnums.WeekOffset
-                ) else ScheduleEnums.WeekOffset(week_offset)
-                self.day_of_week = day_of_week if isinstance(
-                    day_of_week, ScheduleEnums.DaysOfWeek
-                ) else ScheduleEnums.DaysOfWeek(day_of_week)
+                self.week_offset = (
+                    week_offset
+                    if isinstance(week_offset, ScheduleEnums.WeekOffset)
+                    else ScheduleEnums.WeekOffset(week_offset)
+                )
+                self.day_of_week = (
+                    day_of_week
+                    if isinstance(day_of_week, ScheduleEnums.DaysOfWeek)
+                    else ScheduleEnums.DaysOfWeek(day_of_week)
+                )
 
     _FROM_DICT_MAP = {
         'recurrence_pattern': ScheduleEnums.RecurrencePattern,
@@ -325,17 +354,19 @@ class ScheduleTime(Dictable):
         'daily': Daily.from_dict,
         'weekly': Weekly.from_dict,
         'monthly': Monthly.from_dict,
-        'yearly': Yearly.from_dict
+        'yearly': Yearly.from_dict,
     }
 
     def __init__(
         self,
-        recurrence_pattern: Optional[Union[ScheduleEnums.RecurrencePattern, str]] = None,
+        recurrence_pattern: Optional[
+            Union[ScheduleEnums.RecurrencePattern, str]
+        ] = None,
         execution: Optional[Execution] = None,
         daily: Optional[Daily] = None,
         weekly: Optional[Weekly] = None,
         monthly: Optional[Monthly] = None,
-        yearly: Optional[Yearly] = None
+        yearly: Optional[Yearly] = None,
     ):
         """Set attributes representing details of the time-based schedule.
 
@@ -360,9 +391,11 @@ class ScheduleTime(Dictable):
                 schedule. Defaults to None.
         """
 
-        self.recurrence_pattern = recurrence_pattern if isinstance(
-            recurrence_pattern, ScheduleEnums.RecurrencePattern
-        ) else ScheduleEnums.RecurrencePattern(recurrence_pattern)
+        self.recurrence_pattern = (
+            recurrence_pattern
+            if isinstance(recurrence_pattern, ScheduleEnums.RecurrencePattern)
+            else ScheduleEnums.RecurrencePattern(recurrence_pattern)
+        )
         self.execution = execution
         if daily:
             self.daily = daily
@@ -382,22 +415,27 @@ class ScheduleTime(Dictable):
         start_time: Optional[str] = None,
         stop_time: Optional[str] = None,
         execution_repeat_interval: Optional[int] = None,
-        daily_pattern: Optional[Union[ScheduleEnums.DailyPattern,
-                                      str]] = ScheduleEnums.DailyPattern.NONE,
+        daily_pattern: Optional[
+            Union[ScheduleEnums.DailyPattern, str]
+        ] = ScheduleEnums.DailyPattern.NONE,
         repeat_interval: Optional[int] = None,
         days_of_week: Optional[Union[List[ScheduleEnums.DaysOfWeek], List[str]]] = None,
         day: Optional[int] = None,
         month: Optional[int] = None,
-        week_offset: Optional[Union[ScheduleEnums.WeekOffset,
-                                    str]] = ScheduleEnums.WeekOffset.NONE,
-        day_of_week: Optional[Union[ScheduleEnums.DaysOfWeek,
-                                    str]] = ScheduleEnums.DaysOfWeek.NONE,
+        week_offset: Optional[
+            Union[ScheduleEnums.WeekOffset, str]
+        ] = ScheduleEnums.WeekOffset.NONE,
+        day_of_week: Optional[
+            Union[ScheduleEnums.DaysOfWeek, str]
+        ] = ScheduleEnums.DaysOfWeek.NONE,
         weekday_offset: Optional[str] = None,
         days_of_month: Optional[List[str]] = None,
-        monthly_pattern: Optional[Union[ScheduleEnums.MonthlyPattern,
-                                        str]] = ScheduleEnums.MonthlyPattern.NONE,
-        yearly_pattern: Optional[Union[ScheduleEnums.YearlyPattern,
-                                       str]] = ScheduleEnums.YearlyPattern.NONE
+        monthly_pattern: Optional[
+            Union[ScheduleEnums.MonthlyPattern, str]
+        ] = ScheduleEnums.MonthlyPattern.NONE,
+        yearly_pattern: Optional[
+            Union[ScheduleEnums.YearlyPattern, str]
+        ] = ScheduleEnums.YearlyPattern.NONE,
     ):
         """
         Uses provided properties to create object representation of details of a
@@ -477,7 +515,8 @@ class ScheduleTime(Dictable):
         if execution_pattern == ScheduleEnums.ExecutionPattern.ONCE:
             execution = cls.Execution.from_dict(
                 {
-                    'execution_pattern': execution_pattern, 'execution_time': execution_time
+                    'execution_pattern': execution_pattern,
+                    'execution_time': execution_time,
                 }
             )
         elif execution_pattern == ScheduleEnums.ExecutionPattern.REPEAT:
@@ -486,7 +525,7 @@ class ScheduleTime(Dictable):
                     'execution_pattern': execution_pattern,
                     'start_time': start_time,
                     'stop_time': stop_time,
-                    'repeat_interval': execution_repeat_interval
+                    'repeat_interval': execution_repeat_interval,
                 }
             )
         else:
@@ -496,23 +535,25 @@ class ScheduleTime(Dictable):
 
         if recurrence_pattern == ScheduleEnums.RecurrencePattern.DAILY:
             daily = cls.Daily.from_dict(
-                {
-                    'daily_pattern': daily_pattern, 'repeat_interval': repeat_interval
-                }
+                {'daily_pattern': daily_pattern, 'repeat_interval': repeat_interval}
             )
-            return cls(recurrence_pattern=recurrence_pattern, execution=execution, daily=daily)
+            return cls(
+                recurrence_pattern=recurrence_pattern, execution=execution, daily=daily
+            )
         elif recurrence_pattern == ScheduleEnums.RecurrencePattern.WEEKLY:
             if days_of_week and type(days_of_week) is not list:
                 helper.exception_handler(
                     msg='Error: days_of_week must be provided as a list',
-                    exception_type=ValueError
+                    exception_type=ValueError,
                 )
             weekly = cls.Weekly.from_dict(
-                {
-                    'repeat_interval': repeat_interval, 'days_of_week': days_of_week
-                }
+                {'repeat_interval': repeat_interval, 'days_of_week': days_of_week}
             )
-            return cls(recurrence_pattern=recurrence_pattern, execution=execution, weekly=weekly)
+            return cls(
+                recurrence_pattern=recurrence_pattern,
+                execution=execution,
+                weekly=weekly,
+            )
         elif recurrence_pattern == ScheduleEnums.RecurrencePattern.MONTHLY:
             monthly = cls.Monthly.from_dict(
                 {
@@ -522,10 +563,14 @@ class ScheduleTime(Dictable):
                     "week_offset": week_offset,
                     "day_of_week": day_of_week,
                     "WeekdayOffset": weekday_offset,
-                    "days_of_month": days_of_month
+                    "days_of_month": days_of_month,
                 }
             )
-            return cls(recurrence_pattern=recurrence_pattern, execution=execution, monthly=monthly)
+            return cls(
+                recurrence_pattern=recurrence_pattern,
+                execution=execution,
+                monthly=monthly,
+            )
         elif recurrence_pattern == ScheduleEnums.RecurrencePattern.YEARLY:
             yearly = cls.Yearly.from_dict(
                 {
@@ -533,18 +578,25 @@ class ScheduleTime(Dictable):
                     'month': month,
                     'day': day,
                     'week_offset': week_offset,
-                    'day_of_week': day_of_week
+                    'day_of_week': day_of_week,
                 }
             )
-            return cls(recurrence_pattern=recurrence_pattern, execution=execution, yearly=yearly)
+            return cls(
+                recurrence_pattern=recurrence_pattern,
+                execution=execution,
+                yearly=yearly,
+            )
         else:
             helper.exception_handler(
-                msg='Error: Wrong value of recurrence_pattern', exception_type=ValueError
+                msg='Error: Wrong value of recurrence_pattern',
+                exception_type=ValueError,
             )
 
     def update_properties(
         self,
-        recurrence_pattern: Optional[Union[ScheduleEnums.RecurrencePattern, str]] = None,
+        recurrence_pattern: Optional[
+            Union[ScheduleEnums.RecurrencePattern, str]
+        ] = None,
         execution_pattern: Optional[Union[ScheduleEnums.ExecutionPattern, str]] = None,
         execution_time: Optional[str] = None,
         start_time: Optional[str] = None,
@@ -560,7 +612,7 @@ class ScheduleTime(Dictable):
         weekday_offset: Optional[Union[ScheduleEnums.WeekdayOffset, str]] = None,
         days_of_month: Optional[List[str]] = None,
         monthly_pattern: Optional[Union[ScheduleEnums.MonthlyPattern, str]] = None,
-        yearly_pattern: Optional[Union[ScheduleEnums.YearlyPattern, str]] = None
+        yearly_pattern: Optional[Union[ScheduleEnums.YearlyPattern, str]] = None,
     ):
         """
         Updates ScheduleTime object according to provided parameters. If a
@@ -630,30 +682,39 @@ class ScheduleTime(Dictable):
         """
 
         if execution_pattern:
-            execution_pattern = execution_pattern if isinstance(
-                execution_pattern, ScheduleEnums.ExecutionPattern
-            ) else ScheduleEnums.ExecutionPattern(execution_pattern)
-        self.execution.execution_pattern = execution_pattern or self.execution.execution_pattern
+            execution_pattern = (
+                execution_pattern
+                if isinstance(execution_pattern, ScheduleEnums.ExecutionPattern)
+                else ScheduleEnums.ExecutionPattern(execution_pattern)
+            )
+        self.execution.execution_pattern = (
+            execution_pattern or self.execution.execution_pattern
+        )
         if recurrence_pattern:
-            recurrence_pattern = recurrence_pattern if isinstance(
-                recurrence_pattern, ScheduleEnums.RecurrencePattern
-            ) else ScheduleEnums.RecurrencePattern(recurrence_pattern)
+            recurrence_pattern = (
+                recurrence_pattern
+                if isinstance(recurrence_pattern, ScheduleEnums.RecurrencePattern)
+                else ScheduleEnums.RecurrencePattern(recurrence_pattern)
+            )
         self.recurrence_pattern = recurrence_pattern or self.recurrence_pattern
 
         if self.execution.execution_pattern == ScheduleEnums.ExecutionPattern.ONCE:
             self.execution = self.Execution.from_dict(
                 {
-                    'execution_pattern': execution_pattern or self.execution.execution_pattern,
-                    'execution_time': execution_time or self.execution.execution_time
+                    'execution_pattern': execution_pattern
+                    or self.execution.execution_pattern,
+                    'execution_time': execution_time or self.execution.execution_time,
                 }
             )
         elif self.execution.execution_pattern == ScheduleEnums.ExecutionPattern.REPEAT:
             self.execution = self.Execution.from_dict(
                 {
-                    'execution_pattern': execution_pattern or self.execution.execution_pattern,
+                    'execution_pattern': execution_pattern
+                    or self.execution.execution_pattern,
                     'start_time': start_time or self.execution.start_time,
                     'stop_time': stop_time or self.execution.stop_time,
-                    'repeat_interval': execution_repeat_interval or self.execution.repeat_interval
+                    'repeat_interval': execution_repeat_interval
+                    or self.execution.repeat_interval,
                 }
             )
 
@@ -663,46 +724,49 @@ class ScheduleTime(Dictable):
                     {
                         'daily_pattern': daily_pattern or self.daily.daily_pattern,
                         'repeat_interval': (
-                            repeat_interval or getattr(self.daily, 'repeat_interval', None)
-                        )
+                            repeat_interval
+                            or getattr(self.daily, 'repeat_interval', None)
+                        ),
                     }
                 )
             else:
                 self.daily = self.Daily.from_dict(
-                    {
-                        'daily_pattern': daily_pattern, 'repeat_interval': repeat_interval
-                    }
+                    {'daily_pattern': daily_pattern, 'repeat_interval': repeat_interval}
                 )
 
         if self.recurrence_pattern == ScheduleEnums.RecurrencePattern.WEEKLY:
             if hasattr(self, 'weekly') and self.weekly:
                 self.weekly = self.Weekly.from_dict(
                     {
-                        'repeat_interval': repeat_interval or self.weekly.repeat_interval,
-                        'days_of_week': days_of_week or self.weekly.days_of_week
+                        'repeat_interval': repeat_interval
+                        or self.weekly.repeat_interval,
+                        'days_of_week': days_of_week or self.weekly.days_of_week,
                     }
                 )
             else:
                 self.weekly = self.Weekly.from_dict(
-                    {
-                        'repeat_interval': repeat_interval, 'days_of_week': days_of_week
-                    }
+                    {'repeat_interval': repeat_interval, 'days_of_week': days_of_week}
                 )
 
         if self.recurrence_pattern == ScheduleEnums.RecurrencePattern.MONTHLY:
             if hasattr(self, 'monthly') and self.monthly:
                 self.monthly = self.Monthly.from_dict(
                     {
-                        "monthly_pattern": monthly_pattern or self.monthly.monthly_pattern,
-                        "repeat_interval": repeat_interval or self.monthly.repeat_interval,
+                        "monthly_pattern": monthly_pattern
+                        or self.monthly.monthly_pattern,
+                        "repeat_interval": repeat_interval
+                        or self.monthly.repeat_interval,
                         "day": day or getattr(self.monthly, 'day', None),
-                        "week_offset": week_offset or getattr(self.monthly, 'week_offset', None),
-                        "day_of_week": day_of_week or getattr(self.monthly, 'day_of_week', None),
+                        "week_offset": week_offset
+                        or getattr(self.monthly, 'week_offset', None),
+                        "day_of_week": day_of_week
+                        or getattr(self.monthly, 'day_of_week', None),
                         "weekday_offset": (
-                            weekday_offset or getattr(self.monthly, 'weekday_offset', None)
+                            weekday_offset
+                            or getattr(self.monthly, 'weekday_offset', None)
                         ),
                         "days_of_month": days_of_month
-                        or getattr(self.monthly, 'days_of_month', None)
+                        or getattr(self.monthly, 'days_of_month', None),
                     }
                 )
             else:
@@ -714,7 +778,7 @@ class ScheduleTime(Dictable):
                         "week_offset": week_offset,
                         "day_of_week": day_of_week,
                         "weekday_offset": weekday_offset,
-                        "days_of_month": days_of_month
+                        "days_of_month": days_of_month,
                     }
                 )
 
@@ -725,8 +789,10 @@ class ScheduleTime(Dictable):
                         'yearly_pattern': yearly_pattern or self.yearly.yearly_pattern,
                         'month': month or getattr(self.yearly, 'month', None),
                         'day': day or getattr(self.yearly, 'day', None),
-                        'week_offset': week_offset or getattr(self.yearly, 'week_offset', None),
-                        'day_of_week': day_of_week or getattr(self.yearly, 'day_of_week', None),
+                        'week_offset': week_offset
+                        or getattr(self.yearly, 'week_offset', None),
+                        'day_of_week': day_of_week
+                        or getattr(self.yearly, 'day_of_week', None),
                     }
                 )
             else:
@@ -736,6 +802,6 @@ class ScheduleTime(Dictable):
                         'month': month,
                         'day': day,
                         'week_offset': week_offset,
-                        'day_of_week': day_of_week
+                        'day_of_week': day_of_week,
                     }
                 )

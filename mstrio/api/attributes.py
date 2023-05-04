@@ -13,7 +13,7 @@ def create_attribute(
     show_expression_as: Optional[List[str]] = None,
     show_potential_tables: Optional[str] = None,
     show_fields: Optional[str] = None,
-    fields: Optional[str] = None
+    fields: Optional[str] = None,
 ):
     """Create a new attribute in the changeset,
     based on the definition provided in request body.
@@ -50,9 +50,9 @@ def create_attribute(
                 'showExpressionAs': show_expression_as,
                 'showPotentialTables': show_potential_tables,
                 'showFields': show_fields,
-                'fields': fields
+                'fields': fields,
             },
-            json=body
+            json=body,
         )
 
 
@@ -65,7 +65,7 @@ def get_attribute(
     show_expression_as: Optional[List[str]] = None,
     show_potential_tables: Optional[str] = None,
     show_fields: Optional[str] = None,
-    fields: Optional[str] = None
+    fields: Optional[str] = None,
 ):
     """Get definition of a single attribute by id
 
@@ -102,8 +102,8 @@ def get_attribute(
             'showExpressionAs': show_expression_as,
             'showPotentialTables': show_potential_tables,
             'showFields': show_fields,
-            'fields': fields
-        }
+            'fields': fields,
+        },
     )
 
 
@@ -117,7 +117,7 @@ def update_attribute(
     show_potential_tables: Optional[str] = None,
     show_fields: Optional[str] = None,
     fields: Optional[str] = None,
-    remove_invalid_fields: Optional[str] = None
+    remove_invalid_fields: Optional[str] = None,
 ):
     """Update a specific attribute in the changeset
     This endpoint replaces the attribute's top-level fields
@@ -159,7 +159,7 @@ def update_attribute(
                 'showPotentialTables': show_potential_tables,
                 'showFields': show_fields,
                 'fields': fields,
-                'removeInvalidFields': remove_invalid_fields
+                'removeInvalidFields': remove_invalid_fields,
             },
-            json=body
+            json=body,
         )

@@ -17,7 +17,7 @@ def get_recipients(
     search_pattern="CONTAINS_ANY_WORD",
     offset=0,
     limit=-1,
-    enabled_status='ALL'
+    enabled_status='ALL',
 ):
     """Get information for a set of recipients.
 
@@ -50,14 +50,20 @@ def get_recipients(
             'searchPattern': search_pattern,
             'offset': offset,
             'limit': limit,
-            'enabledStatus': enabled_status
+            'enabledStatus': enabled_status,
         },
     )
 
 
 @ErrorHandler(err_msg='Error getting information for a set of users')
 def get_users_info(
-    connection, name_begins, abbreviation_begins, offset=0, limit=-1, fields=None, error_msg=None
+    connection,
+    name_begins,
+    abbreviation_begins,
+    offset=0,
+    limit=-1,
+    fields=None,
+    error_msg=None,
 ):
     """Get information for a set of users.
 
@@ -86,7 +92,7 @@ def get_users_info(
             'abbreviationBegins': abbreviation_begins,
             'offset': offset,
             'limit': limit,
-            'fields': fields
+            'fields': fields,
         },
         headers={'X-MSTR-ProjectID': None},
     )
@@ -99,7 +105,7 @@ def get_users_info_async(
     abbreviation_begins,
     offset=0,
     limit=-1,
-    fields=None
+    fields=None,
 ):
     """Get information for a set of users asynchronously.
 
@@ -127,7 +133,7 @@ def get_users_info_async(
         'abbreviationBegins': abbreviation_begins,
         'offset': offset,
         'limit': limit,
-        'fields': fields
+        'fields': fields,
     }
     url = f'{connection.base_url}/api/users/'
     headers = {'X-MSTR-ProjectID': None}
@@ -259,7 +265,9 @@ def create_address_v2(
     )
 
 
-@ErrorHandler(err_msg='Error updating address with ID {address_id} for user with ID {id}')
+@ErrorHandler(
+    err_msg='Error updating address with ID {address_id} for user with ID {id}'
+)
 def update_address(connection, id, address_id, body, fields=None):
     """Update a specific address for a specific user.
 
@@ -282,7 +290,9 @@ def update_address(connection, id, address_id, body, fields=None):
     )
 
 
-@ErrorHandler(err_msg='Error deleting address with ID {address_id} for a user with ID {id}')
+@ErrorHandler(
+    err_msg='Error deleting address with ID {address_id} for a user with ID {id}'
+)
 def delete_address(connection, id, address_id, fields=None):
     """Delete a specific address for a specific user.
 
@@ -341,9 +351,7 @@ def get_user_privileges(connection, id, project_id=None, privilege_level=None):
     url = f'{connection.base_url}/api/users/{id}/privileges/'
     return connection.get(
         url=url,
-        params={
-            'privilege.level': privilege_level, 'projectId': project_id
-        },
+        params={'privilege.level': privilege_level, 'projectId': project_id},
     )
 
 
@@ -383,7 +391,9 @@ def get_user_info(connection, id, fields=None):
         HTTP response object returned by the MicroStrategy REST server.
     """
 
-    return connection.get(url=f'{connection.base_url}/api/users/{id}', params={'fields': fields})
+    return connection.get(
+        url=f'{connection.base_url}/api/users/{id}', params={'fields': fields}
+    )
 
 
 @ErrorHandler(err_msg='Error deleting user with ID {id}')
@@ -466,7 +476,7 @@ def get_security_filters(
     projects: Optional[str | list[str]] = None,
     offset: int = 0,
     limit: int = -1,
-    error_msg: Optional[str] = None
+    error_msg: Optional[str] = None,
 ):
     """Get each project level security filter and its corresponding inherited
     security filters for the user with given ID.
@@ -488,8 +498,8 @@ def get_security_filters(
     """
     url = f"{connection.base_url}/api/users/{id}/securityFilters"
 
-    projects = (
-        ','.join(projects if isinstance(projects, list) else [projects])
-    ) if projects else projects
+    if projects and isinstance(projects, list):
+        projects = ','.join(projects)
+
     params = {'projects.id': projects, 'offset': offset, 'limit': limit}
     return connection.get(url=url, params=params)

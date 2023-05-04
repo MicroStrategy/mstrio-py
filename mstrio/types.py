@@ -43,6 +43,7 @@ class ObjectTypes(Enum):
     SECURITY_FILTER = 58
     SHORTCUT = 67
     SHORTCUT_TARGET = 68
+    DRIVER = 84
     NONE = None
 
     def __new__(cls, value):
@@ -131,7 +132,6 @@ class ExtendedType(Enum):
         return self.value
 
 
-TypeOrSubtype = Union[int,
-                      ObjectTypes,
-                      ObjectSubTypes,
-                      List[Union[int, ObjectTypes, ObjectSubTypes]]]
+TypeOrSubtype = Union[
+    int, ObjectTypes, ObjectSubTypes, List[Union[int, ObjectTypes, ObjectSubTypes]]
+]

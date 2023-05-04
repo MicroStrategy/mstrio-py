@@ -26,7 +26,7 @@ def store_search_instance(
     used_by_object: Optional[str] = None,
     used_by_recursive: Optional[bool] = None,
     used_by_one_of: Optional[bool] = None,
-    error_msg: Optional[str] = None
+    error_msg: Optional[str] = None,
 ):
     """
     Search the metadata and store an instance of search results.
@@ -95,8 +95,8 @@ def store_search_instance(
             'usedByObject': used_by_object,
             'usedByRecursive': used_by_recursive,
             'usesOneOf': uses_one_of,
-            'usedByOneOf': used_by_one_of
-        }
+            'usedByOneOf': used_by_one_of,
+        },
     )
 
 
@@ -107,7 +107,7 @@ def get_search_results(
     project_id: Optional[str] = None,
     offset: int = 0,
     limit: int = -1,
-    error_msg: Optional[str] = None
+    error_msg: Optional[str] = None,
 ):
     """
     Get search results in a list format.
@@ -132,9 +132,7 @@ def get_search_results(
     return connection.get(
         url=f"{connection.base_url}/api/metadataSearches/results",
         headers={'X-MSTR-ProjectID': project_id},
-        params={
-            'searchId': search_id, 'offset': offset, 'limit': limit
-        }
+        params={'searchId': search_id, 'offset': offset, 'limit': limit},
     )
 
 
@@ -144,7 +142,7 @@ def get_search_results_async(
     search_id: str,
     project_id: Optional[str] = None,
     offset: int = 0,
-    limit: int = -1
+    limit: int = -1,
 ):
     """Get search results in a list format asynchronously.
 
@@ -174,14 +172,16 @@ def get_search_results_async(
     return future
 
 
-@ErrorHandler(err_msg='Error getting search result in atree format for search with ID {search_id}')
+@ErrorHandler(
+    err_msg='Error getting search result in atree format for search with ID {search_id}'
+)
 def get_search_results_tree_format(
     connection: "Connection",
     search_id: str,
     project_id: Optional[str] = None,
     offset: int = 0,
     limit: int = -1,
-    error_msg: Optional[str] = None
+    error_msg: Optional[str] = None,
 ):
     """
     Get search results in a tree format.
@@ -206,9 +206,7 @@ def get_search_results_tree_format(
     return connection.get(
         url=f"{connection.base_url}/api/metadataSearches/results/tree",
         headers={'X-MSTR-ProjectID': project_id},
-        params={
-            'searchId': search_id, 'offset': offset, 'limit': limit
-        },
+        params={'searchId': search_id, 'offset': offset, 'limit': limit},
     )
 
 
@@ -226,7 +224,7 @@ def get_quick_search_result(
     hidden: Optional[bool] = None,
     get_ancestors: Optional[bool] = None,
     cross_cluster: Optional[bool] = None,
-    error_msg: Optional[str] = None
+    error_msg: Optional[str] = None,
 ):
     return connection.get(
         url=f"{connection.base_url}/api/searches/results",
@@ -241,24 +239,27 @@ def get_quick_search_result(
             'getAncestors': get_ancestors,
             'certifiedStatus': certified_status,
             'result.hidden': hidden,
-            'isCrossCluster': cross_cluster
-        }
+            'isCrossCluster': cross_cluster,
+        },
     )
 
 
 @ErrorHandler(
-    err_msg='Error getting quick search result from search object with ID {search_object_id}'
+    err_msg='Error getting quick search result from search object with ID {'
+    'search_object_id}'
 )
 def get_quick_search_result_from_object(
     connection: "Connection",
     project_id: str,
     search_object_id: str,
-    subtypes: Optional[Union["ObjectSubTypes", List["ObjectSubTypes"], int, List[int]]] = None,
+    subtypes: Optional[
+        Union["ObjectSubTypes", List["ObjectSubTypes"], int, List[int]]
+    ] = None,
     include_ancestors: Optional[bool] = None,
     include_acl: Optional[bool] = None,
     limit: Optional[int] = None,
     offset: Optional[int] = None,
-    error_msg: Optional[str] = None
+    error_msg: Optional[str] = None,
 ):
     return connection.get(
         url=f"{connection.base_url}/api/searchObjects/{search_object_id}/results",
@@ -268,8 +269,8 @@ def get_quick_search_result_from_object(
             'includeAcl': include_acl,
             'result.subtypes': subtypes,
             'offset': offset,
-            'limit': limit
-        }
+            'limit': limit,
+        },
     )
 
 
@@ -278,7 +279,7 @@ def get_shortcuts(
     connection: "Connection",
     body: dict,
     shortcut_info_flag: int = 0,
-    error_msg: Optional[str] = None
+    error_msg: Optional[str] = None,
 ):
     """Retrieve information about specific published shortcuts
     in specific projects.
@@ -318,7 +319,7 @@ def get_shortcut(
     id: str,
     project_id: str,
     shortcut_info_flag: int = 2,
-    error_msg: Optional[str] = None
+    error_msg: Optional[str] = None,
 ):
     """Get information about specific published shortcut in specific project.
 
@@ -343,16 +344,16 @@ def get_shortcut(
             f'?shortcutInfoFlag={shortcut_info_flag}'
         ),
         headers={'X-MSTR-ProjectID': None},
-        json=[{
-            "projectId": project_id, "shortcutIds": [id]
-        }],
+        json=[{"projectId": project_id, "shortcutIds": [id]}],
     )
 
     if response.ok:
         response_json = response.json()
         if len(response_json) > 0:
             response_json = response_json[0]
-        response.encoding, response._content = 'utf-8', json.dumps(response_json).encode('utf-8')
+        response.encoding, response._content = 'utf-8', json.dumps(
+            response_json
+        ).encode('utf-8')
     return response
 
 
@@ -362,7 +363,7 @@ def get_search_suggestions(
     project_id: Optional[str] = None,
     key: Optional[str] = None,
     count: int = -1,
-    is_cross_cluster: bool = None
+    is_cross_cluster: bool = None,
 ):
     """Store results of the Search engine to return search suggestions.
 
@@ -384,5 +385,5 @@ def get_search_suggestions(
             f'{connection.base_url}/api/searches/suggestions'
             f'?key={key}?count={count}?isCrossCluster={str(is_cross_cluster).lower()}'
         ),
-        headers={'X-MSTR-ProjectID': project_id}
+        headers={'X-MSTR-ProjectID': project_id},
     )

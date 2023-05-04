@@ -9,7 +9,11 @@ from mstrio.users_and_groups.user import User
 from mstrio.utils import helper
 from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, ObjectTypes
 from mstrio.utils.enum_helper import AutoName, get_enum_val
-from mstrio.utils.helper import get_args_from_func, get_default_args_from_func, get_objects_id
+from mstrio.utils.helper import (
+    get_args_from_func,
+    get_default_args_from_func,
+    get_objects_id,
+)
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
 if TYPE_CHECKING:
@@ -20,7 +24,10 @@ logger = logging.getLogger(__name__)
 
 @method_version_handler('11.3.0000')
 def list_datasource_connections(
-    connection: "Connection", to_dictionary: bool = False, limit: Optional[int] = None, **filters
+    connection: "Connection",
+    to_dictionary: bool = False,
+    limit: Optional[int] = None,
+    **filters,
 ) -> Union[List["DatasourceConnection"], List[dict]]:
     """Get list of DatasourceConnection objects or dicts. Optionally filter the
     connections by specifying filters.
@@ -32,8 +39,15 @@ def list_datasource_connections(
             User objects.
         limit: limit the number of elements returned. If `None` (default), all
             objects are returned.
-        **filters: Available filter parameters: ['id', 'name', 'description',
-            'acg']
+        **filters: Available filter parameters: ['name', 'id', 'description',
+            'acg', 'execution_mode', 'max_cancel_attempt_time',
+            'max_query_exe_time', 'max_connection_attempt_time',
+            'connection_lifetime', 'connection_idle_timeout',
+            'char_encoding_windows', 'char_encoding_unix',
+            'table_prefix', 'connection_string', 'parameterized_queries',
+            'extended_fetch', 'driver_type', 'oauth_parameter', 'iam',
+            'resource', 'scope', 'enable_sso', 'datasource_login',
+            'database_type', 'database_version']
 
     Examples:
         >>> list_datasource_connections(connection, name='db_conn_name')
@@ -141,7 +155,7 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
             'view_media',
             'ancestors',
             'certified_info',
-            'acl'
+            'acl',
         ): objects.get_object_info,
         (
             'id',
@@ -168,8 +182,8 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
             'iam',
             'resource',
             'scope',
-            'enable_sso'
-        ): datasources.get_datasource_connection
+            'enable_sso',
+        ): datasources.get_datasource_connection,
     }
     _API_PATCH: dict = {
         ('abbreviation'): (objects.update_object, 'partial_put'),
@@ -195,11 +209,11 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
             'iam',
             'resource',
             'scope',
-            'enable_sso'
+            'enable_sso',
         ): (
             datasources.update_datasource_connection,
             'patch',
-        )
+        ),
     }
     _PATCH_PATH_TYPES = {
         "name": str,
@@ -223,11 +237,14 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
         "iam": dict,
         "resource": str,
         "scope": str,
-        "enable_sso": bool
+        "enable_sso": bool,
     }
 
     def __init__(
-        self, connection: "Connection", name: Optional[str] = None, id: Optional[str] = None
+        self,
+        connection: "Connection",
+        name: Optional[str] = None,
+        id: Optional[str] = None,
     ) -> None:
         """Initialize DatasourceConnection object and synchronize with server.
 
@@ -239,7 +256,9 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
         """
 
         if id is None and name is None:
-            raise ValueError("Please specify either 'id' or 'name' parameter in the constructor.")
+            raise ValueError(
+                "Please specify either 'id' or 'name' parameter in the constructor."
+            )
 
         if id is None:
             objects_info = DatasourceConnection._list_datasource_connections(
@@ -255,26 +274,38 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
 
     def _init_variables(self, **kwargs) -> None:
         super()._init_variables(**kwargs)
-        self.execution_mode = ExecutionMode(kwargs["execution_mode"]
-                                            ) if kwargs.get("execution_mode") else None
+        self.execution_mode = (
+            ExecutionMode(kwargs["execution_mode"])
+            if kwargs.get("execution_mode")
+            else None
+        )
         self.max_cancel_attempt_time = kwargs.get("max_cancel_attempt_time")
         self.max_query_exe_time = kwargs.get("max_query_exe_time")
         self.max_connection_attempt_time = kwargs.get("max_connection_attempt_time")
         self.connection_lifetime = kwargs.get("connection_lifetime")
         self.connection_idle_timeout = kwargs.get("connection_idle_timeout")
-        self.char_encoding_windows = CharEncoding(
-            kwargs["char_encoding_windows"]
-        ) if kwargs.get("char_encoding_windows") else None
-        self.char_encoding_unix = CharEncoding(kwargs["char_encoding_unix"]
-                                               ) if kwargs.get("char_encoding_unix") else None
+        self.char_encoding_windows = (
+            CharEncoding(kwargs["char_encoding_windows"])
+            if kwargs.get("char_encoding_windows")
+            else None
+        )
+        self.char_encoding_unix = (
+            CharEncoding(kwargs["char_encoding_unix"])
+            if kwargs.get("char_encoding_unix")
+            else None
+        )
         self.table_prefix = kwargs.get("table_prefix")
         self.connection_string = kwargs.get("connection_string")
         self.parameterized_queries = kwargs.get("parameterized_queries")
         self.extended_fetch = kwargs.get("extended_fetch")
-        self.driver_type = DriverType(kwargs["driver_type"]) if kwargs.get("driver_type") else None
-        self.datasource_login = DatasourceLogin.from_dict(
-            kwargs.get("datasource_login"), self.connection
-        ) if kwargs.get("datasource_login") else None
+        self.driver_type = (
+            DriverType(kwargs["driver_type"]) if kwargs.get("driver_type") else None
+        )
+        self.datasource_login = (
+            DatasourceLogin.from_dict(kwargs.get("datasource_login"), self.connection)
+            if kwargs.get("datasource_login")
+            else None
+        )
         self.database_type = kwargs.get("database_type")
         self.database_version = kwargs.get("database_version")
         self._oauth_parameter = kwargs.get("oauth_parameter")
@@ -306,7 +337,7 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
         iam: Optional[dict] = None,
         resource: Optional[str] = None,
         scope: Optional[str] = None,
-        enable_sso: Optional[bool] = None
+        enable_sso: Optional[bool] = None,
     ) -> None:
         """Alter the datasource connection properties.
 
@@ -348,13 +379,15 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
             scope: List of delegated permissions that the app is requesting.
             enable_sso: Specifies whether to use Single Sign-On.
         """
-        datasource_login = {
-            'id': get_objects_id(datasource_login, DatasourceLogin)
-        } if datasource_login else None
+        datasource_login = (
+            {'id': get_objects_id(datasource_login, DatasourceLogin)}
+            if datasource_login
+            else None
+        )
         func = self.alter
         args = get_args_from_func(func)
         defaults = get_default_args_from_func(func)
-        default_dict = dict(zip(args[-len(defaults):], defaults)) if defaults else {}
+        default_dict = dict(zip(args[-len(defaults) :], defaults)) if defaults else {}
         local = locals()
         properties = {}
         for property_key in default_dict.keys():
@@ -389,7 +422,7 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
         iam: Optional[dict] = None,
         resource: Optional[str] = None,
         scope: Optional[str] = None,
-        enable_sso: bool = False
+        enable_sso: bool = False,
     ) -> "DatasourceConnection":
         """Create a new datasource connection on the I-Server.
 
@@ -457,22 +490,23 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
             "parameterizedQueries": parameterized_queries,
             "extendedFetch": extended_fetch,
             "database": {
-                "login": {
-                    "id": login_id
-                }, "type": database_type, "version": database_version
+                "login": {"id": login_id},
+                "type": database_type,
+                "version": database_version,
             },
             "driverType": get_enum_val(driver_type, DriverType),
             "oauthParameter": oauth_parameter,
             "iam": iam,
             "resource": resource,
             "scope": scope,
-            "enable_sso": enable_sso
+            "enable_sso": enable_sso,
         }
         body = helper.delete_none_values(body, recursion=True)
         response = datasources.create_datasource_connection(connection, body).json()
         if config.verbose:
             logger.info(
-                f"Successfully created datasource connection named: '{response.get('name')}' "
+                f"Successfully created datasource connection named: '"
+                f"{response.get('name')}' "
                 f"with ID: '{response.get('id')}'"
             )
         return cls.from_dict(source=response, connection=connection)
@@ -505,14 +539,14 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
         connection: "Connection",
         to_dictionary: bool = False,
         limit: Optional[int] = None,
-        **filters
+        **filters,
     ) -> Union[List["DatasourceConnection"], List[dict]]:
         objects = helper.fetch_objects(
             connection=connection,
             api=datasources.get_datasource_connections,
             dict_unpack_value="connections",
             limit=limit,
-            filters=filters
+            filters=filters,
         )
         if to_dictionary:
             return objects

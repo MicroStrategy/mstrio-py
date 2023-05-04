@@ -27,7 +27,7 @@ class Content(Dictable):
         UNSUPPORTED = auto()
 
     class Properties(Dictable):
-        """ Class representation of personalization properties
+        """Class representation of personalization properties
 
         Attributes:
             format_mode: Type that defines how much of the Report Services
@@ -156,9 +156,8 @@ class Content(Dictable):
                 filter_summary: FilterSummary = FilterSummary.BAR,
                 fit_to_page: bool = False,
                 repeat_column_header: bool = False,
-                grid_paging_mode: GridPagingMode = GridPagingMode.NONE
+                grid_paging_mode: GridPagingMode = GridPagingMode.NONE,
             ):
-
                 self.page_option = page_option
                 self.page_size = page_size
                 self.page_detail_level = page_detail_level
@@ -175,7 +174,7 @@ class Content(Dictable):
                 "page_option": PageOption,
                 "page_size": PageSize,
                 "orientation": Orientation,
-                "filter_summary": FilterSummary
+                "filter_summary": FilterSummary,
             }
 
         class Bursting(Dictable):
@@ -193,17 +192,16 @@ class Content(Dictable):
                 slicing_attributes: Optional[list[str]] = None,
                 address_attribute_id: Optional[str] = None,
                 device_id: Optional[str] = None,
-                form_id: Optional[str] = None
+                form_id: Optional[str] = None,
             ):
-                self.slicing_attributes = slicing_attributes if isinstance(
-                    slicing_attributes, list
-                ) else []
+                self.slicing_attributes = (
+                    slicing_attributes if isinstance(slicing_attributes, list) else []
+                )
                 self.address_attribute_id = address_attribute_id
                 self.device_id = device_id
                 self.form_id = form_id
 
         class Prompt(Dictable):
-
             def __init__(self, enabled: bool, instance_id: str = None):
                 self.enabled = enabled
                 self.instance_id = instance_id
@@ -220,9 +218,8 @@ class Content(Dictable):
             prompt: Optional[Prompt] = None,
             file_name: Optional[str] = None,
             content_modes: Optional[list[str]] = None,
-            bookmark_ids: Optional[list[str]] = None
+            bookmark_ids: Optional[list[str]] = None,
         ):
-
             self.format_mode = format_mode
             self.view_mode = view_mode
             self.format_type = format_type
@@ -241,7 +238,7 @@ class Content(Dictable):
             "format_type": FormatType,
             "export_to_pdf_settings": ExportToPdfSettings.from_dict,
             "bursting": Bursting.from_dict,
-            "prompt": Prompt.from_dict
+            "prompt": Prompt.from_dict,
         }
 
     class RefreshCondition(Dictable):
@@ -258,8 +255,11 @@ class Content(Dictable):
         class SubscriptionFilter(Dictable):
             """Subscription filter. The format of the subscription filters are
                 exactly the same as the view filters. Please refer to
-                https://lw.microstrategy.com/msdz/MSDL/GARelease_Current/docs/projects/RESTSDK/Content/topics/REST_API/REST_API_Filtering_RptsCubes_ViewFilter_CodeSamples.htm#multiple_filters_on_attribute_forms
-                for detailed information. But itshould be noted that
+                https://lw.microstrategy.com/msdz/MSDL/GARelease_Current/docs
+                /projects/RESTSDK/Content/topics/REST_API
+                /REST_API_Filtering_RptsCubes_ViewFilter_CodeSamples.htm
+                #multiple_filters_on_attribute_forms
+                for detailed information. But it should be noted that
                 subscription filters only support Filter on attribute forms
                 and Multiple filters on attribute forms.
 
@@ -301,7 +301,7 @@ class Content(Dictable):
                     db_role_id: Optional[str] = None,
                     namespace: Optional[str] = None,
                     table_name: Optional[str] = None,
-                    url: Optional[str] = None
+                    url: Optional[str] = None,
                 ):
                     self.db_role_id = db_role_id
                     self.namespace = namespace
@@ -313,14 +313,15 @@ class Content(Dictable):
                 self,
                 id: str,
                 refresh_policy: RefreshPolicy,
-                alternate_source: Optional[AlternateSource] = None
+                alternate_source: Optional[AlternateSource] = None,
             ):
                 self.id = id
                 self.refresh_policy = refresh_policy
                 self.alternate_source = alternate_source
 
             _FROM_DICT_MAP = {
-                "refresh_policy": RefreshPolicy, "alternate_source": AlternateSource.from_dict
+                "refresh_policy": RefreshPolicy,
+                "alternate_source": AlternateSource.from_dict,
             }
 
         # RefreshCondition
@@ -328,7 +329,7 @@ class Content(Dictable):
             self,
             tables: list[TableRefreshInfo],
             dataset_refresh_policy: Optional[RefreshPolicy] = None,
-            filters: Optional[list[SubscriptionFilter]] = None
+            filters: Optional[list[SubscriptionFilter]] = None,
         ):
             self.tables = tables
             self.dataset_refresh_policy = dataset_refresh_policy
@@ -336,12 +337,14 @@ class Content(Dictable):
 
         _FROM_DICT_MAP = {
             "dataset_refresh_policy": RefreshPolicy,
-            "tables": lambda tables,
-            connection:
-            [Content.RefreshCondition.TableRefreshInfo.from_dict(t, connection) for t in tables],
-            "filters": lambda filters,
-            connection: [
-                Content.RefreshCondition.SubscriptionFilter.from_dict(f, connection)  # noqa
+            "tables": lambda tables, connection: [
+                Content.RefreshCondition.TableRefreshInfo.from_dict(t, connection)
+                for t in tables
+            ],
+            "filters": lambda filters, connection: [
+                Content.RefreshCondition.SubscriptionFilter.from_dict(
+                    f, connection
+                )  # noqa
                 for f in filters
             ],
         }
@@ -353,7 +356,7 @@ class Content(Dictable):
         type: Type,
         name: Optional[str] = None,
         personalization: Optional[Properties] = None,
-        refresh_condition: Optional[RefreshCondition] = None
+        refresh_condition: Optional[RefreshCondition] = None,
     ):
         self.id = id
         self.type = type
@@ -364,5 +367,5 @@ class Content(Dictable):
     _FROM_DICT_MAP = {
         "type": Type,
         "personalization": Properties.from_dict,
-        "refresh_condition": RefreshCondition.from_dict
+        "refresh_condition": RefreshCondition.from_dict,
     }

@@ -8,7 +8,7 @@ from .schema_management import (
     SchemaManagement,
     SchemaTask,
     SchemaTaskStatus,
-    SchemaUpdateType
+    SchemaUpdateType,
 )
 from .table import *
 from .transformation import *

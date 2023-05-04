@@ -1,23 +1,23 @@
 # NOSONAR
+import logging
 from collections import defaultdict
 from enum import auto
-import logging
-from typing import Iterable, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Iterable, Optional
 
 from mstrio import config
 from mstrio.api import contacts
 from mstrio.users_and_groups.contact_group import ContactGroup
 from mstrio.users_and_groups.user import User
-from mstrio.utils.entity import auto_match_args_entity, DeleteMixin, EntityBase
+from mstrio.utils.entity import DeleteMixin, EntityBase, auto_match_args_entity
 from mstrio.utils.enum_helper import AutoName
 from mstrio.utils.helper import (
+    Dictable,
     camel_to_snake,
     delete_none_values,
-    Dictable,
     fetch_objects,
     get_args_from_func,
     get_default_args_from_func,
-    get_objects_id
+    get_objects_id,
 )
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
@@ -54,12 +54,17 @@ class ContactAddress(Dictable):
         connection: instance of Connection, optional,
             is required if device is string
     """
+
     @staticmethod
     def __device_from_dict(source, connection):
         from mstrio.distribution_services.device.device import Device
+
         return Device.from_dict(source, connection)
 
-    _FROM_DICT_MAP = {'delivery_type': ContactDeliveryType, 'device': __device_from_dict}
+    _FROM_DICT_MAP = {
+        'delivery_type': ContactDeliveryType,
+        'device': __device_from_dict,
+    }
 
     def __init__(
         self,
@@ -69,22 +74,28 @@ class ContactAddress(Dictable):
         device: 'Device | str',
         id: Optional[str] = None,
         is_default: bool = False,
-        connection: Optional['Connection'] = None
+        connection: Optional['Connection'] = None,
     ):
         self.id = id
         self.name = name
         self.physical_address = physical_address
         self.is_default = is_default
 
-        self.delivery_type = delivery_type if isinstance(delivery_type, ContactDeliveryType
-                                                         ) else ContactDeliveryType(delivery_type)
+        self.delivery_type = (
+            delivery_type
+            if isinstance(delivery_type, ContactDeliveryType)
+            else ContactDeliveryType(delivery_type)
+        )
 
         from mstrio.distribution_services.device.device import Device
+
         if isinstance(device, Device):
             self.device = device
         else:
             if not connection:
-                raise ValueError('Argument: connection is required if device is a string')
+                raise ValueError(
+                    'Argument: connection is required if device is a string'
+                )
 
             self.device = Device(connection, id=device)
 
@@ -95,8 +106,9 @@ class ContactAddress(Dictable):
 
         params = [
             f"{param}={self.delivery_type}"
-            if param == 'delivery_type' else f'{param}={repr(value)}' for param,
-            value in param_dict.items()
+            if param == 'delivery_type'
+            else f'{param}={repr(value)}'
+            for param, value in param_dict.items()
         ]
         formatted_params = ', '.join(params)
 
@@ -110,7 +122,7 @@ class ContactAddress(Dictable):
             'deliveryType': self.delivery_type.value,
             'deviceId': self.device.id,
             'deviceName': self.device.name,
-            'isDefault': self.is_default
+            'isDefault': self.is_default,
         }
 
         return result if camel_case else camel_to_snake(result)
@@ -129,7 +141,10 @@ class ContactAddress(Dictable):
 
 @method_version_handler('11.3.0100')
 def list_contacts(
-    connection: 'Connection', to_dictionary: bool = False, limit: Optional[int] = None, **filters
+    connection: 'Connection',
+    to_dictionary: bool = False,
+    limit: Optional[int] = None,
+    **filters,
 ) -> list['Contact'] | list[dict]:
     """Get all contacts as list of Contact objects or dictionaries.
 
@@ -142,7 +157,7 @@ def list_contacts(
         limit: limit the number of elements returned. If `None` (default), all
             objects are returned.
         **filters: Available filter parameters:
-            ['id', 'name', 'description', 'enabled']
+            ['id', 'name', 'description', 'enabled', 'linked_user']
     """
 
     return Contact._list_contacts(
@@ -166,6 +181,7 @@ class Contact(EntityBase, DeleteMixin):
         connection: instance of Connection class, represents connection
                     to MicroStrategy Intelligence Server
     """
+
     _FROM_DICT_MAP = {
         **EntityBase._FROM_DICT_MAP,
         'linked_user': User.from_dict,
@@ -180,13 +196,19 @@ class Contact(EntityBase, DeleteMixin):
             'enabled',
             'linked_user',
             'memberships',
-            'contact_addresses'
+            'contact_addresses',
         ): contacts.get_contact
     }
     _API_DELETE = staticmethod(contacts.delete_contact)
     _API_PATCH = {
-        ('name', 'description', 'enabled', 'linked_user', 'contact_addresses',
-         'memberships'): (contacts.update_contact, 'put')
+        (
+            'name',
+            'description',
+            'enabled',
+            'linked_user',
+            'contact_addresses',
+            'memberships',
+        ): (contacts.update_contact, 'put')
     }
     _PATCH_PATH_TYPES = {
         'name': str,
@@ -194,11 +216,14 @@ class Contact(EntityBase, DeleteMixin):
         'enabled': bool,
         'linked_user': dict,
         'contact_addresses': list,
-        'memberships': list
+        'memberships': list,
     }
 
     def __init__(
-        self, connection: 'Connection', id: Optional[str] = None, name: Optional[str] = None
+        self,
+        connection: 'Connection',
+        id: Optional[str] = None,
+        name: Optional[str] = None,
     ):
         """Initialize Contact object by passing id or name.
         When `id` is provided, name is omitted.
@@ -210,10 +235,14 @@ class Contact(EntityBase, DeleteMixin):
         """
 
         if id is None and name is None:
-            raise ValueError("Please specify either 'id' or 'name' parameter in the constructor.")
+            raise ValueError(
+                "Please specify either 'id' or 'name' parameter in the constructor."
+            )
 
         if id is None:
-            result = Contact._list_contacts(connection=connection, name=name, to_dictionary=True)
+            result = Contact._list_contacts(
+                connection=connection, name=name, to_dictionary=True
+            )
 
             if result:
                 object_data = result[0]
@@ -231,17 +260,26 @@ class Contact(EntityBase, DeleteMixin):
         self.enabled = kwargs.get('enabled')
 
         linked_user = kwargs.get("linked_user")
-        self.linked_user = User.from_dict(linked_user, self.connection) if linked_user else None
+        self.linked_user = (
+            User.from_dict(linked_user, self.connection) if linked_user else None
+        )
 
         addresses = kwargs.get('contact_addresses')
-        self.contact_addresses = [
-            ContactAddress.from_dict(address, self.connection) for address in addresses
-        ] if addresses else None
+        self.contact_addresses = (
+            [
+                ContactAddress.from_dict(address, self.connection)
+                for address in addresses
+            ]
+            if addresses
+            else None
+        )
 
         memberships = kwargs.get('memberships')
-        self.memberships = [
-            ContactGroup.from_dict(m, self.connection) for m in memberships
-        ] if memberships else None
+        self.memberships = (
+            [ContactGroup.from_dict(m, self.connection) for m in memberships]
+            if memberships
+            else None
+        )
 
     @classmethod
     @method_version_handler('11.3.0200')
@@ -252,7 +290,7 @@ class Contact(EntityBase, DeleteMixin):
         linked_user: 'User | str',
         contact_addresses: Iterable['ContactAddress | dict'],
         description: Optional[str] = None,
-        enabled: bool = True
+        enabled: bool = True,
     ) -> 'Contact':
         """Create a new contact.
 
@@ -271,9 +309,7 @@ class Contact(EntityBase, DeleteMixin):
             'name': name,
             'description': description,
             'enabled': enabled,
-            'linkedUser': {
-                'id': get_objects_id(linked_user, User)
-            },
+            'linkedUser': {'id': get_objects_id(linked_user, User)},
             'contactAddresses': [
                 address.to_dict() if isinstance(address, ContactAddress) else address
                 for address in contact_addresses
@@ -284,7 +320,8 @@ class Contact(EntityBase, DeleteMixin):
 
         if config.verbose:
             logger.info(
-                f"Successfully created contact named: '{name}' with ID: '{response['id']}'"
+                f"Successfully created contact named: '{name}' with ID: "
+                f"'{response['id']}'"
             )
 
         return cls.from_dict(source=response, connection=connection)
@@ -295,7 +332,7 @@ class Contact(EntityBase, DeleteMixin):
         description: Optional[str] = None,
         enabled: Optional[bool] = None,
         linked_user: Optional['User | str'] = None,
-        contact_addresses: Optional[Iterable['ContactAddress | dict']] = None
+        contact_addresses: Optional[Iterable['ContactAddress | dict']] = None,
     ):
         """Update properties of a contact
 
@@ -311,7 +348,7 @@ class Contact(EntityBase, DeleteMixin):
         func = self.alter
         args = get_args_from_func(func)
         defaults = get_default_args_from_func(func)
-        defaults_dict = dict(zip(args[-len(defaults):], defaults)) if defaults else {}
+        defaults_dict = dict(zip(args[-len(defaults) :], defaults)) if defaults else {}
         local = locals()
         properties = defaultdict(dict)
 
@@ -327,7 +364,7 @@ class Contact(EntityBase, DeleteMixin):
         connection: 'Connection',
         to_dictionary: bool = False,
         limit: Optional[int] = None,
-        **filters
+        **filters,
     ) -> list['Contact'] | list[dict]:
         """Get all contacts as list of Contact objects or dictionaries.
 
@@ -348,7 +385,7 @@ class Contact(EntityBase, DeleteMixin):
             api=contacts.get_contacts,
             limit=limit,
             filters=filters,
-            dict_unpack_value='contacts'
+            dict_unpack_value='contacts',
         )
 
         if to_dictionary:

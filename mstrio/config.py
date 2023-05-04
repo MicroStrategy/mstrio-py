@@ -6,7 +6,9 @@ from pandas import options
 
 verbose = True  # Controls the amount of feedback from the I-Server
 fetch_on_init = True  # Controls if object will fetch basic data from server on init
-progress_bar = True  # Controls whether progress bar will be shown during long fetch operations
+progress_bar = (
+    True  # Controls whether progress bar will be shown during long fetch operations
+)
 debug = False  # Lets the program run in debugging mode
 # Sets number of rows displayed for pandas DataFrame
 options.display.max_rows = max(250, options.display.max_rows)
@@ -15,7 +17,9 @@ options.display.max_colwidth = max(100, options.display.max_colwidth)
 print_warnings = 'always'
 module_path = 'mstrio.*'
 save_responses = False  # Used to save REST API responses for mocking
-wip_warnings_enabled = True  # Controls whether warnings/errors about WIP functionality are emitted
+wip_warnings_enabled = (
+    True  # Controls whether warnings/errors about WIP functionality are emitted
+)
 
 
 def custom_formatwarning(msg, category, *args, **kwargs):
@@ -25,7 +29,9 @@ def custom_formatwarning(msg, category, *args, **kwargs):
 
 warnings.formatwarning = custom_formatwarning
 warnings.filterwarnings(action=print_warnings, module=module_path)
-warnings.filterwarnings(action=print_warnings, category=DeprecationWarning, module=module_path)
+warnings.filterwarnings(
+    action=print_warnings, category=DeprecationWarning, module=module_path
+)
 warnings.filterwarnings(action='default', category=UserWarning, module=module_path)
 
 

@@ -1,16 +1,16 @@
-from enum import Enum
 import logging
+from enum import Enum
 from operator import itemgetter
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
-from pandas.core.frame import DataFrame
 import requests
+from pandas.core.frame import DataFrame
 from tqdm.auto import tqdm
 
 from mstrio import config
 from mstrio.api import cubes, datasets
 from mstrio.connection import Connection
-from mstrio.object_management.search_operations import full_search, SearchPattern
+from mstrio.object_management.search_operations import SearchPattern, full_search
 from mstrio.project_objects.datasets import cube_cache
 from mstrio.types import ObjectSubTypes, ObjectTypes
 from mstrio.users_and_groups.user import User
@@ -24,10 +24,11 @@ from mstrio.utils.helper import (
     get_parallel_number,
     get_valid_project_id,
     response_handler,
-    sort_object_properties
+    sort_object_properties,
 )
 from mstrio.utils.parser import Parser
 from mstrio.utils.sessions import FuturesSessionWithRenewal
+from mstrio.utils.exceptions import NotSupportedError
 
 if TYPE_CHECKING:
     from .cube_cache import CubeCache
@@ -96,7 +97,7 @@ def list_all_cubes(
     project_name: Optional[str] = None,
     to_dictionary: bool = False,
     limit: Optional[int] = None,
-    **filters
+    **filters,
 ) -> list["OlapCube", "SuperCube"] | list[dict]:
     """Get list of Cube objects (OlapCube or SuperCube) or dicts with them.
     Optionally filter cubes by specifying 'name'.
@@ -161,9 +162,11 @@ def list_all_cubes(
             cube_subtype = object_['subtype']
             if cube_subtype == int(ObjectSubTypes.OLAP_CUBE):
                 from .olap_cube import OlapCube
+
                 all_cubes.append(OlapCube.from_dict(object_, connection))
             elif cube_subtype == int(ObjectSubTypes.SUPER_CUBE):
                 from .super_cube import SuperCube
+
                 all_cubes.append(SuperCube.from_dict(object_, connection))
         return all_cubes
 
@@ -173,7 +176,7 @@ def load_cube(
     cube_id: Optional[str] = None,
     cube_name: Optional[str] = None,
     folder_id: Optional[str] = None,
-    instance_id: Optional[str] = None
+    instance_id: Optional[str] = None,
 ) -> "OlapCube | SuperCube | list[OlapCube, SuperCube]":
     """Load single cube specified by either 'cube_id' or both 'cube_name' and
     'folder_id'.
@@ -205,7 +208,10 @@ def load_cube(
 
     if cube_id:
         if cube_name:
-            msg = "Both `cube_id` and `cube_name` provided. Loading cube based on `cube_id`."
+            msg = (
+                "Both `cube_id` and `cube_name` provided. Loading cube based on "
+                "`cube_id`."
+            )
             exception_handler(msg, Warning, False)
         elif folder_id:
             msg = (
@@ -218,7 +224,7 @@ def load_cube(
             project=connection.project_id,
             object_types=[ObjectSubTypes.OLAP_CUBE, ObjectSubTypes.SUPER_CUBE],
             pattern=SearchPattern.EXACTLY,
-            id=cube_id
+            id=cube_id,
         )
     elif not cube_name:
         msg = "Specify either `cube_id` or `cube_name`."
@@ -230,12 +236,14 @@ def load_cube(
             name=cube_name,
             object_types=[ObjectSubTypes.OLAP_CUBE, ObjectSubTypes.SUPER_CUBE],
             pattern=SearchPattern.EXACTLY,
-            root=folder_id
+            root=folder_id,
         )
 
     ret_cubes = []
     for object_ in objects_:
-        object_ = object_ if len(objects_) > 1 else {**object_, "instance_id": instance_id}
+        object_ = (
+            object_ if len(objects_) > 1 else {**object_, "instance_id": instance_id}
+        )
 
         ret_cubes.append(choose_cube(connection, object_))
         ret_cubes = [tmp for tmp in ret_cubes if tmp]  # remove `None` values
@@ -246,7 +254,9 @@ def load_cube(
     elif len(ret_cubes) == 1:
         return ret_cubes[0]
     else:
-        exception_handler(f"More than one cube with name {cube_name} was loaded.", Warning, False)
+        exception_handler(
+            f"More than one cube with name {cube_name} was loaded.", Warning, False
+        )
         return ret_cubes
 
 
@@ -265,6 +275,7 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
         instance_id (str): Identifier of an instance if cube instance has been
             already initialized, NULL by default.
     """
+
     _OBJECT_TYPE = ObjectTypes.REPORT_DEFINITION
     _OBJECT_SUBTYPE = ObjectSubTypes.NONE.value
     # TODO maybe add cube_info call and attribute to
@@ -272,7 +283,7 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
     _FROM_DICT_MAP = {
         **Entity._FROM_DICT_MAP,
         'owner': User.from_dict,
-        'certified_info': CertifiedInfo.from_dict
+        'certified_info': CertifiedInfo.from_dict,
     }
     _SIZE_LIMIT = 10000000  # this sets desired chunk size in bytes
 
@@ -283,7 +294,7 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
         name: Optional[str] = None,
         instance_id: Optional[str] = None,
         parallel: bool = True,
-        progress_bar: bool = True
+        progress_bar: bool = True,
     ):
         """Initialize an instance of a cube by its id.
 
@@ -312,7 +323,7 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
             instance_id=instance_id,
             parallel=parallel,
             progress_bar=progress_bar,
-            subtype=self._OBJECT_SUBTYPE
+            subtype=self._OBJECT_SUBTYPE,
         )
         connection._validate_project_selected()
         self._get_definition()
@@ -322,9 +333,9 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
         self.instance_id = kwargs.get("instance_id")
         self._parallel = kwargs.get("parallel", True)
         self._initial_limit = 1000
-        self._progress_bar = True if kwargs.get(
-            "progress_bar", True
-        ) and config.progress_bar else False
+        self._progress_bar = (
+            True if kwargs.get("progress_bar", True) and config.progress_bar else False
+        )
         self._table_definition = {}
         self._dataframe = None
         self._dataframes = []
@@ -355,7 +366,7 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
         self,
         name: Optional[str] = None,
         description: Optional[str] = None,
-        abbreviation: Optional[str] = None
+        abbreviation: Optional[str] = None,
     ):
         """Alter Cube properties.
 
@@ -365,9 +376,9 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
             abbreviation: new abbreviation of the Dataset
         """
         func = self.alter
-        args = func.__code__.co_varnames[:func.__code__.co_argcount]
+        args = func.__code__.co_varnames[: func.__code__.co_argcount]
         defaults = func.__defaults__  # type: ignore
-        default_dict = dict(zip(args[-len(defaults):], defaults)) if defaults else {}
+        default_dict = dict(zip(args[-len(defaults) :], defaults)) if defaults else {}
         local = locals()
         properties = {}
         for property_key in default_dict.keys():
@@ -407,7 +418,6 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
         if self.instance_id is None:
             res = self.__create_cube_instance(self._initial_limit)
         else:
-
             # try to get first chunk from already initialized instance of cube,
             # if not possible, initialize new instance
             try:
@@ -416,7 +426,7 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
                     cube_id=self._id,
                     instance_id=self.instance_id,
                     offset=0,
-                    limit=self._initial_limit
+                    limit=self._initial_limit,
                 )
             except requests.HTTPError:
                 res = self.__create_cube_instance(self._initial_limit)
@@ -433,19 +443,28 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
         # If there are more rows to fetch, fetch them
         if paging['current'] != paging['total']:
             if not limit:
-                limit = max(1000, int((self._initial_limit * self._SIZE_LIMIT) / len(res.content)))
+                limit = max(
+                    1000,
+                    int((self._initial_limit * self._SIZE_LIMIT) / len(res.content)),
+                )
             # Count the number of additional iterations
-            it_total = int((paging['total'] - self._initial_limit) / limit) + \
-                ((paging['total'] - self._initial_limit) % limit != 0)
+            it_total = int((paging['total'] - self._initial_limit) / limit) + (
+                (paging['total'] - self._initial_limit) % limit != 0
+            )
 
             if self._parallel and it_total > 1:
                 threads = get_parallel_number(it_total)
-                with FuturesSessionWithRenewal(connection=self._connection,
-                                               max_workers=threads) as session:
+                with FuturesSessionWithRenewal(
+                    connection=self._connection, max_workers=threads
+                ) as session:
                     fetch_pbar = tqdm(
-                        desc="Downloading", total=it_total + 1, disable=(not self._progress_bar)
+                        desc="Downloading",
+                        total=it_total + 1,
+                        disable=(not self._progress_bar),
                     )
-                    future = self.__fetch_chunks_future(session, paging, self.instance_id, limit)
+                    future = self.__fetch_chunks_future(
+                        session, paging, self.instance_id, limit
+                    )
                     fetch_pbar.update()
                     for i, f in enumerate(future, start=1):
                         response = f.result()
@@ -453,7 +472,9 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
                             response_handler(response, "Error getting cube contents.")
                         fetch_pbar.update()
                         fetch_pbar.set_postfix(
-                            rows=str(min(self._initial_limit + i * limit, paging['total']))
+                            rows=str(
+                                min(self._initial_limit + i * limit, paging['total'])
+                            )
                         )
                         p.parse(response.json())
                     fetch_pbar.close()
@@ -464,10 +485,15 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
         self._dataframe = p.dataframe
         # split dataframe to dataframes matching tables in Cube
         if multi_df:
+            if p.has_multiform_attributes():
+                raise NotSupportedError(
+                    "Splitting into multiple dataframes is not supported for cubes "
+                    "containing multiform attributes."
+                )
             # split dataframe to dataframes matching tables in Cube
             self._dataframes = [
-                self._dataframe[columns].copy() for _,
-                columns in self.__multitable_definition().items()
+                self._dataframe[columns].copy()
+                for _, columns in self.__multitable_definition().items()
             ]
             return self._dataframes
         else:
@@ -484,14 +510,16 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
                 instance_id=instance_id,
                 offset=_offset,
                 limit=limit,
-            ) for _offset in range(self._initial_limit, pagination['total'], limit)
+            )
+            for _offset in range(self._initial_limit, pagination['total'], limit)
         ]
 
     def __fetch_chunks(self, parser, pagination, it_total, instance_id, limit):
         """Fetch add'l rows from this object instance from the Intelligence
         Server."""
-        with tqdm(desc="Downloading", total=it_total + 1,
-                  disable=(not self._progress_bar)) as fetch_pbar:
+        with tqdm(
+            desc="Downloading", total=it_total + 1, disable=(not self._progress_bar)
+        ) as fetch_pbar:
             fetch_pbar.update()
             for _offset in range(self._initial_limit, pagination['total'], limit):
                 response = cubes.cube_instance_id(
@@ -499,10 +527,12 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
                     cube_id=self._id,
                     instance_id=instance_id,
                     offset=_offset,
-                    limit=limit
+                    limit=limit,
                 )
                 fetch_pbar.update()
-                fetch_pbar.set_postfix(rows=str(min(_offset + limit, pagination['total'])))
+                fetch_pbar.set_postfix(
+                    rows=str(min(_offset + limit, pagination['total']))
+                )
                 parser.parse(response=response.json())
 
     def __create_cube_instance(self, limit):
@@ -511,7 +541,7 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
             bar_format='{desc}',
             leave=False,
             ncols=280,
-            disable=(not self._progress_bar)
+            disable=(not self._progress_bar),
         )
         # Request a new instance, set instance id
         response = cubes.cube_instance(
@@ -529,7 +559,7 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
         attributes: Optional[list] = None,
         metrics: Optional[list] = None,
         attr_elements: Optional[list] = None,
-        operator: str = 'In'
+        operator: str = 'In',
     ) -> None:
         """Apply filters on the cube's objects.
 
@@ -602,7 +632,9 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
     def list_properties(self) -> dict:
         """List all properties of the object."""
 
-        attributes = {key: self.__dict__[key] for key in self.__dict__ if not key.startswith('_')}
+        attributes = {
+            key: self.__dict__[key] for key in self.__dict__ if not key.startswith('_')
+        }
         attributes = {
             **attributes,
             "id": self.id,
@@ -625,7 +657,10 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
             "attributes": self.attributes,
             "metrics": self.metrics,
         }
-        return {key: attributes[key] for key in sorted(attributes, key=sort_object_properties)}
+        return {
+            key: attributes[key]
+            for key in sorted(attributes, key=sort_object_properties)
+        }
 
     def _get_info(self) -> None:
         """Get metadata for specific cubes.
@@ -652,19 +687,27 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
         Implements GET /v2/cubes/<cube_id>.
         """
         if self._id is not None:
-            _definition = cubes.cube_definition(connection=self._connection, id=self._id).json()
-            full_attributes = _definition["definition"]["availableObjects"]["attributes"]
+            _definition = cubes.cube_definition(
+                connection=self._connection, id=self._id
+            ).json()
+            full_attributes = _definition["definition"]["availableObjects"][
+                "attributes"
+            ]
             full_metrics = _definition["definition"]["availableObjects"]["metrics"]
             self._attributes = [
-                {
-                    'name': attr['name'], 'id': attr['id']
-                } for attr in full_attributes
+                {'name': attr['name'], 'id': attr['id']} for attr in full_attributes
             ]
-            self._metrics = [{'name': metr['name'], 'id': metr['id']} for metr in full_metrics]
+            self._metrics = [
+                {'name': metr['name'], 'id': metr['id']} for metr in full_metrics
+            ]
 
             self._table_names = self.__multitable_definition().keys()
-            row_counts = [f'Row Count - {table_name}' for table_name in self._table_names]
-            self._row_counts = list(filter(lambda x: x['name'] in row_counts, self._metrics))
+            row_counts = [
+                f'Row Count - {table_name}' for table_name in self._table_names
+            ]
+            self._row_counts = list(
+                filter(lambda x: x['name'] in row_counts, self._metrics)
+            )
             self.__remove_row_count()
             # for lazy fetch properties
             self.__definition_retrieved = True
@@ -676,14 +719,19 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
                 connection=self._connection,
                 id=self._id,
                 fields=['tables', 'columns'],
-                whitelist=[('ERR001', 500)]
+                whitelist=[('ERR001', 500)],
             )
             if res_tables.ok:
                 ds_definition = res_tables.json()
-                for table in ds_definition['result']['definition']['availableObjects']['tables']:
+                for table in ds_definition['result']['definition']['availableObjects'][
+                    'tables'
+                ]:
                     column_list = [
-                        column['columnName'] for column in ds_definition['result']['definition']
-                        ['availableObjects']['columns'] if table['name'] == column['tableName']
+                        column['columnName']
+                        for column in ds_definition['result']['definition'][
+                            'availableObjects'
+                        ]['columns']
+                        if table['name'] == column['tableName']
                     ]
                     self._table_definition[table['name']] = column_list
         return self._table_definition
@@ -691,7 +739,9 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
     def __remove_row_count(self):
         """Remove all Row Count metrics from cube."""
         row_counts = list(map(itemgetter('name'), self._row_counts))
-        self._metrics = list(filter(lambda x: x['name'] not in row_counts, self._metrics))
+        self._metrics = list(
+            filter(lambda x: x['name'] not in row_counts, self._metrics)
+        )
 
     def __get_attr_elements(self, limit=50000):
         """Get elements of report attributes synchronously.
@@ -700,7 +750,6 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
         """
 
         def fetch_for_attribute(attribute):
-
             @fallback_on_timeout()
             def fetch_for_attribute_given_limit(limit):
                 response = cubes.cube_single_attribute_elements(
@@ -731,7 +780,7 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
                 return {
                     "attribute_name": attribute['name'],
                     "attribute_id": attribute['id'],
-                    "elements": elements
+                    "elements": elements,
                 }
 
             return fetch_for_attribute_given_limit(limit)[0]
@@ -742,7 +791,7 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
                 self.attributes,
                 desc="Loading attribute elements",
                 leave=False,
-                disable=(not self._progress_bar)
+                disable=(not self._progress_bar),
             )
             attr_elements = [fetch_for_attribute(attribute) for attribute in pbar]
             pbar.close()
@@ -758,15 +807,16 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
         attr_elements = []
         if self.attributes:
             threads = get_parallel_number(len(self.attributes))
-            with FuturesSessionWithRenewal(connection=self._connection,
-                                           max_workers=threads) as session:
+            with FuturesSessionWithRenewal(
+                connection=self._connection, max_workers=threads
+            ) as session:
                 # Fetch first chunk of attribute elements.
                 futures = self.__fetch_attribute_elements_chunks(session, limit)
                 pbar = tqdm(
                     futures,
                     desc="Loading attribute elements",
                     leave=False,
-                    disable=(not self._progress_bar)
+                    disable=(not self._progress_bar),
                 )
                 for i, future in enumerate(pbar):
                     attr = self.attributes[i]
@@ -792,7 +842,7 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
                         {
                             "attribute_name": attr['name'],
                             "attribute_id": attr['id'],
-                            "elements": elements
+                            "elements": elements,
                         }
                     )
                 pbar.close()
@@ -810,7 +860,8 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
                 attribute_id=attribute['id'],
                 offset=0,
                 limit=limit,
-            ) for attribute in self.attributes
+            )
+            for attribute in self.attributes
         ]
 
     def unpublish(self, force: bool = False) -> bool:
@@ -826,11 +877,14 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
         """
         user_input = 'N'
         if not force:
-            user_input = input(
-                f"Are you sure you want to unpublish cube '{self.name}' with ID: "
-                f"{self._id}? This operation will delete all of its caches. "
-                f"[Y/N]: "
-            ) or 'N'
+            user_input = (
+                input(
+                    f"Are you sure you want to unpublish cube '{self.name}' with ID: "
+                    f"{self._id}? This operation will delete all of its caches. "
+                    f"[Y/N]: "
+                )
+                or 'N'
+            )
         if force or user_input == 'Y':
             all_caches_num = len(self.caches)
             deleted_caches_num = 0
@@ -839,14 +893,15 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
                     deleted_caches_num += 1
             if all_caches_num == deleted_caches_num:
                 logger.info(
-                    f"Cube '{self.name}' with ID: '{self._id}' was successfully unpublished."
+                    f"Cube '{self.name}' with ID: '{self._id}' was successfully "
+                    f"unpublished."
                 )
                 self._caches = []
                 return True
             else:
                 logger.warning(
-                    f"Cube '{self.name}' with ID: '{self._id}' was not successfully unpublished"
-                    f", because not all of its caches were deleted."
+                    f"Cube '{self.name}' with ID: '{self._id}' was not successfully "
+                    f"unpublished, because not all of its caches were deleted."
                 )
                 return False
         else:
@@ -896,8 +951,9 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
             if self._parallel is True:
                 # TODO: move the fallback inside the function to apply
                 # per-attribute, like with non-async version.
-                self._attr_elements = fallback_on_timeout()(self.__get_attr_elements_async
-                                                            )(50000)[0]
+                self._attr_elements = fallback_on_timeout()(
+                    self.__get_attr_elements_async
+                )(50000)[0]
             else:
                 self._attr_elements = self.__get_attr_elements()
             self._filter._populate_attr_elements(self._attr_elements)
@@ -911,7 +967,7 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
             self.__filter = Filter(
                 attributes=self._attributes,
                 metrics=self._metrics,
-                attr_elements=self._attr_elements
+                attr_elements=self._attr_elements,
             )
         return self.__filter
 
@@ -935,7 +991,7 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
         if self._dataframe is None:
             exception_handler(
                 msg="Dataframe not loaded. Retrieve with Report.to_dataframe().",
-                exception_type=Warning
+                exception_type=Warning,
             )
         return self._dataframe
 
@@ -944,7 +1000,7 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
         if len(self._dataframes) == 0:
             exception_handler(
                 msg="Dataframe not loaded. Retrieve with Report.to_dataframe().",
-                exception_type=Warning
+                exception_type=Warning,
             )
         return self._dataframes
 

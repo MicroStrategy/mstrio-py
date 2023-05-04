@@ -1,5 +1,6 @@
 import pandas as pd
 import datetime as dt
+from collections import defaultdict
 
 
 class Model:
@@ -21,11 +22,24 @@ class Model:
     _KEY_UPDATE_POL = 'update_policy'
     _KEY_TABLES = [_KEY_TABLE_NAME, _KEY_DATA_FRAME, _KEY_AS_ATTR, _KEY_AS_METR]
 
-    __MAX_DESC_LEN = 250
+    _MAX_DESC_LEN = 250
 
-    _INVALID_CHARS = ['\\', '"', '[', ']']  # check for invalid characters in column names
+    _INVALID_CHARS = [
+        '\\',
+        '"',
+        '[',
+        ']',
+    ]  # check for invalid characters in column names
 
-    def __init__(self, tables, name, description=None, folder_id=None, ignore_special_chars=False):
+    def __init__(
+        self,
+        tables,
+        name,
+        description=None,
+        folder_id=None,
+        ignore_special_chars=False,
+        attr_forms_mapping=None,
+    ):
         """Initializes Model with tables, a name, and an optional description.
 
         Args:
@@ -42,153 +56,166 @@ class Model:
                 My Reports folder.
         """
 
-        self.__ignore_special_chars = ignore_special_chars
+        self._ignore_special_chars = ignore_special_chars
 
         # check integrity of tables list
-        self.__check_table_list(tables=tables)
+        self._check_table_list(tables=tables)
 
         # check super cube name params
-        self.__name = name
-        self.__check_param_str(self.__name, msg="SuperCube name should be a string.")
-        self.__check_param_len(
-            self.__name,
-            msg=f"SuperCube name should be <= {self.__MAX_DESC_LEN} characters.",
-            max_length=self.__MAX_DESC_LEN
+        self._name = name
+        self._check_param_str(self._name, msg="SuperCube name should be a string.")
+        self._check_param_len(
+            self._name,
+            msg=f"SuperCube name should be <= {self._MAX_DESC_LEN} characters.",
+            max_length=self._MAX_DESC_LEN,
         )
-        self.__check_param_inv_chars(
-            self.__name,
+        self._check_param_inv_chars(
+            self._name,
             msg="SuperCube name cannot contain '{}', '{}', '{}', '{}'.".format(
                 *self._INVALID_CHARS
             ),
-            invalid_chars=self._INVALID_CHARS
+            invalid_chars=self._INVALID_CHARS,
         )
 
         # check super cube description params
         if description is None:
-            self.__description = ""
+            self._description = ""
         else:
-            self.__description = description
-            self.__check_param_str(
-                self.__description, msg="SuperCube description should be a string."
+            self._description = description
+            self._check_param_str(
+                self._description, msg="SuperCube description should be a string."
             )
-            self.__check_param_len(
-                self.__description,
-                msg="SuperCube description should be <= {} characters.".format(
-                    self.__MAX_DESC_LEN
+            self._check_param_len(
+                self._description,
+                msg=(
+                    f"SuperCube description should be <= {self._MAX_DESC_LEN}"
+                    " characters."
                 ),
-                max_length=self.__MAX_DESC_LEN
+                max_length=self._MAX_DESC_LEN,
             )
 
         # check folder_id param
-        if folder_id is None:
-            self._folder_id = ""
-        else:
-            self._folder_id = folder_id
+        self._folder_id = folder_id or ''
 
         # init lists to accumulate table, attr, metric definitions and model
-        self.__tables = []
-        self.__attributes = []
-        self.__metrics = []
-        self.__model = None
+        self._tables = []
+        self._attributes = []
+        self._metrics = []
+        self._model = None
 
+        forms_mapping = attr_forms_mapping or []
         # build the model
-        self.__build(tables=tables)
+        self._build(tables=tables, forms_mapping=forms_mapping)
 
     def get_model(self):
         """Return the model object."""
-        return self.__model
+        return self._model
 
-    def __build(self, tables):
+    def _build(self, tables, forms_mapping):
         """Generates the data model by mapping attributes and metrics from list
         of tables."""
 
+        table2columns_used = self._add_user_defined_attribute_forms(forms_mapping)
+
         # Map tables one by one
         for table in tables:
-            self.__map_table(table)
+            mapped_columns = table2columns_used[table['table_name']]
+            self._map_table(table, mapped_columns)
 
         # set model object
-        self.__model = {
-            "name": self.__name,
-            "description": self.__description,
-            "folderId": self._folder_id,
-            "tables": self.__tables,
-            "metrics": self.__metrics,
-            "attributes": self.__attributes
+        self._model = {
+            'name': self._name,
+            'description': self._description,
+            'folderId': self._folder_id,
+            'tables': self._tables,
+            'metrics': self._metrics,
+            'attributes': self._attributes,
         }
 
-    def __map_table(self, table):
+    def _add_user_defined_attribute_forms(self, forms_mapping):
+        table2columns_used = defaultdict(set)
+
+        for attr in forms_mapping:
+            self._attributes.append(attr.to_dict())
+            for form in attr.forms:
+                for expr in form.expressions:
+                    table2columns_used[expr.table].add(expr.column)
+
+        return table2columns_used
+
+    def _map_table(self, table, skip_columns):
+        df = table[self._KEY_DATA_FRAME]
+
         # map column names and column types
-        _col_names = self.__get_col_names(table[self._KEY_DATA_FRAME])
-        _col_types = self.__get_col_types(table[self._KEY_DATA_FRAME])
+        col_names = self._get_col_names(df)
+        col_types = self._get_col_types(df)
+        table_name = table[self._KEY_TABLE_NAME]
 
         # map tables
-        self.__add_table(
-            name=table[self._KEY_TABLE_NAME], col_names=_col_names, col_types=_col_types
-        )
+        self._add_table(name=table_name, col_names=col_names, col_types=col_types)
 
         # map attributes and metrics
-        for _name, _type in zip(_col_names, _col_types):
+        for name, column_type in zip(col_names, col_types):
+            if name in skip_columns:
+                continue
 
-            if self.__is_metric(_type):
-                if self._KEY_AS_ATTR in table.keys() and _name in table[self._KEY_AS_ATTR]:
-                    self.__add_attribute(_name, table[self._KEY_TABLE_NAME])
-                else:
-                    self.__add_metric(_name, table[self._KEY_TABLE_NAME])
-
+            if name in table.get(self._KEY_AS_ATTR, []):
+                self._add_attribute(name, table_name)
+            elif name in table.get(self._KEY_AS_METR, []) or self._is_metric(
+                column_type
+            ):
+                self._add_metric(name, table_name)
             else:
-                if self._KEY_AS_METR in table.keys() and _name in table[self._KEY_AS_METR]:
-                    self.__add_metric(_name, table[self._KEY_TABLE_NAME])
-                else:
-                    self.__add_attribute(_name, table[self._KEY_TABLE_NAME])
+                self._add_attribute(name, table_name)
 
-    def __get_col_types(self, table):
+    def _get_col_types(self, table):
         """Map column types from each column in the list of table."""
         list_dtypes_values = list(table.dtypes.values)
-        for i in range(len(table.columns)):
-            if list_dtypes_values[i] == 'object' and isinstance(table.columns[i][0], dt.time):
-                list_dtypes_values[i] = 'time'
-        return list(map(self.__map_data_type, list_dtypes_values))
 
-    def __add_metric(self, name, table_name):
+        for i in range(len(table.columns)):
+            if list_dtypes_values[i] == 'object' and isinstance(
+                table.columns[i][0], dt.time
+            ):
+                list_dtypes_values[i] = 'time'
+
+        return [self._map_data_type(datatype) for datatype in list_dtypes_values]
+
+    def _add_metric(self, name, table_name):
         """Add a metric to a metric list instance."""
-        self.__metrics.append(
+        self._metrics.append(
             {
-                'name': name, 'expressions': [{
-                    'tableName': table_name, 'columnName': name
-                }]
+                'name': name,
+                'expressions': [{'tableName': table_name, 'columnName': name}],
             }
         )
 
-    def __add_attribute(self, name, table_name):
+    def _add_attribute(self, name, table_name):
         """Add an attribute to an attribute list instance."""
-        self.__attributes.append(
+        self._attributes.append(
             {
                 'name': name,
                 'attributeForms': [
                     {
                         'category': 'ID',
-                        'expressions': [{
-                            'tableName': table_name, 'columnName': name
-                        }]
+                        'expressions': [{'tableName': table_name, 'columnName': name}],
                     }
-                ]
+                ],
             }
         )
 
-    def __add_table(self, name, col_names, col_types):
+    def _add_table(self, name, col_names, col_types):
         """Add a table to a table list instance."""
-        self.__tables.append(
+        self._tables.append(
             {
                 'name': name,
                 'columnHeaders': [
-                    {
-                        'name': name, 'dataType': typ
-                    } for name, typ in zip(col_names, col_types)
-                ]
+                    {'name': name, 'dataType': typ}
+                    for name, typ in zip(col_names, col_types)
+                ],
             }
         )
 
-    def __check_table_list(self, tables):
+    def _check_table_list(self, tables):
         """Check integrity of table list parameter."""
 
         # tables must be a list
@@ -201,93 +228,94 @@ class Model:
 
         # check integrity of each table passed to tables
         for table in tables:
-            self.__check_table(table)
+            self._check_table(table)
 
-    def __check_table(self, table):
+    def _check_table(self, table):
         """Check integrity of table parameter."""
 
         # force all list elements to be a dict with specific names
-        msg = "Each table must be a dictionary with keys: '{}', '{}', '{},' and '{}'.".format(
-            *self._KEY_TABLES
-        )
+        table_keys_list = "', '".join(self._KEY_TABLES)
+        msg = f"Each table must be a dictionary with keys: '{table_keys_list}'."
+
         if not isinstance(table, dict):
             raise TypeError(msg)
 
-        if not all(k in table.keys() for k in (self._KEY_TABLE_NAME, self._KEY_DATA_FRAME)):
+        if not all(k in table for k in (self._KEY_TABLE_NAME, self._KEY_DATA_FRAME)):
             raise ValueError(msg)
 
         # check that the value of the data frame key is a pandas data frame
         if not isinstance(table[self._KEY_DATA_FRAME], pd.DataFrame):
-            msg = "Pandas DataFrame must be passed as the value in the '{}' key.".format(
-                self._KEY_DATA_FRAME
+            msg = (
+                "Pandas DataFrame must be passed as the value in the "
+                f"'{self._KEY_DATA_FRAME}' key."
             )
             raise TypeError(msg)
 
         # check for presence of invalid characters in data frame column names
-        if not self.__ignore_special_chars and any(
-            [col for col in table[self._KEY_DATA_FRAME].columns
-             for inv in self._INVALID_CHARS if inv in col]):
-            msg = "Column names cannot contain '{}', '{}', '{}', '{}'".format(*self._INVALID_CHARS)
+        if not self._ignore_special_chars and any(
+            [
+                col
+                for col in table[self._KEY_DATA_FRAME].columns
+                for inv in self._INVALID_CHARS
+                if inv in col
+            ]
+        ):
+            msg = "Column names cannot contain '{}', '{}', '{}', '{}'".format(
+                *self._INVALID_CHARS
+            )
             raise ValueError(msg)
 
     @staticmethod
-    def __get_col_names(table):
+    def _get_col_names(table):
         """Returns column names from a table as a list."""
         return list(table.columns)
 
     @staticmethod
-    def __map_data_type(datatype):
+    def _map_data_type(datatype):
         """Maps a Python data type to a MicroStrategy data type."""
-        if datatype == 'object':
-            return "STRING"
-        elif datatype == 'int32':
-            return "INTEGER"
-        elif datatype == 'int64':
-            return "BIGINTEGER"
-        elif datatype in ['float64', 'float32']:
-            return "DOUBLE"
-        elif datatype == 'bool':
-            return "BOOLEAN"
-        elif datatype == 'datetime64[ns]':
-            return 'DATETIME'
-        elif datatype == 'time':
-            return 'TIME'
+        return {
+            'object': 'STRING',
+            'int32': 'INTEGER',
+            'int64': 'BIGINTEGER',
+            'float32': 'DOUBLE',
+            'float64': 'DOUBLE',
+            'bool': 'BOOLEAN',
+            'datetime64[ns]': 'DATETIME',
+            'time': 'TIME',
+        }.get(str(datatype))
 
     @staticmethod
-    def __check_param_len(param, msg, max_length):
+    def _check_param_len(param, msg, max_length):
         if len(param) > max_length:
             raise ValueError(msg)
-        else:
-            return True
+
+        return True
 
     @staticmethod
-    def __check_param_str(param, msg):
+    def _check_param_str(param, msg):
         if not isinstance(param, str):
             raise TypeError(msg)
-        else:
-            return True
+
+        return True
 
     @staticmethod
-    def __check_param_inv_chars(param, msg, invalid_chars):
-        if any([inv for inv in invalid_chars if inv in param]):
+    def _check_param_inv_chars(param, msg, invalid_chars):
+        if any(inv for inv in invalid_chars if inv in param):
             raise ValueError(msg)
 
     @staticmethod
-    def __is_metric(datatype):
+    def _is_metric(datatype):
         """Helper function for determining if the requested datatype is (by
         default) a metric or attribute."""
-        if datatype in ["DOUBLE", "INTEGER", "BIGINTEGER", "BIGDECIMAL"]:
-            return True
-        else:
-            return False
+        return datatype in ['DOUBLE', 'INTEGER', 'BIGINTEGER', 'BIGDECIMAL']
 
     @property
     def name(self):
-        return self.__name
+        return self._name
 
     @property
     def description(self):
-        return self.__description
+        return self._description
 
     @property
     def folder_id(self):
@@ -295,12 +323,12 @@ class Model:
 
     @property
     def tables(self):
-        return self.__tables
+        return self._tables
 
     @property
     def attributes(self):
-        return self.__attributes
+        return self._attributes
 
     @property
     def metrics(self):
-        return self.__metrics
+        return self._metrics

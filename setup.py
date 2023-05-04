@@ -4,8 +4,14 @@ import pkg_resources
 from setuptools import find_packages, setup
 from setuptools.extern.packaging import version as packaging_version
 
-from mstrio import (__author__, __author_email__, __description__, __license__, __title__,
-                    __version__)
+from mstrio import (
+    __author__,
+    __author_email__,
+    __description__,
+    __license__,
+    __title__,
+    __version__,
+)
 
 MANIFEST_FILE = 'MANIFEST.in'
 
@@ -20,7 +26,6 @@ pkg_resources.safe_version = lambda v: v
 
 
 class NoNormalizeVersion(packaging_version.Version):
-
     def __init__(self, version):
         self._orig_version = version
         super().__init__(version)
@@ -44,22 +49,26 @@ with open('README.md') as f:
 
 
 peer_force_version = [  # peer dependency (dep of dep)
-                        # but we need to force version for SEC
-                        # backend only (front peers are
-                        # handled in code ~20 lines below)
+    # but we need to force version for SEC
+    # backend only (front peers are
+    # handled in code ~20 lines below)
     'urllib3>=1.26.0',  # ver 1.25.x is incompatible
-    'Jinja2>=3, <4',    # UI related, but also dev-dep of `pandas` but required for testing
+    'Jinja2>=3, <4',  # UI related, but also dev-dep of pandas but required for testing
     'certifi>=2022.12.7',  # SEC safe version
 ]
 
+# Update test_packages in PyExec integration tests if this list of requirements
+# is updated (new package is added or one of them is removed)
+# https://github.com/mstr-kiai/PyExec/blob/m2021/tests/integration/test_pyexec.py#L195
 requirements = [
     'requests>=2.27, <2.29',
     'requests-futures>=1.0.0, <1.1',
     'pandas>=1.1.5, <1.6',
     'numpy>=1.24, <1.25',
     'tqdm>=4.41, <4.70',
-    'packaging>=21.3, <22',
-    'stringcase>=1.2, <1.3'
+    'packaging>=22.0, <23.0',
+    'stringcase>=1.2, <1.3',
+    'pyhumps>=3.8',
 ] + peer_force_version
 
 # Add dependencies for connector-jupyter if connector-jupyter folder is added
@@ -68,15 +77,14 @@ if find_in_file('graft connector-jupyter', MANIFEST_FILE):
         # direct dependencies
         'jupyter-contrib-nbextensions>=0.5.1, <0.6',
         'ipywidgets>=8.0.2, <9',
-
         # peer, UI related, force version for SEC
         'notebook>=6.4.12',
         'jupyter_core>=4.11.2',
         'lxml>=4.9.1',
-        'ipython>=8.4.0, <9',
+        'ipython>=8.10.0, <9',
         'nbconvert>=7, <8',
         'mistune>=2.0.4',
-        'setuptools>=65.5.1'
+        'setuptools>=65.5.1',
     ]
 
 setup(
@@ -99,8 +107,20 @@ setup(
     install_requires=requirements,
     extras_require={
         'dev': [
-            'flake8', 'mypy', 'yapf', 'nose', 'coverage', 'pytest', 'pytest-cov', 'isort',
-            'pre-commit', 'flaky', 'python-decouple'
+            'flake8',
+            'mypy',
+            'yapf',
+            'nose',
+            'coverage',
+            'pytest',
+            'pytest-cov',
+            'isort',
+            'pre-commit',
+            'flaky',
+            'python-decouple',
+            'black',
+            'flake8-black',
+            'build',
         ],  # noqa
     },
     packages=find_packages(),

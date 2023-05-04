@@ -13,9 +13,8 @@ class Filter:
         metrics: list,
         attr_elements: Optional[list] = None,
         row_count_metrics: Optional[list] = None,
-        operator: str = 'In'
+        operator: str = 'In',
     ):
-
         self.attributes = {}
         for a in attributes:
             self.attributes[a["id"]] = {"name": a["name"]}
@@ -27,9 +26,9 @@ class Filter:
         self.attr_elems = {}
         if attr_elements is not None:
             self._populate_attr_elements(attr_elements)
-        self.row_count_metrics = [] if row_count_metrics is None else [
-            i['id'] for i in row_count_metrics
-        ]
+        self.row_count_metrics = (
+            [] if row_count_metrics is None else [i['id'] for i in row_count_metrics]
+        )
         self.attr_selected = []
         self.metr_selected = []
         self.attr_elem_selected = []
@@ -76,7 +75,8 @@ class Filter:
 
             if self.__duplicated(element_id):
                 helper.exception_handler(
-                    msg=self.err_msg_duplicated.format(element_id), exception_type=Warning
+                    msg=self.err_msg_duplicated.format(element_id),
+                    exception_type=Warning,
                 )
             else:
                 self.attr_elems[element_id] = {}
@@ -121,7 +121,6 @@ class Filter:
         return ro
 
     def _view_filter(self):
-
         if not self.attr_elem_selected:
             return None
 
@@ -160,7 +159,8 @@ class Filter:
         for att in attr_elements:
             for el in att["elements"]:
                 self.attr_elems[el["id"]] = {
-                    "name": att["attribute_name"], "attribute_id": att["attribute_id"]
+                    "name": att["attribute_name"],
+                    "attribute_id": att["attribute_id"],
                 }
 
     def __type(self, object_id):
@@ -181,14 +181,19 @@ class Filter:
         if object_is_attr_el:
             return object_id.split(':')[0] not in self.attributes.keys()
         else:
-            valid_object_ids = list(self.metrics.keys()
-                                    ) + list(self.attributes.keys()) + self.row_count_metrics
+            valid_object_ids = (
+                list(self.metrics.keys())
+                + list(self.attributes.keys())
+                + self.row_count_metrics
+            )
             return object_id not in valid_object_ids
 
     def __duplicated(self, object_id):
         """Check if requested object_id is already selected."""
         attr_selected = [elem[0] for elem in self.attr_selected]
-        all_selected_objects = attr_selected + self.metr_selected + self.attr_elem_selected
+        all_selected_objects = (
+            attr_selected + self.metr_selected + self.attr_elem_selected
+        )
 
         if object_id in all_selected_objects:
             return True

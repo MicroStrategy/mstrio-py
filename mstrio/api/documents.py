@@ -21,7 +21,7 @@ def get_dossiers(
     search_pattern: Optional[str] = None,
     fields: Optional[str] = None,
     project_id: Optional[str] = None,
-    error_msg: Optional[str] = None
+    error_msg: Optional[str] = None,
 ) -> Response:
     """Get the list of available dossiers.
 
@@ -55,7 +55,7 @@ def get_dossiers(
             'offset': offset,
             'limit': limit,
             'certifiedStatus': certified_status,
-            'fields': fields
+            'fields': fields,
         },
     )
 
@@ -69,7 +69,7 @@ def get_dossiers_async(
     certified_status: Optional[str] = None,
     search_pattern: Optional[str] = None,
     fields: Optional[str] = None,
-    project_id: Optional[str] = None
+    project_id: Optional[str] = None,
 ):
     """Get the list of available dossiers asynchronously.
 
@@ -96,14 +96,14 @@ def get_dossiers_async(
     """
     connection._validate_project_selected()
     url = f'{connection.base_url}/api/dossiers'
-    headers = {'X-MSTR-ProjectID': project_id},
+    headers = ({'X-MSTR-ProjectID': project_id},)
     params = {
         'searchTerm': search_term,
         'searchPattern': search_pattern,
         'offset': offset,
         'limit': limit,
         'certifiedStatus': certified_status,
-        'fields': fields
+        'fields': fields,
     }
     return future_session.get(url=url, params=params, headers=headers)
 
@@ -118,7 +118,7 @@ def get_documents(
     certified_status: Optional[str] = None,
     project_id: Optional[str] = None,
     fields: Optional[str] = None,
-    error_msg: Optional[str] = None
+    error_msg: Optional[str] = None,
 ) -> Response:
     """Get the list of available documents.
 
@@ -153,7 +153,7 @@ def get_documents(
             'offset': offset,
             'limit': limit,
             'certifiedStatus': certified_status,
-            'fields': fields
+            'fields': fields,
         },
     )
 
@@ -200,7 +200,7 @@ def get_documents_async(
         'offset': offset,
         'limit': limit,
         'certifiedStatus': certified_status,
-        'fields': fields
+        'fields': fields,
     }
     headers = {'X-MSTR-ProjectID': project_id}
     future = future_session.get(url=url, params=params, headers=headers)
@@ -220,7 +220,10 @@ def get_document_status(connection, document_id, instance_id, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    url = f"{connection.base_url}/api/documents/{document_id}/instances/{instance_id}/status"
+    url = (
+        f"{connection.base_url}/api/documents/{document_id}/instances/"
+        f"{instance_id}/status"
+    )
     return connection.get(url=url, headers={'X-MSTR-ProjectID': None})
 
 
@@ -238,7 +241,10 @@ def get_prompts_for_instance(connection, document_id, instance_id, error_msg=Non
     Returns:
         Complete HTTP response object.
     """
-    url = f"{connection.base_url}/api/documents/{document_id}/instances/{instance_id}/prompts"
+    url = (
+        f"{connection.base_url}/api/documents/{document_id}/"
+        f"instances/{instance_id}/prompts"
+    )
     return connection.get(url=url, headers={'X-MSTR-ProjectID': None})
 
 
@@ -259,13 +265,17 @@ def get_attribute_element_for_prompt(
     Returns:
         Complete HTTP response object.
     """
-    url = f"{connection.base_url}/api/documents/{document_id}/instances/{instance_id}/prompts" \
-          f"/{prompt_identifier}/elements"
+    url = (
+        f"{connection.base_url}/api/documents/{document_id}/"
+        f"instances/{instance_id}/prompts/{prompt_identifier}/elements"
+    )
     return connection.get(url=url, headers={'X-MSTR-ProjectID': None})
 
 
 @ErrorHandler(err_msg='Error getting available object for prompt {prompt_identifier}')
-def get_available_object(connection, document_id, instance_id, prompt_identifier, error_msg=None):
+def get_available_object(
+    connection, document_id, instance_id, prompt_identifier, error_msg=None
+):
     """Get available object for answering all kinds of prompts.
 
     Args:
@@ -278,12 +288,16 @@ def get_available_object(connection, document_id, instance_id, prompt_identifier
     Returns:
         Complete HTTP response object.
     """
-    url = f"{connection.base_url}/api/documents/{document_id}/instances/{instance_id}/prompts" \
-          f"/{prompt_identifier}/objects"
+    url = (
+        f"{connection.base_url}/api/documents/{document_id}/instances/"
+        f"{instance_id}/prompts/{prompt_identifier}/objects"
+    )
     return connection.get(url=url, headers={'X-MSTR-ProjectID': None})
 
 
-@ErrorHandler(err_msg='Error exporting visualization for document {document_id} to PDF file.')
+@ErrorHandler(
+    err_msg='Error exporting visualization for document {document_id} to PDF file.'
+)
 def export_visualization_to_pdf(
     connection, document_id, instance_id, node_key, body, error_msg=None
 ):
@@ -300,12 +314,16 @@ def export_visualization_to_pdf(
     Returns:
         Complete HTTP response object.
     """
-    url = f"{connection.base_url}/api/documents/{document_id}/instances/{instance_id}" \
-          f"/visualizations/{node_key}/pdf"
+    url = (
+        f"{connection.base_url}/api/documents/{document_id}/instances/{instance_id}"
+        f"/visualizations/{node_key}/pdf"
+    )
     return connection.post(url=url, headers={'X-MSTR-ProjectID': None}, json=body)
 
 
-@ErrorHandler(err_msg='Error exporting visualization for document {document_id} to CSV file.')
+@ErrorHandler(
+    err_msg='Error exporting visualization for document {document_id} to CSV file.'
+)
 def export_visualization_to_csv(
     connection, document_id, instance_id, node_key, body, error_msg=None
 ):
@@ -323,18 +341,20 @@ def export_visualization_to_csv(
     Returns:
         Complete HTTP response object.
     """
-    url = f"{connection.base_url}/api/documents/{document_id}/instances/{instance_id}" \
-          f"/visualizations/{node_key}/csv"
+    url = (
+        f"{connection.base_url}/api/documents/{document_id}/instances/{instance_id}"
+        f"/visualizations/{node_key}/csv"
+    )
     return connection.post(url=url, headers={'X-MSTR-ProjectID': None}, json=body)
 
 
 @ErrorHandler(err_msg='Error exporting document {document_id} to PDF file.')
 def export_document_to_pdf(
-        connection: "Connection",
-        document_id: str,
-        instance_id: str,
-        body: dict,
-        error_msg: Optional[str] = None
+    connection: "Connection",
+    document_id: str,
+    instance_id: str,
+    body: dict,
+    error_msg: Optional[str] = None,
 ) -> Response:
     """Export a specific document instance to a PDF file.
 
@@ -348,18 +368,22 @@ def export_document_to_pdf(
     Returns:
         Complete HTTP response object.
     """
-    project_id = get_valid_project_id(connection=connection, project_id=connection.project_id)
-    url = f"{connection.base_url}/api/documents/{document_id}/instances/{instance_id}/pdf"
+    project_id = get_valid_project_id(
+        connection=connection, project_id=connection.project_id
+    )
+    url = (
+        f"{connection.base_url}/api/documents/{document_id}/instances/{instance_id}/pdf"
+    )
     return connection.post(url=url, headers={'X-MSTR-ProjectID': project_id}, json=body)
 
 
 @ErrorHandler(err_msg='Error exporting document {document_id} to .mstr file')
 def export_document_to_mstr(
-        connection: "Connection",
-        document_id: str,
-        instance_id: str,
-        body: dict,
-        error_msg: Optional[str] = None
+    connection: "Connection",
+    document_id: str,
+    instance_id: str,
+    body: dict,
+    error_msg: Optional[str] = None,
 ) -> Response:
     """Export a specific document in a specific project to an .mstr file.
 
@@ -373,18 +397,23 @@ def export_document_to_mstr(
     Returns:
         Complete HTTP response object.
     """
-    project_id = get_valid_project_id(connection=connection, project_id=connection.project_id)
-    url = f"{connection.base_url}/api/documents/{document_id}/instances/{instance_id}/mstr"
+    project_id = get_valid_project_id(
+        connection=connection, project_id=connection.project_id
+    )
+    url = (
+        f"{connection.base_url}/api/documents/{document_id}/instances/"
+        f"{instance_id}/mstr"
+    )
     return connection.post(url=url, headers={'X-MSTR-ProjectID': project_id}, json=body)
 
 
 @ErrorHandler(err_msg='Error exporting document {document_id} to Excel file.')
 def export_document_to_excel(
-        connection: "Connection",
-        document_id: str,
-        instance_id: str,
-        body: dict,
-        error_msg: Optional[str] = None
+    connection: "Connection",
+    document_id: str,
+    instance_id: str,
+    body: dict,
+    error_msg: Optional[str] = None,
 ) -> Response:
     """Export a document from a specific document instance to an Excel file.
 
@@ -398,8 +427,13 @@ def export_document_to_excel(
     Returns:
         Complete HTTP response object.
     """
-    project_id = get_valid_project_id(connection=connection, project_id=connection.project_id)
-    url = f"{connection.base_url}/api/documents/{document_id}/instances/{instance_id}/excel"
+    project_id = get_valid_project_id(
+        connection=connection, project_id=connection.project_id
+    )
+    url = (
+        f"{connection.base_url}/api/documents/{document_id}/"
+        f"instances/{instance_id}/excel"
+    )
     return connection.post(url=url, headers={'X-MSTR-ProjectID': project_id}, json=body)
 
 
@@ -416,7 +450,10 @@ def set_document_to_prompt_status(connection, document_id, instance_id, error_ms
     Returns:
         Complete HTTP response object.
     """
-    url = f"{connection.base_url}/api/documents/{document_id}/instances/{instance_id}/rePrompt"
+    url = (
+        f"{connection.base_url}/api/documents/{document_id}/"
+        f"instances/{instance_id}/rePrompt"
+    )
     return connection.post(url=url, headers={'X-MSTR-ProjectID': None})
 
 
@@ -450,7 +487,10 @@ def overwrite_document(connection, document_id, instance_id, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    url = f"{connection.base_url}/api/documents/{document_id}/instances/{instance_id}/save"
+    url = (
+        f"{connection.base_url}/api/documents/{document_id}/"
+        f"instances/{instance_id}/save"
+    )
     return connection.post(url=url, headers={'X-MSTR-ProjectID': None})
 
 
@@ -467,7 +507,10 @@ def save_document_as(connection, document_id, instance_id, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    url = f"{connection.base_url}/api/documents/{document_id}/instances/{instance_id}/saveAs"
+    url = (
+        f"{connection.base_url}/api/documents/{document_id}/"
+        f"instances/{instance_id}/saveAs"
+    )
     return connection.post(url=url, headers={'X-MSTR-ProjectID': None})
 
 
@@ -519,7 +562,10 @@ def refresh_document_instance(connection, document_id, instance_id, error_msg=No
     Returns:
         Complete HTTP response object.
     """
-    url = f"{connection.base_url}/api/documents/{document_id}/instances/{instance_id}/refresh"
+    url = (
+        f"{connection.base_url}/api/documents/{document_id}/"
+        f"instances/{instance_id}/refresh"
+    )
     return connection.put(url=url, headers={'X-MSTR-ProjectID': None})
 
 
@@ -556,8 +602,10 @@ def answer_prompts(connection, document_id, instance_id, body, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    url = f"{connection.base_url}/api/documents/{document_id}/instances/{instance_id}" \
-          f"/prompts/answers"
+    url = (
+        f"{connection.base_url}/api/documents/{document_id}/instances/{instance_id}"
+        f"/prompts/answers"
+    )
     return connection.put(url=url, headers={'X-MSTR-ProjectID': None}, json=body)
 
 
@@ -574,7 +622,10 @@ def get_document_shortcut(connection, document_id, instance_id, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    url = f"{connection.base_url}/api/documents/{document_id}/instances/{instance_id}/shortcut"
+    url = (
+        f"{connection.base_url}/api/documents/{document_id}/"
+        f"instances/{instance_id}/shortcut"
+    )
     return connection.get(url=url)
 
 
@@ -596,10 +647,7 @@ def create_dossier_instance(connection, dossier_id, body, error_msg=None):
 
 
 @ErrorHandler(err_msg='Error getting hierarchy for dossier {id}')
-def get_dossier_hierarchy(
-        connection: "Connection",
-        id: str
-) -> Response:
+def get_dossier_hierarchy(connection: "Connection", id: str) -> Response:
     """Get the hierarchy of a specific dossier in a specific project.
 
     Args:
@@ -630,7 +678,9 @@ def get_document_definition(connection, id, error_msg=None):
 
 
 @ErrorHandler(err_msg='Error getting dossier hierarchy from instance {instance_id}')
-def get_dossier_hierarchy_from_instance(connection, dossier_id, instance_id, error_msg=None):
+def get_dossier_hierarchy_from_instance(
+    connection, dossier_id, instance_id, error_msg=None
+):
     """Get the hierarchy of a specific dossier in a specific project from
     instance.
 
@@ -643,7 +693,10 @@ def get_dossier_hierarchy_from_instance(connection, dossier_id, instance_id, err
     Returns:
         Complete HTTP response object.
     """
-    url = f"{connection.base_url}/api/v2/dossiers/{dossier_id}/instances/{instance_id}/definition"
+    url = (
+        f"{connection.base_url}/api/v2/dossiers/{dossier_id}/"
+        f"instances/{instance_id}/definition"
+    )
     return connection.get(url=url, headers={'X-MSTR-ProjectID': None})
 
 
@@ -663,6 +716,9 @@ def get_definition_and_results_of_visualization(
     Returns:
         Complete HTTP response object.
     """
-    url = f"{connection.base_url}/api/v2/dossiers/{dossier_id}/instances/{instance_id}/chapters" \
-          f"/{chapter_key}/visualizations/{visualization_key}"
+    url = (
+        f"{connection.base_url}/api/v2/dossiers/{dossier_id}"
+        f"/instances/{instance_id}/chapters/{chapter_key}"
+        f"/visualizations/{visualization_key}"
+    )
     return connection.get(url=url, headers={'X-MSTR-ProjectID': None})

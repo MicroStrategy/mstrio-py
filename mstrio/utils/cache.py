@@ -25,7 +25,9 @@ class Cache:
     Base class for managing cache.
     """
 
-    def __init__(self, connection: Connection, cache_id: str, cache_dict: Optional[dict] = None):
+    def __init__(
+        self, connection: Connection, cache_id: str, cache_dict: Optional[dict] = None
+    ):
         """Initialize the Cache object.
 
         Args:
@@ -47,7 +49,9 @@ class Cache:
         """Initialize variables given cache_dict."""
         kwargs = camel_to_snake(kwargs)
         self._project_name = kwargs.get('project_name')
-        self._source = CacheSource.from_dict(source) if (source := kwargs.get('source')) else None
+        self._source = (
+            CacheSource.from_dict(source) if (source := kwargs.get('source')) else None
+        )
         self._last_update_time = kwargs.get('last_update_time')
         self._last_hit_time = kwargs.get('last_hit_time')
         self._hit_count = kwargs.get('hit_count')
@@ -107,7 +111,6 @@ class Cache:
 
 @dataclass
 class CacheSource(Dictable):
-
     class Type(AutoName):
         REPORT = auto()
         DOCUMENT = auto()
@@ -124,7 +127,9 @@ class CacheSource(Dictable):
     type: Type
 
     def __repr__(self):
-        return f"CacheSource(id='{self.id}, name='{self.name}, type='{self.type.value}')"
+        return (
+            f"CacheSource(id='{self.id}, name='{self.name}, type='{self.type.value}')"
+        )
 
 
 class ContentCacheMixin:
@@ -157,7 +162,7 @@ class ContentCacheMixin:
         cache_ids: list[str],
         value: Optional[bool] = None,
         status: Optional[str] = None,
-        nodes: Optional[list[str]] = None
+        nodes: Optional[list[str]] = None,
     ) -> Response:
         """Engine for altering ContentCache status
 
@@ -183,7 +188,7 @@ class ContentCacheMixin:
         logger_message = {
             'replace/loaded/True': 'load',
             'replace/loaded/False': 'unload',
-            'remove/None/None': 'delete'
+            'remove/None/None': 'delete',
         }.get(f'{op}/{status}/{value}')
 
         for cache_id in cache_ids:
@@ -194,9 +199,12 @@ class ContentCacheMixin:
             body['operationList'].append(
                 {
                     'op': op,
-                    'path': f'/contentCaches/{content_cache.combined_id}/status/{status}'
-                    if status else f'/contentCaches/{content_cache.combined_id}',
-                    'value': value
+                    'path': (
+                        f'/contentCaches/{content_cache.combined_id}/status/{status}'
+                    )
+                    if status
+                    else f'/contentCaches/{content_cache.combined_id}',
+                    'value': value,
                 }
             )
         if body['operationList']:
@@ -216,7 +224,11 @@ class ContentCacheMixin:
         Returns:
             Response object."""
         res = ContentCacheMixin.__alter_status(
-            connection=connection, op='replace', cache_ids=cache_ids, value=True, status='loaded'
+            connection=connection,
+            op='replace',
+            cache_ids=cache_ids,
+            value=True,
+            status='loaded',
         )
         if config.verbose and res:
             logger.info('Successfully loaded content caches')
@@ -234,7 +246,11 @@ class ContentCacheMixin:
         Returns:
             Response object."""
         res = ContentCacheMixin.__alter_status(
-            connection=connection, op='replace', cache_ids=cache_ids, value=False, status='loaded'
+            connection=connection,
+            op='replace',
+            cache_ids=cache_ids,
+            value=False,
+            status='loaded',
         )
         if config.verbose and res:
             logger.info('Successfully unloaded content caches')
@@ -257,10 +273,13 @@ class ContentCacheMixin:
             Response object."""
         user_input = 'N'
         if not force:
-            user_input = input(
-                'Are you sure you want to delete all content caches with '
-                'provided IDs? [Y/N]: '
-            ) or 'N'
+            user_input = (
+                input(
+                    'Are you sure you want to delete all content caches with '
+                    'provided IDs? [Y/N]: '
+                )
+                or 'N'
+            )
         if force or user_input == 'Y':
             res = ContentCacheMixin.__alter_status(
                 connection=connection, op='remove', cache_ids=cache_ids
@@ -350,7 +369,7 @@ class ContentCacheMixin:
             content_type=content_type,
             size=size,
             owner=owner,
-            filters={}
+            filters={},
         )
         caches = [list(cache.items())[0] for cache in caches['content_caches']]
         if limit:
@@ -359,9 +378,9 @@ class ContentCacheMixin:
         caches = [{**cache[1], 'combined_id': cache[0]} for cache in caches]
 
         # apply filtering
-        filtered_caches = (
-            lambda str_arg, arg: [cache for cache in caches if cache.get(str_arg, '') == arg]
-        )
+        def filtered_caches(str_arg, arg):
+            return [cache for cache in caches if cache.get(str_arg, '') == arg]
+
         if id:
             caches = filtered_caches('id', id)
         if db_connection_id:
@@ -373,12 +392,15 @@ class ContentCacheMixin:
         if security_filter_id:
             caches = filtered_caches('securityFilterId', security_filter_id)
         if unloaded:
-            caches = [cache for cache in caches if not cache.get('status').get('loaded')]
+            caches = [
+                cache for cache in caches if not cache.get('status').get('loaded')
+            ]
 
         if to_dictionary:
             return caches
         else:
             from mstrio.project_objects import ContentCache
+
             return ContentCache.from_dict(connection, caches)
 
     @classmethod
@@ -456,8 +478,11 @@ class ContentCacheMixin:
                 'db_login_id', 'owner', 'status', 'size', 'wh_tables',
                 'security_filter_id']
         """
-        cache_ids = [cache.id for cache in cls.list_caches(connection, **filters)
-                     if cache.status.ready]
+        cache_ids = [
+            cache.id
+            for cache in cls.list_caches(connection, **filters)
+            if cache.status.ready
+        ]
         if cache_ids:
             cls.delete_caches(
                 connection=connection,

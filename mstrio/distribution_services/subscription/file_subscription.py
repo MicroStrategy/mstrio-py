@@ -16,7 +16,7 @@ class FileSubscription(Subscription):
         id: Optional[str] = None,
         subscription_id: Optional[str] = None,
         project_id: Optional[str] = None,
-        project_name: Optional[str] = None
+        project_name: Optional[str] = None,
     ):
         """Initializes FileSubscription object and populates it with
         I-Server data if id or subscription_id is passed.
@@ -55,6 +55,7 @@ class FileSubscription(Subscription):
         recipients: Optional[list[dict] | list[str]] = None,
         delivery: Optional[Delivery | dict] = None,
         delivery_expiration_date: Optional[str] = None,
+        delivery_expiration_timezone: Optional[str] = None,
         contact_security: bool = True,
         zip_filename: Optional[str] = None,
         zip_password_protect: Optional[bool] = None,
@@ -62,7 +63,7 @@ class FileSubscription(Subscription):
         file_burst_sub_folder: Optional[str] = None,
         space_delimiter: Optional[str] = None,
         delivery_notification_enabled: bool = False,
-        delivery_personal_notification_address_id: Optional[str] = None
+        delivery_personal_notification_address_id: Optional[str] = None,
     ) -> "FileSubscription":
         """Creates a new file subscription.
         Args:
@@ -92,6 +93,8 @@ class FileSubscription(Subscription):
             delivery (dict | Delivery, optional): delivery object or dict
             delivery_expiration_date (string, optional): expiration date
                 of the subscription, format should be yyyy - MM - dd
+            delivery_expiration_timezone (str, optional): expiration timezone
+                of the subscription, example value 'Europe/London'
             contact_security (bool): whether to use contact security for each
                 contact group member
             zip_filename(str, optional): filename of the compressed content
@@ -106,6 +109,8 @@ class FileSubscription(Subscription):
             delivery_personal_notification_address_id (str, optional):
                 Notification details
         """
+        notification_address_id = delivery_personal_notification_address_id
+
         return super()._Subscription__create(
             connection=connection,
             name=name,
@@ -124,6 +129,7 @@ class FileSubscription(Subscription):
             delivery=delivery,
             delivery_mode=Delivery.DeliveryMode.FILE,
             delivery_expiration_date=delivery_expiration_date,
+            delivery_expiration_timezone=delivery_expiration_timezone,
             contact_security=contact_security,
             zip_filename=zip_filename,
             zip_password_protect=zip_password_protect,
@@ -131,7 +137,7 @@ class FileSubscription(Subscription):
             file_burst_sub_folder=file_burst_sub_folder,
             space_delimiter=space_delimiter,
             delivery_notification_enabled=delivery_notification_enabled,
-            delivery_personal_notification_address_id=delivery_personal_notification_address_id
+            delivery_personal_notification_address_id=notification_address_id,
         )
 
     def alter(
@@ -149,6 +155,7 @@ class FileSubscription(Subscription):
         delivery: Optional[Delivery | dict] = None,
         custom_msg: Optional[str] = None,
         delivery_expiration_date: Optional[str] = None,
+        delivery_expiration_timezone: Optional[str] = None,
         contact_security: bool = True,
         zip_filename: Optional[str] = None,
         zip_password_protect: Optional[bool] = None,
@@ -156,7 +163,7 @@ class FileSubscription(Subscription):
         file_burst_sub_folder: Optional[str] = None,
         space_delimiter: Optional[str] = None,
         delivery_notification_enabled: bool = False,
-        delivery_personal_notification_address_id: Optional[str] = None
+        delivery_personal_notification_address_id: Optional[str] = None,
     ):
         """Alter the subscription.
         Args:
@@ -180,8 +187,10 @@ class FileSubscription(Subscription):
             recipients (list[dict] | dict, optional): list of recipients IDs
                 or dicts
             delivery (dict | Delivery, optional): delivery object or dict
-            delivery_expiration_date (string, optional): expiration date
+            delivery_expiration_date (str, optional): expiration date
                 of the subscription, format should be yyyy - MM - dd
+            delivery_expiration_timezone (str, optional): expiration timezone
+                of the subscription
             contact_security (bool): whether to use contact security for each
                 contact group member
             zip_filename(str, optional): filename of the compressed content
@@ -196,6 +205,8 @@ class FileSubscription(Subscription):
             delivery_personal_notification_address_id (str, optional):
                 Notification details
         """
+        notification_address_id = delivery_personal_notification_address_id
+
         return super().alter(
             name=name,
             filename=filename,
@@ -210,6 +221,7 @@ class FileSubscription(Subscription):
             delivery=delivery,
             custom_msg=custom_msg,
             delivery_expiration_date=delivery_expiration_date,
+            delivery_expiration_timezone=delivery_expiration_timezone,
             contact_security=contact_security,
             zip_filename=zip_filename,
             zip_password_protect=zip_password_protect,
@@ -217,5 +229,5 @@ class FileSubscription(Subscription):
             file_burst_sub_folder=file_burst_sub_folder,
             space_delimiter=space_delimiter,
             delivery_notification_enabled=delivery_notification_enabled,
-            delivery_personal_notification_address_id=delivery_personal_notification_address_id
+            delivery_personal_notification_address_id=notification_address_id,
         )

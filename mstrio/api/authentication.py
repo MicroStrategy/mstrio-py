@@ -1,7 +1,9 @@
 from mstrio.utils.error_handlers import ErrorHandler
 
 
-@ErrorHandler(err_msg='Authentication error. Check user credentials or REST API URL and try again')
+@ErrorHandler(
+    err_msg='Authentication error. Check user credentials or REST API URL and try again'
+)
 def login(connection):
     """Authenticate a user and create an HTTP session on the web server where
     the user's MicroStrategy sessions are stored.
@@ -64,7 +66,7 @@ def session_renew(connection):
         skip_expiration_check=True,
         url=f'{connection.base_url}/api/sessions',
         headers={'X-MSTR-ProjectID': None},
-        timeout=2.0
+        timeout=2.0,
     )
 
 
@@ -98,7 +100,9 @@ def identity_token(connection):
     Returns:
         Complete HTTP response object.
     """
-    return connection.post(url=f'{connection.base_url}/api/auth/identityToken', )
+    return connection.post(
+        url=f'{connection.base_url}/api/auth/identityToken',
+    )
 
 
 def validate_identity_token(connection, identity_token):
@@ -118,7 +122,8 @@ def validate_identity_token(connection, identity_token):
 
 
 @ErrorHandler(
-    err_msg='Error creating a new Web server session that shares an existing IServer session.'
+    err_msg='Error creating a new Web server session that shares an existing IServer '
+    'session.'
 )
 def delegate(connection, identity_token, whitelist=None):
     """Returns authentication token and cookies from given X-MSTR-
@@ -135,9 +140,7 @@ def delegate(connection, identity_token, whitelist=None):
     return connection.post(
         skip_expiration_check=True,
         url=f'{connection.base_url}/api/auth/delegate',
-        json={
-            'loginMode': "-1", 'identityToken': identity_token
-        },
+        json={'loginMode': "-1", 'identityToken': identity_token},
     )
 
 

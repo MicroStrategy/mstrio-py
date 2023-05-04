@@ -17,6 +17,7 @@ class SchemaLockType(AutoName):
     """Enumeration constants used to specify a type of lock that can be placed
     on schema. Type `UNLOCKED` is used only when displaying status.
     """
+
     ABSOLUTE_INDIVIDUAL = auto()
     EXCLUSIVE_CONSTITUENT = auto()
     ABSOLUTE_CONSTITUENT = auto()
@@ -25,6 +26,7 @@ class SchemaLockType(AutoName):
 
 class SchemaUpdateType(AutoName):
     """Enumeration constants used to specify type of update for the schema."""
+
     TABLE_KEY = auto()
     ENTRY_LEVEL = auto()
     LOGICAL_SIZE = auto()
@@ -48,7 +50,7 @@ class SchemaLockStatus(Dictable):
         comment: Optional[str] = None,
         machine_name: Optional[str] = None,
         owner_name: Optional[str] = None,
-        owner_id: Optional[str] = None
+        owner_id: Optional[str] = None,
     ):
         """Initialize schema lock status. When schema is unlocked, only its
         `lock_type` is provided.
@@ -87,7 +89,9 @@ class SchemaLockStatus(Dictable):
         """
 
         self.lock_type = get_enum(lock_type, SchemaLockType)
-        self.date_created = map_str_to_datetime("date_created", date_created, self._FROM_DICT_MAP)
+        self.date_created = map_str_to_datetime(
+            "date_created", date_created, self._FROM_DICT_MAP
+        )
         self.comment = comment
         self.machine_name = machine_name
         self.owner_name = owner_name
@@ -96,6 +100,7 @@ class SchemaLockStatus(Dictable):
 
 class SchemaTaskStatus(AutoName):
     """Enumeration constants used to specify status of the task."""
+
     RUNNING = auto()
     COMPLETED = auto()
     FAILED = auto()
@@ -105,7 +110,9 @@ class SchemaTaskError(Dictable):
     """Representation of properties used to report an error related to schema
     task."""
 
-    def __init__(self, code: str, message: str, additional_properties: Optional[dict] = None):
+    def __init__(
+        self, code: str, message: str, additional_properties: Optional[dict] = None
+    ):
         """Initialize task error.
 
         Args:
@@ -126,7 +133,7 @@ class SchemaTask(Dictable):
         'status': SchemaTaskStatus,
         'start_time': DatetimeFormats.FULLDATETIME,
         'end_time': DatetimeFormats.FULLDATETIME,
-        'errors': [SchemaTaskError]
+        'errors': [SchemaTaskError],
     }
 
     def __init__(
@@ -159,7 +166,9 @@ class SchemaTask(Dictable):
         """
         self.id = id
         self.status = get_enum(status, SchemaTaskStatus)
-        self.start_time = map_str_to_datetime("start_time", start_time, self._FROM_DICT_MAP)
+        self.start_time = map_str_to_datetime(
+            "start_time", start_time, self._FROM_DICT_MAP
+        )
         self.end_time = map_str_to_datetime("end_time", end_time, self._FROM_DICT_MAP)
         self.errors = errors
 
@@ -168,7 +177,7 @@ class SchemaTask(Dictable):
             self.__init__,
             self,
             exclude=['self', 'start_time', 'end_time', 'errors'],
-            include_defaults=False
+            include_defaults=False,
         )
 
         params = [f'{param}={repr(value)}' for param, value in param_dict.items()]
@@ -233,10 +242,10 @@ class SchemaManagement:
             self.__init__, self, exclude=['self'], include_defaults=False
         )
         params = [
-            f"{param}" if
-            (param == "connection" and isinstance(value, Connection)) else f'{param}={repr(value)}'
-            for param,
-            value in param_dict.items()
+            f"{param}"
+            if (param == "connection" and isinstance(value, Connection))
+            else f'{param}={repr(value)}'
+            for param, value in param_dict.items()
         ]
         formatted_params = ', '.join(params)
 
@@ -296,7 +305,9 @@ class SchemaManagement:
             logger.info('Schema is already unlocked.')
             return True
 
-        res = schema.unlock_schema(self.connection, project_id=self.project_id, throw_error=False)
+        res = schema.unlock_schema(
+            self.connection, project_id=self.project_id, throw_error=False
+        )
         if res.ok:
             self.get_lock_status()
             return True
@@ -304,9 +315,10 @@ class SchemaManagement:
 
     def reload(
         self,
-        update_types: Optional[Union[List[Union[str, "SchemaUpdateType"]],
-                                     Union[str, "SchemaUpdateType"]]] = None,
-        respond_async: bool = True
+        update_types: Optional[
+            Union[List[Union[str, "SchemaUpdateType"]], Union[str, "SchemaUpdateType"]]
+        ] = None,
+        respond_async: bool = True,
     ) -> Optional["SchemaTask"]:
         """Reload (update) the schema. This operation can be performed
         asynchronously. In that case the task is created and it is saved in
@@ -347,7 +359,9 @@ class SchemaManagement:
             update_types = [update_types]
         update_types = [get_enum_val(t, SchemaUpdateType) for t in update_types]
 
-        res = schema.reload_schema(self.connection, self.project_id, update_types, respond_async)
+        res = schema.reload_schema(
+            self.connection, self.project_id, update_types, respond_async
+        )
         if res.ok and respond_async:
             return self._save_task(res.json())
 
@@ -368,8 +382,8 @@ class SchemaManagement:
             task_id = self.tasks[task_index].id
         except IndexError:
             msg = (
-                f"Cannot get task with index {task_index} from the list of tasks for this "
-                "schema management object. Check the list using property `tasks`."
+                f"Cannot get task with index {task_index} from the list of tasks for "
+                f"this schema management object. Check the list using property `tasks`."
             )
             exception_handler(msg, Warning)
             return

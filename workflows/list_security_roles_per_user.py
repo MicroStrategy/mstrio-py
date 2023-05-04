@@ -12,7 +12,7 @@ def list_security_roles_per_user(
     connection: "Connection",
     user_group_name: str = None,
     user_group_id: str = None,
-    include_user_groups: bool = False
+    include_user_groups: bool = False,
 ) -> List[dict]:
     """List security roles for every user in a user group.
     It is possible to provide either name or id of user group.
@@ -36,7 +36,9 @@ def list_security_roles_per_user(
         }
     """
 
-    user_group_ = UserGroup(connection=connection, name=user_group_name, id=user_group_id)
+    user_group_ = UserGroup(
+        connection=connection, name=user_group_name, id=user_group_id
+    )
     all_security_roles = []
     for member in user_group_.list_members():
         if not member.get('fullName', None):
@@ -54,7 +56,7 @@ def list_security_roles_per_user(
             'id': member['id'],
             'name': member['name'],
             'username': member.get('username', None),
-            'security_roles': security_roles
+            'security_roles': security_roles,
         }
         print('Security roles:', flush=True)
         for project_ in m['security_roles']:

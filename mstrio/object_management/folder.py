@@ -10,7 +10,7 @@ from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, MoveMixin
 from mstrio.utils.helper import (
     fetch_objects_async,
     get_default_args_from_func,
-    get_valid_project_id
+    get_valid_project_id,
 )
 
 if TYPE_CHECKING:
@@ -25,7 +25,7 @@ def list_folders(
     project_name: Optional[str] = None,
     to_dictionary: bool = False,
     limit: Optional[int] = None,
-    **filters
+    **filters,
 ) -> list["Folder"] | list[dict]:
     """Get a list of folders - either all folders in a specific project or all
     folders that are outside of projects, called configuration-level folders.
@@ -50,8 +50,10 @@ def list_folders(
             (False) returns objects.
         limit (int): limit the number of elements returned. If `None` (default),
             all objects are returned.
-        **filters: Available filter parameters: ['id', 'name', 'description',
-            'date_created', 'date_modified', 'acg']
+        **filters: Available filter parameters: ['name', 'id', 'type',
+            'subtype', 'date_created', 'date_modified', 'version', 'acg',
+             'owner', 'hidden',
+          'ext_type']
 
     Returns:
         list of `Folder` objects or list of dictionaries
@@ -71,13 +73,14 @@ def list_folders(
         limit=limit,
         chunk_size=1000,
         project_id=project_id,
-        filters=filters
+        filters=filters,
     )
 
     if to_dictionary:
         return objects
     else:
         from mstrio.utils.object_mapping import map_objects_list
+
         return map_objects_list(connection, objects)
 
 
@@ -119,6 +122,7 @@ def get_my_personal_objects_contents(
         return objects
     else:
         from mstrio.utils.object_mapping import map_objects_list
+
         return map_objects_list(connection, objects)
 
 
@@ -129,7 +133,7 @@ def get_predefined_folder_contents(
     project_name: Optional[str] = None,
     to_dictionary: bool = False,
     limit: Optional[int] = None,
-    **filters
+    **filters,
 ) -> list:
     """Get contents of a pre-defined MicroStrategy folder in a specific project.
     Available values for `folder_type` are stored in enum `PredefinedFolders`.
@@ -178,13 +182,14 @@ def get_predefined_folder_contents(
         chunk_size=1000,
         folder_type=folder_type.value,
         project_id=project_id,
-        filters=filters
+        filters=filters,
     )
 
     if to_dictionary:
         return objects
     else:
         from mstrio.utils.object_mapping import map_objects_list
+
         return map_objects_list(connection, objects)
 
 
@@ -218,12 +223,12 @@ class Folder(Entity, CopyMixin, MoveMixin, DeleteMixin):
         contents: contents of folder
     """
 
-    _FROM_DICT_MAP = {
-        **Entity._FROM_DICT_MAP,
-        'owner': User.from_dict
-    }
+    _FROM_DICT_MAP = {**Entity._FROM_DICT_MAP, 'owner': User.from_dict}
 
-    _API_PATCH: dict = {**Entity._API_PATCH, ('folder_id'): (objects.update_object, 'partial_put')}
+    _API_PATCH: dict = {
+        **Entity._API_PATCH,
+        ('folder_id'): (objects.update_object, 'partial_put'),
+    }
 
     _OBJECT_TYPE = ObjectTypes.FOLDER
     _SIZE_LIMIT = 10000000  # this sets desired chunk size in bytes
@@ -246,7 +251,11 @@ class Folder(Entity, CopyMixin, MoveMixin, DeleteMixin):
 
     @classmethod
     def create(
-        cls, connection: "Connection", name: str, parent: str, description: Optional[str] = None
+        cls,
+        connection: "Connection",
+        name: str,
+        parent: str,
+        description: Optional[str] = None,
     ) -> "Folder":
         """Create a new folder in a folder selected within connection object
         by providing its name, id of parent folder and optionally description.
@@ -271,7 +280,9 @@ class Folder(Entity, CopyMixin, MoveMixin, DeleteMixin):
             )
         return cls.from_dict(source=response, connection=connection)
 
-    def alter(self, name: Optional[str] = None, description: Optional[str] = None) -> None:
+    def alter(
+        self, name: Optional[str] = None, description: Optional[str] = None
+    ) -> None:
         """Alter the folder properties.
 
         Args:
@@ -308,11 +319,12 @@ class Folder(Entity, CopyMixin, MoveMixin, DeleteMixin):
             limit=None,
             chunk_size=1000,
             id=self.id,
-            filters=filters
+            filters=filters,
         )
 
         if to_dictionary:
             return objects
         else:
             from mstrio.utils.object_mapping import map_objects_list
+
             return map_objects_list(self.connection, objects)

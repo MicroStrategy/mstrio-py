@@ -193,7 +193,10 @@ def get_incremental_refresh_report_vldb_properties(
         HTTP response object. Expected status: 200
     """
     return connection.get(
-        url=f'{connection.base_url}/api/model/incrementalRefresh/{id}/applicableVldbProperties',
+        url=(
+            f'{connection.base_url}/api/model/incrementalRefresh/'
+            f'{id}/applicableVldbProperties'
+        ),
         headers={'X-MSTR-ProjectID': project_id},
     )
 
@@ -243,7 +246,10 @@ def request_incremental_refresh_report_preview_data(
         HTTP response object. Expected status: 202
     """
     return connection.post(
-        url=f'{connection.base_url}/api/incrementalRefresh/{id}/instances/{instance_id}/data',
+        url=(
+            f'{connection.base_url}/api/incrementalRefresh/{id}/instances'
+            f'/{instance_id}/data'
+        ),
         headers={'X-MSTR-ProjectID': project_id},
         params={'fields': fields},
     )
@@ -275,7 +281,10 @@ def get_incremental_refresh_report_preview_data(
         HTTP response object. Expected status: 200
     """
     return connection.get(
-        url=f'{connection.base_url}/api/incrementalRefresh/{id}/instances/{instance_id}/data',
+        url=(
+            f'{connection.base_url}/api/incrementalRefresh/{id}/instances'
+            f'/{instance_id}/data'
+        ),
         headers={'X-MSTR-ProjectID': project_id},
         params={
             'offset': offset,
@@ -302,7 +311,9 @@ def create_incremental_refresh_report_instance(connection: Connection, id: str):
 
 
 @ErrorHandler(err_msg="Error deleting instance of the incremental refresh report")
-def delete_incremental_refresh_report_instance(connection: Connection, id: str, instance_id: str):
+def delete_incremental_refresh_report_instance(
+    connection: Connection, id: str, instance_id: str
+):
     """Delete instance of an incremental refresh report.
 
     Args:

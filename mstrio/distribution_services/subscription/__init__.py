@@ -9,7 +9,7 @@ from .delivery import (
     Orientation,
     SendContentAs,
     ShortcutCacheFormat,
-    ZipSettings
+    ZipSettings,
 )
 from .dynamic_recipient_list import DynamicRecipientList, list_dynamic_recipient_lists
 from .email_subscription import EmailSubscription

@@ -23,7 +23,7 @@ def get_connection(
     workstation_data: dict,
     project_name: Optional[str] = None,
     project_id: Optional[str] = None,
-    ssl_verify: bool = False
+    ssl_verify: bool = False,
 ) -> Optional["Connection"]:
     """Connect to environment without providing user's credentials.
 
@@ -74,15 +74,20 @@ def get_connection(
                 cookie_values['name'],
                 cookie_values['value'],
                 domain=cookie_values['domain'],
-                path=cookie_values['path']
+                path=cookie_values['path'],
             )
     except Exception as e:
-        logger.error(f'Some error occurred while preparing data to get identity token: \n{e}')
+        logger.error(
+            f'Some error occurred while preparing data to get identity token: \n{e}'
+        )
         return None
 
     # get identity token
     r = requests.post(
-        base_url + 'api/auth/identityToken', headers=headers, cookies=jar, verify=ssl_verify
+        base_url + 'api/auth/identityToken',
+        headers=headers,
+        cookies=jar,
+        verify=ssl_verify,
     )
     if r.ok:
         # create connection to I-Server
@@ -91,7 +96,7 @@ def get_connection(
             identity_token=r.headers['X-MSTR-IdentityToken'],
             project_id=project_id,
             project_name=project_name,
-            ssl_verify=ssl_verify
+            ssl_verify=ssl_verify,
         )
     else:
         logger.error(f'HTTP {r.status_code} - {r.reason}, Message {r.text}')
@@ -149,7 +154,7 @@ class Connection:
         certificate_path: Optional[str] = None,
         proxies: Optional[dict] = None,
         identity_token: Optional[str] = None,
-        verbose: bool = True
+        verbose: bool = True,
     ):
         """Establish a connection with MicroStrategy REST API.
 
@@ -219,14 +224,15 @@ class Connection:
             self.select_project(project_id, project_name)
         else:
             msg = (
-                f'This version of mstrio is only supported on MicroStrategy 11.1.0400 or higher.\n'
+                f'This version of mstrio is only supported on MicroStrategy 11.1.0400 '
+                f'or higher.\n'
                 f'Current Intelligence Server version: {self.iserver_version}\n'
                 f'Current MicroStrategy Web version: {self.web_version}'
             )
             logger.warning(msg)
             helper.exception_handler(
                 msg='MicroStrategy Version not supported.',
-                exception_type=exceptions.VersionException
+                exception_type=exceptions.VersionException,
             )
 
     def __enter__(self):
@@ -246,7 +252,9 @@ class Connection:
         if response and response.ok:
             self._reset_timeout()
             if config.verbose:
-                logger.info('Connection to MicroStrategy Intelligence Server was renewed.')
+                logger.info(
+                    'Connection to MicroStrategy Intelligence Server was renewed.'
+                )
         else:
             response = self._login()
             self._reset_timeout()
@@ -255,7 +263,8 @@ class Connection:
 
             if config.verbose:
                 logger.info(
-                    'Connection to MicroStrategy Intelligence Server has been established.'
+                    'Connection to MicroStrategy Intelligence Server has been '
+                    'established.'
                 )
 
     renew = connect
@@ -263,17 +272,22 @@ class Connection:
     def delegate(self):
         """Delegates identity token to get authentication token and connect to
         MicroStrategy Intelligence Server."""
-        response = authentication.delegate(self, self.identity_token, whitelist=[('ERR003', 401)])
+        response = authentication.delegate(
+            self, self.identity_token, whitelist=[('ERR003', 401)]
+        )
         if response.ok:
             self._reset_timeout()
             self.token = response.headers['X-MSTR-AuthToken']
             self.timeout = self._get_session_timeout()
             if config.verbose:
                 logger.info(
-                    'Connection with MicroStrategy Intelligence Server has been delegated.'
+                    'Connection with MicroStrategy Intelligence Server has been '
+                    'delegated.'
                 )
         else:
-            print("Could not share existing connection session, please input credentials:")
+            print(
+                "Could not share existing connection session, please input credentials:"
+            )
             self.__prompt_credentials()
             self.connect()
 
@@ -296,7 +310,9 @@ class Connection:
         self.token = None
 
         if config.verbose:
-            logger.info('Connection to MicroStrategy Intelligence Server has been closed.')
+            logger.info(
+                'Connection to MicroStrategy Intelligence Server has been closed.'
+            )
 
     def status(self) -> bool:
         """Checks if the session is still alive.
@@ -310,7 +326,9 @@ class Connection:
             logger.info('Connection to MicroStrategy Intelligence Server is active.')
             return True
         else:
-            logger.info('Connection to MicroStrategy Intelligence Server is not active.')
+            logger.info(
+                'Connection to MicroStrategy Intelligence Server is not active.'
+            )
             return False
 
     def select_project(
@@ -445,7 +463,9 @@ class Connection:
     def __prompt_credentials(self) -> None:
         self.username = self.username or input("Username: ")
         self.__password = self.__password or getpass("Password: ")
-        self.login_mode = self.login_mode or input("Login mode (1 - Standard, 16 - LDAP): ")
+        self.login_mode = self.login_mode or input(
+            "Login mode (1 - Standard, 16 - LDAP): "
+        )
 
     def __check_version(self) -> bool:
         """Checks version of I-Server and MicroStrategy Web and store these
@@ -457,7 +477,8 @@ class Connection:
                 iserver_version = json_response["iServerVersion"][:9]
             except KeyError:
                 raise exceptions.IServerException(
-                    "I-Server is currently unavailable. Please contact your administrator."
+                    "I-Server is currently unavailable. Please contact your "
+                    "administrator."
                 )
             web_version = json_response.get("webVersion")
             web_version = web_version[:9] if web_version else None
@@ -473,7 +494,7 @@ class Connection:
         proxies,
         existing_session=None,
         retries=2,
-        backoff_factor=0.3
+        backoff_factor=0.3,
     ):
         """Creates a shared requests.Session() object with configuration from
         the initialization. Additional parameters change how the HTTPAdapter is
@@ -523,10 +544,13 @@ class Connection:
 
     @staticmethod
     def _configure_ssl(ssl_verify, certificate_path):
-
         def get_certs_from_cwd():
             cert_extensions = ['crt', 'pem', 'p12']
-            return [file for file in os.listdir('.') if file.split('.')[-1] in cert_extensions]
+            return [
+                file
+                for file in os.listdir('.')
+                if file.split('.')[-1] in cert_extensions
+            ]
 
         def find_cert_in_cwd(ssl_verify):
             certs = get_certs_from_cwd()
@@ -540,7 +564,9 @@ class Connection:
         return find_cert_in_cwd(ssl_verify)
 
     def __get_user_info(self) -> None:
-        response = authentication.get_info_for_authenticated_user(connection=self).json()
+        response = authentication.get_info_for_authenticated_user(
+            connection=self
+        ).json()
         self._user_id = response.get("id")
         self._user_full_name = response.get("fullName")
         self._user_initials = response.get("initials")

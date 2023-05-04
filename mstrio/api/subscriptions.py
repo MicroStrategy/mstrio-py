@@ -12,7 +12,9 @@ if TYPE_CHECKING:
 
 
 @ErrorHandler(err_msg='Error getting subscription list.')
-def list_subscriptions(connection, project_id, fields=None, offset=0, limit=-1, error_msg=None):
+def list_subscriptions(
+    connection, project_id, fields=None, offset=0, limit=-1, error_msg=None
+):
     """Get a list of subscriptions.
 
     Args:
@@ -33,15 +35,18 @@ def list_subscriptions(connection, project_id, fields=None, offset=0, limit=-1, 
     """
     return connection.get(
         url=f'{connection.base_url}/api/subscriptions',
-        params={
-            'offset': offset, 'limit': limit, 'fields': fields
-        },
+        params={'offset': offset, 'limit': limit, 'fields': fields},
         headers={'X-MSTR-ProjectID': project_id},
     )
 
 
 def list_subscriptions_async(
-    future_session: "FuturesSession", connection, project_id, fields=None, offset=0, limit=-1
+    future_session: "FuturesSession",
+    connection,
+    project_id,
+    fields=None,
+    offset=0,
+    limit=-1,
 ):
     """Get a list of subscriptions asynchronously.
 
@@ -76,7 +81,7 @@ def list_dynamic_recipient_lists(
     offset: int = 0,
     limit: int = -1,
     fields: Optional[str] = None,
-    error_msg: Optional[str] = None
+    error_msg: Optional[str] = None,
 ) -> Response:
     """Get a list of Dynamic Recipient Lists.
 
@@ -98,10 +103,8 @@ def list_dynamic_recipient_lists(
     """
     return connection.get(
         url=f'{connection.base_url}/api/dynamicRecipientLists',
-        params={
-            'offset': offset, 'limit': limit, 'fields': fields
-        },
-        headers={'X-MSTR-ProjectID': project_id}
+        params={'offset': offset, 'limit': limit, 'fields': fields},
+        headers={'X-MSTR-ProjectID': project_id},
     )
 
 
@@ -111,7 +114,7 @@ def list_dynamic_recipient_lists_async(
     project_id: str,
     offset: int = 0,
     limit: int = -1,
-    fields: Optional[str] = None
+    fields: Optional[str] = None,
 ) -> Response:
     """Get a list of Dynamic Recipient Lists asynchronously.
 
@@ -135,14 +138,14 @@ def list_dynamic_recipient_lists_async(
     return future_session.get(
         url=f'{connection.base_url}/api/dynamicRecipientLists',
         headers={'X-MSTR-ProjectID': project_id},
-        params={
-            'offset': offset, 'limit': limit, 'fields': fields
-        }
+        params={'offset': offset, 'limit': limit, 'fields': fields},
     )
 
 
 @ErrorHandler(err_msg='Error getting subscription {subscription_id} information.')
-def get_subscription(connection, subscription_id, project_id, fields=None, error_msg=None):
+def get_subscription(
+    connection, subscription_id, project_id, fields=None, error_msg=None
+):
     """Get information of a specific subscription for a given project.
 
     Args:
@@ -170,7 +173,7 @@ def get_dynamic_recipient_list(
     id: str,
     project_id: str,
     fields: Optional[str] = None,
-    error_msg: Optional[str] = None
+    error_msg: Optional[str] = None,
 ) -> Response:
     """Get information of a specific Dynamic Recipient List for a given project.
 
@@ -330,7 +333,7 @@ def create_dynamic_recipient_list(
     project_id: str,
     body: dict,
     fields: Optional[list[str]] = None,
-    error_msg: Optional[str] = None
+    error_msg: Optional[str] = None,
 ) -> Response:
     """Create a new subscription.
 
@@ -350,7 +353,7 @@ def create_dynamic_recipient_list(
         url=f'{connection.base_url}/api/dynamicRecipientLists',
         params={'fields': fields},
         headers={'X-MSTR-ProjectID': project_id},
-        json=body
+        json=body,
     )
 
 
@@ -389,7 +392,7 @@ def remove_dynamic_recipient_list(
     id: str,
     project_id: str,
     error_msg: Optional[str] = None,
-    exception_type: Optional[Exception] = None
+    exception_type: Optional[Exception] = None,
 ) -> Response:
     """Delete a Dynamic Recipient List.
 
@@ -451,7 +454,7 @@ def update_dynamic_recipient_list(
     project_id: str,
     body: dict,
     fields: Optional[list[str]] = None,
-    error_msg: Optional[str] = None
+    error_msg: Optional[str] = None,
 ) -> Response:
     """Updates a Dynamic Recipient List.
 
@@ -478,7 +481,14 @@ def update_dynamic_recipient_list(
 
 @ErrorHandler(err_msg='Error getting recipients list.')
 def available_recipients(
-    connection, project_id, body, delivery_type, offset=0, limit=-1, fields=None, error_msg=None
+    connection,
+    project_id,
+    body,
+    delivery_type,
+    offset=0,
+    limit=-1,
+    fields=None,
+    error_msg=None,
 ):
     """Get a list of available recipients in shared list, for a given content
     and delivery type, within a given project.
@@ -513,7 +523,10 @@ def available_recipients(
     return connection.post(
         url=f'{connection.base_url}/api/subscriptions/recipients/results',
         params={
-            'fields': fields, 'deliveryType': delivery_type, 'offset': offset, 'limit': limit
+            'fields': fields,
+            'deliveryType': delivery_type,
+            'offset': offset,
+            'limit': limit,
         },
         headers={'X-MSTR-ProjectID': project_id},
         json=body,
@@ -543,15 +556,15 @@ def bursting_attributes(
     """
     return connection.get(
         url=f'{connection.base_url}/api/subscriptions/bursting',
-        params={
-            'fields': fields, 'contentId': content_id, 'contentType': content_type
-        },
+        params={'fields': fields, 'contentId': content_id, 'contentType': content_type},
         headers={'X-MSTR-ProjectID': project_id},
     )
 
 
 @ErrorHandler(err_msg='Error sending subscription {subscription_id}')
-def send_subscription(connection, subscription_id, project_id, body, fields=None, error_msg=None):
+def send_subscription(
+    connection, subscription_id, project_id, body, fields=None, error_msg=None
+):
     """Send the existing subscription immediately.
 
     Args:

@@ -14,8 +14,9 @@ logger = logging.getLogger(__name__)
 
 
 @method_version_handler('11.3.0100')
-def list_events(connection: Connection, to_dictionary: bool = False, limit: int = None,
-                **filters) -> Union[List["Event"], List[dict]]:
+def list_events(
+    connection: Connection, to_dictionary: bool = False, limit: int = None, **filters
+) -> Union[List["Event"], List[dict]]:
     """List event objects or event dictionaries. Optionally filter list.
 
     Args:
@@ -24,16 +25,15 @@ def list_events(connection: Connection, to_dictionary: bool = False, limit: int 
         to_dictionary(bool, optional): if True, return event as
             list of dicts
         limit(int, optional): maximum number of Events returned.
-        **filters: Available filter parameters:['name':,
-                                                'id',
-                                                'description']
+        **filters: Available filter parameters:
+            ['name', 'id', 'description', 'acg']
     """
     _objects = helper.fetch_objects(
         connection=connection,
         api=events.list_events,
         limit=limit,
         filters=filters,
-        dict_unpack_value='events'
+        dict_unpack_value='events',
     )
 
     if to_dictionary:
@@ -70,14 +70,17 @@ class Event(Entity, DeleteMixin):
             'ancestors',
             'certified_info',
             'acg',
-            'acl'
+            'acl',
         ): objects.get_object_info,
     }
     _API_DELETE = staticmethod(events.delete_event)
     _API_PATCH = {('name', 'description'): (events.update_event, 'put')}
 
     def __init__(
-        self, connection: Connection, id: Optional[str] = None, name: Optional[str] = None
+        self,
+        connection: Connection,
+        id: Optional[str] = None,
+        name: Optional[str] = None,
     ) -> None:
         """Initialize the Event object, populates it with I-Server data.
         Specify either `id` or `name`. When `id` is provided (not `None`),
@@ -89,9 +92,11 @@ class Event(Entity, DeleteMixin):
             id: Event ID
             name: Event name
         """
-        self._API_GETTERS[('id', 'name', 'description')] = \
-            events.get_event if version.parse(connection.web_version) >= \
-            version.parse('11.3.0200') else objects.get_object_info
+        self._API_GETTERS[('id', 'name', 'description')] = (
+            events.get_event
+            if version.parse(connection.web_version) >= version.parse('11.3.0200')
+            else objects.get_object_info
+        )
 
         if id is None and name is None:
             raise AttributeError(
@@ -111,7 +116,9 @@ class Event(Entity, DeleteMixin):
         """Trigger the Event"""
         response = events.trigger_event(self.connection, self.id)
         if response.ok and config.verbose:
-            logger.info(f"Event '{self.name}' with ID : '{self.id}' has been triggered.")
+            logger.info(
+                f"Event '{self.name}' with ID : '{self.id}' has been triggered."
+            )
         return response.ok
 
     @classmethod
@@ -130,7 +137,8 @@ class Event(Entity, DeleteMixin):
             {
                 "name": name,
                 "description": description,
-            }, recursion=True
+            },
+            recursion=True,
         )
         response = events.create_event(connection, body)
         return cls.from_dict(response.json(), connection)
@@ -146,7 +154,8 @@ class Event(Entity, DeleteMixin):
             {
                 "name": name,
                 "description": description,
-            }, recursion=True
+            },
+            recursion=True,
         )
         self._alter_properties(**args)
         if config.verbose:

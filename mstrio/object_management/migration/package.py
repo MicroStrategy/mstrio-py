@@ -1,7 +1,7 @@
-from enum import auto
 import logging
+from enum import auto
 from time import sleep
-from typing import Any, Dict, List, Optional, Union
+from typing import Optional
 
 from mstrio import config
 from mstrio.api import migration
@@ -12,7 +12,7 @@ from mstrio.utils import helper
 from mstrio.utils.entity import DeleteMixin, EntityBase
 from mstrio.utils.enum_helper import AutoName
 from mstrio.utils.helper import Dictable, exception_handler
-from mstrio.utils.wip import module_wip, WipLevels
+from mstrio.utils.wip import WipLevels, module_wip
 
 module_wip(globals(), level=WipLevels.PREVIEW)
 
@@ -44,6 +44,7 @@ class PackageSettings(Dictable):
         logical table sizes. (Logical table sizes affect how the MicroStrategy
         SQL Engine determines which tables to use in a query.)
         """
+
         RECAL_TABLE_LOGICAL_SIZE = auto()
         RECAL_TABLE_KEYS_FACT_ENTRY_LEVEL = auto()
 
@@ -54,6 +55,7 @@ class PackageSettings(Dictable):
         destination project or replace it with the ACL from the source project.
         Note: This is not supported for project security packages.
         """
+
         USE_EXISTING = auto()
         REPLACE = auto()
 
@@ -64,6 +66,7 @@ class PackageSettings(Dictable):
         ACL. This is helpful when copying an object into a user's profile
         folder, so that the user can have full control over the object.
         """
+
         KEEP_ACL_AS_SOURCE_OBJECT = auto()
         INHERIT_ACL_AS_DEST_FOLDER = auto()
 
@@ -108,6 +111,7 @@ class PackageSettings(Dictable):
         FORCE_KEEP_BOTH: No change is made to the destination object. The source
         object is always saved as a new object.
         """
+
         USE_EXISTING = auto()
         REPLACE = auto()
         KEEP_BOTH = auto()
@@ -121,7 +125,7 @@ class PackageSettings(Dictable):
         'default_action': DefaultAction,
         'update_schema': [UpdateSchema],
         'acl_on_replacing_objects': AclOnReplacingObjects,
-        'acl_on_new_objects': [AclOnNewObjects]
+        'acl_on_new_objects': [AclOnNewObjects],
     }
 
     def __init__(
@@ -129,14 +133,20 @@ class PackageSettings(Dictable):
         default_action: DefaultAction = DefaultAction.USE_EXISTING,
         update_schema: Optional[UpdateSchema] = None,
         acl_on_replacing_objects: Optional[AclOnReplacingObjects] = None,
-        acl_on_new_objects: Optional[AclOnNewObjects] = None
+        acl_on_new_objects: Optional[AclOnNewObjects] = None,
     ):
         self.default_action = default_action
-        self.update_schema = (update_schema if isinstance(update_schema, list)
-                              or not update_schema else [update_schema])
+        self.update_schema = (
+            update_schema
+            if isinstance(update_schema, list) or not update_schema
+            else [update_schema]
+        )
         self.acl_on_replacing_objects = acl_on_replacing_objects
-        self.acl_on_new_objects = acl_on_new_objects if isinstance(acl_on_new_objects,
-                                                                   list) else [acl_on_new_objects]
+        self.acl_on_new_objects = (
+            acl_on_new_objects
+            if isinstance(acl_on_new_objects, list)
+            else [acl_on_new_objects]
+        )
 
 
 class PackageContentInfo(Dictable):
@@ -198,6 +208,7 @@ class PackageContentInfo(Dictable):
         FORCE_KEEP_BOTH: No change is made to the destination object. The source
         object is always saved as a new object.
         """
+
         USE_EXISTING = auto()
         REPLACE = auto()
         KEEP_BOTH = auto()
@@ -221,7 +232,9 @@ class PackageContentInfo(Dictable):
         """
 
         @classmethod
-        def from_dict(cls, source: Dict[str, Any], connection: Optional["Connection"] = None):
+        def from_dict(
+            cls, source: dict[str, any], connection: Optional["Connection"] = None
+        ):
             return super().from_dict(source, connection)
 
         def __init__(self, id: str, connection: Optional["Connection"] = None):
@@ -234,12 +247,17 @@ class PackageContentInfo(Dictable):
             self._connection = kwargs.get("connection")
             self._id = kwargs.get("id")
 
-    _FROM_DICT_MAP = {'type': ObjectTypes, 'action': Action, 'level': Level, 'owner': Owner}
+    _FROM_DICT_MAP = {
+        'type': ObjectTypes,
+        'action': Action,
+        'level': Level,
+        'owner': Owner,
+    }
 
     def __init__(
         self,
         id: str,
-        action: Union[Action, str] = Action.USE_EXISTING,
+        action: Action | str = Action.USE_EXISTING,
         name: Optional[str] = None,
         version: Optional[str] = None,
         type: Optional[ObjectTypes] = None,
@@ -248,7 +266,7 @@ class PackageContentInfo(Dictable):
         date_modified: Optional[str] = None,
         include_dependents: Optional[bool] = None,
         explicit_included: Optional[bool] = None,
-        level: Optional[Union[Level, str]] = None
+        level: Optional[Level | str] = None,
     ):
         self.id = id
         self.name = name
@@ -260,8 +278,12 @@ class PackageContentInfo(Dictable):
         self.include_dependents = include_dependents
         self.explicit_included = explicit_included
         try:
-            self.level = PackageContentInfo.Level(level) if isinstance(level, str) else level
-            self.action = PackageContentInfo.Action(action) if isinstance(action, str) else action
+            self.level = (
+                PackageContentInfo.Level(level) if isinstance(level, str) else level
+            )
+            self.action = (
+                PackageContentInfo.Action(action) if isinstance(action, str) else action
+            )
         except ValueError:
             exception_handler(msg="Wrong enum value", exception_type=ValueError)
 
@@ -277,7 +299,7 @@ class PackageConfig(Dictable):
     """
 
     class PackageUpdateType(AutoName):
-        """ Package update type:
+        """Package update type:
         PROJECT: For user’s input, only accept non configuration object. But
             the actual package contains all kinds of objects, including
             configuration objects.
@@ -287,19 +309,22 @@ class PackageConfig(Dictable):
             ”Security Role”,”User”, “User group“.
         PROJECT_SECURITY: Only contains user objects.
         """
+
         PROJECT = auto()
         PROJECT_SECURITY = auto()
         CONFIGURATION = auto()
 
     _FROM_DICT_MAP = {
-        'type': PackageUpdateType, 'settings': PackageSettings, 'content': [PackageContentInfo]
+        'type': PackageUpdateType,
+        'settings': PackageSettings,
+        'content': [PackageContentInfo],
     }
 
     def __init__(
         self,
         type: PackageUpdateType,
         settings: PackageSettings,
-        content: Union[List[PackageContentInfo], PackageContentInfo]
+        content: list[PackageContentInfo] | PackageContentInfo,
     ):
         self.type = type
         self.settings = settings
@@ -317,7 +342,9 @@ class Package(EntityBase, DeleteMixin):
         content(PackageContentInfo): content details of package
     """
 
-    _API_GETTERS = {("id", "status", "settings", "content"): migration.get_package_holder}
+    _API_GETTERS = {
+        ("id", "status", "settings", "content"): migration.get_package_holder
+    }
     _API_DELETE = staticmethod(migration.delete_package_holder)
 
     _FROM_DICT_MAP = {
@@ -336,7 +363,7 @@ class Package(EntityBase, DeleteMixin):
         if id is None:
             exception_handler(
                 "Please provide actual value for id argument, other than None.",
-                exception_type=ValueError
+                exception_type=ValueError,
             )
 
         super().__init__(connection, id)
@@ -382,8 +409,9 @@ class Package(EntityBase, DeleteMixin):
         total_time = 0
         # Wait until update ready
         while True:
-            response = migration.get_package_holder(self.connection, self.id,
-                                                    show_content=False).json()
+            response = migration.get_package_holder(
+                self.connection, self.id, show_content=False
+            ).json()
             if response.get('status') == 'ready':
                 break
             sleep(TIMEOUT_INCREMENT)
@@ -403,11 +431,14 @@ class Package(EntityBase, DeleteMixin):
             package_binary: binary of the package to be uploaded
             progress_bar: boolean value that decides whether a progress bar will
                 be displayed. defaults to False"""
-        response = migration.upload_package(self.connection, self.id, package_binary).json()
+        response = migration.upload_package(
+            self.connection, self.id, package_binary
+        ).json()
         self.status = response.get('status')
         if config.verbose and not progress_bar:
             logger.info(
-                f"Uploaded package binary to package holder with ID: '{response.get('id')}'"
+                f"Uploaded package binary to package holder with ID: "
+                f"'{response.get('id')}'"
             )
 
     def download_package_binary(self, progress_bar: bool = False) -> bytes:
@@ -436,7 +467,9 @@ class PackageImport(EntityBase, DeleteMixin):
         progress(int): progress of package import process
     """
 
-    _API_GETTERS = {("id", "status", "undo_package_created", "progress"): migration.get_import}
+    _API_GETTERS = {
+        ("id", "status", "undo_package_created", "progress"): migration.get_import
+    }
     _API_DELETE = staticmethod(migration.delete_import)
     _progress_bar = True
 
@@ -451,7 +484,7 @@ class PackageImport(EntityBase, DeleteMixin):
         if id is None:
             exception_handler(
                 "Please provide actual value for id argument, other than None.",
-                exception_type=ValueError
+                exception_type=ValueError,
             )
 
         super().__init__(connection, id)
@@ -464,7 +497,11 @@ class PackageImport(EntityBase, DeleteMixin):
 
     @classmethod
     def create(
-        cls, connection: Connection, package_id: str, generate_undo: bool, progress_bar=False
+        cls,
+        connection: Connection,
+        package_id: str,
+        generate_undo: bool,
+        progress_bar=False,
     ):
         """Create a package import process.
 
@@ -479,8 +516,9 @@ class PackageImport(EntityBase, DeleteMixin):
 
         Returns:
             A PackageImport object."""
-        response = migration.create_import(connection, package_id,
-                                           generate_undo=generate_undo).json()
+        response = migration.create_import(
+            connection, package_id, generate_undo=generate_undo
+        ).json()
 
         total_time = 0
         # Wait until update ready
@@ -496,7 +534,9 @@ class PackageImport(EntityBase, DeleteMixin):
                 return False
 
         if config.verbose and not progress_bar:
-            logger.info(f"Created package import process with ID: '{response.get('id')}'")
+            logger.info(
+                f"Created package import process with ID: '{response.get('id')}'"
+            )
         return cls.from_dict(source=response, connection=connection)
 
     def download_undo_binary(self, progress_bar=False):
@@ -524,5 +564,8 @@ class PackageImport(EntityBase, DeleteMixin):
 
         response = migration.create_undo(self.connection, self.id)
         if config.verbose and not progress_bar:
-            logger.info(f"Downloaded undo package binary for import process with ID: '{self.id}'")
+            logger.info(
+                f"Downloaded undo package binary for import process with ID: "
+                f"'{self.id}'"
+            )
         return response.content

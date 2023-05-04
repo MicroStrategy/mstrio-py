@@ -13,10 +13,9 @@ def all_nodes_async(
     error_msg: str,
     unpack_value: Optional[str] = None,
     limit: Optional[int] = None,
-    **kwargs
+    **kwargs,
 ):
-    """Return list of objects fetched async using wrappers in monitors.py
-    """
+    """Return list of objects fetched async using wrappers in monitors.py"""
 
     node = kwargs.get('node_name')
     if not node:
@@ -36,12 +35,23 @@ def all_nodes_async(
         param_value_dict = auto_match_args(
             async_api,
             kwargs,
-            exclude=['connection', 'limit', 'offset', 'future_session', 'error_msg', 'node_name']
+            exclude=[
+                'connection',
+                'limit',
+                'offset',
+                'future_session',
+                'error_msg',
+                'node_name',
+            ],
         )
         futures = [
             async_api(
-                future_session=session, connection=connection, node_name=n, **param_value_dict
-            ) for n in node_names
+                future_session=session,
+                connection=connection,
+                node_name=n,
+                **param_value_dict,
+            )
+            for n in node_names
         ]
         objects = []
         for f in futures:

@@ -2,16 +2,20 @@ import json
 from typing import Optional
 
 from mstrio.connection import Connection
-from mstrio.utils.api_helpers import FuturesSessionWithRenewal, unpack_information
+from mstrio.utils.api_helpers import (
+    FuturesSessionWithRenewal,
+    changeset_manager,
+    unpack_information,
+)
 from mstrio.utils.datasources import (
     alter_conn_list_resp,
     alter_conn_resp,
     alter_instance_list_resp,
     alter_instance_resp,
-    alter_patch_req_body
+    alter_patch_req_body,
 )
 from mstrio.utils.error_handlers import ErrorHandler
-from mstrio.utils.helper import exception_handler, IServerError, response_handler
+from mstrio.utils.helper import IServerError, exception_handler, response_handler
 
 
 @ErrorHandler(err_msg='Error getting available DBMSs.')
@@ -95,7 +99,9 @@ def update_datasource_instance(connection, id, body, error_msg=None):
     """
     url = f"{connection.base_url}/api/datasources/{id}"
     for op_dict in body["operationList"]:
-        op_dict = alter_patch_req_body(op_dict, "/datasourceConnection", "/databaseConnectionId")
+        op_dict = alter_patch_req_body(
+            op_dict, "/datasourceConnection", "/databaseConnectionId"
+        )
         op_dict = alter_patch_req_body(
             op_dict, "/primaryDatasource", "/databasePrimaryDatasourceId"
         )
@@ -141,7 +147,7 @@ def get_datasource_namespaces(
     project_id: Optional[str] = None,
     refresh: Optional[bool] = None,
     fields: Optional[str] = None,
-    error_msg: Optional[str] = None
+    error_msg: Optional[str] = None,
 ):
     """Get namespaces for a specific datasource.
 
@@ -180,7 +186,7 @@ def get_datasource_namespaces_async(
     id: str,
     project_id: Optional[str] = None,
     refresh: Optional[bool] = None,
-    fields: Optional[str] = None
+    fields: Optional[str] = None,
 ):
     return session.get(
         url=f"{connection.base_url}/api/datasources/{id}/catalog/namespaces",
@@ -218,7 +224,9 @@ def get_datasource_instances(
         database_type = None if database_type is None else database_type.join(",")
         ids = None if ids is None else ids.join(",")
         url = f"{connection.base_url}/api/datasources"
-        response = connection.get(url=url, params={'id': ids, 'database.type': database_type})
+        response = connection.get(
+            url=url, params={'id': ids, 'database.type': database_type}
+        )
     if not response.ok:
         res = response.json()
         if project and res.get("message") == "HTTP 404 Not Found":
@@ -231,12 +239,17 @@ def get_datasource_instances(
             )
             exception_handler(warning_msg, Warning)
             return get_datasource_instances(
-                connection=connection, ids=ids, database_type=database_type, error_msg=error_msg
+                connection=connection,
+                ids=ids,
+                database_type=database_type,
+                error_msg=error_msg,
             )
         if not error_msg:
-            if project \
-                    and res.get('code') == "ERR006" \
-                    and "not a valid value for Project ID" in res.get('message'):
+            if (
+                project
+                and res.get('code') == "ERR006"
+                and "not a valid value for Project ID" in res.get('message')
+            ):
                 error_msg = f"{project} is not a valid Project class instance or ID"
                 raise ValueError(error_msg)
             error_msg = "Error getting Datasource Instances"
@@ -283,8 +296,10 @@ def get_datasource_connection(connection, id, error_msg=None):
     response = connection.get(url=url)
     if not response.ok:
         if error_msg is None:
-            error_msg = (f"Error getting Datasource Connection with ID: {id}. "
-                         f"Check if it is not embedded Datasource Connection.")
+            error_msg = (
+                f"Error getting Datasource Connection with ID: {id}. "
+                f"Check if it is not embedded Datasource Connection."
+            )
         response_handler(response, error_msg)
     response = alter_conn_resp(response)
     return response
@@ -373,7 +388,7 @@ def get_datasource_mappings(
     connection: Connection,
     default_connection_map: Optional[bool] = False,
     project_id: Optional[str] = None,
-    error_msg: Optional[str] = None
+    error_msg: Optional[str] = None,
 ):
     """Get information for all connection mappings.
 
@@ -394,7 +409,7 @@ def get_datasource_mappings(
         params={
             "defaultConnectionMap": default_connection_map,
             "projectId": project_id,
-        }
+        },
     )
 
     if default_connection_map and not response.ok and response.status_code == 404:
@@ -410,7 +425,7 @@ def get_datasource_mapping(
     id=str,
     default_connection_map: Optional[bool] = False,
     project_id: Optional[str] = None,
-    error_msg: Optional[str] = None
+    error_msg: Optional[str] = None,
 ):
     """Get information about specific connection mapping.
 
@@ -440,19 +455,25 @@ def get_datasource_mapping(
         response_json = response.json()
 
         try:
-            mappings = [mapping for mapping in response_json['mappings'] if mapping["id"] == id]
+            mappings = [
+                mapping for mapping in response_json['mappings'] if mapping["id"] == id
+            ]
 
             mapping_data = mappings[0]
             mapping_data['ds_connection'] = mapping_data.pop('connection')
         except LookupError:
             raise IServerError(message="Connection Mapping not found", http_code=None)
 
-        response.encoding, response._content = 'utf-8', json.dumps(mapping_data).encode('utf-8')
+        response.encoding, response._content = 'utf-8', json.dumps(mapping_data).encode(
+            'utf-8'
+        )
     return response
 
 
 @ErrorHandler(err_msg='Error creating connection mapping.')
-def create_datasource_mapping(connection: Connection, body, error_msg: Optional[str] = None):
+def create_datasource_mapping(
+    connection: Connection, body, error_msg: Optional[str] = None
+):
     """Create a new connection mapping.
 
     Args:
@@ -468,7 +489,9 @@ def create_datasource_mapping(connection: Connection, body, error_msg: Optional[
 
 
 @ErrorHandler(err_msg='Error deleting connection mapping with ID {id}')
-def delete_datasource_mapping(connection: Connection, id: str, error_msg: Optional[str] = None):
+def delete_datasource_mapping(
+    connection: Connection, id: str, error_msg: Optional[str] = None
+):
     """Delete a connection mapping based on id.
 
     Args:
@@ -499,7 +522,9 @@ def get_datasource_logins(connection: Connection, error_msg: Optional[str] = Non
 
 
 @ErrorHandler(err_msg='Error creating Datasource login.')
-def create_datasource_login(connection: Connection, body, error_msg: Optional[str] = None):
+def create_datasource_login(
+    connection: Connection, body, error_msg: Optional[str] = None
+):
     """Create a new datasource login.
 
     Args:
@@ -515,7 +540,9 @@ def create_datasource_login(connection: Connection, body, error_msg: Optional[st
 
 
 @ErrorHandler(err_msg='Error getting Datasource login with ID {id}')
-def get_datasource_login(connection: Connection, id: str, error_msg: Optional[str] = None):
+def get_datasource_login(
+    connection: Connection, id: str, error_msg: Optional[str] = None
+):
     """Get datasource login for a specific id.
 
     Args:
@@ -531,7 +558,9 @@ def get_datasource_login(connection: Connection, id: str, error_msg: Optional[st
 
 
 @ErrorHandler(err_msg='Error deleting Datasource login with ID {id}')
-def delete_datasource_login(connection: Connection, id: str, error_msg: Optional[str] = None):
+def delete_datasource_login(
+    connection: Connection, id: str, error_msg: Optional[str] = None
+):
     """Delete a datasource login.
 
     Args:
@@ -571,7 +600,7 @@ def get_table_columns(
     datasource_id: str,
     namespace_id: str,
     table_id: str,
-    error_msg: Optional[str] = None
+    error_msg: Optional[str] = None,
 ):
     url = (
         f"{connection.base_url}/api/datasources/{datasource_id}/catalog/namespaces/"
@@ -581,8 +610,12 @@ def get_table_columns(
 
 
 @unpack_information
-@ErrorHandler(err_msg='Error converting Datasource embedded connection from DSN to DSN-less')
-def convert_ds_dsn(connection: Connection, datasource_id: str, error_msg: Optional[str] = None):
+@ErrorHandler(
+    err_msg='Error converting Datasource embedded connection from DSN to DSN-less'
+)
+def convert_ds_dsn(
+    connection: Connection, datasource_id: str, error_msg: Optional[str] = None
+):
     """Convert datasource embedded connection from DSN to DSN-less format
     connection string and update the object to metadata.
 
@@ -600,7 +633,9 @@ def convert_ds_dsn(connection: Connection, datasource_id: str, error_msg: Option
 
 
 @unpack_information
-@ErrorHandler(err_msg='Error converting Datasource connection object from DSN to DSN-less')
+@ErrorHandler(
+    err_msg='Error converting Datasource connection object from DSN to DSN-less'
+)
 def convert_connection_dsn(
     connection: Connection, ds_connection_id: str, error_msg: Optional[str] = None
 ):
@@ -615,5 +650,74 @@ def convert_connection_dsn(
     Returns:
         HTTP response object with updated object data. Expected status is 200.
     """
-    url = f"{connection.base_url}/api/datasources/connections/{ds_connection_id}/conversion"
+    url = (
+        f"{connection.base_url}/api/datasources/connections/{ds_connection_id}"
+        f"/conversion"
+    )
     return connection.post(url=url)
+
+
+@ErrorHandler(err_msg='Error getting VLDB settings for datasource with ID: {id}')
+def get_vldb_settings(connection: 'Connection', id: str, error_msg: str = None):
+    """Get advanced VLDB settings for a datasource.
+
+    Args:
+        connection (Connection): MicroStrategy REST API connection object
+        id (string): Datasource ID
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object.
+    """
+
+    return connection.get(
+        url=f'{connection.base_url}/api/model/datasources/{id}'
+        '?showAdvancedProperties=true'
+    )
+
+
+@ErrorHandler(err_msg='Error updating VLDB settings for datasource with ID {id}')
+def update_vldb_settings(
+    connection: 'Connection', id: str, body: dict, error_msg: str = None
+):
+    """Update metadata of advanced VLDB settings for a datasource.
+
+    Args:
+        connection (Connection): MicroStrategy REST API connection object
+        id (string): Datasource ID
+        body (dict): JSON-formatted data used to update VLDB settings
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object.
+    """
+
+    with changeset_manager(connection) as changeset_id:
+        return connection.put(
+            url=f'{connection.base_url}/api/model/datasources/{id}',
+            json=body,
+            headers={'X-MSTR-MS-Changeset': changeset_id},
+        )
+
+
+@ErrorHandler(
+    err_msg='Error getting metadata of VLDB settings for datasource with ID {id}'
+)
+def get_applicable_vldb_settings(
+    connection: 'Connection', id: str, error_msg: str = None
+):
+    """Get metadata of advanced VLDB settings for a datasource.
+
+    Args:
+        connection (Connection): MicroStrategy REST API connection object
+        id (string): Datasource ID
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object.
+    """
+
+    return connection.get(
+        url=f'{connection.base_url}/api/model/datasources/{id}'
+        '/applicableAdvancedProperties'
+    )

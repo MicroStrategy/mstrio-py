@@ -10,7 +10,10 @@ if TYPE_CHECKING:
 
 @ErrorHandler(err_msg='Error listing Contact Groups.')
 def get_contact_groups(
-    connection: "Connection", offset: int = 0, limit: int = 1000, error_msg: Optional[str] = None
+    connection: "Connection",
+    offset: int = 0,
+    limit: int = 1000,
+    error_msg: Optional[str] = None,
 ):
     """Get a list of all contact groups that the authenticated user has access
         to.
@@ -33,7 +36,10 @@ def get_contact_groups(
 
 
 def get_contact_groups_async(
-    future_session: "FuturesSession", connection: "Connection", offset: int = 0, limit: int = 1000
+    future_session: "FuturesSession",
+    connection: "Connection",
+    offset: int = 0,
+    limit: int = 1000,
 ):
     """Get a list of all contact groups that the authenticated user has access
         to.
@@ -58,7 +64,9 @@ def get_contact_groups_async(
 
 
 @ErrorHandler(err_msg='Error creating Contact Group.')
-def create_contact_group(connection: "Connection", body: dict, error_msg: Optional[str] = None):
+def create_contact_group(
+    connection: "Connection", body: dict, error_msg: Optional[str] = None
+):
     """Create a new contact group.
 
     Args:
@@ -74,7 +82,9 @@ def create_contact_group(connection: "Connection", body: dict, error_msg: Option
 
 
 @ErrorHandler(err_msg='Error getting Contact Group with ID {id}')
-def get_contact_group(connection: "Connection", id: str, error_msg: Optional[str] = None):
+def get_contact_group(
+    connection: "Connection", id: str, error_msg: Optional[str] = None
+):
     """Get contact group by a specific id.
 
     Args:
@@ -109,7 +119,9 @@ def update_contact_group(
 
 
 @ErrorHandler(err_msg='Error deleting Contact Group with ID {id}')
-def delete_contact_group(connection: "Connection", id: str, error_msg: Optional[str] = None):
+def delete_contact_group(
+    connection: "Connection", id: str, error_msg: Optional[str] = None
+):
     """Delete a contact group.
 
     Args:

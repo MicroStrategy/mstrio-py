@@ -74,7 +74,9 @@ def update_transmitter(
 
 
 @ErrorHandler(err_msg='Error deleting Transmitter with ID {id}')
-def delete_transmitter(connection: "Connection", id: str, error_msg: Optional[str] = None):
+def delete_transmitter(
+    connection: "Connection", id: str, error_msg: Optional[str] = None
+):
     """Delete a transmitter.
 
     Args:

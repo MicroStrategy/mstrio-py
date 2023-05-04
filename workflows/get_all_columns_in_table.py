@@ -39,16 +39,21 @@ def list_table_columns(
             SchemaObjectReference(
                 col['information']['subType'],
                 col['information']['objectId'],
-                col['information']['name']
-            ) for col in columns_list_dict
+                col['information']['name'],
+            )
+            for col in columns_list_dict
         ]
 
     if table:
         table_id = table if isinstance(table, str) else table.object_id
-        table_res = tables.get_table(connection, table_id, project_id=connection.project_id).json()
+        table_res = tables.get_table(
+            connection, table_id, project_id=connection.project_id
+        ).json()
         return {table_res['information']['name']: unpack(table_res)}
     else:
-        table_res = tables.get_tables(connection, project_id=connection.project_id).json()
+        table_res = tables.get_tables(
+            connection, project_id=connection.project_id
+        ).json()
         ids = [tab['information']['objectId'] for tab in table_res['tables']]
         tables_async = async_get(tables.get_table_async, connection, ids)
         return {table['information']['name']: unpack(table) for table in tables_async}

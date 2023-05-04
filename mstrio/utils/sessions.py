@@ -5,7 +5,6 @@ from requests_futures.sessions import FuturesSession
 
 
 class FuturesSessionWithRenewal(FuturesSession):
-
     def __init__(self, *, connection, **kwargs):
         super().__init__(session=connection._session, **kwargs)
         self.connection = connection
@@ -18,10 +17,12 @@ class FuturesSessionWithRenewal(FuturesSession):
 
 
 def renew_session(func):
-
     @functools.wraps(func)
     def wrapper(self, *args, **kwargs):
-        if not kwargs.pop('skip_expiration_check', False) and self._is_session_expired():
+        if (
+            not kwargs.pop('skip_expiration_check', False)
+            and self._is_session_expired()
+        ):
             self._renew_or_reconnect()
 
         return func(self, *args, **kwargs)
@@ -30,9 +31,7 @@ def renew_session(func):
 
 
 def log_request(logger):
-
     def decorator(func):
-
         @functools.wraps(func)
         def wrapper(self, url, *args, **kwargs):
             if logger.isEnabledFor(logging.DEBUG):

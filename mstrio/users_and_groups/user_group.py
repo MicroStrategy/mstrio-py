@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from pandas import DataFrame
 
@@ -27,7 +27,7 @@ def list_user_groups(
     name_begins: Optional[str] = None,
     to_dictionary: bool = False,
     limit: Optional[int] = None,
-    **filters
+    **filters,
 ) -> list["UserGroup"]:
     """Get list of User Group objects or User Group dicts. Optionally filter
     the User Groups by specifying 'name_begins' or other filters.
@@ -62,7 +62,7 @@ def list_user_groups(
         name_begins=name_begins,
         to_dictionary=to_dictionary,
         limit=limit,
-        **filters
+        **filters,
     )
 
 
@@ -92,7 +92,11 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin):
         acl: Object access control list
     """
 
-    _SUPPORTED_PATCH_OPERATIONS = {"add": "add", "remove": "remove", "change": "replace"}
+    _SUPPORTED_PATCH_OPERATIONS = {
+        "add": "add",
+        "remove": "remove",
+        "change": "replace",
+    }
     _OBJECT_TYPE = ObjectTypes.USERGROUP
     _API_GETTERS = {
         (
@@ -108,13 +112,13 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin):
             'owner',
             'ancestors',
             'acg',
-            'acl'
+            'acl',
         ): usergroups.get_user_group_info,
         'memberships': usergroups.get_memberships,
         'members': usergroups.get_members,
         'security_roles': usergroups.get_security_roles,
         'privileges': usergroups.get_privileges,
-        'settings': usergroups.get_settings
+        'settings': usergroups.get_settings,
     }
     _PATCH_PATH_TYPES = {
         "name": str,
@@ -123,12 +127,21 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin):
     }
     _API_PATCH: dict = {
         ('abbreviation'): (objects.update_object, 'partial_put'),
-        ('name', 'description', 'memberships', 'security_roles', 'members',
-         'privileges'): (usergroups.update_user_group_info, 'patch')
+        (
+            'name',
+            'description',
+            'memberships',
+            'security_roles',
+            'members',
+            'privileges',
+        ): (usergroups.update_user_group_info, 'patch'),
     }
 
     def __init__(
-        self, connection: Connection, name: Optional[str] = None, id: Optional[str] = None
+        self,
+        connection: Connection,
+        name: Optional[str] = None,
+        id: Optional[str] = None,
     ) -> None:
         """Initialize UserGroup object by passing `name` or `id`. When `id` is
         provided (not `None`), `name` is omitted.
@@ -153,7 +166,7 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin):
             else:
                 helper.exception_handler(
                     f"There is no User Group with the given name: '{name}'",
-                    exception_type=ValueError
+                    exception_type=ValueError,
                 )
         super().__init__(connection=connection, object_id=id, name=name)
 
@@ -174,7 +187,7 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin):
         name: str,
         description: Optional[str] = None,
         memberships: Optional[list[str]] = None,
-        members: Optional[list[str]] = None
+        members: Optional[list[str]] = None,
     ):
         """Create a new User Group on the I-Server. Returns `UserGroup` object.
 
@@ -194,14 +207,15 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin):
             "name": name,
             "description": description,
             "memberships": memberships,
-            "members": members
+            "members": members,
         }
         response = usergroups.create_user_group(connection, body)
         if response.ok:
             response = response.json()
             if config.verbose:
                 logger.info(
-                    f"Successfully created user group '{name}' with ID: '{response.get('id')}'"
+                    f"Successfully created user group '{name}' with ID: "
+                    f"'{response.get('id')}'"
                 )
             return cls.from_dict(source=response, connection=connection)
 
@@ -212,7 +226,7 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin):
         name_begins: Optional[str] = None,
         to_dictionary: bool = False,
         limit: Optional[int] = None,
-        **filters
+        **filters,
     ) -> list["UserGroup"]:
         msg = "Error getting information for a set of User Groups."
         objects = helper.fetch_objects_async(
@@ -223,7 +237,7 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin):
             chunk_size=1000,
             error_msg=msg,
             name_begins=name_begins,
-            filters=filters
+            filters=filters,
         )
         if to_dictionary:
             return objects
@@ -236,14 +250,14 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin):
         connection: Connection,
         name_begins: Optional[str] = None,
         limit: Optional[int] = None,
-        **filters
+        **filters,
     ) -> list[str]:
         group_dicts = UserGroup._get_user_groups(
             connection=connection,
             name_begins=name_begins,
             to_dictionary=True,
             limit=limit,
-            **dict(filters)
+            **dict(filters),
         )
         return [group['id'] for group in group_dicts]
 
@@ -257,7 +271,7 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin):
         func = self.alter
         args = helper.get_args_from_func(func)
         defaults = helper.get_default_args_from_func(func)
-        default_dict = dict(zip(args[-len(defaults):], defaults)) if defaults else {}
+        default_dict = dict(zip(args[-len(defaults) :], defaults)) if defaults else {}
         local = locals()
         properties = {}
         for property_key in default_dict.keys():
@@ -321,7 +335,9 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin):
         if succeeded and config.verbose:
             logger.info(f"Added group '{self.name}' to group(s): {succeeded}")
         if failed and config.verbose:
-            logger.warning(f"Group '{self.name}' is already a member of {failed} group(s)")
+            logger.warning(
+                f"Group '{self.name}' is already a member of {failed} group(s)"
+            )
 
     def remove_from_user_groups(
         self, groups: "str | UserGroup | list[str | UserGroup]"
@@ -331,7 +347,9 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin):
         Args:
             groups: List of User Group objects or ids
         """
-        succeeded, failed = self._update_nested_properties(groups, 'memberships', "remove")
+        succeeded, failed = self._update_nested_properties(
+            groups, 'memberships', "remove"
+        )
         if succeeded and config.verbose:
             logger.info(f"Removed group '{self.name}' from group(s): {succeeded}")
         if failed and config.verbose:
@@ -346,21 +364,27 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin):
             privilege: List of privilege objects, ids or names
         """
         from mstrio.access_and_security.privilege import Privilege
+
         privileges = [
-            priv['id'] for priv in Privilege._validate_privileges(self.connection, privilege)
+            priv['id']
+            for priv in Privilege._validate_privileges(self.connection, privilege)
         ]
         existing_ids = [
-            privilege['privilege']['id'] for privilege in self.list_privileges(mode='GRANTED')
+            privilege['privilege']['id']
+            for privilege in self.list_privileges(mode='GRANTED')
         ]
-        succeeded, failed = self._update_nested_properties(privileges, "privileges", "add",
-                                                           existing_ids)
+        succeeded, failed = self._update_nested_properties(
+            privileges, "privileges", "add", existing_ids
+        )
 
         if succeeded:
             self.fetch('privileges')  # fetch the object privileges
             if config.verbose:
                 logger.info(f"Granted privilege(s) {succeeded} to '{self.name}'")
         if failed and config.verbose:
-            logger.warning(f"User Group '{self.name}' already has privilege(s) {failed}")
+            logger.warning(
+                f"User Group '{self.name}' already has privilege(s) {failed}"
+            )
 
     def revoke_privilege(
         self, privilege: "str | list[str] | Privilege | list[Privilege]"
@@ -371,12 +395,14 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin):
             privilege: List of privilege objects, ids or names
         """
         from mstrio.access_and_security.privilege import Privilege
+
         privileges = {
             priv['id']
             for priv in Privilege._validate_privileges(self.connection, privilege)
         }
         existing_ids = [
-            privilege['privilege']['id'] for privilege in self.list_privileges(mode='ALL')
+            privilege['privilege']['id']
+            for privilege in self.list_privileges(mode='ALL')
         ]
         directly_granted = {
             privilege['privilege']['id']
@@ -390,18 +416,22 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin):
         if not_directly_granted:
             msg = (
                 f"Privileges {sorted(not_directly_granted)} are inherited and will be "
-                "omitted. Only directly granted privileges can be revoked by this method."
+                "omitted. Only directly granted privileges can be revoked by this "
+                "method."
             )
             helper.exception_handler(msg, exception_type=Warning)
 
-        succeeded, failed = self._update_nested_properties(to_revoke, "privileges", "remove",
-                                                           existing_ids)
+        succeeded, failed = self._update_nested_properties(
+            to_revoke, "privileges", "remove", existing_ids
+        )
         if succeeded:
             self.fetch('privileges')  # fetch the object privileges
             if config.verbose:
                 logger.info(f"Revoked privilege(s) {succeeded} from '{self.name}'")
         if failed and config.verbose:
-            logger.warning(f"User group '{self.name}' does not have privilege(s) {failed}")
+            logger.warning(
+                f"User group '{self.name}' does not have privilege(s) {failed}"
+            )
 
     def revoke_all_privileges(self, force: bool = False) -> None:
         """Revoke directly granted group privileges.
@@ -413,18 +443,20 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin):
         user_input = 'N'
         if not force:
             user_input = input(
-                "Are you sure you want to revoke all privileges from user group '{}'? [Y/N]: "
-                .format(self.name)
+                "Are you sure you want to revoke all privileges from user group "
+                f"'{self.name}'? [Y/N]: "
             )
         if force or user_input == 'Y':
             to_revoke = [
-                privilege['privilege']['id'] for privilege in self.list_privileges(mode='GRANTED')
+                privilege['privilege']['id']
+                for privilege in self.list_privileges(mode='GRANTED')
             ]
             if to_revoke:
                 self.revoke_privilege(privilege=to_revoke)
             else:
                 logger.info(
-                    f"User Group '{self.name}' does not have any directly granted privileges"
+                    f"User Group '{self.name}' does not have any directly granted "
+                    f"privileges"
                 )
 
     def list_privileges(
@@ -454,7 +486,8 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin):
             except ValueError:
                 msg = (
                     "Wrong privilege mode has been passed, allowed modes are "
-                    "['ALL'/'INHERITED'/'GRANTED']. See: `privilege.PrivilegeMode` enum."
+                    "['ALL'/'INHERITED'/'GRANTED']. See: `privilege.PrivilegeMode` "
+                    "enum."
                 )
                 helper.exception_handler(msg, ValueError)
 
@@ -479,7 +512,9 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin):
         return to_df(privileges) if to_dataframe else privileges
 
     def assign_security_role(
-        self, security_role: SecurityRole | str, project: Optional["Project | str"] = None
+        self,
+        security_role: SecurityRole | str,
+        project: Optional["Project | str"] = None,
     ) -> None:  # NOSONAR
         """Assigns a Security Role to the User Group for given project.
 
@@ -488,16 +523,22 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin):
             project: Project name or object
         """
 
-        security_role = security_role if isinstance(security_role, SecurityRole) else SecurityRole(
-            self.connection, id=str(security_role)
+        security_role = (
+            security_role
+            if isinstance(security_role, SecurityRole)
+            else SecurityRole(self.connection, id=str(security_role))
         )
 
         security_role.grant_to([self.id], project)
         if config.verbose:
-            logger.info(f"Assigned Security Role '{security_role.name}' to group: '{self.name}'")
+            logger.info(
+                f"Assigned Security Role '{security_role.name}' to group: '{self.name}'"
+            )
 
     def revoke_security_role(
-        self, security_role: SecurityRole | str, project: Optional["Project | str"] = None
+        self,
+        security_role: SecurityRole | str,
+        project: Optional["Project | str"] = None,
     ) -> None:  # NOSONAR
         """Removes a Security Role from the User Group for given project.
 
@@ -506,13 +547,18 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin):
             project: Project name or object
         """
 
-        security_role = security_role if isinstance(security_role, SecurityRole) else SecurityRole(
-            self.connection, id=str(security_role)
+        security_role = (
+            security_role
+            if isinstance(security_role, SecurityRole)
+            else SecurityRole(self.connection, id=str(security_role))
         )
 
         security_role.revoke_from([self.id], project)
         if config.verbose:
-            logger.info(f"Revoked Security Role '{security_role.name}' from group: '{self.name}'")
+            logger.info(
+                f"Revoked Security Role '{security_role.name}' from group: "
+                f"'{self.name}'"
+            )
 
     @method_version_handler('11.3.0200')
     def list_security_filters(
@@ -534,7 +580,10 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin):
             the dictionary.
         """
         from mstrio.modeling.security_filter import SecurityFilter
-        objects_ = usergroups.get_security_filters(self.connection, self.id, projects).json()
+
+        objects_ = usergroups.get_security_filters(
+            self.connection, self.id, projects
+        ).json()
         projects_ = objects_.get("projects")
 
         objects_ = {
@@ -544,8 +593,10 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin):
         }
 
         self._security_filters = {
-            name:
-            [SecurityFilter.from_dict(sec_filter, self.connection) for sec_filter in sec_filters]
+            name: [
+                SecurityFilter.from_dict(sec_filter, self.connection)
+                for sec_filter in sec_filters
+            ]
             for (name, sec_filters) in objects_.items()
         }
         if to_dictionary:
@@ -563,7 +614,10 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin):
         """
         if isinstance(security_filter, str):
             from mstrio.modeling.security_filter import SecurityFilter
-            security_filter = SecurityFilter.from_dict({"id": security_filter}, self.connection)
+
+            security_filter = SecurityFilter.from_dict(
+                {"id": security_filter}, self.connection
+            )
         return security_filter.apply(self.id)
 
     def revoke_security_filter(self, security_filter: "SecurityFilter | str"):
@@ -579,7 +633,10 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin):
         """
         if isinstance(security_filter, str):
             from mstrio.modeling.security_filter import SecurityFilter
-            security_filter = SecurityFilter.from_dict({"id": security_filter}, self.connection)
+
+            security_filter = SecurityFilter.from_dict(
+                {"id": security_filter}, self.connection
+            )
         return security_filter.revoke(self.id)
 
     def get_settings(self) -> dict:

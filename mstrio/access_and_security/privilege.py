@@ -28,7 +28,10 @@ class Privilege(EntityBase):
     """
 
     def __init__(
-        self, connection: Connection, name: Optional[str] = None, id: Optional[str] = None
+        self,
+        connection: Connection,
+        name: Optional[str] = None,
+        id: Optional[str] = None,
     ) -> None:
         """Initialize Privilege object by passing `name` or `id`. When `id` is
         provided (not `None`), `name` is omitted. To explore all available
@@ -43,7 +46,7 @@ class Privilege(EntityBase):
         if name is None and id is None:
             helper.exception_handler(
                 "Please specify either 'name' or 'id' parameter in the constructor.",
-                exception_type=ValueError
+                exception_type=ValueError,
             )
 
         if name is None or (name and id):
@@ -55,7 +58,8 @@ class Privilege(EntityBase):
                 self._set_object_attributes(**privilege)
             else:
                 helper.exception_handler(
-                    f"There is no Privilege with the given id: '{id}'", exception_type=ValueError
+                    f"There is no Privilege with the given id: '{id}'",
+                    exception_type=ValueError,
                 )
         if id is None:
             privileges = Privilege.list_privileges(
@@ -67,7 +71,7 @@ class Privilege(EntityBase):
             else:
                 helper.exception_handler(
                     f"There is no Privilege with the given name: '{name}'",
-                    exception_type=ValueError
+                    exception_type=ValueError,
                 )
         super().__init__(connection, self.id, name=self.name)
 
@@ -82,7 +86,7 @@ class Privilege(EntityBase):
         connection: Connection,
         to_dictionary: bool = False,
         to_dataframe: bool = False,
-        **filters
+        **filters,
     ) -> Union[List["Privilege"], List[dict], DataFrame]:
         """Get list of privilege objects or privilege dicts. Filter the
         privileges by specifying the `filters` keyword arguments.
@@ -97,7 +101,7 @@ class Privilege(EntityBase):
                 User objects.
             to_dataframe: If `True`, returns `DataFrame`.
             **filters: Available filter parameters: ['id', 'name',
-                'description', 'categories', 'is_project_level_privilege']
+                'description', 'is_project_level_privilege']
 
         Examples:
             >>> Privilege.list_privileges(connection, to_dataframe=True,
@@ -105,12 +109,15 @@ class Privilege(EntityBase):
             >>>                           id=[1,2,3,4,5])
         """
         if to_dictionary and to_dataframe:
-            helper.exception_handler(
-                "Please select either `to_dictionary=True` or `to_dataframe=True`, but not both.",
-                ValueError
+            raise ValueError(
+                "Please select either `to_dictionary=True` or `to_dataframe=True`,"
+                " but not both.",
             )
         objects = helper.fetch_objects(
-            connection=connection, api=security.get_privileges, limit=None, filters=filters
+            connection=connection,
+            api=security.get_privileges,
+            limit=None,
+            filters=filters,
         )
         if to_dictionary:
             return objects
@@ -126,6 +133,7 @@ class Privilege(EntityBase):
             users: list of `User` objects or names.
         """
         from mstrio.users_and_groups.user import User
+
         if isinstance(users, str):
             users = [User(self.connection, name=users)]
         elif isinstance(users, User):
@@ -142,6 +150,7 @@ class Privilege(EntityBase):
             users: list of `User` objects or names.
         """
         from mstrio.users_and_groups.user import User
+
         if isinstance(users, str):
             users = [User(self.connection, name=users)]
         elif isinstance(users, User):
@@ -184,7 +193,9 @@ class Privilege(EntityBase):
     @staticmethod
     def _validate_privileges(
         connection: Connection,
-        privileges: Union[Union["Privilege", int, str], List[Union["Privilege", int, str]]]
+        privileges: Union[
+            Union["Privilege", int, str], List[Union["Privilege", int, str]]
+        ],
     ) -> List[dict]:
         """This function validates if the privilege ID/Name/Object is valid and
         returns the IDs.
@@ -192,26 +203,36 @@ class Privilege(EntityBase):
         If invalid, raise ValueError.
         """
 
-        all_privileges = Privilege.list_privileges(connection=connection, to_dictionary=True)
+        all_privileges = Privilege.list_privileges(
+            connection=connection, to_dictionary=True
+        )
         validated = []
 
         privileges = privileges if isinstance(privileges, list) else [privileges]
 
         for privilege in privileges:
             is_str_name = type(privilege) == str and len(privilege) > 3
-            is_str_id = type(privilege) == str and len(privilege) > 0 and len(privilege) <= 3
-            is_int_id = isinstance(privilege, int) and privilege < 300 and privilege >= 0
+            is_str_id = (
+                type(privilege) == str and len(privilege) > 0 and len(privilege) <= 3
+            )
+            is_int_id = (
+                isinstance(privilege, int) and privilege < 300 and privilege >= 0
+            )
             privilege_ok = False
 
             if is_str_name:
                 temp_priv = helper.filter_list_of_dicts(all_privileges, name=privilege)
                 privilege_ok = bool(temp_priv)
             elif is_str_id or is_int_id:
-                temp_priv = helper.filter_list_of_dicts(all_privileges, id=str(privilege))
+                temp_priv = helper.filter_list_of_dicts(
+                    all_privileges, id=str(privilege)
+                )
                 privilege_ok = bool(temp_priv)
 
             if privilege_ok:
-                validated.append({'id': temp_priv[0]['id'], 'name': temp_priv[0]['name']})
+                validated.append(
+                    {'id': temp_priv[0]['id'], 'name': temp_priv[0]['name']}
+                )
             elif isinstance(privilege, Privilege):
                 validated.append({'id': privilege.id, 'name': privilege.name})
             else:
@@ -221,8 +242,8 @@ class Privilege(EntityBase):
                     + "EnumDSSXMLPrivilegeTypes.html"
                 )
                 msg = (
-                    f"'{privilege}' is not a valid privilege. Possible values can be found in "
-                    "EnumDSSXMLPrivilegeTypes: \n" + docs_url
+                    f"'{privilege}' is not a valid privilege. Possible values can be "
+                    f"found in EnumDSSXMLPrivilegeTypes: \n" + docs_url
                 )
                 helper.exception_handler(msg, exception_type=ValueError)
         return validated
@@ -268,4 +289,6 @@ class PrivilegeList:
 
     def to_dataframe(self):
         """Returns DataFrame with privileges."""
-        return DataFrame([[p.id, p.name, p.description, p.categories] for p in self.__privileges])
+        return DataFrame(
+            [[p.id, p.name, p.description, p.categories] for p in self.__privileges]
+        )

@@ -27,8 +27,7 @@ def method_version_handler(version):
                 connection_obj = conn[0]
             elif cls:
                 raise TypeError(
-                    f"{function.__name__}() "
-                    "missing required argument: 'connection'"
+                    f"{function.__name__}() " "missing required argument: 'connection'"
                 )
             else:
                 connection_obj = getattr(args[0], 'connection', None) or getattr(

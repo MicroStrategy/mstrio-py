@@ -56,7 +56,7 @@ class DimensionalityUnit(Dictable):
         'dimensionality_unit_type': DimensionalityUnitType,
         'filtering': Filtering,
         'aggregation': Aggregation,
-        'target': SchemaObjectReference.from_dict
+        'target': SchemaObjectReference.from_dict,
     }
 
     dimensionality_unit_type: DimensionalityUnitType
@@ -99,7 +99,8 @@ class Dimensionality(Dictable):
     """
 
     _FROM_DICT_MAP = {
-        'dimensionality_units': [DimensionalityUnit], 'prompt': SchemaObjectReference
+        'dimensionality_units': [DimensionalityUnit],
+        'prompt': SchemaObjectReference,
     }
 
     dimensionality_units: Optional[list[DimensionalityUnit]] = None
@@ -109,7 +110,10 @@ class Dimensionality(Dictable):
 
     @classmethod
     def from_dict(
-        cls, source: dict, connection: Optional['Connection'] = None, to_snake_case: bool = True
+        cls,
+        source: dict,
+        connection: Optional['Connection'] = None,
+        to_snake_case: bool = True,
     ):
         data = source.copy()
         data['dimensionality_units'] = data.get('dimty_units', [])

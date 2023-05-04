@@ -3,7 +3,7 @@ from enum import auto
 from typing import Optional, Union
 
 from mstrio.utils.enum_helper import AutoName, AutoUpperName
-from mstrio.utils.helper import camel_to_snake, Dictable, exception_handler
+from mstrio.utils.helper import Dictable, camel_to_snake, exception_handler
 
 
 class SendContentAs(AutoName):
@@ -28,6 +28,7 @@ class LegacyCacheType(AutoUpperName):
     """
     Available values when using environment with version 11.3.0100 or lower
     """
+
     RESERVED = auto()
     SHORTCUT = auto()
     SHORTCUTWITHBOOKMARK = auto()
@@ -57,7 +58,6 @@ class LibraryCacheTypes(AutoName):
 
 
 class DeliveryDictable(Dictable):
-
     VALIDATION_DICT = {}
 
     @classmethod
@@ -75,8 +75,8 @@ class DeliveryDictable(Dictable):
 
     def validate(self):
         """Validate whether all obligatory properties of the Delivery object
-            are present and whether all the properties present are of
-            correct types."""
+        are present and whether all the properties present are of
+        correct types."""
         for key, value in self.__dict__.items():
             vtype = self.VALIDATION_DICT[key][0]
             obligatory = self.VALIDATION_DICT[key][1]
@@ -85,10 +85,12 @@ class DeliveryDictable(Dictable):
                     "{} has incorrect type {}. Correct type is {}.".format(
                         key, type(value), vtype
                     ),
-                    TypeError
+                    TypeError,
                 )
             elif value is None and obligatory:
-                exception_handler(f"{key} is obligatory and cannot be empty.", ValueError)
+                exception_handler(
+                    f"{key} is obligatory and cannot be empty.", ValueError
+                )
 
 
 class ZipSettings(DeliveryDictable):
@@ -101,14 +103,16 @@ class ZipSettings(DeliveryDictable):
     """
 
     VALIDATION_DICT = {
-        "filename": [str, False], "password": [str, False], "password_protect": [bool, False]
+        "filename": [str, False],
+        "password": [str, False],
+        "password_protect": [bool, False],
     }
 
     def __init__(
         self,
         filename: Optional[str] = None,
         password: Optional[str] = None,
-        password_protect: bool = False
+        password_protect: bool = False,
     ):
         self.filename = filename
         self.password = password if password_protect else None
@@ -172,7 +176,7 @@ class Delivery(DeliveryDictable):
             "space_delimiter": [str, False],
             "send_content_as": [str, False],
             "overwrite_older_version": [bool, False],
-            "zip": [ZipSettings, False]
+            "zip": [ZipSettings, False],
         }
 
         def __init__(
@@ -183,7 +187,7 @@ class Delivery(DeliveryDictable):
             space_delimiter: Optional[str] = None,
             send_content_as: Optional[SendContentAs] = None,
             overwrite_older_version: bool = False,
-            zip: Optional[ZipSettings] = None
+            zip: Optional[ZipSettings] = None,
         ):
             self.subject = subject
             self.message = message
@@ -196,13 +200,17 @@ class Delivery(DeliveryDictable):
 
         def validate(self):
             """Validate whether all obligatory properties of the Delivery
-                object are present, whether all the properties present are
-                of correct types and whether the message and subject do
-                not exceed the charater limits."""
+            object are present, whether all the properties present are
+            of correct types and whether the message and subject do
+            not exceed the character limits."""
             if self.message and len(self.message) > 1000:
-                exception_handler("Message too long. Max message length is 1000 characters.")
+                exception_handler(
+                    "Message too long. Max message length is 1000 characters."
+                )
             if self.subject and len(self.subject) > 265:
-                exception_handler("Subject too long. Max subject length is 265 characters.")
+                exception_handler(
+                    "Subject too long. Max subject length is 265 characters."
+                )
             super().validate()
 
     class File(DeliveryDictable):
@@ -220,7 +228,7 @@ class Delivery(DeliveryDictable):
             "filename": [str, False],
             "space_delimiter": [str, False],
             "burst_sub_folder": [str, False],
-            "zip": [ZipSettings, False]
+            "zip": [ZipSettings, False],
         }
 
         def __init__(
@@ -228,7 +236,7 @@ class Delivery(DeliveryDictable):
             filename: Optional[str] = None,
             space_delimiter: Optional[str] = None,
             burst_sub_folder: Optional[str] = None,
-            zip: Optional[ZipSettings] = None
+            zip: Optional[ZipSettings] = None,
         ):
             self.filename = filename
             self.space_delimiter = space_delimiter
@@ -255,7 +263,7 @@ class Delivery(DeliveryDictable):
             "range_end": [int, False],
             "collated": [bool, False],
             "orientation": [str, False],
-            "use_print_range": [bool, False]
+            "use_print_range": [bool, False],
         }
 
         def __init__(
@@ -265,7 +273,7 @@ class Delivery(DeliveryDictable):
             range_end: Optional[int] = None,
             collated: bool = False,
             orientation: Orientation = Orientation.PORTRAIT.name,
-            use_print_range: bool = False
+            use_print_range: bool = False,
         ):
             self.copies = copies
             self.range_start = range_start
@@ -285,14 +293,16 @@ class Delivery(DeliveryDictable):
         """
 
         VALIDATION_DICT = {
-            "filename": [str, False], "space_delimiter": [str, False], "zip": [ZipSettings, False]
+            "filename": [str, False],
+            "space_delimiter": [str, False],
+            "zip": [ZipSettings, False],
         }
 
         def __init__(
             self,
             space_delimiter: Optional[str] = None,
             filename: Optional[str] = None,
-            zip: Optional[ZipSettings] = None
+            zip: Optional[ZipSettings] = None,
         ):
             self.space_delimiter = space_delimiter
             self.filename = filename
@@ -322,7 +332,7 @@ class Delivery(DeliveryDictable):
             shortcut_cache_format: ShortcutCacheFormat = ShortcutCacheFormat.RESERVED,
             library_cache_types: Optional[list[LibraryCacheTypes]] = None,
             reuse_dataset_cache: bool = False,
-            is_all_library_users: bool = False
+            is_all_library_users: bool = False,
         ):
             self.cache_type = cache_type
             self.shortcut_cache_format = shortcut_cache_format
@@ -349,7 +359,7 @@ class Delivery(DeliveryDictable):
             "device_id": [str, False],
             "do_not_create_update_caches": [bool, False],
             "overwrite_older_version": [bool, False],
-            "re_run_hl": [bool, False]
+            "re_run_hl": [bool, False],
         }
 
         def __init__(
@@ -358,7 +368,7 @@ class Delivery(DeliveryDictable):
             device_id: Optional[str] = None,
             do_not_create_update_caches: bool = False,
             overwrite_older_version: bool = False,
-            re_run_hl: bool = False
+            re_run_hl: bool = False,
         ):
             self.client_type = client_type
             self.device_id = device_id
@@ -383,7 +393,7 @@ class Delivery(DeliveryDictable):
             "device_id": [str, False],
             "do_not_create_update_caches": [bool, False],
             "overwrite_older_version": [bool, False],
-            "re_run_hl": [bool, False]
+            "re_run_hl": [bool, False],
         }
 
         def __init__(
@@ -391,7 +401,7 @@ class Delivery(DeliveryDictable):
             device_id: Optional[str] = None,
             do_not_create_update_caches: bool = False,
             overwrite_older_version: bool = False,
-            re_run_hl: bool = False
+            re_run_hl: bool = False,
         ):
             self.device_id = device_id
             self.do_not_create_update_caches = do_not_create_update_caches
@@ -401,6 +411,7 @@ class Delivery(DeliveryDictable):
     VALIDATION_DICT = {
         "mode": [str, True],
         "expiration": [str, False],
+        "expiration_time_zone": [str, False],
         "contact_security": [bool, False],
         "email": [Email, False],
         "file": [File, False],
@@ -408,7 +419,7 @@ class Delivery(DeliveryDictable):
         "ftp": [Ftp, False],
         "cache": [Cache, False],
         "mobile": [Mobile, False],
-        "history_list": [HistoryList, False]
+        "history_list": [HistoryList, False],
     }
 
     def __init__(
@@ -437,16 +448,20 @@ class Delivery(DeliveryDictable):
         device_id: Optional[str] = None,
         do_not_create_update_caches: bool = False,
         re_run_hl: bool = False,
+        expiration_time_zone: Optional[str] = None,
         email: Optional[Email] = None,
         file: Optional[File] = None,
         cache_type: Union[CacheType, str] = CacheType.RESERVED,
-        shortcut_cache_format: Union[ShortcutCacheFormat, str] = ShortcutCacheFormat.RESERVED,
-        library_cache_types: list[Union[LibraryCacheTypes,
-                                        str]] = [LibraryCacheTypes.WEB],  # noqa: E501
+        shortcut_cache_format: Union[
+            ShortcutCacheFormat, str
+        ] = ShortcutCacheFormat.RESERVED,
+        library_cache_types: list[Union[LibraryCacheTypes, str]] = [
+            LibraryCacheTypes.WEB
+        ],
         reuse_dataset_cache: bool = False,
         is_all_library_users: bool = False,
         notification_enabled: bool = False,
-        personal_notification_address_id: Optional[str] = None
+        personal_notification_address_id: Optional[str] = None,
     ):
         self.mode = mode
         if expiration:
@@ -455,11 +470,12 @@ class Delivery(DeliveryDictable):
                     "Expiration date must be later or equal to {}".format(
                         datetime.now().strftime("%Y-%m-%d")
                     ),
-                    ValueError
+                    ValueError,
                 )
             else:
                 self.expiration = expiration
         self.contact_security = contact_security
+        self.expiration_time_zone = expiration_time_zone
 
         if zip is None and compress:
             temp_zip = ZipSettings(filename, password, password_protect)
@@ -476,7 +492,7 @@ class Delivery(DeliveryDictable):
                 space_delimiter,
                 send_content_as,
                 overwrite_older_version,
-                temp_zip
+                temp_zip,
             )
         elif self.DeliveryMode(mode) == self.DeliveryMode.FILE:
             self.file = self.File(filename, space_delimiter, burst_sub_folder, temp_zip)
@@ -492,7 +508,7 @@ class Delivery(DeliveryDictable):
                 shortcut_cache_format,
                 library_cache_types,
                 reuse_dataset_cache,
-                is_all_library_users
+                is_all_library_users,
             )
         elif self.DeliveryMode(mode) == self.DeliveryMode.MOBILE:
             self.mobile = self.Mobile(
@@ -500,15 +516,20 @@ class Delivery(DeliveryDictable):
                 device_id,
                 do_not_create_update_caches,
                 overwrite_older_version,
-                re_run_hl
+                re_run_hl,
             )
         elif self.DeliveryMode(mode) == self.DeliveryMode.HISTORY_LIST:
             self.history_list = self.HistoryList(
-                device_id, do_not_create_update_caches, overwrite_older_version, re_run_hl
+                device_id,
+                do_not_create_update_caches,
+                overwrite_older_version,
+                re_run_hl,
             )
         if notification_enabled:
             self.notification_enabled = notification_enabled
-            self.personal_notification = {"address_id": personal_notification_address_id}
+            self.personal_notification = {
+                "address_id": personal_notification_address_id
+            }
 
     @classmethod
     def from_dict(cls, source, **kwargs):
@@ -517,7 +538,9 @@ class Delivery(DeliveryDictable):
         super(Delivery, obj).__init__()
         source = camel_to_snake(source)
         for key, value in source.items():
-            if not obj.change_mode(key, value):  # Change mode or set attr if its not mode param
+            if not obj.change_mode(
+                key, value
+            ):  # Change mode or set attr if its not mode param
                 setattr(obj, key, value)
         return obj
 

@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 
 class ParameterType(AutoName):
     """Enumeration constant indicating type of parameter"""
+
     CONSTANT = auto()
     OBJECT_REFERENCE = auto()
     EXPRESSION = auto()
@@ -25,6 +26,7 @@ class ParameterType(AutoName):
 
 class VariantType(AutoName):
     """Enumeration constant indicating type of value of a variant object"""
+
     INT32 = auto()
     INT64 = auto()
     DATE = auto()
@@ -47,7 +49,9 @@ class PredicateParameter(Dictable):
         return result
 
     @staticmethod
-    def dispatch(source, connection: Optional['Connection'] = None) -> Type['PredicateParameter']:
+    def dispatch(
+        source, connection: Optional['Connection'] = None
+    ) -> Type['PredicateParameter']:
         """Returns an appropriate PredicateParameter object from the
             provided source
 

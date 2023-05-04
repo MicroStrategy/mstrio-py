@@ -18,7 +18,7 @@ class CacheUpdateSubscription(Subscription):
         id: Optional[str] = None,
         subscription_id: Optional[str] = None,
         project_id: Optional[str] = None,
-        project_name: Optional[str] = None
+        project_name: Optional[str] = None,
     ):
         """Initialize CacheUpdateSubscription object, populates it with
         I-Server data if id or subscription_id is passed.
@@ -55,6 +55,7 @@ class CacheUpdateSubscription(Subscription):
         recipients: Optional[list[dict] | list[str]] = None,
         delivery: Optional[Delivery | dict] = None,
         delivery_expiration_date: Optional[str] = None,
+        delivery_expiration_timezone: Optional[str] = None,
         contact_security: bool = True,
         cache_cache_type: Optional[CacheType | str] = None,
         cache_shortcut_cache_format: Optional[ShortcutCacheFormat | str] = None,
@@ -89,6 +90,8 @@ class CacheUpdateSubscription(Subscription):
             delivery (Delivery | dict, optional): delivery object or dict
             delivery_expiration_date (str, optional): expiration date of the
                 subscription, format should be yyyy - MM - dd,
+            delivery_expiration_timezone (str, optional): expiration timezone
+                of the subscription, example value 'Europe/London'
             contact_security (bool): whether to use contact security for each
                 contact group member
             cache_cache_type (CacheType | str, optional):
@@ -105,6 +108,8 @@ class CacheUpdateSubscription(Subscription):
             delivery_personal_notification_address_id (str, optional):
                 Notification details
         """
+        notification_address_id = delivery_personal_notification_address_id
+
         return super()._Subscription__create(
             connection=connection,
             name=name,
@@ -121,15 +126,17 @@ class CacheUpdateSubscription(Subscription):
             delivery=delivery,
             delivery_mode=Delivery.DeliveryMode.CACHE,
             delivery_expiration_date=delivery_expiration_date,
+            delivery_expiration_timezone=delivery_expiration_timezone,
             contact_security=contact_security,
             cache_cache_type=cache_cache_type or CacheType.RESERVED,
             cache_shortcut_cache_format=cache_shortcut_cache_format
             or ShortcutCacheFormat.RESERVED,
-            cache_library_cache_types=cache_library_cache_types or [LibraryCacheTypes.WEB],
+            cache_library_cache_types=cache_library_cache_types
+            or [LibraryCacheTypes.WEB],
             cache_reuse_dataset_cache=cache_reuse_dataset_cache,
             cache_is_all_library_users=cache_is_all_library_users,
             delivery_notification_enabled=delivery_notification_enabled,
-            delivery_personal_notification_address_id=delivery_personal_notification_address_id,
+            delivery_personal_notification_address_id=notification_address_id,
         )
 
     def alter(
@@ -146,6 +153,7 @@ class CacheUpdateSubscription(Subscription):
         delivery: Optional[Delivery | dict] = None,
         custom_msg: Optional[str] = None,
         delivery_expiration_date: Optional[str] = None,
+        delivery_expiration_timezone: Optional[str] = None,
         contact_security: bool = True,
         cache_cache_type: Optional[CacheType | str] = None,
         cache_shortcut_cache_format: Optional[ShortcutCacheFormat | str] = None,
@@ -177,6 +185,8 @@ class CacheUpdateSubscription(Subscription):
             delivery (Delivery | dict, optional): delivery object or dict
             delivery_expiration_date (str, optional): expiration date of the
                 subscription, format should be yyyy - MM - dd,
+            delivery_expiration_timezone (str, optional): expiration timezone
+                of the subscription
             contact_security (bool): whether to use contact security for each
                 contact group member
             cache_cache_type (CacheType | str, optional):
@@ -193,6 +203,8 @@ class CacheUpdateSubscription(Subscription):
             delivery_personal_notification_address_id (str, optional):
                 Notification details
         """
+        notification_address_id = delivery_personal_notification_address_id
+
         return super().alter(
             name=name,
             allow_delivery_changes=allow_delivery_changes,
@@ -206,13 +218,15 @@ class CacheUpdateSubscription(Subscription):
             delivery=delivery,
             custom_msg=custom_msg,
             delivery_expiration_date=delivery_expiration_date,
+            delivery_expiration_timezone=delivery_expiration_timezone,
             contact_security=contact_security,
             cache_cache_type=cache_cache_type or CacheType.RESERVED,
             cache_shortcut_cache_format=cache_shortcut_cache_format
             or ShortcutCacheFormat.RESERVED,
-            cache_library_cache_types=cache_library_cache_types or [LibraryCacheTypes.WEB],
+            cache_library_cache_types=cache_library_cache_types
+            or [LibraryCacheTypes.WEB],
             cache_reuse_dataset_cache=cache_reuse_dataset_cache,
             cache_is_all_library_users=cache_is_all_library_users,
             delivery_notification_enabled=delivery_notification_enabled,
-            delivery_personal_notification_address_id=delivery_personal_notification_address_id
+            delivery_personal_notification_address_id=notification_address_id,
         )

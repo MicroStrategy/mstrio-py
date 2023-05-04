@@ -25,6 +25,7 @@ class PredicateNode(ExpressionNode):
             printable characters can be used as a predicate.
         predicate_text: Text representation of a predicate
     """
+
     predicate_id: Optional[str] = None
     predicate_text: Optional[str] = None
 
@@ -41,12 +42,17 @@ class PredicateNode(ExpressionNode):
 
     @classmethod
     def from_dict(
-        cls, source: dict, connection: Optional['Connection'] = None, to_snake_case: bool = True
+        cls,
+        source: dict,
+        connection: Optional['Connection'] = None,
+        to_snake_case: bool = True,
     ) -> Type['PredicateNode']:
         data = camel_to_snake(source) if to_snake_case else source.copy()
         # get a dict under predicate_tree attribute to unpack it
         predicate_tree = data.pop('predicate_tree')
-        return super().from_dict({**data, **predicate_tree}, connection, to_snake_case=False)
+        return super().from_dict(
+            {**data, **predicate_tree}, connection, to_snake_case=False
+        )
 
     def _get_node_data(self):
         """Return dictionary that contains data unique to particular predicate
@@ -161,6 +167,7 @@ class MetricPredicate(PredicateNode):
         """Enumeration constant that describes how the metric is used
         within the predicate.
         """
+
         VALUE = auto()
         RANK_DESCEND = auto()
         RANK_ASCEND = auto()
@@ -195,11 +202,15 @@ class MetricPredicate(PredicateNode):
             'predicate_tree': {
                 'function': self.function.value,
                 'parameters': [item.to_dict() for item in self.parameters],
-                'level': [item.to_dict() for item in self.level] if self.level else None,
+                'level': [item.to_dict() for item in self.level]
+                if self.level
+                else None,
                 'level_type': self.level_type,
                 'metric': self.metric.to_dict(),
                 'metric_function': self.metric_function.value,
-                'break_by': [item.to_dict() for item in self.break_by] if self.break_by else None,
+                'break_by': [item.to_dict() for item in self.break_by]
+                if self.break_by
+                else None,
                 'null_include': self.null_include,
                 'is_independent': self.is_independent.value,
             }
@@ -300,7 +311,9 @@ class SetFromRelationshipPredicate(PredicateNode):
                 'guide': self.guide.to_dict() if self.guide else None,
                 'is_independent': self.is_independent.value,
             },
-            'children': [item.to_dict() for item in self.children] if self.children else None,
+            'children': [item.to_dict() for item in self.children]
+            if self.children
+            else None,
         }
 
         return delete_none_values(result, recursion=True)
@@ -343,7 +356,10 @@ class JointElementListPredicate(PredicateNode):
         return {
             'predicate_tree': {
                 'level': [item.to_dict() for item in self.level],
-                'tuples': [[item.to_dict() for item in tuple_item] for tuple_item in self.tuples],
+                'tuples': [
+                    [item.to_dict() for item in tuple_item]
+                    for tuple_item in self.tuples
+                ],
             },
         }
 
@@ -381,6 +397,7 @@ class ElementListPredicate(PredicateNode):
         """Enumeration constant that describes what functions can be used
         within ElementListPredicate
         """
+
         IN = auto()
         NOT_IN = auto()
 
@@ -402,9 +419,12 @@ class ElementListPredicate(PredicateNode):
         result = {
             'predicate_tree': {
                 'attribute': self.attribute.to_dict() if self.attribute else None,
-                'elements': [item.to_dict() for item in self.elements] if self.elements else None,
+                'elements': [item.to_dict() for item in self.elements]
+                if self.elements
+                else None,
                 'elements_prompt': self.elements_prompt.to_dict()
-                if self.elements_prompt else None,  # noqa
+                if self.elements_prompt
+                else None,  # noqa
                 'function': self.function.value,
             }
         }
@@ -478,7 +498,7 @@ class AttributeFormPredicate(PredicateNode):
         'parameters': [PredicateParameter.dispatch],
         'attribute': SchemaObjectReference,
         'form': SchemaObjectReference,
-        'function': Function
+        'function': Function,
     }
     _ALLOW_NONE_ATTRIBUTES = ['parameters']
 
@@ -674,6 +694,7 @@ class Operator(ExpressionNode):
         """Enumeration value indicating how the predicate's level should be
         determined
         """
+
         NONE = auto()
         METRIC_LEVEL = auto()
         GRID_LEVEL = auto()
@@ -751,6 +772,7 @@ class ObjectReference(ExpressionNode):
         """Enumeration constant that specify how to merge multiple answers
         if the predicate's value is obtained via a prompt.
         """
+
         AND = auto()
         OR = auto()
 
@@ -866,6 +888,7 @@ class ExpressionFormShortcut(ExpressionNode):
             qualification. When set it will override the user's personal data
             locale preference.
     """
+
     _TYPE = NodeType.FORM_SHORTCUT
     _FROM_DICT_MAP = {
         **ExpressionNode._FROM_DICT_MAP,
@@ -935,6 +958,7 @@ class ExpressionRelationship(ExpressionNode):
             We use a list so that this value matches the list value of the
             same name used in an operator node.
     """
+
     _TYPE = NodeType.RELATIONSHIP
     _FROM_DICT_MAP = {
         **ExpressionNode._FROM_DICT_MAP,
@@ -981,6 +1005,7 @@ class BandingPredicate(PredicateNode):
         """Enumeration constant used to specify function used to slice
         metric values into bands
         """
+
         VALUE = auto()
         RANK_DESCEND = auto()
         PERCENTILE_DESCEND = auto()
@@ -1105,10 +1130,12 @@ class BandingPointsPredicate(BandingPredicate):
 
     def _get_node_data(self):
         result = self._get_banding_common_data()
-        result['predicate_tree'].update({
-            'points': self.points,
-            'band_names': self.band_names,
-        })
+        result['predicate_tree'].update(
+            {
+                'points': self.points,
+                'band_names': self.band_names,
+            }
+        )
 
         return result
 

@@ -14,7 +14,7 @@ from mstrio.modeling.schema.helpers import (
     PhysicalTableType,
     TableColumn,
     TableColumnMergeOption,
-    TablePrefixOption
+    TablePrefixOption,
 )
 from mstrio.modeling.schema.table.physical_table import PhysicalTable
 from mstrio.object_management import Folder
@@ -29,7 +29,7 @@ from mstrio.utils.helper import (
     fetch_objects,
     get_args_from_func,
     get_default_args_from_func,
-    get_valid_project_id
+    get_valid_project_id,
 )
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
@@ -49,7 +49,7 @@ def list_logical_tables(
     project_id: Optional[str] = None,
     project_name: Optional[str] = None,
     filters: Optional[dict] = None,
-    limit: Optional[int] = None
+    limit: Optional[int] = None,
 ) -> list["LogicalTable"] | list[dict]:
     """List all logical tables in a project mapped to a specified connection.
        Optionally, you can filter by physical table type.
@@ -68,8 +68,11 @@ def list_logical_tables(
             Defaults to False.
         table_type(PhysicalTableType, optional): If specified, returns a list
             of logical tables with physical table with this type.
-        filters: dict that specifies filter expressions. Available filters are
-            `name`, `folder_id`, `folder_name`, `project_id` and `project_name`
+        filters: dict that specifies filter expressions. Only used if a name,
+            folder_id, folder_name, project_id or project_name are provided.
+            Available filters are:
+            ['date_created', 'date_modified', 'version_id', 'acg',
+             'primary_locale', 'sub_type', 'name', 'id']
         limit: limit the number of elements returned. If `None` (default), all
             objects are returned.
 
@@ -86,7 +89,7 @@ def list_logical_tables(
             folder_name=folder_name,
             project_id=project_id,
             project_name=project_name,
-            limit=limit
+            limit=limit,
         )
     else:
         if table_type:
@@ -120,8 +123,12 @@ def list_logical_tables(
                 fields="information",
             )
 
-        return logical_tables if to_dictionary else LogicalTable.bulk_from_dict(
-            source_list=logical_tables, connection=connection
+        return (
+            logical_tables
+            if to_dictionary
+            else LogicalTable.bulk_from_dict(
+                source_list=logical_tables, connection=connection
+            )
         )
 
 
@@ -133,7 +140,7 @@ def _full_search_logical_tables(
     project_id: Optional[str] = None,
     project_name: Optional[str] = None,
     limit: Optional[int] = None,
-    to_dictionary: bool = False
+    to_dictionary: bool = False,
 ) -> list[type["LogicalTable"]] | list[dict]:
     """Searches for a logical table in a specified project. You can narrow the
        search result by folder's id or name.
@@ -189,11 +196,17 @@ def _full_search_logical_tables(
             connection=connection,
             project=project_id,
             object_types=ObjectTypes.FOLDER,
-            limit=limit
+            limit=limit,
         )
-        folder = next(filter(lambda _folder: _folder.get("name") == folder_name, folders), None)
-        folder_id = folder["id"] if folder else exception_handler(
-            'Folder with a given name was not found.', exception_type=ValueError
+        folder = next(
+            filter(lambda _folder: _folder.get("name") == folder_name, folders), None
+        )
+        folder_id = (
+            folder["id"]
+            if folder
+            else exception_handler(
+                'Folder with a given name was not found.', exception_type=ValueError
+            )
         )
 
     logical_tables = full_search(
@@ -202,10 +215,14 @@ def _full_search_logical_tables(
         project=project_id,
         object_types=ObjectTypes.TABLE,
         root=folder_id,
+        limit=limit,
     )
     return (
-        logical_tables if to_dictionary else
-        LogicalTable.bulk_from_dict(source_list=logical_tables, connection=connection)
+        logical_tables
+        if to_dictionary
+        else LogicalTable.bulk_from_dict(
+            source_list=logical_tables, connection=connection
+        )
     )
 
 
@@ -220,13 +237,15 @@ def list_changeset_tables(
 ) -> list[type["LogicalTable"]]:
     # Changeset must be specified
     if not changeset_id:
-        exception_handler(msg="You must specify changeset ID.", exception_type=ValueError)
+        exception_handler(
+            msg="You must specify changeset ID.", exception_type=ValueError
+        )
 
     project_id = get_valid_project_id(
         connection=connection,
         project_id=project_id,
         project_name=project_name,
-        with_fallback=False if project_name else True
+        with_fallback=False if project_name else True,
     )
 
     tables_list = fetch_objects(
@@ -380,6 +399,7 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
             "name",
             "description",
             "logical_size",
+            "is_logical_size_locked",
             "is_true_key",
             "primary_data_source",
             "enclose_sql_in_parentheses",
@@ -392,7 +412,7 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
         "name": str,
         "description": str,
         "logical_size": int,
-        "is_logical_size_locked": str,
+        "is_logical_size_locked": bool,
         "is_true_key": bool,
         "primary_data_source": dict,
         "enclose_sql_in_parentheses": bool,
@@ -447,7 +467,7 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
             connection=connection,
             project_id=project_id,
             project_name=project_name,
-            with_fallback=False if project_name else True
+            with_fallback=False if project_name else True,
         )
 
         if not id and not name:
@@ -476,7 +496,8 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
         attributes = kwargs.get("attributes")
         self.attributes = (
             Attribute.bulk_from_dict(source_list=attributes, connection=self.connection)
-            if attributes else None
+            if attributes
+            else None
         )
 
         ancestors = kwargs.get("ancestors")
@@ -487,7 +508,9 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
         if facts:
             [f.update(f.pop("information")) for f in facts]
         self.facts = (
-            Fact.bulk_from_dict(source_list=facts, connection=self.connection) if facts else None
+            Fact.bulk_from_dict(source_list=facts, connection=self.connection)
+            if facts
+            else None
         )
         self.is_logical_size_locked = kwargs.get("is_logical_size_locked")
         self.is_part_of_partition = kwargs.get("is_part_of_partition")
@@ -497,13 +520,15 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
         physical_table = kwargs.get("physical_table")
         self.physical_table = (
             PhysicalTable.from_dict(source=physical_table, connection=self.connection)
-            if physical_table else None
+            if physical_table
+            else None
         )
 
         primary_data_source = kwargs.get("primary_data_source")
         self.primary_data_source = (
             SchemaObjectReference.from_dict(source=primary_data_source)
-            if primary_data_source else None
+            if primary_data_source
+            else None
         )
         self.primary_locale = kwargs.get("primary_locale")
 
@@ -511,7 +536,9 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
         self.secondary_data_sources = (
             SchemaObjectReference.bulk_from_dict(
                 source_list=secondary_data_sources, connection=self.connection
-            ) if secondary_data_sources else None
+            )
+            if secondary_data_sources
+            else None
         )
 
         sub_type = kwargs.get("sub_type")
@@ -521,7 +548,9 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
         self.table_key = (
             SchemaObjectReference.bulk_from_dict(
                 source_list=table_key, connection=self.connection
-            ) if table_key else None
+            )
+            if table_key
+            else None
         )
         self._version = kwargs.get("version_id")
 
@@ -547,7 +576,9 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
         is_true_key: Optional[bool] = None,
         enclose_sql_in_parentheses: Optional[bool] = None,
         check_secondary_data_source_table: Optional[bool] = None,
-        column_merge_option: Optional[TableColumnMergeOption] = TableColumnMergeOption.REUSE_ANY,
+        column_merge_option: Optional[
+            TableColumnMergeOption
+        ] = TableColumnMergeOption.REUSE_ANY,
         table_prefix_option: Optional[TablePrefixOption] = None,
     ) -> type["LogicalTable"]:
         """Create a new table in a specific project.
@@ -643,26 +674,30 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
                     table_name="New Table", table_description="New Description",
                     sub_type=ObjectSubType.LOGICAL_TABLE))
         """
-        if physical_table and any([
+        if physical_table and any(
+            [
                 physical_table_name,
                 physical_table_namespace,
                 physical_table_prefix,
                 sql_statement,
                 columns,
-        ]):
+            ]
+        ):
             msg = (
-                "You can either pass the `physical table` object or specify parameters related "
-                "to the physical table, not both."
+                "You can either pass the `physical table` object or specify "
+                "parameters related to the physical table, not both."
             )
             exception_handler(msg, exception_type=ValueError)
 
         physical_table = (
             PhysicalTable(connection=connection, id=physical_table.get("id"))
-            if isinstance(physical_table, dict) else physical_table
+            if isinstance(physical_table, dict)
+            else physical_table
         )
 
-        if get_enum_val(getattr(physical_table, "table_type", physical_table_type)
-                        ) == get_enum_val(PhysicalTableType.WAREHOUSE_PARTITION):
+        if get_enum_val(
+            getattr(physical_table, "table_type", physical_table_type)
+        ) == get_enum_val(PhysicalTableType.WAREHOUSE_PARTITION):
             exception_handler(
                 msg="Warehouse Partition tables are not supported.",
                 exception_type=TypeError,
@@ -677,7 +712,8 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
 
         primary_data_source = (
             primary_data_source.to_dict()
-            if isinstance(primary_data_source, SchemaObjectReference) else primary_data_source
+            if isinstance(primary_data_source, SchemaObjectReference)
+            else primary_data_source
         )
 
         physical_table = {
@@ -687,9 +723,14 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
             ),
             "tableName": getattr(physical_table, "table_name", physical_table_name),
             "namespace": getattr(physical_table, "namespace", physical_table_namespace),
-            "tablePrefix": getattr(physical_table, "table_prefix", physical_table_prefix),
-            "columns": [col.to_dict() if isinstance(col, TableColumn) else col for col in cols] if
-            (cols := getattr(physical_table, "columns", columns)) else None,
+            "tablePrefix": getattr(
+                physical_table, "table_prefix", physical_table_prefix
+            ),
+            "columns": [
+                col.to_dict() if isinstance(col, TableColumn) else col for col in cols
+            ]
+            if (cols := getattr(physical_table, "columns", columns))
+            else None,
             "sqlStatement": getattr(physical_table, "sql_statement", sql_statement),
         }
 
@@ -699,7 +740,8 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
                 "description": table_description,
                 "subType": get_enum_val(sub_type, ObjectSubType),
                 "destinationFolderId": destination_folder.id
-                if isinstance(destination_folder, Folder) else destination_folder,
+                if isinstance(destination_folder, Folder)
+                else destination_folder,
                 "isEmbedded": is_embedded,
             },
             "logicalSize": logical_size,
@@ -715,7 +757,9 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
             connection=connection,
             data=body,
             check_secondary_data_source_table=check_secondary_data_source_table,
-            column_merge_option=get_enum_val(column_merge_option, TableColumnMergeOption),
+            column_merge_option=get_enum_val(
+                column_merge_option, TableColumnMergeOption
+            ),
             table_prefix_option=get_enum_val(table_prefix_option, TablePrefixOption),
         ).json()
 
@@ -767,7 +811,9 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
         description: Optional[str] = None,
         is_logical_size_locked: Optional[bool] = None,
         primary_data_source: Optional[SchemaObjectReference] = None,
-        secondary_data_sources: Optional[list[SchemaObjectReference] | list[dict]] = None,
+        secondary_data_sources: Optional[
+            list[SchemaObjectReference] | list[dict]
+        ] = None,
         physical_table_object_name: Optional[str] = None,
         physical_table_name: Optional[str] = None,
         physical_table_prefix: Optional[str] = None,
@@ -845,7 +891,7 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
         func = self.alter
         args = get_args_from_func(func)
         defaults = get_default_args_from_func(func)
-        default_dict = dict(zip(args[-len(defaults):], defaults)) if defaults else {}
+        default_dict = dict(zip(args[-len(defaults) :], defaults)) if defaults else {}
         local = locals()
         properties = {}
         for property_key in default_dict.keys():
@@ -853,30 +899,32 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
                 properties[property_key] = local[property_key]
 
         physical_table_type = self.physical_table.table_type
-        if physical_table_type == PhysicalTableType.NORMAL and (sql_statement or columns):
+        if physical_table_type == PhysicalTableType.NORMAL and (
+            sql_statement or columns
+        ):
             exception_handler(
                 msg=(
-                    "You cannot change `sql_statement` nor `columns` attributes when a logical"
-                    " table depends upon a normal physical table."
+                    "You cannot change `sql_statement` nor `columns` attributes when "
+                    "a logical table depends upon a normal physical table."
                 ),
                 exception_type=TypeError,
             )
-        elif physical_table_type == PhysicalTableType.SQL and (physical_table_prefix
-                                                               or physical_table_name):
+        elif physical_table_type == PhysicalTableType.SQL and (
+            physical_table_prefix or physical_table_name
+        ):
             exception_handler(
                 msg=(
-                    "You cannot change `physical_table_name` nor `physical_table_prefix` when"
-                    "a logical table depends upon a freeform sql physical table."
+                    "You cannot change `physical_table_name` nor "
+                    "`physical_table_prefix` when a logical table depends upon "
+                    "a freeform sql physical table."
                 ),
                 exception_type=TypeError,
             )
 
         physical_table = (
-            {
-                "information": {
-                    "name": properties.pop("physical_table_object_name")
-                }
-            } if properties.get("physical_table_object_name") else {}
+            {"information": {"name": properties.pop("physical_table_object_name")}}
+            if properties.get("physical_table_object_name")
+            else {}
         )
         physical_table.update(
             {
@@ -886,7 +934,9 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
                 "columns": properties.pop("columns", None),
             }
         )
-        properties["physical_table"] = delete_none_values(physical_table, recursion=True)
+        properties["physical_table"] = delete_none_values(
+            physical_table, recursion=True
+        )
 
         self._alter_properties(**properties)
 
@@ -924,7 +974,8 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
         if res.ok:
             data = res.json().get("physicalTable")
             logger.info(
-                f"Successfully modified a structure of a physical table '{data.get('tableName')}' "
+                f"Successfully modified a structure of a physical table '"
+                f"{data.get('tableName')}' "
                 f"with ID: '{data.get('information').get('objectId')}' "
                 f"in a '{data.get('namespace')}' namespace "
                 f"with a '{data.get('tablePrefix')}' table prefix."
@@ -947,10 +998,17 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
         """
         col_merge_option = get_enum(col_merge_option, TableColumnMergeOption)
         logical_tables = list_logical_tables(connection)
-        with tqdm(total=len(logical_tables), desc="Updating structures...") as progress_bar:
+        with tqdm(
+            total=len(logical_tables), desc="Updating structures..."
+        ) as progress_bar:
             for table in logical_tables:
-                if (table.physical_table.table_type != PhysicalTableType.WAREHOUSE_PARTITION):
-                    table.update_physical_table_structure(col_merge_option=col_merge_option)
+                if (
+                    table.physical_table.table_type
+                    != PhysicalTableType.WAREHOUSE_PARTITION
+                ):
+                    table.update_physical_table_structure(
+                        col_merge_option=col_merge_option
+                    )
                 progress_bar.update()
 
     def __validate_physical_table_type(self) -> bool:

@@ -48,11 +48,12 @@ class ErrorHandler:
         self._err_msg = err_msg
 
     def __call__(self, func: Callable[[Any], Any]):
-
         @wraps(func)
         def inner(*args, **kwargs):
             response = func(*args, **kwargs)
-            error_msg = kwargs.get("error_msg") if kwargs.get("error_msg") else self._err_msg
+            error_msg = (
+                kwargs.get("error_msg") if kwargs.get("error_msg") else self._err_msg
+            )
             if not response.ok:
                 handler_kwargs = self._get_resp_handler_kwargs(kwargs)
                 error_msg = self._replace_with_values(error_msg, func, *args, **kwargs)

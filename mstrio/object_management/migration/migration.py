@@ -1,15 +1,19 @@
-from enum import auto, Enum
 import logging
+from enum import Enum, auto
 from pathlib import Path
-from typing import Callable, List, Optional, Union
+from typing import Callable, Optional
 
 from mstrio import config
 from mstrio.api.exceptions import VersionException
 from mstrio.connection import Connection
-from mstrio.object_management.migration.package import Package, PackageConfig, PackageImport
+from mstrio.object_management.migration.package import (
+    Package,
+    PackageConfig,
+    PackageImport,
+)
 from mstrio.utils.helper import Dictable, exception_handler
 from mstrio.utils.progress_bar_mixin import ProgressBarMixin
-from mstrio.utils.wip import module_wip, WipLevels
+from mstrio.utils.wip import WipLevels, module_wip
 
 module_wip(globals(), level=WipLevels.PREVIEW)
 
@@ -76,7 +80,7 @@ class Migration(Dictable, ProgressBarMixin):
         target_connection: Optional[Connection] = None,
         custom_package_path: Optional[str] = None,
         name: Optional[str] = None,
-        create_undo: bool = True
+        create_undo: bool = True,
     ):
         if not self._validate_envs_version(source_connection, target_connection):
             exception_handler(
@@ -84,7 +88,7 @@ class Migration(Dictable, ProgressBarMixin):
                     "Environments must run IServer version 11.3.0200 or newer. "
                     "Please update your environments to use this feature."
                 ),
-                exception_type=VersionException
+                exception_type=VersionException,
             )
         self.name = name
         self.source_connection = source_connection
@@ -100,8 +104,9 @@ class Migration(Dictable, ProgressBarMixin):
         self._package_import = None
         self._undo_binary = None
 
-        if custom_package_path and self._check_file_path(custom_package_path,
-                                                         "custom_package_path"):
+        if custom_package_path and self._check_file_path(
+            custom_package_path, "custom_package_path"
+        ):
             self.save_path = custom_package_path
             filename, file_extension = self._decompose_file_path(custom_package_path)
             with open(f"{filename}{file_extension}", "rb") as f:
@@ -114,8 +119,11 @@ class Migration(Dictable, ProgressBarMixin):
         source_connection: Connection, target_connection: Connection
     ) -> bool:
         return (
-            (source_connection is None or source_connection._iserver_version >= '11.3.0200')
-            and (target_connection is None or target_connection._iserver_version >= '11.3.0200')
+            source_connection is None
+            or source_connection._iserver_version >= '11.3.0200'
+        ) and (
+            target_connection is None
+            or target_connection._iserver_version >= '11.3.0200'
         )
 
     @staticmethod
@@ -134,36 +142,43 @@ class Migration(Dictable, ProgressBarMixin):
             return True
         else:
             exception_handler(
-                msg=f"Invalid save path. Parent directory specified in `{var_name}` is incorrect.",
-                exception_type=AttributeError
+                msg=f"Invalid save path. Parent directory specified in `{var_name}` is"
+                f" incorrect.",
+                exception_type=AttributeError,
             )
 
     def perform_full_migration(self) -> bool:
         """Perform 'create_package()' and 'migrate_package()' using
         configuration provided when creating `Migration` object.
         """
-        if not isinstance(self.source_connection, Connection) or self.source_connection is None:
+        if (
+            not isinstance(self.source_connection, Connection)
+            or self.source_connection is None
+        ):
             exception_handler(
                 msg=(
                     "Migration object missing `source_connection`. "
                     "`perform_full_migration()` unavailable."
                 ),
-                exception_type=AttributeError
+                exception_type=AttributeError,
             )
-        if not isinstance(self.target_connection, Connection) or self.target_connection is None:
+        if (
+            not isinstance(self.target_connection, Connection)
+            or self.target_connection is None
+        ):
             exception_handler(
                 msg=(
                     "Migration object missing `target_connection`. "
                     "`perform_full_migration()` unavailable."
                 ),
-                exception_type=AttributeError
+                exception_type=AttributeError,
             )
 
         self._display_progress_bar(
             desc='Migration status: ',
             unit='Migration',
             total=4,
-            bar_format='{desc} |{bar:50}| {percentage:3.0f}%'
+            bar_format='{desc} |{bar:50}| {percentage:3.0f}%',
         )
 
         if not self.create_package():
@@ -183,24 +198,32 @@ class Migration(Dictable, ProgressBarMixin):
         Raises AttributeError if `source_connection` is not specified.
 
         Raises FileExistsError if a package or undo package with the same name
-        already exist at`save_path` location. """
-        if not isinstance(self.source_connection, Connection) or self.source_connection is None:
+        already exist at`save_path` location."""
+        if (
+            not isinstance(self.source_connection, Connection)
+            or self.source_connection is None
+        ):
             exception_handler(
-                msg=("Migration object does not have `source_connection`. Import unavailable."),
-                exception_type=AttributeError
+                msg=(
+                    "Migration object does not have `source_connection`. Import "
+                    "unavailable."
+                ),
+                exception_type=AttributeError,
             )
 
         filename, file_extension = self._decompose_file_path(self.save_path)
         """File existence checked here instead of using "xb" mode in context
         manager to avoid creation of package if it should not be saved"""
-        if Path(f"{filename}{file_extension}").exists() or Path(f"{filename}_undo{file_extension}"
-                                                                ).exists():
+        if (
+            Path(f"{filename}{file_extension}").exists()
+            or Path(f"{filename}_undo{file_extension}").exists()
+        ):
             exception_handler(
                 msg=(
                     "Migration file / undo package with this name already exists."
                     "Please use other location / filename in `save_path` parameter."
                 ),
-                exception_type=FileExistsError
+                exception_type=FileExistsError,
             )
 
         self.__private_status = MigrationStatus.CREATING_PACKAGE
@@ -216,7 +239,9 @@ class Migration(Dictable, ProgressBarMixin):
         self.__private_status = MigrationStatus.CREATING_PACKAGE_COMPLETED
         return True
 
-    def migrate_package(self, custom_package_path: Optional[str] = None, is_undo=False) -> bool:
+    def migrate_package(
+        self, custom_package_path: Optional[str] = None, is_undo=False
+    ) -> bool:
         """Performs migration of already created package to the target
         environment. Import package will be loaded from `custom_package_path`.
         If `custom_package_path` not provided, the object previously acquired
@@ -227,25 +252,36 @@ class Migration(Dictable, ProgressBarMixin):
         Raises AttributeError if `target_connection` is not specified.
         """
 
-        if not isinstance(self.target_connection, Connection) or self.target_connection is None:
+        if (
+            not isinstance(self.target_connection, Connection)
+            or self.target_connection is None
+        ):
             exception_handler(
-                msg=("Migration object does not have `target_connection`. "
-                     "Export unavailable."),
-                exception_type=AttributeError
+                msg=(
+                    "Migration object does not have `target_connection`. "
+                    "Export unavailable."
+                ),
+                exception_type=AttributeError,
             )
 
-        if custom_package_path and self._check_file_path(custom_package_path,
-                                                         "custom_package_path"):
+        if custom_package_path and self._check_file_path(
+            custom_package_path, "custom_package_path"
+        ):
             self.save_path = custom_package_path
             filename, file_extension = self._decompose_file_path(custom_package_path)
             with open(f"{filename}{file_extension}", "rb") as f:
                 return self._migrate_package(f.read(), is_undo=is_undo)
         return self._migrate_package(
-            self._package_binary, custom_package_path=custom_package_path, is_undo=is_undo
+            self._package_binary,
+            custom_package_path=custom_package_path,
+            is_undo=is_undo,
         )
 
     def _migrate_package(
-        self, binary: bytes, is_undo: bool = False, custom_package_path: Optional[str] = None
+        self,
+        binary: bytes,
+        is_undo: bool = False,
+        custom_package_path: Optional[str] = None,
     ) -> bool:
         if binary is None:
             exception_handler(
@@ -253,7 +289,7 @@ class Migration(Dictable, ProgressBarMixin):
                     "Import package is None. Run `create_package()` first, "
                     "or specify `custom_package_path`."
                 ),
-                exception_type=AttributeError
+                exception_type=AttributeError,
             )
 
         self.__private_status = MigrationStatus.MIGRATION_IN_PROGRESS
@@ -270,7 +306,7 @@ class Migration(Dictable, ProgressBarMixin):
             self._save_package_binary_locally(
                 filename=f"{filename}_undo",
                 file_extension=file_extension,
-                _bytes=self.undo_binary
+                _bytes=self.undo_binary,
             )
 
         self._delete_package_holder()
@@ -298,7 +334,9 @@ class Migration(Dictable, ProgressBarMixin):
         self.__private_status = MigrationStatus.UNDO_COMPLETED
 
     def _create_package_holder(self, conn: Connection):
-        self._package = Package.create(conn, progress_bar=self._progress_bar is not None)
+        self._package = Package.create(
+            conn, progress_bar=self._progress_bar is not None
+        )
 
     def _update_package_holder(self):
         return self._package.update_config(self.configuration)
@@ -309,7 +347,9 @@ class Migration(Dictable, ProgressBarMixin):
         )
 
     def _upload_package_binary(self, binary: bytes):
-        self._package.upload_package_binary(binary, progress_bar=self._progress_bar is not None)
+        self._package.upload_package_binary(
+            binary, progress_bar=self._progress_bar is not None
+        )
 
     def _delete_package_holder(self):
         self._package.delete(force=True)
@@ -317,7 +357,10 @@ class Migration(Dictable, ProgressBarMixin):
 
     def _create_import(self, conn: Connection) -> bool:
         self._package_import = PackageImport.create(
-            conn, self.package.id, self.create_undo, progress_bar=self._progress_bar is not None
+            conn,
+            self.package.id,
+            self.create_undo,
+            progress_bar=self._progress_bar is not None,
         )
         if self._package_import is False:
             return False
@@ -332,10 +375,14 @@ class Migration(Dictable, ProgressBarMixin):
             progress_bar=self._progress_bar is not None
         )
 
-    def _save_package_binary_locally(self, filename: str, file_extension: str, _bytes: bytes):
+    def _save_package_binary_locally(
+        self, filename: str, file_extension: str, _bytes: bytes
+    ):
         with open(f"{filename}{file_extension}", "wb") as f:
             f.write(_bytes)
-        logger.info(f'Package / package undo binary created at:{filename}{file_extension}')
+        logger.info(
+            f'Package / package undo binary created at:{filename}{file_extension}'
+        )
 
     @property
     def package(self):
@@ -363,11 +410,13 @@ class Migration(Dictable, ProgressBarMixin):
 
     @__private_status.setter
     def __private_status(self, var: MigrationStatus):
-        self._update_progress_bar_if_needed(new_description=f'[{self.name}] Status: {var.name}')
+        self._update_progress_bar_if_needed(
+            new_description=f'[{self.name}] Status: {var.name}'
+        )
         self._status = var
 
 
-def bulk_full_migration(migrations: Union[Migration, List[Migration]], verbose: bool = False):
+def bulk_full_migration(migrations: Migration | list[Migration], verbose: bool = False):
     """Run `perform_full_migration()` for each of the migrations provided.
     Args:
         migrations: migrations to be executed
@@ -376,7 +425,9 @@ def bulk_full_migration(migrations: Union[Migration, List[Migration]], verbose: 
     __run_func_for_all_migrations(Migration.perform_full_migration, migrations, verbose)
 
 
-def bulk_migrate_package(migrations: Union[Migration, List[Migration]], verbose: bool = False):
+def bulk_migrate_package(
+    migrations: Migration | list[Migration], verbose: bool = False
+):
     """Run `migrate_package()` for each of the migrations provided.
     Args:
         migrations: migrations to be executed
@@ -387,10 +438,10 @@ def bulk_migrate_package(migrations: Union[Migration, List[Migration]], verbose:
 
 def __run_func_for_all_migrations(
     func: Callable,
-    migrations: Union[Migration, List[Migration]],
+    migrations: Migration | list[Migration],
     verbose: bool = False,
     *args,
-    **kwargs
+    **kwargs,
 ):
     if type(migrations) is Migration:
         migrations = [migrations]

@@ -2,16 +2,21 @@ import logging
 from typing import Optional, TYPE_CHECKING
 
 from mstrio.api import objects
-from mstrio.object_management.search_operations import full_search, SearchDomain, SearchPattern
+from mstrio.object_management.search_operations import (
+    full_search,
+    SearchDomain,
+    SearchPattern,
+)
 from mstrio.types import ObjectTypes
 from mstrio.users_and_groups.user import User
 from mstrio.utils.acl import ACLMixin
 from mstrio.utils.certified_info import CertifiedInfo
 from mstrio.utils.entity import CertifyMixin, CopyMixin, DeleteMixin, Entity, MoveMixin
+from mstrio.utils.enum_helper import get_enum
 from mstrio.utils.helper import (
     get_args_from_func,
     get_default_args_from_func,
-    get_valid_project_id
+    get_valid_project_id,
 )
 
 if TYPE_CHECKING:
@@ -22,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 def list_objects(
     connection: "Connection",
-    object_type: ObjectTypes,
+    object_type: ObjectTypes | int,
     name: Optional[str] = None,
     project_id: Optional[str] = None,
     project_name: Optional[str] = None,
@@ -58,7 +63,7 @@ def list_objects(
         limit: limit the number of elements returned. If `None` (default), all
             objects are returned.
         **filters: Available filter parameters: ['id', 'name', 'description',
-            'date_created', 'date_modified', 'acg']
+            'date_created', 'date_modified', 'acg', 'owner', 'ext_type']
 
     Examples:
         >>> list_objects(connection, object_type=ObjectTypes.USER)
@@ -68,7 +73,7 @@ def list_objects(
         connection=connection,
         project_id=project_id,
         project_name=project_name,
-        with_fallback=True
+        with_fallback=True,
     )
 
     result = Object._list_objects(
@@ -147,10 +152,13 @@ class Object(Entity, ACLMixin, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin):
             'comments',
             'project_id',
             'hidden',
-            'target_info'
+            'target_info',
         ): objects.get_object_info
     }
-    _API_PATCH: dict = {**Entity._API_PATCH, ('folder_id'): (objects.update_object, 'partial_put')}
+    _API_PATCH: dict = {
+        **Entity._API_PATCH,
+        ('folder_id'): (objects.update_object, 'partial_put'),
+    }
 
     def __init__(self, connection: "Connection", type: ObjectTypes, id: str):
         """Initialize object by ID.
@@ -165,9 +173,11 @@ class Object(Entity, ACLMixin, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin):
         super().__init__(connection=connection, object_id=id, type=type)
 
     def _init_variables(self, **kwargs) -> None:
-        self._OBJECT_TYPE = ObjectTypes(kwargs.get("type")) if ObjectTypes.contains(
-            kwargs.get("type")
-        ) else ObjectTypes.NONE
+        self._OBJECT_TYPE = (
+            ObjectTypes(kwargs.get("type"))
+            if ObjectTypes.contains(kwargs.get("type"))
+            else ObjectTypes.NONE
+        )
         super()._init_variables(**kwargs)
 
     def __str__(self):
@@ -177,7 +187,7 @@ class Object(Entity, ACLMixin, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin):
         self,
         name: Optional[str] = None,
         description: Optional[str] = None,
-        abbreviation: Optional[str] = None
+        abbreviation: Optional[str] = None,
     ) -> None:
         """Alter the object properties.
 
@@ -189,7 +199,7 @@ class Object(Entity, ACLMixin, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin):
         func = self.alter
         args = get_args_from_func(func)
         defaults = get_default_args_from_func(func)
-        default_dict = dict(zip(args[-len(defaults):], defaults)) if defaults else {}
+        default_dict = dict(zip(args[-len(defaults) :], defaults)) if defaults else {}
         local = locals()
         properties = {}
         for property_key in default_dict.keys():
@@ -201,7 +211,7 @@ class Object(Entity, ACLMixin, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin):
     def _list_objects(
         cls,
         connection: "Connection",
-        object_type: ObjectTypes,
+        object_type: ObjectTypes | int,
         name: Optional[str] = None,
         project_id: Optional[str] = None,
         to_dictionary: bool = False,
@@ -212,7 +222,7 @@ class Object(Entity, ACLMixin, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin):
     ) -> list["Object"] | list[dict]:
         objects = full_search(
             connection,
-            object_types=object_type,
+            object_types=get_enum(object_type, ObjectTypes),
             name=name,
             project=project_id,
             domain=domain,

@@ -1,9 +1,40 @@
 # Changelog
 
+## 11.3.9.103 - 2023/05/05
+
+### Major changes
+- added `list_vldb_settings`, `alter_vldb_settings` and `reset_vldb_settings`
+  methods to `DatasourceInstance` class and `Project` class to allow management
+  of VLDB settings
+- added `Driver` class and `list_drivers` function in `mstrio.datasources.driver`
+  module to allow driver management
+- added `Gateway` class and `list_gateways` function in `mstrio.datasources.gateways`
+  module and `GatewayType` and `DBType` enums in `mstrio.datasources.helpers` to
+  allow gateway management
+
+### Minor changes
+- updated `ipython` dependency version to 8.10.0
+- added a `project_id` property for `Metric` instances
+- fixed `is_logical_size_locked` for `LogicalTable` to be working as boolean
+- fixed `list_logical_tables` function to return all tables if called without
+  specifying `project_id` or `project_name`, unless limit argument is provided
+- fixed `Attribute`, `Document`, `Fact`, `Filter`, `Metric`, `Transformation`,
+  `IncrementalRefreshReport` classes to be initialized by name with 
+  `SearchPattern.EXACTLY` instead of `SearchPattern.CONTAINS`
+- fixed `list_objects` function to accept integer as input for `object_type` argument
+- fixed `User.security_filters` property to always return all user's security filters
+  from all loaded projects
+- added `delivery_expiration_timezone` argument for `Subscription` class and its subclasses
+  (supported from Update 10 environments)
+- fixed `Attribute` objects always returning `None` for `hidden` field and fixed
+  `alter` method to allow updating it
+- added `SuperCubeAttribute`, `SupperCubeAttributeForm`, `SuperCubeFormExpression`
+  classes in `mstrio.project_objects.datasets.super_cube` module to support attribute
+  forms for `SuperCube`
+
 ## 11.3.9.101 - 2023/03/03
 
 ### Major changes
-
 - added `HistoryListSubscription`, `FTPSubscription` and `FileSubscription`
   classes in `mstrio.distribution_services.subscription` package to allow
   management of new subscription types

@@ -5,7 +5,9 @@ from mstrio.types import ObjectTypes
 
 if TYPE_CHECKING:
     from mstrio.object_management.search_enums import (
-        SearchDomain, SearchPattern, SearchResultsFormat
+        SearchDomain,
+        SearchPattern,
+        SearchResultsFormat,
     )
     from mstrio.server import Project
     from mstrio.types import TypeOrSubtype
@@ -100,7 +102,7 @@ class DependenceMixin:
             offset=offset,
             results_format=results_format,
             to_dictionary=to_dictionary,
-            **filters
+            **filters,
         )
 
     def list_dependencies(
@@ -186,5 +188,5 @@ class DependenceMixin:
             limit=limit,
             offset=offset,
             to_dictionary=to_dictionary,
-            **filters
+            **filters,
         )

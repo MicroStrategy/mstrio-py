@@ -100,7 +100,12 @@ def report_instance_id(connection, report_id, instance_id, offset=0, limit=5000)
 
 
 def report_instance_id_coroutine(
-    future_session: "FuturesSession", connection, report_id, instance_id, offset=0, limit=5000
+    future_session: "FuturesSession",
+    connection,
+    report_id,
+    instance_id,
+    offset=0,
+    limit=5000,
 ):
     """Get the future of a previously created instance for a specific report
     asynchronously, using the in-memory instance created by report_instance().
@@ -118,7 +123,9 @@ def report_instance_id_coroutine(
 
 
 @ErrorHandler(err_msg='Error retrieving attribute {attribute_id} elements.')
-def report_single_attribute_elements(connection, report_id, attribute_id, offset=0, limit=200000):
+def report_single_attribute_elements(
+    connection, report_id, attribute_id, offset=0, limit=200000
+):
     """Get elements of a specific attribute of a specific report.
 
     Args:
@@ -137,17 +144,23 @@ def report_single_attribute_elements(connection, report_id, attribute_id, offset
     Returns:
         Complete HTTP response object
     """
-    url = f'{connection.base_url}/api/reports/{report_id}/attributes/{attribute_id}/elements'
+    url = (
+        f'{connection.base_url}/api/reports/{report_id}/attributes/'
+        f'{attribute_id}/elements'
+    )
     return connection.get(
         url=url,
-        params={
-            'offset': offset, 'limit': limit
-        },
+        params={'offset': offset, 'limit': limit},
     )
 
 
 def report_single_attribute_elements_coroutine(
-    future_session: "FuturesSession", connection, report_id, attribute_id, offset=0, limit=200000
+    future_session: "FuturesSession",
+    connection,
+    report_id,
+    attribute_id,
+    offset=0,
+    limit=200000,
 ):
     """Get elements of a specific attribute of a specific report.
 
@@ -169,7 +182,10 @@ def report_single_attribute_elements_coroutine(
     Returns:
         Complete Future object
     """
-    url = f'{connection.base_url}/api/reports/{report_id}/attributes/{attribute_id}/elements'
+    url = (
+        f'{connection.base_url}/api/reports/{report_id}'
+        f'/attributes/{attribute_id}/elements'
+    )
     future = future_session.get(url, params={'offset': offset, 'limit': limit})
     return future
 
@@ -193,9 +209,7 @@ def get_report_prompts(connection, report_id, closed=None, fields=None):
     url = f'{connection.base_url}/api/reports/{report_id}/prompts'
     return connection.get(
         url=url,
-        params={
-            'closed': closed, 'fields': fields
-        },
+        params={'closed': closed, 'fields': fields},
     )
 
 
@@ -218,10 +232,10 @@ def get_prompted_instance(connection, report_id, instance_id, closed=None, field
             part of the response model.
 
     """
-    url = f'{connection.base_url}/api/reports/{report_id}/instances/{instance_id}/prompts'
+    url = (
+        f'{connection.base_url}/api/reports/{report_id}/instances/{instance_id}/prompts'
+    )
     return connection.get(
         url=url,
-        params={
-            'closed': closed, 'fields': fields
-        },
+        params={'closed': closed, 'fields': fields},
     )

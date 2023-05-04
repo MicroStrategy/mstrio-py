@@ -143,12 +143,14 @@ def upload(connection, id, session_id, body, throw_error=False):
     """
     connection._validate_project_selected()
     return connection.put(
-        url=f'{connection.base_url}/api/datasets/{id}/uploadSessions/{session_id}', json=body
+        url=f'{connection.base_url}/api/datasets/{id}/uploadSessions/{session_id}',
+        json=body,
     )
 
 
 @ErrorHandler(
-    err_msg='Error publishing uploaded data for dataset with ID {id} Cancelling publication.'
+    err_msg='Error publishing uploaded data for dataset with ID {id} Cancelling '
+    'publication.'
 )
 def publish(connection, id, session_id, throw_error=False):
     """Publish a multi-table dataset.
@@ -186,7 +188,10 @@ def publish_status(connection, id, session_id):
         HTTP response object returned by the MicroStrategy REST server
     """
 
-    url = f'{connection.base_url}/api/datasets/{id}/uploadSessions/{session_id}/publishStatus'
+    url = (
+        f'{connection.base_url}/api/datasets/{id}/uploadS'
+        f'essions/{session_id}/publishStatus'
+    )
     return connection.get(url=url)
 
 

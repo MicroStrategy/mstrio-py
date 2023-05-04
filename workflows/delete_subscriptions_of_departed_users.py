@@ -37,7 +37,8 @@ def delete_subscriptions_of_departed_users(connection: "Connection") -> None:
                 print("All " + msg + " were deleted.", flush=True)
             else:
                 print(
-                    "Not all " + msg + " were deleted or there was no subscriptions.", flush=True
+                    "Not all " + msg + " were deleted or there was no subscriptions.",
+                    flush=True,
                 )
 
 

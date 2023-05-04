@@ -1,12 +1,15 @@
 import itertools
 import logging
 from concurrent.futures import as_completed
-from typing import Optional, TYPE_CHECKING, Type
+from typing import TYPE_CHECKING, Optional
 
 from mstrio.api import browsing, objects
 from mstrio.connection import Connection
 from mstrio.object_management.search_enums import (
-    CertifiedStatus, SearchDomain, SearchPattern, SearchResultsFormat
+    CertifiedStatus,
+    SearchDomain,
+    SearchPattern,
+    SearchResultsFormat,
 )
 from mstrio.server import Environment
 from mstrio.server.project import Project
@@ -19,7 +22,7 @@ from mstrio.utils.helper import (
     get_args_from_func,
     get_enum_val,
     get_objects_id,
-    merge_id_and_type
+    merge_id_and_type,
 )
 from mstrio.utils.sessions import FuturesSessionWithRenewal
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
@@ -56,7 +59,10 @@ class SearchObject(Entity, CopyMixin, MoveMixin):
 
     _OBJECT_TYPE = ObjectTypes.SEARCH
     _FROM_DICT_MAP = {**Entity._FROM_DICT_MAP, 'owner': User.from_dict}
-    _API_PATCH: dict = {**Entity._API_PATCH, ('folder_id'): (objects.update_object, 'partial_put')}
+    _API_PATCH: dict = {
+        **Entity._API_PATCH,
+        ('folder_id'): (objects.update_object, 'partial_put'),
+    }
 
     def __init__(self, connection: "Connection", id: str) -> None:
         """Initialize SearchObject object and synchronize with server.
@@ -83,7 +89,7 @@ def quick_search(
     certified_status: CertifiedStatus = CertifiedStatus.ALL,
     limit: Optional[int] = None,
     offset: Optional[int] = None,
-    to_dictionary: bool = True
+    to_dictionary: bool = True,
 ):
     """Use the stored results of the Quick Search engine to return
      search results and display them as a list. The Quick Search
@@ -129,13 +135,16 @@ def quick_search(
 
     Returns:
          list of objects or list of dictionaries
-     """
+    """
     from mstrio.utils.object_mapping import map_objects_list
+
     project_id = get_objects_id(project, Project)
     if object_types and not isinstance(object_types, list):
         object_types = [get_enum_val(object_types, (ObjectTypes, ObjectSubTypes))]
     elif object_types:
-        object_types = [get_enum_val(t, (ObjectTypes, ObjectSubTypes)) for t in object_types]
+        object_types = [
+            get_enum_val(t, (ObjectTypes, ObjectSubTypes)) for t in object_types
+        ]
     pattern = get_enum_val(pattern, SearchPattern)
     certified_status = get_enum_val(certified_status, CertifiedStatus)
     resp = browsing.get_quick_search_result(
@@ -150,7 +159,7 @@ def quick_search(
         cross_cluster=cross_cluster,
         limit=limit,
         certified_status=certified_status,
-        offset=offset
+        offset=offset,
     )
     objects = resp.json()["result"]
     if to_dictionary:
@@ -168,7 +177,7 @@ def quick_search_from_object(
     subtypes: Optional[ObjectSubTypes | list[ObjectSubTypes] | int | list[int]] = None,
     limit: Optional[int] = None,
     offset: Optional[int] = None,
-    to_dictionary: bool = True
+    to_dictionary: bool = True,
 ):
     """Perform a quick search based on a predefined Search Object.
     Use an existing search object for Quick Search engine to return
@@ -197,6 +206,7 @@ def quick_search_from_object(
         list of objects or list of dictionaries
     """
     from mstrio.utils.object_mapping import map_objects_list
+
     project_id = get_objects_id(project, Project)
     search_object_id = get_objects_id(search_object, SearchObject)
     subtypes = get_enum_val(subtypes, ObjectSubTypes)
@@ -208,7 +218,7 @@ def quick_search_from_object(
         include_ancestors=include_ancestors,
         include_acl=include_acl,
         limit=limit,
-        offset=offset
+        offset=offset,
     )
     objects = resp.json()["result"]
     if to_dictionary:
@@ -222,7 +232,7 @@ def get_search_suggestions(
     project: Optional[Project | str] = None,
     key: Optional[str] = None,
     max_results: int = 4,
-    cross_cluster: Optional[bool] = None
+    cross_cluster: Optional[bool] = None,
 ) -> list[str]:
     """Request search suggestions from the server.
 
@@ -242,13 +252,17 @@ def get_search_suggestions(
         list of search suggestions
     """
     project_id = get_objects_id(project, Project)
-    return browsing.get_search_suggestions(
-        connection=connection,
-        project_id=project_id,
-        key=key,
-        count=max_results,
-        is_cross_cluster=cross_cluster
-    ).json().get('suggestions')
+    return (
+        browsing.get_search_suggestions(
+            connection=connection,
+            project_id=project_id,
+            key=key,
+            count=max_results,
+            is_cross_cluster=cross_cluster,
+        )
+        .json()
+        .get('suggestions')
+    )
 
 
 @method_version_handler('11.3.0000')
@@ -259,7 +273,7 @@ def full_search(
     pattern: SearchPattern | int = SearchPattern.CONTAINS,
     domain: SearchDomain | int = SearchDomain.PROJECT,
     root: Optional[str] = None,
-    object_types: Optional["TypeOrSubtype"] = None,
+    object_types: Optional['TypeOrSubtype'] = None,
     uses_object_id: Optional[EntityBase | str] = None,
     uses_object_type: Optional[ObjectTypes | int] = None,
     uses_recursive: bool = False,
@@ -272,7 +286,7 @@ def full_search(
     limit: Optional[int] = None,
     offset: Optional[int] = None,
     to_dictionary: bool = True,
-    **filters
+    **filters,
 ) -> list[dict] | list[Entity]:
     """Perform a full metadata search and return results.
 
@@ -337,8 +351,12 @@ def full_search(
     passed_params = locals()
     start_search_args = get_args_from_func(start_full_search)
     search_result_args = get_args_from_func(get_search_results)
-    start_search_params = {k: v for k, v in passed_params.items() if k in start_search_args}
-    search_result_params = {k: v for k, v in passed_params.items() if k in search_result_args}
+    start_search_params = {
+        k: v for k, v in passed_params.items() if k in start_search_args
+    }
+    search_result_params = {
+        k: v for k, v in passed_params.items() if k in search_result_args
+    }
     resp = start_full_search(**start_search_params)
     search_result_params["search_id"] = resp["id"]
     del search_result_params["filters"]
@@ -362,7 +380,7 @@ def start_full_search(
     used_by_object_id: Optional[EntityBase | str] = None,
     used_by_object_type: Optional[ObjectTypes | ObjectSubTypes | int] = None,
     used_by_recursive: bool = False,
-    used_by_one_of: bool = False
+    used_by_one_of: bool = False,
 ) -> dict:
     """Search the metadata for objects in a specific project that
     match specific search criteria, and save the results in IServer memory.
@@ -419,26 +437,37 @@ def start_full_search(
 
     if uses_object_id and used_by_object_id:
         exception_handler(
-            msg="It is not allowed to use both ‘uses_object’ and ‘used_by_object’ in one request.",
-            exception_type=AttributeError
+            msg="It is not allowed to use both ‘uses_object’ and ‘used_by_object’ in "
+            "one request.",
+            exception_type=AttributeError,
         )
 
-    uses_object = merge_id_and_type(
-        uses_object_id,
-        uses_object_type,
-        "Please provide both `uses_object_id` and `uses_object_type`."
-    ) if uses_object_id else None
-    used_by_object = merge_id_and_type(
-        used_by_object_id,
-        used_by_object_type,
-        "Please provide both `used_by_object_id` and `uses_object_type`."
-    ) if used_by_object_id else None
+    uses_object = (
+        merge_id_and_type(
+            uses_object_id,
+            uses_object_type,
+            "Please provide both `uses_object_id` and `uses_object_type`.",
+        )
+        if uses_object_id
+        else None
+    )
+    used_by_object = (
+        merge_id_and_type(
+            used_by_object_id,
+            used_by_object_type,
+            "Please provide both `used_by_object_id` and `uses_object_type`.",
+        )
+        if used_by_object_id
+        else None
+    )
 
     project_id = get_objects_id(project, Project)
     if object_types and not isinstance(object_types, list):
         object_types = [get_enum_val(object_types, (ObjectTypes, ObjectSubTypes))]
     elif object_types:
-        object_types = [get_enum_val(t, (ObjectTypes, ObjectSubTypes)) for t in object_types]
+        object_types = [
+            get_enum_val(t, (ObjectTypes, ObjectSubTypes)) for t in object_types
+        ]
     pattern = get_enum_val(pattern, SearchPattern)
     domain = get_enum_val(domain, SearchDomain)
     resp = browsing.store_search_instance(
@@ -468,7 +497,7 @@ def get_search_results(
     limit: Optional[int] = None,
     offset: Optional[int] = None,
     to_dictionary: bool = False,
-    **filters
+    **filters,
 ):
     """Retrieve the results of a full metadata search previously stored in
     an instance in IServer memory, may be obtained by `start_full_search`.
@@ -514,9 +543,10 @@ def _get_search_result_list_format(
     limit: Optional[int] = None,
     offset: Optional[int] = None,
     to_dictionary: bool = True,
-    **filters
+    **filters,
 ):
     from mstrio.utils.object_mapping import map_objects_list
+
     objects = fetch_objects_async(
         connection=connection,
         api=browsing.get_search_results,
@@ -539,7 +569,7 @@ def _get_search_result_tree_format(
     search_id: str,
     project_id: Optional[str] = None,
     limit: Optional[int] = None,
-    offset: Optional[int] = None
+    offset: Optional[int] = None,
 ):
     resp = browsing.get_search_results_tree_format(
         connection=connection,
@@ -558,7 +588,7 @@ def find_objects_with_id(
     object_id: str,
     projects: Optional[list[Project] | list[str]] = None,
     to_dictionary=False,
-) -> list[dict[str, dict | Type[Entity]]]:
+) -> list[dict[str, dict | type[Entity]]]:
     """Find object by its ID only, without knowing project ID and object type.
     The search is performed by iterating over projects and trying to retrieve
     the objects with different type.

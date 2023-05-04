@@ -2,7 +2,8 @@ from dataclasses import asdict, dataclass
 from enum import auto, Enum
 from typing import Optional, Type, TYPE_CHECKING
 
-from stringcase import camelcase, capitalcase, snakecase
+from stringcase import capitalcase
+from humps import camelize, decamelize
 
 from mstrio.utils.enum_helper import AutoName
 from mstrio.utils.helper import Dictable, snake_to_camel, delete_none_values
@@ -13,6 +14,7 @@ if TYPE_CHECKING:
 
 class DynamicDateTimeType(AutoName):
     """Enumeration constant indicating type of dynamic date time object"""
+
     DATE = auto()
     TIME = auto()
     DATE_TIME = auto()
@@ -20,24 +22,28 @@ class DynamicDateTimeType(AutoName):
 
 class DateMode(AutoName):
     """Enumeration constant indicating mode of date"""
+
     DYNAMIC = auto()
     STATIC = auto()
 
 
 class HourMode(AutoName):
     """Enumeration constant indicating mode of hour"""
+
     DYNAMIC = auto()
     STATIC = auto()
 
 
 class MinuteAndSecondMode(AutoName):
     """Enumeration constant indicating mode of minute and second"""
+
     DYNAMIC = auto()
     STATIC = auto()
 
 
 class DayOfWeek(Enum):
     """Enumeration used to indicate day of week"""
+
     SUNDAY = 0
     MONDAY = 1
     TUESDAY = 2
@@ -53,7 +59,9 @@ class VersatileDate(Dictable):
     _MODE = None
 
     @staticmethod
-    def dispatch(source, connection: Optional['Connection'] = None) -> Type['VersatileDate']:
+    def dispatch(
+        source, connection: Optional['Connection'] = None
+    ) -> Type['VersatileDate']:
         """Returns an appropriate VersatileDate type object from the
             provided source
 
@@ -230,7 +238,7 @@ class DynamicVersatileDate(VersatileDate):
         # every type of adjustment has its own unique attribute name
         # and only one can be present in json
         # so generate it based on class name
-        attr_name = snakecase(self.adjustment.__class__.__name__)
+        attr_name = decamelize(self.adjustment.__class__.__name__)
         result[attr_name] = result.pop('adjustment')
 
         result = delete_none_values(
@@ -244,11 +252,16 @@ class DynamicVersatileDate(VersatileDate):
     ) -> 'DynamicVersatileDate':
         try:
             key, value = next(
-                (key, value) for key, value in source.items() if key.startswith('adjustment'))
+                (key, value)
+                for key, value in source.items()
+                if key.startswith('adjustment')
+            )
         except StopIteration:
-            raise AttributeError("Missing field for adjustment of a date in source data.")
+            raise AttributeError(
+                "Missing field for adjustment of a date in source data."
+            )
 
-        cls_name = capitalcase(camelcase(key))
+        cls_name = capitalcase(camelize(key))
         cls_obj = globals()[cls_name]
         adjustment = cls_obj(**value)
 

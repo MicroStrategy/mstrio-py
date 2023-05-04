@@ -43,7 +43,9 @@ def _adapt_date_to_format(date: str, format_str: str) -> Union[tuple, str]:
         date = date[:-1]
     plus_index = date.find('+')
     percent_z_index = format_str.find('%z')
-    localization = '' if plus_index == -1 or percent_z_index == -1 else date[plus_index:]
+    localization = (
+        '' if plus_index == -1 or percent_z_index == -1 else date[plus_index:]
+    )
     date = date[:plus_index] if plus_index != -1 else date
 
     # fill time with zeros to match the format with maximum number of details
@@ -57,6 +59,8 @@ def _adapt_date_to_format(date: str, format_str: str) -> Union[tuple, str]:
         date += ':00.000'
     elif t_index + 9 == len(date):  # T00:00:00
         date += '.000'
+    elif t_index + 13 < len(date):
+        date = date[: t_index + 13]
 
     # cut `date` to match the provided format
     dot_index = date.find('.')
@@ -72,9 +76,10 @@ def _adapt_date_to_format(date: str, format_str: str) -> Union[tuple, str]:
         localization = ''  # don't add localization if format is without time
     else:
         from mstrio.utils.helper import exception_handler
+
         msg = (
-            f"For given format of date ({format_str}) adapting date to such format is not"
-            "provided."
+            f"For given format of date ({format_str}) adapting date to such format "
+            f"is not provided."
         )
         exception_handler(msg, Warning)
         return (initial_date, format_str)
@@ -145,19 +150,27 @@ def _get_only_datetimeformat_map(string_to_date_map: dict) -> dict:
 
 
 def _solve_prefix_and_convert_date(
-    func, name: str, date: str, string_to_date_map: dict, only_datetimefomat: bool = True
+    func,
+    name: str,
+    date: str,
+    string_to_date_map: dict,
+    only_datetimefomat: bool = True,
 ):
     if only_datetimefomat:
         string_to_date_map = _get_only_datetimeformat_map(string_to_date_map)
     if f'_{name}' in string_to_date_map:
-        date_format = string_to_date_map[f'_{name}'].value if isinstance(
-            string_to_date_map[f'_{name}'], DatetimeFormats
-        ) else string_to_date_map[f'_{name}']
+        date_format = (
+            string_to_date_map[f'_{name}'].value
+            if isinstance(string_to_date_map[f'_{name}'], DatetimeFormats)
+            else string_to_date_map[f'_{name}']
+        )
         return func(date, date_format)
     elif name in string_to_date_map:
-        date_format = string_to_date_map[name].value if isinstance(
-            string_to_date_map[name], DatetimeFormats
-        ) else string_to_date_map[name]
+        date_format = (
+            string_to_date_map[name].value
+            if isinstance(string_to_date_map[name], DatetimeFormats)
+            else string_to_date_map[name]
+        )
         return func(date, date_format)
     return date
 
@@ -195,7 +208,9 @@ def bulk_str_to_datetime(
     to datetime format. If parameter is not found in `string_to_date_map`,
     it is returned without changes."""
     for key, val in source.items():
-        source[key] = map_str_to_datetime(key, val, string_to_date_map, only_datetimefomat)
+        source[key] = map_str_to_datetime(
+            key, val, string_to_date_map, only_datetimefomat
+        )
     return source
 
 
@@ -206,7 +221,9 @@ def bulk_datetime_to_str(
     to string format. If parameter is not found in `string_to_date_map`,
     it is returned without changes."""
     for key, val in source.items():
-        source[key] = map_datetime_to_str(key, val, string_to_date_map, only_datetimefomat)
+        source[key] = map_datetime_to_str(
+            key, val, string_to_date_map, only_datetimefomat
+        )
     return source
 
 
@@ -226,7 +243,6 @@ def override_datetime_format(
     """
 
     def decorator_datetime(func):
-
         @wraps(func)
         def wrapped(*args, **kwargs):
             response = func(*args, **kwargs)
@@ -239,8 +255,9 @@ def override_datetime_format(
                 for field in fields:
                     datetime_obj = str_to_datetime(obj[field], original_format)
                     obj[field] = datetime_to_str(datetime_obj, expected_format)
-            response.encoding, response._content = 'utf-8', json.dumps(response_json).encode(
-                'utf-8')
+            response.encoding, response._content = 'utf-8', json.dumps(
+                response_json
+            ).encode('utf-8')
             return response
 
         return wrapped

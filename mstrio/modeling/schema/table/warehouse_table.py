@@ -11,7 +11,7 @@ from mstrio.api import tables as tables_api
 from mstrio.connection import Connection
 from mstrio.datasources.datasource_instance import (
     DatasourceInstance,
-    list_connected_datasource_instances
+    list_connected_datasource_instances,
 )
 from mstrio.modeling.schema import ObjectSubType, SchemaObjectReference
 from mstrio.modeling.schema.helpers import TableColumn, TableColumnMergeOption
@@ -30,7 +30,7 @@ def list_datasource_warehouse_tables(
     namespace_id: str,
     name: str = None,
     to_dictionary: bool = False,
-    limit: Optional[int] = None
+    limit: Optional[int] = None,
 ) -> list[Type["WarehouseTable"]] | list[dict]:
     """Lists available warehouse tables in a specified datasource within a
        specified namespace.
@@ -68,11 +68,10 @@ def list_datasource_warehouse_tables(
         namespace_id=namespace_id,
     )
     [
-        table.update({
-            "datasource": {
-                "id": datasource_id
-            }, "namespace_id": namespace_id
-        }) for table in tables
+        table.update(
+            {"datasource": {"id": datasource_id}, "namespace_id": namespace_id}
+        )
+        for table in tables
     ]
     if to_dictionary:
         return tables
@@ -83,7 +82,7 @@ def list_warehouse_tables(
     connection: Connection,
     to_dictionary: bool = False,
     name: Optional[str] = None,
-    datasource_id: Optional[str] = None
+    datasource_id: Optional[str] = None,
 ) -> list["WarehouseTable"] | list[dict]:
     """Fetches all available warehouse table. This operation is done
        asynchronously and is heavy: a lot of requests are performed to fetch
@@ -145,7 +144,9 @@ class WarehouseTable(Dictable):
         name: str,
         namespace: str,
     ):
-        self.__id = id  # Non-persistent. It will change if the table name or namespace changes.
+        self.__id = (
+            id  # Non-persistent. It will change if the table name or namespace changes.
+        )
         self.connection = connection
         self.datasource = datasource
         self.name = name
@@ -192,9 +193,7 @@ class WarehouseTable(Dictable):
         return lt
 
     def list_dependent_logical_tables(
-        self,
-        to_dictionary: bool = False,
-        refresh: bool = False
+        self, to_dictionary: bool = False, refresh: bool = False
     ) -> list["LogicalTable"] | list[dict]:
         """Get all dependent logical tables.
 
@@ -213,12 +212,15 @@ class WarehouseTable(Dictable):
         logical_tables = list_logical_tables(connection=self.connection)
         if self.physical_table_id:
             dependent_logical_tables = [
-                table for table in logical_tables
+                table
+                for table in logical_tables
                 if table.physical_table.id == self.physical_table_id
             ]
         else:
             dependent_logical_tables = [
-                table for table in logical_tables if table.physical_table.table_name == self.name
+                table
+                for table in logical_tables
+                if table.physical_table.table_name == self.name
             ]
 
         self._dependent_logical_tables = dependent_logical_tables
@@ -238,18 +240,22 @@ class WarehouseTable(Dictable):
         if dependent_logical_tables:
             logger.warning("Following logical tables will be deleted: ")
             [logger.info(f"{str(table)}") for table in dependent_logical_tables]
-            confirmed_delete = (force or input("Would you like to continue? Y/n").lower() == "y")
+            confirmed_delete = (
+                force or input("Would you like to continue? Y/n").lower() == "y"
+            )
             if confirmed_delete:
-                statuses = [table.delete(force=True) for table in dependent_logical_tables]
-                self.physical_table_id = (None if all(statuses) else self.physical_table_id)
+                statuses = [
+                    table.delete(force=True) for table in dependent_logical_tables
+                ]
+                self.physical_table_id = (
+                    None if all(statuses) else self.physical_table_id
+                )
                 return statuses
         else:
             logger.error("This table is not included in a project.")
 
     def list_columns(
-        self,
-        to_dictionary: bool = False,
-        refresh: bool = False
+        self, to_dictionary: bool = False, refresh: bool = False
     ) -> list[Type[TableColumn]] | list[dict]:
         """Get columns for a specific database table.
 
@@ -268,7 +274,8 @@ class WarehouseTable(Dictable):
             return self._columns
         datasource_id = (
             self.datasource.id
-            if isinstance(self.datasource, DatasourceInstance) else self.datasource.get("id")
+            if isinstance(self.datasource, DatasourceInstance)
+            else self.datasource.get("id")
         )
         columns = fetch_objects(
             connection=self.connection,
@@ -296,7 +303,7 @@ class WarehouseTable(Dictable):
         connection: Connection,
         to_dictionary: bool = False,
         name: Optional[str] = None,
-        datasource_id: Optional[str] = None
+        datasource_id: Optional[str] = None,
     ) -> list["WarehouseTable"] | list[dict]:
         """Fetches all available warehouse table in a project mapped to the
            Connection object. This operation is done asynchronously and is
@@ -319,7 +326,9 @@ class WarehouseTable(Dictable):
                 or WarehouseTable objects.
         """
         if name or datasource_id:
-            tables = cls._filter(connection=connection, name=name, datasource_id=datasource_id)
+            tables = cls._filter(
+                connection=connection, name=name, datasource_id=datasource_id
+            )
             if to_dictionary:
                 return [table.to_dict() for table in tables]
             return tables
@@ -334,7 +343,7 @@ class WarehouseTable(Dictable):
         cls,
         connection: Connection,
         name: Optional[str] = None,
-        datasource_id: Optional[str] = None
+        datasource_id: Optional[str] = None,
     ) -> list["WarehouseTable"]:
         """Fetches (if not yet fetched) and filters all available warehouse
            tables. Available filters are table name and datasource id. These
@@ -358,16 +367,18 @@ class WarehouseTable(Dictable):
                 if table.datasource.id == datasource_id
             ]
             available_tables = [
-                table
-                for table in datasource_tables
-                if table.name == name.lower()
+                table for table in datasource_tables if table.name == name.lower()
             ]
 
         elif name:
-            available_tables = [table for table in available_tables if table.name == name.lower()]
+            available_tables = [
+                table for table in available_tables if table.name == name.lower()
+            ]
         elif datasource_id:
             available_tables = [
-                table for table in available_tables if table.datasource.id == datasource_id
+                table
+                for table in available_tables
+                if table.datasource.id == datasource_id
             ]
         return available_tables
 
@@ -391,21 +402,29 @@ class WarehouseTable(Dictable):
                 or WarehouseTable objects.
         """
 
-        connected_datasource_instances: list[dict] = list_connected_datasource_instances(
-            connection, to_dictionary=True)
-        urls: dict[str, str] = cls._get_namespaces_urls(connection, connected_datasource_instances)
+        connected_datasource_instances: list[
+            dict
+        ] = list_connected_datasource_instances(connection, to_dictionary=True)
+        urls: dict[str, str] = cls._get_namespaces_urls(
+            connection, connected_datasource_instances
+        )
 
         with FuturesSessionWithRenewal(connection=connection) as session:
-            namespaces: dict[str, list[dict]] = cls._get_namespaces(connection, urls, session)
+            namespaces: dict[str, list[dict]] = cls._get_namespaces(
+                connection, urls, session
+            )
 
             warehouse_tables_futures = cls._get_warehouse_tables_futures(
-                connection, session, namespaces)
+                connection, session, namespaces
+            )
 
-            warehouse_tables: list[dict] = cls._get_warehouse_tables(connection,
-                                                                     warehouse_tables_futures)
+            warehouse_tables: list[dict] = cls._get_warehouse_tables(
+                connection, warehouse_tables_futures
+            )
 
-            available_tables = cls.bulk_from_dict(source_list=warehouse_tables,
-                                                  connection=connection)
+            available_tables = cls.bulk_from_dict(
+                source_list=warehouse_tables, connection=connection
+            )
         if to_dictionary:
             return warehouse_tables
 
@@ -413,9 +432,7 @@ class WarehouseTable(Dictable):
 
     @classmethod
     def _get_warehouse_tables(
-        cls,
-        connection: Connection,
-        warehouse_tables_futures: list[Future]
+        cls, connection: Connection, warehouse_tables_futures: list[Future]
     ) -> list[dict]:
         """Retrieves warehouse tables from a list of provided futures.
 
@@ -431,11 +448,15 @@ class WarehouseTable(Dictable):
         """
 
         warehouse_tables: list[dict] = []
-        with tqdm(total=len(warehouse_tables_futures),
-                  desc="Retrieving warehouse tables...") as pbar:
+        with tqdm(
+            total=len(warehouse_tables_futures), desc="Retrieving warehouse tables..."
+        ) as pbar:
             for future in as_completed(warehouse_tables_futures):
-                namespace_tables = cls._get_future_with_request_exceptions_handlers_and_pbar(
-                    cls._get_tables_from_future, future, pbar, connection=connection)
+                namespace_tables = (
+                    cls._get_future_with_request_exceptions_handlers_and_pbar(
+                        cls._get_tables_from_future, future, pbar, connection=connection
+                    )
+                )
                 if namespace_tables:
                     warehouse_tables += namespace_tables
 
@@ -443,10 +464,7 @@ class WarehouseTable(Dictable):
 
     @classmethod
     def _get_namespaces(
-        cls,
-        connection: Connection,
-        urls: dict,
-        session: FuturesSessionWithRenewal
+        cls, connection: Connection, urls: dict, session: FuturesSessionWithRenewal
     ) -> dict[str, list[dict]]:
         """Retrieves namespaces for every url using provided session object.
 
@@ -464,14 +482,15 @@ class WarehouseTable(Dictable):
         namespaces: dict[str, list[dict]] = {}
         namespaces_futures = cls._get_namespaces_futures(connection, session, urls)
         with tqdm(
-                total=len(namespaces_futures),
-                desc="Retrieving namespaces from available datasources...",
+            total=len(namespaces_futures),
+            desc="Retrieving namespaces from available datasources...",
         ) as pbar:
             for future in as_completed(namespaces_futures):
                 namespaces[
-                    future
-                    .datasource_id] = cls._get_future_with_request_exceptions_handlers_and_pbar(
-                        cls._get_namespaces_from_future, future, pbar)
+                    future.datasource_id
+                ] = cls._get_future_with_request_exceptions_handlers_and_pbar(
+                    cls._get_namespaces_from_future, future, pbar
+                )
         return namespaces
 
     @classmethod
@@ -487,8 +506,7 @@ class WarehouseTable(Dictable):
 
     @staticmethod
     def _get_namespaces_urls(
-        connection: "Connection",
-        connected_datasource_instances: list[dict]
+        connection: "Connection", connected_datasource_instances: list[dict]
     ) -> dict[str, str]:
         """Creates urls to api/datasources/{datasource_id}/catalog/namespaces
            that are later used to fetch all namespaces from a specified
@@ -504,9 +522,11 @@ class WarehouseTable(Dictable):
                 and matching namespaces url as a value
         """
         return {
-            connected_datasource_instance.get("id"):
-            (f"{connection.base_url}/api/datasources/{connected_datasource_instance.get('id')}"
-             f"/catalog/namespaces")
+            connected_datasource_instance.get("id"): (
+                f"{connection.base_url}/api/datasources/"
+                f"{connected_datasource_instance.get('id')}"
+                f"/catalog/namespaces"
+            )
             for connected_datasource_instance in connected_datasource_instances
         }
 
@@ -514,7 +534,7 @@ class WarehouseTable(Dictable):
     def _get_namespaces_futures(
         connection: "Connection",
         session: FuturesSessionWithRenewal,
-        urls: dict[str, str]
+        urls: dict[str, str],
     ) -> list[Future]:
         """Creates Future objects using specified FuturesSession object for each
            url.

@@ -178,27 +178,38 @@ class FormatProperty(Dictable):
             )
 
         def _init_from_hex(self, hex_val: str) -> str:
-            r, g, b = self._rgb_base_converter(r=hex_val[1:3], g=hex_val[3:5], b=hex_val[5:7],
-                                               original_base=16, desired_base=2)
+            r, g, b = self._rgb_base_converter(
+                r=hex_val[1:3],
+                g=hex_val[3:5],
+                b=hex_val[5:7],
+                original_base=16,
+                desired_base=2,
+            )
             self.server_value = str(int(r + g + b, 2))
             self.hex_value = hex_val
             self.red, self.green, self.blue = self._rgb_base_converter(r, g, b, 2, 10)
 
         def _init_from_rest(self, rest_val: str) -> str:
             bin_color = format(int(rest_val), '0>24b')
-            r, g, b = self._rgb_base_converter(r=bin_color[0:8], g=bin_color[8:16],
-                                               b=bin_color[16:24], original_base=2,
-                                               desired_base=16)
+            r, g, b = self._rgb_base_converter(
+                r=bin_color[0:8],
+                g=bin_color[8:16],
+                b=bin_color[16:24],
+                original_base=2,
+                desired_base=16,
+            )
             self.server_value = rest_val
             self.hex_value = f'#{r}{g}{b}'
             self.red, self.green, self.blue = self._rgb_base_converter(r, g, b, 16, 10)
 
         def _init_from_rgb(self, red: str, green: str, blue: str) -> str:
-            r, g, b = self._rgb_base_converter(r=red, g=green, b=blue, original_base=10,
-                                               desired_base=2)
+            r, g, b = self._rgb_base_converter(
+                r=red, g=green, b=blue, original_base=10, desired_base=2
+            )
             self.server_value = str(int(r + g + b, 2))
-            r, g, b = self._rgb_base_converter(r=red, g=green, b=blue, original_base=10,
-                                               desired_base=16)
+            r, g, b = self._rgb_base_converter(
+                r=red, g=green, b=blue, original_base=10, desired_base=16
+            )
             self.hex_value = f'#{r}{g}{b}'
             self.red, self.green, self.blue = red, green, blue
 
@@ -214,7 +225,7 @@ class FormatProperty(Dictable):
             red: int | None = None,
             green: int | None = None,
             blue: int | None = None,
-            server_value: str | None = None
+            server_value: str | None = None,
         ):
             """Create an object representing color value of a `FormatProperty`.
              It can be created by providing either hex value, server readable
@@ -230,20 +241,25 @@ class FormatProperty(Dictable):
                 green(int): component of a RGB format, expressed as decimal
                 blue(int): component of a RGB format, expressed as decimal"""
 
-            if server_value is not None and isinstance(server_value,
-                                                       str) and server_value.isnumeric():
+            if (
+                server_value is not None
+                and isinstance(server_value, str)
+                and server_value.isnumeric()
+            ):
                 self._init_from_rest(rest_val=server_value)
             elif hex_value is not None and hex_value[0] == '#' and len(hex_value) == 7:
                 self._init_from_hex(hex_val=hex_value)
             elif red in range(256) and green in range(256) and blue in range(256):
                 self._init_from_rgb(str(red), str(green), str(blue))
             else:
-                raise ValueError('Invalid parameter for Color value of the format property.')
+                raise ValueError(
+                    'Invalid parameter for Color value of the format property.'
+                )
 
         def __repr__(self):
             return (
-                f'hex_value: {self.hex_value}, rgb: ({self.red}, {self.green}, {self.blue}), '
-                f'server_value: {self.server_value}'
+                f'hex_value: {self.hex_value}, rgb: ({self.red}, {self.green}, '
+                f'{self.blue}), server_value: {self.server_value}'
             )
 
     _FROM_DICT_MAP = {
@@ -262,16 +278,17 @@ class FormatProperty(Dictable):
         cls,
         source: Dict[str, Any],
         connection: Optional["Connection"] = None,
-        to_snake_case: bool = True
+        to_snake_case: bool = True,
     ) -> "FormatProperty":
         if source.get('type'):
             if 'color' in source.get('type'):
                 return FormatProperty(
                     type=FormatProperty.FormatType(source.get('type')),
-                    value=FormatProperty.Color(server_value=source.get('value'))
+                    value=FormatProperty.Color(server_value=source.get('value')),
                 )
             return FormatProperty(
-                type=FormatProperty.FormatType(source.get('type')), value=source.get('value')
+                type=FormatProperty.FormatType(source.get('type')),
+                value=source.get('value'),
             )
 
 
@@ -288,12 +305,14 @@ class MetricFormat(Dictable):
 
     _FROM_DICT_MAP = {
         'values': (
-            lambda source,
-            connection: [FormatProperty.from_dict(content, connection) for content in source]
+            lambda source, connection: [
+                FormatProperty.from_dict(content, connection) for content in source
+            ]
         ),
         'header': (
-            lambda source,
-            connection: [FormatProperty.from_dict(content, connection) for content in source]
+            lambda source, connection: [
+                FormatProperty.from_dict(content, connection) for content in source
+            ]
         ),
     }
 

@@ -5,7 +5,7 @@ import pandas as pd
 
 from mstrio.api import cubes
 from mstrio.connection import Connection
-from mstrio.object_management.search_operations import full_search, SearchPattern
+from mstrio.object_management.search_operations import SearchPattern, full_search
 from mstrio.utils.entity import ObjectSubTypes, ObjectTypes
 from mstrio.utils.helper import exception_handler, get_valid_project_id
 from mstrio.utils.version_helper import class_version_handler
@@ -112,6 +112,7 @@ class OlapCube(_Cube):
             Pandas `DataFrame`
         table_definition
     """
+
     _OBJECT_SUBTYPE = ObjectSubTypes.OLAP_CUBE.value
 
     def __init__(
@@ -121,7 +122,7 @@ class OlapCube(_Cube):
         name: Optional[str] = None,
         instance_id: Optional[str] = None,
         parallel: bool = True,
-        progress_bar: bool = True
+        progress_bar: bool = True,
     ):
         """Initialize an Olap Cube instance.
 
@@ -149,12 +150,15 @@ class OlapCube(_Cube):
             name=name,
             instance_id=instance_id,
             parallel=parallel,
-            progress_bar=progress_bar
+            progress_bar=progress_bar,
         )
 
     @classmethod
     def available_metrics(
-        cls, connection: Connection, basic_info_only: bool = True, to_dataframe: bool = False
+        cls,
+        connection: Connection,
+        basic_info_only: bool = True,
+        to_dataframe: bool = False,
     ) -> list[dict] | list[pd.DataFrame]:
         """Get all metrics available on I-Server.
 
@@ -178,7 +182,10 @@ class OlapCube(_Cube):
 
     @classmethod
     def available_attributes(
-        cls, connection: Connection, basic_info_only: bool = True, to_dataframe: bool = False
+        cls,
+        connection: Connection,
+        basic_info_only: bool = True,
+        to_dataframe: bool = False,
     ) -> list[dict] | list[pd.DataFrame]:
         """Get all attributes available on I-Server.
 
@@ -202,7 +209,10 @@ class OlapCube(_Cube):
 
     @classmethod
     def available_attribute_forms(
-        cls, connection: Connection, basic_info_only: bool = True, to_dataframe: bool = False
+        cls,
+        connection: Connection,
+        basic_info_only: bool = True,
+        to_dataframe: bool = False,
     ) -> list[dict] | list[pd.DataFrame]:
         """Get all attribute forms available on I-Server.
 
@@ -230,14 +240,16 @@ class OlapCube(_Cube):
         connection: Connection,
         object_type: ObjectTypes | ObjectSubTypes,
         basic_info_only: bool = True,
-        to_dataframe: bool = False
+        to_dataframe: bool = False,
     ) -> list[dict] | list[pd.DataFrame]:
         """Helper function to get available objects based on their type. It
         should be used to get only available attribute, metrics or attribute
         forms."""
         connection._validate_project_selected()
         avl_objects = full_search(
-            connection=connection, object_types=object_type, project=connection.project_id
+            connection=connection,
+            object_types=object_type,
+            project=connection.project_id,
         )
         for a in avl_objects:
             new_type = None
@@ -252,9 +264,8 @@ class OlapCube(_Cube):
 
         if basic_info_only:
             avl_objects = [
-                {
-                    'id': a['id'], 'name': a['name'], 'type': a['type']
-                } for a in avl_objects
+                {'id': a['id'], 'name': a['name'], 'type': a['type']}
+                for a in avl_objects
             ]
         if to_dataframe:
             avl_objects = pd.DataFrame.from_dict(avl_objects)
@@ -270,7 +281,7 @@ class OlapCube(_Cube):
         description: Optional[str] = None,
         overwrite: bool = False,
         attributes: Optional[list[dict]] = None,
-        metrics: Optional[list[dict]] = None
+        metrics: Optional[list[dict]] = None,
     ) -> "OlapCube | None":
         """Create an OLAP Cube by defining its name, description, destination
         folder, attributes and metrics.
@@ -309,9 +320,12 @@ class OlapCube(_Cube):
         if not OlapCube.__check_objects(metrics, 'metric'):
             return None
 
-        definition = {'availableObjects': {'attributes': attributes, 'metrics': metrics}}
-        cube_id = cubes.create(connection, name, folder_id, overwrite, description,
-                               definition).json()['id']
+        definition = {
+            'availableObjects': {'attributes': attributes, 'metrics': metrics}
+        }
+        cube_id = cubes.create(
+            connection, name, folder_id, overwrite, description, definition
+        ).json()['id']
         return load_cube(connection, cube_id)
 
     @staticmethod
@@ -339,7 +353,10 @@ class OlapCube(_Cube):
         if 'type' not in object_:
             object_['type'] = obj_name
         elif object_['type'] != obj_name:
-            msg = f"Each element in dictionary with {obj_name}s must be of a type '{obj_name}'."
+            msg = (
+                f"Each element in dictionary with {obj_name}s must be of a type "
+                f"'{obj_name}'."
+            )
             exception_handler(msg, Warning, True)
             return False
         return True
@@ -369,15 +386,15 @@ class OlapCube(_Cube):
             `requests.exceptions.HTTPError` when response returned from request
             to I-Server to update new OLAP Cube was not ok.
         """
-        if not OlapCube.__check_attributes_update(attributes, self.attributes, self.status):
+        if not OlapCube.__check_attributes_update(
+            attributes, self.attributes, self.status
+        ):
             return False
         if not OlapCube.__check_metrics_update(metrics, self.metrics, self.status):
             return False
 
         definition = {
-            'availableObjects': {
-                'attributes': attributes, 'metrics': metrics
-            },
+            'availableObjects': {'attributes': attributes, 'metrics': metrics},
         }
 
         res = cubes.update(self._connection, self._id, definition)
@@ -399,11 +416,16 @@ class OlapCube(_Cube):
         metrics: list[dict], existing_metrics: list[dict], status: int
     ) -> bool:
         """Check dictionaries with metrics before update of an OLAP Cube."""
-        return OlapCube.__check_objects_update(metrics, existing_metrics, 'metric', status)
+        return OlapCube.__check_objects_update(
+            metrics, existing_metrics, 'metric', status
+        )
 
     @staticmethod
     def __check_objects_update(
-        objects_: list[dict], existing_objects: list[dict], object_name: str, status: int
+        objects_: list[dict],
+        existing_objects: list[dict],
+        object_name: str,
+        status: int,
     ) -> bool:
         """Check objects (attributes or metrics) represented as dictionaries
         before update of an OLAP Cube. When status of cube is 0, then it is not
@@ -413,7 +435,9 @@ class OlapCube(_Cube):
         """
         existing_ids = [o['id'] for o in existing_objects]
         reorganised_objects_count = 0  # to check if all existing objects were provided
-        msg = f"It is not possible to add new {object_name}s when editing published cube."
+        msg = (
+            f"It is not possible to add new {object_name}s when editing published cube."
+        )
         for object_ in objects_:
             # check if structure of dictionary with an object is correct
             if not OlapCube.__check_object(object_, object_name):
@@ -428,7 +452,10 @@ class OlapCube(_Cube):
 
         # check if status of cube is correct in case of removing objects
         if reorganised_objects_count != len(existing_ids) and status != 0:
-            msg = f"It is not possible delete existing {object_name}s when editing published cube."
+            msg = (
+                f"It is not possible delete existing {object_name}s when editing "
+                f"published cube."
+            )
             exception_handler(msg, Warning)
             return False
 

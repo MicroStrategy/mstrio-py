@@ -6,7 +6,6 @@ from mstrio.utils.helper import Dictable
 
 @dataclass
 class Node(Dictable):
-
     name: Optional[str] = None
     address: Optional[str] = None
     service_control: Optional[bool] = None
@@ -20,7 +19,6 @@ class Node(Dictable):
 
 @dataclass
 class Service(Dictable):
-
     id: str
     service: str
     port: int
@@ -31,7 +29,6 @@ class Service(Dictable):
 
 @dataclass
 class ServiceWithNode(Dictable):
-
     node: str
     address: str
     id: str

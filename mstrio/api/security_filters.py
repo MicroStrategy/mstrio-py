@@ -18,7 +18,7 @@ def get_security_filter_members(
         project_id = connection.project_id
     return connection.get(
         url=f"{connection.base_url}/api/securityFilters/{id}/members",
-        headers={'X-MSTR-ProjectID': project_id}
+        headers={'X-MSTR-ProjectID': project_id},
     )
 
 
@@ -29,7 +29,7 @@ def update_security_filter_members(
     body: dict,
     project_id: str = None,
     error_msg: str = None,
-    throw_error: bool = True
+    throw_error: bool = True,
 ):
     """Update members information for a specific security filter."""
     if project_id is None:
@@ -38,7 +38,7 @@ def update_security_filter_members(
     return connection.patch(
         url=f"{connection.base_url}/api/securityFilters/{id}/members",
         headers={'X-MSTR-ProjectID': project_id},
-        json=body
+        json=body,
     )
 
 
@@ -51,7 +51,7 @@ def create_security_filter(
     show_expression_as: str = None,
     error_msg: str = None,
     throw_error: bool = True,
-    **kwargs
+    **kwargs,
 ):
     """Creates a new security filter in the changeset,
     based on the definition provided in request body.
@@ -79,8 +79,8 @@ def create_security_filter(
             json=body,
             params={
                 'showFilterTokens': str(show_filter_tokens).lower(),
-                'showExpressionAs': show_expression_as
-            }
+                'showExpressionAs': show_expression_as,
+            },
         )
 
 
@@ -94,7 +94,7 @@ def get_security_filter(
     show_expression_as: str = None,
     show_fields: str = None,
     show_filter_tokens: bool = False,
-    error_msg: str = None
+    error_msg: str = None,
 ):
     """Get the definition of a security filter.
     The project ID is required to return a security filter's definition
@@ -132,14 +132,12 @@ def get_security_filter(
 
     return connection.get(
         url=f"{connection.base_url}/api/model/securityFilters/{id}",
-        headers={
-            'X-MSTR-ProjectID': project_id, 'X-MSTR-MS-Changeset': changeset_id
-        },
+        headers={'X-MSTR-ProjectID': project_id, 'X-MSTR-MS-Changeset': changeset_id},
         params={
             'showExpressionAs': show_expression_as,
             'showFields': show_fields,
-            'showFilterTokens': str(show_filter_tokens).lower()
-        }
+            'showFilterTokens': str(show_filter_tokens).lower(),
+        },
     )
 
 
@@ -153,7 +151,7 @@ def update_security_filter(
     show_fields: str = None,
     show_filter_tokens: bool = False,
     error_msg: str = None,
-    throw_error: bool = True
+    throw_error: bool = True,
 ):
     """Updates a specific security filter in the changeset,
     based on the definition provided in the request body.
@@ -187,9 +185,9 @@ def update_security_filter(
             params={
                 'showExpressionAs': show_expression_as,
                 'showFields': show_fields,
-                'showFilterTokens': str(show_filter_tokens).lower()
+                'showFilterTokens': str(show_filter_tokens).lower(),
             },
-            json=body
+            json=body,
         )
 
 
@@ -201,7 +199,7 @@ def get_security_filters(
     offset: int = 0,
     limit: int = -1,
     fields: str = None,
-    error_msg: str = None
+    error_msg: str = None,
 ):
     """Get all list of Security Filters for a project.
     You can set the offset and limit for pagination function.
@@ -230,6 +228,6 @@ def get_security_filters(
             'nameContains': name_contains,
             'offset': offset,
             'limit': limit,
-            'fields': fields
-        }
+            'fields': fields,
+        },
     )

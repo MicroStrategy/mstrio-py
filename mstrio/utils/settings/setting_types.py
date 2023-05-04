@@ -3,8 +3,7 @@ import warnings
 import mstrio.utils.helper as helper
 
 
-class SettingValueFactory():
-
+class SettingValueFactory:
     def get_setting(self, config: dict) -> "SettingValue":
         setting_value_types = {
             'number': NumberSetting,
@@ -15,7 +14,7 @@ class SettingValueFactory():
             'email': EmailSetting,
             'object': ObjectSetting,
             'mstr_object': MstrObjectSetting,
-            None: DeprecatedSetting
+            None: DeprecatedSetting,
         }
         setting_type = config.get('type')
         return setting_value_types[setting_type](config)
@@ -67,6 +66,7 @@ class SettingValue:
 
 class EnumSetting(SettingValue):
     """Representation of an Enum setting type."""
+
     # initially empty options that require additional action
     # to be available (e.g. creating a TimeZone object)
     _DYNAMICALLY_ADDED_OPTIONS = {'defaultTimezone': str}
@@ -125,7 +125,7 @@ class NumberSetting(SettingValue):
             self.max_value,
             self.min_value,
             options,
-            exception=exception
+            exception=exception,
         )
 
 
@@ -137,7 +137,9 @@ class StringSetting(SettingValue):
         self.type = list if self.multi_select else str
 
     def _validate_value(self, value, exception=True):
-        return helper.validate_param_value(self.name, value, self.type, exception=exception)
+        return helper.validate_param_value(
+            self.name, value, self.type, exception=exception
+        )
 
 
 class TimeSetting(SettingValue):
@@ -150,7 +152,12 @@ class TimeSetting(SettingValue):
     def _validate_value(self, value, exception=True):
         regex = r"^[1-2][0-9](:[0-5][0-9]){1,2}$"
         return helper.validate_param_value(
-            self.name, value, str, regex=regex, exception=exception, valid_example='23:45'
+            self.name,
+            value,
+            str,
+            regex=regex,
+            exception=exception,
+            valid_example='23:45',
         )
 
 
@@ -170,7 +177,7 @@ class EmailSetting(SettingValue):
             special_values=[''],
             regex=regex,
             exception=exception,
-            valid_example='name@mail.com'
+            valid_example='name@mail.com',
         )
 
 
@@ -201,7 +208,9 @@ class DeprecatedSetting:
         self.description = config.get('description')
 
     def _validate_value(self, value):
-        msg = f"Setting '{self.name}' with value '{value}' is deprecated and is read-only"
+        msg = (
+            f"Setting '{self.name}' with value '{value}' is deprecated and is read-only"
+        )
         warnings.warn(msg, DeprecationWarning)
         return True
 

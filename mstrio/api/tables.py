@@ -38,9 +38,7 @@ def get_table(
 
     return connection.get(
         url=f"{connection.base_url}/api/model/tables/{id}",
-        headers={
-            "X-MSTR-ProjectID": project_id, "X-MSTR-Changeset": changeset_id
-        },
+        headers={"X-MSTR-ProjectID": project_id, "X-MSTR-Changeset": changeset_id},
         params={"fields": fields},
     )
 
@@ -51,7 +49,7 @@ def get_tables(
     connection: "Connection",
     project_id: Optional[str] = None,
     changeset_id: Optional[str] = None,
-    limit: int = 1000,
+    limit: int = None,
     offset: int = 0,
     fields: Optional[str] = None,
     error_msg: Optional[str] = None,
@@ -63,8 +61,8 @@ def get_tables(
         project_id (str, optional): Project ID
         changeset_id (str, optional): Changeset ID
         limit (int, optional): Maximum number of items returned for a single
-            request. Used to control paging behavior. Use -1 for no limit.
-            Default is 1000.
+            request. Used to control paging behavior. Use None for no limit.
+            Default is None.
         offset (int, optional): Starting point within the collection of
             returned results. Used to control paging behavior. Default is 0.
         fields(list, optional): Comma separated top-level field whitelist.
@@ -80,12 +78,8 @@ def get_tables(
 
     return connection.get(
         url=f"{connection.base_url}/api/model/tables",
-        headers={
-            "X-MSTR-ProjectID": project_id, "X-MSTR-Changeset": changeset_id
-        },
-        params={
-            "limit": limit, "offset": offset, "fields": fields
-        },
+        headers={"X-MSTR-ProjectID": project_id, "X-MSTR-Changeset": changeset_id},
+        params={"limit": limit, "offset": offset, "fields": fields},
     )
 
 
@@ -126,9 +120,7 @@ def patch_table(
             url=f"{connection.base_url}/api/model/tables/{id}",
             headers={"X-MSTR-MS-Changeset": changeset_id},
             json=body,
-            params={
-                "columnMergeOption": column_merge_option, "fields": fields
-            },
+            params={"columnMergeOption": column_merge_option, "fields": fields},
         )
 
 
@@ -184,7 +176,8 @@ def post_table(
             json=data,
             params={
                 "checkSecondaryDataSourceTable": "true"
-                if check_secondary_data_source_table else "false",
+                if check_secondary_data_source_table
+                else "false",
                 "columnMergeOption": column_merge_option,
                 "tablePrefixOption": table_prefix_option,
                 "fields": fields,
@@ -238,9 +231,7 @@ def get_table_async(
     """
     return session.get(
         url=f"{connection.base_url}/api/model/tables/{id}",
-        headers={
-            "X-MSTR-MS-Changeset": changeset_id, "X-MSTR-ProjectID": project_id
-        },
+        headers={"X-MSTR-MS-Changeset": changeset_id, "X-MSTR-ProjectID": project_id},
         params={"fields": fields},
     )
 
@@ -249,12 +240,13 @@ def get_available_warehouse_tables_async(
     session: FuturesSessionWithRenewal,
     connection: "Connection",
     datasource_id: str,
-    namespace_id: str
+    namespace_id: str,
 ):
     return session.get(
-        f"{connection.base_url}/api/datasources/{datasource_id}/catalog/namespaces/{namespace_id}"
+        f"{connection.base_url}/api/datasources/{datasource_id}/catalog/namespaces/"
+        f"{namespace_id}"
         "/tables",
         headers={
             "X-MSTR-ProjectID": connection.project_id,
-        }
+        },
     )

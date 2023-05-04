@@ -4,10 +4,19 @@ from .predefined_folders import PredefinedFolders
 
 # isort: off
 from .folder import (
-    Folder, get_my_personal_objects_contents, get_predefined_folder_contents, list_folders
+    Folder,
+    get_my_personal_objects_contents,
+    get_predefined_folder_contents,
+    list_folders,
 )
+
 # isort: on
-from .search_enums import CertifiedStatus, SearchDomain, SearchPattern, SearchResultsFormat
+from .search_enums import (
+    CertifiedStatus,
+    SearchDomain,
+    SearchPattern,
+    SearchResultsFormat,
+)
 from .search_operations import (
     CertifiedStatus,
     full_search,

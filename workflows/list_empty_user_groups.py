@@ -14,7 +14,9 @@ def list_empty_user_groups(connection: "Connection") -> List["UserGroup"]:
             `connection.Connection()`
     """
     all_user_groups = list_user_groups(connection=connection)
-    return [user_group_ for user_group_ in all_user_groups if not user_group_.list_members()]
+    return [
+        user_group_ for user_group_ in all_user_groups if not user_group_.list_members()
+    ]
 
 
 # connect to environment without providing user credentials

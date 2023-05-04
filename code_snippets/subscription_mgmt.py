@@ -114,6 +114,7 @@ FTP_SUB = FTPSubscription.create(
 
 # Define variables which can be later used in a script
 HISTORY_LIST_SUBSCRIPTION_NAME = $history_list_subscription_name
+DELIVERY_EXPIRATION_DATE = $delivery_expiration_date
 
 # Create a history list subscription
 HL_SUB = HistoryListSubscription.create(
@@ -134,7 +135,7 @@ HL_SUB = HistoryListSubscription.create(
 
 # Define variables which can be later used in a script
 CACHE_SUBSCRIPTION_NAME = $cache_subscription_name
-DELIVERY_EXPIRATION_DATE = $delivery_expiration_date
+DELIVERY_EXPIRATION_TIME_ZONE = $delivery_expiration_time_zone
 
 # Create a cache update subscription
 CACHE_UPDATE_SUB = CacheUpdateSubscription.create(
@@ -148,6 +149,7 @@ CACHE_UPDATE_SUB = CacheUpdateSubscription.create(
     ),
     schedules=[SCHEDULE_ID],
     delivery_expiration_date=DELIVERY_EXPIRATION_DATE,
+    delivery_expiration_timezone=DELIVERY_EXPIRATION_TIME_ZONE,
     send_now=True,
     recipients=[RECIPIENT_ID_3],
     cache_cache_type=CacheType.RESERVED

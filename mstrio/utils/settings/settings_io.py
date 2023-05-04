@@ -20,8 +20,7 @@ logger = logging.getLogger(__name__)
 EXPORTED_MSG = "Settings exported to"
 
 
-class SettingsSerializerFactory():
-
+class SettingsSerializerFactory:
     def get_serializer(self, file):
         file_type = None
         for extension in ['.json', '.csv', '.p', '.pkl', '.pickle']:
@@ -30,7 +29,8 @@ class SettingsSerializerFactory():
 
         if file_type is None:
             raise ValueError(
-                "This file type is not supported. Supported file types are .json, .csv, .pickle"
+                "This file type is not supported. Supported file types are .json, .csv,"
+                " .pickle"
             )
         elif file_type == 'json':
             return JSONSettingsIO()
@@ -59,13 +59,16 @@ class SettingsIO(metaclass=ABCMeta):
             raise ValueError("FILE_NAME not defined")
         elif not file.endswith(cls.FILE_NAME):
             msg = (
-                f'The file extension is different than {cls.FILE_NAME}, please note that using'
-                ' a different extension might disrupt opening the file correctly.'
+                f"The file extension is different than {cls.FILE_NAME}, please note "
+                f"that using a different extension might disrupt opening the file "
+                f"correctly."
             )
             helper.exception_handler(msg, exception_type=Warning)
 
     @classmethod
-    def check_type(cls, settings_type: Union[str, None], settings_obj: "BaseSettings") -> None:
+    def check_type(
+        cls, settings_type: Union[str, None], settings_obj: "BaseSettings"
+    ) -> None:
         if settings_type is None:
             return None
         elif settings_type != settings_obj._TYPE:
@@ -112,13 +115,14 @@ class PickleSettingsIO(SettingsIO):
             settings_dict.update(
                 __version__=cls.get_version(settings_obj), __page__=settings_obj._TYPE
             )
-            pickle.dump(settings_dict, f, protocol=4)  # pickle protocol added in python 3.4
+            pickle.dump(
+                settings_dict, f, protocol=4
+            )  # pickle protocol added in python 3.4
         if config.verbose:
             logger.info(f"{EXPORTED_MSG} '{file}'")
 
     @classmethod
     def from_file(cls, file: str, settings_obj: "BaseSettings") -> dict:
-
         with open(file, 'rb') as f:
             settings_dict = pickle.load(f)
 
@@ -157,7 +161,6 @@ class JSONSettingsIO(SettingsIO):
 
     @classmethod
     def from_file(cls, file: str, settings_obj: "BaseSettings") -> dict:
-
         with open(file) as f:
             settings_dict = json.load(f)
 
@@ -190,18 +193,22 @@ class CSVSettingsIO(SettingsIO):
         with open(file, 'w', newline='') as f:
             # Add lines for workstation compatibility
             version = cls.get_version(settings_obj)
-            f.write(f"#__page__,{settings_obj._TYPE}\n#__version__,{version}\nName, Value\n")
+            f.write(
+                f"#__page__,{settings_obj._TYPE}\n#__version__,{version}\nName, Value\n"
+            )
             w = csv.DictWriter(f, fieldnames=['Name', 'Value'], quoting=csv.QUOTE_ALL)
 
             settings_dict = settings_obj.list_properties(show_names=False)
-            rows = [{'Name': setting, 'Value': value} for setting, value in settings_dict.items()]
+            rows = [
+                {'Name': setting, 'Value': value}
+                for setting, value in settings_dict.items()
+            ]
             w.writerows(rows)
             if config.verbose:
                 logger.info(f"{EXPORTED_MSG} '{file}'")
 
     @classmethod
     def from_file(cls, file: str, settings_obj: "BaseSettings") -> dict:
-
         with open(file) as f:
             settings_dict = dict(csv.reader(f, quoting=csv.QUOTE_ALL))
             return cls.process_csv_settings(settings_dict, settings_obj)
@@ -241,7 +248,9 @@ class CSVSettingsIO(SettingsIO):
         return processed_settings
 
     @classmethod
-    def check_type(cls, settings_type: Union[str, None], settings_obj: "BaseSettings") -> None:
+    def check_type(
+        cls, settings_type: Union[str, None], settings_obj: "BaseSettings"
+    ) -> None:
         if settings_type is None:
             raise ValueError('CSV settings are missing `#__page__` header')
         elif settings_type != settings_obj._TYPE:
