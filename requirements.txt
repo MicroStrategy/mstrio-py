@@ -107,7 +107,7 @@ stringcase==1.2.0
 terminado==0.17.1
 tinycss2==1.2.1
 tomli==2.0.1
-tornado==6.2
+tornado==6.3.2
 tqdm==4.64.1
 traitlets==5.9.0
 typing_extensions==4.5.0
