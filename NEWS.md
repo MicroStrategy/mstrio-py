@@ -1,5 +1,26 @@
 # Changelog
 
+## 11.3.10.101 - 2023/06/02
+
+### Major changes
+- updated `create` method of `OlapCube` class to support new parameters:
+  `template`, `filter`, `options`, `advanced_properties`, `time_based_settings`,
+  `show_expression_as` and `show_filter_tokens`
+- updated `alter` method of `OlapCube` class to allow altering new parameters:
+  `template`, `filter`, `options` and `time_based_settings`
+- added `set_partition_attribute`, `remove_partition_attribute` and `list_attribute_forms`
+  methods to `OlapCube` class to allow managemenet of partition attribute and observing
+  attributes forms
+- added `list_vldb_settings`, `alter_vldb_settings` and `reset_vldb_settings`
+  methods to `OlapCube` class to allow management of VLDB settings
+
+### Deprecated
+- `update` method of `OlapCube` class is no longer supported, is superseded by `alter`
+  method, and will be removed in the future
+- `attributes`, `metrics` and `overwrite` parameters in `create` method of `OlapCube` class
+  are no longer supported, are superseded by `template` parameter, and will be removed
+  in the future
+
 ## 11.3.9.103 - 2023/05/05
 
 ### Major changes

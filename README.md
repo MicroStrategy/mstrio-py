@@ -61,6 +61,7 @@ with **VLDB settings** management (see [code_snippets][code_snippet_vldb])
 - **Privilege** and **Security Role** management modules (see [code_snippets][code_snippet_privilege])
 - **Cube Cache** management modules (see [code_snippets][code_snippet_cache])
 - **Intelligent Cube** management modules (see [code_snippets][code_snippet_olap])
+with **VLDB settings** management (see [code_snippets][code_snippet_vldb])
 - **Security filter** module (see [code_snippets][code_snippet_security_filter])
 - **Datasources and Connection Mapping** subpackage for database management (see [code_snippets][code_snippet_datasource])
 with **VLDB settings** management (see [code_snippets][code_snippet_vldb])
@@ -181,7 +182,7 @@ jupyter nbextension enable connector-jupyter --py --sys-prefix
 <a id="versioning--changelog" name="versioning--changelog"></a>
 # Versioning & Changelog
 
-Current version: **11.3.9.103** (5 May 2023). Check out [**Changelog**][release_notes] to see what's new.
+Current version: **11.3.10.101** (2 June 2023). Check out [**Changelog**][release_notes] to see what's new.
 
 mstrio-py is constantly developed to support newest MicroStrategy REST APIs. Functionalities may be added to mstrio on monthly basis. It is **recommended** to always install the newest version of mstrio-py, as it will be most stable and still maintain backwards compatibility with various MicroStrategy installations, dating back to 11.1.4.
 

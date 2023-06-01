@@ -34,6 +34,7 @@ Untitled*
 MANIFEST
 .pre-commit*
 validation_scripts
+tox.ini
 
 # PyInstaller
 #  Usually these files are written by a python script from a template

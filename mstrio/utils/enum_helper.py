@@ -11,6 +11,9 @@ class AutoName(Enum):
     def has_value(cls, value):
         return value in set(item.value for item in cls)
 
+    def __repr__(self) -> str:
+        return self.__str__()
+
 
 class AutoUpperName(Enum):
     def _generate_next_value_(self, start, count, last_values):

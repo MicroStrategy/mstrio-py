@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from enum import auto
-from typing import Optional, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 from mstrio.utils.enum_helper import AutoName
 from mstrio.utils.exceptions import NotSupportedError
@@ -187,6 +187,8 @@ class ObjectSubType(AutoName):
     SUBSCRIPTION_ADDRESS = auto()
     SUBSCRIPTION_CONTACT = auto()
     SUBSCRIPTION_INSTANCE = auto()
+    CALENDAR_SYSTEM = auto()
+    TIMEZONE_SYSTEM = auto()
 
 
 class TableColumnMergeOption(AutoName):

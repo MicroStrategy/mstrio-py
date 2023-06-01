@@ -29,7 +29,7 @@ package and is available after installation and enabling as Jupyter extension.
 """
 
 __title__ = "mstrio-py"
-__version__ = "11.3.9.103"  # NOSONAR
+__version__ = "11.3.10.101"  # NOSONAR
 __license__ = "Apache License 2.0"
 __description__ = "Python interface for the MicroStrategy REST API"
 __author__ = "MicroStrategy"

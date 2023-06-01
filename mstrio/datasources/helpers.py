@@ -24,6 +24,7 @@ class DBType(AutoName):
     CLOUD_GATEWAY_AWS_S3 = auto()
     CLOUD_GATEWAY_AZURE_ADLS_2 = auto()
     CLOUD_GATEWAY_GOOGLE_CLOUD_STORAGE = auto()
+    CLOUD_GATEWAY_SHAREPOINT = auto()
     COMPOSITE = auto()
     CONCUR = auto()
     CONNECTION_CLOUD = auto()

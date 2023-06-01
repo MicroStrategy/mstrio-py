@@ -586,11 +586,27 @@
       "type": "text",
       "multiple": false
     },
-    "attribute_name": {
+    "metric_id": {
       "type": "text",
       "multiple": false
     },
-    "metric_id": {
+    "new_attribute_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "new_metric_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "new_attribute_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "new_metric_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "attribute_name": {
       "type": "text",
       "multiple": false
     },
@@ -607,6 +623,54 @@
       "multiple": false
     },
     "cube_folder_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "template": {
+      "type": "text",
+      "multiple": false
+    },
+    "filter_expression": {
+      "type": "text",
+      "multiple": false
+    },
+    "cube_options": {
+      "type": "text",
+      "multiple": false
+    },
+    "advanced_properties": {
+      "type": "text",
+      "multiple": false
+    },
+    "time_based_settings": {
+      "type": "text",
+      "multiple": false
+    },
+    "new_cube_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "new_cube_description": {
+      "type": "text",
+      "multiple": false
+    },
+    "new_cube_abbreviation": {
+      "type": "text",
+      "multiple": false
+    },
+    "new_template": {
+      "type": "text",
+      "multiple": false
+    },
+    "new_filter_expression": {
+      "type": "text",
+      "multiple": false
+    },
+    "new_cube_options": {
+      "type": "text",
+      "multiple": false
+    },
+    "new_time_based_settings": {
       "type": "text",
       "multiple": false
     }
@@ -1639,6 +1703,10 @@
       "multiple": false
     },
     "setting_value3": {
+      "type": "text",
+      "multiple": false
+    },
+    "cube_id": {
       "type": "text",
       "multiple": false
     }
