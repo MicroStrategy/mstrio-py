@@ -6,6 +6,7 @@ ease its usage.
 """
 
 from mstrio.server import Project
+from mstrio.project_objects.datasets import OlapCube
 from mstrio.datasources import DatasourceInstance
 from mstrio.connection import get_connection
 
@@ -123,3 +124,33 @@ datasource_settings_from_names = datasource.list_vldb_settings(
 print(datasource_settings_from_names[SETTING_NAME1].value)
 print(datasource_settings_from_names[SETTING_NAME2].value)
 print(datasource_settings_from_names[SETTING_NAME3].value)
+
+# OLAP Cube VLDB settings management
+
+# Define a variable which can be later used in a script
+CUBE_ID = $cube_id
+
+# Get OLAP Cube based on its ID
+olap_cube = OlapCube(connection=conn, id=CUBE_ID)
+
+# Listing VLDB settings with different conditions
+cube_settings_from_set = olap_cube.list_vldb_settings(set_names=[PROPERTY_SET])
+print(cube_settings_from_set)
+cube_settings_as_dicts = olap_cube.list_vldb_settings(to_dictionary=True)
+print(cube_settings_as_dicts)
+cube_settings_as_dataframe_from_group = olap_cube.list_vldb_settings(
+    to_dataframe=True, groups=[GROUP_NAME]
+)
+print(cube_settings_as_dataframe_from_group)
+
+# Altering different VLDB settings
+olap_cube.reset_vldb_settings(force=True)
+print(olap_cube.vldb_settings[SETTING_NAME3].value)
+olap_cube.alter_vldb_settings(names_to_values={SETTING_NAME3: SETTING_VALUE3})
+print(olap_cube.vldb_settings[SETTING_NAME3].value)
+
+# Reseting VLDB settings
+# Set values to default for all settings specified by names
+olap_cube.reset_vldb_settings(names=[SETTING_NAME3])
+cube_settings_from_names = olap_cube.list_vldb_settings(names=[SETTING_NAME3])
+print(cube_settings_from_names[SETTING_NAME3].value)

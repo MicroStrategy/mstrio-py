@@ -6,7 +6,6 @@ from typing import Callable, Optional
 from pandas import DataFrame
 
 from mstrio import config
-from mstrio.utils import helper
 from mstrio.utils.enum_helper import AutoName
 from mstrio.utils.helper import Dictable
 from mstrio.utils.version_helper import class_version_handler
@@ -170,8 +169,9 @@ class ModelVldbMixin:
         vldb_settings (dict[str, VldbSetting]): Dict with settings names as keys
             and VldbSetting objects as values.
 
-    Objects currently supporting ModelVldbMixin settings are Project and
-    DatasourceInstance. Must be mixedin with Entity or its subclasses.
+    Objects currently supporting ModelVldbMixin settings are Project,
+    DatasourceInstance and OlapCube. Must be mixedin with Entity or its
+    subclasses.
     """
 
     _MODEL_VLDB_API: dict[str, Callable]
@@ -210,7 +210,7 @@ class ModelVldbMixin:
         for arg in args:
             if arg not in all_args:
                 msg = f"There is no VldbSetting with '{str_arg}' equals to '{arg}'."
-                helper.exception_handler(msg, exception_type=ValueError)
+                raise ValueError(msg)
 
         return {
             name: setting
@@ -254,7 +254,7 @@ class ModelVldbMixin:
                 "Please select either `to_dictionary=True` or `to_dataframe=True`, "
                 "but not both.",
             )
-            helper.exception_handler(msg, exception_type=ValueError)
+            raise ValueError(msg)
 
         self._fetch()
         vldb_settings = self.vldb_settings.copy()
@@ -275,14 +275,14 @@ class ModelVldbMixin:
                 )
             else:
                 msg = "Elements in the groups list must be of the same type."
-                helper.exception_handler(msg, exception_type=TypeError)
+                raise TypeError(msg)
 
         if names:
             vldb_settings = self.__filter_settings(vldb_settings, 'name', names)
 
         if not vldb_settings:
             msg = "There is no VldbSetting objects found with given parameters."
-            helper.exception_handler(msg, exception_type=ValueError)
+            raise ValueError(msg)
 
         if to_dictionary or to_dataframe:
             vldb_settings = {
@@ -323,14 +323,14 @@ class ModelVldbMixin:
 
         if not names_to_values:
             msg = "Please provide not empty dict with names to values pairs."
-            helper.exception_handler(msg, exception_type=ValueError)
+            raise ValueError(msg)
 
         body = {'advancedProperties': {'vldbProperties': {}}}
 
         for name, value in names_to_values.items():
             if name not in self.vldb_settings:
                 msg = f"There is no VldbSetting with name '{name}'."
-                helper.exception_handler(msg, exception_type=ValueError)
+                raise ValueError(msg)
 
             setting = self.vldb_settings[name]
 
@@ -340,7 +340,7 @@ class ModelVldbMixin:
             if not isinstance(value, type(setting.value)):
                 value_type = type(setting.value)
                 msg = f"Wrong type of VldbSetting value, it should be {value_type}."
-                helper.exception_handler(msg, exception_type=TypeError)
+                raise TypeError(msg)
 
             key = f'[{setting.property_set}].[{setting.name}]'
             body['advancedProperties']['vldbProperties'][key] = {'value': value}
@@ -363,7 +363,7 @@ class ModelVldbMixin:
             if setting.max_value:
                 msg += f" positive and less or equal to {setting.max_value}"
             msg += f" of {setting_value_type}."
-            helper.exception_handler(msg, exception_type=ValueError)
+            raise ValueError(msg)
 
         return setting_value_type(value)
 

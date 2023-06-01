@@ -147,7 +147,7 @@ class Filter:
 
             return vf
 
-    def _filter_body(self):
+    def _request_body(self):
         fb = {}
         fb["requestedObjects"] = self._requested_objects()
         if self.attr_elem_selected:

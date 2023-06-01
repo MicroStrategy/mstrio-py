@@ -443,7 +443,7 @@ class Report(
         )
 
         # Switch off subtotals if I-Server version is higher than 11.2.1
-        body = self._filter._filter_body()
+        body = self._filter._request_body()
         if version.parse(self._connection.iserver_version) >= version.parse(
             "11.2.0100"
         ):

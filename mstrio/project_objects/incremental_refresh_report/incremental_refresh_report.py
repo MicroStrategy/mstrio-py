@@ -16,10 +16,7 @@ from mstrio.modeling import (
 )
 from mstrio.object_management import Folder, SearchPattern, full_search
 from mstrio.project_objects import OlapCube
-from mstrio.project_objects.incremental_refresh_report import (
-    AdvancedProperties,
-    Template,
-)
+from mstrio.project_objects.datasets.helpers import AdvancedProperties, Template
 from mstrio.types import ObjectSubTypes, ObjectTypes
 from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, MoveMixin
 from mstrio.utils.enum_helper import AutoName, get_enum_val

@@ -1,8 +1,10 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from packaging import version
 
+from mstrio.modeling.expression import ExpressionFormat
 from mstrio.utils.error_handlers import ErrorHandler
+from mstrio.utils.helper import get_enum_val
 
 if TYPE_CHECKING:
     from requests_futures.sessions import FuturesSession
@@ -309,4 +311,219 @@ def get_sql_view(connection: "Connection", cube_id: str, project_id: str = None)
     return connection.get(
         url=f"{connection.base_url}/api/v2/cubes/{cube_id}/sqlView",
         params={'X-MSTR-projectID': project_id},
+    )
+
+
+@ErrorHandler(err_msg='Error creating cube {name}.')
+def create_cube(
+    connection: 'Connection',
+    body: dict,
+    project_id: Optional[str] = None,
+    cube_template_id: Optional[str] = None,
+    show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
+    show_filter_tokens: bool = False,
+    show_advanced_properties: bool = True,
+):
+    """Create a new cube.
+
+    Args:
+        connection (Connection): MicroStrategy REST API connection object.
+        body (dict): JSON-formatted data used to create cube.
+        project_id (str, optional): Project ID.
+        cube_template_id (str, optional): If specified, new created cube will
+            inherit 'template' of given by ID cube.
+        show_expression_as (ExpressionFormat, str, optional): Specify how
+            expressions should be presented, default 'ExpressionFormat.TREE'.
+            Available values:
+            - None.
+                (expression is returned in 'text' format)
+            - `ExpressionFormat.TREE` or `tree`.
+                (expression is returned in `text` and `tree` formats)
+            - `ExpressionFormat.TOKENS` or `tokens`.
+                (expression is returned in `text` and `tokens` formats)
+        show_filter_tokens (bool, optional): Specify whether 'filter'
+            is returned in 'tokens' format, along with `text` and `tree`
+            formats, default False.
+            - If omitted or False, only `text` and `tree` formats are returned.
+            - If True, all `text`, 'tree' and `tokens` formats are returned.
+        show_advanced_properties (bool, optional): Specify whether to retrieve
+            the values of the advanced properties. If omitted or false, nothing
+            will be returned for the advanced properties, default True.
+
+    Returns:
+        HTTP response object. Expected status: 200.
+
+    Raises:
+        AttributeError: If project ID is not provided and Connection object
+            doesn't have project selected.
+    """
+
+    if project_id is None:
+        connection._validate_project_selected()
+        project_id = connection.project_id
+
+    params = {
+        'cubeTemplateId': cube_template_id,
+        'showExpressionAs': get_enum_val(show_expression_as, ExpressionFormat),
+        'showFilterTokens': str(show_filter_tokens).lower(),
+        'showAdvancedProperties': str(show_advanced_properties).lower(),
+    }
+
+    return connection.post(
+        url=f'{connection.base_url}/api/model/cubes',
+        headers={'X-MSTR-ProjectID': project_id},
+        json=body,
+        params=params,
+    )
+
+
+@ErrorHandler(err_msg='Error getting cube with ID {id}')
+def get_cube(
+    connection: 'Connection',
+    id: str,
+    project_id: Optional[str] = None,
+    show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
+    show_filter_tokens: bool = False,
+    show_advanced_properties: bool = True,
+):
+    """Get cube by specific ID.
+
+    Args:
+        connection (Connection): MicroStrategy REST API connection object.
+        id (str): Cube ID.
+        project_id (str, optional): Project ID.
+        show_expression_as (ExpressionFormat, str, optional): Specify how
+            expressions should be presented, default 'ExpressionFormat.TREE'.
+            Available values:
+            - None.
+                (expression is returned in 'text' format)
+            - `ExpressionFormat.TREE` or `tree`.
+                (expression is returned in `text` and `tree` formats)
+            - `ExpressionFormat.TOKENS` or `tokens`.
+                (expression is returned in `text` and `tokens` formats)
+        show_filter_tokens (bool, optional): Specify whether 'filter'
+            is returned in 'tokens' format, along with `text` and `tree`
+            formats, default False.
+            - If omitted or False, only `text` and `tree` formats are returned.
+            - If True, all `text`, 'tree' and `tokens` formats are returned.
+        show_advanced_properties (bool, optional): Specify whether to retrieve
+            the values of the advanced properties. If omitted or false, nothing
+            will be returned for the advanced properties, default True.
+
+    Returns:
+        HTTP response object. Expected status: 200.
+
+    Raises:
+        AttributeError: If project ID is not provided and Connection object
+            doesn't have project selected.
+    """
+
+    if project_id is None:
+        connection._validate_project_selected()
+        project_id = connection.project_id
+
+    params = {
+        'showExpressionAs': get_enum_val(show_expression_as, ExpressionFormat),
+        'showFilterTokens': str(show_filter_tokens).lower(),
+        'showAdvancedProperties': str(show_advanced_properties).lower(),
+    }
+
+    return connection.get(
+        url=f'{connection.base_url}/api/model/cubes/{id}',
+        headers={'X-MSTR-ProjectID': project_id},
+        params=params,
+    )
+
+
+@ErrorHandler(err_msg='Error updating cube with ID {id}')
+def update_cube(
+    connection: 'Connection',
+    id: str,
+    body: dict,
+    project_id: Optional[str] = None,
+    show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
+    show_filter_tokens: bool = False,
+    show_advanced_properties: bool = False,
+):
+    """Update cube specified by ID.
+
+    Args:
+        connection (Connection): MicroStrategy REST API connection object.
+        id (str): Cube ID.
+        body (dict): JSON-formatted data used to update cube.
+        project_id (str, optional): Project ID.
+        show_expression_as (ExpressionFormat, str, optional): Specify how
+            expressions should be presented, default 'ExpressionFormat.TREE'.
+            Available values:
+            - None.
+                (expression is returned in 'text' format)
+            - `ExpressionFormat.TREE` or `tree`.
+                (expression is returned in `text` and `tree` formats)
+            - `ExpressionFormat.TOKENS` or `tokens`.
+                (expression is returned in `text` and `tokens` formats)
+        show_filter_tokens (bool, optional): Specify whether 'filter'
+            is returned in 'tokens' format, along with `text` and `tree`
+            formats, default False.
+            - If omitted or False, only `text` and `tree` formats are returned.
+            - If True, all `text`, 'tree' and `tokens` formats are returned.
+        show_advanced_properties (bool, optional): Specify whether to retrieve
+            the values of the advanced properties. If omitted or false, nothing
+            will be returned for the advanced properties, default False.
+
+    Returns:
+        HTTP response object. Expected status: 200.
+
+    Raises:
+        AttributeError: If project ID is not provided and Connection object
+            doesn't have project selected.
+    """
+
+    if project_id is None:
+        connection._validate_project_selected()
+        project_id = connection.project_id
+
+    params = {
+        'showExpressionAs': get_enum_val(show_expression_as, ExpressionFormat),
+        'showFilterTokens': str(show_filter_tokens).lower(),
+        'showAdvancedProperties': str(show_advanced_properties).lower(),
+    }
+
+    return connection.put(
+        url=f'{connection.base_url}/api/model/cubes/{id}',
+        headers={
+            'X-MSTR-ProjectID': project_id,
+        },
+        json=body,
+        params=params,
+    )
+
+
+@ErrorHandler(err_msg='Error getting metadata of VLDB settings for cube with ID {id}')
+def get_applicable_vldb_settings(
+    connection: 'Connection',
+    id: str,
+    project_id: Optional[str] = None,
+):
+    """Get metadata of advanced VLDB settings for cube.
+
+    Args:
+        connection (Connection): MicroStrategy REST API connection object.
+        id (str): Cube ID.
+        project_id (str, optional): Project ID.
+
+    Returns:
+        HTTP response object. Expected status: 200.
+
+    Raises:
+        AttributeError: If project ID is not provided and Connection object
+            doesn't have project selected.
+    """
+
+    if project_id is None:
+        connection._validate_project_selected()
+        project_id = connection.project_id
+
+    return connection.get(
+        url=f'{connection.base_url}/api/model/cubes/{id}/applicableVldbProperties',
+        headers={'X-MSTR-ProjectID': project_id},
     )
