@@ -1,4 +1,4 @@
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from mstrio.utils.api_helpers import changeset_manager, unpack_information
 from mstrio.utils.error_handlers import ErrorHandler
@@ -12,9 +12,9 @@ if TYPE_CHECKING:
 def create_filter(
     connection: "Connection",
     body: dict,
-    show_expression_as: Optional[str] = None,
+    show_expression_as: str | None = None,
     show_filter_tokens: bool = False,
-    error_msg: Optional[str] = None,
+    error_msg: str | None = None,
 ):
     """Creates a new filter in the changeset,
     based on the definition provided in request body.
@@ -52,11 +52,11 @@ def create_filter(
 def get_filter(
     connection: "Connection",
     id: str,
-    project_id: Optional[str] = None,
-    changeset_id: Optional[str] = None,
-    show_expression_as: Optional[str] = None,
+    project_id: str | None = None,
+    changeset_id: str | None = None,
+    show_expression_as: str | None = None,
     show_filter_tokens: bool = False,
-    error_msg: Optional[str] = None,
+    error_msg: str | None = None,
 ):
     """Get the definition of a filter.
     The project ID is required to return a filter's definition
@@ -106,9 +106,9 @@ def update_filter(
     connection: "Connection",
     id: str,
     body: dict,
-    show_expression_as: Optional[str] = None,
+    show_expression_as: str | None = None,
     show_filter_tokens: bool = False,
-    error_msg: Optional[str] = None,
+    error_msg: str | None = None,
 ):
     """Updates a specific filter in the changeset,
     based on the definition provided in the request body.

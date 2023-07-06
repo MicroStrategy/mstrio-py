@@ -1,5 +1,3 @@
-from typing import Optional
-
 from mstrio.connection import Connection
 from mstrio.utils.api_helpers import changeset_manager, unpack_information
 from mstrio.utils.error_handlers import ErrorHandler
@@ -10,7 +8,7 @@ from mstrio.utils.error_handlers import ErrorHandler
 def create_metric(
     connection: Connection,
     body: dict,
-    show_expression_as: Optional[list[str]] = None,
+    show_expression_as: list[str] | None = None,
     show_filter_tokens: bool = False,
 ):
     """Create a new metric in the changeset,
@@ -50,8 +48,8 @@ def create_metric(
 def get_metric(
     connection: Connection,
     id: str,
-    changeset_id: Optional[str] = None,
-    show_expression_as: Optional[list[str]] = None,
+    changeset_id: str | None = None,
+    show_expression_as: list[str] | None = None,
     show_filter_tokens: bool = False,
 ):
     """Get definition of a single metric by id
@@ -91,7 +89,7 @@ def update_metric(
     connection: Connection,
     id: str,
     body: dict,
-    show_expression_as: Optional[list[str]] = None,
+    show_expression_as: list[str] | None = None,
     show_filter_tokens: bool = False,
 ):
     """Update a specific metric in the changeset,

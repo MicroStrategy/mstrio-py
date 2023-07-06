@@ -1,5 +1,6 @@
 from enum import auto
-from mstrio.utils.enum_helper import AutoName, AutoCapitalizedName
+
+from mstrio.utils.enum_helper import AutoCapitalizedName, AutoName
 
 
 class DBType(AutoName):

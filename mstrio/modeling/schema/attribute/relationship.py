@@ -1,5 +1,4 @@
 from enum import auto
-from typing import List, Optional
 
 from mstrio.modeling.schema.helpers import SchemaObjectReference
 from mstrio.utils.enum_helper import AutoName
@@ -42,8 +41,8 @@ class Relationship(Dictable):
         relationship_type: RelationshipType,
         relationship_table: SchemaObjectReference,
         parent: SchemaObjectReference,
-        child: Optional[SchemaObjectReference] = None,
-        joint_child: Optional[List[SchemaObjectReference]] = None,
+        child: SchemaObjectReference | None = None,
+        joint_child: list[SchemaObjectReference] | None = None,
     ) -> None:
         self.relationship_type = relationship_type
         self.relationship_table = relationship_table

@@ -2,7 +2,7 @@ from concurrent.futures import as_completed
 from contextlib import contextmanager
 from functools import wraps
 from json import dumps
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from mstrio.api.changesets import (
     commit_changeset_changes,
@@ -113,7 +113,7 @@ def async_get(
     async_wrapper: callable,
     connection: 'Connection',
     ids: list[str],
-    error_msg: Optional[str] = None,
+    error_msg: str | None = None,
     **kwargs,
 ) -> list[dict]:
     """Asynchronously get results of single object GET requests. GET requests

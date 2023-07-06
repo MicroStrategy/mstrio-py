@@ -1,12 +1,12 @@
 from dataclasses import asdict, dataclass
-from enum import auto, Enum
-from typing import Optional, Type, TYPE_CHECKING
+from enum import Enum, auto
+from typing import TYPE_CHECKING, Optional
 
-from stringcase import capitalcase
 from humps import camelize, decamelize
+from stringcase import capitalcase
 
 from mstrio.utils.enum_helper import AutoName
-from mstrio.utils.helper import Dictable, snake_to_camel, delete_none_values
+from mstrio.utils.helper import Dictable, delete_none_values, snake_to_camel
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
@@ -61,7 +61,7 @@ class VersatileDate(Dictable):
     @staticmethod
     def dispatch(
         source, connection: Optional['Connection'] = None
-    ) -> Type['VersatileDate']:
+    ) -> type['VersatileDate']:
         """Returns an appropriate VersatileDate type object from the
             provided source
 
@@ -229,7 +229,7 @@ class DynamicVersatileDate(VersatileDate):
     day_offset: int
     month_offset: int
     adjustment: DateAdjustment = AdjustmentNone()
-    exclude_weekends: Optional[bool] = None
+    exclude_weekends: bool | None = None
 
     def to_dict(self, camel_case: bool = True) -> dict:
         result = asdict(self)
@@ -312,12 +312,12 @@ class VersatileTime(Dictable):
     }
     hour_mode: HourMode
     minute_and_second_mode: MinuteAndSecondMode
-    hour: Optional[int] = None
-    hour_offset: Optional[int] = None
-    minute: Optional[int] = None
-    minute_offset: Optional[int] = None
-    second: Optional[int] = None
-    second_offset: Optional[int] = None
+    hour: int | None = None
+    hour_offset: int | None = None
+    minute: int | None = None
+    minute_offset: int | None = None
+    second: int | None = None
+    second_offset: int | None = None
 
 
 @dataclass
@@ -340,5 +340,5 @@ class DynamicDateTimeStructure(Dictable):
         'time': VersatileTime,
     }
     type: DynamicDateTimeType
-    date: Optional[VersatileDate] = None
-    time: Optional[VersatileTime] = None
+    date: VersatileDate | None = None
+    time: VersatileTime | None = None

@@ -1,20 +1,15 @@
 import csv
-from enum import Enum
 import inspect
 import logging
+from collections.abc import Callable
+from enum import Enum
 from os.path import join as joinpath
 from pprint import pprint
 from sys import version_info
-from typing import (
-    Any,
-    Callable,
-    Optional,
-    TYPE_CHECKING,
-    TypeVar,
-)
+from typing import TYPE_CHECKING, Any, Optional, TypeVar
 
-from pandas import DataFrame
 import humps
+from pandas import DataFrame
 
 from mstrio import config
 from mstrio.api import objects
@@ -27,8 +22,8 @@ from mstrio.utils.dependence_mixin import DependenceMixin
 from mstrio.utils.exceptions import NotSupportedError
 from mstrio.utils.helper import rename_dict_keys
 from mstrio.utils.time_helper import (
-    bulk_str_to_datetime,
     DatetimeFormats,
+    bulk_str_to_datetime,
     map_str_to_datetime,
 )
 
@@ -201,7 +196,7 @@ class EntityBase(helper.Dictable):
         self.name = kwargs.get("name")
         self._altered_properties = dict()
 
-    def fetch(self, attr: Optional[str] = None) -> None:  # NOSONAR
+    def fetch(self, attr: str | None = None) -> None:  # NOSONAR
         """Fetch the latest object's state from the I-Server.
 
         Note:
@@ -297,7 +292,7 @@ class EntityBase(helper.Dictable):
             self._fetched_attributes.add(key)
 
     @classmethod
-    def _find_func(cls, attr: str) -> Optional[Callable]:
+    def _find_func(cls, attr: str) -> Callable | None:
         """Searches cls._API_GETTERS dictionary for a REST API wrapper function
         used to fetch `attr` from a server.
 
@@ -559,8 +554,8 @@ class EntityBase(helper.Dictable):
         cls: T,
         objects: T | list[T],
         name: str,
-        path: Optional[str] = None,
-        properties: Optional[list[str]] = None,
+        path: str | None = None,
+        properties: list[str] | None = None,
     ) -> None:
         """Exports MSTR objects to a csv file.
 
@@ -796,7 +791,7 @@ class EntityBase(helper.Dictable):
         objects: Any | list[Any],
         path: str,
         op: str,
-        existing_ids: Optional[list[str]] = None,
+        existing_ids: list[str] | None = None,
     ) -> tuple[str, str]:
         """Internal method to update objects with the specified patch wrapper.
         Used for adding and removing objects from nested properties of an
@@ -1150,8 +1145,8 @@ class CopyMixin:
 
     def create_copy(
         self: Entity,
-        name: Optional[str] = None,
-        folder_id: Optional[str] = None,
+        name: str | None = None,
+        folder_id: str | None = None,
         project: Optional['Project | str'] = None,
     ) -> Any:
         """Create a copy of the object on the I-Server.
@@ -1201,69 +1196,14 @@ class MoveMixin:
         folder = folder.id if isinstance(folder, Folder) else folder
         self._alter_properties(folder_id=folder)
 
-    def _find_object_with_name(
-        self,
-        connection: Connection,
-        name: Optional[str] = None,
-        listing_function: callable = None,
-    ) -> dict:
-        """Find objects with given name if no id is given.
-
-        Args:
-            connection: A MicroStrategy connection object
-            name: name of the object. Defaults to None.
-            object_type: type of an object that is searched.
-            listing_function: function called to list all the objects
-                with given name
-
-        Returns:
-            dict: object properties in a dictionary.
-
-        Raises:
-            ValueError: if both `id` and `name` are not provided,
-                if there is more than 1 object with the given `name` or
-                if object with the given `name` doesn't exist.
-        """
-        if name is None:
-            raise ValueError(
-                "Please specify either 'name' or 'id' parameter in the constructor."
-            )
-        objects = listing_function(connection=connection, name=name)
-        if objects:
-            number_of_objects = len(objects)
-            if 1 < number_of_objects <= 5:
-                error_string = (
-                    f"There are {number_of_objects} {self.__class__.__name__} objects"
-                    " with this name. Please initialize with id.\n"
-                )
-                for object in objects:
-                    error_string += 'Folder path: '
-                    for d in object.ancestors:
-                        error_string += d['name'] + '/'
-                    error_string += (
-                        f' {self.__class__.__name__} id: {object.id} - '
-                        f'{self.__class__.__name__} name: {object.name}\n'
-                    )
-                raise ValueError(error_string)
-            if number_of_objects > 5:
-                raise ValueError(
-                    f"There are {number_of_objects} {self.__class__.__name__}"
-                    " objects with this name. Please initialize with id."
-                )
-            return objects[0].to_dict()
-        else:
-            raise ValueError(
-                f"There is no {self.__class__.__name__} with the given name: '{name}'"
-            )
-
 
 class DeleteMixin:
     """DeleteMixin class adds deleting objects functionality.
     Must be mixedin with Entity or its subclasses.
     """
 
-    _delete_confirm_msg: Optional[str] = None
-    _delete_success_msg: Optional[str] = None
+    _delete_confirm_msg: str | None = None
+    _delete_success_msg: str | None = None
 
     def delete(self: Entity, force: bool = False) -> bool:
         """Delete object.
@@ -1358,7 +1298,7 @@ class VldbMixin:
 
     _parameter_error = "Please specify the project parameter."
 
-    def list_vldb_settings(self: Entity, project: Optional[str] = None) -> list:
+    def list_vldb_settings(self: Entity, project: str | None = None) -> list:
         """List VLDB settings."""
         connection = (
             self.connection if hasattr(self, 'connection') else self._connection
@@ -1376,7 +1316,7 @@ class VldbMixin:
         property_set_name: str,
         name: str,
         value: dict,
-        project: Optional[str] = None,
+        project: str | None = None,
     ) -> None:
         """Alter VLDB settings for a given property set."""
 
@@ -1398,7 +1338,7 @@ class VldbMixin:
         if config.verbose and response.ok:
             logger.info('VLDB settings altered.')
 
-    def reset_vldb_settings(self: Entity, project: Optional[str] = None) -> None:
+    def reset_vldb_settings(self: Entity, project: str | None = None) -> None:
         """Reset VLDB settings to default values."""
 
         connection = (

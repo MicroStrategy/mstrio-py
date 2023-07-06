@@ -1,6 +1,6 @@
-from enum import Enum
 import sys
-from typing import Optional, TYPE_CHECKING
+from enum import Enum
+from typing import TYPE_CHECKING
 
 from mstrio.access_and_security.security_role import SecurityRole  # noqa: F401
 from mstrio.datasources import DatasourceConnection  # noqa: F401
@@ -65,7 +65,7 @@ def __str_to_class(classname):
 
 
 def map_to_object(
-    object_type: int | ObjectTypes, subtype: Optional[int | ObjectSubTypes] = None
+    object_type: int | ObjectTypes, subtype: int | ObjectSubTypes | None = None
 ):
     if not isinstance(object_type, ObjectTypes):
         try:

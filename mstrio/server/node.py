@@ -1,14 +1,13 @@
 from dataclasses import dataclass
-from typing import Optional
 
 from mstrio.utils.helper import Dictable
 
 
 @dataclass
 class Node(Dictable):
-    name: Optional[str] = None
-    address: Optional[str] = None
-    service_control: Optional[bool] = None
+    name: str | None = None
+    address: str | None = None
+    service_control: bool | None = None
 
     @classmethod
     def from_dict(cls, source: dict):
@@ -23,8 +22,8 @@ class Service(Dictable):
     service: str
     port: int
     status: str
-    tags: Optional[dict] = None
-    output: Optional[str] = None
+    tags: dict | None = None
+    output: str | None = None
 
 
 @dataclass
@@ -36,5 +35,5 @@ class ServiceWithNode(Dictable):
     port: int
     status: str
     service_address: str
-    tags: Optional[dict] = None
-    output: Optional[str] = None
+    tags: dict | None = None
+    output: str | None = None

@@ -131,9 +131,9 @@ class PackageSettings(Dictable):
     def __init__(
         self,
         default_action: DefaultAction = DefaultAction.USE_EXISTING,
-        update_schema: Optional[UpdateSchema] = None,
-        acl_on_replacing_objects: Optional[AclOnReplacingObjects] = None,
-        acl_on_new_objects: Optional[AclOnNewObjects] = None,
+        update_schema: UpdateSchema | None = None,
+        acl_on_replacing_objects: AclOnReplacingObjects | None = None,
+        acl_on_new_objects: AclOnNewObjects | None = None,
     ):
         self.default_action = default_action
         self.update_schema = (
@@ -258,15 +258,15 @@ class PackageContentInfo(Dictable):
         self,
         id: str,
         action: Action | str = Action.USE_EXISTING,
-        name: Optional[str] = None,
-        version: Optional[str] = None,
-        type: Optional[ObjectTypes] = None,
-        owner: Optional[Owner] = None,
-        date_created: Optional[str] = None,
-        date_modified: Optional[str] = None,
-        include_dependents: Optional[bool] = None,
-        explicit_included: Optional[bool] = None,
-        level: Optional[Level | str] = None,
+        name: str | None = None,
+        version: str | None = None,
+        type: ObjectTypes | None = None,
+        owner: Owner | None = None,
+        date_created: str | None = None,
+        date_modified: str | None = None,
+        include_dependents: bool | None = None,
+        explicit_included: bool | None = None,
+        level: Level | str | None = None,
     ):
         self.id = id
         self.name = name

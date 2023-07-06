@@ -1,4 +1,4 @@
-from typing import List, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 from mstrio.api import datasources
 from mstrio.utils import helper
@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 @method_version_handler('11.3.0000')
 def list_available_dbms(
     connection: "Connection", to_dictionary: bool = False, limit: int = None, **filters
-) -> Union[List["Dbms"], List[dict]]:
+) -> list["Dbms"] | list[dict]:
     """List all available database management systems (DBMSs) objects or dicts.
     Optionally filter the DBMS by specifying filters.
 
@@ -114,7 +114,7 @@ class Dbms(EntityBase):
         to_dictionary: bool = False,
         limit: int = None,
         **filters,
-    ) -> Union[List["Dbms"], List[dict]]:
+    ) -> list["Dbms"] | list[dict]:
         objects = helper.fetch_objects(
             connection=connection,
             api=datasources.get_available_dbms,

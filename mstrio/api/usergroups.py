@@ -1,4 +1,4 @@
-from typing import List, Optional, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 from mstrio.utils.error_handlers import ErrorHandler
 
@@ -344,10 +344,10 @@ def get_security_roles(connection, id, project_id=None, error_msg=None):
 def get_security_filters(
     connection: "Connection",
     id: str,
-    projects: Optional[Union[str, List[str]]] = None,
+    projects: str | list[str] | None = None,
     offset: int = 0,
     limit: int = -1,
-    error_msg: Optional[str] = None,
+    error_msg: str | None = None,
 ):
     """Get each project level security filter and its corresponding inherited
     security filters for the user group with given ID.

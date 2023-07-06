@@ -1,7 +1,7 @@
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import auto
-from typing import Callable, Optional
 
 from pandas import DataFrame
 
@@ -105,10 +105,10 @@ class VldbSetting(Dictable):
     options: list[PreviewOption]
     resolved_location: ResolvedLocation
     is_inherited: bool
-    max_value: Optional[int] = None
-    next_value: Optional[str] = None
-    next_resolved_location: Optional[ResolvedLocation] = None
-    value_separator: Optional[str] = None
+    max_value: int | None = None
+    next_value: str | None = None
+    next_resolved_location: ResolvedLocation | None = None
+    value_separator: str | None = None
 
     type_map = {
         VldbPropertyType.INT32: int,
@@ -220,9 +220,9 @@ class ModelVldbMixin:
 
     def list_vldb_settings(
         self,
-        set_names: Optional[list[str]] = None,
-        names: Optional[list[str]] = None,
-        groups: Optional[list[int] | list[str]] = None,
+        set_names: list[str] | None = None,
+        names: list[str] | None = None,
+        groups: list[int] | list[str] | None = None,
         to_dictionary: bool = False,
         to_dataframe: bool = False,
     ) -> dict[str, VldbSetting]:
@@ -369,9 +369,9 @@ class ModelVldbMixin:
 
     def reset_vldb_settings(
         self,
-        set_names: Optional[list[str]] = None,
-        names: Optional[list[str]] = None,
-        groups: Optional[list[int] | list[str]] = None,
+        set_names: list[str] | None = None,
+        names: list[str] | None = None,
+        groups: list[int] | list[str] | None = None,
         force: bool = False,
     ) -> None:
         """Reset VLDB settings specified by parameters to its default values.

@@ -1,20 +1,20 @@
-from dataclasses import dataclass
 import logging
-from typing import Optional
+from dataclasses import dataclass
 
 from packaging import version
 
 from mstrio import config
 from mstrio.api import subscriptions
 from mstrio.connection import Connection
-from mstrio.utils.entity import EntityBase, DeleteMixin
+from mstrio.utils.entity import DeleteMixin, EntityBase
 from mstrio.utils.helper import (
-    delete_none_values,
     Dictable,
+    delete_none_values,
     exception_handler,
     fetch_objects_async,
     filter_params_for_func,
     get_valid_project_id,
+    find_object_with_name,
 )
 from mstrio.utils.version_helper import class_version_handler
 
@@ -23,10 +23,10 @@ logger = logging.getLogger(__name__)
 
 def list_dynamic_recipient_lists(
     connection: Connection,
-    project_id: Optional[str] = None,
-    project_name: Optional[str] = None,
+    project_id: str | None = None,
+    project_name: str | None = None,
     to_dictionary: bool = False,
-    limit: Optional[int] = None,
+    limit: int | None = None,
     **filters,
 ) -> list["DynamicRecipientList"] | list[dict]:
     """Get list of Dynamic Recipient List objects or dicts with them.
@@ -162,10 +162,10 @@ class DynamicRecipientList(EntityBase, DeleteMixin):
     def __init__(
         self,
         connection: Connection,
-        id: Optional[str] = None,
-        name: Optional[str] = None,
-        project_id: Optional[str] = None,
-        project_name: Optional[str] = None,
+        id: str | None = None,
+        name: str | None = None,
+        project_id: str | None = None,
+        project_name: str | None = None,
     ) -> None:
         """Initializes a new instance of a DynamicRecipientList class
 
@@ -185,8 +185,11 @@ class DynamicRecipientList(EntityBase, DeleteMixin):
         """
         if not id:
             if name:
-                dynamic_recipient_list = self.__find_dynamic_recipient_list_by_name(
-                    connection=connection, name=name
+                dynamic_recipient_list = find_object_with_name(
+                    connection=connection,
+                    cls=self.__class__,
+                    name=name,
+                    listing_function=list_dynamic_recipient_lists,
                 )
                 id = dynamic_recipient_list['id']
             else:
@@ -254,13 +257,13 @@ class DynamicRecipientList(EntityBase, DeleteMixin):
         physical_address: MappingField,
         linked_user: MappingField,
         device: MappingField,
-        project_id: Optional[str] = None,
-        project_name: Optional[str] = None,
-        description: Optional[str] = None,
-        recipient_name: Optional[MappingField] = None,
-        notification_address: Optional[MappingField] = None,
-        notification_device: Optional[MappingField] = None,
-        personalization: Optional[MappingField] = None,
+        project_id: str | None = None,
+        project_name: str | None = None,
+        description: str | None = None,
+        recipient_name: MappingField | None = None,
+        notification_address: MappingField | None = None,
+        notification_device: MappingField | None = None,
+        personalization: MappingField | None = None,
     ) -> "DynamicRecipientList":
         """Create a new DynamicRecipientList with specified properties.
 
@@ -332,16 +335,16 @@ class DynamicRecipientList(EntityBase, DeleteMixin):
 
     def alter(
         self,
-        name: Optional[str] = None,
-        source_report_id: Optional[str] = None,
-        physical_address: Optional[MappingField] = None,
-        linked_user: Optional[MappingField] = None,
-        device: Optional[MappingField] = None,
-        description: Optional[str] = None,
-        recipient_name: Optional[MappingField] = None,
-        notification_address: Optional[MappingField] = None,
-        notification_device: Optional[MappingField] = None,
-        personalization: Optional[MappingField] = None,
+        name: str | None = None,
+        source_report_id: str | None = None,
+        physical_address: MappingField | None = None,
+        linked_user: MappingField | None = None,
+        device: MappingField | None = None,
+        description: str | None = None,
+        recipient_name: MappingField | None = None,
+        notification_address: MappingField | None = None,
+        notification_device: MappingField | None = None,
+        personalization: MappingField | None = None,
     ) -> None:
         """Alter a DynamicRecipientList's specified properties
 
@@ -383,23 +386,3 @@ class DynamicRecipientList(EntityBase, DeleteMixin):
         personalization = personalization or self.personalization
         properties = filter_params_for_func(self.alter, locals(), exclude=['self'])
         self._alter_properties(**properties)
-
-    @staticmethod
-    def __find_dynamic_recipient_list_by_name(connection: "Connection", name: str):
-        dynamic_recipient_lists = list_dynamic_recipient_lists(
-            connection=connection, name=name
-        )
-
-        if dynamic_recipient_lists:
-            number_of_drls = len(dynamic_recipient_lists)
-            if number_of_drls > 1:
-                raise ValueError(
-                    f"There are {number_of_drls} Dynamic Recipient Lists"
-                    " with this name. Please initialize with id."
-                )
-            else:
-                return dynamic_recipient_lists[0].to_dict()
-        else:
-            raise ValueError(
-                f"There is no DynamicRecipientList with the given name: '{name}'"
-            )

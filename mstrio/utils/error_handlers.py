@@ -1,7 +1,8 @@
-from functools import wraps
 import inspect
 import logging
-from typing import Any, Callable, Union
+from collections.abc import Callable
+from functools import wraps
+from typing import Any
 
 from requests.adapters import Response
 
@@ -80,7 +81,7 @@ class ErrorHandler:
 
 def bulk_operation_response_handler(
     response: Response, unpack_value: str = None
-) -> Union[PartialSuccess, Success, MstrException]:
+) -> PartialSuccess | Success | MstrException:
     """Handle partial success and other statuses from bulk operation."""
     response_body = response.json()
     if response.ok and unpack_value:

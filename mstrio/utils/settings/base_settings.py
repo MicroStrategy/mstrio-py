@@ -1,15 +1,15 @@
-from abc import ABCMeta, abstractmethod
 import json
 import logging
+import warnings
+from abc import ABCMeta, abstractmethod
 from pprint import pprint
 from sys import version_info
-from typing import Any, Dict, List, Optional, Union
-import warnings
+from typing import Any
 
 from pandas import DataFrame, Series
 
-from mstrio import config
 import mstrio.utils.helper as helper
+from mstrio import config
 
 from .setting_types import DeprecatedSetting, SettingValue, SettingValueFactory
 from .settings_helper import convert_settings_to_byte, convert_settings_to_mega_byte
@@ -36,11 +36,11 @@ class BaseSettings(metaclass=ABCMeta):
         settings: settings
     """
 
-    _CONFIG: Dict = {}
+    _CONFIG: dict = {}
     # !NOTE define in child classes
-    _TYPE: Union[str, None] = None
-    _READ_ONLY: List[str] = []
-    _CONVERSION_MAP: Dict[str, str] = {}
+    _TYPE: str | None = None
+    _READ_ONLY: list[str] = []
+    _CONVERSION_MAP: dict[str, str] = {}
 
     def alter(self, **settings):
         """Alter settings in a command manager like way."""
@@ -76,7 +76,7 @@ class BaseSettings(metaclass=ABCMeta):
             cfg.update({'name': setting})
 
     def compare_with_files(
-        self, files: List[str], show_diff_only: bool = False
+        self, files: list[str], show_diff_only: bool = False
     ) -> DataFrame:
         """Compare the current project settings to settings in file/files
         Args:
@@ -199,7 +199,7 @@ class BaseSettings(metaclass=ABCMeta):
         return df
 
     def _validate_settings(
-        self, settings: Optional[dict] = None, bad_setting=Warning, bulk_error=True
+        self, settings: dict | None = None, bad_setting=Warning, bulk_error=True
     ) -> None:
         """Validate setting-value pairs and raise AttributeError or TypeError
         if invalid. If `bad_setting` or `bad_type` is of type Exception, then
@@ -277,7 +277,7 @@ class BaseSettings(metaclass=ABCMeta):
             super().__setattr__(setting, value)
 
     def __override_settings_config(self, value: SettingValue) -> None:
-        # placeholder to be overwriten
+        # placeholder to be overwritten
         pass
 
     def __str__(self):

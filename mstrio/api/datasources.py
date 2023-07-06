@@ -1,5 +1,4 @@
 import json
-from typing import Optional
 
 from mstrio.connection import Connection
 from mstrio.utils.api_helpers import (
@@ -144,10 +143,10 @@ def create_datasource_instance(connection, body, error_msg=None):
 def get_datasource_namespaces(
     connection: "Connection",
     id: str,
-    project_id: Optional[str] = None,
-    refresh: Optional[bool] = None,
-    fields: Optional[str] = None,
-    error_msg: Optional[str] = None,
+    project_id: str | None = None,
+    refresh: bool | None = None,
+    fields: str | None = None,
+    error_msg: str | None = None,
 ):
     """Get namespaces for a specific datasource.
 
@@ -184,9 +183,9 @@ def get_datasource_namespaces_async(
     session: FuturesSessionWithRenewal,
     connection: "Connection",
     id: str,
-    project_id: Optional[str] = None,
-    refresh: Optional[bool] = None,
-    fields: Optional[str] = None,
+    project_id: str | None = None,
+    refresh: bool | None = None,
+    fields: str | None = None,
 ):
     return session.get(
         url=f"{connection.base_url}/api/datasources/{id}/catalog/namespaces",
@@ -386,9 +385,9 @@ def test_datasource_connection(connection, body, error_msg=None):
 @ErrorHandler(err_msg='Error fetching connection mappings.')
 def get_datasource_mappings(
     connection: Connection,
-    default_connection_map: Optional[bool] = False,
-    project_id: Optional[str] = None,
-    error_msg: Optional[str] = None,
+    default_connection_map: bool | None = False,
+    project_id: str | None = None,
+    error_msg: str | None = None,
 ):
     """Get information for all connection mappings.
 
@@ -423,9 +422,9 @@ def get_datasource_mappings(
 def get_datasource_mapping(
     connection: Connection,
     id=str,
-    default_connection_map: Optional[bool] = False,
-    project_id: Optional[str] = None,
-    error_msg: Optional[str] = None,
+    default_connection_map: bool | None = False,
+    project_id: str | None = None,
+    error_msg: str | None = None,
 ):
     """Get information about specific connection mapping.
 
@@ -472,7 +471,7 @@ def get_datasource_mapping(
 
 @ErrorHandler(err_msg='Error creating connection mapping.')
 def create_datasource_mapping(
-    connection: Connection, body, error_msg: Optional[str] = None
+    connection: Connection, body, error_msg: str | None = None
 ):
     """Create a new connection mapping.
 
@@ -490,7 +489,7 @@ def create_datasource_mapping(
 
 @ErrorHandler(err_msg='Error deleting connection mapping with ID {id}')
 def delete_datasource_mapping(
-    connection: Connection, id: str, error_msg: Optional[str] = None
+    connection: Connection, id: str, error_msg: str | None = None
 ):
     """Delete a connection mapping based on id.
 
@@ -507,7 +506,7 @@ def delete_datasource_mapping(
 
 
 @ErrorHandler(err_msg="Error getting Datasource logins.")
-def get_datasource_logins(connection: Connection, error_msg: Optional[str] = None):
+def get_datasource_logins(connection: Connection, error_msg: str | None = None):
     """Get information for all datasource logins.
 
     Args:
@@ -522,9 +521,7 @@ def get_datasource_logins(connection: Connection, error_msg: Optional[str] = Non
 
 
 @ErrorHandler(err_msg='Error creating Datasource login.')
-def create_datasource_login(
-    connection: Connection, body, error_msg: Optional[str] = None
-):
+def create_datasource_login(connection: Connection, body, error_msg: str | None = None):
     """Create a new datasource login.
 
     Args:
@@ -540,9 +537,7 @@ def create_datasource_login(
 
 
 @ErrorHandler(err_msg='Error getting Datasource login with ID {id}')
-def get_datasource_login(
-    connection: Connection, id: str, error_msg: Optional[str] = None
-):
+def get_datasource_login(connection: Connection, id: str, error_msg: str | None = None):
     """Get datasource login for a specific id.
 
     Args:
@@ -559,7 +554,7 @@ def get_datasource_login(
 
 @ErrorHandler(err_msg='Error deleting Datasource login with ID {id}')
 def delete_datasource_login(
-    connection: Connection, id: str, error_msg: Optional[str] = None
+    connection: Connection, id: str, error_msg: str | None = None
 ):
     """Delete a datasource login.
 
@@ -577,7 +572,7 @@ def delete_datasource_login(
 
 @ErrorHandler(err_msg='Error updating Datasource login with ID {id}')
 def update_datasource_login(
-    connection: Connection, id: str, body, error_msg: Optional[str] = None
+    connection: Connection, id: str, body, error_msg: str | None = None
 ):
     """Update a datasource login.
 
@@ -600,7 +595,7 @@ def get_table_columns(
     datasource_id: str,
     namespace_id: str,
     table_id: str,
-    error_msg: Optional[str] = None,
+    error_msg: str | None = None,
 ):
     url = (
         f"{connection.base_url}/api/datasources/{datasource_id}/catalog/namespaces/"
@@ -614,7 +609,7 @@ def get_table_columns(
     err_msg='Error converting Datasource embedded connection from DSN to DSN-less'
 )
 def convert_ds_dsn(
-    connection: Connection, datasource_id: str, error_msg: Optional[str] = None
+    connection: Connection, datasource_id: str, error_msg: str | None = None
 ):
     """Convert datasource embedded connection from DSN to DSN-less format
     connection string and update the object to metadata.
@@ -637,7 +632,7 @@ def convert_ds_dsn(
     err_msg='Error converting Datasource connection object from DSN to DSN-less'
 )
 def convert_connection_dsn(
-    connection: Connection, ds_connection_id: str, error_msg: Optional[str] = None
+    connection: Connection, ds_connection_id: str, error_msg: str | None = None
 ):
     """Convert datasource connection from DSN to DSN-less format connection
     string and update the object to metadata.

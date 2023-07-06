@@ -1,5 +1,3 @@
-from typing import Optional
-
 from mstrio.connection import Connection
 from mstrio.utils.error_handlers import ErrorHandler
 from mstrio.utils.time_helper import DatetimeFormats, override_datetime_format
@@ -11,7 +9,7 @@ from mstrio.utils.time_helper import DatetimeFormats, override_datetime_format
     ('dateCreated', 'dateModified'),
 )
 @ErrorHandler(err_msg='Error creating Device.')
-def create_device(connection: Connection, body: dict, error_msg: Optional[str] = None):
+def create_device(connection: Connection, body: dict, error_msg: str | None = None):
     """Create a new device.
 
     Args:
@@ -32,7 +30,7 @@ def create_device(connection: Connection, body: dict, error_msg: Optional[str] =
     ('dateCreated', 'dateModified'),
 )
 @ErrorHandler(err_msg='Error getting Device with ID {id}')
-def get_device(connection: Connection, id: str, error_msg: Optional[str] = None):
+def get_device(connection: Connection, id: str, error_msg: str | None = None):
     """Get device by a specific id.
 
     Args:
@@ -48,7 +46,7 @@ def get_device(connection: Connection, id: str, error_msg: Optional[str] = None)
 
 
 @ErrorHandler(err_msg='Error deleting Device with ID {id}')
-def delete_device(connection: Connection, id: str, error_msg: Optional[str] = None):
+def delete_device(connection: Connection, id: str, error_msg: str | None = None):
     """Delete a device.
 
     Args:
@@ -70,7 +68,7 @@ def delete_device(connection: Connection, id: str, error_msg: Optional[str] = No
 )
 @ErrorHandler(err_msg='Error updating Device with ID {id}')
 def update_device(
-    connection: Connection, id: str, body: dict, error_msg: Optional[str] = None
+    connection: Connection, id: str, body: dict, error_msg: str | None = None
 ):
     """Update a device.
 
@@ -96,9 +94,9 @@ def update_device(
 )
 def get_devices(
     connection: Connection,
-    device_type: Optional[str] = None,
-    fields: Optional[str] = None,
-    error_msg: Optional[str] = None,
+    device_type: str | None = None,
+    fields: str | None = None,
+    error_msg: str | None = None,
 ):
     """Get information for all devices.
 

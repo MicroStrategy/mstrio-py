@@ -1,9 +1,7 @@
-from typing import Optional
-
 from mstrio.connection import Connection
 from mstrio.utils.api_helpers import unpack_information
 from mstrio.utils.error_handlers import ErrorHandler
-from mstrio.utils.wip import module_wip, WipLevels
+from mstrio.utils.wip import WipLevels, module_wip
 
 module_wip(globals(), level=WipLevels.WARNING)
 
@@ -13,10 +11,10 @@ module_wip(globals(), level=WipLevels.WARNING)
 def get_incremental_refresh_report(
     connection: Connection,
     id: str,
-    project_id: Optional[str] = None,
-    show_expression_as: Optional[list[str]] = None,
-    show_filter_tokens: Optional[bool] = None,
-    show_advanced_properties: Optional[bool] = None,
+    project_id: str | None = None,
+    show_expression_as: list[str] | None = None,
+    show_filter_tokens: bool | None = None,
+    show_advanced_properties: bool | None = None,
 ):
     """Get a definition of incremental refresh report
 
@@ -67,10 +65,10 @@ def get_incremental_refresh_report(
 def create_incremental_refresh_report(
     connection: Connection,
     body: dict,
-    project_id: Optional[str] = None,
-    show_expression_as: Optional[list[str]] = None,
-    show_filter_tokens: Optional[bool] = None,
-    show_advanced_properties: Optional[bool] = None,
+    project_id: str | None = None,
+    show_expression_as: list[str] | None = None,
+    show_filter_tokens: bool | None = None,
+    show_advanced_properties: bool | None = None,
 ):
     """Create a new incremental refresh report,
     based on the definition provided in request body.
@@ -124,10 +122,10 @@ def update_incremental_refresh_report(
     connection: Connection,
     id: str,
     body: dict,
-    project_id: Optional[str] = None,
-    show_expression_as: Optional[list[str]] = None,
-    show_filter_tokens: Optional[bool] = None,
-    show_advanced_properties: Optional[bool] = None,
+    project_id: str | None = None,
+    show_expression_as: list[str] | None = None,
+    show_filter_tokens: bool | None = None,
+    show_advanced_properties: bool | None = None,
 ):
     """Update a specified incremental refresh report,
     based on the definition provided in request body.
@@ -203,7 +201,7 @@ def get_incremental_refresh_report_vldb_properties(
 
 @ErrorHandler(err_msg="Error executing an incremental refresh report")
 def execute_incremental_refresh_report(
-    connection: Connection, id: str, project_id: str, fields: Optional[str] = None
+    connection: Connection, id: str, project_id: str, fields: str | None = None
 ):
     """Execute an incremental refresh report.
 
@@ -230,7 +228,7 @@ def request_incremental_refresh_report_preview_data(
     id: str,
     instance_id: str,
     project_id: str,
-    fields: Optional[str] = None,
+    fields: str | None = None,
 ):
     """Request preview data for an incremental refresh report.
 
@@ -261,9 +259,9 @@ def get_incremental_refresh_report_preview_data(
     id: str,
     instance_id: str,
     project_id: str,
-    offset: Optional[int] = None,
-    limit: Optional[int] = None,
-    fields: Optional[str] = None,
+    offset: int | None = None,
+    limit: int | None = None,
+    fields: str | None = None,
 ):
     """Get preview data for an incremental refresh report.
 

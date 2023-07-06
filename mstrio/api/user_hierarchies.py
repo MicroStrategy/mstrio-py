@@ -1,4 +1,4 @@
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from mstrio.utils.api_helpers import changeset_manager, unpack_information
 from mstrio.utils.error_handlers import ErrorHandler
@@ -10,11 +10,11 @@ if TYPE_CHECKING:
 @ErrorHandler(err_msg='Error listing Hierarchies.')
 def get_user_hierarchies(
     connection: "Connection",
-    project_id: Optional[str] = None,
-    changeset_id: Optional[str] = None,
+    project_id: str | None = None,
+    changeset_id: str | None = None,
     limit: int = 1000,
     offset: int = 0,
-    error_msg: Optional[str] = None,
+    error_msg: str | None = None,
 ):
     """Get a list of all user hierarchies.
     The project ID is required to return all user hierarchy definitions
@@ -57,7 +57,7 @@ def get_user_hierarchies(
 @unpack_information
 @ErrorHandler(err_msg='Error creating the user hierarchy.')
 def create_user_hierarchy(
-    connection: "Connection", body: dict, error_msg: Optional[str] = None
+    connection: "Connection", body: dict, error_msg: str | None = None
 ):
     """Creates a new user hierarchy in the changeset,
     based on the definition provided in request body.
@@ -83,9 +83,9 @@ def create_user_hierarchy(
 def get_user_hierarchy(
     connection: "Connection",
     id: str,
-    project_id: Optional[str] = None,
-    changeset_id: Optional[str] = None,
-    error_msg: Optional[str] = None,
+    project_id: str | None = None,
+    changeset_id: str | None = None,
+    error_msg: str | None = None,
 ):
     """Get the definition of a user hierarchy.
     The project ID is required to return a user hierarchy's definition
@@ -120,7 +120,7 @@ def get_user_hierarchy(
 @unpack_information
 @ErrorHandler(err_msg='Error updating the user hierarchy with ID: {id}.')
 def update_user_hierarchy(
-    connection: "Connection", id: str, body: dict, error_msg: Optional[str] = None
+    connection: "Connection", id: str, body: dict, error_msg: str | None = None
 ):
     """Updates a specific user hierarchy in the changeset,
     based on the definition provided in the request body.
@@ -147,7 +147,7 @@ def update_user_hierarchy(
 
 @ErrorHandler(err_msg='Error deleting the user hierarchy with ID: {id}.')
 def delete_user_hierarchy(
-    connection: "Connection", id: str, error_msg: Optional[str] = None
+    connection: "Connection", id: str, error_msg: str | None = None
 ):
     """Delete a specific user hierarchy
 

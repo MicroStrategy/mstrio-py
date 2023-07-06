@@ -1,6 +1,5 @@
 import logging
-from functools import partial
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from mstrio import config
 from mstrio.api import filters, objects
@@ -9,12 +8,18 @@ from mstrio.object_management import SearchPattern, search_operations
 from mstrio.object_management.folder import Folder
 from mstrio.types import ObjectSubTypes, ObjectTypes
 from mstrio.users_and_groups import User
-from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, MoveMixin
+from mstrio.utils.entity import (
+    CopyMixin,
+    DeleteMixin,
+    Entity,
+    MoveMixin,
+)
 from mstrio.utils.enum_helper import get_enum_val
 from mstrio.utils.helper import (
     delete_none_values,
     filter_params_for_func,
     get_valid_project_id,
+    find_object_with_name,
 )
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
@@ -29,11 +34,11 @@ logger = logging.getLogger(__name__)
 @method_version_handler('11.3.0000')
 def list_filters(
     connection: "Connection",
-    name: Optional[str] = None,
+    name: str | None = None,
     to_dictionary: bool = False,
-    limit: Optional[int] = None,
-    project_id: Optional[str] = None,
-    project_name: Optional[str] = None,
+    limit: int | None = None,
+    project_id: str | None = None,
+    project_name: str | None = None,
     search_pattern: SearchPattern | int = SearchPattern.CONTAINS,
     show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
     show_filter_tokens: bool = False,
@@ -62,7 +67,7 @@ def list_filters(
         project_name (str, optional): Project name
         search_pattern (SearchPattern enum or int, optional): pattern to
             search for, such as Begin With or Exactly. Possible values are
-            available in ENUM mstrio.object_management.SearchPattern.
+            available in ENUM `mstrio.object_management.SearchPattern`.
             Default value is CONTAINS (4).
         show_expression_as (ExpressionFormat or str, optional): specify how
             expressions should be presented
@@ -208,8 +213,8 @@ class Filter(Entity, CopyMixin, DeleteMixin, MoveMixin):
     def __init__(
         self,
         connection: "Connection",
-        id: Optional[str] = None,
-        name: Optional[str] = None,
+        id: str | None = None,
+        name: str | None = None,
         show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
         show_filter_tokens: bool = False,
     ):
@@ -233,12 +238,16 @@ class Filter(Entity, CopyMixin, DeleteMixin, MoveMixin):
         """
         connection._validate_project_selected()
         if id is None:
-            found_filter = super()._find_object_with_name(
+            if name is None:
+                raise ValueError(
+                    "Please specify either 'name' or 'id' parameter in the constructor."
+                )
+
+            found_filter = find_object_with_name(
                 connection=connection,
+                cls=self.__class__,
                 name=name,
-                listing_function=partial(
-                    list_filters, search_pattern=SearchPattern.EXACTLY
-                ),
+                listing_function=list_filters,
             )
             id = found_filter['id']
         super().__init__(
@@ -276,10 +285,10 @@ class Filter(Entity, CopyMixin, DeleteMixin, MoveMixin):
         connection: "Connection",
         name: str,
         destination_folder: Folder | str,
-        qualification: Optional[Expression | dict] = None,
-        description: Optional[str] = None,
-        is_embedded: Optional[bool] = False,
-        primary_locale: Optional[str] = None,
+        qualification: Expression | dict | None = None,
+        description: str | None = None,
+        is_embedded: bool | None = False,
+        primary_locale: str | None = None,
         show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
         show_filter_tokens: bool = False,
     ) -> "Filter":
@@ -360,11 +369,11 @@ class Filter(Entity, CopyMixin, DeleteMixin, MoveMixin):
 
     def alter(
         self,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        destination_folder_id: Optional[str] = None,
-        qualification: Optional[Expression | dict] = None,
-        is_embedded: Optional[bool] = None,
+        name: str | None = None,
+        description: str | None = None,
+        destination_folder_id: str | None = None,
+        qualification: Expression | dict | None = None,
+        is_embedded: bool | None = None,
     ):
         """Alter the filter properties.
 

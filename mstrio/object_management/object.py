@@ -1,11 +1,11 @@
 import logging
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from mstrio.api import objects
 from mstrio.object_management.search_operations import (
-    full_search,
     SearchDomain,
     SearchPattern,
+    full_search,
 )
 from mstrio.types import ObjectTypes
 from mstrio.users_and_groups.user import User
@@ -28,9 +28,9 @@ logger = logging.getLogger(__name__)
 def list_objects(
     connection: "Connection",
     object_type: ObjectTypes | int,
-    name: Optional[str] = None,
-    project_id: Optional[str] = None,
-    project_name: Optional[str] = None,
+    name: str | None = None,
+    project_id: str | None = None,
+    project_name: str | None = None,
     domain: SearchDomain | int = SearchDomain.CONFIGURATION,
     search_pattern: SearchPattern | int = SearchPattern.CONTAINS,
     to_dictionary: bool = False,
@@ -185,9 +185,9 @@ class Object(Entity, ACLMixin, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin):
 
     def alter(
         self,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        abbreviation: Optional[str] = None,
+        name: str | None = None,
+        description: str | None = None,
+        abbreviation: str | None = None,
     ) -> None:
         """Alter the object properties.
 
@@ -212,12 +212,12 @@ class Object(Entity, ACLMixin, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin):
         cls,
         connection: "Connection",
         object_type: ObjectTypes | int,
-        name: Optional[str] = None,
-        project_id: Optional[str] = None,
+        name: str | None = None,
+        project_id: str | None = None,
         to_dictionary: bool = False,
         domain: int | SearchDomain = SearchDomain.CONFIGURATION,
         pattern: int | SearchPattern = SearchPattern.CONTAINS,
-        limit: Optional[int] = None,
+        limit: int | None = None,
         **filters,
     ) -> list["Object"] | list[dict]:
         objects = full_search(

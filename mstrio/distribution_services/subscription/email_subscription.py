@@ -1,5 +1,3 @@
-from typing import Optional
-
 from mstrio.connection import Connection
 
 from ..schedule import Schedule
@@ -13,10 +11,10 @@ class EmailSubscription(Subscription):
     def __init__(
         self,
         connection: Connection,
-        id: Optional[str] = None,
-        subscription_id: Optional[str] = None,
-        project_id: Optional[str] = None,
-        project_name: Optional[str] = None,
+        id: str | None = None,
+        subscription_id: str | None = None,
+        project_id: str | None = None,
+        project_name: str | None = None,
     ):
         """Initialize EmailSubscription object, populates it with I-Server data
         if id or subscription_id is passed.
@@ -41,29 +39,29 @@ class EmailSubscription(Subscription):
         cls,
         connection: Connection,
         name: str,
-        project_id: Optional[str] = None,
-        project_name: Optional[str] = None,
-        allow_delivery_changes: Optional[bool] = None,
-        allow_personalization_changes: Optional[bool] = None,
+        project_id: str | None = None,
+        project_name: str | None = None,
+        allow_delivery_changes: bool | None = None,
+        allow_personalization_changes: bool | None = None,
         allow_unsubscribe: bool = True,
-        send_now: Optional[bool] = None,
-        owner_id: Optional[str] = None,
-        schedules: Optional[str | list[str] | Schedule | list[Schedule]] = None,
-        contents: Optional[Content] = None,
+        send_now: bool | None = None,
+        owner_id: str | None = None,
+        schedules: str | list[str] | Schedule | list[Schedule] | None = None,
+        contents: Content | None = None,
         recipients: list[str] | list[dict] = None,
-        delivery_expiration_date: Optional[str] = None,
-        delivery_expiration_timezone: Optional[str] = None,
-        contact_security: Optional[bool] = None,
-        space_delimiter: Optional[str] = None,
-        email_subject: Optional[str] = None,
-        email_message: Optional[str] = None,
+        delivery_expiration_date: str | None = None,
+        delivery_expiration_timezone: str | None = None,
+        contact_security: bool | None = None,
+        space_delimiter: str | None = None,
+        email_subject: str | None = None,
+        email_message: str | None = None,
         email_send_content_as: str = 'data',
         overwrite_older_version: bool = False,
-        filename: Optional[str] = None,
+        filename: str | None = None,
         compress: bool = False,
-        zip_filename: Optional[str] = None,
-        zip_password_protect: Optional[bool] = None,
-        zip_password: Optional[str] = None,
+        zip_filename: str | None = None,
+        zip_password_protect: bool | None = None,
+        zip_password: str | None = None,
     ):
         """Creates a new email subscription.
 

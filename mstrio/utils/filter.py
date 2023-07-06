@@ -1,5 +1,3 @@
-from typing import Optional
-
 import mstrio.utils.helper as helper
 
 
@@ -11,8 +9,8 @@ class Filter:
         self,
         attributes: list,
         metrics: list,
-        attr_elements: Optional[list] = None,
-        row_count_metrics: Optional[list] = None,
+        attr_elements: list | None = None,
+        row_count_metrics: list | None = None,
         operator: str = 'In',
     ):
         self.attributes = {}

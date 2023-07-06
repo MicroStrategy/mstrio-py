@@ -1,4 +1,4 @@
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from mstrio.utils.api_helpers import changeset_manager, unpack_information
 from mstrio.utils.error_handlers import ErrorHandler
@@ -13,10 +13,10 @@ if TYPE_CHECKING:
 def get_table(
     connection: "Connection",
     id: str,
-    project_id: Optional[str] = None,
-    changeset_id: Optional[str] = None,
-    fields: Optional[str] = None,
-    error_msg: Optional[str] = None,
+    project_id: str | None = None,
+    changeset_id: str | None = None,
+    fields: str | None = None,
+    error_msg: str | None = None,
 ):
     """Get a detailed definition for a specified table.
 
@@ -47,12 +47,12 @@ def get_table(
 @ErrorHandler("Error listing tables")
 def get_tables(
     connection: "Connection",
-    project_id: Optional[str] = None,
-    changeset_id: Optional[str] = None,
+    project_id: str | None = None,
+    changeset_id: str | None = None,
     limit: int = None,
     offset: int = 0,
-    fields: Optional[str] = None,
-    error_msg: Optional[str] = None,
+    fields: str | None = None,
+    error_msg: str | None = None,
 ):
     """Get a list of all tables.
 
@@ -89,9 +89,9 @@ def patch_table(
     connection: "Connection",
     id: str,
     body: dict,
-    column_merge_option: Optional[str] = None,
-    fields: Optional[dict] = None,
-    error_msg: Optional[str] = None,
+    column_merge_option: str | None = None,
+    fields: dict | None = None,
+    error_msg: str | None = None,
 ):
     """Update a detailed definition for a specified table in the changeset
 
@@ -129,11 +129,11 @@ def patch_table(
 def post_table(
     connection: "Connection",
     data: dict,
-    check_secondary_data_source_table: Optional[bool] = None,
-    column_merge_option: Optional[str] = None,
-    table_prefix_option: Optional[str] = None,
-    fields: Optional[str] = None,
-    error_msg: Optional[str] = None,
+    check_secondary_data_source_table: bool | None = None,
+    column_merge_option: str | None = None,
+    table_prefix_option: str | None = None,
+    fields: str | None = None,
+    error_msg: str | None = None,
 ):
     """Update a detailed definition for a specified table in the changeset
 
@@ -190,8 +190,8 @@ def get_available_warehouse_tables(
     connection: "Connection",
     datasource_id: str,
     namespace_id: str,
-    project_id: Optional[str] = None,
-    error_msg: Optional[str] = None,
+    project_id: str | None = None,
+    error_msg: str | None = None,
 ):
     if project_id is None:
         connection._validate_project_selected(),
@@ -213,7 +213,7 @@ def get_table_async(
     session: FuturesSessionWithRenewal,
     connection: "Connection",
     id: str,
-    changeset_id: Optional[str] = None,
+    changeset_id: str | None = None,
     project_id: str = None,
     fields=None,
 ):

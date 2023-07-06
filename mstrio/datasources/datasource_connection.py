@@ -1,6 +1,6 @@
-from enum import auto
 import logging
-from typing import List, Optional, TYPE_CHECKING, Union
+from enum import auto
+from typing import TYPE_CHECKING
 
 from mstrio import config
 from mstrio.api import datasources, objects
@@ -26,9 +26,9 @@ logger = logging.getLogger(__name__)
 def list_datasource_connections(
     connection: "Connection",
     to_dictionary: bool = False,
-    limit: Optional[int] = None,
+    limit: int | None = None,
     **filters,
-) -> Union[List["DatasourceConnection"], List[dict]]:
+) -> list["DatasourceConnection"] | list[dict]:
     """Get list of DatasourceConnection objects or dicts. Optionally filter the
     connections by specifying filters.
 
@@ -243,8 +243,8 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
     def __init__(
         self,
         connection: "Connection",
-        name: Optional[str] = None,
-        id: Optional[str] = None,
+        name: str | None = None,
+        id: str | None = None,
     ) -> None:
         """Initialize DatasourceConnection object and synchronize with server.
 
@@ -316,28 +316,28 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
 
     def alter(
         self,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        execution_mode: Union[str, ExecutionMode] = None,
-        max_cancel_attempt_time: Optional[int] = None,
-        max_query_exe_time: Optional[int] = None,
-        max_connection_attempt_time: Optional[int] = None,
-        connection_lifetime: Optional[int] = None,
-        connection_idle_timeout: Optional[int] = None,
-        char_encoding_windows: Union[str, CharEncoding] = None,
-        char_encoding_unix: Union[str, CharEncoding] = None,
-        table_prefix: Optional[str] = None,
-        connection_string: Optional[str] = None,
-        parameterized_queries: Optional[bool] = None,
-        extended_fetch: Optional[bool] = None,
-        driver_type: Union[str, DriverType] = None,
-        database_type: Optional[str] = None,
-        database_version: Optional[str] = None,
-        datasource_login: Union[str, DatasourceLogin, None] = None,
-        iam: Optional[dict] = None,
-        resource: Optional[str] = None,
-        scope: Optional[str] = None,
-        enable_sso: Optional[bool] = None,
+        name: str | None = None,
+        description: str | None = None,
+        execution_mode: str | ExecutionMode = None,
+        max_cancel_attempt_time: int | None = None,
+        max_query_exe_time: int | None = None,
+        max_connection_attempt_time: int | None = None,
+        connection_lifetime: int | None = None,
+        connection_idle_timeout: int | None = None,
+        char_encoding_windows: str | CharEncoding = None,
+        char_encoding_unix: str | CharEncoding = None,
+        table_prefix: str | None = None,
+        connection_string: str | None = None,
+        parameterized_queries: bool | None = None,
+        extended_fetch: bool | None = None,
+        driver_type: str | DriverType = None,
+        database_type: str | None = None,
+        database_version: str | None = None,
+        datasource_login: str | DatasourceLogin | None = None,
+        iam: dict | None = None,
+        resource: str | None = None,
+        scope: str | None = None,
+        enable_sso: bool | None = None,
     ) -> None:
         """Alter the datasource connection properties.
 
@@ -400,28 +400,28 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
         cls,
         connection: "Connection",
         name: str,
-        description: Optional[str] = None,
-        acg: Optional[int] = None,
-        execution_mode: Union[str, ExecutionMode] = None,
-        max_cancel_attempt_time: Optional[int] = None,
-        max_query_exe_time: Optional[int] = None,
-        max_connection_attempt_time: Optional[int] = None,
-        connection_lifetime: Optional[int] = None,
-        connection_idle_timeout: Optional[int] = None,
-        char_encoding_windows: Union[str, CharEncoding] = None,
-        char_encoding_unix: Union[str, CharEncoding] = None,
-        table_prefix: Optional[str] = None,
-        connection_string: Optional[str] = None,
+        description: str | None = None,
+        acg: int | None = None,
+        execution_mode: str | ExecutionMode = None,
+        max_cancel_attempt_time: int | None = None,
+        max_query_exe_time: int | None = None,
+        max_connection_attempt_time: int | None = None,
+        connection_lifetime: int | None = None,
+        connection_idle_timeout: int | None = None,
+        char_encoding_windows: str | CharEncoding = None,
+        char_encoding_unix: str | CharEncoding = None,
+        table_prefix: str | None = None,
+        connection_string: str | None = None,
         parameterized_queries: bool = False,
         extended_fetch: bool = False,
-        datasource_login: Union[DatasourceLogin, str, None] = None,
-        database_type: Optional[str] = None,
-        database_version: Optional[str] = None,
-        driver_type: Union[str, DriverType] = None,
-        oauth_parameter: Optional[str] = None,
-        iam: Optional[dict] = None,
-        resource: Optional[str] = None,
-        scope: Optional[str] = None,
+        datasource_login: DatasourceLogin | str | None = None,
+        database_type: str | None = None,
+        database_version: str | None = None,
+        driver_type: str | DriverType = None,
+        oauth_parameter: str | None = None,
+        iam: dict | None = None,
+        resource: str | None = None,
+        scope: str | None = None,
         enable_sso: bool = False,
     ) -> "DatasourceConnection":
         """Create a new datasource connection on the I-Server.
@@ -538,9 +538,9 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
         cls,
         connection: "Connection",
         to_dictionary: bool = False,
-        limit: Optional[int] = None,
+        limit: int | None = None,
         **filters,
-    ) -> Union[List["DatasourceConnection"], List[dict]]:
+    ) -> list["DatasourceConnection"] | list[dict]:
         objects = helper.fetch_objects(
             connection=connection,
             api=datasources.get_datasource_connections,

@@ -1,7 +1,6 @@
-from concurrent.futures import as_completed, Future
-from functools import cached_property
 import logging
-from typing import Optional, Type
+from concurrent.futures import Future, as_completed
+from functools import cached_property
 
 from requests import HTTPError, ReadTimeout
 from tqdm import tqdm
@@ -15,7 +14,7 @@ from mstrio.datasources.datasource_instance import (
 )
 from mstrio.modeling.schema import ObjectSubType, SchemaObjectReference
 from mstrio.modeling.schema.helpers import TableColumn, TableColumnMergeOption
-from mstrio.modeling.schema.table.logical_table import list_logical_tables, LogicalTable
+from mstrio.modeling.schema.table.logical_table import LogicalTable, list_logical_tables
 from mstrio.utils.helper import Dictable, fetch_objects
 from mstrio.utils.sessions import FuturesSessionWithRenewal
 from mstrio.utils.version_helper import method_version_handler
@@ -30,8 +29,8 @@ def list_datasource_warehouse_tables(
     namespace_id: str,
     name: str = None,
     to_dictionary: bool = False,
-    limit: Optional[int] = None,
-) -> list[Type["WarehouseTable"]] | list[dict]:
+    limit: int | None = None,
+) -> list[type["WarehouseTable"]] | list[dict]:
     """Lists available warehouse tables in a specified datasource within a
        specified namespace.
 
@@ -81,8 +80,8 @@ def list_datasource_warehouse_tables(
 def list_warehouse_tables(
     connection: Connection,
     to_dictionary: bool = False,
-    name: Optional[str] = None,
-    datasource_id: Optional[str] = None,
+    name: str | None = None,
+    datasource_id: str | None = None,
 ) -> list["WarehouseTable"] | list[dict]:
     """Fetches all available warehouse table. This operation is done
        asynchronously and is heavy: a lot of requests are performed to fetch
@@ -160,9 +159,9 @@ class WarehouseTable(Dictable):
     def add_to_project(
         self,
         logical_table_name: str,
-        prefix: Optional[str] = None,
-        col_merge_option: Optional[TableColumnMergeOption | str] = None,
-    ) -> Type["LogicalTable"]:
+        prefix: str | None = None,
+        col_merge_option: TableColumnMergeOption | str | None = None,
+    ) -> type["LogicalTable"]:
         """Adds a table to a project. This function corresponds to 'ADD WHTABLE'
            statement from MSTR Command Manager.
 
@@ -230,7 +229,7 @@ class WarehouseTable(Dictable):
 
         return dependent_logical_tables
 
-    def delete_from_project(self, force: bool = False) -> Optional[list[bool]]:
+    def delete_from_project(self, force: bool = False) -> list[bool] | None:
         """Remove the Warehouse Table from a project by removing all of its
         dependent logical tables. It will only delete dependent logical
         tables if they themselves have no dependent objects. This function
@@ -256,7 +255,7 @@ class WarehouseTable(Dictable):
 
     def list_columns(
         self, to_dictionary: bool = False, refresh: bool = False
-    ) -> list[Type[TableColumn]] | list[dict]:
+    ) -> list[type[TableColumn]] | list[dict]:
         """Get columns for a specific database table.
 
         Args:
@@ -302,8 +301,8 @@ class WarehouseTable(Dictable):
         cls,
         connection: Connection,
         to_dictionary: bool = False,
-        name: Optional[str] = None,
-        datasource_id: Optional[str] = None,
+        name: str | None = None,
+        datasource_id: str | None = None,
     ) -> list["WarehouseTable"] | list[dict]:
         """Fetches all available warehouse table in a project mapped to the
            Connection object. This operation is done asynchronously and is
@@ -342,8 +341,8 @@ class WarehouseTable(Dictable):
     def _filter(
         cls,
         connection: Connection,
-        name: Optional[str] = None,
-        datasource_id: Optional[str] = None,
+        name: str | None = None,
+        datasource_id: str | None = None,
     ) -> list["WarehouseTable"]:
         """Fetches (if not yet fetched) and filters all available warehouse
            tables. Available filters are table name and datasource id. These
@@ -576,7 +575,7 @@ class WarehouseTable(Dictable):
             session (FuturesSession): A FuturesSession object used to fetch
                 the tables.
             namespaces (dict[str, list[dict]]): a dictionary with datasource id
-                as a key and list of available namespaces withing this
+                as a key and list of available namespaces within this
                 datasource as a value.
 
         Returns:

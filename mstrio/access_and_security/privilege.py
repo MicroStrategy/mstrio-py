@@ -1,4 +1,4 @@
-from typing import List, Optional, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 from pandas import DataFrame
 
@@ -30,8 +30,8 @@ class Privilege(EntityBase):
     def __init__(
         self,
         connection: Connection,
-        name: Optional[str] = None,
-        id: Optional[str] = None,
+        name: str | None = None,
+        id: str | None = None,
     ) -> None:
         """Initialize Privilege object by passing `name` or `id`. When `id` is
         provided (not `None`), `name` is omitted. To explore all available
@@ -87,7 +87,7 @@ class Privilege(EntityBase):
         to_dictionary: bool = False,
         to_dataframe: bool = False,
         **filters,
-    ) -> Union[List["Privilege"], List[dict], DataFrame]:
+    ) -> list['Privilege'] | list[dict] | DataFrame:
         """Get list of privilege objects or privilege dicts. Filter the
         privileges by specifying the `filters` keyword arguments.
 
@@ -126,7 +126,7 @@ class Privilege(EntityBase):
         else:
             return [cls.from_dict(source=obj, connection=connection) for obj in objects]
 
-    def add_to_user(self, users: List[Union["User", str]]) -> None:
+    def add_to_user(self, users: list[Union["User", str]]) -> None:
         """Add privilege to user.
 
         Args:
@@ -143,7 +143,7 @@ class Privilege(EntityBase):
         for user in users:
             user.grant_privilege(self.id)
 
-    def revoke_from_user(self, users: List[Union["User", str]]) -> None:
+    def revoke_from_user(self, users: list[Union["User", str]]) -> None:
         """Revoke privilege from user.
 
         Args:
@@ -160,7 +160,7 @@ class Privilege(EntityBase):
         for user in users:
             user.revoke_privilege(self.id)
 
-    def add_to_user_group(self, groups: List[Union["UserGroup", str]]) -> None:
+    def add_to_user_group(self, groups: list[Union["UserGroup", str]]) -> None:
         """Add privilege to User Group.
 
         Args:
@@ -175,7 +175,7 @@ class Privilege(EntityBase):
         for group in groups:
             group.grant_privilege(self.id)
 
-    def revoke_from_user_group(self, groups: List[Union["UserGroup", str]]) -> None:
+    def revoke_from_user_group(self, groups: list[Union["UserGroup", str]]) -> None:
         """Revoke privilege from User Group.
 
         Args:
@@ -193,10 +193,8 @@ class Privilege(EntityBase):
     @staticmethod
     def _validate_privileges(
         connection: Connection,
-        privileges: Union[
-            Union["Privilege", int, str], List[Union["Privilege", int, str]]
-        ],
-    ) -> List[dict]:
+        privileges: 'Privilege | int | str | list[Privilege | int | str]',
+    ) -> list[dict]:
         """This function validates if the privilege ID/Name/Object is valid and
         returns the IDs.
 

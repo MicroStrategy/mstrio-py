@@ -1,5 +1,5 @@
 from enum import IntFlag
-from typing import Any, Optional, TypeVar
+from typing import Any, TypeVar
 
 from mstrio.api import browsing, objects
 from mstrio.connection import Connection
@@ -193,7 +193,7 @@ def get_shortcuts(
     shortcut_info_flag: ShortcutInfoFlags
     | int = ShortcutInfoFlags.DssDossierShortcutInfoDefault,
     to_dictionary: bool = False,
-    limit: Optional[int] = None,
+    limit: int | None = None,
     **filters,
 ) -> list[dict] | list[Shortcut]:
     """Retrieve information about specific published shortcuts

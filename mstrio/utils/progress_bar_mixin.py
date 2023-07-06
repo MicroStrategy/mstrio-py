@@ -1,5 +1,3 @@
-from typing import Optional, Union
-
 from tqdm.auto import tqdm
 
 
@@ -9,10 +7,10 @@ class ProgressBarMixin:
     def _display_progress_bar(
         self,
         desc: str,
-        total: Union[int, float],
-        unit: Optional[str] = None,
-        initial: Union[int, float] = 0,
-        bar_format: Optional[str] = None,
+        total: int | float,
+        unit: str | None = None,
+        initial: int | float = 0,
+        bar_format: str | None = None,
         leave: bool = True,
         **kwargs,
     ):
@@ -66,8 +64,8 @@ class ProgressBarMixin:
 
     def _update_progress_bar_if_needed(
         self,
-        new_description: Optional[str] = None,
-        update_increment: Union[int, float] = 1,
+        new_description: str | None = None,
+        update_increment: int | float = 1,
     ):
         """Updates the state of the progress bar.
         Use it after `display_progress_bar`.
@@ -79,7 +77,7 @@ class ProgressBarMixin:
                 self._progress_bar.set_description_str(new_description)
             self._progress_bar.update(update_increment)
 
-    def _set_progress_bar_value(self, new_val: Union[int, float]):
+    def _set_progress_bar_value(self, new_val: int | float):
         """Sets the value of the progress bar and refreshes it.
         Use it after `display_progress_bar`.
         Args:

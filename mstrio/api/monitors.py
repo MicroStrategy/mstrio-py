@@ -1,5 +1,5 @@
 import json
-from typing import Optional, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 from unittest.mock import Mock
 from urllib.parse import quote, urlencode
 
@@ -7,7 +7,7 @@ from packaging import version
 from requests.adapters import Response
 
 from mstrio.api.exceptions import MstrException, PartialSuccess, Success
-from mstrio.utils.error_handlers import bulk_operation_response_handler, ErrorHandler
+from mstrio.utils.error_handlers import ErrorHandler, bulk_operation_response_handler
 from mstrio.utils.helper import (
     delete_none_values,
     filter_list_of_dicts,
@@ -25,7 +25,10 @@ ISERVER_VERSION_11_3_2 = '11.3.0200'
 
 @ErrorHandler(err_msg='Error getting list of all projects from metadata.')
 def get_projects(
-    connection: "Connection", offset: int = 0, limit: int = -1, error_msg: str = None
+    connection: "Connection",
+    offset: int = 0,
+    limit: int = -1,
+    error_msg: str | None = None,
 ):
     """Get list of all projects from metadata.
     Args:
@@ -83,8 +86,8 @@ def get_projects_async(
 def get_node_info(
     connection: "Connection",
     id: str = None,
-    node_name: str = None,
-    error_msg: str = None,
+    node_name: str | None = None,
+    error_msg: str | None = None,
 ):
     """Get information about nodes in the connected Intelligence Server
     cluster.
@@ -115,8 +118,8 @@ def update_node_properties(
     node_name: str,
     project_id: str,
     body: dict,
-    error_msg: str = None,
-    whitelist: Optional[list[tuple]] = None,
+    error_msg: str | None = None,
+    whitelist: list[tuple] | None = None,
 ):
     """Update properties such as project status for a specific project for
     respective cluster node. You obtain cluster node name and project id from
@@ -163,8 +166,8 @@ def update_node_properties(
 def add_node(
     connection: "Connection",
     node_name: str,
-    error_msg: str = None,
-    whitelist: Optional[list[tuple]] = None,
+    error_msg: str | None = None,
+    whitelist: list[tuple] | None = None,
 ):
     """Add a node to the connected Intelligence Server cluster. The node must
     meet I-Server clustering requirements. If the node is part of a multi-node
@@ -199,8 +202,8 @@ def add_node(
 def remove_node(
     connection: "Connection",
     node_name: str,
-    error_msg: str = None,
-    whitelist: Optional[list[tuple]] = None,
+    error_msg: str | None = None,
+    whitelist: list[tuple] | None = None,
 ):
     """Remove a node from the connected Intelligence Server cluster. After a
     successful removal, some existing authorization tokens may become
@@ -234,7 +237,7 @@ def get_user_connections(
     node_name: str,
     offset: int = 0,
     limit: int = 100,
-    error_msg: str = None,
+    error_msg: str | None = None,
 ):
     """Get user connections information on specific intelligence server node.
 
@@ -289,7 +292,10 @@ def get_user_connections_async(
 
 
 def delete_user_connection(
-    connection: "Connection", id: str, error_msg: str = None, bulk: bool = False
+    connection: "Connection",
+    id: str,
+    error_msg: str | None = None,
+    bulk: bool = False,
 ):
     """Disconnect a user connection on specific intelligence server node.
 
@@ -387,8 +393,8 @@ def delete_cube_cache(connection: "Connection", id: str, throw_error: bool = Tru
 def alter_cube_cache_status(
     connection: "Connection",
     id: str,
-    active: bool = None,
-    loaded: bool = None,
+    active: bool | None = None,
+    loaded: bool | None = None,
     throw_error: bool = True,
 ):
     """Alter an cube cache status. In one request it is possible to set either
@@ -425,10 +431,10 @@ def get_cube_caches(
     node: str,
     offset: int = 0,
     limit: int = 1000,
-    project_ids: str = None,
+    project_ids: str | None = None,
     loaded: bool = False,
-    sort_by: str = None,
-    error_msg: str = None,
+    sort_by: str | None = None,
+    error_msg: str | None = None,
 ):
     """Get the list of cube caches on a specific cluster node.
 
@@ -474,9 +480,9 @@ def get_cube_caches_async(
     node: str,
     offset: int = 0,
     limit: int = 1000,
-    project_ids: str = None,
+    project_ids: str | None = None,
     loaded: bool = False,
-    sort_by: str = None,
+    sort_by: str | None = None,
 ):
     """Get the list of cube caches on a specific cluster node asynchronously.
 
@@ -543,7 +549,7 @@ def get_cube_cache_manipulation_status(
     err_msg='Error getting database connections for {nodes_names} cluster node.'
 )
 def get_database_connections(
-    connection: "Connection", nodes_names: str, error_msg: str = None
+    connection: "Connection", nodes_names: str, error_msg: str | None = None
 ):
     """Get database connections information on specific intelligence
         server node.
@@ -564,7 +570,7 @@ def get_database_connections(
 
 @ErrorHandler(err_msg='Error deleting database connections {connection_id}.')
 def delete_database_connection(
-    connection: "Connection", connection_id: str, error_msg: str = None
+    connection: "Connection", connection_id: str, error_msg: str | None = None
 ):
     """Disconnect a database connection on specific intelligence server node.
 
@@ -598,9 +604,9 @@ def delete_database_connection_async(
 def get_job(
     connection: "Connection",
     id: str,
-    node_name: str = None,
-    fields: list[str] = None,
-    error_msg: str = None,
+    node_name: str | None = None,
+    fields: list[str] | None = None,
+    error_msg: str | None = None,
 ):
     """Get job information.
 
@@ -663,7 +669,10 @@ def get_job(
 
 @ErrorHandler(err_msg="Error getting job {id}.")
 def get_job_v2(
-    connection: "Connection", id: str, fields: list[str] = None, error_msg: str = None
+    connection: "Connection",
+    id: str,
+    fields: list[str] | None = None,
+    error_msg: str | None = None,
 ):
     """Get job information.
 
@@ -688,14 +697,14 @@ def get_job_v2(
 def get_jobs(
     connection: "Connection",
     node_name: str,
-    project_id: str = None,
-    status: str = None,
-    job_type: str = None,
-    user_full_name: str = None,
-    object_id: str = None,
-    sort_by: str = None,
-    fields: list[str] = None,
-    error_msg: str = None,
+    project_id: str | None = None,
+    status: str | None = None,
+    job_type: str | None = None,
+    user_full_name: str | None = None,
+    object_id: str | None = None,
+    sort_by: str | None = None,
+    fields: list[str] | None = None,
+    error_msg: str | None = None,
 ) -> Response:
     """Get list of a jobs.
 
@@ -738,13 +747,13 @@ def get_jobs_async(
     future_session: "FuturesSession",
     connection: "Connection",
     node_name: str,
-    project_id: str = None,
-    status: str = None,
-    job_type: str = None,
-    user_full_name: str = None,
-    object_id: str = None,
-    sort_by: str = None,
-    fields: list[str] = None,
+    project_id: str | None = None,
+    status: str | None = None,
+    job_type: str | None = None,
+    user_full_name: str | None = None,
+    object_id: str | None = None,
+    sort_by: str | None = None,
+    fields: list[str] | None = None,
 ) -> Response:
     """Get list of a jobs asynchronously.
 
@@ -788,22 +797,22 @@ def get_jobs_async(
 def get_jobs_v2(
     connection: "Connection",
     node_name: str,
-    user: Union[list[str], str] = None,
-    description: str = None,
-    type: Union[list[str], str] = None,
-    status: Union[list[str], str] = None,
-    object_id: Optional[list[str]] = None,
-    object_type: Union[list[str], str] = None,
-    project_id: Union[list[str], str] = None,
-    project_name: Union[list[str], str] = None,
-    pu_name: Union[list[str], str] = None,
-    subscription_type: Union[list[str], str] = None,
-    subscription_recipient: Union[list[str], str] = None,
-    memory_usage: str = None,
-    elapsed_time: str = None,
-    sort_by: str = None,
-    fields: list[str] = None,
-    error_msg: str = None,
+    user: list[str] | str | None = None,
+    description: str | None = None,
+    type: list[str] | str | None = None,
+    status: list[str] | str | None = None,
+    object_id: list[str] | None = None,
+    object_type: list[str] | str | None = None,
+    project_id: list[str] | str | None = None,
+    project_name: list[str] | str | None = None,
+    pu_name: list[str] | str | None = None,
+    subscription_type: list[str] | str | None = None,
+    subscription_recipient: list[str] | str | None = None,
+    memory_usage: str | None = None,
+    elapsed_time: str | None = None,
+    sort_by: str | None = None,
+    fields: list[str] | None = None,
+    error_msg: str | None = None,
 ):
     """Get list of a jobs.
 
@@ -881,21 +890,21 @@ def get_jobs_v2_async(
     future_session: "FuturesSession",
     connection: "Connection",
     node_name: str,
-    user: Union[list[str], str] = None,
-    description: str = None,
-    type: Union[list[str], str] = None,
-    status: Union[list[str], str] = None,
-    object_id: Optional[list[str]] = None,
-    object_type: Union[list[str], str] = None,
-    project_id: Union[list[str], str] = None,
-    project_name: Union[list[str], str] = None,
-    pu_name: Union[list[str], str] = None,
-    subscription_type: Union[list[str], str] = None,
-    subscription_recipient: Union[list[str], str] = None,
-    memory_usage: str = None,
-    elapsed_time: str = None,
-    sort_by: str = None,
-    fields: list[str] = None,
+    user: list[str] | str | None = None,
+    description: str | None = None,
+    type: list[str] | str | None = None,
+    status: list[str] | str | None = None,
+    object_id: list[str] | None = None,
+    object_type: list[str] | str | None = None,
+    project_id: list[str] | str | None = None,
+    project_name: list[str] | str | None = None,
+    pu_name: list[str] | str | None = None,
+    subscription_type: list[str] | str | None = None,
+    subscription_recipient: list[str] | str | None = None,
+    memory_usage: str | None = None,
+    elapsed_time: str | None = None,
+    sort_by: str | None = None,
+    fields: list[str] | None = None,
 ) -> Response:
     """Get list of a jobs asynchronously.
 
@@ -973,7 +982,10 @@ def get_jobs_v2_async(
 
 @ErrorHandler(err_msg="Error killing job {id}")
 def cancel_job(
-    connection: "Connection", id: str, fields: list[str] = None, error_msg: str = None
+    connection: "Connection",
+    id: str,
+    fields: list[str] | None = None,
+    error_msg: str | None = None,
 ):
     """Cancel a job specified by `id`. Use cancel_job_v1 if I-Server version
     is 11.3.2 or cancel_job_v2 otherwise.
@@ -998,7 +1010,10 @@ def cancel_job(
 
 @ErrorHandler(err_msg="Error killing job {id}")
 def cancel_job_v1(
-    connection: "Connection", id: str, fields: list[str] = None, error_msg: str = None
+    connection: "Connection",
+    id: str,
+    fields: list[str] | None = None,
+    error_msg: str | None = None,
 ):
     """Cancel a job specified by `id`.
 
@@ -1021,7 +1036,10 @@ def cancel_job_v1(
 
 @ErrorHandler(err_msg="Error killing job {id}")
 def cancel_job_v2(
-    connection: "Connection", id: str, fields: list[str] = None, error_msg: str = None
+    connection: "Connection",
+    id: str,
+    fields: list[str] | None = None,
+    error_msg: str | None = None,
 ):
     """Cancel a job specified by `id`.
 
@@ -1043,8 +1061,8 @@ def cancel_job_v2(
 
 
 def cancel_jobs(
-    connection: "Connection", ids: list[str], fields: list[str] = None
-) -> Union[Success, PartialSuccess, MstrException]:
+    connection: "Connection", ids: list[str], fields: list[str] | None = None
+) -> Success | PartialSuccess | MstrException:
     """Cancel jobs specified by `ids`. Use cancel_jobs_v1 if I-Server version
     is 11.3.2 or cancel_jobs_v2 otherwise.
 
@@ -1069,7 +1087,9 @@ def cancel_jobs(
     return bulk_operation_response_handler(response, "jobCancellationStatus")
 
 
-def cancel_jobs_v1(connection: "Connection", ids: list[str], fields: list[str] = None):
+def cancel_jobs_v1(
+    connection: "Connection", ids: list[str], fields: list[str] | None = None
+):
     """Cancel jobs specified by `ids`.
 
     Args:
@@ -1094,7 +1114,9 @@ def cancel_jobs_v1(connection: "Connection", ids: list[str], fields: list[str] =
         raise ValueError("No ids have been passed.")
 
 
-def cancel_jobs_v2(connection: "Connection", ids: list[str], fields: list[str] = None):
+def cancel_jobs_v2(
+    connection: "Connection", ids: list[str], fields: list[str] | None = None
+):
     """Cancel jobs specified by `ids`.
 
     Args:
@@ -1126,17 +1148,17 @@ def get_contents_caches(
     node: str,
     offset: int = 0,
     limit: int = 1000,
-    status: Optional[str] = None,
-    content_type: Optional[str] = None,
-    content_format: Optional[str] = None,
-    size: Optional[str] = None,
-    owner: Optional[str] = None,
-    expiration: Optional[str] = None,
-    last_updated: Optional[str] = None,
-    hit_count: Optional[str] = None,
-    sort_by: Optional[str] = None,
-    fields: Optional[str] = None,
-    error_msg: Optional[str] = None,
+    status: str | None = None,
+    content_type: str | None = None,
+    content_format: str | None = None,
+    size: str | None = None,
+    owner: str | None = None,
+    expiration: str | None = None,
+    last_updated: str | None = None,
+    hit_count: str | None = None,
+    sort_by: str | None = None,
+    fields: str | None = None,
+    error_msg: str | None = None,
 ) -> Response:
     """Get cache objects
 
@@ -1194,7 +1216,7 @@ def get_contents_caches(
 
 @ErrorHandler(err_msg='Error updating caches')
 def update_contents_caches(
-    connection: "Connection", node: str, body: dict, fields: Optional[str] = None
+    connection: "Connection", node: str, body: dict, fields: str | None = None
 ) -> Response:
     """Alter multiple content cache statuses or remove content caches entirely
         in multiple projects at specific node.

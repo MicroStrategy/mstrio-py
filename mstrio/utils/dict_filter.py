@@ -1,6 +1,7 @@
-from enum import Enum
 import logging
-from typing import Any, Callable, Dict, Iterable, List, TYPE_CHECKING, TypeVar, Union
+from collections.abc import Callable, Iterable
+from enum import Enum
+from typing import TYPE_CHECKING, Any, TypeVar, Union
 
 if TYPE_CHECKING:
     from mstrio.utils.entity import EntityBase
@@ -26,7 +27,7 @@ DICT_COMPARE = 'dict'
 ENTITY_COMPARE = 'entity'
 
 
-def check_valid_param(dict_object: Dict[KT, VT], params: Iterable) -> None:
+def check_valid_param(dict_object: dict[KT, VT], params: Iterable) -> None:
     """Check if filter parameters can be used with given dict."""
     # all keys from dict that are supported for filtering
     allowed = list(
@@ -134,7 +135,7 @@ def make_dict_filter(param: str, op: str, filter_value: Any) -> Callable:
                 logger.error(f"'{param}' filter value is incorrect.")
                 raise e
 
-    def my_filter(dict_object: Dict[KT, VT]) -> bool:
+    def my_filter(dict_object: dict[KT, VT]) -> bool:
         """This function will be executed when passed into filter() function"""
         # extract actual value from dict
         if param not in dict_object:
@@ -172,8 +173,8 @@ def make_dict_filter(param: str, op: str, filter_value: Any) -> Callable:
 
 
 def filter_list_of_dicts(
-    list_of_dicts: List[Dict[KT, VT]], **filters: Dict[str, SupportedExpression]
-) -> List[Dict[KT, VT]]:
+    list_of_dicts: list[dict[KT, VT]], **filters: dict[str, SupportedExpression]
+) -> list[dict[KT, VT]]:
     """Filter a list of dicts by providing one or more key-value pair filters.
 
     Args:

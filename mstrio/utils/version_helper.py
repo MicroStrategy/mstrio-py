@@ -99,7 +99,7 @@ def is_server_min_version(connection: 'Connection', version_str: str) -> bool:
 
     Args:
         connection (Connection): MicroStrategy REST API connection object
-        version_str (str): String containg iServer version number
+        version_str (str): String containing iServer version number
 
     Returns:
         True if iServer version is greater or equal to given version.

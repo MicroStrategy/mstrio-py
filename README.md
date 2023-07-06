@@ -88,6 +88,7 @@ It is subject to change until it is released as Generally Available.
 - **Dynamic Recipient List** module (see [code_snippets][code_snippet_dynamic_recipient_list])
 - **Driver** module (see [code_snippets][code_snippet_datasource])
 - **Gateway** module (see [code_snippets][code_snippet_datasource])
+- **Language** module (see [code_snippets][code_snippet_languages])
 
 
 <a id="documentation" name="documentation"></a>
@@ -182,7 +183,7 @@ jupyter nbextension enable connector-jupyter --py --sys-prefix
 <a id="versioning--changelog" name="versioning--changelog"></a>
 # Versioning & Changelog
 
-Current version: **11.3.10.101** (2 June 2023). Check out [**Changelog**][release_notes] to see what's new.
+Current version: **11.3.10.102** (7 July 2023). Check out [**Changelog**][release_notes] to see what's new.
 
 mstrio-py is constantly developed to support newest MicroStrategy REST APIs. Functionalities may be added to mstrio on monthly basis. It is **recommended** to always install the newest version of mstrio-py, as it will be most stable and still maintain backwards compatibility with various MicroStrategy installations, dating back to 11.1.4.
 
@@ -231,10 +232,10 @@ When features (modules, parameters, attributes, methods etc.) are marked for dep
 [mstr_datasci_comm]: https://community.microstrategy.com/s/topic/0TO44000000AJ2dGAG/python-r-u108
 [mstrio_py_doc]: http://www2.microstrategy.com/producthelp/Current/mstrio-py/
 [mstr_rest_demo]: https://demo.microstrategy.com/MicroStrategyLibrary/api-docs/index.html
-[mstr_rest_docs]: https://lw.microstrategy.com/msdz/MSDL/GARelease_Current/docs/projects/RESTSDK/Content/topics/REST_API/REST_API.htm
-[mstr_help_docs]: https://www2.microstrategy.com/producthelp/current/MSTR-for-Jupyter/Content/mstr_for_jupyter.htm
-[cors_manual]: https://lw.microstrategy.com/msdz/MSDL/GARelease_Current/docs/projects/EmbeddingSDK/Content/topics/EnableCORS.htm
-[same_site_manual]: https://community.microstrategy.com/s/article/Chrome-v80-Cookie-Behavior-and-the-impact-on-MicroStrategy-Deployments?language=undefined&t=1581355581289
+[mstr_rest_docs]: https://microstrategy.github.io/rest-api-docs/
+[mstr_help_docs]: https://www2.microstrategy.com/producthelp/current/FederatedAnalytics/en-us/Content/mstr_for_jupyter.htm
+[cors_manual]: https://microstrategy.github.io/embedding-sdk-docs/config/#enable-cross-origin-resource-sharing-cors
+[same_site_manual]: https://microstrategy.github.io/embedding-sdk-docs/config/#allow-samesite-cookies
 [python_venv]: https://docs.python.org/3/tutorial/venv.html
 [release_notes]: https://github.com/MicroStrategy/mstrio-py/blob/master/NEWS.md
 [logo]: https://github.com/MicroStrategy/mstrio-py/blob/master/mstr-logo.png?raw=true
@@ -274,3 +275,4 @@ When features (modules, parameters, attributes, methods etc.) are marked for dep
 [code_snippet_dossier]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/dossier.py
 [code_snippet_dynamic_recipient_list]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/dynamic_recipient_list.py
 [code_snippet_vldb]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/vldb.py
+[code_snippet_languages]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/languages.py

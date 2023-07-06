@@ -1,10 +1,10 @@
 from dataclasses import dataclass
 from enum import auto
-from typing import List, Optional, Type, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from mstrio.modeling.schema.helpers import SchemaObjectReference
 from mstrio.utils.enum_helper import AutoName
-from mstrio.utils.helper import camel_to_snake, Dictable
+from mstrio.utils.helper import Dictable, camel_to_snake
 
 from .dynamic_date_time import DynamicDateTimeStructure
 from .expression import Expression
@@ -51,7 +51,7 @@ class PredicateParameter(Dictable):
     @staticmethod
     def dispatch(
         source, connection: Optional['Connection'] = None
-    ) -> Type['PredicateParameter']:
+    ) -> type['PredicateParameter']:
         """Returns an appropriate PredicateParameter object from the
             provided source
 
@@ -110,7 +110,7 @@ class AttributeElement(Dictable):
     }
     display: str
     element_id: str
-    attribute: Optional[SchemaObjectReference] = None
+    attribute: SchemaObjectReference | None = None
 
 
 @dataclass
@@ -245,7 +245,7 @@ class ConstantArrayParameter(PredicateParameter):
         'constants_type': VariantType,
     }
     constants_type: VariantType
-    constants: List[str]
+    constants: list[str]
 
 
 @dataclass

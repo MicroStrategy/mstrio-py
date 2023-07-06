@@ -1,5 +1,3 @@
-from typing import Optional
-
 from mstrio.api import cubes as cubes_api
 from mstrio.connection import Connection
 from mstrio.modeling.expression import ExpressionFormat
@@ -14,8 +12,8 @@ REST_ATTRIBUTES_MAP = {
 def create(
     connection: Connection,
     body: dict,
-    project_id: Optional[str] = None,
-    cube_template_id: Optional[str] = None,
+    project_id: str | None = None,
+    cube_template_id: str | None = None,
     show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
     show_filter_tokens: bool = False,
     show_advanced_properties: bool = True,
@@ -70,7 +68,7 @@ def create(
 def get(
     connection: Connection,
     id: str,
-    project_id: Optional[str] = None,
+    project_id: str | None = None,
     show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
     show_filter_tokens: bool = False,
     show_advanced_properties: bool = True,
@@ -122,7 +120,7 @@ def update(
     connection: Connection,
     id: str,
     body: dict,
-    project_id: Optional[str] = None,
+    project_id: str | None = None,
     show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
     show_filter_tokens: bool = False,
     show_advanced_properties: bool = False,

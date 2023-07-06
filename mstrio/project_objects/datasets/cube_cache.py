@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from mstrio import config
 from mstrio.api import monitors
@@ -17,13 +17,13 @@ logger = logging.getLogger(__name__)
 @method_version_handler('11.3.0000')
 def list_cube_caches(
     connection: "Connection",
-    nodes: Optional[list[str] | str] = None,
-    cube_id: Optional[str] = None,
-    loaded: Optional[bool] = False,
-    db_connection_id: Optional[str] = None,
-    project_ids: Optional[list[str]] = None,
-    to_dictionary: Optional[bool] = False,
-    limit: Optional[int] = None,
+    nodes: list[str] | str | None = None,
+    cube_id: str | None = None,
+    loaded: bool | None = False,
+    db_connection_id: str | None = None,
+    project_ids: list[str] | None = None,
+    to_dictionary: bool | None = False,
+    limit: int | None = None,
 ) -> list["CubeCache"] | list[dict]:
     """List cube caches. You can filter them by cube (`cube_id`), database
     connection (`db_connection_id`) and projects (`project_ids`). You can also
@@ -101,10 +101,10 @@ def delete_cube_caches(
     connection: "Connection",
     loaded: bool = False,
     force: bool = False,
-    nodes: Optional[list[str] | str] = None,
-    cube_id: Optional[str] = None,
-    db_connection_id: Optional[str] = None,
-) -> Optional[dict]:
+    nodes: list[str] | str | None = None,
+    cube_id: str | None = None,
+    db_connection_id: str | None = None,
+) -> dict | None:
     """Delete all cube caches on a given node.
 
     Optionally it is possible to specify for which cube or for which database
@@ -188,7 +188,7 @@ class CubeCache(Cache):
         self,
         connection: "Connection",
         cache_id: str,
-        cube_cache_dict: Optional[dict] = None,
+        cube_cache_dict: dict | None = None,
     ):
         """Initialize the CubeCache object. If cube_cache_dict provided
         no I-Server request will be sent.

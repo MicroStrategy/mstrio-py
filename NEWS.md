@@ -1,5 +1,23 @@
 # Changelog
 
+## 11.3.10.102 - 2023/07/07
+
+### Major changes
+- added `Language` class in `mstrio.server.language` package to allow management
+  of Languages
+- added `list_languages` and `list_interface_languages` to allow listing languages
+  and interface languages
+
+### Minor changes
+- fixed `Metric` objects always returning `None` for `hidden` field and fixed
+  `alter` method to allow updating it
+
+### Deprecated
+- `Locale` class in `mstrio.datasources` is no longer supported and is
+  superseded by `Language` class in `mstrio.server.language` package
+- `list_locales` function in `mstrio.datasources` is no longer supported and is
+  superseded by `list_languages` function in `mstrio.server.language` package
+
 ## 11.3.10.101 - 2023/06/02
 
 ### Major changes

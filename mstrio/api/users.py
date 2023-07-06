@@ -1,4 +1,4 @@
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from requests import Response
 
@@ -235,7 +235,7 @@ def create_address(connection, id, body, fields=None):
 
 @ErrorHandler(err_msg='Error creating a new address for user with ID {id}')
 def create_address_v2(
-    connection: "Connection", id: str, body: dict, fields: Optional[str] = None
+    connection: "Connection", id: str, body: dict, fields: str | None = None
 ) -> Response:
     """Create a new address for a specific user.
 
@@ -473,10 +473,10 @@ def get_memberships(connection, id, fields=None):
 def get_security_filters(
     connection: "Connection",
     id: str,
-    projects: Optional[str | list[str]] = None,
+    projects: str | list[str] | None = None,
     offset: int = 0,
     limit: int = -1,
-    error_msg: Optional[str] = None,
+    error_msg: str | None = None,
 ):
     """Get each project level security filter and its corresponding inherited
     security filters for the user with given ID.

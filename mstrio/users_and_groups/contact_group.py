@@ -1,13 +1,14 @@
 # NOSONAR
-from collections import defaultdict
-from enum import auto
 import logging
-from typing import Iterable, Optional, Union, List, TYPE_CHECKING
+from collections import defaultdict
+from collections.abc import Iterable
+from enum import auto
+from typing import TYPE_CHECKING, Union
 
 from mstrio import config
 from mstrio.api import contact_groups
 from mstrio.users_and_groups.user import User
-from mstrio.utils.entity import auto_match_args_entity, DeleteMixin, EntityBase
+from mstrio.utils.entity import DeleteMixin, EntityBase, auto_match_args_entity
 from mstrio.utils.enum_helper import AutoName
 from mstrio.utils.helper import (
     Dictable,
@@ -47,9 +48,9 @@ class ContactGroupMember(Dictable):
     def __init__(
         self,
         name: str,
-        type: Union[str, ContactGroupMemberType],
-        id: Optional[str] = None,
-        description: Optional[str] = None,
+        type: str | ContactGroupMemberType,
+        id: str | None = None,
+        description: str | None = None,
         enabled: bool = True,
     ):
         self.name = name
@@ -99,9 +100,9 @@ class ContactGroupMember(Dictable):
 def list_contact_groups(
     connection: "Connection",
     to_dictionary: bool = False,
-    limit: Optional[int] = None,
+    limit: int | None = None,
     **filters,
-) -> Union[List["ContactGroup"], List[dict]]:
+) -> list["ContactGroup"] | list[dict]:
     """Get all contact groups as list of ContactGroup objects or
     dictionaries.
 
@@ -173,8 +174,8 @@ class ContactGroup(EntityBase, DeleteMixin):
     def __init__(
         self,
         connection: 'Connection',
-        id: Optional[str] = None,
-        name: Optional[str] = None,
+        id: str | None = None,
+        name: str | None = None,
     ):
         """Initialize Contact Group object by passing id or name.
         When `id` is provided, name is omitted.
@@ -234,9 +235,9 @@ class ContactGroup(EntityBase, DeleteMixin):
         cls,
         connection: "Connection",
         name: str,
-        linked_user: Union[str, User],
-        members: List[Union[dict, ContactGroupMember]],
-        description: Optional[str] = None,
+        linked_user: str | User,
+        members: list[dict | ContactGroupMember],
+        description: str | None = None,
         enabled: bool = True,
     ) -> 'ContactGroup':
         """Create a new contact group.
@@ -274,11 +275,11 @@ class ContactGroup(EntityBase, DeleteMixin):
 
     def alter(
         self,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        enabled: Optional[bool] = None,
-        linked_user: Optional[Union['User', str]] = None,
-        members: Optional[Iterable[Union['ContactGroupMember', dict]]] = None,
+        name: str | None = None,
+        description: str | None = None,
+        enabled: bool | None = None,
+        linked_user: Union['User', str] | None = None,
+        members: Iterable[Union['ContactGroupMember', dict]] | None = None,
     ):
         """Update properties of a contact group
 
@@ -312,10 +313,10 @@ class ContactGroup(EntityBase, DeleteMixin):
         cls,
         connection: "Connection",
         to_dictionary: bool = False,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
+        limit: int | None = None,
+        offset: int | None = None,
         **filters,
-    ) -> Union[List["ContactGroup"], List[dict]]:
+    ) -> list["ContactGroup"] | list[dict]:
         objects = fetch_objects_async(
             connection=connection,
             api=contact_groups.get_contact_groups,

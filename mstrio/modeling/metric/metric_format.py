@@ -1,7 +1,7 @@
+import logging
 from dataclasses import dataclass
 from enum import auto
-import logging
-from typing import Any, Dict, Optional, Union
+from typing import Any, Optional, Union
 
 from mstrio.connection import Connection
 from mstrio.utils.enum_helper import AutoName
@@ -276,7 +276,7 @@ class FormatProperty(Dictable):
     @classmethod
     def from_dict(
         cls,
-        source: Dict[str, Any],
+        source: dict[str, Any],
         connection: Optional["Connection"] = None,
         to_snake_case: bool = True,
     ) -> "FormatProperty":

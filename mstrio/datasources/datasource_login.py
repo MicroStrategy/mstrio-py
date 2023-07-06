@@ -1,5 +1,5 @@
 import logging
-from typing import List, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 from mstrio import config
 from mstrio.api import datasources, objects
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 @method_version_handler('11.2.0500')
 def list_datasource_logins(
     connection: "Connection", to_dictionary: bool = False, limit: int = None, **filters
-) -> Union[List["DatasourceLogin"], List[dict]]:
+) -> list["DatasourceLogin"] | list[dict]:
     """Get list of DatasourceLogin objects or dicts. Optionally filter the
     logins by specifying filters.
 
@@ -199,7 +199,7 @@ class DatasourceLogin(Entity, CopyMixin, DeleteMixin):
         to_dictionary: bool = False,
         limit: int = None,
         **filters,
-    ) -> Union[List["DatasourceLogin"], List[dict]]:
+    ) -> list["DatasourceLogin"] | list[dict]:
         objects = helper.fetch_objects(
             connection=connection,
             api=datasources.get_datasource_logins,

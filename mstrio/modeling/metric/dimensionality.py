@@ -1,7 +1,7 @@
+import logging
 from dataclasses import dataclass
 from enum import auto
-import logging
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from mstrio.modeling.schema.helpers import SchemaObjectReference
 from mstrio.utils.enum_helper import AutoName
@@ -60,12 +60,12 @@ class DimensionalityUnit(Dictable):
     }
 
     dimensionality_unit_type: DimensionalityUnitType
-    aggregation: Optional[Aggregation] = None
-    filtering: Optional[Filtering] = None
-    group_by: Optional[bool] = None
-    relative_position: Optional[int] = None
-    target: Optional[SchemaObjectReference] = None
-    axis_collection: Optional[dict] = None
+    aggregation: Aggregation | None = None
+    filtering: Filtering | None = None
+    group_by: bool | None = None
+    relative_position: int | None = None
+    target: SchemaObjectReference | None = None
+    axis_collection: dict | None = None
 
     @classmethod
     def from_dict(cls, source: dict):
@@ -103,10 +103,10 @@ class Dimensionality(Dictable):
         'prompt': SchemaObjectReference,
     }
 
-    dimensionality_units: Optional[list[DimensionalityUnit]] = None
-    exclude_attribute: Optional[bool] = None
-    allow_adding_unit: Optional[bool] = None
-    prompt: Optional[SchemaObjectReference] = None
+    dimensionality_units: list[DimensionalityUnit] | None = None
+    exclude_attribute: bool | None = None
+    allow_adding_unit: bool | None = None
+    prompt: SchemaObjectReference | None = None
 
     @classmethod
     def from_dict(

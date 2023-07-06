@@ -1,5 +1,3 @@
-from typing import Optional
-
 import requests
 
 from mstrio.connection import Connection
@@ -9,8 +7,8 @@ from mstrio.utils.error_handlers import ErrorHandler
 @ErrorHandler(err_msg='Error while creating the package holder')
 def create_package_holder(
     connection: Connection,
-    project_id: Optional[str] = None,
-    error_msg: Optional[str] = None,
+    project_id: str | None = None,
+    error_msg: str | None = None,
 ) -> requests.Response:
     """Create a new in-memory metadata package holder.
 
@@ -36,9 +34,9 @@ def update_package_holder(
     connection: Connection,
     body: dict,
     id: str,
-    project_id: Optional[str] = None,
+    project_id: str | None = None,
     prefer: str = "respond-async",
-    error_msg: Optional[str] = None,
+    error_msg: str | None = None,
 ) -> requests.Response:
     """Fill the content of the in-memory metadata package holder per supplied
     specification. Currently, it's only supported when the holder is empty.
@@ -70,8 +68,8 @@ def update_package_holder(
 def download_package(
     connection: Connection,
     id: str,
-    project_id: Optional[str] = None,
-    error_msg: Optional[str] = None,
+    project_id: str | None = None,
+    error_msg: str | None = None,
 ) -> requests.Response:
     """Download a package binary.
 
@@ -98,8 +96,8 @@ def upload_package(
     connection: Connection,
     id: str,
     file: bytes,
-    project_id: Optional[str] = None,
-    error_msg: Optional[str] = None,
+    project_id: str | None = None,
+    error_msg: str | None = None,
 ) -> requests.Response:
     """Upload package to sandbox directly.
 
@@ -127,9 +125,9 @@ def upload_package(
 def get_package_holder(
     connection: Connection,
     id: str,
-    project_id: Optional[str] = None,
+    project_id: str | None = None,
     show_content: bool = True,
-    error_msg: Optional[str] = None,
+    error_msg: str | None = None,
 ) -> requests.Response:
     """Get definition of a package, including package status and its detail
     content.
@@ -160,9 +158,9 @@ def get_package_holder(
 def delete_package_holder(
     connection: Connection,
     id: str,
-    project_id: Optional[str] = None,
+    project_id: str | None = None,
     prefer: str = 'respond-async',
-    error_msg: Optional[str] = None,
+    error_msg: str | None = None,
 ) -> requests.Response:
     """Delete the in-memory metadata package holder, releasing associated
     Intelligence Server resources.
@@ -195,9 +193,9 @@ def delete_package_holder(
 def create_import(
     connection: Connection,
     id: str,
-    project_id: Optional[str] = None,
+    project_id: str | None = None,
     generate_undo: bool = False,
-    error_msg: Optional[str] = None,
+    error_msg: str | None = None,
 ) -> requests.Response:
     """Create a package import process.
 
@@ -231,8 +229,8 @@ def create_import(
 def get_import(
     connection: Connection,
     id: str,
-    project_id: Optional[str] = None,
-    error_msg: Optional[str] = None,
+    project_id: str | None = None,
+    error_msg: str | None = None,
 ) -> requests.Response:
     """Get result of a package import process.
 
@@ -258,8 +256,8 @@ def get_import(
 def delete_import(
     connection: Connection,
     id: str,
-    project_id: Optional[str] = None,
-    error_msg: Optional[str] = None,
+    project_id: str | None = None,
+    error_msg: str | None = None,
 ) -> requests.Response:
     """Closes an existing import process previously created.
 
@@ -288,8 +286,8 @@ def delete_import(
 def create_undo(
     connection: Connection,
     id: str,
-    project_id: Optional[str] = None,
-    error_msg: Optional[str] = None,
+    project_id: str | None = None,
+    error_msg: str | None = None,
 ) -> requests.Response:
     """Download undo package binary for this import process.
 

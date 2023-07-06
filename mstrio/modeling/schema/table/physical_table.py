@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 from mstrio.api import datasources
 from mstrio.api import tables as tables_api
@@ -24,13 +24,13 @@ logger = logging.getLogger(__name__)
 @method_version_handler('11.3.0100')
 def list_physical_tables(
     connection: Connection,
-    project_id: Optional[str] = None,
-    project_name: Optional[str] = None,
-    filters: Optional[dict] = None,
-    limit: Optional[int] = None,
+    project_id: str | None = None,
+    project_name: str | None = None,
+    filters: dict | None = None,
+    limit: int | None = None,
     to_dictionary: bool = False,
     include_unassigned_tables: bool = False,
-) -> Union[list["PhysicalTable"], list[dict]]:
+) -> list["PhysicalTable"] | list[dict]:
     """List all physical tables in a project.
 
     Specify either `project_id` or `project_name`.
@@ -96,8 +96,8 @@ def list_physical_tables(
 @method_version_handler('11.3.0100')
 def list_tables_prefixes(
     connection: Connection,
-    project_id: Optional[str] = None,
-    project_name: Optional[str] = None,
+    project_id: str | None = None,
+    project_name: str | None = None,
 ):
     """Returns the prefixes for the physical tables
 
@@ -127,8 +127,8 @@ def list_tables_prefixes(
 def list_namespaces(
     connection: "Connection",
     id: str,
-    refresh: Optional[bool] = None,
-    limit: Optional[int] = None,
+    refresh: bool | None = None,
+    limit: int | None = None,
     **filters,
 ) -> list[dict]:
     """Get list of namespaces. Optionally filter them by specifying filters.
@@ -197,9 +197,9 @@ class PhysicalTable(Entity):
         self,
         connection: Connection,
         id: str,
-        name: Optional[str] = None,
-        project_id: Optional[str] = None,
-        project_name: Optional[str] = None,
+        name: str | None = None,
+        project_id: str | None = None,
+        project_name: str | None = None,
     ):
         """Initializes a PhysicalTable object. You have to provide ID of a
             physical table object. You can get this ID e.g. using

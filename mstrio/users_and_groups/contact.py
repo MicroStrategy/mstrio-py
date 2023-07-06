@@ -1,8 +1,9 @@
 # NOSONAR
 import logging
 from collections import defaultdict
+from collections.abc import Iterable
 from enum import auto
-from typing import TYPE_CHECKING, Iterable, Optional
+from typing import TYPE_CHECKING, Optional
 
 from mstrio import config
 from mstrio.api import contacts
@@ -72,7 +73,7 @@ class ContactAddress(Dictable):
         physical_address: str,
         delivery_type: ContactDeliveryType | str,
         device: 'Device | str',
-        id: Optional[str] = None,
+        id: str | None = None,
         is_default: bool = False,
         connection: Optional['Connection'] = None,
     ):
@@ -143,7 +144,7 @@ class ContactAddress(Dictable):
 def list_contacts(
     connection: 'Connection',
     to_dictionary: bool = False,
-    limit: Optional[int] = None,
+    limit: int | None = None,
     **filters,
 ) -> list['Contact'] | list[dict]:
     """Get all contacts as list of Contact objects or dictionaries.
@@ -222,8 +223,8 @@ class Contact(EntityBase, DeleteMixin):
     def __init__(
         self,
         connection: 'Connection',
-        id: Optional[str] = None,
-        name: Optional[str] = None,
+        id: str | None = None,
+        name: str | None = None,
     ):
         """Initialize Contact object by passing id or name.
         When `id` is provided, name is omitted.
@@ -289,7 +290,7 @@ class Contact(EntityBase, DeleteMixin):
         name: str,
         linked_user: 'User | str',
         contact_addresses: Iterable['ContactAddress | dict'],
-        description: Optional[str] = None,
+        description: str | None = None,
         enabled: bool = True,
     ) -> 'Contact':
         """Create a new contact.
@@ -328,11 +329,11 @@ class Contact(EntityBase, DeleteMixin):
 
     def alter(
         self,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        enabled: Optional[bool] = None,
+        name: str | None = None,
+        description: str | None = None,
+        enabled: bool | None = None,
         linked_user: Optional['User | str'] = None,
-        contact_addresses: Optional[Iterable['ContactAddress | dict']] = None,
+        contact_addresses: Iterable['ContactAddress | dict'] | None = None,
     ):
         """Update properties of a contact
 
@@ -363,7 +364,7 @@ class Contact(EntityBase, DeleteMixin):
         cls,
         connection: 'Connection',
         to_dictionary: bool = False,
-        limit: Optional[int] = None,
+        limit: int | None = None,
         **filters,
     ) -> list['Contact'] | list[dict]:
         """Get all contacts as list of Contact objects or dictionaries.

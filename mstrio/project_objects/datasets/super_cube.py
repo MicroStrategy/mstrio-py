@@ -1,7 +1,6 @@
 import logging
 import time
 from dataclasses import dataclass
-from typing import Optional
 
 import pandas as pd
 from tqdm.auto import tqdm
@@ -11,15 +10,16 @@ from mstrio.api import cubes, datasets
 from mstrio.connection import Connection
 from mstrio.object_management import (
     Folder,
-    get_predefined_folder_contents,
     PredefinedFolders,
+    get_predefined_folder_contents,
 )
-from mstrio.object_management.search_operations import full_search, SearchPattern
+from mstrio.object_management.search_operations import SearchPattern, full_search
 from mstrio.utils import helper
 from mstrio.utils.encoder import Encoder
 from mstrio.utils.entity import CertifyMixin, ObjectSubTypes
 from mstrio.utils.model import Model
 from mstrio.utils.version_helper import is_server_min_version
+
 from .cube import _Cube
 
 logger = logging.getLogger(__name__)
@@ -27,12 +27,12 @@ logger = logging.getLogger(__name__)
 
 def list_super_cubes(
     connection: Connection,
-    name: Optional[str] = None,
+    name: str | None = None,
     search_pattern: SearchPattern | int = SearchPattern.CONTAINS,
-    project_id: Optional[str] = None,
-    project_name: Optional[str] = None,
+    project_id: str | None = None,
+    project_name: str | None = None,
     to_dictionary: bool = False,
-    limit: Optional[int] = None,
+    limit: int | None = None,
     **filters,
 ) -> list["SuperCube"] | list[dict]:
     """Get list of SuperCube objects or dicts with them.
@@ -196,10 +196,10 @@ class SuperCube(_Cube, CertifyMixin):
     def __init__(
         self,
         connection: Connection,
-        id: Optional[str] = None,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        instance_id: Optional[str] = None,
+        id: str | None = None,
+        name: str | None = None,
+        description: str | None = None,
+        instance_id: str | None = None,
         progress_bar: bool = True,
         parallel: bool = True,
     ):
@@ -367,7 +367,7 @@ class SuperCube(_Cube, CertifyMixin):
         """
         self._tables = [t for t in self._tables if t.get('table_name') != name]
 
-    def __check_folder_contents(self, name: str, folder_id: Optional[str] = None):
+    def __check_folder_contents(self, name: str, folder_id: str | None = None):
         """Check if folder already have object with given name.
         If folder_id is None, check My Reports folder.
         """
@@ -393,12 +393,12 @@ class SuperCube(_Cube, CertifyMixin):
 
     def create(
         self,
-        folder_id: Optional[str] = None,
+        folder_id: str | None = None,
         auto_upload: bool = True,
         auto_publish: bool = True,
         chunksize: int = 100000,
         force: bool = False,
-        attribute_forms: Optional[list[SuperCubeAttribute]] = None,
+        attribute_forms: list[SuperCubeAttribute] | None = None,
     ) -> None:
         """Create a new super cube and initialize cube object after successful
         creation. This function does not return new super cube, but it updates
@@ -422,11 +422,11 @@ class SuperCube(_Cube, CertifyMixin):
                 Defaults to False.
             attribute_forms (list[SuperCubeAttribute], optional): list
             of instances of SuperCubeAttribute, that links tables' columns to
-            different forms of the same attribute. If this argugment is not
+            different forms of the same attribute. If this argument is not
             provided, a separate attribute is created for every distinct column
-            name. If it is proveded, it contain mapping of columns to
+            name. If it is provided, it contains mapping of columns to
             attributes as different form of an attribute. For all columns that
-            are not part of any attribute's form expression, seprate attribute
+            are not part of any attribute's form expression, separate attribute
             will be created.
         """
         if auto_publish and not auto_upload:
@@ -557,9 +557,9 @@ class SuperCube(_Cube, CertifyMixin):
     def save_as(
         self,
         name: str,
-        description: Optional[str] = None,
-        folder_id: Optional[str] = None,
-        table_name: Optional[str] = None,
+        description: str | None = None,
+        folder_id: str | None = None,
+        table_name: str | None = None,
     ) -> "SuperCube":
         """Creates a new single-table cube with the data frame stored in the
         SuperCube instance `SuperCube.dataframe`.

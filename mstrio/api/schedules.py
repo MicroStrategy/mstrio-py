@@ -1,5 +1,4 @@
 import json
-from typing import Optional
 
 from requests.adapters import Response
 
@@ -162,7 +161,7 @@ def delete_schedule(connection, id, fields=None, error_msg=None):
 
 @ErrorHandler(err_msg='Error getting schedule information')
 def get_contents_schedule(
-    connection: "Connection", project_id: str, body: dict, fields: Optional[str] = None
+    connection: "Connection", project_id: str, body: dict, fields: str | None = None
 ) -> Response:
     """Get a list of available schedules for a list of contents within a given
         project.

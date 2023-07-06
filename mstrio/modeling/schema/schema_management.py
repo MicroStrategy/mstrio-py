@@ -1,6 +1,6 @@
-from enum import auto
 import logging
-from typing import List, Optional, Union
+from enum import auto
+from typing import Optional, Union
 
 from mstrio.api import schema
 from mstrio.connection import Connection
@@ -46,11 +46,11 @@ class SchemaLockStatus(Dictable):
     def __init__(
         self,
         lock_type: Union['SchemaLockType', str],
-        date_created: Optional[str] = None,
-        comment: Optional[str] = None,
-        machine_name: Optional[str] = None,
-        owner_name: Optional[str] = None,
-        owner_id: Optional[str] = None,
+        date_created: str | None = None,
+        comment: str | None = None,
+        machine_name: str | None = None,
+        owner_name: str | None = None,
+        owner_id: str | None = None,
     ):
         """Initialize schema lock status. When schema is unlocked, only its
         `lock_type` is provided.
@@ -111,7 +111,7 @@ class SchemaTaskError(Dictable):
     task."""
 
     def __init__(
-        self, code: str, message: str, additional_properties: Optional[dict] = None
+        self, code: str, message: str, additional_properties: dict | None = None
     ):
         """Initialize task error.
 
@@ -139,10 +139,10 @@ class SchemaTask(Dictable):
     def __init__(
         self,
         id: str,
-        status: Union[str, SchemaTaskStatus],
-        start_time: Optional[str] = None,
-        end_time: Optional[str] = None,
-        errors: Optional[List[SchemaTaskError]] = None,
+        status: str | SchemaTaskStatus,
+        start_time: str | None = None,
+        end_time: str | None = None,
+        errors: list[SchemaTaskError] | None = None,
     ):
         """Initialize task.
 
@@ -204,8 +204,8 @@ class SchemaManagement:
     def __init__(
         self,
         connection: "Connection",
-        project_id: Optional[str] = None,
-        project_name: Optional[str] = None,
+        project_id: str | None = None,
+        project_name: str | None = None,
     ):
         """Initialize schema management object for the given project.
 
@@ -315,9 +315,9 @@ class SchemaManagement:
 
     def reload(
         self,
-        update_types: Optional[
-            Union[List[Union[str, "SchemaUpdateType"]], Union[str, "SchemaUpdateType"]]
-        ] = None,
+        update_types: list[Union[str, "SchemaUpdateType"]]
+        | Union[str, "SchemaUpdateType"]
+        | None = None,
         respond_async: bool = True,
     ) -> Optional["SchemaTask"]:
         """Reload (update) the schema. This operation can be performed

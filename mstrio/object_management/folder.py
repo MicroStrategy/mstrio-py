@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from mstrio import config
 from mstrio.api import folders, objects
@@ -21,10 +21,10 @@ logger = logging.getLogger(__name__)
 
 def list_folders(
     connection: "Connection",
-    project_id: Optional[str] = None,
-    project_name: Optional[str] = None,
+    project_id: str | None = None,
+    project_name: str | None = None,
     to_dictionary: bool = False,
-    limit: Optional[int] = None,
+    limit: int | None = None,
     **filters,
 ) -> list["Folder"] | list[dict]:
     """Get a list of folders - either all folders in a specific project or all
@@ -86,8 +86,8 @@ def list_folders(
 
 def get_my_personal_objects_contents(
     connection: "Connection",
-    project_id: Optional[str] = None,
-    project_name: Optional[str] = None,
+    project_id: str | None = None,
+    project_name: str | None = None,
     to_dictionary: bool = False,
 ) -> list:
     """Get contents of `My Personal Objects` folder in a specific project.
@@ -129,10 +129,10 @@ def get_my_personal_objects_contents(
 def get_predefined_folder_contents(
     connection: "Connection",
     folder_type: PredefinedFolders,
-    project_id: Optional[str] = None,
-    project_name: Optional[str] = None,
+    project_id: str | None = None,
+    project_name: str | None = None,
     to_dictionary: bool = False,
-    limit: Optional[int] = None,
+    limit: int | None = None,
     **filters,
 ) -> list:
     """Get contents of a pre-defined MicroStrategy folder in a specific project.
@@ -233,7 +233,7 @@ class Folder(Entity, CopyMixin, MoveMixin, DeleteMixin):
     _OBJECT_TYPE = ObjectTypes.FOLDER
     _SIZE_LIMIT = 10000000  # this sets desired chunk size in bytes
 
-    def __init__(self, connection: "Connection", id: str, name: Optional[str] = None):
+    def __init__(self, connection: "Connection", id: str, name: str | None = None):
         """Initialize folder object by its identifier.
 
         Note:
@@ -255,7 +255,7 @@ class Folder(Entity, CopyMixin, MoveMixin, DeleteMixin):
         connection: "Connection",
         name: str,
         parent: str,
-        description: Optional[str] = None,
+        description: str | None = None,
     ) -> "Folder":
         """Create a new folder in a folder selected within connection object
         by providing its name, id of parent folder and optionally description.
@@ -280,9 +280,7 @@ class Folder(Entity, CopyMixin, MoveMixin, DeleteMixin):
             )
         return cls.from_dict(source=response, connection=connection)
 
-    def alter(
-        self, name: Optional[str] = None, description: Optional[str] = None
-    ) -> None:
+    def alter(self, name: str | None = None, description: str | None = None) -> None:
         """Alter the folder properties.
 
         Args:

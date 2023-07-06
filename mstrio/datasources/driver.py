@@ -1,5 +1,3 @@
-from typing import Optional, Type
-
 from mstrio.connection import Connection
 from mstrio.types import ObjectTypes
 from mstrio.utils.entity import Entity
@@ -88,8 +86,8 @@ class Driver(Entity):
     def __init__(
         self,
         connection: Connection,
-        id: Optional[str] = None,
-        name: Optional[str] = None,
+        id: str | None = None,
+        name: str | None = None,
     ):
         """Initialize Driver object by passing ID or name.
         When `id` is provided, `name` is omitted.
@@ -126,7 +124,7 @@ class Driver(Entity):
 
     def alter(
         self,
-        is_enabled: Optional[bool] = None,
+        is_enabled: bool | None = None,
     ):
         """Update properties of a Driver
 
@@ -150,7 +148,7 @@ class Driver(Entity):
     @classmethod
     def list(
         cls, connection: Connection, to_dictionary: bool = False, **filters
-    ) -> list[Type['Driver']] | list[dict]:
+    ) -> list[type['Driver']] | list[dict]:
         """Get all driver as list of Driver objects or dictionaries.
 
         Optionally filter the drivers by specifying filters.

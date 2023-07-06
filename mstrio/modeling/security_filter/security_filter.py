@@ -1,6 +1,6 @@
-from enum import Enum
 import logging
-from typing import List, Optional, TYPE_CHECKING, Type
+from enum import Enum
+from typing import TYPE_CHECKING
 
 from mstrio import config
 from mstrio.api import objects, security_filters
@@ -24,6 +24,7 @@ from mstrio.utils.helper import (
     filter_params_for_func,
     get_valid_project_id,
     get_valid_project_name,
+    find_object_with_name,
 )
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
@@ -38,18 +39,18 @@ logger = logging.getLogger(__name__)
 @method_version_handler('11.3.0200')
 def list_security_filters(
     connection: "Connection",
-    name_contains: Optional[str] = None,
+    name_contains: str | None = None,
     to_dictionary: bool = False,
-    offset: Optional[int] = None,
-    limit: Optional[int] = None,
-    project_id: Optional[str] = None,
-    project_name: Optional[str] = None,
+    offset: int | None = None,
+    limit: int | None = None,
+    project_id: str | None = None,
+    project_name: str | None = None,
     show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
     show_filter_tokens: bool = False,
-    user: Optional[User | str] = None,
-    user_group: Optional[UserGroup | str] = None,
+    user: User | str | None = None,
+    user_group: UserGroup | str | None = None,
     **filters,
-) -> list[Type["SecurityFilter"]] | list[dict]:
+) -> list[type["SecurityFilter"]] | list[dict]:
     """Get a list of Security Filter objects or dicts. Optionally filter the
     objects by specifying filters parameter.
     It can also be filtered by user or user group.
@@ -269,8 +270,8 @@ class SecurityFilter(Entity, CopyMixin, DeleteMixin, MoveMixin):
     def __init__(
         self,
         connection: "Connection",
-        id: Optional[str] = None,
-        name: Optional[str] = None,
+        id: str | None = None,
+        name: str | None = None,
         show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
         show_filter_tokens: bool = False,
     ):
@@ -294,8 +295,16 @@ class SecurityFilter(Entity, CopyMixin, DeleteMixin, MoveMixin):
         """
         connection._validate_project_selected()
         if id is None:
-            security_filter = super()._find_object_with_name(
-                connection=connection, name=name, listing_function=list_security_filters
+            if name is None:
+                raise ValueError(
+                    "Please specify either 'name' or 'id' parameter in the constructor."
+                )
+
+            security_filter = find_object_with_name(
+                connection=connection,
+                cls=self.__class__,
+                name=name,
+                listing_function=list_security_filters,
             )
             id = security_filter['id']
         super().__init__(
@@ -354,14 +363,14 @@ class SecurityFilter(Entity, CopyMixin, DeleteMixin, MoveMixin):
         name: str,
         destination_folder: Folder | str,
         qualification: Expression | dict,
-        description: Optional[str] = None,
+        description: str | None = None,
         is_embedded: bool = False,
-        primary_locale: Optional[str] = None,
+        primary_locale: str | None = None,
         show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
         show_filter_tokens: bool = False,
-        top_level: Optional[List[dict] | List[SchemaObjectReference]] = None,
-        bottom_level: Optional[List[dict] | List[SchemaObjectReference]] = None,
-    ) -> Type["SecurityFilter"]:
+        top_level: list[dict] | list[SchemaObjectReference] | None = None,
+        bottom_level: list[dict] | list[SchemaObjectReference] | None = None,
+    ) -> type["SecurityFilter"]:
         """Create a new security filter in a specific project.
 
         Args:
@@ -454,13 +463,13 @@ class SecurityFilter(Entity, CopyMixin, DeleteMixin, MoveMixin):
 
     def alter(
         self,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        destination_folder_id: Optional[str] = None,
-        qualification: Optional[Expression | dict] = None,
-        is_embedded: Optional[bool] = None,
-        top_level: Optional[List[dict] | List[SchemaObjectReference]] = None,
-        bottom_level: Optional[List[dict] | List[SchemaObjectReference]] = None,
+        name: str | None = None,
+        description: str | None = None,
+        destination_folder_id: str | None = None,
+        qualification: Expression | dict | None = None,
+        is_embedded: bool | None = None,
+        top_level: list[dict] | list[SchemaObjectReference] | None = None,
+        bottom_level: list[dict] | list[SchemaObjectReference] | None = None,
     ):
         """Alter the security filter properties.
 
@@ -483,9 +492,13 @@ class SecurityFilter(Entity, CopyMixin, DeleteMixin, MoveMixin):
 
     def apply(
         self,
-        users_and_groups: Optional[
-            List[User] | List[UserGroup] | List[str] | User | UserGroup | str
-        ] = None,
+        users_and_groups: list[User]
+        | list[UserGroup]
+        | list[str]
+        | User
+        | UserGroup
+        | str
+        | None = None,
     ):
         """Updates members information for a specific security filter.
         Grants a security filter to users or user groups.
@@ -505,9 +518,13 @@ class SecurityFilter(Entity, CopyMixin, DeleteMixin, MoveMixin):
 
     def revoke(
         self,
-        users_and_groups: Optional[
-            List[User] | List[UserGroup] | List[str] | User | UserGroup | str
-        ] = None,
+        users_and_groups: list[User]
+        | list[UserGroup]
+        | list[str]
+        | User
+        | UserGroup
+        | str
+        | None = None,
     ):
         """Updates members information for a specific security filter.
         Revokes a security filter from users or groups.
@@ -528,9 +545,13 @@ class SecurityFilter(Entity, CopyMixin, DeleteMixin, MoveMixin):
     def _update_members(
         self,
         op: UpdateOperator,
-        users_and_groups: Optional[
-            List[User] | List[UserGroup] | List[str] | User | UserGroup | str
-        ] = None,
+        users_and_groups: list[User]
+        | list[UserGroup]
+        | list[str]
+        | User
+        | UserGroup
+        | str
+        | None = None,
     ):
         """Update members of security filter."""
         users_or_groups = self._retrieve_ids_from_list(users_and_groups)
@@ -555,10 +576,14 @@ class SecurityFilter(Entity, CopyMixin, DeleteMixin, MoveMixin):
 
     @staticmethod
     def _retrieve_ids_from_list(
-        objects: Optional[
-            List[User] | List[UserGroup] | List[str] | User | UserGroup | str
-        ] = None,
-    ) -> List[str]:
+        objects: list[User]
+        | list[UserGroup]
+        | list[str]
+        | User
+        | UserGroup
+        | str
+        | None = None,
+    ) -> list[str]:
         """Parsing a list which can contain at the same time User object(s),
         UserGroup object(s), id(s) to a list with id(s)."""
 

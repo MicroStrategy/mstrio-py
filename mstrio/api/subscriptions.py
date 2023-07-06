@@ -1,4 +1,4 @@
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from requests import Response
 
@@ -80,8 +80,8 @@ def list_dynamic_recipient_lists(
     project_id: str,
     offset: int = 0,
     limit: int = -1,
-    fields: Optional[str] = None,
-    error_msg: Optional[str] = None,
+    fields: str | None = None,
+    error_msg: str | None = None,
 ) -> Response:
     """Get a list of Dynamic Recipient Lists.
 
@@ -114,7 +114,7 @@ def list_dynamic_recipient_lists_async(
     project_id: str,
     offset: int = 0,
     limit: int = -1,
-    fields: Optional[str] = None,
+    fields: str | None = None,
 ) -> Response:
     """Get a list of Dynamic Recipient Lists asynchronously.
 
@@ -172,8 +172,8 @@ def get_dynamic_recipient_list(
     connection: "Connection",
     id: str,
     project_id: str,
-    fields: Optional[str] = None,
-    error_msg: Optional[str] = None,
+    fields: str | None = None,
+    error_msg: str | None = None,
 ) -> Response:
     """Get information of a specific Dynamic Recipient List for a given project.
 
@@ -332,8 +332,8 @@ def create_dynamic_recipient_list(
     connection: "Connection",
     project_id: str,
     body: dict,
-    fields: Optional[list[str]] = None,
-    error_msg: Optional[str] = None,
+    fields: list[str] | None = None,
+    error_msg: str | None = None,
 ) -> Response:
     """Create a new subscription.
 
@@ -391,8 +391,8 @@ def remove_dynamic_recipient_list(
     connection: "Connection",
     id: str,
     project_id: str,
-    error_msg: Optional[str] = None,
-    exception_type: Optional[Exception] = None,
+    error_msg: str | None = None,
+    exception_type: Exception | None = None,
 ) -> Response:
     """Delete a Dynamic Recipient List.
 
@@ -453,8 +453,8 @@ def update_dynamic_recipient_list(
     id: str,
     project_id: str,
     body: dict,
-    fields: Optional[list[str]] = None,
-    error_msg: Optional[str] = None,
+    fields: list[str] | None = None,
+    error_msg: str | None = None,
 ) -> Response:
     """Updates a Dynamic Recipient List.
 

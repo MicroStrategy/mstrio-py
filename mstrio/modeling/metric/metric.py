@@ -1,7 +1,6 @@
 import logging
 from dataclasses import dataclass
 from enum import Enum, auto
-from functools import partial
 from typing import TYPE_CHECKING, Optional
 
 from mstrio import config
@@ -17,13 +16,19 @@ from mstrio.modeling.schema.helpers import (
 from mstrio.object_management import Folder, SearchPattern, search_operations
 from mstrio.types import ObjectTypes
 from mstrio.users_and_groups.user import User
-from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, MoveMixin
+from mstrio.utils.entity import (
+    CopyMixin,
+    DeleteMixin,
+    Entity,
+    MoveMixin,
+)
 from mstrio.utils.enum_helper import AutoName, get_enum_val
 from mstrio.utils.helper import (
     Dictable,
     delete_none_values,
     filter_params_for_func,
     get_valid_project_id,
+    find_object_with_name,
 )
 from mstrio.utils.version_helper import method_version_handler
 
@@ -36,12 +41,12 @@ logger = logging.getLogger(__name__)
 @method_version_handler(version='11.3.0500')
 def list_metrics(
     connection: Connection,
-    name: Optional[str] = None,
+    name: str | None = None,
     metric_type: ObjectTypes = ObjectTypes.METRIC,
-    project_id: Optional[str] = None,
-    project_name: Optional[str] = None,
+    project_id: str | None = None,
+    project_name: str | None = None,
     to_dictionary: bool = False,
-    limit: Optional[int] = None,
+    limit: int | None = None,
     search_pattern: SearchPattern | int = SearchPattern.CONTAINS,
     show_expression_as: ExpressionFormat | str = ExpressionFormat.TOKENS,
     **filters,
@@ -76,7 +81,7 @@ def list_metrics(
             None all object are returned.
         search_pattern (SearchPattern enum or int, optional): pattern to
             search for, such as Begin With or Exactly. Possible values are
-            available in ENUM mstrio.object_management.SearchPattern.
+            available in ENUM `mstrio.object_management.SearchPattern`.
             Default value is CONTAINS (4).
         show_expression_as (ExpressionFormat, str): specify how expressions
             should be presented
@@ -232,11 +237,11 @@ class Threshold(Dictable):
     }
 
     format: list[FormatProperty]
-    condition: Optional[Expression] = None
-    name: Optional[str] = None
-    replace_text: Optional[str] = None
-    semantics: Optional[Semantics] = None
-    scope: Optional[Scope] = None
+    condition: Expression | None = None
+    name: str | None = None
+    replace_text: str | None = None
+    semantics: Semantics | None = None
+    scope: Scope | None = None
     enable: bool = True
 
 
@@ -282,6 +287,7 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa: F811
         metric_format_type: specifies whether the metric has HTML content,
             MetricFormatType enumerator
         thresholds: list of Threshold for the metric
+        hidden: Specifies whether the object is hidden
     """
 
     @dataclass
@@ -315,9 +321,9 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa: F811
             'prompt': SchemaObjectReference.from_dict,
         }
 
-        filter: Optional[SchemaObjectReference] = None
-        embed_method: Optional[EmbedMethod] = None
-        prompt: Optional[SchemaObjectReference] = None
+        filter: SchemaObjectReference | None = None
+        embed_method: EmbedMethod | None = None
+        prompt: SchemaObjectReference | None = None
         remove_elements: bool = False
 
     @dataclass
@@ -408,6 +414,7 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa: F811
             'acg',
             'acl',
             'target_info',
+            'hidden',
         ): objects.get_object_info,
     }
     _API_PATCH = {
@@ -432,7 +439,7 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa: F811
             'metric_format_type',
             'thresholds',
         ): (metrics.update_metric, 'partial_put'),
-        'folder_id': (objects.update_object, 'partial_put'),
+        ('folder_id', 'hidden'): (objects.update_object, 'partial_put'),
     }
     _FROM_DICT_MAP = {
         **Entity._FROM_DICT_MAP,
@@ -468,8 +475,8 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa: F811
     def __init__(
         self,
         connection: Connection,
-        id: Optional[str] = None,
-        name: Optional[str] = None,
+        id: str | None = None,
+        name: str | None = None,
         show_expression_as: ExpressionFormat | str = ExpressionFormat.TOKENS,
     ) -> None:
         """Initializes a new instance of Metric class
@@ -495,12 +502,17 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa: F811
                 or if Metric with the given `name` doesn't exist.
         """
         if id is None:
-            metric = super()._find_object_with_name(
+            if name is None:
+                raise ValueError(
+                    "Please specify either 'name' or 'id' parameter in the constructor."
+                )
+
+            metric = find_object_with_name(
                 connection=connection,
+                cls=self.__class__,
                 name=name,
-                listing_function=partial(
-                    list_metrics, search_pattern=SearchPattern.EXACTLY
-                ),
+                listing_function=list_metrics,
+                search_pattern=SearchPattern.EXACTLY,
             )
             id = metric['id']
         super().__init__(
@@ -583,18 +595,18 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa: F811
         expression: Expression,
         description: str | None = None,
         is_embedded: bool = False,
-        dimensionality: Optional[Dimensionality] = None,
-        conditionality: Optional[Conditionality] = None,
-        metric_subtotals: Optional[list[MetricSubtotal]] = None,
+        dimensionality: Dimensionality | None = None,
+        conditionality: Conditionality | None = None,
+        metric_subtotals: list[MetricSubtotal] | None = None,
         aggregate_from_base: bool = False,
-        formula_join_type: Optional[FormulaJoinType] = FormulaJoinType.DEFAULT,
-        smart_total: Optional[SmartTotal] = None,
-        data_type: Optional[DataType] = None,
-        format: Optional[MetricFormat] = None,
+        formula_join_type: FormulaJoinType | None = FormulaJoinType.DEFAULT,
+        smart_total: SmartTotal | None = None,
+        data_type: DataType | None = None,
+        format: MetricFormat | None = None,
         subtotal_from_base: bool = False,
-        column_name_alias: Optional[str] = None,
-        metric_format_type: Optional[MetricFormatType] = None,
-        thresholds: Optional[list[Threshold]] = None,
+        column_name_alias: str | None = None,
+        metric_format_type: MetricFormatType | None = None,
+        thresholds: list[Threshold] | None = None,
         show_expression_as: ExpressionFormat | str = ExpressionFormat.TOKENS,
     ) -> "Metric":
         """Create a new metric with specified properties.
@@ -696,20 +708,21 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa: F811
         name: str = None,
         destination_folder_id: str = None,
         expression: Expression = None,
-        description: Optional[str] = None,
-        dimensionality: Optional[Dimensionality] = None,
-        conditionality: Optional[Conditionality] = None,
-        metric_subtotals: Optional[list[MetricSubtotal]] = None,
+        description: str | None = None,
+        dimensionality: Dimensionality | None = None,
+        conditionality: Conditionality | None = None,
+        metric_subtotals: list[MetricSubtotal] | None = None,
         aggregate_from_base: bool = False,
-        formula_join_type: Optional[FormulaJoinType] = FormulaJoinType.DEFAULT,
-        smart_total: Optional[SmartTotal] = None,
-        data_type: Optional[DataType] = None,
-        format: Optional[MetricFormat] = None,
+        formula_join_type: FormulaJoinType | None = FormulaJoinType.DEFAULT,
+        smart_total: SmartTotal | None = None,
+        data_type: DataType | None = None,
+        format: MetricFormat | None = None,
         subtotal_from_base: bool = False,
-        column_name_alias: Optional[str] = None,
-        metric_format_type: Optional[MetricFormatType] = None,
-        thresholds: Optional[list[Threshold]] = None,
+        column_name_alias: str | None = None,
+        metric_format_type: MetricFormatType | None = None,
+        thresholds: list[Threshold] | None = None,
         show_expression_as: ExpressionFormat | str = ExpressionFormat.TOKENS,
+        hidden: bool | None = None,
     ):
         """Alter a metric's specified properties
 
@@ -743,7 +756,17 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa: F811
                 Available values:
                 - `ExpressionFormat.TREE` or `tree`
                 - `ExpressionFormat.TOKENS or `tokens` (default)
+            hidden: Specifies whether the metric is hidden
         """
+        # REST doesn't return hidden attribute if its value is False.
+        # If attribute is not present in response, the mstrio engine
+        # interprets this as 'no value' and sets its value to None.
+        # But if attribute's value is not None, and REST returns nothing
+        # the engine does nothing, and doesn't change its value.
+        # So if 'hidden' has value True, and is changed to False,
+        # the REST will return nothing, and locally its value will stay True.
+        # This line is to update local value of 'hidden'.
+        self._hidden = hidden
 
         name = name or self.name
         properties = filter_params_for_func(self.alter, locals(), exclude=['self'])
@@ -768,3 +791,7 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa: F811
     @property
     def project_id(self):
         return self._project_id if self._project_id else self.connection.project_id
+
+    @property
+    def hidden(self):
+        return self._hidden or False

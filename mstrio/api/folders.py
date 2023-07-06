@@ -1,4 +1,4 @@
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from mstrio.connection import Connection
 from mstrio.utils.error_handlers import ErrorHandler
@@ -12,8 +12,8 @@ def create_folder(
     connection: Connection,
     name: str,
     parent_id: str,
-    description: Optional[str] = None,
-    project_id: Optional[str] = None,
+    description: str | None = None,
+    project_id: str | None = None,
 ):
     """Create a folder.
 
@@ -46,7 +46,7 @@ def create_folder(
 
 
 @ErrorHandler(err_msg='Error while deleting folder with ID: {id}.')
-def delete_folder(connection: Connection, id: str, project_id: Optional[str] = None):
+def delete_folder(connection: Connection, id: str, project_id: str | None = None):
     """Delete complete folder.
 
     Args:
@@ -67,10 +67,10 @@ def delete_folder(connection: Connection, id: str, project_id: Optional[str] = N
 @ErrorHandler(err_msg='Error while listing folders.')
 def list_folders(
     connection: Connection,
-    project_id: Optional[str] = None,
+    project_id: str | None = None,
     offset: int = 0,
     limit: int = 5000,
-    error_msg: Optional[str] = None,
+    error_msg: str | None = None,
 ):
     """Get a list of folders.
 
@@ -96,7 +96,7 @@ def list_folders(
 def list_folders_async(
     future_session: "FuturesSession",
     connection: Connection,
-    project_id: Optional[str] = None,
+    project_id: str | None = None,
     offset: int = 0,
     limit: int = 5000,
 ):
@@ -126,10 +126,10 @@ def list_folders_async(
 def get_folder_contents(
     connection: Connection,
     id: str,
-    project_id: Optional[str] = None,
+    project_id: str | None = None,
     offset: int = 0,
     limit: int = 5000,
-    error_msg: Optional[str] = None,
+    error_msg: str | None = None,
 ):
     """Get contents of a folder.
 
@@ -158,7 +158,7 @@ def get_folder_contents_async(
     future_session: "FuturesSession",
     connection: Connection,
     id: str,
-    project_id: Optional[str] = None,
+    project_id: str | None = None,
     offset: int = 0,
     limit: int = 5000,
 ):
@@ -190,10 +190,10 @@ def get_folder_contents_async(
 def get_predefined_folder_contents(
     connection: Connection,
     folder_type: int,
-    project_id: Optional[str] = None,
+    project_id: str | None = None,
     offset: int = 0,
     limit: int = 5000,
-    error_msg: Optional[str] = None,
+    error_msg: str | None = None,
 ):
     """Get contents of a pre-defined folder.
 
@@ -221,7 +221,7 @@ def get_predefined_folder_contents_async(
     future_session: "FuturesSession",
     connection: Connection,
     folder_type: int,
-    project_id: Optional[str] = None,
+    project_id: str | None = None,
     offset: int = 0,
     limit: int = 5000,
 ):
@@ -250,7 +250,7 @@ def get_predefined_folder_contents_async(
 
 @ErrorHandler(err_msg='Error while getting contents of My Personal Objects folder.')
 def get_my_personal_objects_contents(
-    connection: Connection, project_id: Optional[str] = None
+    connection: Connection, project_id: str | None = None
 ):
     """Get contents of My Personal Objects folder.
 

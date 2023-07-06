@@ -1,7 +1,6 @@
-from mstrio.connection import Connection
 from mstrio.api import gateways as gateways_api
+from mstrio.connection import Connection
 from mstrio.utils.helper import rename_dict_keys
-
 
 REST_ATTRIBUTES_MAP = {'type': 'gatewayType', 'certifiedAsGateway': 'isCertified'}
 

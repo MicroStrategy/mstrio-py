@@ -1,6 +1,6 @@
-from enum import auto, Enum
 import logging
-from typing import List, Optional, TYPE_CHECKING, Union
+from enum import Enum, auto
+from typing import TYPE_CHECKING, Union
 
 from packaging import version
 
@@ -238,24 +238,24 @@ def _set_api_wrappers(connection) -> dict:
 @method_version_handler('11.3.0200')
 def list_jobs(
     connection: "Connection",
-    node: Optional[Union[Node, str]] = None,
-    user: Optional[Union["User", str]] = None,
-    description: Optional[str] = None,
-    type: Optional[Union[JobType, str]] = None,
-    status: Optional[Union[JobStatus, str]] = None,
-    object_id: Optional[str] = None,
-    object_type: Optional[ObjectType] = None,
-    project: Optional[Union[Project, str]] = None,
-    pu_name: Optional[Union[PUName, str]] = None,
-    subscription_type: Optional[Union[SubscriptionType, str]] = None,
-    subscription_recipient: Optional[Union["User", str]] = None,
-    memory_usage: Optional[str] = None,
-    elapsed_time: Optional[str] = None,
-    sort_by: Optional[Union[SortBy, str]] = None,
+    node: Node | str | None = None,
+    user: Union["User", str] | None = None,
+    description: str | None = None,
+    type: JobType | str | None = None,
+    status: JobStatus | str | None = None,
+    object_id: str | None = None,
+    object_type: ObjectType | None = None,
+    project: Project | str | None = None,
+    pu_name: PUName | str | None = None,
+    subscription_type: SubscriptionType | str | None = None,
+    subscription_recipient: Union["User", str] | None = None,
+    memory_usage: str | None = None,
+    elapsed_time: str | None = None,
+    sort_by: SortBy | str | None = None,
     to_dictionary: bool = False,
-    limit: Optional[int] = None,
+    limit: int | None = None,
     **filters,
-) -> Union[List["Job"], List[dict]]:
+) -> list["Job"] | list[dict]:
     """List jobs objects or job dictionaires.
     Args:
         connection(object): MicroStrategy connection object returned by
@@ -303,7 +303,7 @@ def list_jobs(
         >>> list_jobs_v1(connection, duration='gt:100')
 
     Returns:
-        Union[List["Job"], List[dict]]: list of Job objects or dictionaries.
+        List[Job] | List[dict]: list of Job objects or dictionaries.
     """
     user = user.full_name if isinstance(user, Entity) else user
     subscription_recipient = (
@@ -380,17 +380,17 @@ def list_jobs(
 @method_version_handler('11.3.0200')
 def list_jobs_v1(
     connection: Connection,
-    node: Optional[Union[Node, str]] = None,
-    project: Optional[Union[Project, str]] = None,
-    status: Optional[Union[JobStatus, str]] = None,
-    job_type: Optional[Union[JobType, str]] = None,
-    user: Optional[Union["User", str]] = None,
-    object_id: Optional[str] = None,
-    sort_by: Optional[Union[SortBy, str]] = None,
+    node: Node | str | None = None,
+    project: Project | str | None = None,
+    status: JobStatus | str | None = None,
+    job_type: JobType | str | None = None,
+    user: Union["User", str] | None = None,
+    object_id: str | None = None,
+    sort_by: SortBy | str | None = None,
     to_dictionary: bool = False,
-    limit: Optional[int] = None,
+    limit: int | None = None,
     **filters,
-) -> Union[List["Job"], List[dict]]:
+) -> list["Job"] | list[dict]:
     """List job objects or job dictionaries. Optionally filter list.
     NOTE: list_jobs can return up to 1024 jobs per request.
 
@@ -420,7 +420,7 @@ def list_jobs_v1(
         >>> list_jobs_v1(connection, duration='gt:100')
 
     Returns:
-        Union[List["Job"], List[dict]]: list of Job objects or dictionaries.
+        List[Job] | List[dict]: list of Job objects or dictionaries.
     """
     project_id = project.id if isinstance(project, Project) else project
     user_full_name = user.full_name if isinstance(user, Entity) else user
@@ -454,8 +454,8 @@ def list_jobs_v1(
 
 @method_version_handler('11.3.0200')
 def kill_jobs(
-    connection: Connection, jobs: List[Union["Job", str]]
-) -> Union[Success, PartialSuccess, MstrException]:
+    connection: Connection, jobs: list[Union["Job", str]]
+) -> Success | PartialSuccess | MstrException:
     """Kill existing jobs by Job objects or job ids.
 
     Args:
@@ -476,21 +476,21 @@ def kill_jobs(
 @method_version_handler('11.3.0200')
 def kill_all_jobs(
     connection: Connection,
-    user: Optional[Union["User", str]] = None,
-    description: Optional[str] = None,
-    type: Optional[Union[JobType, str]] = None,
-    status: Optional[Union[JobStatus, str]] = None,
-    object_id: Optional[str] = None,
-    object_type: Optional[Union[ObjectType, str]] = None,
-    project: Optional[Union[Project, str]] = None,
-    pu_name: Optional[Union[PUName, str]] = None,
-    subscription_type: Optional[Union[SubscriptionType, str]] = None,
-    subscription_recipient: Optional[Union["User", str]] = None,
-    memory_usage: Optional[str] = None,
-    elapsed_time: Optional[str] = None,
+    user: Union["User", str] | None = None,
+    description: str | None = None,
+    type: JobType | str | None = None,
+    status: JobStatus | str | None = None,
+    object_id: str | None = None,
+    object_type: ObjectType | str | None = None,
+    project: Project | str | None = None,
+    pu_name: PUName | str | None = None,
+    subscription_type: SubscriptionType | str | None = None,
+    subscription_recipient: Union["User", str] | None = None,
+    memory_usage: str | None = None,
+    elapsed_time: str | None = None,
     force: bool = False,
     **filters,
-) -> Union[Success, PartialSuccess, MstrException]:
+) -> Success | PartialSuccess | MstrException:
     """Kill jobs filtered by passed fields
 
     Args:

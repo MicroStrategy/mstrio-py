@@ -1,5 +1,3 @@
-from typing import Optional
-
 from mstrio.connection import Connection
 from mstrio.distribution_services.schedule import Schedule
 from mstrio.distribution_services.subscription import Content, Delivery, Subscription
@@ -14,10 +12,10 @@ class HistoryListSubscription(Subscription):
     def __init__(
         self,
         connection: Connection,
-        id: Optional[str] = None,
-        subscription_id: Optional[str] = None,
-        project_id: Optional[str] = None,
-        project_name: Optional[str] = None,
+        id: str | None = None,
+        subscription_id: str | None = None,
+        project_id: str | None = None,
+        project_name: str | None = None,
     ):
         """Initializes HistoryListSubscription object and populates it with
         I-Server data if id or subscription_id is passed.
@@ -41,26 +39,26 @@ class HistoryListSubscription(Subscription):
         cls,
         connection: Connection,
         name: str,
-        project_id: Optional[str] = None,
-        project_name: Optional[str] = None,
-        multiple_contents: Optional[bool] = False,
-        allow_delivery_changes: Optional[bool] = None,
-        allow_personalization_changes: Optional[bool] = None,
-        allow_unsubscribe: Optional[bool] = None,
-        send_now: Optional[bool] = None,
-        owner_id: Optional[str] = None,
-        schedules: Optional[str | list[str] | Schedule | list[Schedule]] = None,
-        contents: Optional[Content] = None,
-        recipients: Optional[list[dict] | list[str]] = None,
-        delivery: Optional[Delivery | dict] = None,
-        delivery_expiration_date: Optional[str] = None,
-        delivery_expiration_timezone: Optional[str] = None,
+        project_id: str | None = None,
+        project_name: str | None = None,
+        multiple_contents: bool | None = False,
+        allow_delivery_changes: bool | None = None,
+        allow_personalization_changes: bool | None = None,
+        allow_unsubscribe: bool | None = None,
+        send_now: bool | None = None,
+        owner_id: str | None = None,
+        schedules: str | list[str] | Schedule | list[Schedule] | None = None,
+        contents: Content | None = None,
+        recipients: list[dict] | list[str] | None = None,
+        delivery: Delivery | dict | None = None,
+        delivery_expiration_date: str | None = None,
+        delivery_expiration_timezone: str | None = None,
         contact_security: bool = True,
         do_not_create_update_caches: bool = True,
         overwrite_older_version: bool = False,
         re_run_hl: bool = True,
         delivery_notification_enabled: bool = False,
-        delivery_personal_notification_address_id: Optional[str] = None,
+        delivery_personal_notification_address_id: str | None = None,
     ) -> "HistoryListSubscription":
         """Creates a new history list subscription.
         Args:
@@ -134,25 +132,25 @@ class HistoryListSubscription(Subscription):
 
     def alter(
         self,
-        name: Optional[str] = None,
-        multiple_contents: Optional[bool] = None,
-        allow_delivery_changes: Optional[bool] = None,
-        allow_personalization_changes: Optional[bool] = None,
-        allow_unsubscribe: Optional[bool] = None,
-        send_now: Optional[bool] = None,
-        owner_id: Optional[str] = None,
-        schedules: Optional[str | list[str] | Schedule | list[Schedule]] = None,
-        recipients: Optional[list[dict] | list[str]] = None,
-        delivery: Optional[Delivery | dict] = None,
-        custom_msg: Optional[str] = None,
-        delivery_expiration_date: Optional[str] = None,
-        delivery_expiration_timezone: Optional[str] = None,
+        name: str | None = None,
+        multiple_contents: bool | None = None,
+        allow_delivery_changes: bool | None = None,
+        allow_personalization_changes: bool | None = None,
+        allow_unsubscribe: bool | None = None,
+        send_now: bool | None = None,
+        owner_id: str | None = None,
+        schedules: str | list[str] | Schedule | list[Schedule] | None = None,
+        recipients: list[dict] | list[str] | None = None,
+        delivery: Delivery | dict | None = None,
+        custom_msg: str | None = None,
+        delivery_expiration_date: str | None = None,
+        delivery_expiration_timezone: str | None = None,
         contact_security: bool = True,
         do_not_create_update_caches: bool = True,
         overwrite_older_version: bool = False,
         re_run_hl: bool = True,
         delivery_notification_enabled: bool = False,
-        delivery_personal_notification_address_id: Optional[str] = None,
+        delivery_personal_notification_address_id: str | None = None,
     ):
         """Alter the subscription.
         Args:

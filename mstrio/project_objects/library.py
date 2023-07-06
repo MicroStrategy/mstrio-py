@@ -1,10 +1,10 @@
-from typing import List, TYPE_CHECKING, Union, Optional
+from typing import TYPE_CHECKING, Union
 
 from mstrio.api import library
+from mstrio.connection import Connection
 from mstrio.project_objects.document import Document, list_documents
 from mstrio.project_objects.dossier import list_dossiers
 from mstrio.utils.helper import get_valid_project_id
-from mstrio.connection import Connection
 
 if TYPE_CHECKING:
     from mstrio.project_objects.dossier import Dossier
@@ -14,8 +14,8 @@ class Library:
     def __init__(
         self,
         connection: Connection,
-        project_id: Optional[str] = None,
-        project_name: Optional[str] = None,
+        project_id: str | None = None,
+        project_name: str | None = None,
     ):
         self.connection = connection
         ids = self.__get_library_ids()
@@ -64,7 +64,7 @@ class Library:
             self._contents = self.dossiers + self.documents
         return self._contents
 
-    def publish(self, contents: Union[List, "Document", "Dossier", str]):
+    def publish(self, contents: Union[list, "Document", "Dossier", str]):
         """Publishes dossier or document to the authenticated user's library.
 
         contents: dossiers or documents to be published, can be Dossier/Document
@@ -77,7 +77,7 @@ class Library:
             body = {'id': doc_id, 'recipients': [{'id': self.user_id}]}
             library.publish_document(self.connection, body=body)
 
-    def unpublish(self, contents: Union[List, "Document", "Dossier", str]):
+    def unpublish(self, contents: Union[list, "Document", "Dossier", str]):
         """Publishes dossier or document to the authenticated user's library.
 
         contents: dossiers or documents to be published, can be Dossier/Document

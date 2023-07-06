@@ -1,4 +1,4 @@
-from typing import Callable, Optional
+from collections.abc import Callable
 
 from mstrio.api import monitors
 from mstrio.server.node import Node
@@ -11,8 +11,8 @@ def all_nodes_async(
     async_api: Callable,
     filters: dict,
     error_msg: str,
-    unpack_value: Optional[str] = None,
-    limit: Optional[int] = None,
+    unpack_value: str | None = None,
+    limit: int | None = None,
     **kwargs,
 ):
     """Return list of objects fetched async using wrappers in monitors.py"""

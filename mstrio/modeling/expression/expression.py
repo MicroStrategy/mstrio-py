@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from enum import auto
-from typing import List, Optional, Type, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Optional
 
 from mstrio.modeling.schema.helpers import ObjectSubType, SchemaObjectReference
 from mstrio.object_management import search_operations
@@ -8,9 +8,9 @@ from mstrio.object_management.search_enums import SearchPattern
 from mstrio.types import ObjectSubTypes, ObjectTypes
 from mstrio.utils.enum_helper import AutoName
 from mstrio.utils.helper import (
+    Dictable,
     camel_to_snake,
     delete_none_values,
-    Dictable,
     get_valid_project_id,
     snake_to_camel,
 )
@@ -32,9 +32,9 @@ class ExpressionNode(Dictable):
         'dependence_type': DependenceType,
     }
 
-    expression_type: Optional[ExpressionType] = None
-    dimty_type: Optional[DimtyType] = None
-    dependence_type: Optional[DependenceType] = None
+    expression_type: ExpressionType | None = None
+    dimty_type: DimtyType | None = None
+    dependence_type: DependenceType | None = None
 
     def to_dict(self, camel_case: bool = True) -> dict:
         result = super().to_dict(camel_case)
@@ -45,7 +45,7 @@ class ExpressionNode(Dictable):
     @staticmethod
     def dispatch(
         source, connection: Optional['Connection'] = None
-    ) -> Type['ExpressionNode']:
+    ) -> type['ExpressionNode']:
         """Method dispatching node data to appropriate class that represents
         this type of node.
         """
@@ -129,11 +129,11 @@ class Token(Dictable):
     }
 
     value: str
-    type: Optional[Type] = None
-    target: Optional[SchemaObjectReference] = None
-    attribute_form: Optional[str] = None
-    level: Optional[Level] = None
-    state: Optional[State] = None
+    type: Type | None = None
+    target: SchemaObjectReference | None = None
+    attribute_form: str | None = None
+    level: Level | None = None
+    state: State | None = None
 
     def to_dict(self, camel_case=True) -> dict:
         result = super().to_dict(camel_case=camel_case)
@@ -194,9 +194,9 @@ class Expression(Dictable):
         'tree': ExpressionNode.dispatch,
     }
 
-    text: Optional[str] = None
-    tokens: Optional[List[Token]] = None
-    tree: Optional[ExpressionNode] = None
+    text: str | None = None
+    tokens: list[Token] | None = None
+    tree: ExpressionNode | None = None
 
     def __repr__(self):
         return f"Expression(text='{self.text}')"
@@ -204,14 +204,14 @@ class Expression(Dictable):
 
 def list_functions(
     connection: 'Connection',
-    name: Optional[str] = None,
+    name: str | None = None,
     to_dictionary: bool = False,
-    search_pattern: Union[SearchPattern, int] = SearchPattern.CONTAINS,
-    project_id: Optional[str] = None,
-    project_name: Optional[str] = None,
-    limit: Optional[int] = None,
+    search_pattern: SearchPattern | int = SearchPattern.CONTAINS,
+    project_id: str | None = None,
+    project_name: str | None = None,
+    limit: int | None = None,
     **filters,
-) -> Union[List['SchemaObjectReference'], List[dict]]:
+) -> list['SchemaObjectReference'] | list[dict]:
     """Get list of SchemaObjectReference objects or dicts representing
     functions. Optionally filter functions by specifying 'name'.
 
@@ -288,7 +288,7 @@ def list_functions(
             'object_id': obj.get('id'),
             'sub_type': ObjectSubType.FUNCTION
             if obj.get('subtype') == ObjectSubTypes.FUNCTION.value
-            else None,  # noqa
+            else None,
         }
         for obj in objects
     ]

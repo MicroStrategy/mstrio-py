@@ -1,21 +1,27 @@
-from enum import auto
 import logging
-from typing import List, Optional, TYPE_CHECKING, Union
+from enum import auto
+from typing import TYPE_CHECKING
 
 from mstrio import config
 from mstrio.api import objects, user_hierarchies
 from mstrio.modeling.schema.helpers import SchemaObjectReference
 from mstrio.types import ObjectTypes
 from mstrio.users_and_groups import User
-from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, MoveMixin
+from mstrio.utils.entity import (
+    CopyMixin,
+    DeleteMixin,
+    Entity,
+    MoveMixin,
+)
 from mstrio.utils.enum_helper import AutoName
 from mstrio.utils.helper import (
-    delete_none_values,
     Dictable,
+    delete_none_values,
     fetch_objects,
     get_args_from_func,
     get_default_args_from_func,
     get_enum_val,
+    find_object_with_name,
 )
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
@@ -39,7 +45,7 @@ class UserHierarchySubType(AutoName):
 @method_version_handler('11.3.0200')
 def list_user_hierarchies(
     connection: "Connection", to_dictionary: bool = False, limit: int = None, **filters
-) -> Union[List["UserHierarchy"], List[dict]]:
+) -> list["UserHierarchy"] | list[dict]:
     """Get list of UserHierarchy objects or dicts. Optionally filter the
     user hierarchies by specifying filters.
 
@@ -87,9 +93,9 @@ class HierarchyAttribute(Dictable):
         object_id: str,
         entry_point: bool,
         name: str,
-        element_display_option: Union[ElementDisplayOption, str],
-        filters: Union[List[SchemaObjectReference], List[dict]] = None,
-        limit: Optional[int] = None,
+        element_display_option: ElementDisplayOption | str,
+        filters: list[SchemaObjectReference] | list[dict] = None,
+        limit: int | None = None,
     ):
         self.object_id = object_id
         self.entry_point = entry_point
@@ -139,8 +145,8 @@ class HierarchyRelationship(Dictable):
 
     def __init__(
         self,
-        parent: Union[SchemaObjectReference, dict],
-        child: Union[SchemaObjectReference, dict],
+        parent: SchemaObjectReference | dict,
+        child: SchemaObjectReference | dict,
     ):
         self.parent = (
             parent
@@ -269,8 +275,8 @@ class UserHierarchy(Entity, CopyMixin, MoveMixin, DeleteMixin):
     def __init__(
         self,
         connection: "Connection",
-        id: Optional[str] = None,
-        name: Optional[str] = None,
+        id: str | None = None,
+        name: str | None = None,
     ):
         """Initialize user hierarchy object by its identifier.
 
@@ -282,11 +288,18 @@ class UserHierarchy(Entity, CopyMixin, MoveMixin, DeleteMixin):
 
         """
         if id is None:
+            if name is None:
+                raise ValueError(
+                    "Please specify either 'name' or 'id' parameter in the constructor."
+                )
+
             object_info, object_info["connection"] = (
-                super()._find_object_with_name(
+                find_object_with_name(
                     connection=connection,
+                    cls=self.__class__,
                     name=name,
                     listing_function=list_user_hierarchies,
+                    search_pattern=None,
                 ),
                 connection,
             )
@@ -329,14 +342,14 @@ class UserHierarchy(Entity, CopyMixin, MoveMixin, DeleteMixin):
         cls,
         connection: "Connection",
         name: str,
-        sub_type: Union[str, UserHierarchySubType],
+        sub_type: str | UserHierarchySubType,
         destination_folder_id: str,
-        attributes: Union[List[HierarchyAttribute], List[dict]],
+        attributes: list[HierarchyAttribute] | list[dict],
         use_as_drill_hierarchy: bool = True,
         description: str = None,
         is_embedded: bool = False,
         primary_locale: str = None,
-        relationships: Union[List[HierarchyRelationship], List[dict]] = None,
+        relationships: list[HierarchyRelationship] | list[dict] = None,
     ):
         """Create a new user hierarchy in a specific project.
 
@@ -401,13 +414,13 @@ class UserHierarchy(Entity, CopyMixin, MoveMixin, DeleteMixin):
     def alter(
         self,
         name: str = None,
-        sub_type: Union[str, UserHierarchySubType] = None,
-        attributes: Union[List[HierarchyAttribute], List[dict], None] = None,
-        use_as_drill_hierarchy: Optional[bool] = None,
-        description: Optional[str] = None,
+        sub_type: str | UserHierarchySubType = None,
+        attributes: list[HierarchyAttribute] | list[dict] | None = None,
+        use_as_drill_hierarchy: bool | None = None,
+        description: str | None = None,
         is_embedded: bool = False,
-        destination_folder_id: Optional[str] = None,
-        relationships: Union[List[HierarchyRelationship], List[dict], None] = None,
+        destination_folder_id: str | None = None,
+        relationships: list[HierarchyRelationship] | list[dict] | None = None,
     ):
         """Alter the user hierarchies properties.
 
@@ -438,7 +451,7 @@ class UserHierarchy(Entity, CopyMixin, MoveMixin, DeleteMixin):
                 properties[property_key] = local[property_key]
         self._alter_properties(**properties)
 
-    def add_attribute(self, attribute: Union[HierarchyAttribute, dict]):
+    def add_attribute(self, attribute: HierarchyAttribute | dict):
         """Add an attribute to an existing hierarchy.
 
         Args:
@@ -447,7 +460,7 @@ class UserHierarchy(Entity, CopyMixin, MoveMixin, DeleteMixin):
         """
         return self.alter(attributes=self.attributes + [attribute])
 
-    def remove_attribute(self, attribute: Union[HierarchyAttribute, dict]):
+    def remove_attribute(self, attribute: HierarchyAttribute | dict):
         """Remove attribute from an existing user hierarchy.
 
         Args:
@@ -457,7 +470,7 @@ class UserHierarchy(Entity, CopyMixin, MoveMixin, DeleteMixin):
         attributes = [attr for attr in self.attributes if attr != attribute]
         return self.alter(attributes=attributes)
 
-    def add_relationship(self, relationship: Union[HierarchyRelationship, dict]):
+    def add_relationship(self, relationship: HierarchyRelationship | dict):
         """Add a relationship to an existing hierarchy.
 
         Args:
@@ -466,7 +479,7 @@ class UserHierarchy(Entity, CopyMixin, MoveMixin, DeleteMixin):
         """
         return self.alter(relationships=self.relationships + [relationship])
 
-    def remove_relationship(self, relationship: Union[HierarchyRelationship, dict]):
+    def remove_relationship(self, relationship: HierarchyRelationship | dict):
         """Remove relationship from an existing user hierarchy.
 
         Args:
@@ -492,7 +505,7 @@ class UserHierarchy(Entity, CopyMixin, MoveMixin, DeleteMixin):
         to_dictionary: bool = False,
         limit: int = None,
         **filters,
-    ) -> Union[List["UserHierarchy"], List[dict]]:
+    ) -> list["UserHierarchy"] | list[dict]:
         objects = fetch_objects(
             connection=connection,
             api=user_hierarchies.get_user_hierarchies,
