@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from mstrio.modeling.schema.helpers import SchemaObjectReference
 from mstrio.utils.helper import Dictable
@@ -57,8 +57,8 @@ class FactExpression(Dictable):
     }
 
     expression: Expression
-    tables: List[SchemaObjectReference]
-    id: Optional[str] = None
+    tables: list[SchemaObjectReference]
+    id: str | None = None
 
     def to_dict(self, camel_case: bool = True) -> dict:
         result = super().to_dict(camel_case)
@@ -79,7 +79,7 @@ class FactExpression(Dictable):
         return super().from_dict(data, connection, to_snake_case)
 
     def local_alter(
-        self, expression: Expression = None, tables: List[SchemaObjectReference] = None
+        self, expression: Expression = None, tables: list[SchemaObjectReference] = None
     ):
         """Locally alters the Fact Expression
 

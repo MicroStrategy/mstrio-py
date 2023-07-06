@@ -1,14 +1,14 @@
-from abc import ABCMeta, abstractclassmethod
-from ast import literal_eval
 import csv
 import json
 import logging
 import pickle
-from typing import Optional, TYPE_CHECKING, Union
+from abc import ABCMeta, abstractclassmethod
+from ast import literal_eval
+from typing import TYPE_CHECKING
 
+import mstrio.utils.helper as helper
 from mstrio import config
 from mstrio.api.exceptions import VersionException
-import mstrio.utils.helper as helper
 
 from .settings_helper import convert_settings_to_mega_byte
 
@@ -41,9 +41,9 @@ class SettingsSerializerFactory:
 
 
 class SettingsIO(metaclass=ABCMeta):
-    FILE_NAME: Union[str, tuple, None] = None
-    PROJECT_VERSION: Optional[int] = None
-    SERVER_VERSION: Optional[int] = None
+    FILE_NAME: str | tuple | None = None
+    PROJECT_VERSION: int | None = None
+    SERVER_VERSION: int | None = None
 
     @abstractclassmethod
     def to_file(cls, file: str, settings_obj: "BaseSettings") -> None:
@@ -67,7 +67,7 @@ class SettingsIO(metaclass=ABCMeta):
 
     @classmethod
     def check_type(
-        cls, settings_type: Union[str, None], settings_obj: "BaseSettings"
+        cls, settings_type: str | None, settings_obj: "BaseSettings"
     ) -> None:
         if settings_type is None:
             return None
@@ -76,7 +76,7 @@ class SettingsIO(metaclass=ABCMeta):
 
     @classmethod
     def check_version(
-        cls, version: Union[str, int, None], settings_type: Union[str, None]
+        cls, version: str | int | None, settings_type: str | None
     ) -> None:
         if isinstance(version, str):
             version = int(version)
@@ -249,7 +249,7 @@ class CSVSettingsIO(SettingsIO):
 
     @classmethod
     def check_type(
-        cls, settings_type: Union[str, None], settings_obj: "BaseSettings"
+        cls, settings_type: str | None, settings_obj: "BaseSettings"
     ) -> None:
         if settings_type is None:
             raise ValueError('CSV settings are missing `#__page__` header')
@@ -257,7 +257,7 @@ class CSVSettingsIO(SettingsIO):
             raise TypeError('Unsupported settings.')
 
     @classmethod
-    def check_version(cls, version: Union[int, None], settings_type: str) -> None:
+    def check_version(cls, version: int | None, settings_type: str) -> None:
         if version is None:
             raise ValueError('CSV settings are missing `#__version__` header')
         elif isinstance(version, str):

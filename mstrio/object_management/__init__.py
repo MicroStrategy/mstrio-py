@@ -1,5 +1,5 @@
 # flake8: noqa
-from .object import list_objects, Object
+from .object import Object, list_objects
 from .predefined_folders import PredefinedFolders
 
 # isort: off
@@ -19,16 +19,16 @@ from .search_enums import (
 )
 from .search_operations import (
     CertifiedStatus,
+    SearchDomain,
+    SearchObject,
+    SearchPattern,
+    SearchResultsFormat,
+    find_objects_with_id,
     full_search,
     get_search_results,
     get_search_suggestions,
     quick_search,
     quick_search_from_object,
-    SearchDomain,
-    SearchObject,
-    SearchPattern,
-    SearchResultsFormat,
     start_full_search,
-    find_objects_with_id,
 )
-from .shortcut import get_shortcuts, Shortcut, ShortcutInfoFlags
+from .shortcut import Shortcut, ShortcutInfoFlags, get_shortcuts

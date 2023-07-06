@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from enum import auto
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Union
 
 from mstrio.utils.enum_helper import AutoName
 from mstrio.utils.exceptions import NotSupportedError
@@ -227,9 +227,9 @@ class SchemaObjectReference(Dictable):
     _FROM_DICT_MAP = {'sub_type': ObjectSubType}
 
     sub_type: ObjectSubType
-    object_id: Optional[str] = None
-    name: Optional[str] = None
-    is_embedded: Optional[bool] = None
+    object_id: str | None = None
+    name: str | None = None
+    is_embedded: bool | None = None
 
     def __eq__(self, other):
         if not isinstance(other, SchemaObjectReference):
@@ -422,8 +422,8 @@ class AttributeSorts(Dictable):
 
     def __init__(
         self,
-        report_sorts: Optional[list[AttributeSort]] = None,
-        browse_sorts: Optional[list[AttributeSort]] = None,
+        report_sorts: list[AttributeSort] | None = None,
+        browse_sorts: list[AttributeSort] | None = None,
     ) -> None:
         self.report_sorts = report_sorts
         self.browse_sorts = browse_sorts
@@ -440,14 +440,14 @@ class TableColumn(Dictable):
 
     _FROM_DICT_MAP = {"data_type": DataType, "sub_type": ObjectSubType}
     data_type: DataType
-    column_name: Optional[str] = None  # When retrieved as part of a logical tab
-    name: Optional[str] = None  # When retrieved from datasources API
-    id: Optional[str] = None
-    sub_type: Optional[ObjectSubType] = None
-    date_created: Optional[str] = None
-    date_modified: Optional[str] = None
-    version_id: Optional[str] = None
-    primary_locale: Optional[str] = None
+    column_name: str | None = None  # When retrieved as part of a logical tab
+    name: str | None = None  # When retrieved from datasources API
+    id: str | None = None
+    sub_type: ObjectSubType | None = None
+    date_created: str | None = None
+    date_modified: str | None = None
+    version_id: str | None = None
+    primary_locale: str | None = None
 
     @classmethod
     def from_dict(cls, source, connection, to_snake_case=True) -> 'TableColumn':

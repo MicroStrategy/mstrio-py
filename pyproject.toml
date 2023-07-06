@@ -1,0 +1,150 @@
+[build-system]
+requires = ["hatchling >= 1.14.0"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+path = "mstrio/__init__.py"
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/code_snippets",
+    "/mstrio",
+    "/workflows",
+    "/NEWS.md",
+    "/README.md",
+    "/USAGE.md",
+    "/requirements.txt",
+    "/setup.cfg",
+    "/connector-jupyter",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["mstrio", "connector-jupyter"]
+
+[project]
+name = "mstrio-py"
+description = "Python interface for the MicroStrategy REST API"
+authors = [
+    { name = "MicroStrategy", email = "pkowal@microstrategy.com" }
+]
+requires-python = ">=3.10"
+license = {text = "Apache License 2.0"}
+readme = "README.md"
+dynamic = ["version"]
+
+classifiers = [
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: JavaScript",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3 :: Only",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "Intended Audience :: End Users/Desktop",
+    "Intended Audience :: Science/Research",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Software Development",
+]
+
+dependencies = [
+    # peer dependency (dep of dep)
+    # but we need to force version for SEC
+    # backend only (front peers are
+    # handled in code ~20 lines below)
+    "urllib3 >= 1.26.0",  # ver 1.25.x is incompatible
+    "Jinja2 >=3, <4",  # UI related, but also dev-dep of pandas but required for testing
+    "certifi >= 2022.12.7",  # SEC safe version
+
+    # Direct mstrio dependencies
+    "numpy >=1.24, <1.25",
+    "packaging >=23",
+    "pandas >=1.1.5, <=1.6",
+    "pyhumps >=3.8",
+    "requests >=2.27, <2.29",
+    "requests_futures >=1.0.0, <1.1",
+    "stringcase >=1.2",
+    "tqdm >=4.41, <4.70",
+
+    # Dependencies for connector-jupyter
+    # direct dependencies
+    "jupyter-contrib-nbextensions >=0.5.1, <0.6",
+    "ipywidgets >=8.0.2, <9",
+    # peer, UI related, force version for SEC
+    "notebook >=6.4.12",
+    "jupyter_core >=4.11.2",
+    "lxml >=4.9.1",
+    "ipython >=8.10.0, <9",
+    "nbconvert >=7, <8",
+    "mistune >=2.0.4",
+]
+
+[project.optional-dependencies]
+dev = [
+    "flake8",
+    "mypy",
+    "yapf",
+    "nose",
+    "coverage",
+    "pytest",
+    "pytest-cov",
+    "isort",
+    "pre-commit",
+    "flaky",
+    "python-decouple",
+    "black",
+    "flake8-black",
+]
+
+[project.urls]
+"Bug Tracker" = "https://github.com/MicroStrategy/mstrio-py/issues"
+"Documentation" = "https://www2.microstrategy.com/producthelp/Current/mstrio-py/"
+"Source Code" = "https://github.com/MicroStrategy/mstrio-py"
+"Quick Manual" = "https://www2.microstrategy.com/producthelp/current/MSTR-for-Jupyter/Content/mstr_for_jupyter.htm"
+
+[tool.mypy]
+python_version = 3.10
+warn_unused_configs = true
+strict_optional = false
+show_error_codes = true
+color_output = true
+
+[tool.isort]
+profile = "black"
+
+[tool.coverage.run]
+omit = [
+    "mstrio/api/*"
+]
+relative_files = true
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def _",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError"
+]
+omit = [
+    "mstrio/api/*",
+    "mstrio/utils/datasources.py"
+]
+show_missing = true
+
+
+[tool.black]
+target_version = ["py310"]
+skip_string_normalization = 1
+extend-exclude = '''
+/(
+    | __pycache__
+    | code_snippets
+    | connector-jupyter
+    | workflows
+    | validation_scripts
+    | .tox
+)/
+'''

@@ -1,16 +1,15 @@
-from typing import Optional, Type
-
-from packaging import version
 import pandas as pd
 import requests
+from packaging import version
 from tqdm.auto import tqdm
 
 from mstrio import config
-from mstrio.api import objects, reports as reports_api
+from mstrio.api import objects
+from mstrio.api import reports as reports_api
 from mstrio.api.schedules import get_contents_schedule
 from mstrio.connection import Connection
 from mstrio.distribution_services.schedule import Schedule
-from mstrio.object_management.search_operations import full_search, SearchPattern
+from mstrio.object_management.search_operations import SearchPattern, full_search
 from mstrio.users_and_groups.user import User
 from mstrio.utils.cache import CacheSource, ContentCacheMixin
 from mstrio.utils.certified_info import CertifiedInfo
@@ -20,8 +19,8 @@ from mstrio.utils.entity import (
     DeleteMixin,
     Entity,
     MoveMixin,
-    ObjectTypes,
     ObjectSubTypes,
+    ObjectTypes,
 )
 from mstrio.utils.filter import Filter
 from mstrio.utils.helper import (
@@ -38,15 +37,15 @@ from mstrio.utils.sessions import FuturesSessionWithRenewal
 
 def list_reports(
     connection: Connection,
-    name: Optional[str] = None,
+    name: str | None = None,
     search_pattern: SearchPattern | int = SearchPattern.CONTAINS,
-    project_id: Optional[str] = None,
-    project_name: Optional[str] = None,
+    project_id: str | None = None,
+    project_name: str | None = None,
     to_dictionary: bool = False,
-    limit: Optional[int] = None,
-    folder_id: Optional[str] = None,
+    limit: int | None = None,
+    folder_id: str | None = None,
     **filters,
-) -> list[Type['Report']] | list[dict]:
+) -> list[type['Report']] | list[dict]:
     """Get list of Report objects or dicts with them.
     Optionally filter reports by specifying 'name'.
 
@@ -184,7 +183,7 @@ class Report(
         self,
         connection: Connection,
         id: str,
-        instance_id: Optional[str] = None,
+        instance_id: str | None = None,
         parallel: bool = True,
         progress_bar: bool = True,
     ):
@@ -231,9 +230,9 @@ class Report(
 
     def alter(
         self,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        abbreviation: Optional[str] = None,
+        name: str | None = None,
+        description: str | None = None,
+        abbreviation: str | None = None,
     ):
         """Alter Report properties.
 
@@ -253,7 +252,7 @@ class Report(
                 properties[property_key] = local[property_key]
         self._alter_properties(**properties)
 
-    def to_dataframe(self, limit: Optional[int] = None) -> pd.DataFrame:
+    def to_dataframe(self, limit: int | None = None) -> pd.DataFrame:
         """Extract contents of a report instance into a Pandas `DataFrame`.
 
         Args:
@@ -474,9 +473,9 @@ class Report(
 
     def apply_filters(
         self,
-        attributes: Optional[list] = None,
-        metrics: Optional[list] = None,
-        attr_elements: Optional[list] = None,
+        attributes: list | None = None,
+        metrics: list | None = None,
+        attr_elements: list | None = None,
         operator: str = 'In',
     ) -> None:
         """Apply filters on the reports's objects.

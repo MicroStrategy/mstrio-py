@@ -1,4 +1,4 @@
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from requests import Response
 
@@ -16,12 +16,12 @@ def get_dossiers(
     connection: "Connection",
     offset: int = 0,
     limit: int = -1,
-    search_term: Optional[str] = None,
-    certified_status: Optional[str] = None,
-    search_pattern: Optional[str] = None,
-    fields: Optional[str] = None,
-    project_id: Optional[str] = None,
-    error_msg: Optional[str] = None,
+    search_term: str | None = None,
+    certified_status: str | None = None,
+    search_pattern: str | None = None,
+    fields: str | None = None,
+    project_id: str | None = None,
+    error_msg: str | None = None,
 ) -> Response:
     """Get the list of available dossiers.
 
@@ -65,11 +65,11 @@ def get_dossiers_async(
     connection: "Connection",
     offset: int = 0,
     limit: int = -1,
-    search_term: Optional[str] = None,
-    certified_status: Optional[str] = None,
-    search_pattern: Optional[str] = None,
-    fields: Optional[str] = None,
-    project_id: Optional[str] = None,
+    search_term: str | None = None,
+    certified_status: str | None = None,
+    search_pattern: str | None = None,
+    fields: str | None = None,
+    project_id: str | None = None,
 ):
     """Get the list of available dossiers asynchronously.
 
@@ -114,11 +114,11 @@ def get_documents(
     offset: int = 0,
     limit: int = -1,
     search_pattern: str = None,
-    search_term: Optional[str] = None,
-    certified_status: Optional[str] = None,
-    project_id: Optional[str] = None,
-    fields: Optional[str] = None,
-    error_msg: Optional[str] = None,
+    search_term: str | None = None,
+    certified_status: str | None = None,
+    project_id: str | None = None,
+    fields: str | None = None,
+    error_msg: str | None = None,
 ) -> Response:
     """Get the list of available documents.
 
@@ -164,10 +164,10 @@ def get_documents_async(
     offset: int = 0,
     limit: int = -1,
     search_pattern: str = None,
-    search_term: Optional[str] = None,
-    project_id: Optional[str] = None,
-    certified_status: Optional[str] = None,
-    fields: Optional[str] = None,
+    search_term: str | None = None,
+    project_id: str | None = None,
+    certified_status: str | None = None,
+    fields: str | None = None,
 ):
     """Get the list of available documents asynchronously.
 
@@ -354,7 +354,7 @@ def export_document_to_pdf(
     document_id: str,
     instance_id: str,
     body: dict,
-    error_msg: Optional[str] = None,
+    error_msg: str | None = None,
 ) -> Response:
     """Export a specific document instance to a PDF file.
 
@@ -383,7 +383,7 @@ def export_document_to_mstr(
     document_id: str,
     instance_id: str,
     body: dict,
-    error_msg: Optional[str] = None,
+    error_msg: str | None = None,
 ) -> Response:
     """Export a specific document in a specific project to an .mstr file.
 
@@ -413,7 +413,7 @@ def export_document_to_excel(
     document_id: str,
     instance_id: str,
     body: dict,
-    error_msg: Optional[str] = None,
+    error_msg: str | None = None,
 ) -> Response:
     """Export a document from a specific document instance to an Excel file.
 

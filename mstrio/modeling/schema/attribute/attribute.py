@@ -1,8 +1,8 @@
 import logging
 import warnings
+from collections.abc import Callable
 from copy import deepcopy
-from functools import partial
-from typing import TYPE_CHECKING, Callable, Optional, Union
+from typing import TYPE_CHECKING, Optional
 
 from mstrio import config
 from mstrio.api import attributes, hierarchies, objects, tables
@@ -25,12 +25,18 @@ from mstrio.object_management import search_operations
 from mstrio.object_management.folder import Folder
 from mstrio.object_management.search_enums import SearchPattern
 from mstrio.types import ObjectSubTypes, ObjectTypes
-from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, MoveMixin
+from mstrio.utils.entity import (
+    CopyMixin,
+    DeleteMixin,
+    Entity,
+    MoveMixin,
+)
 from mstrio.utils.enum_helper import get_enum_val
 from mstrio.utils.helper import (
     delete_none_values,
     filter_params_for_func,
     get_valid_project_id,
+    find_object_with_name,
 )
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
@@ -43,16 +49,16 @@ logger = logging.getLogger(__name__)
 @method_version_handler('11.3.0100')
 def list_attributes(
     connection: Connection,
-    name: Optional[str] = None,
-    attribute_subtype: Optional[ObjectSubTypes] = None,
+    name: str | None = None,
+    attribute_subtype: ObjectSubTypes | None = None,
     to_dictionary: bool = False,
-    limit: Optional[int] = None,
-    search_pattern: Union[SearchPattern, int] = SearchPattern.CONTAINS,
-    project_id: Optional[str] = None,
-    project_name: Optional[str] = None,
-    show_expression_as: Union[ExpressionFormat, str] = ExpressionFormat.TREE,
+    limit: int | None = None,
+    search_pattern: SearchPattern | int = SearchPattern.CONTAINS,
+    project_id: str | None = None,
+    project_name: str | None = None,
+    show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
     **filters,
-) -> Union[list["Attribute"], list[dict]]:
+) -> list["Attribute"] | list[dict]:
     """Get list of Attribute objects or dicts with them.
     Optionally filter attributes by specifying 'name', 'attribute_subtype'.
 
@@ -85,8 +91,8 @@ def list_attributes(
         project_id (str, optional): Project ID
         project_name (str, optional): Project name
         search_pattern (SearchPattern enum or int, optional): pattern to search
-            for, such as Begin With or Exactly. Possible values are available in
-            ENUM mstrio.object_management.SearchPattern.
+            for, such as Begin With or Exactly. Possible values are
+            available in ENUM `mstrio.object_management.SearchPattern`.
             Default value is CONTAINS (4).
         show_expression_as (ExpressionFormat, str): specify how expressions
             should be presented
@@ -254,7 +260,7 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
     def validate_key_form(
         key_form: FormReference,
         forms: list[AttributeForm],
-        error_msg: Optional[str] = None,
+        error_msg: str | None = None,
     ) -> FormReference:
         """Validate whether the key form exists in the list of attribute forms
             provided
@@ -332,7 +338,7 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
     @staticmethod
     def validate_sorts(
         sorts: AttributeSorts, forms: list[AttributeForm]
-    ) -> Optional[AttributeSorts]:
+    ) -> AttributeSorts | None:
         """Validate whether the sorts use form references that aren't present
             in the provided forms
 
@@ -363,16 +369,16 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
         cls,
         connection: 'Connection',
         name: str,
-        sub_type: Union[ObjectSubType, str],
-        destination_folder: Union[Folder, str],
+        sub_type: ObjectSubType | str,
+        destination_folder: Folder | str,
         forms: list[AttributeForm],
         key_form: FormReference,
         displays: AttributeDisplays,
-        description: Optional[str] = None,
+        description: str | None = None,
         is_embedded: bool = False,
-        attribute_lookup_table: Optional[SchemaObjectReference] = None,
-        sorts: Optional[AttributeSorts] = None,
-        show_expression_as: Union[ExpressionFormat, str] = ExpressionFormat.TREE,
+        attribute_lookup_table: SchemaObjectReference | None = None,
+        sorts: AttributeSorts | None = None,
+        show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
     ) -> "Attribute":
         """Alter attribute properties.
 
@@ -453,9 +459,9 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
     def __init__(
         self,
         connection: Connection,
-        id: Optional[str] = None,
-        name: Optional[str] = None,
-        show_expression_as: Union[ExpressionFormat, str] = ExpressionFormat.TREE,
+        id: str | None = None,
+        name: str | None = None,
+        show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
     ) -> None:
         """Initializes a new instance of Attribute class
 
@@ -480,12 +486,17 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
             if Attribute with the given `name` doesn't exist.
         """
         if id is None:
-            attribute = super()._find_object_with_name(
+            if name is None:
+                raise ValueError(
+                    "Please specify either 'name' or 'id' parameter in the constructor."
+                )
+
+            attribute = find_object_with_name(
                 connection=connection,
+                cls=self.__class__,
                 name=name,
-                listing_function=partial(
-                    list_attributes, search_pattern=SearchPattern.EXACTLY
-                ),
+                listing_function=list_attributes,
+                search_pattern=SearchPattern.EXACTLY,
             )
             id = attribute['id']
         super().__init__(
@@ -540,18 +551,18 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
 
     def alter(
         self,
-        sub_type: Optional[str] = None,
-        name: Optional[str] = None,
-        is_embedded: Optional[bool] = None,
-        description: Optional[str] = None,
-        destination_folder_id: Optional[str] = None,
-        forms: Optional[list[AttributeForm]] = None,
-        attribute_lookup_table: Optional[SchemaObjectReference] = None,
-        key_form: Optional[FormReference] = None,
-        displays: Optional[AttributeDisplays] = None,
-        sorts: Optional[AttributeSorts] = None,
-        relationships: Optional[Relationship] = None,
-        hidden: Optional[bool] = None,
+        sub_type: str | None = None,
+        name: str | None = None,
+        is_embedded: bool | None = None,
+        description: str | None = None,
+        destination_folder_id: str | None = None,
+        forms: list[AttributeForm] | None = None,
+        attribute_lookup_table: SchemaObjectReference | None = None,
+        key_form: FormReference | None = None,
+        displays: AttributeDisplays | None = None,
+        sorts: AttributeSorts | None = None,
+        relationships: Relationship | None = None,
+        hidden: bool | None = None,
     ):
         """Alter attribute properties.
 
@@ -603,10 +614,10 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
     # Attribute relationships management
     def add_child(
         self,
-        child: Optional[SchemaObjectReference] = None,
-        joint_child: Optional[list[SchemaObjectReference]] = None,
+        child: SchemaObjectReference | None = None,
+        joint_child: list[SchemaObjectReference] | None = None,
         relationship_type: RelationshipType = RelationshipType.ONE_TO_MANY,
-        table: Optional[SchemaObjectReference] = None,
+        table: SchemaObjectReference | None = None,
     ) -> None:
         """Add a child to the attribute.
 
@@ -653,7 +664,7 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
         self,
         parent: SchemaObjectReference,
         relationship_type: RelationshipType = RelationshipType.ONE_TO_MANY,
-        table: Optional[SchemaObjectReference] = None,
+        table: SchemaObjectReference | None = None,
     ) -> None:
         """Add a parent to the attribute.
 
@@ -680,8 +691,8 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
 
     def remove_child(
         self,
-        child: Optional[SchemaObjectReference] = None,
-        joint_child: Optional[list[SchemaObjectReference]] = None,
+        child: SchemaObjectReference | None = None,
+        joint_child: list[SchemaObjectReference] | None = None,
     ) -> None:
         """Removes a child of the attribute.
 
@@ -744,7 +755,7 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
 
     def list_relationship_candidates(
         self, already_used: bool = True, to_dictionary: bool = True
-    ) -> Union[dict, list[SchemaObjectReference]]:
+    ) -> dict | list[SchemaObjectReference]:
         """Lists potential relationship candidates for the Attribute.
 
         Args:
@@ -809,7 +820,7 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
         return result
 
     def list_tables(
-        self, expression: Optional[Union[FactExpression, str]] = None
+        self, expression: FactExpression | str | None = None
     ) -> list[SchemaObjectReference]:
         """List all tables in the given expression. If expression is not
         specified, list all tables for attribute.
@@ -849,7 +860,7 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
 
         self._alter_properties(forms=forms)
 
-    def get_form(self, id: str = None, name: str = None) -> Optional[AttributeForm]:
+    def get_form(self, id: str = None, name: str = None) -> AttributeForm | None:
         """Retrieve a certain attribute form of a local instance of
         Attribute object.
 
@@ -870,7 +881,7 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
 
     def get_fact_expression(
         self, expression_id: str, form_id: str = None, form_name: str = None
-    ) -> Optional[FactExpression]:
+    ) -> FactExpression | None:
         """Retrieve a certain fact expression of a local instance of
         Attribute object.
 
@@ -885,18 +896,18 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
 
     def add_form(
         self,
-        form: Optional[AttributeForm] = None,
-        name: Optional[str] = None,
-        expressions: Optional[list[FactExpression]] = None,
-        lookup_table: Optional[SchemaObjectReference] = None,
-        description: Optional[str] = None,
-        category: Optional[str] = None,
-        display_format: Optional[AttributeForm.DisplayFormat] = None,
-        data_type: Optional[DataType] = None,
-        alias: Optional[str] = None,
-        child_forms: Optional[list[FormReference]] = None,
-        geographical_role: Optional[AttributeForm.GeographicalRole] = None,
-        time_role: Optional[AttributeForm.TimeRole] = None,
+        form: AttributeForm | None = None,
+        name: str | None = None,
+        expressions: list[FactExpression] | None = None,
+        lookup_table: SchemaObjectReference | None = None,
+        description: str | None = None,
+        category: str | None = None,
+        display_format: AttributeForm.DisplayFormat | None = None,
+        data_type: DataType | None = None,
+        alias: str | None = None,
+        child_forms: list[FormReference] | None = None,
+        geographical_role: AttributeForm.GeographicalRole | None = None,
+        time_role: AttributeForm.TimeRole | None = None,
         is_form_group: bool = False,
         is_multilingual: bool = False,
     ):
@@ -1015,7 +1026,7 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
                     break
         return Attribute.validate_sorts(sorts, forms)
 
-    def remove_form(self, form_id: str, new_key_form: Optional[FormReference] = None):
+    def remove_form(self, form_id: str, new_key_form: FormReference | None = None):
         """Remove attribute form with a given `form_id`. If this form was
         present in `displays` or `sorts`, it will be automatically removed
         from there.
@@ -1064,18 +1075,18 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
     def alter_form(
         self,
         form_id: str,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        display_format: Optional[AttributeForm.DisplayFormat] = None,
-        data_type: Optional[DataType] = None,
-        expressions: Optional[list[FactExpression]] = None,
-        alias: Optional[str] = None,
-        lookup_table: Optional[SchemaObjectReference] = None,
-        child_forms: Optional[list[FormReference]] = None,
-        geographical_role: Optional[AttributeForm.GeographicalRole] = None,
-        time_role: Optional[AttributeForm.TimeRole] = None,
-        is_form_group: Optional[bool] = None,
-        is_multilingual: Optional[bool] = None,
+        name: str | None = None,
+        description: str | None = None,
+        display_format: AttributeForm.DisplayFormat | None = None,
+        data_type: DataType | None = None,
+        expressions: list[FactExpression] | None = None,
+        alias: str | None = None,
+        lookup_table: SchemaObjectReference | None = None,
+        child_forms: list[FormReference] | None = None,
+        geographical_role: AttributeForm.GeographicalRole | None = None,
+        time_role: AttributeForm.TimeRole | None = None,
+        is_form_group: bool | None = None,
+        is_multilingual: bool | None = None,
     ):
         """Alter attribute form with a given `form_id`.
 
@@ -1117,7 +1128,7 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
         form_id: str,
         fact_expression_id: str,
         expression: Optional['Expression'] = None,
-        tables: Optional[list[SchemaObjectReference]] = None,
+        tables: list[SchemaObjectReference] | None = None,
     ):
         """Alter fact expression of the attribute form with given ID
         Args:
@@ -1149,7 +1160,7 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
         self,
         form_id: str,
         fact_expression_id: str,
-        new_lookup_table: Optional[SchemaObjectReference] = None,
+        new_lookup_table: SchemaObjectReference | None = None,
     ):
         """Remove expression from the form. If the expressions left are
         not using lookup table assigned to the form, provide new lookup

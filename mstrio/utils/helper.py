@@ -4,11 +4,12 @@ import os
 import re
 import time
 import warnings
+from collections.abc import Callable
 from datetime import datetime
 from enum import Enum
 from functools import reduce, wraps
 from json.decoder import JSONDecodeError
-from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar
+from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union
 
 import humps
 import pandas as pd
@@ -32,6 +33,7 @@ from mstrio.utils.time_helper import (
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
+    from mstrio.object_management import SearchPattern
     from mstrio.project_objects.datasets import OlapCube, SuperCube
     from mstrio.server import Project
     from mstrio.types import ObjectTypes
@@ -327,8 +329,8 @@ def get_parallel_number(total_chunks):
 
 def _prepare_objects(
     objects: dict | list[dict],
-    filters: Optional[dict] = None,
-    dict_unpack_value: Optional[str] = None,
+    filters: dict | None = None,
+    dict_unpack_value: str | None = None,
 ):
     if type(objects) is dict and dict_unpack_value:
         objects = objects[dict_unpack_value]
@@ -342,11 +344,11 @@ def fetch_objects_async(
     connection: "Connection",
     api: Callable,
     async_api: Callable,
-    limit: Optional[int],
+    limit: int | None,
     chunk_size: int,
     filters: dict,
-    error_msg: Optional[str] = None,
-    dict_unpack_value: Optional[str] = None,
+    error_msg: str | None = None,
+    dict_unpack_value: str | None = None,
     **kwargs,
 ) -> list:
     """Get all objects asynchronously. Optionally filter the objects using
@@ -433,10 +435,10 @@ def fetch_objects_async(
 def fetch_objects(
     connection: "Connection",
     api: Callable,
-    limit: Optional[int],
+    limit: int | None,
     filters: dict,
-    error_msg: Optional[str] = None,
-    dict_unpack_value: Optional[str] = None,
+    error_msg: str | None = None,
+    dict_unpack_value: str | None = None,
     **kwargs,
 ) -> list:
     """Fetch and prepare objects. Optionally filter the objects by using the
@@ -487,7 +489,7 @@ def sort_object_properties(source: dict) -> int:
 def auto_match_args(
     func: Callable,
     param_dict: dict,
-    exclude: Optional[list] = None,
+    exclude: list | None = None,
     include_defaults: bool = True,
 ) -> dict:
     """Automatically match dict data to function arguments.
@@ -668,7 +670,7 @@ def extract_all_dict_values(list_of_dicts: list[dict]) -> list[Any]:
 
 
 def delete_none_values(
-    source: dict, *, whitelist_attributes: Optional[list] = None, recursion: bool
+    source: dict, *, whitelist_attributes: list | None = None, recursion: bool
 ) -> dict:
     """Delete keys with None values from dictionary.
 
@@ -703,9 +705,9 @@ def get_objects_id(obj, obj_class):
 
 def list_folders(
     connection,
-    name: Optional[str] = None,
+    name: str | None = None,
     to_dataframe: bool = False,
-    limit: Optional[int] = None,
+    limit: int | None = None,
     **filters,
 ) -> list[dict] | pd.DataFrame:
     """List folders.
@@ -761,9 +763,9 @@ def list_folders(
 def create_folder(
     connection,
     folder_name: str,
-    folder_description: Optional[str] = None,
-    parent_name: Optional[str] = None,
-    parent_id: Optional[str] = None,
+    folder_description: str | None = None,
+    parent_name: str | None = None,
+    parent_id: str | None = None,
 ):
     """Create a folder.
 
@@ -813,7 +815,7 @@ def create_folder(
 
 
 def delete_folder(
-    connection, id: Optional[str] = None, name: Optional[str] = None, error_msg=None
+    connection, id: str | None = None, name: str | None = None, error_msg=None
 ):
     """Delete a folder.
 
@@ -862,7 +864,7 @@ def delete_folder(
 def merge_id_and_type(
     object_id: str,
     object_type: 'ObjectTypes | ObjectSubTypes | int',
-    error_msg: Optional[str] = None,
+    error_msg: str | None = None,
 ) -> str:
     if not object_id or not object_type:
         exception_handler(
@@ -922,7 +924,7 @@ def rgetattr(obj, attr, *default):
 
 
 def filter_params_for_func(
-    func: Callable, params: dict, exclude: Optional[list] = None
+    func: Callable, params: dict, exclude: list | None = None
 ) -> dict:
     """Filter dict of parameters and return only those that are parameters
     of a `func`.
@@ -986,8 +988,8 @@ def choose_cube(
 
 def get_valid_project_id(
     connection: "Connection",
-    project_id: Optional[str] = None,
-    project_name: Optional[str] = None,
+    project_id: str | None = None,
+    project_name: str | None = None,
     with_fallback: bool = False,
 ):
     """Check if the project name exists and return the project ID.
@@ -1033,7 +1035,7 @@ def get_valid_project_id(
     return project_id
 
 
-def fallback_to_conn_project_id(connection: "Connection") -> Optional[str]:
+def fallback_to_conn_project_id(connection: "Connection") -> str | None:
     try:
         connection._validate_project_selected()
         return connection.project_id
@@ -1290,7 +1292,7 @@ def rename_dict_keys(source: dict, mapping: dict) -> dict:
 
 
 def verify_project_status(
-    project: 'Project', correct_statuses: list[str] | str, node: Optional[str] = None
+    project: 'Project', correct_statuses: list[str] | str, node: str | None = None
 ) -> bool:
     """Veriy if provided status is correct for given project.
 
@@ -1305,7 +1307,7 @@ def verify_project_status(
         bool: True if status is correct and False otherwise.
     """
 
-    def get_status(project: 'Project', node: Optional[str] = None) -> str:
+    def get_status(project: 'Project', node: str | None = None) -> str:
         node_name = project.nodes[0]['name'] if not node else node
         nodes_filtered = [node for node in project.nodes if node['name'] == node_name]
 
@@ -1334,3 +1336,61 @@ def verify_project_status(
         iteration += 1
 
     return status in correct_statuses
+
+
+def find_object_with_name(
+    connection: 'Connection',
+    cls,
+    name: str,
+    listing_function: callable,
+    search_pattern: Union['SearchPattern', None] = None,
+) -> dict:
+    """Find objects with given name if no id is given.
+
+    Args:
+        connection: A MicroStrategy connection object
+        name: name of the object. Defaults to None.
+        listing_function: function called to list all the objects
+            with given name
+        search_pattern: search pattern used to find the object.
+
+    Returns:
+        dict: object properties in a dictionary.
+
+    Raises:
+        ValueError: if both `id` and `name` are not provided,
+            if there is more than 1 object with the given `name` or
+            if object with the given `name` doesn't exist.
+    """
+    if search_pattern:
+        results = listing_function(
+            connection=connection, name=name, search_pattern=search_pattern
+        )
+    else:
+        results = listing_function(connection=connection, name=name)
+
+    if results:
+        number_of_objects = len(results)
+
+        if 1 < number_of_objects <= 5:
+            error_string = (
+                f"There are {number_of_objects} {cls.__name__} objects"
+                f" with name: {name}:\n"
+            )
+            for obj in results:
+                path = "/".join(ancestor['name'] for ancestor in obj.ancestors)
+                error_string += f"ID: {obj.id} in folder: {path}\n"
+
+            error_string += "Please initialize with ID."
+
+            raise ValueError(error_string)
+
+        if number_of_objects > 5:
+            raise ValueError(
+                f"There are {number_of_objects} {cls.__name__}"
+                " objects with this name. Please initialize with ID."
+            )
+
+        return results[0].to_dict()
+    else:
+        raise ValueError(f"There is no {cls.__name__} with the given name: '{name}'")

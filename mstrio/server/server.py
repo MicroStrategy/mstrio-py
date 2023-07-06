@@ -1,12 +1,11 @@
 import logging
-from typing import Dict
 
 from packaging import version
 
+import mstrio.utils.helper as helper
 from mstrio import config
 from mstrio.api import administration
 from mstrio.connection import Connection
-import mstrio.utils.helper as helper
 from mstrio.utils.settings.base_settings import BaseSettings
 from mstrio.utils.settings.setting_types import SettingValue
 from mstrio.utils.version_helper import method_version_handler
@@ -77,7 +76,7 @@ class ServerSettings(BaseSettings):
         if response.status_code == 207:
             helper.exception_handler("Some settings could not be updated.", Warning)
 
-    def _fetch(self) -> Dict:
+    def _fetch(self) -> dict:
         settings = administration.get_iserver_settings(self._connection).json()
         return self._prepare_settings_fetch(settings)
 

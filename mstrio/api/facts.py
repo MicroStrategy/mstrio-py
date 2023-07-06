@@ -1,5 +1,3 @@
-from typing import Optional
-
 from mstrio.connection import Connection
 from mstrio.utils.api_helpers import changeset_manager, unpack_information
 from mstrio.utils.error_handlers import ErrorHandler
@@ -12,9 +10,9 @@ def read_fact(
     id: str,
     project_id: str = None,
     changeset_id: str = None,
-    show_expression_as: Optional[str] = None,
+    show_expression_as: str | None = None,
     show_potential_tables: bool = False,
-    show_fields: Optional[str] = None,
+    show_fields: str | None = None,
 ):
     if project_id is None:
         connection._validate_project_selected()
@@ -43,7 +41,7 @@ def read_fact(
 def create_fact(
     connection: "Connection",
     body: dict,
-    show_expression_as: Optional[str] = None,
+    show_expression_as: str | None = None,
     show_potential_tables: bool = False,
 ):
     spt = (
@@ -69,7 +67,7 @@ def update_fact(
     connection: "Connection",
     id: str,
     body: dict,
-    show_expression_as: Optional[str] = None,
+    show_expression_as: str | None = None,
     show_potential_tables: bool = False,
 ):
     spt = (

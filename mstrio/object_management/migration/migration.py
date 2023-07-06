@@ -1,7 +1,7 @@
 import logging
+from collections.abc import Callable
 from enum import Enum, auto
 from pathlib import Path
-from typing import Callable, Optional
 
 from mstrio import config
 from mstrio.api.exceptions import VersionException
@@ -74,12 +74,12 @@ class Migration(Dictable, ProgressBarMixin):
 
     def __init__(
         self,
-        save_path: Optional[str] = f"{Path.cwd()}/migration.mmp",
-        source_connection: Optional[Connection] = None,
-        configuration: Optional[PackageConfig] = None,
-        target_connection: Optional[Connection] = None,
-        custom_package_path: Optional[str] = None,
-        name: Optional[str] = None,
+        save_path: str | None = f"{Path.cwd()}/migration.mmp",
+        source_connection: Connection | None = None,
+        configuration: PackageConfig | None = None,
+        target_connection: Connection | None = None,
+        custom_package_path: str | None = None,
+        name: str | None = None,
         create_undo: bool = True,
     ):
         if not self._validate_envs_version(source_connection, target_connection):
@@ -240,7 +240,7 @@ class Migration(Dictable, ProgressBarMixin):
         return True
 
     def migrate_package(
-        self, custom_package_path: Optional[str] = None, is_undo=False
+        self, custom_package_path: str | None = None, is_undo=False
     ) -> bool:
         """Performs migration of already created package to the target
         environment. Import package will be loaded from `custom_package_path`.
@@ -281,7 +281,7 @@ class Migration(Dictable, ProgressBarMixin):
         self,
         binary: bytes,
         is_undo: bool = False,
-        custom_package_path: Optional[str] = None,
+        custom_package_path: str | None = None,
     ) -> bool:
         if binary is None:
             exception_handler(

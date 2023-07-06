@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from packaging import version
 
@@ -318,8 +318,8 @@ def get_sql_view(connection: "Connection", cube_id: str, project_id: str = None)
 def create_cube(
     connection: 'Connection',
     body: dict,
-    project_id: Optional[str] = None,
-    cube_template_id: Optional[str] = None,
+    project_id: str | None = None,
+    cube_template_id: str | None = None,
     show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
     show_filter_tokens: bool = False,
     show_advanced_properties: bool = True,
@@ -381,7 +381,7 @@ def create_cube(
 def get_cube(
     connection: 'Connection',
     id: str,
-    project_id: Optional[str] = None,
+    project_id: str | None = None,
     show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
     show_filter_tokens: bool = False,
     show_advanced_properties: bool = True,
@@ -440,7 +440,7 @@ def update_cube(
     connection: 'Connection',
     id: str,
     body: dict,
-    project_id: Optional[str] = None,
+    project_id: str | None = None,
     show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
     show_filter_tokens: bool = False,
     show_advanced_properties: bool = False,
@@ -502,7 +502,7 @@ def update_cube(
 def get_applicable_vldb_settings(
     connection: 'Connection',
     id: str,
-    project_id: Optional[str] = None,
+    project_id: str | None = None,
 ):
     """Get metadata of advanced VLDB settings for cube.
 

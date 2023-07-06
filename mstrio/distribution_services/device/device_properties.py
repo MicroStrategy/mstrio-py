@@ -1,5 +1,4 @@
 from enum import auto
-from typing import Optional, Union
 
 from mstrio.utils.enum_helper import AutoName
 from mstrio.utils.helper import Dictable, exception_handler
@@ -165,10 +164,10 @@ class EmailMimeSettings(Dictable):
 
     def __init__(
         self,
-        plain_text_html_body_encoding: Union[EmailEncoding, str],
-        text_attachment_encoding: Union[EmailEncoding, str],
-        binary_attachment_encoding: Union[EmailEncoding, str],
-        message_sensitivity: Union[EmailMessageSensitivity, str],
+        plain_text_html_body_encoding: EmailEncoding | str,
+        text_attachment_encoding: EmailEncoding | str,
+        binary_attachment_encoding: EmailEncoding | str,
+        message_sensitivity: EmailMessageSensitivity | str,
         us_ascii_encoding: bool = False,
         non_us_ascii_quotes: bool = False,
         embed_html_attachments: bool = False,
@@ -219,10 +218,10 @@ class EmailSmartHostSettings(Dictable):
 
     def __init__(
         self,
-        server: Optional[str] = None,
-        port: Optional[int] = None,
+        server: str | None = None,
+        port: int | None = None,
         always_use_smart_host: bool = False,
-        smart_host_username: Optional[str] = None,
+        smart_host_username: str | None = None,
         smart_host_password: bool = False,
     ):
         self.server = server
@@ -249,9 +248,9 @@ class EmailDeviceProperties(Dictable):
 
     def __init__(
         self,
-        format: Union[str, EmailFormat],
-        mime_settings: Optional[Union[dict, EmailMimeSettings]] = None,
-        smart_host_settings: Optional[Union[dict, EmailSmartHostSettings]] = None,
+        format: str | EmailFormat,
+        mime_settings: dict | EmailMimeSettings | None = None,
+        smart_host_settings: dict | EmailSmartHostSettings | None = None,
     ):
         self.format = EmailFormat(format) if isinstance(format, str) else format
         self.mime_settings = (
@@ -288,15 +287,15 @@ class FtpServerSettings(Dictable):
 
     def __init__(
         self,
-        protocol: Union[FtpProtocol, str],
+        protocol: FtpProtocol | str,
         port: int,
         path: str,
-        host: Optional[str] = None,
+        host: str | None = None,
         passive_mode: bool = True,
         max_connections: int = -1,
         ascii_mode: bool = True,
-        user_name: Optional[str] = None,
-        password: Optional[str] = None,
+        user_name: str | None = None,
+        password: str | None = None,
     ):
         self.protocol = FtpProtocol(protocol) if isinstance(protocol, str) else protocol
         self.host = host
@@ -324,8 +323,8 @@ class FtpDeviceProperties(Dictable):
 
     def __init__(
         self,
-        server_settings: Union[FtpServerSettings, dict],
-        file_system: Union[FileSystem, dict],
+        server_settings: FtpServerSettings | dict,
+        file_system: FileSystem | dict,
     ):
         self.server_settings = (
             FtpServerSettings.from_dict(server_settings)
@@ -355,11 +354,11 @@ class IOSDeviceProperties(Dictable):
     def __init__(
         self,
         app_id: str = '',
-        server: Optional[str] = None,
-        port: Optional[int] = None,
-        provider_certificate: Optional[str] = None,
-        feedback_service_server: Optional[str] = None,
-        feedback_service_port: Optional[int] = None,
+        server: str | None = None,
+        port: int | None = None,
+        provider_certificate: str | None = None,
+        feedback_service_server: str | None = None,
+        feedback_service_port: int | None = None,
     ):
         self.app_id = app_id
         self.server = server
@@ -389,15 +388,15 @@ class AndroidDeviceProperties(Dictable):
     def __init__(
         self,
         package_name: str,
-        server: Optional[str] = None,
-        port: Optional[int] = None,
-        auth_key: Optional[str] = None,
-        collapse_key: Optional[str] = None,
+        server: str | None = None,
+        port: int | None = None,
+        auth_key: str | None = None,
+        collapse_key: str | None = None,
         delay_with_idle: bool = False,
-        notification_active_hours: Optional[int] = None,
+        notification_active_hours: int | None = None,
         use_proxy: bool = False,
-        proxy_server: Optional[str] = None,
-        proxy_port: Optional[int] = None,
+        proxy_server: str | None = None,
+        proxy_port: int | None = None,
     ):
         self.package_name = package_name
         self.server = server
@@ -427,7 +426,7 @@ class FileLocation(Dictable):
         file_path: str,
         append_user_path: bool = False,
         use_backup_location: bool = False,
-        backup_file_path: Optional[str] = None,
+        backup_file_path: str | None = None,
     ):
         self.file_path = file_path
         self.append_user_path = append_user_path
@@ -455,8 +454,8 @@ class FileProperties(Dictable):
         read_only: bool = True,
         archive: bool = False,
         index: bool = False,
-        file_encoding: Optional[Union[FileEncoding, str]] = None,
-        unix_access_rights: Optional[str] = None,
+        file_encoding: FileEncoding | str | None = None,
+        unix_access_rights: str | None = None,
     ):
         self.read_only = read_only
         self.archive = archive
@@ -483,9 +482,9 @@ class UnixWindowsSharity(Dictable):
     def __init__(
         self,
         sharity_enabled: bool = False,
-        server_username: Optional[str] = None,
-        server_password: Optional[str] = None,
-        server_mount_root: Optional[str] = None,
+        server_username: str | None = None,
+        server_password: str | None = None,
+        server_mount_root: str | None = None,
     ):
         self.sharity_enabled = sharity_enabled
         self.server_username = server_username
@@ -516,11 +515,11 @@ class FileDeviceProperties(Dictable):
 
     def __init__(
         self,
-        file_location: Union[FileLocation, dict],
-        file_system: Union[FileSystem, dict],
-        connection_parameters: Union[ConnectionParameters, dict],
-        file_properties: Union[FileProperties, dict],
-        unix_windows_sharity: Union[UnixWindowsSharity, dict],
+        file_location: FileLocation | dict,
+        file_system: FileSystem | dict,
+        connection_parameters: ConnectionParameters | dict,
+        file_properties: FileProperties | dict,
+        unix_windows_sharity: UnixWindowsSharity | dict,
     ):
         self.file_location = (
             FileLocation.from_dict(file_location)
@@ -559,7 +558,7 @@ class PrinterLocation(Dictable):
     """
 
     def __init__(
-        self, location: Optional[str] = None, user_defined_location: bool = False
+        self, location: str | None = None, user_defined_location: bool = False
     ):
         self.location = location
         self.user_defined_location = user_defined_location
@@ -587,8 +586,8 @@ class PrinterPdfSettings(Dictable):
         self,
         post_script_level: int = 2,
         reverse_pages: bool = False,
-        odd_even_pages: Optional[Union[PdfOddEvenPages, str]] = None,
-        application_priority: Optional[Union[PdfApplicationPriority, str]] = None,
+        odd_even_pages: PdfOddEvenPages | str | None = None,
+        application_priority: PdfApplicationPriority | str | None = None,
     ):
         self.post_script_level = (
             post_script_level
@@ -630,11 +629,11 @@ class PrinterProperties(Dictable):
 
     def __init__(
         self,
-        pdf_setting: Union[PrinterPdfSettings, dict],
-        quality: Optional[str] = None,
+        pdf_setting: PrinterPdfSettings | dict,
+        quality: str | None = None,
         scale: int = 100,
-        paper_source: Optional[Union[PrinterPaperSource, str]] = None,
-        paper_size: Optional[Union[PrinterPaperSize, str]] = None,
+        paper_source: PrinterPaperSource | str | None = None,
+        paper_size: PrinterPaperSize | str | None = None,
     ):
         self.pdf_setting = (
             PrinterPdfSettings.from_dict(pdf_setting)
@@ -672,9 +671,9 @@ class BackupPrinterProperties(Dictable):
     def __init__(
         self,
         print_on_backup: bool = False,
-        backup_location_type: Optional[Union[PrinterBackupLocationType, str]] = None,
-        backup_printer_location: Optional[str] = None,
-        backup_file_location: Optional[str] = None,
+        backup_location_type: PrinterBackupLocationType | str | None = None,
+        backup_printer_location: str | None = None,
+        backup_file_location: str | None = None,
     ):
         self.print_on_backup = print_on_backup
         self.backup_location_type = (
@@ -707,11 +706,11 @@ class PrinterDeviceProperties(Dictable):
 
     def __init__(
         self,
-        printer_location: Union[PrinterLocation, dict],
-        printer_properties: Union[PrinterProperties, dict],
-        connection_parameters: Union[ConnectionParameters, dict],
-        backup_printer_properties: Union[BackupPrinterProperties, dict],
-        temp_file_location: Optional[str] = None,
+        printer_location: PrinterLocation | dict,
+        printer_properties: PrinterProperties | dict,
+        connection_parameters: ConnectionParameters | dict,
+        backup_printer_properties: BackupPrinterProperties | dict,
+        temp_file_location: str | None = None,
     ):
         self.printer_location = (
             PrinterLocation.from_dict(printer_location)

@@ -1,5 +1,3 @@
-from typing import Optional
-
 from mstrio.connection import Connection
 from mstrio.utils.api_helpers import changeset_manager, unpack_information
 from mstrio.utils.error_handlers import ErrorHandler
@@ -10,8 +8,8 @@ from mstrio.utils.error_handlers import ErrorHandler
 def get_transformation(
     connection: Connection,
     id: str,
-    changeset_id: Optional[str] = None,
-    show_expression_as: Optional[list[str]] = None,
+    changeset_id: str | None = None,
+    show_expression_as: list[str] | None = None,
 ):
     """Get definition of a single transformation by id
 
@@ -40,7 +38,7 @@ def get_transformation(
 @unpack_information
 @ErrorHandler(err_msg='Error creating a transformation')
 def create_transformation(
-    connection: Connection, body: dict, show_expression_as: Optional[list[str]] = None
+    connection: Connection, body: dict, show_expression_as: list[str] | None = None
 ):
     """Create a new transformation in the changeset,
     based on the definition provided in request body.
@@ -74,7 +72,7 @@ def update_transformation(
     connection: Connection,
     id: str,
     body: dict,
-    show_expression_as: Optional[list[str]] = None,
+    show_expression_as: list[str] | None = None,
 ):
     """Update a specific transformation in the changeset,
     based on the definition provided in the request body.

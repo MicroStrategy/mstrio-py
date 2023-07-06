@@ -1,8 +1,7 @@
+import json
 from datetime import datetime
 from enum import Enum
 from functools import wraps
-import json
-from typing import Union
 
 import pytz
 
@@ -23,7 +22,7 @@ def _without_loc(format_str):
         return format_str
 
 
-def _adapt_date_to_format(date: str, format_str: str) -> Union[tuple, str]:
+def _adapt_date_to_format(date: str, format_str: str) -> tuple | str:
     """Adapt string with `date` to proper format provided in `format_str`.
     If time is incomplete, fill it with missing zeros to have format with
     milliseconds which then will be cut to match provided format. When
@@ -94,7 +93,7 @@ def _adapt_date_to_format(date: str, format_str: str) -> Union[tuple, str]:
     return (date, format_str)
 
 
-def str_to_datetime(date: str, format_str: str) -> Union[datetime, None]:
+def str_to_datetime(date: str, format_str: str) -> datetime | None:
     """Change date format to datetime, based on `format_str` provided.
     If `date` is already a datetime object, return it. Make the date aware."""
     if date is None:
@@ -125,7 +124,7 @@ def _return_with_miliseconds(func):
 
 
 @_return_with_miliseconds
-def datetime_to_str(date: datetime, format_str: str) -> Union[str, None]:
+def datetime_to_str(date: datetime, format_str: str) -> str | None:
     """Get date string from datetime, based on `format_str` provided.
     If `date` is already a string, return it. Make the date aware."""
     if isinstance(date, str):

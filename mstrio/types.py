@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import List, Union
+from typing import Union
 
 
 class ObjectTypes(Enum):
@@ -133,5 +133,5 @@ class ExtendedType(Enum):
 
 
 TypeOrSubtype = Union[
-    int, ObjectTypes, ObjectSubTypes, List[Union[int, ObjectTypes, ObjectSubTypes]]
+    int, ObjectTypes, ObjectSubTypes, list[Union[int, ObjectTypes, ObjectSubTypes]]
 ]

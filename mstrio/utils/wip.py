@@ -1,15 +1,14 @@
-from enum import auto, Enum
 import functools
-from itertools import filterfalse
 import logging
 import sys
+from enum import Enum, auto
+from itertools import filterfalse
 from textwrap import dedent
-from typing import Optional, Union
 
 from packaging.version import Version
 
-from .exceptions import NotSupportedError
 from .. import __version__, config
+from .exceptions import NotSupportedError
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(  # NOSONAR
@@ -69,8 +68,8 @@ def _get_message_template(level: WipLevels = WipLevels.WARNING):
 
 
 def _construct_message(
-    name: Optional[str] = None,
-    target_release: Optional[Union[Version, str]] = None,
+    name: str | None = None,
+    target_release: Version | str | None = None,
     level: WipLevels = WipLevels.WARNING,
 ):
     template = _get_message_template(level)
@@ -84,10 +83,10 @@ def _construct_message(
 
 
 def _emit(
-    name: Optional[str] = None,
-    target_release: Optional[Union[Version, str]] = None,
+    name: str | None = None,
+    target_release: Version | str | None = None,
     level: WipLevels = WipLevels.WARNING,
-    message: Optional[str] = None,
+    message: str | None = None,
 ):
     if level == WipLevels.SILENT or not config.wip_warnings_enabled:
         return None
@@ -106,10 +105,10 @@ def _emit(
 
 
 def wip(
-    target_release: Optional[Union[Version, str]] = None,
+    target_release: Version | str | None = None,
     level: WipLevels = WipLevels.WARNING,
-    message: Optional[str] = None,
-    prefix_doc: Union[bool, str] = True,
+    message: str | None = None,
+    prefix_doc: bool | str = True,
     mark_attr: bool = True,
 ):
     """Work-In-Progress wrapper
@@ -173,10 +172,10 @@ def wip(
 
 def module_wip(
     module_globals: dict,
-    target_release: Optional[Union[Version, str]] = None,
+    target_release: Version | str | None = None,
     level: WipLevels = WipLevels.WARNING,
-    message: Optional[str] = None,
-    prefix_doc: Union[bool, str] = True,
+    message: str | None = None,
+    prefix_doc: bool | str = True,
     mark_attr: bool = True,
 ):
     """Emit the WIP warning/error/info when the module is loaded."""

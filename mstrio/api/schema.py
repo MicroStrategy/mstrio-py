@@ -1,11 +1,9 @@
-from typing import List, Optional
-
 from mstrio.connection import Connection
 from mstrio.utils.error_handlers import ErrorHandler
 
 
 @ErrorHandler(err_msg='Error reading lock status of the schema.')
-def read_lock_status(connection: "Connection", project_id: Optional[str] = None):
+def read_lock_status(connection: "Connection", project_id: str | None = None):
     """Read lock status of the schema."""
     project_id = project_id if project_id is not None else connection.project_id
     return connection.get(
@@ -18,7 +16,7 @@ def read_lock_status(connection: "Connection", project_id: Optional[str] = None)
 def lock_schema(
     connection: "Connection",
     lock_type: str,
-    project_id: Optional[str] = None,
+    project_id: str | None = None,
     throw_error: bool = True,
 ):
     """Places a lock on the schema."""
@@ -33,8 +31,8 @@ def lock_schema(
 @ErrorHandler(err_msg='Error unlocking the schema.')
 def unlock_schema(
     connection: "Connection",
-    lock_type: Optional[str] = None,
-    project_id: Optional[str] = None,
+    lock_type: str | None = None,
+    project_id: str | None = None,
     throw_error: bool = True,
 ):
     """Unlocks the schema."""
@@ -49,8 +47,8 @@ def unlock_schema(
 @ErrorHandler(err_msg='Error reloading the schema.')
 def reload_schema(
     connection: "Connection",
-    project_id: Optional[str] = None,
-    update_types: Optional[List[str]] = None,
+    project_id: str | None = None,
+    update_types: list[str] | None = None,
     prefer_async: bool = False,
 ):
     """Reloads (updates) the schema."""
@@ -69,7 +67,7 @@ def reload_schema(
 
 @ErrorHandler(err_msg='Error reading status of the task with ID: {task_id}.')
 def read_task_status(
-    connection: "Connection", task_id: str, project_id: Optional[str] = None
+    connection: "Connection", task_id: str, project_id: str | None = None
 ):
     """Read the status of the task."""
     project_id = project_id if project_id is not None else connection.project_id

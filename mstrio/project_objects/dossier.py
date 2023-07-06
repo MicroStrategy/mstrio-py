@@ -1,6 +1,5 @@
 import logging
 from dataclasses import dataclass
-from typing import Optional
 
 from pandas import DataFrame, concat
 
@@ -21,12 +20,12 @@ logger = logging.getLogger(__name__)
 
 def list_dossiers(
     connection: Connection,
-    name: Optional[str] = None,
+    name: str | None = None,
     to_dictionary: bool = False,
     to_dataframe: bool = False,
-    limit: Optional[int] = None,
-    project_id: Optional[str] = None,
-    project_name: Optional[str] = None,
+    limit: int | None = None,
+    project_id: str | None = None,
+    project_name: str | None = None,
     **filters,
 ) -> list["Dossier"] | list[dict] | DataFrame:
     """Get all Dossiers stored on the server.
@@ -68,10 +67,10 @@ def list_dossiers(
 
 def list_dossiers_across_projects(
     connection: Connection,
-    name: Optional[str] = None,
+    name: str | None = None,
     to_dictionary: bool = False,
     to_dataframe: bool = False,
-    limit: Optional[int] = None,
+    limit: int | None = None,
     **filters,
 ) -> list["Dossier"] | list[dict] | DataFrame:
     """Get all Dossiers stored on the server.
@@ -148,8 +147,8 @@ class Dossier(Document):
     def __init__(
         self,
         connection: Connection,
-        name: Optional[str] = None,
-        id: Optional[str] = None,
+        name: str | None = None,
+        id: str | None = None,
     ):
         """Initialize Dossier object by passing name or id.
 
@@ -171,12 +170,12 @@ class Dossier(Document):
         cls,
         connection: Connection,
         search_pattern: SearchPattern | int = SearchPattern.CONTAINS,
-        name: Optional[str] = None,
+        name: str | None = None,
         to_dictionary: bool = False,
         to_dataframe: bool = False,
-        limit: Optional[int] = None,
-        project_id: Optional[str] = None,
-        project_name: Optional[str] = None,
+        limit: int | None = None,
+        project_id: str | None = None,
+        project_name: str | None = None,
         **filters,
     ) -> list["Dossier"] | list[dict] | DataFrame:
         if to_dictionary and to_dataframe:
@@ -225,9 +224,9 @@ class Dossier(Document):
 
     def alter(
         self,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        folder_id: Optional[Folder | str] = None,
+        name: str | None = None,
+        description: str | None = None,
+        folder_id: Folder | str | None = None,
     ):
         """Alter Dossier name, description and/or folder id.
 
@@ -241,7 +240,7 @@ class Dossier(Document):
         """
         super().alter(name, description, folder_id)
 
-    def publish(self, recipients: Optional[UserOrGroup | list[UserOrGroup]] = None):
+    def publish(self, recipients: UserOrGroup | list[UserOrGroup] | None = None):
         """Publish the dossier for authenticated user. If `recipients`
         parameter is specified publishes the dossier for the given users.
 
@@ -252,7 +251,7 @@ class Dossier(Document):
         """
         super().publish(recipients)
 
-    def unpublish(self, recipients: Optional[UserOrGroup | list[UserOrGroup]] = None):
+    def unpublish(self, recipients: UserOrGroup | list[UserOrGroup] | None = None):
         """Unpublish the dossier for all users it was previously published to.
         If `recipients` parameter is specified unpublishes the dossier for the
         given users.
@@ -296,7 +295,7 @@ class VisualizationSelector(Dictable):
     visualization_key: str
     selector_type: str
     current_selection: dict
-    targets: Optional[list[dict]] = None
+    targets: list[dict] | None = None
 
     def list_properties(self, camel_case=True) -> dict:
         """Lists properties of visualization selector."""
@@ -326,14 +325,14 @@ class PageSelector(Dictable):
     key: str
     selector_type: str
     current_selection: dict
-    source: Optional[dict] = None
+    source: dict | None = None
     multi_selection_allowed: bool = False
     has_all_option: bool = False
-    display_style: Optional[str] = None
-    available_object_items: Optional[list[dict]] = None
-    targets: Optional[list[dict]] = None
-    name: Optional[str] = None
-    summary: Optional[str] = None
+    display_style: str | None = None
+    available_object_items: list[dict] | None = None
+    targets: list[dict] | None = None
+    name: str | None = None
+    summary: str | None = None
 
     def list_properties(self, camel_case=True) -> dict:
         """Lists properties of page selector."""
@@ -354,9 +353,9 @@ class PageVisualization(Dictable):
     _FROM_DICT_MAP = {'selector': VisualizationSelector.from_dict}
 
     key: str
-    visualization_type: Optional[str] = None
-    name: Optional[str] = None
-    selector: Optional[VisualizationSelector] = None
+    visualization_type: str | None = None
+    name: str | None = None
+    selector: VisualizationSelector | None = None
 
     def list_properties(self, camel_case=True) -> dict:
         """Lists properties of page visualization."""
@@ -382,8 +381,8 @@ class ChapterPage(Dictable):
 
     key: str
     visualizations: list[PageVisualization]
-    name: Optional[str] = None
-    selectors: Optional[list[PageSelector]] = None
+    name: str | None = None
+    selectors: list[PageSelector] | None = None
 
     def list_properties(self, camel_case=True) -> dict:
         """Lists properties of dossier chapter page."""
@@ -404,8 +403,8 @@ class DossierChapter(Dictable):
 
     key: str
     pages: list[ChapterPage]
-    name: Optional[str] = None
-    filters: Optional[list[dict]] = None
+    name: str | None = None
+    filters: list[dict] | None = None
 
     def list_properties(self, camel_case=True) -> dict:
         """Lists properties of dossier chapter."""

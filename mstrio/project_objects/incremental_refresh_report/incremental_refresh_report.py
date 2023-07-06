@@ -1,7 +1,5 @@
 import logging
 from enum import auto
-from functools import partial
-from typing import Optional, Type
 
 import pandas as pd
 
@@ -18,13 +16,19 @@ from mstrio.object_management import Folder, SearchPattern, full_search
 from mstrio.project_objects import OlapCube
 from mstrio.project_objects.datasets.helpers import AdvancedProperties, Template
 from mstrio.types import ObjectSubTypes, ObjectTypes
-from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, MoveMixin
+from mstrio.utils.entity import (
+    CopyMixin,
+    DeleteMixin,
+    Entity,
+    MoveMixin,
+)
 from mstrio.utils.enum_helper import AutoName, get_enum_val
 from mstrio.utils.helper import (
     delete_none_values,
     filter_params_for_func,
     get_objects_id,
     get_valid_project_id,
+    find_object_with_name,
 )
 from mstrio.utils.parser import Parser
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
@@ -38,18 +42,18 @@ module_wip(globals(), level=WipLevels.WARNING)
 @method_version_handler('11.3.0600')
 def list_incremental_refresh_reports(
     connection: Connection,
-    name: Optional[str] = None,
+    name: str | None = None,
     pattern: SearchPattern | int = SearchPattern.CONTAINS,
-    project_id: Optional[str] = None,
-    project_name: Optional[str] = None,
+    project_id: str | None = None,
+    project_name: str | None = None,
     to_dictionary: bool = False,
-    limit: Optional[int] = None,
-    folder_id: Optional[str] = None,
-    filters: Optional[dict] = None,
+    limit: int | None = None,
+    folder_id: str | None = None,
+    filters: dict | None = None,
     show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
     show_filter_tokens: bool = False,
     show_advanced_properties: bool = False,
-) -> list[Type['IncrementalRefreshReport']] | list[dict]:
+) -> list[type['IncrementalRefreshReport']] | list[dict]:
     return IncrementalRefreshReport.list(
         connection,
         name,
@@ -160,8 +164,8 @@ class IncrementalRefreshReport(Entity, CopyMixin, MoveMixin, DeleteMixin):
     def __init__(
         self,
         connection: Connection,
-        id: Optional[str] = None,
-        name: Optional[str] = None,
+        id: str | None = None,
+        name: str | None = None,
         show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
         show_filter_tokens: bool = False,
         show_advanced_properties: bool = False,
@@ -169,10 +173,16 @@ class IncrementalRefreshReport(Entity, CopyMixin, MoveMixin, DeleteMixin):
         connection._validate_project_selected()
 
         if id is None:
-            reports = super()._find_object_with_name(
+            if name is None:
+                raise ValueError(
+                    "Please specify either 'name' or 'id' parameter in the constructor."
+                )
+
+            reports = find_object_with_name(
                 connection=connection,
+                cls=self.__class__,
                 name=name,
-                listing_function=partial(self.list, pattern=SearchPattern.EXACTLY),
+                listing_function=self.list,
             )
             id = reports['id']
 
@@ -240,9 +250,9 @@ class IncrementalRefreshReport(Entity, CopyMixin, MoveMixin, DeleteMixin):
 
     def execute(
         self,
-        fields: Optional[str] = None,
-        project_id: Optional[str] = None,
-        project_name: Optional[str] = None,
+        fields: str | None = None,
+        project_id: str | None = None,
+        project_name: str | None = None,
     ) -> None:
         project_id = get_valid_project_id(
             self.connection, project_id, project_name, with_fallback=True
@@ -265,18 +275,18 @@ class IncrementalRefreshReport(Entity, CopyMixin, MoveMixin, DeleteMixin):
     def list(
         cls,
         connection: Connection,
-        name: Optional[str] = None,
+        name: str | None = None,
         pattern: SearchPattern | int = SearchPattern.CONTAINS,
-        project_id: Optional[str] = None,
-        project_name: Optional[str] = None,
+        project_id: str | None = None,
+        project_name: str | None = None,
         to_dictionary: bool = False,
-        limit: Optional[int] = None,
-        folder_id: Optional[str] = None,
-        filters: Optional[dict] = None,
+        limit: int | None = None,
+        folder_id: str | None = None,
+        filters: dict | None = None,
         show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
         show_filter_tokens: bool = False,
         show_advanced_properties: bool = False,
-    ) -> list[Type['IncrementalRefreshReport']] | list[dict]:
+    ) -> list[type['IncrementalRefreshReport']] | list[dict]:
         project_id = get_valid_project_id(
             connection=connection,
             project_id=project_id,
@@ -326,10 +336,10 @@ class IncrementalRefreshReport(Entity, CopyMixin, MoveMixin, DeleteMixin):
         increment_type: IncrementType | str,
         refresh_type: RefreshType | str,
         template: Template | dict = None,
-        filter: Optional[Expression | dict] = None,
-        advanced_properties: Optional[dict] = None,
-        description: Optional[str] = None,
-        primary_locale: Optional[str] = None,
+        filter: Expression | dict | None = None,
+        advanced_properties: dict | None = None,
+        description: str | None = None,
+        primary_locale: str | None = None,
         is_embedded: bool = False,
         show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
         show_filter_tokens: bool = False,
@@ -397,10 +407,10 @@ class IncrementalRefreshReport(Entity, CopyMixin, MoveMixin, DeleteMixin):
         destination_folder: Folder | str,
         target_cube: OlapCube | SchemaObjectReference | dict,
         refresh_type: RefreshType | str,
-        filter: Optional[Expression | dict] = None,
-        advanced_properties: Optional[dict] = None,
-        description: Optional[str] = None,
-        primary_locale: Optional[str] = None,
+        filter: Expression | dict | None = None,
+        advanced_properties: dict | None = None,
+        description: str | None = None,
+        primary_locale: str | None = None,
         is_embedded: bool = False,
         show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
         show_filter_tokens: bool = False,
@@ -412,16 +422,16 @@ class IncrementalRefreshReport(Entity, CopyMixin, MoveMixin, DeleteMixin):
 
     def alter(
         self,
-        name: Optional[str] = None,
-        target_cube: Optional[OlapCube | SchemaObjectReference | dict] = None,
-        increment_type: Optional[IncrementType | str] = None,
-        refresh_type: Optional[RefreshType | str] = None,
-        template: Optional[Template | dict] = None,
-        filter: Optional[Expression | dict] = None,
-        advanced_properties: Optional[dict] = None,
-        description: Optional[str] = None,
-        primary_locale: Optional[str] = None,
-        is_embedded: Optional[bool] = None,
+        name: str | None = None,
+        target_cube: OlapCube | SchemaObjectReference | dict | None = None,
+        increment_type: IncrementType | str | None = None,
+        refresh_type: RefreshType | str | None = None,
+        template: Template | dict | None = None,
+        filter: Expression | dict | None = None,
+        advanced_properties: dict | None = None,
+        description: str | None = None,
+        primary_locale: str | None = None,
+        is_embedded: bool | None = None,
     ):
         if isinstance(target_cube, OlapCube):
             target_cube = SchemaObjectReference(
@@ -452,9 +462,9 @@ class IncrementalRefreshReport(Entity, CopyMixin, MoveMixin, DeleteMixin):
 
     def get_preview_data(
         self,
-        offset: Optional[int] = None,
-        limit: Optional[int] = None,
-        fields: Optional[str] = None,
+        offset: int | None = None,
+        limit: int | None = None,
+        fields: str | None = None,
     ) -> pd.DataFrame:
         response = refresh_api.create_incremental_refresh_report_instance(
             self.connection, self.id

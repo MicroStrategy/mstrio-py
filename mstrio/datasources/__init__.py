@@ -21,9 +21,9 @@ from .datasource_instance import (
 from .datasource_login import DatasourceLogin, list_datasource_logins
 from .datasource_map import (
     DatasourceMap,
+    Locale,
     list_datasource_mappings,
     list_locales,
-    Locale,
 )
 from .driver import Driver, list_drivers
 from .gateway import Gateway, list_gateways

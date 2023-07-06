@@ -1,6 +1,5 @@
 from enum import Enum
 from itertools import chain
-from typing import Type
 
 
 class AutoName(Enum):
@@ -9,7 +8,7 @@ class AutoName(Enum):
 
     @classmethod
     def has_value(cls, value):
-        return value in set(item.value for item in cls)
+        return value in {item.value for item in cls}
 
     def __repr__(self) -> str:
         return self.__str__()
@@ -26,8 +25,8 @@ class AutoCapitalizedName(Enum):
 
 
 def __get_enum_helper(
-    obj, enum: Type[Enum] = Enum, get_value: bool = False
-) -> str | Type[Enum] | None:
+    obj, enum: type[Enum] = Enum, get_value: bool = False
+) -> str | type[Enum] | None:
     """Helper function for `get_enum` and `get_enum_val`."""
     if obj is None:
         return obj
@@ -43,12 +42,12 @@ def __get_enum_helper(
     return obj
 
 
-def get_enum(obj, enum: Type[Enum] = Enum) -> Type[Enum] | None:
+def get_enum(obj, enum: type[Enum] = Enum) -> type[Enum] | None:
     """Safely get enum from enum or str."""
     return __get_enum_helper(obj, enum)
 
 
-def get_enum_val(obj, enum: Type[Enum] = Enum) -> str | None:
+def get_enum_val(obj, enum: type[Enum] = Enum) -> str | None:
     """Safely extract value from enum or str."""
     return __get_enum_helper(obj, enum, True)
 

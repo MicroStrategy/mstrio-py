@@ -1,8 +1,6 @@
 import logging
 from dataclasses import dataclass
 from enum import auto
-from functools import partial
-from typing import Optional
 
 from mstrio import config
 from mstrio.api import objects, transformations
@@ -21,6 +19,7 @@ from mstrio.utils.helper import (
     delete_none_values,
     filter_params_for_func,
     get_valid_project_id,
+    find_object_with_name,
 )
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
@@ -30,11 +29,11 @@ logger = logging.getLogger(__name__)
 @method_version_handler('11.3.0500')
 def list_transformations(
     connection,
-    name: Optional[str] = None,
+    name: str | None = None,
     to_dictionary: bool = False,
-    limit: Optional[int] = None,
-    project_id: Optional[str] = None,
-    project_name: Optional[str] = None,
+    limit: int | None = None,
+    project_id: str | None = None,
+    project_name: str | None = None,
     search_pattern: SearchPattern | int = SearchPattern.CONTAINS,
     show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
     **filters,
@@ -67,9 +66,9 @@ def list_transformations(
             None all objects are returned.
         project_id (str, optional): Project ID
         project_name (str, optional): Project name
-        search_pattern (SearchPattern enum or int, optional): pattern to search
-            for, such as Begin With or Exactly. Possible values are available in
-            ENUM mstrio.object_management.SearchPattern.
+        search_pattern (SearchPattern enum or int, optional): pattern to
+            search for, such as Begin With or Exactly. Possible values are
+            available in ENUM `mstrio.object_management.SearchPattern`.
             Default value is CONTAINS (4).
         show_expression_as (ExpressionFormat, str): specify how expressions
             should be presented
@@ -228,12 +227,17 @@ class Transformation(Entity, MoveMixin, DeleteMixin):
             ValueError: if Transformation with the given `name` doesn't exist.
         """
         if id is None:
-            transformation = super()._find_object_with_name(
+            if name is None:
+                raise ValueError(
+                    "Please specify either 'name' or 'id' parameter in the constructor."
+                )
+
+            transformation = find_object_with_name(
                 connection=connection,
+                cls=self.__class__,
                 name=name,
-                listing_function=partial(
-                    list_transformations, search_pattern=SearchPattern.EXACTLY
-                ),
+                listing_function=list_transformations,
+                search_pattern=SearchPattern.EXACTLY,
             )
             id = transformation['id']
         super().__init__(
@@ -291,7 +295,7 @@ class Transformation(Entity, MoveMixin, DeleteMixin):
         attributes: list,
         mapping_type: MappingType | str,
         is_embedded: bool = False,
-        description: Optional[str] = None,
+        description: str | None = None,
         show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
     ) -> 'Transformation':
         """Create Transformation object.
@@ -352,11 +356,11 @@ class Transformation(Entity, MoveMixin, DeleteMixin):
 
     def alter(
         self,
-        name: Optional[str] = None,
-        destination_folder_id: Optional[Folder | str] = None,
-        attributes: Optional[list] = None,
-        mapping_type: Optional[MappingType] = None,
-        description: Optional[str] = None,
+        name: str | None = None,
+        destination_folder_id: Folder | str | None = None,
+        attributes: list | None = None,
+        mapping_type: MappingType | None = None,
+        description: str | None = None,
     ):
         """Alter transformation properties.
 

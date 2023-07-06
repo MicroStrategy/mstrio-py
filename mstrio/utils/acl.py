@@ -206,8 +206,8 @@ class ACLMixin:
         rights: int | Rights | AggregatedRights,
         trustees: "list[UserOrGroup] | UserOrGroup",
         denied: bool = False,
-        inheritable: Optional[bool] = None,
-        propagate_to_children: Optional[bool] = None,
+        inheritable: bool | None = None,
+        propagate_to_children: bool | None = None,
     ) -> None:
         """Add Access Control Element (ACE) to the object ACL.
 
@@ -246,8 +246,8 @@ class ACLMixin:
         rights: int | Rights | AggregatedRights,
         trustees: "list[UserOrGroup] | UserOrGroup",
         denied: bool = False,
-        inheritable: Optional[bool] = None,
-        propagate_to_children: Optional[bool] = None,
+        inheritable: bool | None = None,
+        propagate_to_children: bool | None = None,
     ) -> None:
         """Remove Access Control Element (ACE) from the object ACL.
 
@@ -286,8 +286,8 @@ class ACLMixin:
         rights: int | Rights | AggregatedRights,
         trustees: "list[UserOrGroup] | UserOrGroup",
         denied: bool = False,
-        inheritable: Optional[bool] = None,
-        propagate_to_children: Optional[bool] = None,
+        inheritable: bool | None = None,
+        propagate_to_children: bool | None = None,
     ) -> None:
         """Alter an existing Access Control Element (ACE) of the object ACL.
 
@@ -327,8 +327,8 @@ class ACLMixin:
         rights: int | Rights | AggregatedRights,
         trustees: "list[UserOrGroup] | UserOrGroup",
         denied: bool = False,
-        inheritable: Optional[bool] = None,
-        propagate_to_children: Optional[bool] = None,
+        inheritable: bool | None = None,
+        propagate_to_children: bool | None = None,
     ) -> None:
         """Updates the ACL for this object, performs operation defined by the
         `op` parameter on all objects from `trustees` list.
@@ -377,7 +377,7 @@ class TrusteeACLMixin:
         to_objects: str | list[str],
         object_type: "ObjectTypes | int",
         project: "Optional[Project | str]" = None,
-        propagate_to_children: Optional[bool] = None,
+        propagate_to_children: bool | None = None,
     ) -> None:
         """Set permission to perform actions on given object(s).
 
@@ -470,13 +470,13 @@ class TrusteeACLMixin:
         to_objects: str | list[str],
         object_type: "ObjectTypes | int",
         project: "Optional[Project | str]" = None,
-        execute: Optional[str] = None,
-        use: Optional[str] = None,
-        control: Optional[str] = None,
-        delete: Optional[str] = None,
-        write: Optional[str] = None,
-        read: Optional[str] = None,
-        browse: Optional[str] = None,
+        execute: str | None = None,
+        use: str | None = None,
+        control: str | None = None,
+        delete: str | None = None,
+        write: str | None = None,
+        read: str | None = None,
+        browse: str | None = None,
     ) -> None:
         """Set custom permissions to perform actions on given object(s).
 
@@ -522,7 +522,7 @@ class TrusteeACLMixin:
             object_type: "ObjectTypes | int",
             denied: bool,
             default: bool = False,
-            propagate_to_children: Optional[bool] = None,
+            propagate_to_children: bool | None = None,
             project: "Optional[Project | str]" = None,
         ) -> None:
             right_value = _get_custom_right_value(right)
@@ -617,8 +617,8 @@ def modify_rights(
     rights: int,
     trustees: "list[UserOrGroup] | UserOrGroup",
     denied: bool = False,
-    inheritable: Optional[bool] = None,
-    propagate_to_children: Optional[bool] = None,
+    inheritable: bool | None = None,
+    propagate_to_children: bool | None = None,
     project: "Optional[Project | str]" = None,
 ) -> None | dict:
     """Updates the ACL for all given objects specified by id from ids list,

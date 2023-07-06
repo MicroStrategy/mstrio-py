@@ -1,6 +1,4 @@
 import logging
-from functools import partial
-from typing import Optional
 
 from mstrio import config
 from mstrio.api import facts, objects
@@ -16,9 +14,19 @@ from mstrio.object_management.folder import Folder
 from mstrio.object_management.search_enums import SearchPattern
 from mstrio.types import ObjectTypes
 from mstrio.users_and_groups import User
-from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, MoveMixin
+from mstrio.utils.entity import (
+    CopyMixin,
+    DeleteMixin,
+    Entity,
+    MoveMixin,
+)
 from mstrio.utils.enum_helper import get_enum_val
-from mstrio.utils.helper import Dictable, filter_params_for_func, get_valid_project_id
+from mstrio.utils.helper import (
+    Dictable,
+    filter_params_for_func,
+    get_valid_project_id,
+    find_object_with_name,
+)
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
 logger = logging.getLogger(__name__)
@@ -27,11 +35,11 @@ logger = logging.getLogger(__name__)
 @method_version_handler('11.3.0100')
 def list_facts(
     connection: Connection,
-    name: Optional[str] = None,
+    name: str | None = None,
     to_dictionary: bool = False,
-    limit: Optional[int] = None,
-    project_id: Optional[str] = None,
-    project_name: Optional[str] = None,
+    limit: int | None = None,
+    project_id: str | None = None,
+    project_name: str | None = None,
     search_pattern: SearchPattern | int = SearchPattern.CONTAINS,
     show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
     **filters,
@@ -56,9 +64,9 @@ def list_facts(
             (default), all objects are returned.
         project_id (str, optional): Project ID
         project_name (str, optional): Project name
-        search_pattern (SearchPattern enum or int, optional): pattern to search
-            for, such as Begin With or Exactly. Possible values are available in
-            ENUM mstrio.object_management.SearchPattern.
+        search_pattern (SearchPattern enum or int, optional): pattern to
+            search for, such as Begin With or Exactly. Possible values are
+            available in ENUM `mstrio.object_management.SearchPattern`.
             Default value is CONTAINS (4).
         show_expression_as (optional, enum or str): specify how expressions
             should be presented.
@@ -208,8 +216,8 @@ class Fact(Entity, CopyMixin, DeleteMixin, MoveMixin):
     def __init__(
         self,
         connection: Connection,
-        id: Optional[str] = None,
-        name: Optional[str] = None,
+        id: str | None = None,
+        name: str | None = None,
         show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
     ) -> None:
         """Initialize a new instance of Fact class.
@@ -239,12 +247,17 @@ class Fact(Entity, CopyMixin, DeleteMixin, MoveMixin):
         """
         connection._validate_project_selected()
         if id is None:
-            fact = super()._find_object_with_name(
+            if name is None:
+                raise ValueError(
+                    "Please specify either 'name' or 'id' parameter in the constructor."
+                )
+
+            fact = find_object_with_name(
                 connection=connection,
+                cls=self.__class__,
                 name=name,
-                listing_function=partial(
-                    list_facts, search_pattern=SearchPattern.EXACTLY
-                ),
+                listing_function=list_facts,
+                search_pattern=SearchPattern.EXACTLY,
             )
             id = fact['id']
         super().__init__(
@@ -290,8 +303,8 @@ class Fact(Entity, CopyMixin, DeleteMixin, MoveMixin):
         name: str,
         destination_folder: Folder | str,
         expressions: list[FactExpression | dict],
-        data_type: Optional[DataType | dict] = None,
-        description: Optional[str] = None,
+        data_type: DataType | dict | None = None,
+        description: str | None = None,
         is_embedded: bool = False,
         show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
     ) -> "Fact":
@@ -364,9 +377,9 @@ class Fact(Entity, CopyMixin, DeleteMixin, MoveMixin):
 
     def alter(
         self,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        data_type: Optional[DataType | dict] = None,
+        name: str | None = None,
+        description: str | None = None,
+        data_type: DataType | dict | None = None,
     ):
         """Alter fact properties.
 
@@ -381,7 +394,7 @@ class Fact(Entity, CopyMixin, DeleteMixin, MoveMixin):
         self._alter_properties(**properties)
 
     def get_tables(
-        self, expression: Optional[FactExpression | str] = None
+        self, expression: FactExpression | str | None = None
     ) -> list[SchemaObjectReference]:
         """Get list of all tables in given fact expression. If expression
         argument is not specified, list all tables for fact.

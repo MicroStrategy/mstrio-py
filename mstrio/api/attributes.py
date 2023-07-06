@@ -1,5 +1,3 @@
-from typing import List, Optional
-
 from mstrio.connection import Connection
 from mstrio.utils.api_helpers import changeset_manager, unpack_information
 from mstrio.utils.error_handlers import ErrorHandler
@@ -10,10 +8,10 @@ from mstrio.utils.error_handlers import ErrorHandler
 def create_attribute(
     connection: Connection,
     body: dict,
-    show_expression_as: Optional[List[str]] = None,
-    show_potential_tables: Optional[str] = None,
-    show_fields: Optional[str] = None,
-    fields: Optional[str] = None,
+    show_expression_as: list[str] | None = None,
+    show_potential_tables: str | None = None,
+    show_fields: str | None = None,
+    fields: str | None = None,
 ):
     """Create a new attribute in the changeset,
     based on the definition provided in request body.
@@ -61,11 +59,11 @@ def create_attribute(
 def get_attribute(
     connection: Connection,
     id: str,
-    changeset_id: Optional[str] = None,
-    show_expression_as: Optional[List[str]] = None,
-    show_potential_tables: Optional[str] = None,
-    show_fields: Optional[str] = None,
-    fields: Optional[str] = None,
+    changeset_id: str | None = None,
+    show_expression_as: list[str] | None = None,
+    show_potential_tables: str | None = None,
+    show_fields: str | None = None,
+    fields: str | None = None,
 ):
     """Get definition of a single attribute by id
 
@@ -113,11 +111,11 @@ def update_attribute(
     connection: Connection,
     id: str,
     body: dict,
-    show_expression_as: Optional[List[str]] = None,
-    show_potential_tables: Optional[str] = None,
-    show_fields: Optional[str] = None,
-    fields: Optional[str] = None,
-    remove_invalid_fields: Optional[str] = None,
+    show_expression_as: list[str] | None = None,
+    show_potential_tables: str | None = None,
+    show_fields: str | None = None,
+    fields: str | None = None,
+    remove_invalid_fields: str | None = None,
 ):
     """Update a specific attribute in the changeset
     This endpoint replaces the attribute's top-level fields

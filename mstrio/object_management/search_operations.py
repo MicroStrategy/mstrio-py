@@ -78,17 +78,17 @@ class SearchObject(Entity, CopyMixin, MoveMixin):
 @method_version_handler('11.3.0000')
 def quick_search(
     connection: Connection,
-    project: Optional[Project | str] = None,
-    name: Optional[str] = None,
-    root: Optional[str] = None,
+    project: Project | str | None = None,
+    name: str | None = None,
+    root: str | None = None,
     pattern: SearchPattern | int = SearchPattern.CONTAINS,
     object_types: Optional["TypeOrSubtype"] = None,
     get_ancestors: bool = False,
     cross_cluster: bool = False,
-    hidden: Optional[bool] = None,
+    hidden: bool | None = None,
     certified_status: CertifiedStatus = CertifiedStatus.ALL,
-    limit: Optional[int] = None,
-    offset: Optional[int] = None,
+    limit: int | None = None,
+    offset: int | None = None,
     to_dictionary: bool = True,
 ):
     """Use the stored results of the Quick Search engine to return
@@ -103,8 +103,8 @@ def quick_search(
         project (string): `Project` object or ID
         name(string): Value the search pattern is set to, which will
             be applied to the names of object types being searched. For example,
-            search for all report objects (type) whose name begins with (patter)
-            B (name).
+            search for all report objects (type) whose name begins with
+            (pattern) B (name).
         root(string, optional): Folder ID of the root folder where the search
             will be performed.
         pattern(integer or enum class object): Pattern to search for,
@@ -174,9 +174,9 @@ def quick_search_from_object(
     search_object: SearchObject | str,
     include_ancestors: bool = False,
     include_acl: bool = False,
-    subtypes: Optional[ObjectSubTypes | list[ObjectSubTypes] | int | list[int]] = None,
-    limit: Optional[int] = None,
-    offset: Optional[int] = None,
+    subtypes: ObjectSubTypes | list[ObjectSubTypes] | int | list[int] | None = None,
+    limit: int | None = None,
+    offset: int | None = None,
     to_dictionary: bool = True,
 ):
     """Perform a quick search based on a predefined Search Object.
@@ -229,10 +229,10 @@ def quick_search_from_object(
 @method_version_handler('11.3.0000')
 def get_search_suggestions(
     connection: Connection,
-    project: Optional[Project | str] = None,
-    key: Optional[str] = None,
+    project: Project | str | None = None,
+    key: str | None = None,
     max_results: int = 4,
-    cross_cluster: Optional[bool] = None,
+    cross_cluster: bool | None = None,
 ) -> list[str]:
     """Request search suggestions from the server.
 
@@ -268,23 +268,23 @@ def get_search_suggestions(
 @method_version_handler('11.3.0000')
 def full_search(
     connection: Connection,
-    project: Optional[Project | str] = None,
-    name: Optional[str] = None,
+    project: Project | str | None = None,
+    name: str | None = None,
     pattern: SearchPattern | int = SearchPattern.CONTAINS,
     domain: SearchDomain | int = SearchDomain.PROJECT,
-    root: Optional[str] = None,
+    root: str | None = None,
     object_types: Optional['TypeOrSubtype'] = None,
-    uses_object_id: Optional[EntityBase | str] = None,
-    uses_object_type: Optional[ObjectTypes | int] = None,
+    uses_object_id: EntityBase | str | None = None,
+    uses_object_type: ObjectTypes | int | None = None,
     uses_recursive: bool = False,
     uses_one_of: bool = False,
-    used_by_object_id: Optional[EntityBase | str] = None,
-    used_by_object_type: Optional[ObjectTypes | str] = None,
+    used_by_object_id: EntityBase | str | None = None,
+    used_by_object_type: ObjectTypes | str | None = None,
     used_by_recursive: bool = False,
     used_by_one_of: bool = False,
     results_format: SearchResultsFormat | str = SearchResultsFormat.LIST,
-    limit: Optional[int] = None,
-    offset: Optional[int] = None,
+    limit: int | None = None,
+    offset: int | None = None,
     to_dictionary: bool = True,
     **filters,
 ) -> list[dict] | list[Entity]:
@@ -296,8 +296,8 @@ def full_search(
         project (string): `Project` object or ID
         name(string): Value the search pattern is set to, which will
             be applied to the names of object types being searched. For example,
-            search for all report objects (type) whose name begins with (patter)
-            B (name).
+            search for all report objects (type) whose name begins with
+            pattern) B (name).
         pattern(integer or enum class object): Pattern to search for,
             such as Begin With or Exactly. Possible values are available in
             ENUM mstrio.object_management.SearchPattern.
@@ -367,18 +367,18 @@ def full_search(
 @method_version_handler('11.3.0000')
 def start_full_search(
     connection: Connection,
-    project: Optional[Project | str] = None,
-    name: Optional[str] = None,
+    project: Project | str | None = None,
+    name: str | None = None,
     object_types: Optional["TypeOrSubtype"] = None,
     pattern: SearchPattern | int = SearchPattern.CONTAINS,
     domain: SearchDomain | int = SearchDomain.PROJECT,
-    root: Optional[str] = None,
-    uses_object_id: Optional[EntityBase | str] = None,
-    uses_object_type: Optional[ObjectTypes | ObjectSubTypes | int] = None,
+    root: str | None = None,
+    uses_object_id: EntityBase | str | None = None,
+    uses_object_type: ObjectTypes | ObjectSubTypes | int | None = None,
     uses_recursive: bool = False,
     uses_one_of: bool = False,
-    used_by_object_id: Optional[EntityBase | str] = None,
-    used_by_object_type: Optional[ObjectTypes | ObjectSubTypes | int] = None,
+    used_by_object_id: EntityBase | str | None = None,
+    used_by_object_type: ObjectTypes | ObjectSubTypes | int | None = None,
     used_by_recursive: bool = False,
     used_by_one_of: bool = False,
 ) -> dict:
@@ -396,8 +396,8 @@ def start_full_search(
             mstrio.types.ObjectSubTypes
         name(string): Value the search pattern is set to, which will
             be applied to the names of object types being searched. For example,
-            search for all report objects (type) whose name begins with (patter)
-            B (name).
+            search for all report objects (type) whose name begins with
+            (pattern) B (name).
         pattern(integer or enum class object): Pattern to search for,
             such as Begin With or Exactly. Possible values are available in
             ENUM mstrio.object_management.SearchPattern.
@@ -428,7 +428,7 @@ def start_full_search(
             to also find objects that are used by the given objects indirectly.
             Default value is false.
         used_by_one_of(boolean): Control the Intelligence server to also
-            find objects that are used by one of or all of given objects
+            find objects that are used by one or all given objects
             indirectly. Default value is false.
 
     Returns:
@@ -492,10 +492,10 @@ def start_full_search(
 def get_search_results(
     connection: Connection,
     search_id: str,
-    project: Optional[Project | str] = None,
+    project: Project | str | None = None,
     results_format: SearchResultsFormat = SearchResultsFormat.LIST,
-    limit: Optional[int] = None,
-    offset: Optional[int] = None,
+    limit: int | None = None,
+    offset: int | None = None,
     to_dictionary: bool = False,
     **filters,
 ):
@@ -539,9 +539,9 @@ def get_search_results(
 def _get_search_result_list_format(
     connection: Connection,
     search_id: str,
-    project_id: Optional[str] = None,
-    limit: Optional[int] = None,
-    offset: Optional[int] = None,
+    project_id: str | None = None,
+    limit: int | None = None,
+    offset: int | None = None,
     to_dictionary: bool = True,
     **filters,
 ):
@@ -567,9 +567,9 @@ def _get_search_result_list_format(
 def _get_search_result_tree_format(
     connection: Connection,
     search_id: str,
-    project_id: Optional[str] = None,
-    limit: Optional[int] = None,
-    offset: Optional[int] = None,
+    project_id: str | None = None,
+    limit: int | None = None,
+    offset: int | None = None,
 ):
     resp = browsing.get_search_results_tree_format(
         connection=connection,
@@ -586,7 +586,7 @@ def _get_search_result_tree_format(
 def find_objects_with_id(
     connection: Connection,
     object_id: str,
-    projects: Optional[list[Project] | list[str]] = None,
+    projects: list[Project] | list[str] | None = None,
     to_dictionary=False,
 ) -> list[dict[str, dict | type[Entity]]]:
     """Find object by its ID only, without knowing project ID and object type.

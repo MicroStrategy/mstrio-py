@@ -24,9 +24,9 @@ logger = logging.getLogger(__name__)
 
 def list_user_groups(
     connection: Connection,
-    name_begins: Optional[str] = None,
+    name_begins: str | None = None,
     to_dictionary: bool = False,
-    limit: Optional[int] = None,
+    limit: int | None = None,
     **filters,
 ) -> list["UserGroup"]:
     """Get list of User Group objects or User Group dicts. Optionally filter
@@ -140,8 +140,8 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin):
     def __init__(
         self,
         connection: Connection,
-        name: Optional[str] = None,
-        id: Optional[str] = None,
+        name: str | None = None,
+        id: str | None = None,
     ) -> None:
         """Initialize UserGroup object by passing `name` or `id`. When `id` is
         provided (not `None`), `name` is omitted.
@@ -185,9 +185,9 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin):
         cls,
         connection: Connection,
         name: str,
-        description: Optional[str] = None,
-        memberships: Optional[list[str]] = None,
-        members: Optional[list[str]] = None,
+        description: str | None = None,
+        memberships: list[str] | None = None,
+        members: list[str] | None = None,
     ):
         """Create a new User Group on the I-Server. Returns `UserGroup` object.
 
@@ -223,9 +223,9 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin):
     def _get_user_groups(
         cls,
         connection: Connection,
-        name_begins: Optional[str] = None,
+        name_begins: str | None = None,
         to_dictionary: bool = False,
-        limit: Optional[int] = None,
+        limit: int | None = None,
         **filters,
     ) -> list["UserGroup"]:
         msg = "Error getting information for a set of User Groups."
@@ -248,8 +248,8 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin):
     def _get_user_group_ids(
         cls,
         connection: Connection,
-        name_begins: Optional[str] = None,
-        limit: Optional[int] = None,
+        name_begins: str | None = None,
+        limit: int | None = None,
         **filters,
     ) -> list[str]:
         group_dicts = UserGroup._get_user_groups(
@@ -261,7 +261,7 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin):
         )
         return [group['id'] for group in group_dicts]
 
-    def alter(self, name: Optional[str] = None, description: Optional[str] = None):
+    def alter(self, name: str | None = None, description: str | None = None):
         """Alter User Group name or/and description.
 
         Args:
@@ -562,7 +562,7 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin):
 
     @method_version_handler('11.3.0200')
     def list_security_filters(
-        self, projects: Optional[str | list[str]] = None, to_dictionary: bool = False
+        self, projects: str | list[str] | None = None, to_dictionary: bool = False
     ) -> dict:
         """Get the list of security filters for user group. They can be filtered
         by the projects' ids.

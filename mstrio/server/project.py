@@ -140,8 +140,8 @@ class Project(Entity, ModelVldbMixin):
     def __init__(
         self,
         connection: Connection,
-        name: Optional[str] = None,
-        id: Optional[str] = None,
+        name: str | None = None,
+        id: str | None = None,
     ) -> None:
         """Initialize Project object by passing `name` or `id`. When `id` is
         provided (not `None`), `name` is omitted.
@@ -196,7 +196,7 @@ class Project(Entity, ModelVldbMixin):
         cls,
         connection: Connection,
         name: str,
-        description: Optional[str] = None,
+        description: str | None = None,
         force: bool = False,
     ) -> Optional["Project"]:
         user_input = 'N'
@@ -237,7 +237,7 @@ class Project(Entity, ModelVldbMixin):
         cls,
         connection: Connection,
         to_dictionary: bool = False,
-        limit: Optional[int] = None,
+        limit: int | None = None,
         **filters,
     ) -> list["Project"] | list[dict]:
         msg = "Error getting information for a set of Projects."
@@ -276,7 +276,7 @@ class Project(Entity, ModelVldbMixin):
 
     @classmethod
     def _list_project_ids(
-        cls, connection: Connection, limit: Optional[int] = None, **filters
+        cls, connection: Connection, limit: int | None = None, **filters
     ) -> list[str]:
         project_dicts = Project._list_projects(
             connection=connection,
@@ -304,7 +304,7 @@ class Project(Entity, ModelVldbMixin):
                 cls.from_dict(source=obj, connection=connection) for obj in raw_project
             ]
 
-    def alter(self, name: Optional[str] = None, description: Optional[str] = None):
+    def alter(self, name: str | None = None, description: str | None = None):
         """Alter project name or/and description.
 
         Args:
@@ -318,7 +318,7 @@ class Project(Entity, ModelVldbMixin):
         self._alter_properties(**properties)
 
     def __change_project_state(
-        self, func, on_nodes: Optional[str | list[str]] = None, **mode
+        self, func, on_nodes: str | list[str] | None = None, **mode
     ):
         if type(on_nodes) is list:
             for node in on_nodes:
@@ -337,7 +337,7 @@ class Project(Entity, ModelVldbMixin):
     @method_version_handler('11.2.0000')
     def idle(
         self,
-        on_nodes: Optional[str | list[str]] = None,
+        on_nodes: str | list[str] | None = None,
         mode: IdleMode | str = IdleMode.REQUEST,
     ) -> None:
         """Request to idle a specific cluster node. Idle project with mode
@@ -387,7 +387,7 @@ class Project(Entity, ModelVldbMixin):
         self.__change_project_state(func=idle_project, on_nodes=on_nodes, mode=mode)
 
     @method_version_handler('11.2.0000')
-    def resume(self, on_nodes: Optional[str | list[str]] = None) -> None:
+    def resume(self, on_nodes: str | list[str] | None = None) -> None:
         """Request to resume the project on the chosen cluster nodes. If
         nodes are not specified, the project will be loaded on all nodes.
 
@@ -417,7 +417,7 @@ class Project(Entity, ModelVldbMixin):
         self.__change_project_state(func=resume_project, on_nodes=on_nodes)
 
     @method_version_handler('11.2.0000')
-    def load(self, on_nodes: Optional[str | list[str]] = None) -> None:
+    def load(self, on_nodes: str | list[str] | None = None) -> None:
         """Request to load the project onto the chosen cluster nodes. If
         nodes are not specified, the project will be loaded on all nodes.
 
@@ -447,7 +447,7 @@ class Project(Entity, ModelVldbMixin):
         self.__change_project_state(func=load_project, on_nodes=on_nodes)
 
     @method_version_handler('11.2.0000')
-    def unload(self, on_nodes: Optional[str | list[str]] = None) -> None:
+    def unload(self, on_nodes: str | list[str] | None = None) -> None:
         """Request to unload the project from the chosen cluster nodes. If
         nodes are not specified, the project will be unloaded on all nodes.
         The unload action cannot be performed until all jobs and connections
@@ -484,7 +484,7 @@ class Project(Entity, ModelVldbMixin):
         self.__change_project_state(func=unload_project, on_nodes=on_nodes)
 
     @method_version_handler('11.3.0000')
-    def register(self, on_nodes: Optional[str | list] = None) -> None:
+    def register(self, on_nodes: str | list | None = None) -> None:
         """Register project on nodes.
 
         A registered project will load on node (server) startup.
@@ -501,7 +501,7 @@ class Project(Entity, ModelVldbMixin):
         self._register(on_nodes=value)
 
     @method_version_handler('11.3.0000')
-    def unregister(self, on_nodes: Optional[str | list] = None) -> None:
+    def unregister(self, on_nodes: str | list | None = None) -> None:
         """Unregister project on nodes.
 
         An unregistered project will not load on node (server) startup.
@@ -672,7 +672,7 @@ class ProjectSettings(BaseSettings):
         "enableDocumentOutputCachingInExcel",
     )
 
-    def __init__(self, connection: Connection, project_id: Optional[str] = None):
+    def __init__(self, connection: Connection, project_id: str | None = None):
         """Initialize `ProjectSettings` object.
 
         Args:
@@ -687,7 +687,7 @@ class ProjectSettings(BaseSettings):
         if project_id:
             self.fetch()
 
-    def fetch(self, project_id: Optional[str] = None) -> None:
+    def fetch(self, project_id: str | None = None) -> None:
         """Fetch current project settings from I-Server and update this
         `ProjectSettings` object.
 
@@ -697,7 +697,7 @@ class ProjectSettings(BaseSettings):
         self._check_params(project_id)
         super().fetch()
 
-    def update(self, project_id: Optional[str] = None) -> None:
+    def update(self, project_id: str | None = None) -> None:
         """Update the current project settings on I-Server using this
         Settings object.
 
@@ -762,7 +762,7 @@ class ProjectSettings(BaseSettings):
             ProjectSettings._CONFIG = response.json()
             super()._get_config()
 
-    def _check_params(self, project_id: Optional[str] = None):
+    def _check_params(self, project_id: str | None = None):
         if project_id:
             super(BaseSettings, self).__setattr__('_project_id', project_id)
         if not self._connection or not self._project_id:

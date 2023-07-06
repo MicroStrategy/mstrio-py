@@ -1,5 +1,5 @@
 import json
-from typing import List, Optional, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 from mstrio.utils.error_handlers import ErrorHandler
 
@@ -14,19 +14,19 @@ if TYPE_CHECKING:
 @ErrorHandler(err_msg='Error searching metadata.')
 def store_search_instance(
     connection: "Connection",
-    project_id: Optional[str] = None,
-    name: Optional[str] = None,
-    pattern: Optional[int] = None,
-    domain: Optional[int] = None,
-    root: Optional[str] = None,
-    object_types: Optional[List[int]] = None,
-    uses_object: Optional[str] = None,
+    project_id: str | None = None,
+    name: str | None = None,
+    pattern: int | None = None,
+    domain: int | None = None,
+    root: str | None = None,
+    object_types: list[int] | None = None,
+    uses_object: str | None = None,
     uses_recursive: bool = False,
-    uses_one_of: Optional[bool] = None,
-    used_by_object: Optional[str] = None,
-    used_by_recursive: Optional[bool] = None,
-    used_by_one_of: Optional[bool] = None,
-    error_msg: Optional[str] = None,
+    uses_one_of: bool | None = None,
+    used_by_object: str | None = None,
+    used_by_recursive: bool | None = None,
+    used_by_one_of: bool | None = None,
+    error_msg: str | None = None,
 ):
     """
     Search the metadata and store an instance of search results.
@@ -104,10 +104,10 @@ def store_search_instance(
 def get_search_results(
     connection: "Connection",
     search_id: str,
-    project_id: Optional[str] = None,
+    project_id: str | None = None,
     offset: int = 0,
     limit: int = -1,
-    error_msg: Optional[str] = None,
+    error_msg: str | None = None,
 ):
     """
     Get search results in a list format.
@@ -140,7 +140,7 @@ def get_search_results_async(
     future_session: "FuturesSession",
     connection: "Connection",
     search_id: str,
-    project_id: Optional[str] = None,
+    project_id: str | None = None,
     offset: int = 0,
     limit: int = -1,
 ):
@@ -178,10 +178,10 @@ def get_search_results_async(
 def get_search_results_tree_format(
     connection: "Connection",
     search_id: str,
-    project_id: Optional[str] = None,
+    project_id: str | None = None,
     offset: int = 0,
     limit: int = -1,
-    error_msg: Optional[str] = None,
+    error_msg: str | None = None,
 ):
     """
     Get search results in a tree format.
@@ -213,18 +213,18 @@ def get_search_results_tree_format(
 @ErrorHandler(err_msg='Error getting quick search result.')
 def get_quick_search_result(
     connection,
-    project_id: Optional[str] = None,
-    name: Optional[str] = None,
-    root: Optional[str] = None,
+    project_id: str | None = None,
+    name: str | None = None,
+    root: str | None = None,
     object_types: Optional["TypeOrSubtype"] = None,
-    pattern: Optional[Union["SearchPattern", int]] = None,
+    pattern: Union["SearchPattern", int] | None = None,
     certified_status: Optional["CertifiedStatus"] = None,
-    offset: Optional[int] = None,
-    limit: Optional[int] = None,
-    hidden: Optional[bool] = None,
-    get_ancestors: Optional[bool] = None,
-    cross_cluster: Optional[bool] = None,
-    error_msg: Optional[str] = None,
+    offset: int | None = None,
+    limit: int | None = None,
+    hidden: bool | None = None,
+    get_ancestors: bool | None = None,
+    cross_cluster: bool | None = None,
+    error_msg: str | None = None,
 ):
     return connection.get(
         url=f"{connection.base_url}/api/searches/results",
@@ -252,14 +252,13 @@ def get_quick_search_result_from_object(
     connection: "Connection",
     project_id: str,
     search_object_id: str,
-    subtypes: Optional[
-        Union["ObjectSubTypes", List["ObjectSubTypes"], int, List[int]]
-    ] = None,
-    include_ancestors: Optional[bool] = None,
-    include_acl: Optional[bool] = None,
-    limit: Optional[int] = None,
-    offset: Optional[int] = None,
-    error_msg: Optional[str] = None,
+    subtypes: None
+    | Union["ObjectSubTypes", list["ObjectSubTypes"], int, list[int]] = None,
+    include_ancestors: bool | None = None,
+    include_acl: bool | None = None,
+    limit: int | None = None,
+    offset: int | None = None,
+    error_msg: str | None = None,
 ):
     return connection.get(
         url=f"{connection.base_url}/api/searchObjects/{search_object_id}/results",
@@ -279,7 +278,7 @@ def get_shortcuts(
     connection: "Connection",
     body: dict,
     shortcut_info_flag: int = 0,
-    error_msg: Optional[str] = None,
+    error_msg: str | None = None,
 ):
     """Retrieve information about specific published shortcuts
     in specific projects.
@@ -319,7 +318,7 @@ def get_shortcut(
     id: str,
     project_id: str,
     shortcut_info_flag: int = 2,
-    error_msg: Optional[str] = None,
+    error_msg: str | None = None,
 ):
     """Get information about specific published shortcut in specific project.
 
@@ -360,8 +359,8 @@ def get_shortcut(
 @ErrorHandler(err_msg="Error getting search suggestions.")
 def get_search_suggestions(
     connection: "Connection",
-    project_id: Optional[str] = None,
-    key: Optional[str] = None,
+    project_id: str | None = None,
+    key: str | None = None,
     count: int = -1,
     is_cross_cluster: bool = None,
 ):

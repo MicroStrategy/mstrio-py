@@ -1,11 +1,9 @@
-from typing import Optional
-
 from mstrio.connection import Connection
 from mstrio.utils.error_handlers import ErrorHandler
 
 
 @ErrorHandler(err_msg='Error creating Contact.')
-def create_contact(connection: Connection, body: dict, error_msg: Optional[str] = None):
+def create_contact(connection: Connection, body: dict, error_msg: str | None = None):
     """Create a new contact.
 
     Args:
@@ -21,7 +19,7 @@ def create_contact(connection: Connection, body: dict, error_msg: Optional[str] 
 
 
 @ErrorHandler(err_msg='Error getting Contact with ID {id}')
-def get_contact(connection: Connection, id: str, error_msg: Optional[str] = None):
+def get_contact(connection: Connection, id: str, error_msg: str | None = None):
     """Get contact by a specific id.
 
     Args:
@@ -37,7 +35,7 @@ def get_contact(connection: Connection, id: str, error_msg: Optional[str] = None
 
 
 @ErrorHandler(err_msg='Error deleting Contact with ID {id}')
-def delete_contact(connection: Connection, id: str, error_msg: Optional[str] = None):
+def delete_contact(connection: Connection, id: str, error_msg: str | None = None):
     """Delete a contact.
 
     Args:
@@ -54,7 +52,7 @@ def delete_contact(connection: Connection, id: str, error_msg: Optional[str] = N
 
 @ErrorHandler(err_msg='Error updating Contact with ID {id}')
 def update_contact(
-    connection: Connection, id: str, body: dict, error_msg: Optional[str] = None
+    connection: Connection, id: str, body: dict, error_msg: str | None = None
 ):
     """Update a contact.
 
@@ -76,8 +74,8 @@ def get_contacts(
     connection: Connection,
     offset: int = 0,
     limit: int = -1,
-    fields: Optional[str] = None,
-    error_msg: Optional[str] = None,
+    fields: str | None = None,
+    error_msg: str | None = None,
 ):
     """Get information for all contacts.
 

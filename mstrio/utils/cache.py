@@ -1,7 +1,7 @@
+import logging
 from dataclasses import dataclass
 from enum import auto
-import logging
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from requests import Response
 
@@ -10,7 +10,7 @@ from mstrio.api import monitors
 from mstrio.connection import Connection
 from mstrio.server import Cluster
 from mstrio.utils.enum_helper import AutoName
-from mstrio.utils.helper import camel_to_snake, Dictable, fetch_objects
+from mstrio.utils.helper import Dictable, camel_to_snake, fetch_objects
 
 if TYPE_CHECKING:
     from mstrio.project_objects import ContentCache
@@ -26,7 +26,7 @@ class Cache:
     """
 
     def __init__(
-        self, connection: Connection, cache_id: str, cache_dict: Optional[dict] = None
+        self, connection: Connection, cache_id: str, cache_dict: dict | None = None
     ):
         """Initialize the Cache object.
 
@@ -160,9 +160,9 @@ class ContentCacheMixin:
         connection: "Connection",
         op: str,
         cache_ids: list[str],
-        value: Optional[bool] = None,
-        status: Optional[str] = None,
-        nodes: Optional[list[str]] = None,
+        value: bool | None = None,
+        status: str | None = None,
+        nodes: list[str] | None = None,
     ) -> Response:
         """Engine for altering ContentCache status
 
@@ -258,7 +258,7 @@ class ContentCacheMixin:
 
     @staticmethod
     def delete_caches(
-        connection: "Connection", cache_ids: list[str], force: Optional[bool] = None
+        connection: "Connection", cache_ids: list[str], force: bool | None = None
     ) -> Response:
         """Bulk delete caches.
 
@@ -294,17 +294,17 @@ class ContentCacheMixin:
         connection: "Connection",
         to_dictionary: bool = False,
         status: str = 'ready',
-        project_id: Optional[str] = None,
-        nodes: Optional[list[str] | str] = None,
-        content_type: Optional[CacheSource.Type | str] = None,
-        limit: Optional[int] = None,
-        db_connection_id: Optional[str] = None,
-        db_login_id: Optional[str] = None,
-        id: Optional[str] = None,
-        owner: Optional[str] = None,
-        size: Optional[str] = None,
-        wh_tables: Optional[str] = None,
-        security_filter_id: Optional[str] = None,
+        project_id: str | None = None,
+        nodes: list[str] | str | None = None,
+        content_type: CacheSource.Type | str | None = None,
+        limit: int | None = None,
+        db_connection_id: str | None = None,
+        db_login_id: str | None = None,
+        id: str | None = None,
+        owner: str | None = None,
+        size: str | None = None,
+        wh_tables: str | None = None,
+        security_filter_id: str | None = None,
     ) -> list["ContentCache"] | list[dict]:
         """List content caches. You can filter them by id, database
         connection (`db_connection_id`) and project (`project_id`).
@@ -461,7 +461,7 @@ class ContentCacheMixin:
     def delete_all_caches(
         cls,
         connection: "Connection",
-        force: Optional[bool] = None,
+        force: bool | None = None,
         **filters,
     ):
         """

@@ -28,9 +28,9 @@ logger = logging.getLogger(__name__)
 def list_datasource_instances(
     connection: "Connection",
     to_dictionary: bool = False,
-    limit: Optional[int] = None,
-    ids: Optional[list[str]] = None,
-    database_types: Optional[list[str]] = None,
+    limit: int | None = None,
+    ids: list[str] | None = None,
+    database_types: list[str] | None = None,
     project: Optional['Project | str'] = None,
     **filters,
 ) -> list["DatasourceInstance"] | list[dict]:
@@ -248,8 +248,8 @@ class DatasourceInstance(Entity, CopyMixin, DeleteMixin, ModelVldbMixin):
     def __init__(
         self,
         connection: "Connection",
-        name: Optional[str] = None,
-        id: Optional[str] = None,
+        name: str | None = None,
+        id: str | None = None,
     ) -> None:
         """Initialize DatasourceInstance object by passing name or id.
 
@@ -330,13 +330,13 @@ class DatasourceInstance(Entity, CopyMixin, DeleteMixin, ModelVldbMixin):
         connection: "Connection",
         name: str,
         dbms: Dbms | str,
-        description: Optional[str] = None,
-        datasource_type: Optional[str | DatasourceType] = None,
-        table_prefix: Optional[str] = None,
-        odbc_version: Optional[str] = None,
-        intermediate_store_db_name: Optional[str] = None,
-        intermediate_store_table_space_name: Optional[str] = None,
-        datasource_connection: Optional[str | DatasourceConnection] = None,
+        description: str | None = None,
+        datasource_type: str | DatasourceType | None = None,
+        table_prefix: str | None = None,
+        odbc_version: str | None = None,
+        intermediate_store_db_name: str | None = None,
+        intermediate_store_table_space_name: str | None = None,
+        datasource_connection: str | DatasourceConnection | None = None,
         database_type: str = None,
         database_version: str = None,
         primary_datasource: Optional["str | DatasourceInstance"] = None,
@@ -402,15 +402,15 @@ class DatasourceInstance(Entity, CopyMixin, DeleteMixin, ModelVldbMixin):
 
     def alter(
         self,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        datasource_type: Optional[str | DatasourceType] = None,
-        table_prefix: Optional[str] = None,
-        odbc_version: Optional[str] = None,
-        intermediate_store_db_name: Optional[str] = None,
-        intermediate_store_table_space_name: Optional[str] = None,
-        dbms: Optional[str | Dbms] = None,
-        datasource_connection: Optional[str | DatasourceConnection] = None,
+        name: str | None = None,
+        description: str | None = None,
+        datasource_type: str | DatasourceType | None = None,
+        table_prefix: str | None = None,
+        odbc_version: str | None = None,
+        intermediate_store_db_name: str | None = None,
+        intermediate_store_table_space_name: str | None = None,
+        dbms: str | Dbms | None = None,
+        datasource_connection: str | DatasourceConnection | None = None,
         primary_datasource: Optional["str | DatasourceInstance"] = None,
         data_mart_datasource: Optional["str | DatasourceInstance"] = None,
     ) -> None:
@@ -463,11 +463,11 @@ class DatasourceInstance(Entity, CopyMixin, DeleteMixin, ModelVldbMixin):
     def _list_datasource_instances(
         cls,
         connection: "Connection",
-        to_dictionary: Optional[bool] = False,
-        limit: Optional[int] = None,
-        ids: Optional[list] = None,
-        database_types: Optional[list] = None,
-        project: Optional[Project | str] = None,
+        to_dictionary: bool | None = False,
+        limit: int | None = None,
+        ids: list | None = None,
+        database_types: list | None = None,
+        project: Project | str | None = None,
         **filters,
     ) -> list["DatasourceInstance"] | list[dict]:
         project_id = project.id if isinstance(project, Project) else project

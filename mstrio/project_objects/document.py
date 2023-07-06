@@ -1,6 +1,4 @@
 import logging
-from functools import partial
-from typing import Optional
 
 from pandas import DataFrame, concat
 
@@ -30,6 +28,7 @@ from mstrio.utils.helper import (
     filter_params_for_func,
     get_valid_project_id,
     is_document,
+    find_object_with_name,
 )
 from mstrio.utils.version_helper import method_version_handler
 
@@ -40,10 +39,10 @@ def list_documents(
     connection: Connection,
     to_dictionary: bool = False,
     to_dataframe: bool = False,
-    limit: Optional[int] = None,
-    name: Optional[str] = None,
-    project_id: Optional[str] = None,
-    project_name: Optional[str] = None,
+    limit: int | None = None,
+    name: str | None = None,
+    project_id: str | None = None,
+    project_name: str | None = None,
     **filters,
 ) -> list["Document"] | list[dict] | DataFrame:
     """Get all Documents available in the project specified within the
@@ -86,10 +85,10 @@ def list_documents(
 
 def list_documents_across_projects(
     connection: Connection,
-    name: Optional[str] = None,
+    name: str | None = None,
     to_dictionary: bool = False,
     to_dataframe: bool = False,
-    limit: Optional[int] = None,
+    limit: int | None = None,
     **filters,
 ) -> list["Document"] | list[dict] | DataFrame:
     """Get all Documents stored on the server.
@@ -170,8 +169,8 @@ class Document(Entity, VldbMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCach
     def __init__(
         self,
         connection: Connection,
-        name: Optional[str] = None,
-        id: Optional[str] = None,
+        name: str | None = None,
+        id: str | None = None,
     ):
         """Initialize Document object by passing name or id.
 
@@ -182,12 +181,17 @@ class Document(Entity, VldbMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCach
             id (string, optional): ID of Document
         """
         if id is None:
-            document = super()._find_object_with_name(
+            if name is None:
+                raise ValueError(
+                    "Please specify either 'name' or 'id' parameter in the constructor."
+                )
+
+            document = find_object_with_name(
                 connection=connection,
+                cls=self.__class__,
                 name=name,
-                listing_function=partial(
-                    self._list_all, search_pattern=SearchPattern.EXACTLY
-                ),
+                listing_function=self._list_all,
+                search_pattern=SearchPattern.EXACTLY,
             )
             id = document['id']
         super().__init__(connection=connection, object_id=id, name=name)
@@ -229,9 +233,9 @@ class Document(Entity, VldbMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCach
 
     def alter(
         self,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        folder_id: Optional[Folder | str] = None,
+        name: str | None = None,
+        description: str | None = None,
+        folder_id: Folder | str | None = None,
     ):
         """Alter Document name, description and/or folder id.
 
@@ -258,7 +262,7 @@ class Document(Entity, VldbMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCach
             return None
         return recipient_id
 
-    def publish(self, recipients: Optional[UserOrGroup | list[UserOrGroup]] = None):
+    def publish(self, recipients: UserOrGroup | list[UserOrGroup] | None = None):
         """Publish the document for authenticated user. If `recipients`
         parameter is specified publishes the document for the given users.
 
@@ -288,7 +292,7 @@ class Document(Entity, VldbMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCach
         library.publish_document(self.connection, body)
         self.fetch(attr='recipients')
 
-    def unpublish(self, recipients: Optional[UserOrGroup | list[UserOrGroup]] = None):
+    def unpublish(self, recipients: UserOrGroup | list[UserOrGroup] | None = None):
         """Unpublish the document for all users it was previously published to.
         If `recipients` parameter is specified unpublishes the document for the
         given users.
@@ -365,12 +369,12 @@ class Document(Entity, VldbMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCach
         cls,
         connection: Connection,
         search_pattern: SearchPattern | int = SearchPattern.CONTAINS,
-        name: Optional[str] = None,
+        name: str | None = None,
         to_dictionary: bool = False,
         to_dataframe: bool = False,
-        limit: Optional[int] = None,
-        project_id: Optional[str] = None,
-        project_name: Optional[str] = None,
+        limit: int | None = None,
+        project_id: str | None = None,
+        project_name: str | None = None,
         **filters,
     ) -> list["Document"] | list[dict] | DataFrame:
         if to_dictionary and to_dataframe:

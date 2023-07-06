@@ -1,7 +1,7 @@
 import logging
 from enum import Enum
 from operator import itemgetter
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import requests
 from pandas.core.frame import DataFrame
@@ -93,12 +93,12 @@ class CubeStates(Enum):
 
 def list_all_cubes(
     connection: Connection,
-    name: Optional[str] = None,
+    name: str | None = None,
     search_pattern: SearchPattern | int = SearchPattern.CONTAINS,
-    project_id: Optional[str] = None,
-    project_name: Optional[str] = None,
+    project_id: str | None = None,
+    project_name: str | None = None,
     to_dictionary: bool = False,
-    limit: Optional[int] = None,
+    limit: int | None = None,
     **filters,
 ) -> 'list[OlapCube | SuperCube] | list[dict]':
     """Get list of Cube objects (OlapCube or SuperCube) or dicts with them.
@@ -175,10 +175,10 @@ def list_all_cubes(
 
 def load_cube(
     connection: Connection,
-    cube_id: Optional[str] = None,
-    cube_name: Optional[str] = None,
-    folder_id: Optional[str] = None,
-    instance_id: Optional[str] = None,
+    cube_id: str | None = None,
+    cube_name: str | None = None,
+    folder_id: str | None = None,
+    instance_id: str | None = None,
 ) -> 'OlapCube | SuperCube | list[OlapCube | SuperCube]':
     """Load single cube specified by either 'cube_id' or both 'cube_name' and
     'folder_id'.
@@ -318,8 +318,8 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
         self,
         connection: Connection,
         id: str,
-        name: Optional[str] = None,
-        instance_id: Optional[str] = None,
+        name: str | None = None,
+        instance_id: str | None = None,
         parallel: bool = True,
         progress_bar: bool = True,
     ):
@@ -390,9 +390,9 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
 
     def alter(
         self,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        abbreviation: Optional[str] = None,
+        name: str | None = None,
+        description: str | None = None,
+        abbreviation: str | None = None,
     ):
         """Alter Cube properties.
 
@@ -421,7 +421,7 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
         self._caches = cube_cache.list_cube_caches(self._connection, cube_id=self._id)
         return self._caches
 
-    def to_dataframe(self, limit: Optional[int] = None, multi_df: bool = False):
+    def to_dataframe(self, limit: int | None = None, multi_df: bool = False):
         """Extract contents of a cube into a Pandas `DataFrame`.
 
         Args:
@@ -582,9 +582,9 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
 
     def apply_filters(
         self,
-        attributes: Optional[list] = None,
-        metrics: Optional[list] = None,
-        attr_elements: Optional[list] = None,
+        attributes: list | None = None,
+        metrics: list | None = None,
+        attr_elements: list | None = None,
         operator: str = 'In',
     ) -> None:
         """Apply filters on the cube's objects.

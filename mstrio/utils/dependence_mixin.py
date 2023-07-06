@@ -1,7 +1,7 @@
-from typing import Optional, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Optional, Union
 
-from mstrio.utils.exceptions import NotSupportedError
 from mstrio.types import ObjectTypes
+from mstrio.utils.exceptions import NotSupportedError
 
 if TYPE_CHECKING:
     from mstrio.object_management.search_enums import (
@@ -21,15 +21,15 @@ class DependenceMixin:
 
     def list_dependents(
         self: 'Entity',
-        project: Optional[Union['Project', str]] = None,
-        name: Optional[str] = None,
+        project: Union['Project', str] | None = None,
+        name: str | None = None,
         pattern: Union['SearchPattern', int] = 4,
         domain: Union['SearchDomain', int] = 2,
         object_types: Optional['TypeOrSubtype'] = None,
         uses_recursive: bool = False,
-        root: Optional[str] = None,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
+        root: str | None = None,
+        limit: int | None = None,
+        offset: int | None = None,
         results_format: Union['SearchResultsFormat', str] = 'LIST',
         to_dictionary: bool = True,
         **filters,
@@ -41,7 +41,7 @@ class DependenceMixin:
             name(string): Value the search pattern is set to, which will
                 be applied to the names of object types being searched.
                 For example, search for all report objects (type) whose name
-                begins with (patter) B (name).
+                begins with (pattern) B (name).
             pattern(integer or enum class object): Pattern to search for,
                 such as Begin With or Exactly. Possible values are available in
                 ENUM mstrio.object_management.SearchPattern.
@@ -107,15 +107,15 @@ class DependenceMixin:
 
     def list_dependencies(
         self: 'Entity',
-        project: Optional[Union['Project', str]] = None,
-        name: Optional[str] = None,
+        project: Union['Project', str] | None = None,
+        name: str | None = None,
         pattern: Union['SearchPattern', int] = 4,
         domain: Union['SearchDomain', int] = 2,
         object_types: Optional['TypeOrSubtype'] = None,
         used_by_recursive: bool = False,
-        root: Optional[str] = None,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
+        root: str | None = None,
+        limit: int | None = None,
+        offset: int | None = None,
         results_format: Union['SearchResultsFormat', str] = 'LIST',
         to_dictionary: bool = True,
         **filters,
@@ -127,7 +127,7 @@ class DependenceMixin:
             name(string): Value the search pattern is set to, which will
                 be applied to the names of object types being searched.
                 For example, search for all report objects (type) whose name
-                begins with (patter) B (name).
+                begins with (pattern) B (name).
             pattern(integer or enum class object): Pattern to search for,
                 such as Begin With or Exactly. Possible values are available in
                 ENUM mstrio.object_management.SearchPattern.

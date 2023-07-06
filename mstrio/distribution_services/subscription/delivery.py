@@ -1,6 +1,5 @@
 from datetime import datetime
 from enum import auto
-from typing import Optional, Union
 
 from mstrio.utils.enum_helper import AutoName, AutoUpperName
 from mstrio.utils.helper import Dictable, camel_to_snake, exception_handler
@@ -110,8 +109,8 @@ class ZipSettings(DeliveryDictable):
 
     def __init__(
         self,
-        filename: Optional[str] = None,
-        password: Optional[str] = None,
+        filename: str | None = None,
+        password: str | None = None,
         password_protect: bool = False,
     ):
         self.filename = filename
@@ -181,13 +180,13 @@ class Delivery(DeliveryDictable):
 
         def __init__(
             self,
-            subject: Optional[str] = None,
-            message: Optional[str] = None,
-            filename: Optional[str] = None,
-            space_delimiter: Optional[str] = None,
-            send_content_as: Optional[SendContentAs] = None,
+            subject: str | None = None,
+            message: str | None = None,
+            filename: str | None = None,
+            space_delimiter: str | None = None,
+            send_content_as: SendContentAs | None = None,
             overwrite_older_version: bool = False,
-            zip: Optional[ZipSettings] = None,
+            zip: ZipSettings | None = None,
         ):
             self.subject = subject
             self.message = message
@@ -233,10 +232,10 @@ class Delivery(DeliveryDictable):
 
         def __init__(
             self,
-            filename: Optional[str] = None,
-            space_delimiter: Optional[str] = None,
-            burst_sub_folder: Optional[str] = None,
-            zip: Optional[ZipSettings] = None,
+            filename: str | None = None,
+            space_delimiter: str | None = None,
+            burst_sub_folder: str | None = None,
+            zip: ZipSettings | None = None,
         ):
             self.filename = filename
             self.space_delimiter = space_delimiter
@@ -268,9 +267,9 @@ class Delivery(DeliveryDictable):
 
         def __init__(
             self,
-            copies: Optional[int] = None,
-            range_start: Optional[int] = None,
-            range_end: Optional[int] = None,
+            copies: int | None = None,
+            range_start: int | None = None,
+            range_end: int | None = None,
             collated: bool = False,
             orientation: Orientation = Orientation.PORTRAIT.name,
             use_print_range: bool = False,
@@ -300,9 +299,9 @@ class Delivery(DeliveryDictable):
 
         def __init__(
             self,
-            space_delimiter: Optional[str] = None,
-            filename: Optional[str] = None,
-            zip: Optional[ZipSettings] = None,
+            space_delimiter: str | None = None,
+            filename: str | None = None,
+            zip: ZipSettings | None = None,
         ):
             self.space_delimiter = space_delimiter
             self.filename = filename
@@ -330,7 +329,7 @@ class Delivery(DeliveryDictable):
             self,
             cache_type: CacheType = CacheType.RESERVED,
             shortcut_cache_format: ShortcutCacheFormat = ShortcutCacheFormat.RESERVED,
-            library_cache_types: Optional[list[LibraryCacheTypes]] = None,
+            library_cache_types: list[LibraryCacheTypes] | None = None,
             reuse_dataset_cache: bool = False,
             is_all_library_users: bool = False,
         ):
@@ -365,7 +364,7 @@ class Delivery(DeliveryDictable):
         def __init__(
             self,
             client_type: ClientType = ClientType.RESERVED.name,
-            device_id: Optional[str] = None,
+            device_id: str | None = None,
             do_not_create_update_caches: bool = False,
             overwrite_older_version: bool = False,
             re_run_hl: bool = False,
@@ -398,7 +397,7 @@ class Delivery(DeliveryDictable):
 
         def __init__(
             self,
-            device_id: Optional[str] = None,
+            device_id: str | None = None,
             do_not_create_update_caches: bool = False,
             overwrite_older_version: bool = False,
             re_run_hl: bool = False,
@@ -426,42 +425,40 @@ class Delivery(DeliveryDictable):
         self,
         mode=DeliveryMode.EMAIL.value,
         expiration: str = None,
-        contact_security: Optional[bool] = None,
-        subject: Optional[str] = None,
-        message: Optional[str] = None,
-        filename: Optional[str] = None,
+        contact_security: bool | None = None,
+        subject: str | None = None,
+        message: str | None = None,
+        filename: str | None = None,
         compress: bool = False,
-        zip: Optional[ZipSettings] = None,
-        password: Optional[str] = None,
+        zip: ZipSettings | None = None,
+        password: str | None = None,
         password_protect: bool = False,
-        space_delimiter: Optional[str] = None,
+        space_delimiter: str | None = None,
         send_content_as: SendContentAs = SendContentAs.DATA,
         overwrite_older_version: bool = False,
-        burst_sub_folder: Optional[str] = None,
-        copies: Optional[int] = None,
-        range_start: Optional[int] = None,
-        range_end: Optional[int] = None,
+        burst_sub_folder: str | None = None,
+        copies: int | None = None,
+        range_start: int | None = None,
+        range_end: int | None = None,
         collated: bool = False,
         orientation: Orientation = Orientation.PORTRAIT.name,
         use_print_range: bool = False,
         client_type: ClientType = ClientType.RESERVED.name,
-        device_id: Optional[str] = None,
+        device_id: str | None = None,
         do_not_create_update_caches: bool = False,
         re_run_hl: bool = False,
-        expiration_time_zone: Optional[str] = None,
-        email: Optional[Email] = None,
-        file: Optional[File] = None,
-        cache_type: Union[CacheType, str] = CacheType.RESERVED,
-        shortcut_cache_format: Union[
-            ShortcutCacheFormat, str
-        ] = ShortcutCacheFormat.RESERVED,
-        library_cache_types: list[Union[LibraryCacheTypes, str]] = [
-            LibraryCacheTypes.WEB
-        ],
+        expiration_time_zone: str | None = None,
+        email: Email | None = None,
+        file: File | None = None,
+        cache_type: CacheType | str = CacheType.RESERVED,
+        shortcut_cache_format: (
+            ShortcutCacheFormat | str
+        ) = ShortcutCacheFormat.RESERVED,
+        library_cache_types: list[LibraryCacheTypes | str] = [LibraryCacheTypes.WEB],
         reuse_dataset_cache: bool = False,
         is_all_library_users: bool = False,
         notification_enabled: bool = False,
-        personal_notification_address_id: Optional[str] = None,
+        personal_notification_address_id: str | None = None,
     ):
         self.mode = mode
         if expiration:

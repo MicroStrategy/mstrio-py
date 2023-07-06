@@ -44,10 +44,10 @@ def create_users_from_csv(connection: Connection, csv_file: str) -> list["User"]
 
 def list_users(
     connection: Connection,
-    name_begins: Optional[str] = None,
-    abbreviation_begins: Optional[str] = None,
+    name_begins: str | None = None,
+    abbreviation_begins: str | None = None,
     to_dictionary: bool = False,
-    limit: Optional[int] = None,
+    limit: int | None = None,
     **filters,
 ) -> list["User"] | list[dict]:
     """Get list of user objects or user dicts. Optionally filter the users by
@@ -192,9 +192,9 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
     def __init__(
         self,
         connection: Connection,
-        username: Optional[str] = None,
-        name: Optional[str] = None,
-        id: Optional[str] = None,
+        username: str | None = None,
+        name: str | None = None,
+        id: str | None = None,
     ) -> None:
         """Initialize User object by passing username, name, or id.
         When `id` is provided (not `None`), `username` and `name` are omitted.
@@ -265,17 +265,17 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
         connection: Connection,
         username: str,
         full_name: str,
-        password: Optional[str] = None,
-        description: Optional[str] = None,
+        password: str | None = None,
+        description: str | None = None,
         enabled: bool = True,
         password_modifiable: bool = True,
-        password_expiration_date: Optional[str | datetime] = None,
+        password_expiration_date: str | datetime | None = None,
         require_new_password: bool = True,
         standard_auth: bool = True,
-        ldapdn: Optional[str] = None,
-        trust_id: Optional[str] = None,
-        database_auth_login: Optional[str] = None,
-        memberships: Optional[list] = None,
+        ldapdn: str | None = None,
+        trust_id: str | None = None,
+        database_auth_login: str | None = None,
+        memberships: list | None = None,
     ) -> "User":
         """Create a new user on the I-Server. Returns User object.
 
@@ -353,10 +353,10 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
     def _get_users(
         cls,
         connection: Connection,
-        name_begins: Optional[str] = None,
-        abbreviation_begins: Optional[str] = None,
+        name_begins: str | None = None,
+        abbreviation_begins: str | None = None,
         to_dictionary: bool = False,
-        limit: Optional[int] = None,
+        limit: int | None = None,
         **filters,
     ) -> list["User"] | list[dict]:
         msg = "Error getting information for a set of users."
@@ -380,9 +380,9 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
     def _get_user_ids(
         cls,
         connection: Connection,
-        name_begins: Optional[str] = None,
-        abbreviation_begins: Optional[str] = None,
-        limit: Optional[int] = None,
+        name_begins: str | None = None,
+        abbreviation_begins: str | None = None,
+        limit: int | None = None,
         **filters,
     ) -> list[str]:
         user_dicts = User._get_users(
@@ -397,18 +397,18 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
 
     def alter(
         self,
-        username: Optional[str] = None,
-        full_name: Optional[str] = None,
-        description: Optional[str] = None,
-        password: Optional[str] = None,
-        enabled: Optional[bool] = None,
-        password_modifiable: Optional[bool] = None,
-        password_expiration_date: Optional[str] = None,
-        standard_auth: Optional[bool] = None,
-        require_new_password: Optional[bool] = None,
-        ldapdn: Optional[str] = None,
-        trust_id: Optional[str] = None,
-        database_auth_login: Optional[str] = None,
+        username: str | None = None,
+        full_name: str | None = None,
+        description: str | None = None,
+        password: str | None = None,
+        enabled: bool | None = None,
+        password_modifiable: bool | None = None,
+        password_expiration_date: str | None = None,
+        standard_auth: bool | None = None,
+        require_new_password: bool | None = None,
+        ldapdn: str | None = None,
+        trust_id: str | None = None,
+        database_auth_login: str | None = None,
     ) -> None:
         """Alter user properties.
 
@@ -443,8 +443,8 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
 
     def add_address(
         self,
-        name: Optional[str] = None,
-        address: Optional[str] = None,
+        name: str | None = None,
+        address: str | None = None,
         default: bool = True,
     ) -> None:
         """Add new address to the user object.
@@ -481,9 +481,9 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
     def update_address(
         self,
         id: str,
-        name: Optional[str] = None,
-        address: Optional[str] = None,
-        default: Optional[bool] = None,
+        name: str | None = None,
+        address: str | None = None,
+        default: bool | None = None,
     ) -> None:
         """Update existing address. The address ID has to be specified
         as the name is not unique.
@@ -519,9 +519,9 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
 
     def remove_address(
         self,
-        name: Optional[str] = None,
-        address: Optional[str] = None,
-        id: Optional[str] = None,
+        name: str | None = None,
+        address: str | None = None,
+        id: str | None = None,
     ) -> None:
         """Remove existing address from the user object. Specify either address
         ID or name. Warning, address names are not unique and can potentially
@@ -652,7 +652,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
 
     @method_version_handler('11.3.0200')
     def list_security_filters(
-        self, projects: Optional[str | list[str]] = None, to_dictionary: bool = False
+        self, projects: str | list[str] | None = None, to_dictionary: bool = False
     ) -> dict:
         """Get the list of security filters for user. They can be filtered by
         the projects' ids.
@@ -880,7 +880,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
 
         return to_df(privileges) if to_dataframe else privileges
 
-    def disconnect(self, nodes: Optional[str | list[str]] = None) -> None:
+    def disconnect(self, nodes: str | list[str] | None = None) -> None:
         """Disconnect all active user connection sessions for the specified
         node.
 
@@ -903,7 +903,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
         return super().delete(force=force)
 
     def _to_dataframe_as_columns(
-        self, properties: Optional[list[str]] = None
+        self, properties: list[str] | None = None
     ) -> pd.DataFrame:
         """Exports user object to dataframe, with properties as columns
 
@@ -947,7 +947,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
 
     @classmethod
     def to_datafame_from_list(
-        cls, objects: list['User'], properties: Optional[list[str]] = None
+        cls, objects: list['User'], properties: list[str] | None = None
     ) -> pd.DataFrame:
         """Exports list of user objects to dataframe.
         The properties that are lists, dictionaries, or objects of
@@ -979,8 +979,8 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
     def to_csv_from_list(
         cls,
         objects: list['User'],
-        path: Optional[str] = None,
-        properties: Optional[list[str]] = None,
+        path: str | None = None,
+        properties: list[str] | None = None,
     ) -> str | None:
         """Exports list of user objects to csv (if path is provided)
         or to string (if path is not provided).

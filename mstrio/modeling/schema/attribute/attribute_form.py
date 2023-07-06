@@ -1,5 +1,5 @@
 from enum import auto
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from mstrio.api import objects
 from mstrio.connection import Connection
@@ -225,16 +225,16 @@ class AttributeForm(Entity):  # noqa
         cls,
         connection: Connection,
         name: str,
-        description: Optional[str] = None,
-        category: Optional[str] = None,
-        display_format: Optional[DisplayFormat] = None,
-        data_type: Optional[DataType] = None,
-        expressions: Optional[list[FactExpression]] = None,
-        alias: Optional[str] = None,
-        lookup_table: Optional[SchemaObjectReference] = None,
-        child_forms: Optional[list[FormReference]] = None,
-        geographical_role: Optional[GeographicalRole] = None,
-        time_role: Optional[TimeRole] = None,
+        description: str | None = None,
+        category: str | None = None,
+        display_format: DisplayFormat | None = None,
+        data_type: DataType | None = None,
+        expressions: list[FactExpression] | None = None,
+        alias: str | None = None,
+        lookup_table: SchemaObjectReference | None = None,
+        child_forms: list[FormReference] | None = None,
+        geographical_role: GeographicalRole | None = None,
+        time_role: TimeRole | None = None,
         is_form_group: bool = False,
         is_multilingual: bool = False,
     ) -> "AttributeForm":
@@ -286,18 +286,18 @@ class AttributeForm(Entity):  # noqa
 
     def local_alter(
         self,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        display_format: Optional[DisplayFormat] = None,
-        data_type: Optional[DataType] = None,
-        expressions: Optional[list[FactExpression]] = None,
-        alias: Optional[str] = None,
-        lookup_table: Optional[SchemaObjectReference] = None,
-        child_forms: Optional[list[FormReference]] = None,
-        geographical_role: Optional[GeographicalRole] = None,
-        time_role: Optional[TimeRole] = None,
-        is_form_group: Optional[bool] = None,
-        is_multilingual: Optional[bool] = None,
+        name: str | None = None,
+        description: str | None = None,
+        display_format: DisplayFormat | None = None,
+        data_type: DataType | None = None,
+        expressions: list[FactExpression] | None = None,
+        alias: str | None = None,
+        lookup_table: SchemaObjectReference | None = None,
+        child_forms: list[FormReference] | None = None,
+        geographical_role: GeographicalRole | None = None,
+        time_role: TimeRole | None = None,
+        is_form_group: bool | None = None,
+        is_multilingual: bool | None = None,
     ):
         """Make changes to a local copy of AttributeForm. In order to change
         an AttributeForm object on the server, use `Attribute.alter_form()`
@@ -340,7 +340,7 @@ class AttributeForm(Entity):  # noqa
     def _remove_fact_expression(
         self,
         fact_expression_id: str,
-        new_lookup_table: Optional[SchemaObjectReference] = None,
+        new_lookup_table: SchemaObjectReference | None = None,
     ):
         """
         Internal method that affects ONLY LOCAL AttributeForm object.
@@ -392,8 +392,8 @@ class AttributeForm(Entity):  # noqa
     def _alter_expression(
         self,
         fact_expression_id: str,
-        expression: Optional[Expression] = None,
-        tables: Optional[list[SchemaObjectReference]] = None,
+        expression: Expression | None = None,
+        tables: list[SchemaObjectReference] | None = None,
     ):
         """Internal method that affects ONLY LOCAL AttributeForm object.
         To make changes on the server, use `Attribute.alter_fact_expression()`

@@ -1,7 +1,6 @@
+import logging
 from dataclasses import dataclass
 from enum import auto
-import logging
-from typing import Optional
 
 from requests import Response
 
@@ -10,7 +9,7 @@ from mstrio.api import monitors
 from mstrio.connection import Connection
 from mstrio.utils.cache import Cache, ContentCacheMixin
 from mstrio.utils.enum_helper import AutoName
-from mstrio.utils.helper import camel_to_snake, Dictable
+from mstrio.utils.helper import Dictable, camel_to_snake
 from mstrio.utils.version_helper import class_version_handler
 
 logger = logging.getLogger(__name__)
@@ -45,7 +44,7 @@ class ContentCache(Cache, ContentCacheMixin):
         self,
         connection: "Connection",
         id: str,
-        content_cache_dict: Optional[dict] = None,
+        content_cache_dict: dict | None = None,
     ):
         """Initialize the ContentCache object. If content_cache_dict is provided
         no I-Server request will be sent.
@@ -117,9 +116,9 @@ class ContentCache(Cache, ContentCacheMixin):
     def __alter_status(
         self,
         op: str,
-        value: Optional[bool] = None,
-        status: Optional[str] = None,
-        nodes: Optional[list[str]] = None,
+        value: bool | None = None,
+        status: str | None = None,
+        nodes: list[str] | None = None,
     ) -> Response:
         """Engine for altering ContentCache status
 
@@ -177,7 +176,7 @@ class ContentCache(Cache, ContentCacheMixin):
             return True
         return False
 
-    def delete(self, force: Optional[bool] = None) -> Response:
+    def delete(self, force: bool | None = None) -> Response:
         """Delete content cache.
 
         Args:
@@ -233,7 +232,7 @@ class ContentCache(Cache, ContentCacheMixin):
             'warehouse_tables_used': self.warehouse_tables_used,
             'last_load_time': self.last_load_time,
             'security_filter_id': self.security_filter_id,
-            'promt_answer': self.prompt_answer,
+            'prompt_answer': self.prompt_answer,
             'result_cashe_type': self.result_cache_type,
             'expiration_time': self.expiration_time,
             'database_connection_id': self.database_connection_id,

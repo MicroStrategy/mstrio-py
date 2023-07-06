@@ -1,7 +1,7 @@
+import logging
 from collections import defaultdict
 from enum import auto
-import logging
-from typing import List, Optional, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 from mstrio import config
 from mstrio.api import devices, objects
@@ -19,8 +19,8 @@ from mstrio.users_and_groups import User
 from mstrio.utils.entity import DeleteMixin, Entity
 from mstrio.utils.enum_helper import AutoName, get_enum_val
 from mstrio.utils.helper import (
-    delete_none_values,
     Dictable,
+    delete_none_values,
     fetch_objects,
     get_args_from_func,
     get_default_args_from_func,
@@ -48,7 +48,7 @@ class DeviceType(AutoName):
 
 def list_devices(
     connection: "Connection", to_dictionary: bool = False, limit: int = None, **filters
-) -> Union[List["Device"], List[dict]]:
+) -> list["Device"] | list[dict]:
     """Get list of Device objects or dicts. Optionally filter the
     devices by specifying filters.
 
@@ -206,9 +206,9 @@ class Device(Entity, DeleteMixin):
         cls,
         connection: "Connection",
         name: str,
-        device_type: Union[DeviceType, str],
-        transmitter: Union[Transmitter, str],
-        device_properties: Union[dict, Dictable],
+        device_type: DeviceType | str,
+        transmitter: Transmitter | str,
+        device_properties: dict | Dictable,
         description: str = None,
     ) -> "Device":
         """Create a new device.
@@ -251,9 +251,9 @@ class Device(Entity, DeleteMixin):
 
     def alter(
         self,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        device_properties: Optional[Union[Dictable, dict]] = None,
+        name: str | None = None,
+        description: str | None = None,
+        device_properties: Dictable | dict | None = None,
     ):
         """Alter the device object properties.
 
@@ -313,7 +313,7 @@ class Device(Entity, DeleteMixin):
         to_dictionary: bool = False,
         limit: int = None,
         **filters,
-    ) -> Union[List["Device"], List[dict]]:
+    ) -> list["Device"] | list[dict]:
         objects = fetch_objects(
             connection=connection,
             api=devices.get_devices,

@@ -1,6 +1,7 @@
-import pandas as pd
 import datetime as dt
 from collections import defaultdict
+
+import pandas as pd
 
 
 class Model:

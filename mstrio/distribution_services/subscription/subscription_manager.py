@@ -3,8 +3,8 @@ from typing import Optional
 
 from packaging import version
 
-from mstrio import config
 import mstrio.api.subscriptions as subscriptions_
+from mstrio import config
 from mstrio.connection import Connection
 from mstrio.utils import helper
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
@@ -26,10 +26,10 @@ logger = logging.getLogger(__name__)
 @method_version_handler('11.2.0203')
 def list_subscriptions(
     connection: Connection,
-    project_id: Optional[str] = None,
-    project_name: Optional[str] = None,
+    project_id: str | None = None,
+    project_name: str | None = None,
     to_dictionary: bool = False,
-    limit: Optional[int] = None,
+    limit: int | None = None,
     **filters,
 ) -> list["Subscription"] | list[dict]:
     """Get all subscriptions per project as list of Subscription objects or
@@ -127,8 +127,8 @@ class SubscriptionManager:
     def __init__(
         self,
         connection: Connection,
-        project_id: Optional[str] = None,
-        project_name: Optional[str] = None,
+        project_id: str | None = None,
+        project_name: str | None = None,
     ):
         """Initialize the SubscriptionManager object.
         Specify either `project_id` or `project_name`.
@@ -148,7 +148,7 @@ class SubscriptionManager:
         )
 
     def list_subscriptions(
-        self, to_dictionary: bool = False, limit: Optional[int] = None, **filters
+        self, to_dictionary: bool = False, limit: int | None = None, **filters
     ):
         """Get all subscriptions as list of Subscription objects or
         dictionaries.
@@ -290,8 +290,8 @@ class SubscriptionManager:
     @method_version_handler('11.3.0000')
     def available_recipients(
         self,
-        content_id: Optional[str] = None,
-        content_type: Optional[str] = None,
+        content_id: str | None = None,
+        content_type: str | None = None,
         content: Optional["Content"] = None,
         delivery_type='EMAIL',
     ) -> list[dict]:

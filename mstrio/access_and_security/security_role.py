@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, List, Optional, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Any, Union
 
 from pandas import DataFrame
 
@@ -23,7 +23,7 @@ def list_security_roles(
     connection: Connection,
     to_dictionary: bool = False,
     to_dataframe: bool = False,
-    limit: Optional[int] = None,
+    limit: int | None = None,
     **filters,
 ):
     """Get all Security Roles stored on the server.
@@ -106,8 +106,8 @@ class SecurityRole(Entity, DeleteMixin):
     def __init__(
         self,
         connection: Connection,
-        name: Optional[str] = None,
-        id: Optional[str] = None,
+        name: str | None = None,
+        id: str | None = None,
     ):
         """Initialize Security Role object by passing name or id.
 
@@ -148,9 +148,7 @@ class SecurityRole(Entity, DeleteMixin):
         cls,
         connection: Connection,
         name: str,
-        privileges: Union[
-            Union["Privilege", int, str], List[Union["Privilege", int, str]]
-        ],
+        privileges: Union["Privilege", int, str] | list[Union["Privilege", int, str]],
         description: str = "",
     ):
         """Create a new Security Role.
@@ -201,9 +199,9 @@ class SecurityRole(Entity, DeleteMixin):
         connection: Connection,
         to_dictionary: bool = False,
         to_dataframe: bool = False,
-        limit: Optional[int] = None,
+        limit: int | None = None,
         **filters,
-    ) -> Union[List["SecurityRole"], List[Dict[str, Any]], DataFrame]:
+    ) -> list["SecurityRole"] | list[dict[str, Any]] | DataFrame:
         if to_dictionary and to_dataframe:
             helper.exception_handler(
                 "Please select either to_dictionary=True or to_dataframe=True, "
@@ -225,13 +223,13 @@ class SecurityRole(Entity, DeleteMixin):
             return [cls.from_dict(source=obj, connection=connection) for obj in objects]
 
     @classmethod
-    def _list_security_role_ids(cls, connection: Connection, **filters) -> List[str]:
+    def _list_security_role_ids(cls, connection: Connection, **filters) -> list[str]:
         sr_dicts = SecurityRole._list_security_roles(
             connection, to_dictionary=True, **dict(filters)
         )
         return [role.get('id') for role in sr_dicts]  # type: ignore
 
-    def alter(self, name: Optional[str] = None, description: Optional[str] = None):
+    def alter(self, name: str | None = None, description: str | None = None):
         """Alter Security Role name or/and description.
 
         Args:
@@ -250,7 +248,7 @@ class SecurityRole(Entity, DeleteMixin):
 
         self._alter_properties(**properties)
 
-    def list_members(self, project_name: Optional[str] = None):
+    def list_members(self, project_name: str | None = None):
         """List all members of the Security Role. Optionally, filter the
         results by Project name.
 
@@ -271,7 +269,7 @@ class SecurityRole(Entity, DeleteMixin):
 
     def grant_to(
         self,
-        members: Union["UserOrGroup", List["UserOrGroup"]],
+        members: Union["UserOrGroup", list["UserOrGroup"]],
         project: Union["Project", str],
     ) -> None:
         """Assign users/user groups to a Security Role.
@@ -333,7 +331,7 @@ class SecurityRole(Entity, DeleteMixin):
 
     def revoke_from(
         self,
-        members: Union["UserOrGroup", List["UserOrGroup"]],
+        members: Union["UserOrGroup", list["UserOrGroup"]],
         project: Union["Project", str],
     ) -> None:
         """Remove users/user groups from a Security Role.
@@ -394,9 +392,7 @@ class SecurityRole(Entity, DeleteMixin):
 
     def grant_privilege(
         self,
-        privilege: Union[
-            Union["Privilege", int, str], List[Union["Privilege", int, str]]
-        ],
+        privilege: Union["Privilege", int, str] | list[Union["Privilege", int, str]],
     ) -> None:
         """Grant new project-level privileges to the Security Role.
 
@@ -447,9 +443,7 @@ class SecurityRole(Entity, DeleteMixin):
 
     def revoke_privilege(
         self,
-        privilege: Union[
-            Union["Privilege", int, str], List[Union["Privilege", int, str]]
-        ],
+        privilege: Union["Privilege", int, str] | list[Union["Privilege", int, str]],
     ) -> None:
         """Revoke project-level privileges from the Security Role.
 
@@ -528,7 +522,7 @@ class SecurityRole(Entity, DeleteMixin):
                     f"Security Role '{self.name}' does not have any privilege(s)"
                 )
 
-    def list_privileges(self, to_dataframe: bool = False) -> Union[dict, DataFrame]:
+    def list_privileges(self, to_dataframe: bool = False) -> dict | DataFrame:
         """List ALL privileges for Security Role. Optionally return a
         `DataFrame` object.
 

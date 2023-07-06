@@ -1,5 +1,3 @@
-from typing import List
-
 from mstrio.utils.error_handlers import ErrorHandler
 
 
@@ -51,7 +49,7 @@ def refresh_document_instance(connection, error_msg=None):
 
 
 @ErrorHandler(err_msg='Error deleting bookmarks.')
-def delete_bookmarks(connection, shortcut_id: str, bookmark_ids: List, error_msg=None):
+def delete_bookmarks(connection, shortcut_id: str, bookmark_ids: list, error_msg=None):
     """Bulk deletion of bookmarks.
 
     Args:

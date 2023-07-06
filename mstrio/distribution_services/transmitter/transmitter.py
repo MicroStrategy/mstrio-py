@@ -1,7 +1,7 @@
+import logging
 from collections import defaultdict
 from enum import auto
-import logging
-from typing import List, Optional, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 from mstrio import config
 from mstrio.api import objects, transmitters
@@ -81,10 +81,10 @@ class EmailTransmitterProperties(Dictable):
         save_message_to_file: bool = False,
         send_message_to_file: bool = False,
         send_message_via_smtp: bool = False,
-        save_file_path: Optional[str] = None,
+        save_file_path: str | None = None,
         notify_on_success: bool = False,
         notify_on_failure: bool = False,
-        notification_email_address: Optional[str] = None,
+        notification_email_address: str | None = None,
     ):
         self.sender_display_name = sender_display_name
         self.sender_email_address = sender_email_address
@@ -104,9 +104,9 @@ class EmailTransmitterProperties(Dictable):
 def list_transmitters(
     connection: "Connection",
     to_dictionary: bool = False,
-    limit: Optional[int] = None,
+    limit: int | None = None,
     **filters,
-) -> Union[List["Transmitter"], List[dict]]:
+) -> list["Transmitter"] | list[dict]:
     """Get all transmitters as list of Transmitter objects or
     dictionaries.
 
@@ -188,8 +188,8 @@ class Transmitter(Entity, DeleteMixin):
     def __init__(
         self,
         connection: "Connection",
-        id: Optional[str] = None,
-        name: Optional[str] = None,
+        id: str | None = None,
+        name: str | None = None,
     ):
         """Initialize Transmitter object.
 
@@ -244,11 +244,9 @@ class Transmitter(Entity, DeleteMixin):
         cls,
         connection: "Connection",
         name: str,
-        delivery_type: Union[str, TransmitterDeliveryType],
-        description: Optional[str] = None,
-        email_transmitter_properties: Optional[
-            Union[dict, EmailTransmitterProperties]
-        ] = None,
+        delivery_type: str | TransmitterDeliveryType,
+        description: str | None = None,
+        email_transmitter_properties: dict | EmailTransmitterProperties | None = None,
     ) -> "Transmitter":
         """Create transmitter.
 
@@ -288,11 +286,9 @@ class Transmitter(Entity, DeleteMixin):
 
     def alter(
         self,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        email_transmitter_properties: Optional[
-            Union[dict, EmailTransmitterProperties]
-        ] = None,
+        name: str | None = None,
+        description: str | None = None,
+        email_transmitter_properties: dict | EmailTransmitterProperties | None = None,
     ):
         """Alter transmitter properties.
 
@@ -324,9 +320,9 @@ class Transmitter(Entity, DeleteMixin):
         cls,
         connection: "Connection",
         to_dictionary: bool = False,
-        limit: Optional[int] = None,
+        limit: int | None = None,
         **filters,
-    ) -> Union[List["Transmitter"], List[dict]]:
+    ) -> list["Transmitter"] | list[dict]:
         """Helper method for listing transmitters."""
         objects = fetch_objects(
             connection=connection,

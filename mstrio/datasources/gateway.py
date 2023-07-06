@@ -1,5 +1,3 @@
-from typing import Optional, Type
-
 from mstrio.connection import Connection
 from mstrio.datasources.helpers import DBType, GatewayType
 from mstrio.utils.entity import EntityBase
@@ -56,8 +54,8 @@ class Gateway(EntityBase):
     def __init__(
         self,
         connection: Connection,
-        id: Optional[str] = None,
-        name: Optional[str] = None,
+        id: str | None = None,
+        name: str | None = None,
     ):
         """Initialize Driver object by passing ID or name.
         When `id` is provided, `name` is omitted.
@@ -100,7 +98,7 @@ class Gateway(EntityBase):
     @classmethod
     def list(
         cls, connection: Connection, to_dictionary: bool = False, **filters
-    ) -> list[Type['Gateway']] | list[dict]:
+    ) -> list[type['Gateway']] | list[dict]:
         """Get all gateways as list of Gateway objects or dictionaries.
 
         Optionally filter the gateways by specifying filters.

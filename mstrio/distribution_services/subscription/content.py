@@ -1,5 +1,4 @@
 from enum import auto
-from typing import Optional
 
 from mstrio.distribution_services.subscription.common import RefreshPolicy
 from mstrio.utils.enum_helper import AutoName, AutoUpperName
@@ -189,10 +188,10 @@ class Content(Dictable):
 
             def __init__(
                 self,
-                slicing_attributes: Optional[list[str]] = None,
-                address_attribute_id: Optional[str] = None,
-                device_id: Optional[str] = None,
-                form_id: Optional[str] = None,
+                slicing_attributes: list[str] | None = None,
+                address_attribute_id: str | None = None,
+                device_id: str | None = None,
+                form_id: str | None = None,
             ):
                 self.slicing_attributes = (
                     slicing_attributes if isinstance(slicing_attributes, list) else []
@@ -212,13 +211,13 @@ class Content(Dictable):
             format_mode: FormatMode = FormatMode.DEFAULT,
             view_mode: ViewMode = ViewMode.DEFAULT,
             format_type: FormatType = FormatType.PDF,
-            export_to_pdf_settings: Optional[ExportToPdfSettings] = None,
-            delimiter: Optional[str] = None,
-            bursting: Optional[Bursting] = None,
-            prompt: Optional[Prompt] = None,
-            file_name: Optional[str] = None,
-            content_modes: Optional[list[str]] = None,
-            bookmark_ids: Optional[list[str]] = None,
+            export_to_pdf_settings: ExportToPdfSettings | None = None,
+            delimiter: str | None = None,
+            bursting: Bursting | None = None,
+            prompt: Prompt | None = None,
+            file_name: str | None = None,
+            content_modes: list[str] | None = None,
+            bookmark_ids: list[str] | None = None,
         ):
             self.format_mode = format_mode
             self.view_mode = view_mode
@@ -298,10 +297,10 @@ class Content(Dictable):
                 # XXX: Should all of those be optional or all required or what?
                 def __init__(
                     self,
-                    db_role_id: Optional[str] = None,
-                    namespace: Optional[str] = None,
-                    table_name: Optional[str] = None,
-                    url: Optional[str] = None,
+                    db_role_id: str | None = None,
+                    namespace: str | None = None,
+                    table_name: str | None = None,
+                    url: str | None = None,
                 ):
                     self.db_role_id = db_role_id
                     self.namespace = namespace
@@ -313,7 +312,7 @@ class Content(Dictable):
                 self,
                 id: str,
                 refresh_policy: RefreshPolicy,
-                alternate_source: Optional[AlternateSource] = None,
+                alternate_source: AlternateSource | None = None,
             ):
                 self.id = id
                 self.refresh_policy = refresh_policy
@@ -328,8 +327,8 @@ class Content(Dictable):
         def __init__(
             self,
             tables: list[TableRefreshInfo],
-            dataset_refresh_policy: Optional[RefreshPolicy] = None,
-            filters: Optional[list[SubscriptionFilter]] = None,
+            dataset_refresh_policy: RefreshPolicy | None = None,
+            filters: list[SubscriptionFilter] | None = None,
         ):
             self.tables = tables
             self.dataset_refresh_policy = dataset_refresh_policy
@@ -342,9 +341,7 @@ class Content(Dictable):
                 for t in tables
             ],
             "filters": lambda filters, connection: [
-                Content.RefreshCondition.SubscriptionFilter.from_dict(
-                    f, connection
-                )  # noqa
+                Content.RefreshCondition.SubscriptionFilter.from_dict(f, connection)
                 for f in filters
             ],
         }
@@ -354,9 +351,9 @@ class Content(Dictable):
         self,
         id: str,
         type: Type,
-        name: Optional[str] = None,
-        personalization: Optional[Properties] = None,
-        refresh_condition: Optional[RefreshCondition] = None,
+        name: str | None = None,
+        personalization: Properties | None = None,
+        refresh_condition: RefreshCondition | None = None,
     ):
         self.id = id
         self.type = type

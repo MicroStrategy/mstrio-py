@@ -1,7 +1,8 @@
 import getpass
 import logging
+from collections.abc import Iterable
 from enum import auto
-from typing import TYPE_CHECKING, Iterable, Optional
+from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 import pandas as pd
@@ -59,7 +60,7 @@ class Cluster:
     def list_nodes(
         self,
         project: "Optional[str | Project]" = None,
-        node: Optional[str | Node] = None,
+        node: str | Node | None = None,
         to_dictionary: bool = False,
     ) -> list[Node | dict]:
         """Return a list of nodes and their properties within the cluster.
@@ -308,8 +309,8 @@ class Cluster:
         self,
         service: str,
         nodes: list[str],
-        login: Optional[str] = None,
-        passwd: Optional[str] = None,
+        login: str | None = None,
+        passwd: str | None = None,
     ):
         """Start up a service on selected nodes.
 
@@ -329,8 +330,8 @@ class Cluster:
         self,
         service: str,
         nodes: list[str],
-        login: Optional[str] = None,
-        passwd: Optional[str] = None,
+        login: str | None = None,
+        passwd: str | None = None,
         force: bool = False,
     ):
         """Stop a service on selected nodes. Provided service and node names
@@ -354,8 +355,8 @@ class Cluster:
         action: ServiceAction,
         service: str,
         nodes: list[str],
-        login: Optional[str] = None,
-        passwd: Optional[str] = None,
+        login: str | None = None,
+        passwd: str | None = None,
         force: bool = False,
     ):
         # validate inputs
@@ -466,7 +467,7 @@ class Cluster:
         administration.delete_iserver_node_settings(self.connection, node_name)
 
     def list_projects(
-        self, to_dictionary: bool = False, limit: Optional[int] = None, **filters
+        self, to_dictionary: bool = False, limit: int | None = None, **filters
     ) -> list["Project"]:
         """Return list of project objects or if `to_dictionary=True`
         project dicts. Optionally filter the Projects by specifying the
@@ -485,7 +486,7 @@ class Cluster:
         return env.list_projects(to_dictionary=to_dictionary, limit=limit, **filters)
 
     def load_project(
-        self, project: "str | Project", on_nodes: Optional[str | list[str]] = None
+        self, project: "str | Project", on_nodes: str | list[str] | None = None
     ) -> None:
         """Request to load the project onto the chosen cluster nodes. If
         nodes are not specified, the project will be loaded on all nodes.
@@ -503,7 +504,7 @@ class Cluster:
         project.load(on_nodes=on_nodes)
 
     def unload_project(
-        self, project: "str | Project", on_nodes: Optional[str | list[str]] = None
+        self, project: "str | Project", on_nodes: str | list[str] | None = None
     ) -> None:
         """Request to unload the project from the chosen cluster nodes. If
         nodes are not specified, the project will be unloaded on all nodes.
@@ -616,7 +617,7 @@ class Cluster:
     def _check_service_running(
         service_name: str,
         service_list: list[ServiceWithNode],
-        node_name: Optional[str] = None,
+        node_name: str | None = None,
     ) -> bool:
         """Return True if service is running on any node available.
 
@@ -641,7 +642,7 @@ class Cluster:
     @staticmethod
     def _get_node_info(
         node_name: str, service_name: str, service_list: list[ServiceWithNode]
-    ) -> Optional[dict]:
+    ) -> dict | None:
         nodes = [
             service['nodes']
             for service in service_list
@@ -682,7 +683,7 @@ class Cluster:
         return 'color: %s' % color
 
     @property
-    def default_node(self) -> Optional[str]:
+    def default_node(self) -> str | None:
         """Return name of default node for this cluster."""
 
         for n in self.list_nodes(to_dictionary=True):

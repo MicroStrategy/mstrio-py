@@ -1,5 +1,3 @@
-from typing import Optional
-
 from mstrio.connection import Connection
 from mstrio.users_and_groups.user import User
 from mstrio.utils.entity import auto_match_args_entity
@@ -25,8 +23,8 @@ class CertifiedInfo(Dictable):
         self,
         connection: Connection,
         certified: bool,
-        date_certified: Optional[str] = None,
-        certifier: Optional[dict] = None,
+        date_certified: str | None = None,
+        certifier: dict | None = None,
     ):
         self._connection = connection
         self._certified = certified
@@ -58,13 +56,13 @@ class CertifiedInfo(Dictable):
         return self._connection
 
     @property
-    def certified(self) -> Optional[bool]:
+    def certified(self) -> bool | None:
         return self._certified
 
     @property
-    def date_certified(self) -> Optional[str]:
+    def date_certified(self) -> str | None:
         return self._date_certified
 
     @property
-    def certifier(self) -> Optional[User]:
+    def certifier(self) -> User | None:
         return self._certifier

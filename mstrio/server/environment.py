@@ -1,11 +1,11 @@
-from typing import List, Optional, Union
+from typing import Optional, Union
 
 from pandas import DataFrame
 
-from mstrio.api import monitors
-from mstrio.server.project import compare_project_settings, Project
-from mstrio.server.server import ServerSettings
 import mstrio.utils.helper as helper
+from mstrio.api import monitors
+from mstrio.server.project import Project, compare_project_settings
+from mstrio.server.server import ServerSettings
 from mstrio.utils.version_helper import class_version_handler
 
 
@@ -55,7 +55,7 @@ class Environment:
         self.server_settings.fetch()
 
     def create_project(
-        self, name: str, description: Optional[str] = None, force: bool = False
+        self, name: str, description: str | None = None, force: bool = False
     ) -> Optional["Project"]:
         """Create a new project on the environment.
 
@@ -67,8 +67,8 @@ class Environment:
         return Project._create(self.connection, name, description, force)
 
     def list_projects(
-        self, to_dictionary: bool = False, limit: Optional[int] = None, **filters
-    ) -> Union[List["Project"], List[dict]]:
+        self, to_dictionary: bool = False, limit: int | None = None, **filters
+    ) -> list["Project"] | list[dict]:
         """Return list of project objects or project dicts if
         `to_dictionary=True`. Optionally filter the Projects by specifying
         the `filters` keyword arguments.
@@ -89,7 +89,7 @@ class Environment:
 
     def list_loaded_projects(
         self, to_dictionary: bool = False, **filters
-    ) -> Union[List["Project"], List[dict]]:
+    ) -> list["Project"] | list[dict]:
         """Return list of all loaded project objects or project dicts
         if `to_dictionary=True` that the user has access to. Optionally filter
         the Projects by specifying the `filters` keyword arguments.
@@ -108,9 +108,9 @@ class Environment:
 
     def list_nodes(
         self,
-        project: Optional[Union[str, "Project"]] = None,
-        node_name: Optional[str] = None,
-    ) -> List[dict]:
+        project: Union[str, "Project"] | None = None,
+        node_name: str | None = None,
+    ) -> list[dict]:
         """Return a list of I-Server nodes and their properties. Optionally
         filter by `project` or `node_name`.
 
@@ -123,7 +123,7 @@ class Environment:
         return response['nodes']
 
     def is_loaded(
-        self, project_id: Optional[str] = None, project_name: Optional[str] = None
+        self, project_id: str | None = None, project_name: str | None = None
     ) -> bool:
         """Check if project is loaded, by passing project ID or name,
         returns True or False.
@@ -155,7 +155,7 @@ class Environment:
 
     def compare_settings(
         self,
-        projects: Union[List[str], List["Project"]] = None,
+        projects: list[str] | list["Project"] = None,
         show_diff_only: bool = False,
     ) -> DataFrame:
         """Compare project' settings to the first project in the

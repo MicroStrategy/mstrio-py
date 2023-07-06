@@ -701,6 +701,68 @@
       "multiple": false
     }
   },
+  "languages.py": {
+    "project_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "language_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "language_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "language_new_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "base_lang": {
+      "type": "text",
+      "multiple": false
+    },
+    "interface_lang_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "minutes15": {
+      "type": "text",
+      "multiple": false
+    },
+    "minutes30": {
+      "type": "text",
+      "multiple": false
+    },
+    "hour": {
+      "type": "text",
+      "multiple": false
+    },
+    "day": {
+      "type": "text",
+      "multiple": false
+    },
+    "hour_of_day": {
+      "type": "text",
+      "multiple": false
+    },
+    "week": {
+      "type": "text",
+      "multiple": false
+    },
+    "month": {
+      "type": "text",
+      "multiple": false
+    },
+    "quarter": {
+      "type": "text",
+      "multiple": false
+    },
+    "year": {
+      "type": "text",
+      "multiple": false
+    }
+  },
   "metrics.py": {
     "project_name": {
       "type": "text",

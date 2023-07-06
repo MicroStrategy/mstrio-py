@@ -1,5 +1,4 @@
 import logging
-from typing import List, Optional, Union
 
 from packaging import version
 
@@ -16,7 +15,7 @@ logger = logging.getLogger(__name__)
 @method_version_handler('11.3.0100')
 def list_events(
     connection: Connection, to_dictionary: bool = False, limit: int = None, **filters
-) -> Union[List["Event"], List[dict]]:
+) -> list["Event"] | list[dict]:
     """List event objects or event dictionaries. Optionally filter list.
 
     Args:
@@ -79,8 +78,8 @@ class Event(Entity, DeleteMixin):
     def __init__(
         self,
         connection: Connection,
-        id: Optional[str] = None,
-        name: Optional[str] = None,
+        id: str | None = None,
+        name: str | None = None,
     ) -> None:
         """Initialize the Event object, populates it with I-Server data.
         Specify either `id` or `name`. When `id` is provided (not `None`),
@@ -123,7 +122,7 @@ class Event(Entity, DeleteMixin):
 
     @classmethod
     def create(
-        cls, connection: Connection, name: str, description: Optional[str] = None
+        cls, connection: Connection, name: str, description: str | None = None
     ) -> "Event":
         """Create an Event
 
@@ -143,7 +142,7 @@ class Event(Entity, DeleteMixin):
         response = events.create_event(connection, body)
         return cls.from_dict(response.json(), connection)
 
-    def alter(self, name: Optional[str] = None, description: Optional[str] = None):
+    def alter(self, name: str | None = None, description: str | None = None):
         """Alter the Event's properties
 
         Args:

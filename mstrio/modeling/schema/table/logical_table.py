@@ -1,5 +1,4 @@
 import logging
-from typing import Optional
 
 from tqdm import tqdm
 
@@ -42,14 +41,14 @@ logger = logging.getLogger(__name__)
 def list_logical_tables(
     connection: Connection,
     to_dictionary: bool = False,
-    table_type: Optional[PhysicalTableType] = None,
-    name: Optional[str] = None,
-    folder_id: Optional[str] = None,
-    folder_name: Optional[str] = None,
-    project_id: Optional[str] = None,
-    project_name: Optional[str] = None,
-    filters: Optional[dict] = None,
-    limit: Optional[int] = None,
+    table_type: PhysicalTableType | None = None,
+    name: str | None = None,
+    folder_id: str | None = None,
+    folder_name: str | None = None,
+    project_id: str | None = None,
+    project_name: str | None = None,
+    filters: dict | None = None,
+    limit: int | None = None,
 ) -> list["LogicalTable"] | list[dict]:
     """List all logical tables in a project mapped to a specified connection.
        Optionally, you can filter by physical table type.
@@ -134,12 +133,12 @@ def list_logical_tables(
 
 def _full_search_logical_tables(
     connection: Connection,
-    name: Optional[str] = None,
-    folder_id: Optional[str] = None,
-    folder_name: Optional[str] = None,
-    project_id: Optional[str] = None,
-    project_name: Optional[str] = None,
-    limit: Optional[int] = None,
+    name: str | None = None,
+    folder_id: str | None = None,
+    folder_name: str | None = None,
+    project_id: str | None = None,
+    project_name: str | None = None,
+    limit: int | None = None,
     to_dictionary: bool = False,
 ) -> list[type["LogicalTable"]] | list[dict]:
     """Searches for a logical table in a specified project. You can narrow the
@@ -229,10 +228,10 @@ def _full_search_logical_tables(
 @method_version_handler('11.3.0100')
 def list_changeset_tables(
     connection: Connection,
-    project_id: Optional[str] = None,
-    project_name: Optional[str] = None,
-    limit: Optional[int] = None,
-    changeset_id: Optional[str] = None,
+    project_id: str | None = None,
+    project_name: str | None = None,
+    limit: int | None = None,
+    changeset_id: str | None = None,
     **filters,
 ) -> list[type["LogicalTable"]]:
     # Changeset must be specified
@@ -424,10 +423,10 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
     def __init__(
         self,
         connection: Connection,
-        id: Optional[str] = None,
-        name: Optional[str] = None,
-        project_id: Optional[str] = None,
-        project_name: Optional[str] = None,
+        id: str | None = None,
+        name: str | None = None,
+        project_id: str | None = None,
+        project_name: str | None = None,
     ):
         """Initializes a LogicalTable object. You can specify either `id`
             or `name` where `id` has a priority. You must specify
@@ -559,27 +558,26 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
         cls,
         connection: "Connection",
         primary_data_source: SchemaObjectReference | dict,
-        table_name: Optional[str] = None,
-        table_description: Optional[str] = None,
-        sub_type: Optional[ObjectSubType | str] = ObjectSubType.LOGICAL_TABLE,
-        destination_folder: Optional[Folder | str] = None,
-        is_embedded: Optional[bool] = None,
-        physical_table: Optional[PhysicalTable | dict] = None,
-        physical_table_name: Optional[str] = None,
-        physical_table_namespace: Optional[str] = None,
-        physical_table_type: Optional[PhysicalTableType] = PhysicalTableType.NORMAL,
-        physical_table_prefix: Optional[str] = None,
-        columns: Optional[list[TableColumn] | list[dict]] = None,
-        sql_statement: Optional[str] = None,
-        logical_size: Optional[int] = None,
-        is_part_of_partition: Optional[bool] = None,
-        is_true_key: Optional[bool] = None,
-        enclose_sql_in_parentheses: Optional[bool] = None,
-        check_secondary_data_source_table: Optional[bool] = None,
-        column_merge_option: Optional[
-            TableColumnMergeOption
-        ] = TableColumnMergeOption.REUSE_ANY,
-        table_prefix_option: Optional[TablePrefixOption] = None,
+        table_name: str | None = None,
+        table_description: str | None = None,
+        sub_type: ObjectSubType | str | None = ObjectSubType.LOGICAL_TABLE,
+        destination_folder: Folder | str | None = None,
+        is_embedded: bool | None = None,
+        physical_table: PhysicalTable | dict | None = None,
+        physical_table_name: str | None = None,
+        physical_table_namespace: str | None = None,
+        physical_table_type: PhysicalTableType | None = PhysicalTableType.NORMAL,
+        physical_table_prefix: str | None = None,
+        columns: list[TableColumn] | list[dict] | None = None,
+        sql_statement: str | None = None,
+        logical_size: int | None = None,
+        is_part_of_partition: bool | None = None,
+        is_true_key: bool | None = None,
+        enclose_sql_in_parentheses: bool | None = None,
+        check_secondary_data_source_table: bool | None = None,
+        column_merge_option: None
+        | (TableColumnMergeOption) = TableColumnMergeOption.REUSE_ANY,
+        table_prefix_option: TablePrefixOption | None = None,
     ) -> type["LogicalTable"]:
         """Create a new table in a specific project.
 
@@ -805,22 +803,21 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
 
     def alter(
         self,
-        name: Optional[str] = None,
-        is_true_key: Optional[bool] = None,
-        logical_size: Optional[int] = None,
-        description: Optional[str] = None,
-        is_logical_size_locked: Optional[bool] = None,
-        primary_data_source: Optional[SchemaObjectReference] = None,
-        secondary_data_sources: Optional[
-            list[SchemaObjectReference] | list[dict]
-        ] = None,
-        physical_table_object_name: Optional[str] = None,
-        physical_table_name: Optional[str] = None,
-        physical_table_prefix: Optional[str] = None,
-        sql_statement: Optional[str] = None,
-        enclose_sql_in_parentheses: Optional[bool] = None,
-        columns: Optional[list[TableColumn] | list[dict]] = None,
-        folder_id: Optional[str] = None,
+        name: str | None = None,
+        is_true_key: bool | None = None,
+        logical_size: int | None = None,
+        description: str | None = None,
+        is_logical_size_locked: bool | None = None,
+        primary_data_source: SchemaObjectReference | None = None,
+        secondary_data_sources: None
+        | (list[SchemaObjectReference] | list[dict]) = None,
+        physical_table_object_name: str | None = None,
+        physical_table_name: str | None = None,
+        physical_table_prefix: str | None = None,
+        sql_statement: str | None = None,
+        enclose_sql_in_parentheses: bool | None = None,
+        columns: list[TableColumn] | list[dict] | None = None,
+        folder_id: str | None = None,
     ) -> None:  # NOSONAR
         """Alters properties specified by keyword arguments.
 

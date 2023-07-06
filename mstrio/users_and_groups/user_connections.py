@@ -1,5 +1,5 @@
 import logging
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from packaging import version
 
@@ -68,8 +68,8 @@ class UserConnections:
 
     def list_connections(
         self,
-        nodes: Optional[str | list[str]] = None,
-        limit: Optional[int] = None,
+        nodes: str | list[str] | None = None,
+        limit: int | None = None,
         **filters,
     ) -> list[dict[str, Any]]:
         """Get all active user connections. Optionally filter the connections
@@ -111,9 +111,9 @@ class UserConnections:
 
     def disconnect_users(
         self,
-        connection_ids: Optional[str | list[str]] = None,
-        users: Optional[list["User"] | list[str]] = None,
-        nodes: Optional[str | list[str]] = None,
+        connection_ids: str | list[str] | None = None,
+        users: list["User"] | list[str] | None = None,
+        nodes: str | list[str] | None = None,
         force: bool = False,
         **filters,
     ) -> list[dict] | None:

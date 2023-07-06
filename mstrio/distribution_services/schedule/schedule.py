@@ -1,7 +1,6 @@
+import logging
 from datetime import datetime, timezone
 from enum import auto
-import logging
-from typing import Optional
 
 from mstrio import config
 from mstrio.api import objects, schedules
@@ -247,7 +246,7 @@ class Schedule(Entity, DeleteMixin):
             return False
 
     @method_version_handler('11.3.0000')
-    def disable(self, stop_date: Optional[str | datetime] = None) -> bool:
+    def disable(self, stop_date: str | datetime | None = None) -> bool:
         """Disable the schedule. Optional `stop_date` sets the date when
             the schedule should be disabled.
 
@@ -324,27 +323,27 @@ class Schedule(Entity, DeleteMixin):
         name: str,
         schedule_type: ScheduleType | str,
         start_date: str | datetime,
-        description: Optional[str] = None,
-        stop_date: Optional[str | datetime] = None,
-        event_id: Optional[str] = None,
-        time: Optional[ScheduleTime] = None,
-        recurrence_pattern: Optional[ScheduleEnums.RecurrencePattern | str] = None,
-        execution_pattern: Optional[ScheduleEnums.ExecutionPattern | str] = None,
-        execution_time: Optional[str] = None,
-        start_time: Optional[str] = None,
-        stop_time: Optional[str] = None,
-        execution_repeat_interval: Optional[int] = None,
-        daily_pattern: Optional[ScheduleEnums.DailyPattern | str] = None,
-        repeat_interval: Optional[int] = None,
-        days_of_week: Optional[list[ScheduleEnums.DaysOfWeek] | list[str]] = None,
-        day: Optional[int] = None,
-        month: Optional[int] = None,
-        week_offset: Optional[ScheduleEnums.WeekOffset | str] = None,
-        day_of_week: Optional[ScheduleEnums.DaysOfWeek | str] = None,
-        weekday_off_set: Optional[str] = None,
-        days_of_month: Optional[list[str]] = None,
-        monthly_pattern: Optional[ScheduleEnums.MonthlyPattern | str] = None,
-        yearly_pattern: Optional[ScheduleEnums.YearlyPattern | str] = None,
+        description: str | None = None,
+        stop_date: str | datetime | None = None,
+        event_id: str | None = None,
+        time: ScheduleTime | None = None,
+        recurrence_pattern: ScheduleEnums.RecurrencePattern | str | None = None,
+        execution_pattern: ScheduleEnums.ExecutionPattern | str | None = None,
+        execution_time: str | None = None,
+        start_time: str | None = None,
+        stop_time: str | None = None,
+        execution_repeat_interval: int | None = None,
+        daily_pattern: ScheduleEnums.DailyPattern | str | None = None,
+        repeat_interval: int | None = None,
+        days_of_week: list[ScheduleEnums.DaysOfWeek] | list[str] | None = None,
+        day: int | None = None,
+        month: int | None = None,
+        week_offset: ScheduleEnums.WeekOffset | str | None = None,
+        day_of_week: ScheduleEnums.DaysOfWeek | str | None = None,
+        weekday_off_set: str | None = None,
+        days_of_month: list[str] | None = None,
+        monthly_pattern: ScheduleEnums.MonthlyPattern | str | None = None,
+        yearly_pattern: ScheduleEnums.YearlyPattern | str | None = None,
     ):
         """Create a Schedule using provided parameters as data.
 
@@ -462,30 +461,30 @@ class Schedule(Entity, DeleteMixin):
     @method_version_handler('11.3.0000')
     def alter(
         self,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        start_date: Optional[str | datetime] = None,
-        stop_date: Optional[str | datetime] = None,
-        event: Optional[Event] = None,
-        event_id: Optional[str] = None,
-        time: Optional[ScheduleTime] = None,
-        recurrence_pattern: Optional[ScheduleEnums.RecurrencePattern] = None,
-        execution_pattern: Optional[ScheduleEnums.ExecutionPattern] = None,
-        execution_time: Optional[str] = None,
-        start_time: Optional[str] = None,
-        stop_time: Optional[str] = None,
-        execution_repeat_interval: Optional[int] = None,
-        daily_pattern: Optional[ScheduleEnums.DailyPattern] = None,
-        repeat_interval: Optional[int] = None,
-        days_of_week: Optional[list[ScheduleEnums.DaysOfWeek]] = None,
-        day: Optional[int] = None,
-        month: Optional[int] = None,
-        week_offset: Optional[ScheduleEnums.WeekOffset] = None,
-        day_of_week: Optional[ScheduleEnums.DaysOfWeek] = None,
-        weekday_offset: Optional[str] = None,
-        days_of_month: Optional[list[str]] = None,
-        monthly_pattern: Optional[ScheduleEnums.MonthlyPattern] = None,
-        yearly_pattern: Optional[ScheduleEnums.YearlyPattern] = None,
+        name: str | None = None,
+        description: str | None = None,
+        start_date: str | datetime | None = None,
+        stop_date: str | datetime | None = None,
+        event: Event | None = None,
+        event_id: str | None = None,
+        time: ScheduleTime | None = None,
+        recurrence_pattern: ScheduleEnums.RecurrencePattern | None = None,
+        execution_pattern: ScheduleEnums.ExecutionPattern | None = None,
+        execution_time: str | None = None,
+        start_time: str | None = None,
+        stop_time: str | None = None,
+        execution_repeat_interval: int | None = None,
+        daily_pattern: ScheduleEnums.DailyPattern | None = None,
+        repeat_interval: int | None = None,
+        days_of_week: list[ScheduleEnums.DaysOfWeek] | None = None,
+        day: int | None = None,
+        month: int | None = None,
+        week_offset: ScheduleEnums.WeekOffset | None = None,
+        day_of_week: ScheduleEnums.DaysOfWeek | None = None,
+        weekday_offset: str | None = None,
+        days_of_month: list[str] | None = None,
+        monthly_pattern: ScheduleEnums.MonthlyPattern | None = None,
+        yearly_pattern: ScheduleEnums.YearlyPattern | None = None,
     ) -> None:
         """Alter Schedule properties.
 

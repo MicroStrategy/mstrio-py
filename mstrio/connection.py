@@ -1,12 +1,12 @@
+import logging
+import os
 from base64 import b64encode
 from datetime import datetime
 from getpass import getpass
-import logging
-import os
 from typing import Optional
 
-from packaging import version
 import requests
+from packaging import version
 from requests import Session
 from requests.adapters import HTTPAdapter, Retry
 from requests.cookies import RequestsCookieJar
@@ -21,8 +21,8 @@ logger = logging.getLogger(__name__)
 
 def get_connection(
     workstation_data: dict,
-    project_name: Optional[str] = None,
-    project_id: Optional[str] = None,
+    project_name: str | None = None,
+    project_id: str | None = None,
     ssl_verify: bool = False,
 ) -> Optional["Connection"]:
     """Connect to environment without providing user's credentials.
@@ -145,15 +145,15 @@ class Connection:
     def __init__(
         self,
         base_url: str,
-        username: Optional[str] = None,
-        password: Optional[str] = None,
-        project_name: Optional[str] = None,
-        project_id: Optional[str] = None,
+        username: str | None = None,
+        password: str | None = None,
+        project_name: str | None = None,
+        project_id: str | None = None,
         login_mode: int = 1,
         ssl_verify: bool = True,
-        certificate_path: Optional[str] = None,
-        proxies: Optional[dict] = None,
-        identity_token: Optional[str] = None,
+        certificate_path: str | None = None,
+        proxies: dict | None = None,
+        identity_token: str | None = None,
         verbose: bool = True,
     ):
         """Establish a connection with MicroStrategy REST API.
@@ -332,7 +332,7 @@ class Connection:
             return False
 
     def select_project(
-        self, project_id: Optional[str] = None, project_name: Optional[str] = None
+        self, project_id: str | None = None, project_name: str | None = None
     ) -> None:
         """Select project for the given connection based on project_id or
         project_name.
@@ -434,7 +434,7 @@ class Connection:
             response = self._login()
             self.token = response.headers['X-MSTR-AuthToken']
 
-        if response.ok:
+        if response and response.ok:
             self._reset_timeout()
 
     def _get_session_timeout(self):

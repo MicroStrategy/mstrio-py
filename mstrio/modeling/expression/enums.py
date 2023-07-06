@@ -1,4 +1,4 @@
-from enum import auto, Enum
+from enum import Enum, auto
 
 from mstrio.utils.enum_helper import AutoName
 

@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 from mstrio import config
 from mstrio.api import monitors
@@ -31,10 +31,10 @@ class DatabaseConnections:
 
     def list_connections(
         self,
-        nodes: Union[str, List[str]] = None,
-        limit: Optional[int] = None,
+        nodes: str | list[str] = None,
+        limit: int | None = None,
         **filters,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Get all active database connections. Optionally filter the
          connections by specifying the `filters` keyword arguments.
 
@@ -90,7 +90,7 @@ class DatabaseConnections:
         else:
             return False
 
-    def disconnect_all_databases(self, force: bool = False) -> Union[List[dict], None]:
+    def disconnect_all_databases(self, force: bool = False) -> list[dict] | None:
         """Disconnect all database connections.
 
         Args:
@@ -122,7 +122,7 @@ class DatabaseConnections:
                 )
                 for conn in connections
             ]
-            statuses: List[Dict[str, Union[str, int]]] = []
+            statuses: list[dict[str, str | int]] = []
             for f in futures:
                 response = f.result()
                 statuses.append(
@@ -134,7 +134,7 @@ class DatabaseConnections:
         return self._prepare_disconnect_by_id_message(statuses=statuses)
 
     @staticmethod
-    def _prepare_disconnect_by_id_message(statuses: List[dict]) -> List[dict]:
+    def _prepare_disconnect_by_id_message(statuses: list[dict]) -> list[dict]:
         succeeded = []
         failed = []
 

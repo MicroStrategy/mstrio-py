@@ -1,5 +1,3 @@
-from typing import Optional
-
 from mstrio.connection import Connection
 from mstrio.utils.error_handlers import ErrorHandler
 
@@ -7,7 +5,7 @@ from mstrio.utils.error_handlers import ErrorHandler
 @ErrorHandler(err_msg="Error getting Drivers.")
 def get_drivers(
     connection: Connection,
-    error_msg: Optional[str] = None,
+    error_msg: str | None = None,
 ):
     """Get information for all drivers.
 
@@ -25,7 +23,7 @@ def get_drivers(
 
 
 @ErrorHandler(err_msg='Error getting Driver with ID {id}')
-def get_driver(connection: Connection, id: str, error_msg: Optional[str] = None):
+def get_driver(connection: Connection, id: str, error_msg: str | None = None):
     """Get driver by a specific ID.
 
     Args:
@@ -46,7 +44,7 @@ def update_driver(
     connection: Connection,
     id: str,
     body: dict,
-    error_msg: Optional[str] = None,
+    error_msg: str | None = None,
 ):
     """Update a driver.
 

@@ -1,4 +1,4 @@
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from mstrio.utils.error_handlers import ErrorHandler
 
@@ -13,7 +13,7 @@ def get_contact_groups(
     connection: "Connection",
     offset: int = 0,
     limit: int = 1000,
-    error_msg: Optional[str] = None,
+    error_msg: str | None = None,
 ):
     """Get a list of all contact groups that the authenticated user has access
         to.
@@ -65,7 +65,7 @@ def get_contact_groups_async(
 
 @ErrorHandler(err_msg='Error creating Contact Group.')
 def create_contact_group(
-    connection: "Connection", body: dict, error_msg: Optional[str] = None
+    connection: "Connection", body: dict, error_msg: str | None = None
 ):
     """Create a new contact group.
 
@@ -82,9 +82,7 @@ def create_contact_group(
 
 
 @ErrorHandler(err_msg='Error getting Contact Group with ID {id}')
-def get_contact_group(
-    connection: "Connection", id: str, error_msg: Optional[str] = None
-):
+def get_contact_group(connection: "Connection", id: str, error_msg: str | None = None):
     """Get contact group by a specific id.
 
     Args:
@@ -101,7 +99,7 @@ def get_contact_group(
 
 @ErrorHandler(err_msg='Error updating Contact Group with ID {id}')
 def update_contact_group(
-    connection: "Connection", id: str, body: dict, error_msg: Optional[str] = None
+    connection: "Connection", id: str, body: dict, error_msg: str | None = None
 ):
     """Update a contact group.
 
@@ -120,7 +118,7 @@ def update_contact_group(
 
 @ErrorHandler(err_msg='Error deleting Contact Group with ID {id}')
 def delete_contact_group(
-    connection: "Connection", id: str, error_msg: Optional[str] = None
+    connection: "Connection", id: str, error_msg: str | None = None
 ):
     """Delete a contact group.
 

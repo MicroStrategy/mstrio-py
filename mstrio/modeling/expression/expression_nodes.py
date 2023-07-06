@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from enum import auto
-from typing import List, Optional, Type, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from mstrio.modeling.schema.helpers import SchemaObjectReference
 from mstrio.utils.enum_helper import AutoName
@@ -26,8 +26,8 @@ class PredicateNode(ExpressionNode):
         predicate_text: Text representation of a predicate
     """
 
-    predicate_id: Optional[str] = None
-    predicate_text: Optional[str] = None
+    predicate_id: str | None = None
+    predicate_text: str | None = None
 
     def to_dict(self, camel_case: bool = True) -> dict:
         result = {
@@ -46,7 +46,7 @@ class PredicateNode(ExpressionNode):
         source: dict,
         connection: Optional['Connection'] = None,
         to_snake_case: bool = True,
-    ) -> Type['PredicateNode']:
+    ) -> type['PredicateNode']:
         data = camel_to_snake(source) if to_snake_case else source.copy()
         # get a dict under predicate_tree attribute to unpack it
         predicate_tree = data.pop('predicate_tree')
@@ -86,7 +86,7 @@ class CustomExpressionPredicate(PredicateNode):
     }
 
     expression: Expression
-    node_property: Optional[int] = None
+    node_property: int | None = None
 
     def _get_node_data(self):
         return {
@@ -190,11 +190,11 @@ class MetricPredicate(PredicateNode):
     function: Function
     metric: SchemaObjectReference
     level_type: str
-    parameters: List[PredicateParameter] = field(default_factory=list)
-    level: Optional[List[SchemaObjectReference]] = None
-    metric_function: Optional[MetricFunction] = None
-    null_include: Optional[int] = None
-    break_by: Optional[List[SchemaObjectReference]] = None
+    parameters: list[PredicateParameter] = field(default_factory=list)
+    level: list[SchemaObjectReference] | None = None
+    metric_function: MetricFunction | None = None
+    null_include: int | None = None
+    break_by: list[SchemaObjectReference] | None = None
     is_independent: IsIndependent = IsIndependent.YES
 
     def _get_node_data(self):
@@ -299,10 +299,10 @@ class SetFromRelationshipPredicate(PredicateNode):
         'children': [ExpressionNode.dispatch],
     }
 
-    level: List[SchemaObjectReference]
-    guide: Optional[SchemaObjectReference] = None
+    level: list[SchemaObjectReference]
+    guide: SchemaObjectReference | None = None
     is_independent: IsIndependent = IsIndependent.YES
-    children: Optional[List[ExpressionNode]] = None
+    children: list[ExpressionNode] | None = None
 
     def _get_node_data(self):
         result = {
@@ -349,8 +349,8 @@ class JointElementListPredicate(PredicateNode):
         'tuples': [[AttributeElement]],
     }
 
-    level: List[SchemaObjectReference]
-    tuples: List[List[AttributeElement]]
+    level: list[SchemaObjectReference]
+    tuples: list[list[AttributeElement]]
 
     def _get_node_data(self):
         return {
@@ -410,9 +410,9 @@ class ElementListPredicate(PredicateNode):
         'function': ElementListFunction,
     }
 
-    attribute: Optional[SchemaObjectReference] = None
-    elements: Optional[List[AttributeElement]] = None
-    elements_prompt: Optional[SchemaObjectReference] = None
+    attribute: SchemaObjectReference | None = None
+    elements: list[AttributeElement] | None = None
+    elements_prompt: SchemaObjectReference | None = None
     function: ElementListFunction = ElementListFunction.IN
 
     def _get_node_data(self):
@@ -424,7 +424,7 @@ class ElementListPredicate(PredicateNode):
                 else None,
                 'elements_prompt': self.elements_prompt.to_dict()
                 if self.elements_prompt
-                else None,  # noqa
+                else None,
                 'function': self.function.value,
             }
         }
@@ -506,8 +506,8 @@ class AttributeFormPredicate(PredicateNode):
     attribute: SchemaObjectReference
     form: SchemaObjectReference
     # in swagger is required, but can be empty list
-    parameters: List[PredicateParameter] = field(default_factory=list)
-    data_locale: Optional[str] = None
+    parameters: list[PredicateParameter] = field(default_factory=list)
+    data_locale: str | None = None
 
     def _get_node_data(self):
         result = {
@@ -713,14 +713,14 @@ class Operator(ExpressionNode):
         'custom_function': SchemaObjectReference,
     }
 
-    children: Optional[List[ExpressionNode]] = None
-    function: Optional[Function] = None
-    function_properties: Optional[List[FunctionProperty]] = None
-    function_prompt: Optional[SchemaObjectReference] = None
-    level_type: Optional[LevelType] = None
-    level: Optional[List[SchemaObjectReference]] = None
-    node_property: Optional[int] = None
-    custom_function: Optional[SchemaObjectReference] = None
+    children: list[ExpressionNode] | None = None
+    function: Function | None = None
+    function_properties: list[FunctionProperty] | None = None
+    function_prompt: SchemaObjectReference | None = None
+    level_type: LevelType | None = None
+    level: list[SchemaObjectReference] | None = None
+    node_property: int | None = None
+    custom_function: SchemaObjectReference | None = None
 
 
 @dataclass(kw_only=True)
@@ -784,9 +784,9 @@ class ObjectReference(ExpressionNode):
         'substitute_function_type': SubstituteFunctionType,
     }
 
-    target: Optional[SchemaObjectReference] = None
+    target: SchemaObjectReference | None = None
     is_independent: IsIndependent = IsIndependent.YES
-    substitute_function_type: Optional[SubstituteFunctionType] = None
+    substitute_function_type: SubstituteFunctionType | None = None
 
 
 @dataclass(kw_only=True)
@@ -812,7 +812,7 @@ class ColumnReference(ExpressionNode):
 
     _TYPE = NodeType.COLUMN_REFERENCE
     column_name: str
-    object_id: Optional[str] = None
+    object_id: str | None = None
 
 
 @dataclass(kw_only=True)
@@ -837,8 +837,8 @@ class Constant(ExpressionNode):
         'prompt': SchemaObjectReference,
     }
 
-    variant: Optional[Variant] = None
-    prompt: Optional[SchemaObjectReference] = None
+    variant: Variant | None = None
+    prompt: SchemaObjectReference | None = None
 
 
 @dataclass(kw_only=True)
@@ -898,7 +898,7 @@ class ExpressionFormShortcut(ExpressionNode):
 
     attribute: SchemaObjectReference
     form: SchemaObjectReference
-    data_locale: Optional[str] = None
+    data_locale: str | None = None
 
 
 @dataclass(kw_only=True)
@@ -968,10 +968,10 @@ class ExpressionRelationship(ExpressionNode):
         'children': [ExpressionNode.dispatch],
     }
 
-    level: List[SchemaObjectReference]
-    guide: Optional[SchemaObjectReference] = None
+    level: list[SchemaObjectReference]
+    guide: SchemaObjectReference | None = None
     is_independent: IsIndependent = IsIndependent.YES
-    children: Optional[List[ExpressionNode]] = None
+    children: list[ExpressionNode] | None = None
 
     def to_dict(self, camel_case: bool = True) -> dict:
         data = super().to_dict()
@@ -1016,7 +1016,7 @@ class BandingPredicate(PredicateNode):
         'metric': SchemaObjectReference,
         'band_metric_function': BandMetricFunction,
     }
-    level: List[SchemaObjectReference]
+    level: list[SchemaObjectReference]
     metric: SchemaObjectReference
     band_metric_function: BandMetricFunction
 
@@ -1055,7 +1055,7 @@ class BandingSizePredicate(BandingPredicate):
     start: Variant
     stop: Variant
     size: Variant
-    band_names: Optional[List[str]] = None
+    band_names: list[str] | None = None
 
     def _get_node_data(self):
         result = self._get_banding_common_data()
@@ -1096,7 +1096,7 @@ class BandingCountPredicate(BandingPredicate):
     start: Variant
     stop: Variant
     count: Variant
-    band_names: Optional[List[str]] = None
+    band_names: list[str] | None = None
 
     def _get_node_data(self):
         result = self._get_banding_common_data()
@@ -1125,8 +1125,8 @@ class BandingPointsPredicate(BandingPredicate):
     """
 
     _TYPE = NodeType.PREDICATE_BANDING_POINTS
-    points: List[float]
-    band_names: Optional[List[str]] = None
+    points: list[float]
+    band_names: list[str] | None = None
 
     def _get_node_data(self):
         result = self._get_banding_common_data()

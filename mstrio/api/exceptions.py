@@ -1,5 +1,3 @@
-from typing import Dict, List
-
 from mstrio.utils.dict_filter import filter_list_of_dicts
 
 
@@ -12,7 +10,7 @@ class MstrException(Exception):
         ticket_id: MSTR Ticket ID
     """
 
-    def __init__(self, err_data: Dict):
+    def __init__(self, err_data: dict):
         self.code = err_data.get("code")
         self.message = err_data.get("message")
         self.ticket_id = err_data.get("ticketId")
@@ -47,7 +45,7 @@ class Success(Exception):
         succeeded: list of succeeded operations dict elements
     """
 
-    def __init__(self, data: List[dict]):
+    def __init__(self, data: list[dict]):
         assert isinstance(data, list)
 
         self.succeeded = data
@@ -68,7 +66,7 @@ class PartialSuccess(Exception):
         failed: list of failed operations dict elements
     """
 
-    def __init__(self, data: List[dict]):
+    def __init__(self, data: list[dict]):
         assert isinstance(data, list)
 
         self.succeeded = filter_list_of_dicts(data, status=[200, 204])

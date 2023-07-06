@@ -45,8 +45,8 @@ class AttributeJoinType(Dictable):
     no_participation_in_preserve_row: bool
     resolved_location: ResolvedLocation = ResolvedLocation.DEFAULT
     is_inherited: bool = True
-    next_no_participation_in_preserve_row: Optional[bool] = None
-    next_resolved_location: Optional[ResolvedLocation] = None
+    next_no_participation_in_preserve_row: bool | None = None
+    next_resolved_location: ResolvedLocation | None = None
 
 
 class JoinType(AutoName):
@@ -88,8 +88,8 @@ class MetricJoinType(Dictable):
     join_type: JoinType
     resolved_location: ResolvedLocation = ResolvedLocation.DEFAULT
     is_inherited: bool = True
-    next_join_type: Optional[JoinType] = None
-    next_resolved_location: Optional[ResolvedLocation] = None
+    next_join_type: JoinType | None = None
+    next_resolved_location: ResolvedLocation | None = None
 
 
 @dataclass
@@ -173,9 +173,7 @@ class TemplateUnit(Dictable):
     _TYPE = None
 
     @staticmethod
-    def dispatch(
-        source, connection: Optional[Connection] = None
-    ) -> type['TemplateUnit']:
+    def dispatch(source, connection: Connection | None = None) -> type['TemplateUnit']:
         data = source.copy()
         unit_type = TemplateUnitType(data.pop('type'))
 
@@ -207,7 +205,7 @@ class AttributeFormReference(Dictable):
     """
 
     id: str
-    name: Optional[str] = None
+    name: str | None = None
 
 
 @dataclass
@@ -228,9 +226,9 @@ class AttributeTemplateUnit(TemplateUnit):
     }
 
     id: str
-    name: Optional[str] = None
-    alias: Optional[str] = None
-    forms: Optional[list[AttributeFormReference]] = None
+    name: str | None = None
+    alias: str | None = None
+    forms: list[AttributeFormReference] | None = None
 
 
 @dataclass
@@ -246,8 +244,8 @@ class MetricElement(Dictable):
     _TYPE = ObjectSubType.METRIC
 
     id: str
-    name: Optional[str] = None
-    alias: Optional[str] = None
+    name: str | None = None
+    alias: str | None = None
 
     def to_dict(self, camel_case: bool = True) -> dict:
         return {
@@ -332,7 +330,7 @@ class DataLanguages(Dictable):
     }
 
     data_language_type: DataLanguageType = DataLanguageType.PROJECT_DEFAULT
-    selected_languages: Optional[list[str]] = field(default_factory=list)
+    selected_languages: list[str] | None = field(default_factory=list)
 
 
 @dataclass
@@ -347,8 +345,8 @@ class DataPartition(Dictable):
             whether to fetch data in parallel, default False.
     """
 
-    partition_attribute: Optional[SchemaObjectReference] = None
-    number_of_partitions: Optional[int] = None
+    partition_attribute: SchemaObjectReference | None = None
+    number_of_partitions: int | None = None
     fetch_data_slices_in_parallel: bool = False
 
     @classmethod
@@ -419,8 +417,8 @@ class TimeBasedSettings(Dictable):
             default True.
     """
 
-    timezone: Optional[SchemaObjectReference] = None
-    calendar: Optional[SchemaObjectReference] = None
+    timezone: SchemaObjectReference | None = None
+    calendar: SchemaObjectReference | None = None
     enable_timezone_and_calendar_reporting: bool = True
 
     @classmethod
