@@ -47,7 +47,7 @@ logger_stream_handler = logging.StreamHandler(stream=sys.stdout)
 # warns issued by the warnings module will be redirected to the logging.warning
 logging.captureWarnings(True)
 
-logger = logging.getLogger()
+logger = logging.getLogger("mstrio")
 warnings_logger = logging.getLogger("py.warnings")
 
 logger.addHandler(logger_stream_handler)
