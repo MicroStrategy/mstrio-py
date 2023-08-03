@@ -1,3 +1,4 @@
+import contextlib
 import logging
 from collections.abc import Callable
 from typing import Any
@@ -119,15 +120,11 @@ class Locale(Entity):
 
     @staticmethod
     def _get(connection: Connection, query: str) -> type['Locale']:
-        try:
+        with contextlib.suppress(ValueError):
             return Locale._get_by_id(id=query, connection=connection)
-        except ValueError:
-            pass
 
-        try:
+        with contextlib.suppress(ValueError):
             return Locale._get_by_name(name=query, connection=connection)
-        except ValueError:
-            pass
 
         try:
             return Locale._get_by_abbreviation(

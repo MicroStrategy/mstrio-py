@@ -96,7 +96,7 @@ class Shortcut(Entity, CopyMixin, MoveMixin):
                 connection=connection,
                 project_id=project_id,
                 project_name=project_name,
-                with_fallback=False if project_name else True,
+                with_fallback=not project_name,
             )
             super().__init__(
                 connection=connection,
@@ -224,7 +224,7 @@ def get_shortcuts(
         connection=connection,
         project_id=project_id,
         project_name=project_name,
-        with_fallback=False if project_name else True,
+        with_fallback=not project_name,
     )
 
     shortcuts = fetch_objects(

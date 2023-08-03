@@ -11,13 +11,13 @@ from requests.exceptions import HTTPError
 from mstrio import config
 from mstrio.access_and_security.privilege_mode import PrivilegeMode
 from mstrio.access_and_security.security_role import SecurityRole
-from mstrio.api import users
 from mstrio.connection import Connection
 from mstrio.users_and_groups.user_connections import UserConnections
 from mstrio.utils import helper, time_helper
 from mstrio.utils.acl import TrusteeACLMixin
 from mstrio.utils.entity import DeleteMixin, Entity, ObjectTypes
 from mstrio.utils.helper import Dictable
+from mstrio.utils.response_processors import users
 from mstrio.utils.version_helper import method_version_handler
 
 if TYPE_CHECKING:
@@ -157,10 +157,10 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
             'acl',
             'trust_id',
             'initials',
-        ): users.get_user_info,
+        ): users.get,
         'addresses': users.get_addresses,
-        'security_roles': users.get_user_security_roles,
-        'privileges': users.get_user_privileges,
+        'security_roles': users.get_security_roles,
+        'privileges': users.get_privileges,
     }
     _API_PATCH: dict = {
         (
@@ -182,7 +182,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
             'memberships',
             'addresses',
             'security_roles',
-        ): (users.update_user_info, 'patch')
+        ): (users.update, 'patch')
     }
     _FROM_DICT_MAP = {
         **Entity._FROM_DICT_MAP,
@@ -320,7 +320,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
             "memberships": memberships,
         }
         body = helper.delete_none_values(body, recursion=True)
-        response = users.create_user(connection, body, username).json()
+        response = users.create(connection, body, username)
         if config.verbose:
             logger.info(
                 f"Successfully created user named: '{response.get('username')}' "
@@ -360,13 +360,10 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
         **filters,
     ) -> list["User"] | list[dict]:
         msg = "Error getting information for a set of users."
-        objects = helper.fetch_objects_async(
-            connection,
-            users.get_users_info,
-            users.get_users_info_async,
+        objects = users.get_all(
+            connection=connection,
             limit=limit,
-            chunk_size=1000,
-            error_msg=msg,
+            msg=msg,
             name_begins=name_begins,
             abbreviation_begins=abbreviation_begins,
             filters=filters,
@@ -441,30 +438,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
 
         self._alter_properties(**properties)
 
-    def add_address(
-        self,
-        name: str | None = None,
-        address: str | None = None,
-        default: bool = True,
-    ) -> None:
-        """Add new address to the user object.
-
-        Args:
-            name: User-specified name for the address
-            address: The actual value of the address i.e. email address
-                associated with this address name/id
-            default: Specifies whether this address is the default address
-                (change isDefault parameter). Default value is set to True.
-        """
-        helper.validate_param_value(
-            'address',
-            address,
-            str,
-            regex=r"[^@]+@[^@]+\.[^@]+",
-            valid_example="name@mail.com",
-        )
-        helper.validate_param_value('name', name, str)
-        helper.validate_param_value('default', default, bool)
+    def _create_address_v1(self, name, address, default):
         body = {
             "name": name,
             "deliveryMode": "EMAIL",
@@ -472,11 +446,72 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
             "value": address,
             "default": default,
         }
-        response = users.create_address(self.connection, self.id, body)
-        if response.ok:
+        users.create_address(self.connection, self.id, body)
+        response = users.get_addresses(self.connection, self.id)
+        return response
+
+    def _create_address_v2(self, name, address, default, delivery_type, device_id):
+        if delivery_type and not device_id and config.verbose:
+            msg = (
+                f"Could not add address for user '{self.name}'. When you "
+                "specify 'delivery_type', you need to add 'device_id' as "
+                "well."
+            )
+            helper.exception_handler(msg, TypeError)
+        if device_id and not delivery_type and config.verbose:
+            msg = (
+                f"Could not add address for user '{self.name}'. When you "
+                "specify 'device_id', you need to add 'delivery_type' as "
+                "well."
+            )
+            helper.exception_handler(msg, TypeError)
+
+        body = {
+            "name": name,
+            "physicalAddress": address,
+            "deliveryType": delivery_type,
+            "deviceId": device_id,
+            "idDefault": default,
+        }
+        response = users.create_address_v2(self.connection, self.id, body)
+        return response
+
+    def add_address(
+        self,
+        name: str | None = None,
+        address: str | None = None,
+        default: bool = True,
+        delivery_type: str | None = None,
+        device_id: str | None = None,
+    ) -> None:
+        """Add new address to the user object.
+
+        Args:
+            name (str): User-specified name for the address
+            address (str): The actual value of the address i.e. email address
+                associated with this address name/id
+            default (bool, optional): Specifies whether this address is the
+                default address (change isDefault parameter). Default value is
+                set to True.
+            delivery_type (str, optional): Delivery type
+            device_id (str, optional): Device ID
+        """
+        if delivery_type or device_id:
+            response = self._create_address_v2(
+                name=name,
+                address=address,
+                default=default,
+                delivery_type=delivery_type,
+                device_id=device_id,
+            )
+        else:
+            response = self._create_address_v1(
+                name=name, address=address, default=default
+            )
+        if response:
             if config.verbose:
                 logger.info(f"Added address '{address}' for user '{self.name}'")
-            setattr(self, "_addresses", response.json().get('addresses'))
+            self._addresses = response.get('addresses')
 
     def update_address(
         self,
@@ -484,35 +519,38 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
         name: str | None = None,
         address: str | None = None,
         default: bool | None = None,
+        delivery_type: str | None = None,
+        device_id: str | None = None,
     ) -> None:
         """Update existing address. The address ID has to be specified
         as the name is not unique.
 
         Args:
-            id: ID of the address
-            name: New user-specified name for the address
-            address: New address value
-            default: Whether the address should be (un)marked as default
+            id (str): ID of the address
+            name (str, optional): New user-specified name for the address
+            address (str, optional): New address value
+            default (bool, optional): Whether the address should be (un)marked
+                as default
+            delivery_type (str, optional): Delivery type
+            device_id (str, optional): Device ID
         """
-        if id is None:
+        if not id:
             helper.exception_handler("Please specify 'id' parameter in the method.")
-        body = {}
-        if name is not None:
-            helper.validate_param_value('name', name, str)
-            body["name"] = name
-        if address is not None:
-            helper.validate_param_value(
-                'address',
-                address,
-                str,
-                regex=r"[^@]+@[^@]+\.[^@]+",
-                valid_example="name@mail.com",
-            )
-            body["value"] = address
-        if default is not None:
-            helper.validate_param_value('default', default, bool)
-        response = users.update_address(self.connection, self.id, id, body)
-        if response.ok:
+
+        address_for_update = helper.filter_list_of_dicts(self.addresses, id=id)[0]
+
+        body = {
+            'name': name if name else address_for_update['name'],
+            'physicalAddress': address
+            if address
+            else address_for_update['physicalAddress'],
+            'deliveryType': delivery_type
+            if delivery_type
+            else address_for_update['deliveryType'],
+            'deviceId': device_id if device_id else address_for_update['deviceId'],
+            'isDefault': default if default else address_for_update['isDefault'],
+        }
+        if users.update_address(self.connection, self.id, id, body):
             if config.verbose:
                 logger.info(f"Updated address with ID '{id}' for user '{self.name}'")
             self.fetch("addresses")
@@ -556,13 +594,13 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
             response = users.delete_address(
                 self.connection, id=self.id, address_id=addr['id']
             )
-            if response.ok:
+            if response:
                 if config.verbose:
                     logger.info(
                         f"Removed address '{addr['name']}' with id {addr['id']} "
                         f"from user '{self.name}'"
                     )
-                setattr(self, "_addresses", new_addresses)
+                self._addresses = new_addresses
 
     def add_to_user_groups(
         self, user_groups: "str | UserGroup | list[str | UserGroup]"
@@ -598,7 +636,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
 
     def remove_from_all_user_groups(self) -> None:
         """Removes this User from all user groups."""
-        memberships = getattr(self, 'memberships')
+        memberships = self.memberships
         existing_ids = [obj.get('id') for obj in memberships]
         self.remove_from_user_groups(user_groups=existing_ids)
 
@@ -671,7 +709,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
         """
         from mstrio.modeling.security_filter import SecurityFilter
 
-        objects_ = users.get_security_filters(self.connection, self.id, projects).json()
+        objects_ = users.get_security_filters(self.connection, self.id, projects)
         projects_ = objects_.get("projects")
 
         objects_ = {
@@ -860,7 +898,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin):
                 )
                 helper.exception_handler(msg, ValueError)
 
-        privileges = list()
+        privileges = []
         if mode == PrivilegeMode.ALL:
             privileges = self.privileges
         elif mode == PrivilegeMode.INHERITED:

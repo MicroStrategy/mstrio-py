@@ -28,6 +28,7 @@ from mstrio.modeling.expression import Expression, Token
 # Define variables which can be later used in a script
 PROJECT_NAME = $project_name  # Insert name of project here
 FOLDER_ID = $folder_id  # Insert folder ID here
+HIDDEN = $hidden  # Insert value for hidden attribute here
 
 conn = get_connection(workstationData, PROJECT_NAME)
 
@@ -37,7 +38,7 @@ METRIC_DATA = {
     'name': '<metric_name>',
     'sub_type': ObjectSubType.METRIC,
     'destination_folder': FOLDER_ID,
-    "expression": Expression(
+    'expression': Expression(
         text='Sum(Cost)',
         tokens=[
             Token(
@@ -55,7 +56,7 @@ METRIC_DATA = {
             Token(value='', type=Token.Type.END_OF_TEXT)
         ]
     ),
-    "dimensionality": Dimensionality(
+    'dimensionality': Dimensionality(
         dimensionality_units=[
             DimensionalityUnit(
                 dimensionality_unit_type=DimensionalityUnit.DimensionalityUnitType.ATTRIBUTE,
@@ -83,7 +84,7 @@ METRIC_DATA = {
             )
         ]
     ),
-    "conditionality": Metric.Conditionality(
+    'conditionality': Metric.Conditionality(
         filter=SchemaObjectReference(
             sub_type=ObjectSubType.FILTER, name='<filter_name>', object_id='<object_id>'
         ),
@@ -91,25 +92,26 @@ METRIC_DATA = {
         remove_elements=True
     ),
     'metric_format_type': Metric.MetricFormatType.HTML_TAG,
-    "metric_subtotals": [
+    'metric_subtotals': [
         Metric.MetricSubtotal(
             SchemaObjectReference(ObjectSubType.METRIC_SUBTOTAL, object_id='<object_id>')
         )
     ],
-    "aggregate_from_base": False,
-    "formula_join_type": Metric.FormulaJoinType.INNER,
-    "smart_total": Metric.SmartTotal.DECOMPOSABLE_FALSE,
-    "data_type": DataType(DataType.Type.INTEGER, 10, 0),
-    "format": MetricFormat(
+    'aggregate_from_base': False,
+    'formula_join_type': Metric.FormulaJoinType.INNER,
+    'smart_total': Metric.SmartTotal.DECOMPOSABLE_FALSE,
+    'data_type': DataType(DataType.Type.INTEGER, 10, 0),
+    'format': MetricFormat(
         values=[FormatProperty(type=FormatProperty.FormatType.NUMBER_CATEGORY, value=0)],
         header=[
             FormatProperty(type=FormatProperty.FormatType.NUMBER_CATEGORY, value=4),
             FormatProperty(type=FormatProperty.FormatType.NUMBER_DECIMAL_PLACES, value=1),
         ],
     ),
-    "subtotal_from_base": False,
-    "column_name_alias": "<column_name_alias>",
-    "thresholds": None
+    'subtotal_from_base': False,
+    'column_name_alias': '<column_name_alias>',
+    'thresholds': None,
+    'hidden': HIDDEN,
 }
 
 # Metric management

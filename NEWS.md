@@ -1,5 +1,29 @@
 # Changelog
 
+## 11.3.10.103 - 2023/08/04
+
+### New features
+- added `delete()` method to `Project` class to allow deleting projects
+- added parameter `hidden` to `create` methods of `Attribute` and `Metric` classes
+
+### Minor changes
+- rename `ObjectTypes.NONE` to `ObjectTypes.NOT_SUPPORTED` in `mstrio.types` module
+
+### Bug fixes
+- fixed `to_dataframe` method of `OlapCube` class to return dataframe containing
+  not only default attribute forms (The following types of Intelligent Cube are not
+  supported: MDX, Query Builder, Freefrom SQL, Freeform XQuery, and Data Import.)
+- add printing info message to `load`, `unload` and `delete` methods of `ContentCache`
+  class indicating that operation could not be performed because cache was deleted,
+  in that case execution of `load` method will be stopped by raising error
+- added support for `Date` type to `SuperCube` class
+- updated `User.add_address` and `User.update_address` methods to allow more
+  address customizations
+
+### Deprecated
+- `mstrio.api.exceptions` and `mstrio.utils.exceptions` modules are superseded by
+  `mstrio.helpers`, and will be removed in the future
+
 ## 11.3.10.102 - 2023/07/07
 
 ### Major changes

@@ -1,6 +1,7 @@
 import json
 
 from mstrio.connection import Connection
+from mstrio.helpers import IServerError
 from mstrio.utils.api_helpers import (
     FuturesSessionWithRenewal,
     changeset_manager,
@@ -14,7 +15,7 @@ from mstrio.utils.datasources import (
     alter_patch_req_body,
 )
 from mstrio.utils.error_handlers import ErrorHandler
-from mstrio.utils.helper import IServerError, exception_handler, response_handler
+from mstrio.utils.helper import exception_handler, response_handler
 
 
 @ErrorHandler(err_msg='Error getting available DBMSs.')

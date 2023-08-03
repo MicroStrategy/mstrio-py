@@ -1,7 +1,6 @@
 from collections.abc import Callable
 
 from mstrio.api import monitors
-from mstrio.server.node import Node
 from mstrio.utils.helper import _prepare_objects, auto_match_args, response_handler
 from mstrio.utils.sessions import FuturesSessionWithRenewal
 
@@ -23,6 +22,8 @@ def all_nodes_async(
         all_nodes = nodes_response['nodes']
         node_names = [node['name'] for node in all_nodes if node['status'] == 'running']
     else:
+        from mstrio.server.node import Node
+
         node = node.name if isinstance(node, Node) else node
         if isinstance(node, str):
             node_names = [node]

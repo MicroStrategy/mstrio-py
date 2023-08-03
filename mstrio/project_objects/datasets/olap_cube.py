@@ -12,7 +12,7 @@ from mstrio.modeling import (
     SchemaObjectReference,
 )
 from mstrio.object_management import SearchPattern, full_search
-from mstrio.types import ObjectSubTypes, ObjectTypes
+from mstrio.types import ExtendedType, ObjectSubTypes, ObjectTypes
 from mstrio.utils.enum_helper import get_enum_val
 from mstrio.utils.helper import (
     deprecation_warning,
@@ -88,7 +88,7 @@ def list_olap_cubes(
         connection=connection,
         project_id=project_id,
         project_name=project_name,
-        with_fallback=False if project_name else True,
+        with_fallback=not project_name,
     )
 
     objects_ = full_search(
@@ -569,10 +569,7 @@ class OlapCube(ModelVldbMixin, _Cube):
     def __check_objects(objects_: list[dict], obj_name: str) -> bool:
         """Check objects (attribute or metrics) before creation or update of an
         OLAP Cube."""
-        for obj in objects_:
-            if not OlapCube.__check_object(obj, obj_name):
-                return False
-        return True
+        return all(OlapCube.__check_object(obj, obj_name) for obj in objects_)
 
     @staticmethod
     def __check_object(object_: dict, obj_name: str) -> bool:
@@ -596,7 +593,7 @@ class OlapCube(ModelVldbMixin, _Cube):
             raise ValueError(msg)
         return True
 
-    def update(self, attributes: list[dict] = [], metrics: list[dict] = []) -> bool:
+    def update(self, attributes=None, metrics=None) -> bool:
         """Update an OLAP Cube. When Cube is unpublished, then it is possible to
          add or remove attributes and metrics to/from its definition and
          rearrange existing one. When cube is published it is possible only to
@@ -618,6 +615,9 @@ class OlapCube(ModelVldbMixin, _Cube):
             `requests.exceptions.HTTPError` when response returned from request
             to I-Server to update new OLAP Cube was not ok.
         """
+
+        metrics = metrics or []
+        attributes = attributes or []
 
         deprecation_warning(
             deprecated="'update' method",
@@ -969,3 +969,29 @@ class OlapCube(ModelVldbMixin, _Cube):
         self._metrics = [] if not metrics else metrics[0]
         self._attr_elements = None
         self.__filter = None
+        self.instance_id = None
+
+    def _prepare_instance_body(self) -> dict:
+        body = self._instance_config._request_body()
+
+        if self.ext_type in [ExtendedType.RELATIONAL]:
+            attributes = {
+                elem.id: elem.forms
+                for elem in [
+                    *self.template.rows,
+                    *self.template.columns,
+                    *self.template.page_by,
+                ]
+                if isinstance(elem, AttributeTemplateUnit)
+            }
+            for attr in body['requestedObjects']['attributes']:
+                attr_forms = attributes[attr['id']]
+                if isinstance(attr_forms, list):
+                    for form in attr_forms:
+                        attr['forms'].append(
+                            {
+                                'id': form.id,
+                                'name': form.name,
+                            }
+                        )
+        return body

@@ -1,6 +1,4 @@
-import warnings
-
-import mstrio.utils.helper as helper
+from mstrio.utils import helper
 
 
 class SettingValueFactory:
@@ -74,7 +72,7 @@ class EnumSetting(SettingValue):
     def __init__(self, config: dict):
         super().__init__(config)
         config_name = config.get('name')
-        if config_name in self._DYNAMICALLY_ADDED_OPTIONS:
+        if config_name in self._DYNAMICALLY_ADDED_OPTIONS:  # noqa: SIM401
             self.type = self._DYNAMICALLY_ADDED_OPTIONS[config_name]
         else:
             self.type = list if self.multi_select else type(self.options[0]['value'])
@@ -211,7 +209,7 @@ class DeprecatedSetting:
         msg = (
             f"Setting '{self.name}' with value '{value}' is deprecated and is read-only"
         )
-        warnings.warn(msg, DeprecationWarning)
+        helper.exception_handler(msg=msg, exception_type=DeprecationWarning)
         return True
 
     def __repr__(self):

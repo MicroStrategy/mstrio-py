@@ -621,14 +621,14 @@ class Schedule(Entity, DeleteMixin):
         # from subscription will no longer delete subscription,
         # move 'force' param to method definition
         force = False
-        self._delete_confirm_msg = (
+        self._DELETE_CONFIRM_MSG = (
             "This schedule may be part of a subscription. "
             "Deleting such a schedule will remove the subscription as well. "
             "This action cannot be undone. "
             f"Are you sure you want to delete the schedule '{self.name}'"
             f" with ID: {self.id}?[Y/N]: "
         )
-        self._delete_success_msg = f"Deleted schedule '{self.name}' with ID: {self.id}."
+        self._DELETE_SUCCESS_MSG = f"Deleted schedule '{self.name}' with ID: {self.id}."
 
         return super().delete(force=force)
 

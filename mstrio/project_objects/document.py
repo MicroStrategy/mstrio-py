@@ -7,6 +7,7 @@ from mstrio.api import documents, library, objects
 from mstrio.api.schedules import get_contents_schedule
 from mstrio.connection import Connection
 from mstrio.distribution_services.schedule import Schedule
+from mstrio.helpers import IServerError
 from mstrio.object_management import Folder, SearchPattern, search_operations
 from mstrio.project_objects import OlapCube, SuperCube
 from mstrio.server.environment import Environment
@@ -24,11 +25,10 @@ from mstrio.utils.entity import (
     VldbMixin,
 )
 from mstrio.utils.helper import (
-    IServerError,
     filter_params_for_func,
+    find_object_with_name,
     get_valid_project_id,
     is_document,
-    find_object_with_name,
 )
 from mstrio.utils.version_helper import method_version_handler
 
@@ -276,12 +276,12 @@ class Document(Entity, VldbMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCach
 
         if recipients is None:
             recipients = [self.connection.user_id]
-        elif all([isinstance(el, User) for el in recipients]):
+        elif all(isinstance(el, User) for el in recipients):
             recipients = [recipient.id for recipient in recipients]
-        elif all([isinstance(el, UserGroup) for el in recipients]):
+        elif all(isinstance(el, UserGroup) for el in recipients):
             users = [user for group in recipients for user in group.members]
             recipients = [user["id"] for user in users]
-        elif any([not isinstance(el, str) for el in recipients]):
+        elif any(not isinstance(el, str) for el in recipients):
             raise ValueError(
                 'Please provide either list of User, UserGroup or str elements.'
             )
@@ -308,12 +308,12 @@ class Document(Entity, VldbMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCach
         else:
             if not isinstance(recipients, list):
                 recipients = [recipients]
-            if all([isinstance(el, User) for el in recipients]):
+            if all(isinstance(el, User) for el in recipients):
                 recipients = [recipient.id for recipient in recipients]
-            elif all([isinstance(el, UserGroup) for el in recipients]):
+            elif all(isinstance(el, UserGroup) for el in recipients):
                 users = [user for group in recipients for user in group.members]
                 recipients = [user["id"] for user in users]
-            elif any([not isinstance(el, str) for el in recipients]):
+            elif any(not isinstance(el, str) for el in recipients):
                 raise ValueError(
                     'Please provide either list User and UserGroup elements or str '
                     'elements.'
@@ -387,7 +387,7 @@ class Document(Entity, VldbMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCach
             connection=connection,
             project_id=project_id,
             project_name=project_name,
-            with_fallback=False if project_name else True,
+            with_fallback=not project_name,
         )
 
         objects = search_operations.full_search(

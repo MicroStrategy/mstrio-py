@@ -3,7 +3,6 @@ import os
 from base64 import b64encode
 from datetime import datetime
 from getpass import getpass
-from typing import Optional
 
 import requests
 from packaging import version
@@ -13,7 +12,8 @@ from requests.cookies import RequestsCookieJar
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 
 from mstrio import config
-from mstrio.api import authentication, exceptions, hooks, misc, projects
+from mstrio.api import authentication, hooks, misc, projects
+from mstrio.helpers import IServerException, VersionException
 from mstrio.utils import helper, sessions
 
 logger = logging.getLogger(__name__)
@@ -24,7 +24,7 @@ def get_connection(
     project_name: str | None = None,
     project_id: str | None = None,
     ssl_verify: bool = False,
-) -> Optional["Connection"]:
+) -> 'Connection | None':
     """Connect to environment without providing user's credentials.
 
     It is possible to provide `project_id` or `project_name` to select
@@ -36,9 +36,9 @@ def get_connection(
 
     Note:
         `ssl_verify` is set to False by default just for the `get_connection`
-         function as it is designed for usage inside Workstation.
-         When `ssl_verify` is set to False, warning about missing certificate
-         verification (InsecureRequestWarning) is disabled.
+        function as it is designed for usage inside Workstation.
+        When `ssl_verify` is set to False, warning about missing certificate
+        verification (InsecureRequestWarning) is disabled.
 
     Args:
         workstation_data (object): object which is stored in a 'workstationData'
@@ -59,7 +59,7 @@ def get_connection(
     try:
         logger.info('Creating connection from Workstation Data object...')
         # get base url from Workstation Data object
-        base_url = workstation_data['defaultEnvironment']['url']
+        base_url = helper.url_check(workstation_data['defaultEnvironment']['url'])
         # get headers from Workstation Data object
         headers = workstation_data['defaultEnvironment']['headers']
         # get cookies from Workstation Data object
@@ -84,7 +84,7 @@ def get_connection(
 
     # get identity token
     r = requests.post(
-        base_url + 'api/auth/identityToken',
+        base_url + '/api/auth/identityToken',
         headers=headers,
         cookies=jar,
         verify=ssl_verify,
@@ -100,7 +100,6 @@ def get_connection(
         )
     else:
         logger.error(f'HTTP {r.status_code} - {r.reason}, Message {r.text}')
-        return None
 
 
 class Connection:
@@ -195,7 +194,7 @@ class Connection:
         """
 
         # set the verbosity globally
-        config.verbose = True if verbose and config.verbose else False
+        config.verbose = bool(verbose and config.verbose)
         self.base_url = helper.url_check(base_url)
         self.username = username
         self.login_mode = login_mode
@@ -232,7 +231,7 @@ class Connection:
             logger.warning(msg)
             helper.exception_handler(
                 msg='MicroStrategy Version not supported.',
-                exception_type=exceptions.VersionException,
+                exception_type=VersionException,
             )
 
     def __enter__(self):
@@ -476,7 +475,7 @@ class Connection:
             try:
                 iserver_version = json_response["iServerVersion"][:9]
             except KeyError:
-                raise exceptions.IServerException(
+                raise IServerException(
                     "I-Server is currently unavailable. Please contact your "
                     "administrator."
                 )

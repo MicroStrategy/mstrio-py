@@ -6,9 +6,9 @@ from abc import ABCMeta, abstractclassmethod
 from ast import literal_eval
 from typing import TYPE_CHECKING
 
-import mstrio.utils.helper as helper
 from mstrio import config
-from mstrio.api.exceptions import VersionException
+from mstrio.helpers import VersionException
+from mstrio.utils import helper
 
 from .settings_helper import convert_settings_to_mega_byte
 

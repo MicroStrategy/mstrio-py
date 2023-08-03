@@ -173,10 +173,11 @@ class Object(Entity, ACLMixin, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin):
         super().__init__(connection=connection, object_id=id, type=type)
 
     def _init_variables(self, **kwargs) -> None:
+        object_type = kwargs.get('type')
         self._OBJECT_TYPE = (
-            ObjectTypes(kwargs.get("type"))
-            if ObjectTypes.contains(kwargs.get("type"))
-            else ObjectTypes.NONE
+            ObjectTypes(object_type)
+            if ObjectTypes.contains(object_type)
+            else ObjectTypes.NOT_SUPPORTED
         )
         super()._init_variables(**kwargs)
 

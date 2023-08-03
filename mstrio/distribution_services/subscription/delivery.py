@@ -80,11 +80,8 @@ class DeliveryDictable(Dictable):
             vtype = self.VALIDATION_DICT[key][0]
             obligatory = self.VALIDATION_DICT[key][1]
             if value and not isinstance(value, vtype):
-                exception_handler(
-                    "{} has incorrect type {}. Correct type is {}.".format(
-                        key, type(value), vtype
-                    ),
-                    TypeError,
+                raise TypeError(
+                    f"{key} has incorrect type {type(value)}. Correct type is {vtype}."
                 )
             elif value is None and obligatory:
                 exception_handler(
@@ -454,23 +451,20 @@ class Delivery(DeliveryDictable):
         shortcut_cache_format: (
             ShortcutCacheFormat | str
         ) = ShortcutCacheFormat.RESERVED,
-        library_cache_types: list[LibraryCacheTypes | str] = [LibraryCacheTypes.WEB],
+        library_cache_types: list[LibraryCacheTypes | str] = None,
         reuse_dataset_cache: bool = False,
         is_all_library_users: bool = False,
         notification_enabled: bool = False,
         personal_notification_address_id: str | None = None,
     ):
+        library_cache_types = library_cache_types or [LibraryCacheTypes.WEB]
         self.mode = mode
-        if expiration:
-            if not self._expiration_check(expiration):
-                exception_handler(
-                    "Expiration date must be later or equal to {}".format(
-                        datetime.now().strftime("%Y-%m-%d")
-                    ),
-                    ValueError,
-                )
-            else:
-                self.expiration = expiration
+
+        if expiration and not self._expiration_check(expiration):
+            date = datetime.now().strftime("%Y-%m-%d")
+            raise ValueError(f"Expiration date must be later or equal to {date}")
+
+        self.expiration = expiration
         self.contact_security = contact_security
         self.expiration_time_zone = expiration_time_zone
 

@@ -3,8 +3,8 @@ from typing import Optional
 
 from packaging import version
 
-import mstrio.api.subscriptions as subscriptions_
 from mstrio import config
+from mstrio.api import subscriptions as subscriptions_
 from mstrio.connection import Connection
 from mstrio.utils import helper
 from mstrio.utils.version_helper import class_version_handler, method_version_handler

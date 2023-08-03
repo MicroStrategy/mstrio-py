@@ -1,6 +1,5 @@
 import json
 import logging
-import warnings
 from abc import ABCMeta, abstractmethod
 from pprint import pprint
 from sys import version_info
@@ -8,8 +7,8 @@ from typing import Any
 
 from pandas import DataFrame, Series
 
-import mstrio.utils.helper as helper
 from mstrio import config
+from mstrio.utils import helper
 
 from .setting_types import DeprecatedSetting, SettingValue, SettingValueFactory
 from .settings_helper import convert_settings_to_byte, convert_settings_to_mega_byte
@@ -278,7 +277,7 @@ class BaseSettings(metaclass=ABCMeta):
 
     def __override_settings_config(self, value: SettingValue) -> None:
         # placeholder to be overwritten
-        pass
+        return
 
     def __str__(self):
         """String interpretation of the Setting object."""
@@ -291,7 +290,7 @@ class BaseSettings(metaclass=ABCMeta):
                 name._validate_value(value)
                 if getattr(name, 'reboot_rule', None) is not None:
                     msg = f"{name.name}: {name.reboot_rule.get('description')}"
-                    warnings.warn(msg, Warning)
+                    helper.exception_handler(msg=msg, exception_type=Warning)
                 name.value = value
         else:
             super().__setattr__(name, value)

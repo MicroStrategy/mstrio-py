@@ -1,4 +1,5 @@
 import logging
+from contextlib import suppress
 from enum import Enum, IntFlag
 from typing import TYPE_CHECKING, Any, Optional, TypeVar
 
@@ -7,13 +8,9 @@ import pandas as pd
 from mstrio import config
 from mstrio.api import objects
 from mstrio.connection import Connection
+from mstrio.helpers import IServerError
 from mstrio.types import ObjectTypes
-from mstrio.utils.helper import (
-    Dictable,
-    IServerError,
-    exception_handler,
-    filter_obj_list,
-)
+from mstrio.utils.helper import Dictable, exception_handler, filter_obj_list
 
 if TYPE_CHECKING:
     from mstrio.server import Project
@@ -126,10 +123,9 @@ class ACE(Dictable):
     def __eq__(self, other: object) -> bool:
         if len(self.__dict__) != len(other.__dict__):
             return False
-        for attr in self.__dict__:
-            if getattr(self, attr) != getattr(other, attr):
-                return False
-        return True
+        return all(
+            getattr(self, attr) == getattr(other, attr) for attr in self.__dict__
+        )
 
     @classmethod
     def from_dict(cls, source: dict[str, Any], connection: Connection):
@@ -526,7 +522,7 @@ class TrusteeACLMixin:
             project: "Optional[Project | str]" = None,
         ) -> None:
             right_value = _get_custom_right_value(right)
-            try:
+            with suppress(IServerError):
                 modify_rights(
                     connection=connection,
                     trustees=trustee_id,
@@ -538,11 +534,9 @@ class TrusteeACLMixin:
                     denied=(not denied),
                     propagate_to_children=propagate_to_children,
                 )
-            except IServerError:
-                pass
 
             op = 'REMOVE' if default else 'ADD'
-            try:
+            with suppress(IServerError):
                 modify_rights(
                     connection=connection,
                     trustees=trustee_id,
@@ -554,8 +548,6 @@ class TrusteeACLMixin:
                     denied=denied,
                     propagate_to_children=propagate_to_children,
                 )
-            except IServerError:
-                pass
 
         rights_dict = {
             Rights.EXECUTE: execute,

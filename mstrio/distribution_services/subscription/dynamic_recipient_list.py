@@ -13,8 +13,8 @@ from mstrio.utils.helper import (
     exception_handler,
     fetch_objects_async,
     filter_params_for_func,
-    get_valid_project_id,
     find_object_with_name,
+    get_valid_project_id,
 )
 from mstrio.utils.version_helper import class_version_handler
 
@@ -55,7 +55,7 @@ def list_dynamic_recipient_lists(
         connection=connection,
         project_id=project_id,
         project_name=project_name,
-        with_fallback=False if project_name else True,
+        with_fallback=not project_name,
     )
 
     msg = "Error getting Dynamic Recipient List list."
@@ -200,7 +200,7 @@ class DynamicRecipientList(EntityBase, DeleteMixin):
             connection=connection,
             project_id=project_id,
             project_name=project_name,
-            with_fallback=False if project_name else True,
+            with_fallback=not project_name,
         )
         super().__init__(
             connection=connection, object_id=id, name=name, project_id=project_id
@@ -319,7 +319,7 @@ class DynamicRecipientList(EntityBase, DeleteMixin):
             connection=connection,
             project_id=project_id,
             project_name=project_name,
-            with_fallback=False if project_name else True,
+            with_fallback=not project_name,
         )
         response = subscriptions.create_dynamic_recipient_list(
             connection=connection, project_id=project_id, body=body

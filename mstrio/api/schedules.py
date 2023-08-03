@@ -28,7 +28,7 @@ def list_schedules(connection, fields=None, error_msg=None):
         event_based_in_list = False
         response_json = response.json()
         for schedule in response_json['schedules']:
-            if 'event' in schedule.keys():
+            if 'event' in schedule:
                 schedule['event']['id'] = schedule['event'].pop('eventId')
                 event_based_in_list = True
         if event_based_in_list:
@@ -60,7 +60,7 @@ def get_schedule(connection, id, fields=None, error_msg=None):
     if response.ok:
         # Fix for incorrect 'eventId' (expecting 'id')
         response_json = response.json()
-        if 'event' in response_json.keys():
+        if 'event' in response_json:
             response_json['event']['id'] = response_json['event'].pop('eventId')
             response.encoding, response._content = 'utf-8', json.dumps(
                 response_json
@@ -85,7 +85,7 @@ def create_schedule(connection, body, fields=None, error_msg=None):
     """
 
     # id to eventId conversion - API Problem
-    if 'event' in body.keys():
+    if 'event' in body:
         body['event']['eventId'] = body['event'].pop('id')
 
     response = connection.post(
@@ -94,7 +94,7 @@ def create_schedule(connection, body, fields=None, error_msg=None):
     if response.ok:
         # Fix for incorrect 'eventId' (expecting 'id')
         response_json = response.json()
-        if 'event' in response_json.keys():
+        if 'event' in response_json:
             response_json['event']['id'] = response_json['event'].pop('eventId')
             response.encoding, response._content = 'utf-8', json.dumps(
                 response_json
@@ -120,7 +120,7 @@ def update_schedule(connection, id, body, fields=None, error_msg=None):
     """
 
     # id to eventId conversion - API Problem
-    if 'event' in body.keys():
+    if 'event' in body:
         body['event']['eventId'] = body['event'].pop('id')
 
     response = connection.put(
@@ -131,7 +131,7 @@ def update_schedule(connection, id, body, fields=None, error_msg=None):
     if response.ok:
         # Fix for incorrect 'eventId' (expecting 'id')
         response_json = response.json()
-        if 'event' in response_json.keys():
+        if 'event' in response_json:
             response_json['event']['id'] = response_json['event'].pop('eventId')
         response.encoding, response._content = 'utf-8', json.dumps(
             response_json

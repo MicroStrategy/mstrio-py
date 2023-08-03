@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING, Optional, Union
 
+from mstrio.helpers import NotSupportedError
 from mstrio.types import ObjectTypes
-from mstrio.utils.exceptions import NotSupportedError
 
 if TYPE_CHECKING:
     from mstrio.object_management.search_enums import (
@@ -75,7 +75,7 @@ class DependenceMixin:
         """
         from mstrio.object_management.search_operations import full_search
 
-        if self._OBJECT_TYPE == ObjectTypes.NONE:
+        if self._OBJECT_TYPE == ObjectTypes.NOT_SUPPORTED:
             raise NotSupportedError(
                 f"Listing dependents is not supported for unsupported object"
                 f" with ID {self.id}."
@@ -161,7 +161,7 @@ class DependenceMixin:
         """
         from mstrio.object_management.search_operations import full_search
 
-        if self._OBJECT_TYPE == ObjectTypes.NONE:
+        if self._OBJECT_TYPE == ObjectTypes.NOT_SUPPORTED:
             raise NotSupportedError(
                 f"Listing dependencies is not supported for unsupported object"
                 f" with ID {self.id}."

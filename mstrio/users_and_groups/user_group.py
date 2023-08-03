@@ -491,7 +491,7 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin):
                 )
                 helper.exception_handler(msg, ValueError)
 
-        privileges = list()
+        privileges = []
         if mode == PrivilegeMode.ALL:
             privileges = self.privileges
         elif mode == PrivilegeMode.INHERITED:

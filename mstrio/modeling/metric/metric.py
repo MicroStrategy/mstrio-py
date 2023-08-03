@@ -16,19 +16,14 @@ from mstrio.modeling.schema.helpers import (
 from mstrio.object_management import Folder, SearchPattern, search_operations
 from mstrio.types import ObjectTypes
 from mstrio.users_and_groups.user import User
-from mstrio.utils.entity import (
-    CopyMixin,
-    DeleteMixin,
-    Entity,
-    MoveMixin,
-)
+from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, MoveMixin
 from mstrio.utils.enum_helper import AutoName, get_enum_val
 from mstrio.utils.helper import (
     Dictable,
     delete_none_values,
     filter_params_for_func,
-    get_valid_project_id,
     find_object_with_name,
+    get_valid_project_id,
 )
 from mstrio.utils.version_helper import method_version_handler
 
@@ -105,7 +100,7 @@ def list_metrics(
         connection=connection,
         project_id=project_id,
         project_name=project_name,
-        with_fallback=False if project_name else True,
+        with_fallback=not project_name,
     )
 
     objects_ = search_operations.full_search(
@@ -468,7 +463,7 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa: F811
     @method_version_handler('11.3.0500')
     def from_dict(cls, source: dict, connection: Optional['Connection'] = None):
         new_source = source.copy()
-        new_source['dimensionality'] = source.get('dimty', None)
+        new_source['dimensionality'] = source.get('dimty')
         return super().from_dict(new_source, connection)
 
     @method_version_handler('11.3.0500')
@@ -608,7 +603,8 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa: F811
         metric_format_type: MetricFormatType | None = None,
         thresholds: list[Threshold] | None = None,
         show_expression_as: ExpressionFormat | str = ExpressionFormat.TOKENS,
-    ) -> "Metric":
+        hidden: bool | None = None,
+    ) -> 'Metric':
         """Create a new metric with specified properties.
 
         Args:
@@ -697,10 +693,18 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa: F811
                 f" '{response['id']}'"
             )
 
-        return cls.from_dict(
+        metric = cls.from_dict(
             source={**response, 'show_expression_as': show_expression_as},
             connection=connection,
         )
+
+        # Default value of 'hidden' attribute on IServer is False.
+        # Because of that there is no reason to modify its value
+        # after creation if 'hidden' parameter was provided as False.
+        if hidden:
+            metric.alter(hidden=hidden)
+
+        return metric
 
     @method_version_handler('11.3.0500')
     def alter(

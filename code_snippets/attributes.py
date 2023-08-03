@@ -54,8 +54,9 @@ logical_tables = list_logical_tables(conn)
 logical_table = LogicalTable(conn, id='<logical_table_id>')
 table_columns = logical_table.list_columns()
 
-# Define a variable which can be later used in a script
+# Define variables which can be later used in a script
 FOLDER_ID = $folder_id  # Insert folder ID here
+HIDDEN = $hidden  # Insert value for hidden attribute here
 
 # Example attribute data.
 # Parts of this dictionary will be used in the later parts of this demo script
@@ -149,6 +150,7 @@ ATTRIBUTE_DATA = {
         sub_type=ObjectSubType.LOGICAL_TABLE,
         object_id='<object_id>',
     ),
+    'hidden': HIDDEN,
 }
 
 # Define a variable which can be later used in a script

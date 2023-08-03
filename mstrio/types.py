@@ -44,7 +44,7 @@ class ObjectTypes(Enum):
     SHORTCUT = 67
     SHORTCUT_TARGET = 68
     DRIVER = 84
-    NONE = None
+    NOT_SUPPORTED = None
 
     def __new__(cls, value):
         member = object.__new__(cls)
@@ -93,7 +93,7 @@ class ObjectSubTypes(Enum):
     ATTRIBUTE_ROLE = 3073
     ATTRIBUTE_TRANSFORMATION = 3074
     ROLE_TRANSFORMATION = 11009
-    NONE = None
+    NOT_SUPPORTED = None
 
     def __new__(cls, value):
         member = object.__new__(cls)

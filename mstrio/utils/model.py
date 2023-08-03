@@ -173,11 +173,14 @@ class Model:
         """Map column types from each column in the list of table."""
         list_dtypes_values = list(table.dtypes.values)
 
-        for i in range(len(table.columns)):
-            if list_dtypes_values[i] == 'object' and isinstance(
-                table.columns[i][0], dt.time
-            ):
-                list_dtypes_values[i] = 'time'
+        for i, column_name in enumerate(table.columns):
+            if list_dtypes_values[i] == 'object':
+                column_element = table[column_name][0]
+
+                if isinstance(column_element, dt.time):
+                    list_dtypes_values[i] = 'time'
+                if isinstance(column_element, dt.date):
+                    list_dtypes_values[i] = 'date'
 
         return [self._map_data_type(datatype) for datatype in list_dtypes_values]
 
@@ -254,12 +257,10 @@ class Model:
 
         # check for presence of invalid characters in data frame column names
         if not self._ignore_special_chars and any(
-            [
-                col
-                for col in table[self._KEY_DATA_FRAME].columns
-                for inv in self._INVALID_CHARS
-                if inv in col
-            ]
+            col
+            for col in table[self._KEY_DATA_FRAME].columns
+            for inv in self._INVALID_CHARS
+            if inv in col
         ):
             msg = "Column names cannot contain '{}', '{}', '{}', '{}'".format(
                 *self._INVALID_CHARS
@@ -282,6 +283,7 @@ class Model:
             'float64': 'DOUBLE',
             'bool': 'BOOLEAN',
             'datetime64[ns]': 'DATETIME',
+            'date': 'DATE',
             'time': 'TIME',
         }.get(str(datatype))
 

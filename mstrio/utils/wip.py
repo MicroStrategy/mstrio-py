@@ -7,8 +7,8 @@ from textwrap import dedent
 
 from packaging.version import Version
 
-from .. import __version__, config
-from .exceptions import NotSupportedError
+from mstrio import __version__, config
+from mstrio.helpers import NotSupportedError
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(  # NOSONAR
@@ -31,19 +31,19 @@ def _wiplevel_error(level):
 
 message_templates = {
     WipLevels.PREVIEW: (
-        "In a current version, {}is available as "
+        "In a current version, {} is available as "
         "a Functionality Preview. It is subject to change until it is released "
         "as Generally Available."
     ),
     WipLevels.INFO: (
-        "This {}functionality is a work-in-progress. It may change in future updates."
+        "This {} functionality is a work-in-progress. It may change in future updates."
     ),
     WipLevels.WARNING: (
-        "This {}functionality is a work-in-progress. Use it only if you understand"
+        "This {} functionality is a work-in-progress. Use it only if you understand"
         " the underlying code. It may change in future updates."
     ),
     WipLevels.ERROR: (
-        "This {}functionality is a work-in-progress. It has been deemed unsafe to use"
+        "This {} functionality is a work-in-progress. It has been deemed unsafe to use"
         " and is currently blocked."
     ),
 }
@@ -61,7 +61,7 @@ docstring_prefix_template = dedent(
 
 
 def _get_message_template(level: WipLevels = WipLevels.WARNING):
-    if level in message_templates.keys():
+    if level in message_templates:
         return message_templates[level]
     else:
         return message_templates[WipLevels.INFO]

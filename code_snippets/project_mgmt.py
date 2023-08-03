@@ -50,6 +50,27 @@ new_project = env.create_project(name=PROJECT_NAME, description=PROJECT_DESCRIPT
 # change description of a newly created project
 new_project.alter(description=PROJECT_DESCRIPTION)
 
+# delete a project
+
+# first, the project need to be unloaded
+new_project.unload()
+# then delete the unloaded project,
+# confirmation prompt will appear asking for a project name
+new_project.delete()
+
+# if a project is already unloaded, to delete it, it has to be retrieved
+# via Environment object
+
+# create an environment object
+env = Environment(conn)
+# list projects in the environment
+projects = env.list_projects()
+# get a project that you want to delete
+project = projects['<index of a project to delete>']
+# delete a project, confirmation prompt will appear asking for a project name
+project.delete()
+
+
 # Define variables which can be later used in a script
 PROJECT_1_NAME = $project_1_name
 PROJECT_2_NAME = $project_2_name

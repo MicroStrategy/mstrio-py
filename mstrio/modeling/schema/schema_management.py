@@ -232,7 +232,7 @@ class SchemaManagement:
             connection=connection,
             project_id=project_id,
             project_name=project_name,
-            with_fallback=False if project_name else True,
+            with_fallback=not project_name,
         )
         self._tasks = None
         self._lock_type = None

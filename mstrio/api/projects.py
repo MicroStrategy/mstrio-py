@@ -18,7 +18,7 @@ def get_project(
     name,
     error_msg=None,
     throw_error=True,
-    whitelist=[('ERR001', 500), ('ERR014', 403)],
+    whitelist=[('ERR001', 500), ('ERR014', 403)],  # noqa: B006
 ):
     """Get a specific project that the authenticated user has access to.
 
@@ -313,7 +313,7 @@ def update_projects_on_startup(connection, body, error_msg=None, whitelist=None)
 
 
 @ErrorHandler(err_msg='Error getting VLDB settings for project with ID {id}')
-def get_vldb_settings(connection: 'Connection', id: str, error_msg: str = None):
+def get_vldb_settings(connection: 'Connection', id: str, error_msg: str | None = None):
     """Get advanced VLDB settings for a project.
 
     Args:
@@ -331,7 +331,7 @@ def get_vldb_settings(connection: 'Connection', id: str, error_msg: str = None):
 
 @ErrorHandler(err_msg='Error updating VLDB settings for project with ID {id}')
 def update_vldb_settings(
-    connection: 'Connection', id: str, body: dict, error_msg: str = None
+    connection: 'Connection', id: str, body: dict, error_msg: str | None = None
 ):
     """Update metadata of advanced VLDB settings for a project.
 
@@ -356,7 +356,7 @@ def update_vldb_settings(
     err_msg='Error getting metadata of VLDB settings for project with ID {id}'
 )
 def get_applicable_vldb_settings(
-    connection: 'Connection', id: str, error_msg: str = None
+    connection: 'Connection', id: str, error_msg: str | None = None
 ):
     """Get metadata of advanced VLDB settings for a project.
 
@@ -372,3 +372,18 @@ def get_applicable_vldb_settings(
         url=f'{connection.base_url}/api/model/projects/{id}'
         '/applicableAdvancedProperties'
     )
+
+
+@ErrorHandler(err_msg='Error deleting project with ID {id}')
+def delete_project(connection: 'Connection', id: str, error_msg: str | None = None):
+    """Delete a project.
+
+    Args:
+        connection (Connection): MicroStrategy REST API connection object
+        id (string): Project ID
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object.
+    """
+    return connection.delete(url=f'{connection.base_url}/api/projects/{id}')

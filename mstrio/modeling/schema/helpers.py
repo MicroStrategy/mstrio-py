@@ -2,8 +2,8 @@ from dataclasses import dataclass
 from enum import auto
 from typing import TYPE_CHECKING, Union
 
+from mstrio.helpers import NotSupportedError
 from mstrio.utils.enum_helper import AutoName
-from mstrio.utils.exceptions import NotSupportedError
 from mstrio.utils.helper import Dictable, exception_handler
 
 if TYPE_CHECKING:
@@ -453,7 +453,7 @@ class TableColumn(Dictable):
     def from_dict(cls, source, connection, to_snake_case=True) -> 'TableColumn':
         source = source.copy()
 
-        if information := source.get('information', None):
+        if information := source.get('information'):
             source.update(information)
             source['id'] = source.pop('objectId')
 

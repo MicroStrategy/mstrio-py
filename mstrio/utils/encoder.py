@@ -1,3 +1,4 @@
+import datetime as dt
 from base64 import b64encode
 
 
@@ -38,17 +39,18 @@ class Encoder:
         self.__data_frame = data_frame
 
         # Sets the proper orientation
-        if dataset_type not in self.__table_type_orient_map.keys():
-            raise ValueError(
-                "Table type should be one of "
-                + '%s' % ', '.join(map(str, self.__table_type_orient_map))
-            )
+        if dataset_type not in self.__table_type_orient_map:
+            allowed_types = ', '.join(self.__table_type_orient_map)
+            raise ValueError(f"Table type should be one of {allowed_types}")
         else:
             self.__orientation = self.__table_type_orient_map[dataset_type]
 
     @property
     def encode(self):
         """Encode data in base 64."""
+        for col in self.__data_frame:
+            if type(self.__data_frame[col][0]) == dt.date:
+                self.__data_frame[col] = self.__data_frame[col].astype('str')
         self.__b64_data = b64encode(
             self.__data_frame.to_json(
                 orient=self.__orientation, date_format='iso'

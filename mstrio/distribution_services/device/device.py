@@ -263,9 +263,7 @@ class Device(Entity, DeleteMixin):
             device_properties: properties of the device, specific for each
                 device type
         """
-        device_properties = (
-            self.device_properties if not device_properties else device_properties
-        )
+        device_properties = device_properties or self.device_properties
         device_properties = (
             device_properties.to_dict()
             if isinstance(device_properties, Dictable)

@@ -202,6 +202,27 @@ def get_addresses(connection, id, fields=None):
     )
 
 
+@ErrorHandler(err_msg='Error getting addresses for user with ID {id}')
+def get_addresses_v2(connection, id, fields=None):
+    """Get all of the addresses for a specific user.
+
+    Args:
+        connection (object): MicroStrategy connection object returned by
+            `connection.Connection()`.
+        id (str): User ID.
+        fields (list, optional): Comma separated top-level field whitelist. This
+            allows client to selectively retrieve part of the response model.
+
+    Returns:
+        HTTP response object returned by the MicroStrategy REST server.
+    """
+
+    return connection.get(
+        url=f'{connection.base_url}/api/v2/users/{id}/addresses',
+        params={'fields': fields},
+    )
+
+
 @ErrorHandler(err_msg='Error creating a new address for user with ID {id}')
 def create_address(connection, id, body, fields=None):
     """Create a new address for a specific user.
@@ -242,7 +263,7 @@ def create_address_v2(
     Args:
         connection (object): MicroStrategy connection object returned by
             `connection.Connection()`.
-        id (string): User ID.
+        id (str): User ID.
         body (JSON): JSON-formatted address:
                 {
                 "name": "string",
@@ -274,6 +295,31 @@ def update_address(connection, id, address_id, body, fields=None):
     Args:
         connection (object): MicroStrategy connection object returned by
             `connection.Connection()`.
+        id (str): User ID.
+        address_id (str): Address ID.
+        fields (list, optional): Comma separated top-level field whitelist. This
+            allows client to selectively retrieve part of the response model.
+
+    Returns:
+        HTTP response object returned by the MicroStrategy REST server.
+    """
+
+    return connection.put(
+        url=f'{connection.base_url}/api/users/{id}/addresses/{address_id}',
+        params={'fields': fields},
+        json=body,
+    )
+
+
+@ErrorHandler(
+    err_msg='Error updating address with ID {address_id} for user with ID {id}'
+)
+def update_address_v2(connection, id, address_id, body, fields=None):
+    """Update a specific address for a specific user.
+
+    Args:
+        connection (object): MicroStrategy connection object returned by
+            `connection.Connection()`.
         id (string): User ID.
         address_id (string): Address ID.
         fields (list, optional): Comma separated top-level field whitelist. This
@@ -284,7 +330,7 @@ def update_address(connection, id, address_id, body, fields=None):
     """
 
     return connection.put(
-        url=f'{connection.base_url}/api/users/{id}/addresses/{address_id}',
+        url=f'{connection.base_url}/api/v2/users/{id}/addresses/{address_id}',
         params={'fields': fields},
         json=body,
     )

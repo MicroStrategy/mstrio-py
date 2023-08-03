@@ -7,7 +7,7 @@ from typing import Any
 from requests.adapters import Response
 
 from mstrio import config
-from mstrio.api.exceptions import MstrException, PartialSuccess, Success
+from mstrio.helpers import MstrException, PartialSuccess, Success
 from mstrio.utils.helper import get_default_args_from_func, response_handler
 
 
@@ -48,7 +48,7 @@ class ErrorHandler:
     def __init__(self, err_msg: str):
         self._err_msg = err_msg
 
-    def __call__(self, func: Callable[[Any], Any]):
+    def __call__(self, func: Callable):
         @wraps(func)
         def inner(*args, **kwargs):
             response = func(*args, **kwargs)

@@ -187,7 +187,7 @@ def _full_search_logical_tables(
         connection=connection,
         project_id=project_id,
         project_name=project_name,
-        with_fallback=False if project_name else True,
+        with_fallback=not project_name,
     )
 
     if folder_name and not folder_id:
@@ -244,7 +244,7 @@ def list_changeset_tables(
         connection=connection,
         project_id=project_id,
         project_name=project_name,
-        with_fallback=False if project_name else True,
+        with_fallback=not project_name,
     )
 
     tables_list = fetch_objects(
@@ -466,7 +466,7 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
             connection=connection,
             project_id=project_id,
             project_name=project_name,
-            with_fallback=False if project_name else True,
+            with_fallback=not project_name,
         )
 
         if not id and not name:

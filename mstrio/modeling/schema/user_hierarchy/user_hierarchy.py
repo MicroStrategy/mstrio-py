@@ -7,21 +7,16 @@ from mstrio.api import objects, user_hierarchies
 from mstrio.modeling.schema.helpers import SchemaObjectReference
 from mstrio.types import ObjectTypes
 from mstrio.users_and_groups import User
-from mstrio.utils.entity import (
-    CopyMixin,
-    DeleteMixin,
-    Entity,
-    MoveMixin,
-)
+from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, MoveMixin
 from mstrio.utils.enum_helper import AutoName
 from mstrio.utils.helper import (
     Dictable,
     delete_none_values,
     fetch_objects,
+    find_object_with_name,
     get_args_from_func,
     get_default_args_from_func,
     get_enum_val,
-    find_object_with_name,
 )
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 

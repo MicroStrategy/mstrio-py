@@ -22,9 +22,9 @@ from mstrio.utils.helper import (
     exception_handler,
     fetch_objects,
     filter_params_for_func,
+    find_object_with_name,
     get_valid_project_id,
     get_valid_project_name,
-    find_object_with_name,
 )
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
@@ -105,7 +105,7 @@ def list_security_filters(
         connection=connection,
         project_id=project_id,
         project_name=project_name,
-        with_fallback=False if project_name else True,
+        with_fallback=not project_name,
     )
     project_name = get_valid_project_name(
         connection=connection,
@@ -113,7 +113,8 @@ def list_security_filters(
     )
     if user and user_group:
         exception_handler(
-            "You cannot filter by both `user` and `user_group` at the same time."
+            msg="You cannot filter by both `user` and `user_group` at the same time.",
+            exception_type=ValueError,
         )
 
     if user:
@@ -424,15 +425,13 @@ class SecurityFilter(Entity, CopyMixin, DeleteMixin, MoveMixin):
             },
             "topLevel": [SchemaObjectReference.to_dict(level) for level in top_level]
             if top_level
-            and all([isinstance(level, SchemaObjectReference) for level in top_level])
+            and all(isinstance(level, SchemaObjectReference) for level in top_level)
             else top_level,
             "bottomLevel": [
                 SchemaObjectReference.to_dict(level) for level in bottom_level
             ]
             if bottom_level
-            and all(
-                [isinstance(level, SchemaObjectReference) for level in bottom_level]
-            )
+            and all(isinstance(level, SchemaObjectReference) for level in bottom_level)
             else bottom_level,
         }
         body = delete_none_values(body, recursion=True)

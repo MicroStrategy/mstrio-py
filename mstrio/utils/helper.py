@@ -1,5 +1,6 @@
 import inspect
 import logging
+import math
 import os
 import re
 import time
@@ -9,14 +10,15 @@ from datetime import datetime
 from enum import Enum
 from functools import reduce, wraps
 from json.decoder import JSONDecodeError
-from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Optional, TypeVar
 
 import humps
 import pandas as pd
 
 from mstrio import __version__ as mstrio_version
 from mstrio import config
-from mstrio.api.exceptions import (
+from mstrio.helpers import (
+    IServerError,
     MstrTimeoutError,
     PromptedContentError,
     VersionException,
@@ -74,7 +76,7 @@ def deprecation_warning(
             f"From version {version} {deprecated}{module} will be removed and replaced "
             f"with {new}"
         )
-    warnings.warn(DeprecationWarning(msg))
+    exception_handler(msg=msg, exception_type=DeprecationWarning)
 
 
 def url_check(url):
@@ -189,12 +191,6 @@ def exception_handler(msg, exception_type=Exception, stack_lvl=2):
         raise exception_type(msg)
     elif issubclass(exception_type, Warning):
         warnings.warn(msg, exception_type, stacklevel=stack_lvl)
-
-
-class IServerError(IOError):
-    def __init__(self, message, http_code):
-        super().__init__(message)
-        self.http_code = http_code
 
 
 def response_handler(response, msg, throw_error=True, verbose=True, whitelist=None):
@@ -395,7 +391,7 @@ def fetch_objects_async(
     total_objects = min(limit, total_objects) if limit else total_objects
 
     if total_objects > current_count:
-        it_total = int(total_objects / chunk_size) + (total_objects % chunk_size != 0)
+        it_total = math.ceil(total_objects / chunk_size)
         threads = get_parallel_number(it_total)
         with FuturesSessionWithRenewal(
             connection=connection, max_workers=threads
@@ -621,9 +617,7 @@ def validate_param_value(
     inv_val = ValueError if exception else Warning
     data_type = data_type if isinstance(data_type, list) else [data_type]
 
-    if any(
-        map(lambda x: x == param_val and isinstance(x, type(param_val)), special_values)
-    ):
+    if any(x == param_val and isinstance(x, type(param_val)) for x in special_values):
         return True
 
     if type(param_val) not in data_type:
@@ -632,20 +626,18 @@ def validate_param_value(
         return False
     if type(param_val) == list:
         return all(
-            [
-                __validate_single_param_value(
-                    value,
-                    param_name,
-                    data_type,
-                    max_val,
-                    min_val,
-                    regex,
-                    valid_example,
-                    inv_val,
-                    special_values,
-                )
-                for value in param_val
-            ]
+            __validate_single_param_value(
+                value,
+                param_name,
+                data_type,
+                max_val,
+                min_val,
+                regex,
+                valid_example,
+                inv_val,
+                special_values,
+            )
+            for value in param_val
         )
 
     return __validate_single_param_value(
@@ -949,9 +941,9 @@ def filter_params_for_func(
     for arg in args:
         if arg in exclude:
             continue
-        elif params.get(arg, None) is not None:
+        elif params.get(arg) is not None:
             properties.update({arg: params.get(arg)})
-        elif defaults_dict.get(arg, None) is not None:
+        elif defaults_dict.get(arg) is not None:
             properties.update({arg: defaults_dict.get(arg)})
     return properties
 
@@ -1106,7 +1098,7 @@ class Dictable:
                 ):
                     return [cls._FROM_DICT_MAP[key][0](v) for v in val]
                 elif all(
-                    [isinstance(v, type(Dictable)) for v in cls._FROM_DICT_MAP[key]]
+                    isinstance(v, type(Dictable)) for v in cls._FROM_DICT_MAP[key]
                 ):
                     return [cls._FROM_DICT_MAP[key][0].from_dict(v) for v in val]
                 elif callable(cls._FROM_DICT_MAP[key][0]):
@@ -1308,7 +1300,7 @@ def verify_project_status(
     """
 
     def get_status(project: 'Project', node: str | None = None) -> str:
-        node_name = project.nodes[0]['name'] if not node else node
+        node_name = node if node else project.nodes[0]['name']
         nodes_filtered = [node for node in project.nodes if node['name'] == node_name]
 
         if not nodes_filtered:
@@ -1343,7 +1335,7 @@ def find_object_with_name(
     cls,
     name: str,
     listing_function: callable,
-    search_pattern: Union['SearchPattern', None] = None,
+    search_pattern: Optional['SearchPattern'] = None,
 ) -> dict:
     """Find objects with given name if no id is given.
 

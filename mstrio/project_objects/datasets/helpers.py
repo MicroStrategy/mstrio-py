@@ -4,9 +4,9 @@ from enum import auto
 from typing import Any, Optional, TypeVar
 
 from mstrio.connection import Connection
+from mstrio.helpers import NotSupportedError
 from mstrio.modeling import ObjectSubType, SchemaObjectReference
 from mstrio.utils.enum_helper import AutoName
-from mstrio.utils.exceptions import NotSupportedError
 from mstrio.utils.helper import Dictable, camel_to_snake, snake_to_camel
 from mstrio.utils.vldb_mixin import ResolvedLocation
 

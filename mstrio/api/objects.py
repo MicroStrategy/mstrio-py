@@ -17,7 +17,7 @@ def get_object_info(
     object_type,
     project_id=None,
     error_msg=None,
-    whitelist=[('ERR001 ', 500)],
+    whitelist=[('ERR001 ', 500)],  # noqa: B006
 ):
     """Get information for a specific object in a specific project; if you do
     not specify a project ID, you get information for the object just in the

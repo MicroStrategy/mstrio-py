@@ -6,11 +6,12 @@ from typing import Optional
 from pandas import DataFrame, Series
 from tqdm import tqdm
 
-import mstrio.utils.helper as helper
 from mstrio import config
 from mstrio.api import monitors, projects
 from mstrio.connection import Connection
-from mstrio.utils.entity import Entity, ObjectTypes
+from mstrio.helpers import IServerError
+from mstrio.utils import helper
+from mstrio.utils.entity import DeleteMixin, Entity, ObjectTypes
 from mstrio.utils.settings.base_settings import BaseSettings
 from mstrio.utils.version_helper import method_version_handler
 from mstrio.utils.vldb_mixin import ModelVldbMixin
@@ -99,7 +100,7 @@ def compare_project_settings(
     return df
 
 
-class Project(Entity, ModelVldbMixin):
+class Project(Entity, ModelVldbMixin, DeleteMixin):
     """Object representation of MicroStrategy Project (Project) object.
 
     Attributes:
@@ -129,6 +130,7 @@ class Project(Entity, ModelVldbMixin):
         ('status', 'alias'): projects.get_project,
         'nodes': monitors.get_node_info,
     }
+    _API_DELETE = staticmethod(projects.delete_project)
     _FROM_DICT_MAP = {**Entity._FROM_DICT_MAP, 'status': ProjectStatus}
     _STATUS_PATH = "/status"
     _MODEL_VLDB_API = {
@@ -172,7 +174,7 @@ class Project(Entity, ModelVldbMixin):
 
         try:
             super().__init__(connection=connection, object_id=id, name=name)
-        except helper.IServerError as e:
+        except IServerError as e:
             if not self.is_loaded():
                 helper.exception_handler(
                     (
@@ -376,7 +378,7 @@ class Project(Entity, ModelVldbMixin):
             # This attempts to convert it to avoid breaking backwards compat.
             if mode in IdleMode.__members__.values():
                 mode = IdleMode(mode)
-            elif mode in IdleMode.__members__.keys():
+            elif mode in IdleMode.__members__:
                 mode = IdleMode[mode]
             else:
                 helper.exception_handler(
@@ -483,6 +485,26 @@ class Project(Entity, ModelVldbMixin):
 
         self.__change_project_state(func=unload_project, on_nodes=on_nodes)
 
+    @method_version_handler('11.3.0800')
+    def delete(self: Entity) -> bool:
+        """Delete project.
+
+        Returns:
+            True if project was deleted, False otherwise.
+        """
+        self._DELETE_CONFIRM_MSG = (
+            f"Are you sure you want to delete project "
+            f"'{self.name}' with ID: {self._id}?\n"
+            "All objects will be permanently deleted. This cannot be undone.\n"
+            "Please type the project name to confirm: "
+        )
+        self._DELETE_SUCCESS_MSG = (
+            f"Project '{self.name}' has been successfully deleted."
+        )
+        self._DELETE_PROMPT_ANSWER = self.name
+
+        return super().delete(force=False)
+
     @method_version_handler('11.3.0000')
     def register(self, on_nodes: str | list | None = None) -> None:
         """Register project on nodes.
@@ -554,7 +576,7 @@ class Project(Entity, ModelVldbMixin):
             projects = node.get('projects')
             if projects:
                 status = projects[0].get('status')
-                loaded = True if status == 'loaded' else False
+                loaded = status == 'loaded'
                 if loaded:
                     break
         return loaded

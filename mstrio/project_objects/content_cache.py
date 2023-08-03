@@ -42,10 +42,10 @@ class ContentCache(Cache, ContentCacheMixin):
 
     def __init__(
         self,
-        connection: "Connection",
+        connection: 'Connection',
         id: str,
         content_cache_dict: dict | None = None,
-    ):
+    ) -> None:
         """Initialize the ContentCache object. If content_cache_dict is provided
         no I-Server request will be sent.
 
@@ -97,21 +97,21 @@ class ContentCache(Cache, ContentCacheMixin):
         self._group_by = kwargs.get('group_by')
         self._xml_content = kwargs.get('xml_content', [])
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"ContentCache(id='{self.id}', source={self.source})"
 
-    def fetch(self):
+    def fetch(self) -> None:
         """Fetches the cache from the server, refreshing the variables to match
         those currently stored on the server."""
-        res = ContentCache.list_caches(
+        result = ContentCache.list_caches(
             connection=self._connection,
             project_id=self._project_id,
             nodes=self._nodes,
             id=self.id,
             to_dictionary=True,
         )
-        if res:
-            self._init_variables(**res[0])
+        if result:
+            self._init_variables(**result[0])
 
     def __alter_status(
         self,
@@ -119,7 +119,7 @@ class ContentCache(Cache, ContentCacheMixin):
         value: bool | None = None,
         status: str | None = None,
         nodes: list[str] | None = None,
-    ) -> Response:
+    ) -> Response | None:
         """Engine for altering ContentCache status
 
         Args:
@@ -132,6 +132,22 @@ class ContentCache(Cache, ContentCacheMixin):
         Returns:
             Response object
         """
+        logger_message = {
+            'replace/loaded/True': 'load',
+            'replace/loaded/False': 'unload',
+            'remove/None/None': 'delete',
+        }.get(f'{op}/{status}/{value}')
+        if not self.combined_id and config.verbose:
+            logger.info(
+                f"Could not perform '{logger_message}' operation on deleted cache "
+                f"with ID '{self.id}'."
+            )
+            if logger_message == 'load':
+                raise ValueError(
+                    f"Could not perform 'load' operation on deleted cache "
+                    f"with ID '{self.id}'."
+                )
+            return
         if not nodes:
             nodes = ContentCacheMixin.fetch_nodes(
                 self._connection, self._connection.project_id
@@ -149,34 +165,33 @@ class ContentCache(Cache, ContentCacheMixin):
         }
         return monitors.update_contents_caches(self._connection, nodes, body)
 
-    def load(self):
+    def load(self) -> bool:
         """Load content cache."""
         nodes = self._nodes
-        response = self.__alter_status(
+        result = self.__alter_status(
             op='replace', value=True, status='loaded', nodes=nodes
         )
 
-        if config.verbose and response.ok:
+        if config.verbose and result:
             logger.info(f'Successfully loaded content cache with id: {self.id}')
-        if response.ok:
+        if result:
             self.fetch()
             return True
-        return False
 
-    def unload(self):
+    def unload(self) -> bool:
         """Unload content cache."""
         nodes = self._nodes
-        response = self.__alter_status(
+        result = self.__alter_status(
             op='replace', value=False, status='loaded', nodes=nodes
         )
-        if config.verbose and response:
+        if config.verbose and result:
             logger.info(f'Successfully unloaded content cache with id: {self.id}')
-        if response.ok:
+        if result:
             self.fetch()
             return True
         return False
 
-    def delete(self, force: bool | None = None) -> Response:
+    def delete(self, force: bool | None = None) -> Response | None:
         """Delete content cache.
 
         Args:
@@ -188,22 +203,22 @@ class ContentCache(Cache, ContentCacheMixin):
         if not force:
             user_input = (
                 input(
-                    f"Are you sure you want to delete content cache"
+                    f"Are you sure you want to delete content cache "
                     f"with ID: '{self.id}'? [Y/N]: "
                 )
                 or 'N'
             )
         if force or user_input == 'Y':
             nodes = self._nodes
-            response = self.__alter_status(op='remove', nodes=nodes)
-            if config.verbose and response:
+            result = self.__alter_status(op='remove', nodes=nodes)
+            if config.verbose and result:
                 logger.info(f"Successfully deleted content cache with ID: '{self.id}'.")
-            return response
+            return result
 
     @classmethod
     def from_dict(
-        cls, connection: "Connection", caches: list[dict]
-    ) -> list["ContentCache"]:
+        cls, connection: 'Connection', caches: list[dict]
+    ) -> list['ContentCache']:
         """Creates Caches from a provided dictionary.
 
         Args:
@@ -220,7 +235,7 @@ class ContentCache(Cache, ContentCacheMixin):
             for cache_dict in caches
         ]
 
-    def list_properties(self):
+    def list_properties(self) -> dict:
         """List properties for content cache."""
         return {
             **super().list_properties(),

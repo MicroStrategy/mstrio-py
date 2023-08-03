@@ -39,6 +39,10 @@
     "folder_id": {
       "type": "text",
       "multiple": false
+    },
+    "hidden": {
+      "type": "text",
+      "multiple": false
     }
   },
   "connect.py": {
@@ -673,6 +677,10 @@
     "new_time_based_settings": {
       "type": "text",
       "multiple": false
+    },
+    "new_attribute_form_id": {
+      "type": "text",
+      "multiple": false
     }
   },
   "job_monitor.py": {
@@ -785,6 +793,10 @@
       "multiple": false
     },
     "folder_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "hidden": {
       "type": "text",
       "multiple": false
     }
@@ -1563,6 +1575,34 @@
       "multiple": false
     },
     "address": {
+      "type": "text",
+      "multiple": false
+    },
+    "device_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "delivery_type": {
+      "type": "text",
+      "multiple": false
+    },
+    "address_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "new_address_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "new_address": {
+      "type": "text",
+      "multiple": false
+    },
+    "new_device_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "new_delivery_type": {
       "type": "text",
       "multiple": false
     }

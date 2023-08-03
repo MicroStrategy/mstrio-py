@@ -27,7 +27,7 @@ class Cache:
 
     def __init__(
         self, connection: Connection, cache_id: str, cache_dict: dict | None = None
-    ):
+    ) -> None:
         """Initialize the Cache object.
 
         Args:
@@ -59,7 +59,7 @@ class Cache:
         self._creator_name = kwargs.get('creator_name') or kwargs.get('creator')
         self._creation_time = kwargs.get('creation_time')
 
-    def list_properties(self):
+    def list_properties(self) -> dict:
         """List properties for cache."""
         return {
             'id': self.id,
@@ -140,7 +140,7 @@ class ContentCacheMixin:
     """
 
     @staticmethod
-    def fetch_nodes(connection: "Connection", project_id: str) -> list[str]:
+    def fetch_nodes(connection: 'Connection', project_id: str) -> list[str]:
         """Fetches the nodes for the specified connection and project.
 
         Args:
@@ -157,13 +157,13 @@ class ContentCacheMixin:
 
     @staticmethod
     def __alter_status(
-        connection: "Connection",
+        connection: 'Connection',
         op: str,
         cache_ids: list[str],
         value: bool | None = None,
         status: str | None = None,
         nodes: list[str] | None = None,
-    ) -> Response:
+    ) -> Response | None:
         """Engine for altering ContentCache status
 
         Args:
@@ -194,8 +194,16 @@ class ContentCacheMixin:
         for cache_id in cache_ids:
             content_cache = ContentCache(connection, cache_id)
             if not content_cache.combined_id and config.verbose:
-                logger.info(f'Could not {logger_message} cache {cache_id}')
-                continue
+                logger.info(
+                    f"Could not perform '{logger_message}' operation on deleted cache "
+                    f"with ID '{content_cache.id}'."
+                )
+                if logger_message == 'load':
+                    raise ValueError(
+                        f"Could not perform 'load' operation on deleted cache "
+                        f"with ID '{content_cache.id}'."
+                    )
+                return
             body['operationList'].append(
                 {
                     'op': op,
@@ -213,7 +221,7 @@ class ContentCacheMixin:
             logger.info(NO_CACHE_LOG)
 
     @staticmethod
-    def load_caches(connection: "Connection", cache_ids: list[str]) -> Response:
+    def load_caches(connection: 'Connection', cache_ids: list[str]) -> Response | None:
         """Bulk load caches.
 
         Args:
@@ -223,19 +231,21 @@ class ContentCacheMixin:
 
         Returns:
             Response object."""
-        res = ContentCacheMixin.__alter_status(
+        result = ContentCacheMixin.__alter_status(
             connection=connection,
             op='replace',
             cache_ids=cache_ids,
             value=True,
             status='loaded',
         )
-        if config.verbose and res:
+        if config.verbose and result:
             logger.info('Successfully loaded content caches')
-        return res
+        return result
 
     @staticmethod
-    def unload_caches(connection: "Connection", cache_ids: list[str]) -> Response:
+    def unload_caches(
+        connection: 'Connection', cache_ids: list[str]
+    ) -> Response | None:
         """Bulk unload caches.
 
         Args:
@@ -245,21 +255,21 @@ class ContentCacheMixin:
 
         Returns:
             Response object."""
-        res = ContentCacheMixin.__alter_status(
+        result = ContentCacheMixin.__alter_status(
             connection=connection,
             op='replace',
             cache_ids=cache_ids,
             value=False,
             status='loaded',
         )
-        if config.verbose and res:
+        if config.verbose and result:
             logger.info('Successfully unloaded content caches')
-        return res
+        return result
 
     @staticmethod
     def delete_caches(
-        connection: "Connection", cache_ids: list[str], force: bool | None = None
-    ) -> Response:
+        connection: 'Connection', cache_ids: list[str], force: bool | None = None
+    ) -> Response | None:
         """Bulk delete caches.
 
         Args:
@@ -281,17 +291,17 @@ class ContentCacheMixin:
                 or 'N'
             )
         if force or user_input == 'Y':
-            res = ContentCacheMixin.__alter_status(
+            result = ContentCacheMixin.__alter_status(
                 connection=connection, op='remove', cache_ids=cache_ids
             )
-            if config.verbose and res:
+            if config.verbose and result:
                 logger.info('Successfully deleted content caches')
-            return res
+            return result
 
     @classmethod
     def list_caches(
         cls,
-        connection: "Connection",
+        connection: 'Connection',
         to_dictionary: bool = False,
         status: str = 'ready',
         project_id: str | None = None,
@@ -305,7 +315,7 @@ class ContentCacheMixin:
         size: str | None = None,
         wh_tables: str | None = None,
         security_filter_id: str | None = None,
-    ) -> list["ContentCache"] | list[dict]:
+    ) -> list['ContentCache'] | list[dict]:
         """List content caches. You can filter them by id, database
         connection (`db_connection_id`) and project (`project_id`).
 
@@ -406,9 +416,9 @@ class ContentCacheMixin:
     @classmethod
     def load_all_caches(
         cls,
-        connection: "Connection",
+        connection: 'Connection',
         **filters,
-    ):
+    ) -> None:
         """
         Load all content caches filtered by the class type.
         Optionally filter by additional conditions.
@@ -433,9 +443,9 @@ class ContentCacheMixin:
     @classmethod
     def unload_all_caches(
         cls,
-        connection: "Connection",
+        connection: 'Connection',
         **filters,
-    ):
+    ) -> None:
         """
         Unload all content caches filtered by the class type.
         Optionally filter by additional conditions.
@@ -460,10 +470,10 @@ class ContentCacheMixin:
     @classmethod
     def delete_all_caches(
         cls,
-        connection: "Connection",
+        connection: 'Connection',
         force: bool | None = None,
         **filters,
-    ):
+    ) -> None:
         """
         Delete all content caches filtered by the class type.
         Optionally filter by additional conditions.

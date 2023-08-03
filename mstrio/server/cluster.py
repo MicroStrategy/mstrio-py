@@ -365,15 +365,18 @@ class Cluster:
         self._check_service(service, service_list)
 
         # ask for confirmation when stopping MicroStrategy-Intelligence-Server
-        if action == ServiceAction.STOP:
-            if not force and service == 'MicroStrategy-Intelligence-Server':
-                msg = (
-                    "Stopping the Intelligence Server can affect all the users' "
-                    "sessions, including this current session."
-                )
-                logger.info(msg)
-                if input("Are you sure you want to proceed? [Y/N]:") != 'Y':
-                    return
+        if (
+            action == ServiceAction.STOP
+            and not force
+            and service == "MicroStrategy-Intelligence-Server"
+        ):
+            msg = (
+                "Stopping the Intelligence Server can affect all the users' "
+                "sessions, including this current session."
+            )
+            logger.info(msg)
+            if input("Are you sure you want to proceed? [Y/N]:") == 'N':
+                return
         if action == ServiceAction.START:
             self._check_dependencies(service, service_list)
         # get credentials for operation on service
@@ -632,10 +635,7 @@ class Cluster:
 
         if node_name:
             node = [node for node in nodes if node.node == node_name]
-            if node.status == 'PASSING':
-                return True
-            else:
-                return False
+            return node.status == 'PASSING'
         else:
             return bool([True for node in nodes if node.status == 'PASSING'])
 
@@ -680,7 +680,7 @@ class Cluster:
             case _:
                 color = 'Black'
 
-        return 'color: %s' % color
+        return f'color: {color}'
 
     @property
     def default_node(self) -> str | None:
