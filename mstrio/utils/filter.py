@@ -1,4 +1,4 @@
-import mstrio.utils.helper as helper
+from mstrio.utils import helper
 
 
 class Filter:
@@ -126,7 +126,7 @@ class Filter:
             # build {attribute_id:[element_id, element_id_n]} lookup dict
             lkp = {}
             for s in self.attr_elem_selected:
-                if self.attr_elems[s]["attribute_id"] in lkp.keys():
+                if self.attr_elems[s]["attribute_id"] in lkp:
                     lkp[self.attr_elems[s]["attribute_id"]].append(s)
                 else:
                     lkp[self.attr_elems.get(s)["attribute_id"]] = [s]
@@ -139,15 +139,14 @@ class Filter:
                 opers.append({"operator": self.operator, "operands": [att, elem]})
 
             if len(opers) > 1:
-                vf = {"operator": "And", "operands": [op for op in opers]}
+                vf = {"operator": "And", "operands": opers}
             else:
                 vf = opers[0]
 
             return vf
 
     def _request_body(self):
-        fb = {}
-        fb["requestedObjects"] = self._requested_objects()
+        fb = {"requestedObjects": self._requested_objects()}
         if self.attr_elem_selected:
             fb["viewFilter"] = self._view_filter()
 
@@ -164,11 +163,11 @@ class Filter:
     def __type(self, object_id):
         """Look up and return object type from available objects."""
 
-        if object_id in self.attributes.keys():
+        if object_id in self.attributes:
             return "attribute"
-        elif object_id in list(self.metrics.keys()) + self.row_count_metrics:
+        elif object_id in list(self.metrics) + self.row_count_metrics:
             return "metric"
-        elif object_id in self.attr_elems.keys():
+        elif object_id in self.attr_elems:
             return "element"
         else:
             return None
@@ -193,7 +192,4 @@ class Filter:
             attr_selected + self.metr_selected + self.attr_elem_selected
         )
 
-        if object_id in all_selected_objects:
-            return True
-        else:
-            return False
+        return object_id in all_selected_objects

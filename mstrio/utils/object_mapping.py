@@ -71,12 +71,12 @@ def map_to_object(
         try:
             object_type = ObjectTypes(object_type)
         except ValueError:
-            object_type = None
+            object_type = ObjectTypes.NOT_SUPPORTED
     if not isinstance(subtype, ObjectSubTypes):
         try:
             subtype = ObjectSubTypes(subtype)
         except ValueError:
-            subtype = None
+            subtype = ObjectSubTypes.NOT_SUPPORTED
 
     if (
         object_type == ObjectTypes.REPORT_DEFINITION

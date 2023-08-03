@@ -6,13 +6,8 @@ from packaging import version
 
 from mstrio import config
 from mstrio.api import monitors
-from mstrio.api.exceptions import (
-    MstrException,
-    PartialSuccess,
-    Success,
-    VersionException,
-)
 from mstrio.connection import Connection
+from mstrio.helpers import MstrException, PartialSuccess, Success, VersionException
 from mstrio.server import Node, Project
 from mstrio.utils.entity import Entity, EntityBase
 from mstrio.utils.enum_helper import AutoName

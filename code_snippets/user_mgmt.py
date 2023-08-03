@@ -158,3 +158,29 @@ johns_default_address = johns_default_addresses[0]
 # "default one" we can use a generator expression and take its first output
 # to avoid going through the entire list, increasing performance
 johns_default_address = next((addr for addr in user_john.addresses if addr["is_default"]), None)
+# By default, when only ADDRESS_NAME and ADDRESS are provided, an email type
+# address is created. It is possible to create more address types by providing
+# DEVICE_ID and DELIVERY_TYPE
+ADDRESS_NAME = $address_name
+ADDRESS = $address
+DEVICE_ID = $device_id
+DELIVERY_TYPE = $delivery_type
+user_john.add_address(
+    name=ADDRESS_NAME,
+    address=ADDRESS,
+    device_id=DEVICE_ID,
+    delivery_type=DELIVERY_TYPE
+)
+# It is possible to make changes to an existing address
+ADDRESS_ID = $address_id
+NEW_ADDRESS_NAME = $new_address_name
+NEW_ADDRESS = $new_address
+NEW_DEVICE_ID = $new_device_id
+NEW_DELIVERY_TYPE = $new_delivery_type
+user_john.update_address(
+    id=ADDRESS_ID,
+    name=NEW_ADDRESS_NAME,
+    address=NEW_ADDRESS,
+    device_id=NEW_DEVICE_ID,
+    delivery_type=NEW_DELIVERY_TYPE
+)

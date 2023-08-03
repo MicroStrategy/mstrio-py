@@ -74,7 +74,7 @@ class FactExpression(Dictable):
         to_snake_case: bool = True,
     ) -> 'FactExpression':
         data = source.copy()
-        data['id'] = data.get('expressionId', None)
+        data['id'] = data.get('expressionId')
 
         return super().from_dict(data, connection, to_snake_case)
 

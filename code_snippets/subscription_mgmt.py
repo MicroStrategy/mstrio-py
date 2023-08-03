@@ -17,7 +17,7 @@ from mstrio.distribution_services import (
     Subscription,
     SubscriptionManager
 )
-from mstrio.api.users import create_address_v2, get_addresses
+from mstrio.users_and_groups.user import User
 from mstrio.connection import get_connection
 
 # Define a variable which can be later used in a script
@@ -84,16 +84,14 @@ FTP_ADDRESS_NAME = $ftp_address_name
 PHYSICAL_ADDRESS = $physical_address
 DEVICE_ID = $ftp_device_id
 # FTP sub needs a user with FTP Device address
-# Body for FTP Device address
-BODY = {
-        'name': FTP_ADDRESS_NAME,
-        'physicalAddress': PHYSICAL_ADDRESS,
-        'deliveryType': 'FTP',
-        'deviceId': DEVICE_ID,
-        'isDefault': False
-    }
 # Create FTP address for user
-create_address_v2(connection=CONN, id=RECIPIENT_ID_3, body=BODY)
+USER = User(connection=CONN, id=RECIPIENT_ID_3)
+USER.add_address(
+    name=FTP_ADDRESS_NAME,
+    address=PHYSICAL_ADDRESS,
+    delivery_type='FTP',
+    device_id=DEVICE_ID,
+)
 # Create an ftp subscription
 FTP_SUB = FTPSubscription.create(
     connection=CONN,

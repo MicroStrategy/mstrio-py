@@ -16,19 +16,14 @@ from mstrio.object_management import Folder, SearchPattern, full_search
 from mstrio.project_objects import OlapCube
 from mstrio.project_objects.datasets.helpers import AdvancedProperties, Template
 from mstrio.types import ObjectSubTypes, ObjectTypes
-from mstrio.utils.entity import (
-    CopyMixin,
-    DeleteMixin,
-    Entity,
-    MoveMixin,
-)
+from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, MoveMixin
 from mstrio.utils.enum_helper import AutoName, get_enum_val
 from mstrio.utils.helper import (
     delete_none_values,
     filter_params_for_func,
+    find_object_with_name,
     get_objects_id,
     get_valid_project_id,
-    find_object_with_name,
 )
 from mstrio.utils.parser import Parser
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
@@ -291,7 +286,7 @@ class IncrementalRefreshReport(Entity, CopyMixin, MoveMixin, DeleteMixin):
             connection=connection,
             project_id=project_id,
             project_name=project_name,
-            with_fallback=False if project_name else True,
+            with_fallback=not project_name,
         )
         filters = filters or {}
 

@@ -18,8 +18,8 @@ from mstrio.utils.helper import (
     Dictable,
     delete_none_values,
     filter_params_for_func,
-    get_valid_project_id,
     find_object_with_name,
+    get_valid_project_id,
 )
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
@@ -95,7 +95,7 @@ def list_transformations(
         connection=connection,
         project_id=project_id,
         project_name=project_name,
-        with_fallback=False if project_name else True,
+        with_fallback=not project_name,
     )
 
     objects_ = search_operations.full_search(

@@ -111,9 +111,9 @@ def make_dict_filter(param: str, op: str, filter_value: Any) -> Callable:
         # bool -> type must match exactly to bool -> cast
         # enum -> could be anything as value is extracted
 
-        if op == ENTITY_COMPARE:
-            return filter_value
-        elif isinstance(filter_value, value_type) and op != IN:
+        if (op == ENTITY_COMPARE) or (
+            isinstance(filter_value, value_type) and op != IN
+        ):
             return filter_value
         elif not isinstance(filter_value, value_type):
             # check if all other types are not equal to value_type and cast

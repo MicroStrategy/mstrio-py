@@ -6,7 +6,7 @@ from urllib.parse import quote, urlencode
 from packaging import version
 from requests.adapters import Response
 
-from mstrio.api.exceptions import MstrException, PartialSuccess, Success
+from mstrio.helpers import MstrException, PartialSuccess, Success
 from mstrio.utils.error_handlers import ErrorHandler, bulk_operation_response_handler
 from mstrio.utils.helper import (
     delete_none_values,
@@ -85,7 +85,7 @@ def get_projects_async(
 )
 def get_node_info(
     connection: "Connection",
-    id: str = None,
+    id: str | None = None,
     node_name: str | None = None,
     error_msg: str | None = None,
 ):
@@ -292,10 +292,7 @@ def get_user_connections_async(
 
 
 def delete_user_connection(
-    connection: "Connection",
-    id: str,
-    error_msg: str | None = None,
-    bulk: bool = False,
+    connection: "Connection", id: str, error_msg: str | None = None, bulk: bool = False
 ):
     """Disconnect a user connection on specific intelligence server node.
 

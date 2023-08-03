@@ -72,7 +72,7 @@ def get_cube_status(connection: "Connection", id: str):
 def cube_instance(
     connection: "Connection",
     cube_id: str,
-    body: dict = {},
+    body: dict = None,
     offset: int = 0,
     limit: int = 5000,
 ):
@@ -95,6 +95,7 @@ def cube_instance(
     Returns:
         Complete HTTP response object.
     """
+    body = body or {}
     params = {'offset': offset, 'limit': limit}
     if version.parse(connection.iserver_version) >= version.parse("11.2.0200"):
         params['fields'] = CUBE_FIELDS

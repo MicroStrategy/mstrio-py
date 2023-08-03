@@ -1,3 +1,4 @@
+import contextlib
 import csv
 import inspect
 import logging
@@ -13,13 +14,12 @@ from pandas import DataFrame
 
 from mstrio import config
 from mstrio.api import objects
-from mstrio.api.exceptions import VersionException
 from mstrio.connection import Connection
+from mstrio.helpers import NotSupportedError, VersionException
 from mstrio.types import ExtendedType, ObjectSubTypes, ObjectTypes
 from mstrio.utils import helper
 from mstrio.utils.acl import ACE, ACLMixin, Rights
 from mstrio.utils.dependence_mixin import DependenceMixin
-from mstrio.utils.exceptions import NotSupportedError
 from mstrio.utils.helper import rename_dict_keys
 from mstrio.utils.time_helper import (
     DatetimeFormats,
@@ -146,7 +146,7 @@ class EntityBase(helper.Dictable):
     """
 
     _OBJECT_TYPE: ObjectTypes = (
-        ObjectTypes.NONE
+        ObjectTypes.NOT_SUPPORTED
     )  # MSTR object type defined in ObjectTypes
     _OBJECT_SUBTYPES: list[
         ObjectSubTypes
@@ -194,7 +194,7 @@ class EntityBase(helper.Dictable):
             else kwargs.get("type", self._OBJECT_TYPE)
         )
         self.name = kwargs.get("name")
-        self._altered_properties = dict()
+        self._altered_properties = {}
 
     def fetch(self, attr: str | None = None) -> None:  # NOSONAR
         """Fetch the latest object's state from the I-Server.
@@ -429,10 +429,8 @@ class EntityBase(helper.Dictable):
         if hasattr(self, "_API_GETTERS"):  # fetch attributes not loaded on init
             attr = [attr for attr in self._API_GETTERS.keys() if isinstance(attr, str)]
             for a in attr:
-                try:
+                with contextlib.suppress(VersionException):
                     getattr(self, a)
-                except VersionException:
-                    pass
 
         properties = inspect.getmembers(
             self.__class__, lambda x: isinstance(x, property)
@@ -520,7 +518,8 @@ class EntityBase(helper.Dictable):
         return f"{self.__class__.__name__}({formatted_params})"
 
     def __hash__(self):
-        return hash((self.id, self._OBJECT_TYPE.value))
+        type_value = self._OBJECT_TYPE.value if self._OBJECT_SUBTYPES else None
+        return hash((self.id, type_value))
 
     def __eq__(self, other):
         """Equals operator to compare if an entity is equal to another object.
@@ -831,17 +830,17 @@ class EntityBase(helper.Dictable):
         # check if objects can be manipulated by comparing to existing values
         if op == "add":
             filtered_object_ids = sorted(
-                list(filter(lambda x: x not in existing_ids, object_ids_list))
+                filter(lambda x: x not in existing_ids, object_ids_list)
             )
         elif op == "remove":
             filtered_object_ids = sorted(
-                list(filter(lambda x: x in existing_ids, object_ids_list))
+                filter(lambda x: x in existing_ids, object_ids_list)
             )
         if filtered_object_ids:
             properties = {path: filtered_object_ids}
             self._send_proper_patch_request(properties, op)
 
-        failed = list(sorted(set(object_ids_list) - set(filtered_object_ids)))
+        failed = sorted(set(object_ids_list) - set(filtered_object_ids))
         failed_formatted = [
             object_map.get(object_id, object_id) for object_id in failed
         ]
@@ -886,10 +885,8 @@ class EntityBase(helper.Dictable):
             already_tracked = name in self._altered_properties
             if already_tracked:
                 current_val = self._altered_properties[name][0]
-            elif name in self.__dict__:
-                current_val = self.__dict__[name]
             else:
-                current_val = None
+                current_val = self.__dict__.get(name)
             is_changed = not (type(current_val) is type(value) and current_val == value)
             if is_changed:
                 self._altered_properties.update({name: (current_val, value)})
@@ -1202,8 +1199,9 @@ class DeleteMixin:
     Must be mixedin with Entity or its subclasses.
     """
 
-    _delete_confirm_msg: str | None = None
-    _delete_success_msg: str | None = None
+    _DELETE_CONFIRM_MSG: str | None = None
+    _DELETE_SUCCESS_MSG: str | None = None
+    _DELETE_PROMPT_ANSWER: str = 'Y'
 
     def delete(self: Entity, force: bool = False) -> bool:
         """Delete object.
@@ -1219,23 +1217,27 @@ class DeleteMixin:
 
         user_input = 'N'
         if not force:
-            message = self._delete_confirm_msg or (
+            message = self._DELETE_CONFIRM_MSG or (
                 f"Are you sure you want to delete {object_name} "
                 f"'{self.name}' with ID: {self._id}? [Y/N]: "
             )
             user_input = input(message) or 'N'
-        if force or user_input == 'Y':
+
+        if force or user_input == self._DELETE_PROMPT_ANSWER:
             param_value_dict = auto_match_args_entity(self._API_DELETE, self)
+
             response = self._API_DELETE(**param_value_dict)
+
             if response.status_code == 204 and config.verbose:
                 msg = (
-                    self._delete_success_msg
+                    self._DELETE_SUCCESS_MSG
                     or f"Successfully deleted {object_name} with ID: '{self._id}'."
                 )
                 logger.info(msg)
+
             return response.ok
-        else:
-            return False
+
+        return False
 
 
 class CertifyMixin:
@@ -1355,7 +1357,7 @@ class VldbMixin:
 
 
 def auto_match_args_entity(
-    func: Callable, obj: EntityBase, exclude: list = [], include_defaults: bool = True
+    func: Callable, obj: EntityBase, exclude: list = None, include_defaults: bool = True
 ) -> dict:
     """Automatically match `obj` object data to function arguments.
 
@@ -1371,6 +1373,7 @@ def auto_match_args_entity(
     Raises:
         KeyError: could not match all required arguments
     """
+    exclude = exclude or None
     # convert names starting with '_'
     obj_dict = {
         key[1:] if key.startswith("_") else key: val

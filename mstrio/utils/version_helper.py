@@ -2,11 +2,10 @@ import inspect
 from functools import wraps
 from inspect import getattr_static, getmembers
 
-from packaging import version
 from packaging.version import parse as version_parser
 
-from mstrio.api.exceptions import VersionException
 from mstrio.connection import Connection
+from mstrio.helpers import VersionException
 
 
 def method_version_handler(version):
@@ -105,4 +104,4 @@ def is_server_min_version(connection: 'Connection', version_str: str) -> bool:
         True if iServer version is greater or equal to given version.
         False if iServer version is lower than given version.
     """
-    return version.parse(connection.iserver_version) >= version.parse(version_str)
+    return version_parser(connection.iserver_version) >= version_parser(version_str)

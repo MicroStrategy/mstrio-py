@@ -114,7 +114,7 @@ def get_my_personal_objects_contents(
         connection=connection,
         project_id=project_id,
         project_name=project_name,
-        with_fallback=False if project_name else True,
+        with_fallback=not project_name,
     )
 
     objects = folders.get_my_personal_objects_contents(connection, project_id).json()
@@ -171,7 +171,7 @@ def get_predefined_folder_contents(
         connection=connection,
         project_id=project_id,
         project_name=project_name,
-        with_fallback=False if project_name else True,
+        with_fallback=not project_name,
     )
 
     objects = fetch_objects_async(

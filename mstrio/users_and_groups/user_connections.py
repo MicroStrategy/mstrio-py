@@ -235,7 +235,7 @@ class UserConnections:
                 connection=self.connection, ids=connection_ids
             )
             if res.status_code in [200, 207] or (
-                res.status_code == 403 and not res.json().get('code', None)
+                res.status_code == 403 and not res.json().get('code')
             ):
                 return self._prepare_disconnect_by_id_message(
                     statuses=res.json()['deleteUserConnectionsStatus']

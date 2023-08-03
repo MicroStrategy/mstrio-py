@@ -26,7 +26,7 @@ class Library:
                 connection=connection,
                 project_id=project_id,
                 project_name=project_name,
-                with_fallback=False if project_name else True,
+                with_fallback=not project_name,
             )
         except ValueError:
             self._documents = None

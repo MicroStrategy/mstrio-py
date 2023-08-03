@@ -7,6 +7,13 @@ its usage.
 
 from mstrio.project_objects import list_olap_cubes, OlapCube
 from mstrio.connection import get_connection
+from mstrio.project_objects.datasets.helpers import (
+    AttributeTemplateUnit,
+    MetricTemplateUnit,
+    AttributeFormReference,
+    MetricElement,
+    Template
+)
 
 # Define a variable which can be later used in a script
 PROJECT_NAME = $project_name  # Insert project to connect to here
@@ -110,6 +117,69 @@ attributes = [ATTRIBUTE, NEW_ATTRIBUTE]
 metrics = [METRIC, NEW_METRIC]
 new_olap_cube_from_attributes_and_metrics.update(attributes=attributes, metrics=metrics)
 new_olap_cube.update(attributes=attributes, metrics=metrics)
+
+# Please note that if AttributeTempateUnit.forms are empty and equals to None
+# default attribute forms will be used to create OLAP cube and string indicating that
+# will be returned instead of forms from method OlapCube.list_attribute_forms().
+# Also if AttributeTempateUnit.forms are specified, OlapCube.to_dataframe() will
+# return corresponding to selected attribute forms. To add new form for an attribute
+# in OLAP Cube and to see reflected changes in generated dataframe use OlapCube.alter
+# with modified template with newly added form.
+# Define variables which can be later used in a script
+NEW_ATTRIBUTE_FORM_ID = $new_attribute_form_id      # Insert new attribute form ID here
+TEMPLATE_WITH_NEW_FORM = Template(
+    rows=[
+        AttributeTemplateUnit(
+            id='8D679D4211D3E4981000E787EC6DE8A4',
+            name='Item',
+            alias=None,
+            forms=[
+                AttributeFormReference(id='45C11FA478E745FEA08D781CEA190FE5'),
+                AttributeFormReference(id='CCFBE2A5EADB4F50941FB879CCF1721C'),
+            ],
+        ),
+        MetricTemplateUnit(
+            elements=[
+                MetricElement(
+                    id='9F9B1E724E4E242755BE10AFABA290F4',
+                    name='Web Sales',
+                    alias=None,
+                ),
+            ]
+        ),
+    ],
+    columns=[
+        AttributeTemplateUnit(
+            id='8D679D5011D3E4981000E787EC6DE8A4',
+            name='Supplier',
+            alias=None,
+            forms=[
+                AttributeFormReference(id='45C11FA478E745FEA08D781CEA190FE5'),
+                AttributeFormReference(id='CCFBE2A5EADB4F50941FB879CCF1721C'),
+                AttributeFormReference(id=NEW_ATTRIBUTE_FORM_ID),
+            ],
+        ),
+        MetricTemplateUnit(
+            elements=[
+                MetricElement(
+                    id='971752994EFBAE6CF37A26A03FDA9813',
+                    name='Average Revenue',
+                    alias=None,
+                ),
+            ]
+        ),
+        AttributeTemplateUnit(
+            id='8D679D4B11D3E4981000E787EC6DE8A4',
+            name='Region',
+        ),
+    ],
+    page_by=[],
+)
+
+# To add new attribute form to OLAP cube
+new_olap_cube.alter(
+    template=TEMPLATE_WITH_NEW_FORM,
+)
 
 # Set new partition attribute for OLAP Cube by ID
 new_olap_cube.set_partition_attribute(ATTRIBUTE_ID)

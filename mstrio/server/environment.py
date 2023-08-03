@@ -2,10 +2,10 @@ from typing import Optional, Union
 
 from pandas import DataFrame
 
-import mstrio.utils.helper as helper
 from mstrio.api import monitors
 from mstrio.server.project import Project, compare_project_settings
 from mstrio.server.server import ServerSettings
+from mstrio.utils import helper
 from mstrio.utils.version_helper import class_version_handler
 
 
@@ -148,7 +148,7 @@ class Environment:
         loaded = False
         for node in nodes:
             status = node['projects'][0]['status']
-            loaded = True if status == 'loaded' else False
+            loaded = status == 'loaded'
             if loaded:
                 break
         return loaded

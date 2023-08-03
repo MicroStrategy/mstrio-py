@@ -4,8 +4,8 @@ from enum import Enum, auto
 from pathlib import Path
 
 from mstrio import config
-from mstrio.api.exceptions import VersionException
 from mstrio.connection import Connection
+from mstrio.helpers import VersionException
 from mstrio.object_management.migration.package import (
     Package,
     PackageConfig,
@@ -74,7 +74,7 @@ class Migration(Dictable, ProgressBarMixin):
 
     def __init__(
         self,
-        save_path: str | None = f"{Path.cwd()}/migration.mmp",
+        save_path: str | None = None,
         source_connection: Connection | None = None,
         configuration: PackageConfig | None = None,
         target_connection: Connection | None = None,
@@ -82,6 +82,7 @@ class Migration(Dictable, ProgressBarMixin):
         name: str | None = None,
         create_undo: bool = True,
     ):
+        save_path = save_path or (Path.cwd() / 'migration.mmp')
         if not self._validate_envs_version(source_connection, target_connection):
             exception_handler(
                 msg=(

@@ -19,11 +19,11 @@ from mstrio.distribution_services.subscription.delivery import (
     ShortcutCacheFormat,
     ZipSettings,
 )
+from mstrio.helpers import NotSupportedError
 from mstrio.users_and_groups import User
 from mstrio.utils import helper, time_helper
 from mstrio.utils.entity import EntityBase
 from mstrio.utils.enum_helper import AutoUpperName
-from mstrio.utils.exceptions import NotSupportedError
 from mstrio.utils.helper import (
     get_args_from_func,
     get_default_args_from_func,
@@ -114,7 +114,7 @@ class Subscription(EntityBase):
             connection=connection,
             project_id=project_id,
             project_name=project_name,
-            with_fallback=False if project_name else True,
+            with_fallback=not project_name,
         )
         if id or subscription_id:
             subscription_id = id if id else subscription_id
@@ -161,7 +161,7 @@ class Subscription(EntityBase):
             if kwargs.get('contents')
             else None
         )
-        self.recipients = kwargs.get('recipients', None)
+        self.recipients = kwargs.get('recipients')
         self.delivery = (
             Delivery.from_dict(kwargs.get('delivery'))
             if kwargs.get('delivery')
@@ -211,9 +211,7 @@ class Subscription(EntityBase):
         device_id: str | None = None,
         do_not_create_update_caches: bool | None = None,
         re_run_hl: bool | None = None,
-        cache_library_cache_types: list[LibraryCacheTypes | str] = [
-            LibraryCacheTypes.WEB
-        ],
+        cache_library_cache_types: list[LibraryCacheTypes | str] = None,
         cache_reuse_dataset_cache: bool = False,
         cache_is_all_library_users: bool = False,
         delivery_notification_enabled: bool = False,
@@ -298,6 +296,7 @@ class Subscription(EntityBase):
                 Notification details
         """
         # TODO Potentially remove if new subscription types are supported
+        cache_library_cache_types = cache_library_cache_types or [LibraryCacheTypes.WEB]
         if self.delivery.mode in [
             'SNAPSHOT',
             'PERSONAL_VIEW',
@@ -598,7 +597,8 @@ class Subscription(EntityBase):
         if len(self.recipients) == 1:
             helper.exception_handler(
                 "Subscription must have at last one recipient. Add new recipient "
-                "before removing."
+                "before removing.",
+                exception_type=ValueError,
             )
         for recipient in recipients:
             rec_id = recipient['id'] if isinstance(recipient, dict) else recipient
@@ -611,7 +611,8 @@ class Subscription(EntityBase):
         if len(all_recipients) == 0:
             helper.exception_handler(
                 "You cannot remove all existing recipients. Add new recipient before "
-                "removing."
+                "removing.",
+                exception_type=ValueError,
             )
         elif len(self.recipients) - len(all_recipients) > 0:
             self.alter(recipients=all_recipients)
@@ -679,12 +680,13 @@ class Subscription(EntityBase):
         device_id: str | None = None,
         do_not_create_update_caches: bool | None = None,
         re_run_hl: bool | None = None,
-        library_cache_types: list[LibraryCacheTypes | str] = [LibraryCacheTypes.WEB],
+        library_cache_types: list[LibraryCacheTypes | str] = None,
         reuse_dataset_cache: bool = False,
         is_all_library_users: bool = False,
         notification_enabled: bool = False,
         personal_notification_address_id: str | None = None,
     ):
+        library_cache_types = library_cache_types or [LibraryCacheTypes.WEB]
         func = self.__change_delivery_properties
         args = get_args_from_func(func)
         defaults = get_default_args_from_func(func)
@@ -697,7 +699,7 @@ class Subscription(EntityBase):
                 properties[property_key] = local[property_key]
 
         # 'zip_settings' is 'zip' in object
-        if 'zip_settings' in properties.keys():
+        if 'zip_settings' in properties:
             properties['zip'] = properties.pop('zip_settings')
 
         obj_dict = self.delivery.VALIDATION_DICT
@@ -713,18 +715,18 @@ class Subscription(EntityBase):
         if properties:  # at this point only not None values in properties
             for key, value in properties.items():
                 if (
-                    key in obj_dict.keys()
+                    key in obj_dict
                 ):  # Highest level parameters. Mainly mode type and object
                     # Change mode or set attr if it's not mode param
                     if not self.delivery.change_mode(key, value):
                         self.delivery.__setattr__(key, value)
                 elif (
-                    key in obj_mode_dict.keys()
+                    key in obj_mode_dict
                 ):  # parameters of a particular mode e.g. of email
                     helper.rsetattr(
                         self.delivery, f'{self.delivery.mode.lower()}.{key}', value
                     )
-                elif key in obj_mode_zip_dict.keys():  # zip settings
+                elif key in obj_mode_zip_dict:  # zip settings
                     key = key[4:]
                     if not helper.rgetattr(
                         self.delivery, f'{self.delivery.mode.lower()}.zip', None
@@ -811,9 +813,7 @@ class Subscription(EntityBase):
         device_id: str | None = None,
         do_not_create_update_caches: bool = True,
         re_run_hl: bool = True,
-        cache_library_cache_types: list[LibraryCacheTypes | str] = [
-            LibraryCacheTypes.WEB
-        ],
+        cache_library_cache_types: list[LibraryCacheTypes | str] = None,
         cache_reuse_dataset_cache: bool = False,
         cache_is_all_library_users: bool = False,
         delivery_notification_enabled: bool = False,
@@ -896,6 +896,7 @@ class Subscription(EntityBase):
             delivery_personal_notification_address_id (str, optional):
                 Notification details
         """
+        cache_library_cache_types = cache_library_cache_types or [LibraryCacheTypes.WEB]
         if connection._iserver_version <= '11.3.0100':
             cache_cache_type = LegacyCacheType[cache_cache_type.name]
         else:
@@ -911,7 +912,7 @@ class Subscription(EntityBase):
             connection=connection,
             project_id=project_id,
             project_name=project_name,
-            with_fallback=False if project_name else True,
+            with_fallback=not project_name,
         )
 
         if not schedules:

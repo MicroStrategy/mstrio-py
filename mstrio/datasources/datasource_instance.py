@@ -493,24 +493,16 @@ class DatasourceInstance(Entity, CopyMixin, DeleteMixin, ModelVldbMixin):
     def _set_object_attributes(self, **kwargs) -> None:
         super()._set_object_attributes(**kwargs)
         if kwargs.get("primary_datasource"):
-            setattr(
-                self,
-                'primary_datasource',
-                DatasourceInstance(
-                    id=kwargs.get("primary_datasource").get("id"),
-                    name=kwargs.get("primary_datasource").get("name"),
-                    connection=self.connection,
-                ),
+            self.primary_datasource = DatasourceInstance(
+                id=kwargs.get("primary_datasource").get("id"),
+                name=kwargs.get("primary_datasource").get("name"),
+                connection=self.connection,
             )
         if kwargs.get("data_mart_datasource"):
-            setattr(
-                self,
-                'data_mart_datasource',
-                DatasourceInstance(
-                    id=kwargs.get("data_mart_datasource").get("id"),
-                    name=kwargs.get("data_mart_datasource").get("name"),
-                    connection=self.connection,
-                ),
+            self.data_mart_datasource = DatasourceInstance(
+                id=kwargs.get("data_mart_datasource").get("id"),
+                name=kwargs.get("data_mart_datasource").get("name"),
+                connection=self.connection,
             )
 
     @method_version_handler('11.3.0900')

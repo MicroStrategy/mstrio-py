@@ -63,7 +63,7 @@ def list_physical_tables(
         connection=connection,
         project_id=project_id,
         project_name=project_name,
-        with_fallback=False if project_name else True,
+        with_fallback=not project_name,
     )
     if include_unassigned_tables:
         tables = full_search(
@@ -114,7 +114,7 @@ def list_tables_prefixes(
         connection=connection,
         project_id=project_id,
         project_name=project_name,
-        with_fallback=False if project_name else True,
+        with_fallback=not project_name,
     )
 
     physical_tables = list_physical_tables(
@@ -234,7 +234,7 @@ class PhysicalTable(Entity):
             connection=connection,
             project_id=project_id,
             project_name=project_name,
-            with_fallback=False if project_name else True,
+            with_fallback=not project_name,
         )
 
         super().__init__(connection=connection, object_id=id)

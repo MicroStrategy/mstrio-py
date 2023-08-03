@@ -1,5 +1,4 @@
 import logging
-import warnings
 from collections.abc import Callable
 from copy import deepcopy
 from typing import TYPE_CHECKING, Optional
@@ -25,18 +24,14 @@ from mstrio.object_management import search_operations
 from mstrio.object_management.folder import Folder
 from mstrio.object_management.search_enums import SearchPattern
 from mstrio.types import ObjectSubTypes, ObjectTypes
-from mstrio.utils.entity import (
-    CopyMixin,
-    DeleteMixin,
-    Entity,
-    MoveMixin,
-)
+from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, MoveMixin
 from mstrio.utils.enum_helper import get_enum_val
 from mstrio.utils.helper import (
     delete_none_values,
+    exception_handler,
     filter_params_for_func,
-    get_valid_project_id,
     find_object_with_name,
+    get_valid_project_id,
 )
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
@@ -119,7 +114,7 @@ def list_attributes(
         connection=connection,
         project_id=project_id,
         project_name=project_name,
-        with_fallback=False if project_name else True,
+        with_fallback=not project_name,
     )
 
     if attribute_subtype is None:
@@ -379,7 +374,8 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
         attribute_lookup_table: SchemaObjectReference | None = None,
         sorts: AttributeSorts | None = None,
         show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
-    ) -> "Attribute":
+        hidden: bool | None = None,
+    ) -> 'Attribute':
         """Alter attribute properties.
 
         Args:
@@ -451,10 +447,18 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
                 f"{response['id']}'"
             )
 
-        return cls.from_dict(
+        attribute = cls.from_dict(
             source={**response, 'show_expression_as': show_expression_as},
             connection=connection,
         )
+
+        # Default value of 'hidden' attribute on IServer is False.
+        # Because of that there is no reason to modify its value
+        # after creation if 'hidden' parameter was provided as False.
+        if hidden:
+            attribute.alter(hidden=hidden)
+
+        return attribute
 
     def __init__(
         self,
@@ -636,9 +640,10 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
         elif child:
             for rel in self.relationships:
                 if hasattr(rel, 'child') and rel.child == child:
-                    warnings.warn(
-                        f"{child.name} already is a child of the attribute '{self.id}'"
-                        " and will be omitted."
+                    exception_handler(
+                        msg=f"{child.name} already is a child of the attribute '"
+                        f"{self.id}' and will be omitted.",
+                        exception_type=Warning,
                     )
                     return None
         elif joint_child:
@@ -647,9 +652,10 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
                     children = (
                         "[" + ", ".join(child.name for child in joint_child) + "]"
                     )
-                    warnings.warn(
-                        f"{children} already is a joint_child of the attribute '"
-                        f"{self.id}' and will be omitted."
+                    exception_handler(
+                        msg=f"{children} already is a joint_child of the attribute '"
+                        f"{self.id}' and will be omitted.",
+                        exception_type=Warning,
                     )
                     return None
 
@@ -677,9 +683,10 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
         """
         for rel in self.relationships:
             if rel.parent.object_id == parent.object_id:
-                warnings.warn(
-                    f"{parent.name} already is a parent of the attribute '{self.id}'"
-                    " and will be omitted."
+                exception_handler(
+                    msg=f"{parent.name} already is a parent of the attribute '"
+                    f"{self.id}' and will be omitted.",
+                    exception_type=Warning,
                 )
                 return None
         child = SchemaObjectReference.create_from(self)
@@ -717,9 +724,10 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
                     return self._update_relationships(rel, add=False)
             child_name = child.name
 
-        warnings.warn(
-            f"{child_name} is not a child/joint_child of the attribute '{self.id}'"
-            " and will be omitted."
+        exception_handler(
+            msg=f"{child_name} is not a child/joint_child of the attribute '{self.id}'"
+            f" and will be omitted.",
+            exception_type=Warning,
         )
 
     def remove_parent(self, parent: SchemaObjectReference) -> None:
@@ -733,9 +741,10 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
             if rel.parent.object_id == parent.object_id and parent.object_id != self.id:
                 return self._update_relationships(rel, add=False)
 
-        warnings.warn(
-            f"{parent.name} is not a parent of the attribute '{self.id}' and will be "
-            f"omitted."
+        exception_handler(
+            msg=f"{parent.name} is not a parent of the attribute '{self.id}' and will "
+            f"be omitted.",
+            exception_type=Warning,
         )
 
     def _update_relationships(self, relationship: Relationship, add=True) -> None:

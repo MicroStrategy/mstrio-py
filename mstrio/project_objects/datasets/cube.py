@@ -10,13 +10,13 @@ from tqdm.auto import tqdm
 from mstrio import config
 from mstrio.api import cubes, datasets
 from mstrio.connection import Connection
+from mstrio.helpers import NotSupportedError
 from mstrio.object_management.search_operations import SearchPattern, full_search
 from mstrio.project_objects.datasets import cube_cache
 from mstrio.types import ObjectSubTypes, ObjectTypes
 from mstrio.users_and_groups.user import User
 from mstrio.utils.certified_info import CertifiedInfo
 from mstrio.utils.entity import DeleteMixin, Entity, VldbMixin
-from mstrio.utils.exceptions import NotSupportedError
 from mstrio.utils.filter import Filter
 from mstrio.utils.helper import (
     choose_cube,
@@ -144,7 +144,7 @@ def list_all_cubes(
         connection=connection,
         project_id=project_id,
         project_name=project_name,
-        with_fallback=False if project_name else True,
+        with_fallback=not project_name,
     )
 
     objects_ = full_search(
@@ -279,7 +279,7 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
     """
 
     _OBJECT_TYPE = ObjectTypes.REPORT_DEFINITION
-    _OBJECT_SUBTYPE = ObjectSubTypes.NONE.value
+    _OBJECT_SUBTYPE = None
     _API_GETTERS = {
         (
             'id',
@@ -360,8 +360,8 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
         self.instance_id = kwargs.get('instance_id')
         self._parallel = kwargs.get('parallel', True)
         self._initial_limit = 1000
-        self._progress_bar = (
-            True if kwargs.get('progress_bar', True) and config.progress_bar else False
+        self._progress_bar = bool(
+            kwargs.get("progress_bar", True) and config.progress_bar
         )
         self._table_definition = {}
         self._dataframe = None
@@ -573,7 +573,7 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
         response = cubes.cube_instance(
             connection=self._connection,
             cube_id=self._id,
-            body=self._instance_config._request_body(),
+            body=self._prepare_instance_body(),
             offset=0,
             limit=self._initial_limit,
         )
@@ -913,6 +913,9 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
                 return False
         else:
             return False
+
+    def _prepare_instance_body(self) -> dict:
+        return self._instance_config._request_body()
 
     @property
     def attributes(self) -> list[dict]:

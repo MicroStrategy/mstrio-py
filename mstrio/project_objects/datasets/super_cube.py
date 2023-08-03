@@ -1,4 +1,5 @@
 import logging
+import math
 import time
 from dataclasses import dataclass
 
@@ -78,7 +79,7 @@ def list_super_cubes(
         connection=connection,
         project_id=project_id,
         project_name=project_name,
-        with_fallback=False if project_name else True,
+        with_fallback=not project_name,
     )
 
     objects_ = full_search(
@@ -505,7 +506,7 @@ class SuperCube(_Cube, CertifyMixin):
             total = _df.shape[0]
 
             # Count the number of iterations
-            it_total = int(total / chunksize) + (total % chunksize != 0)
+            it_total = math.ceil(total / chunksize)
 
             pbar = tqdm(chunks, total=it_total, disable=(not self._progress_bar))
             for index, chunk in enumerate(pbar):

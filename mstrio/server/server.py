@@ -2,10 +2,10 @@ import logging
 
 from packaging import version
 
-import mstrio.utils.helper as helper
 from mstrio import config
 from mstrio.api import administration
 from mstrio.connection import Connection
+from mstrio.utils import helper
 from mstrio.utils.settings.base_settings import BaseSettings
 from mstrio.utils.settings.setting_types import SettingValue
 from mstrio.utils.version_helper import method_version_handler

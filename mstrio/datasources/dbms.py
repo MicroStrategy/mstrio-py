@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING
 
 from mstrio.api import datasources
 from mstrio.utils import helper
-from mstrio.utils.entity import EntityBase, ObjectTypes
+from mstrio.utils.entity import EntityBase
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
 if TYPE_CHECKING:
@@ -48,7 +48,7 @@ class Dbms(EntityBase):
         version: Database management system (DBMS) version.
     """
 
-    _OBJECT_TYPE = ObjectTypes.NONE
+    _OBJECT_TYPE = None
     _FROM_DICT_MAP = {}  # map attributes to Enums and Composites
     _DBMS_CACHE = set()
 

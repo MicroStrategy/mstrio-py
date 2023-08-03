@@ -343,7 +343,7 @@ class ContactGroup(EntityBase, DeleteMixin):
             if memberships
             else []
         )
-        setattr(self, '_memberships', memberships_objs)
+        self._memberships = memberships_objs
 
     def add_members(
         self, members: Iterable[Union['ContactGroupMember', 'Contact', 'ContactGroup']]

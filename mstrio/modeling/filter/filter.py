@@ -8,18 +8,13 @@ from mstrio.object_management import SearchPattern, search_operations
 from mstrio.object_management.folder import Folder
 from mstrio.types import ObjectSubTypes, ObjectTypes
 from mstrio.users_and_groups import User
-from mstrio.utils.entity import (
-    CopyMixin,
-    DeleteMixin,
-    Entity,
-    MoveMixin,
-)
+from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, MoveMixin
 from mstrio.utils.enum_helper import get_enum_val
 from mstrio.utils.helper import (
     delete_none_values,
     filter_params_for_func,
-    get_valid_project_id,
     find_object_with_name,
+    get_valid_project_id,
 )
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
@@ -94,7 +89,7 @@ def list_filters(
         connection=connection,
         project_id=project_id,
         project_name=project_name,
-        with_fallback=False if project_name else True,
+        with_fallback=not project_name,
     )
 
     objects = search_operations.full_search(

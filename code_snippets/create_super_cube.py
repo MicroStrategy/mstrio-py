@@ -16,6 +16,7 @@ its usage.
 """
 
 import pandas as pd
+import datetime as dt
 
 from mstrio.project_objects import (
     SuperCubeAttribute,
@@ -42,6 +43,13 @@ sales = {
 }
 sales_df = pd.DataFrame(sales, columns=["store_id", "category", "sales", "sales_fmt"])
 
+dates = {
+    "dates": ['2021-11-15','2020-05-04','2018-01-26','2019-02-18','2021-12-10']
+}
+dates_df = pd.DataFrame(dates, columns=["dates"])
+# If any of your columns should have type 'Date' please set it manually as below
+dates_df["dates"] = pd.to_datetime(dates_df["dates"]).dt.date
+
 # Define a variable which can be later used in a script
 SUPER_CUBE_NAME = $super_cube_name  # Insert name of created suber cube here
 
@@ -51,6 +59,7 @@ SUPER_CUBE_NAME = $super_cube_name  # Insert name of created suber cube here
 ds = SuperCube(connection=conn, name=SUPER_CUBE_NAME)
 ds.add_table(name="Stores", data_frame=stores_df, update_policy="add")
 ds.add_table(name="Sales", data_frame=sales_df, update_policy="add")
+ds.add_table(name="Dates", data_frame=dates_df, update_policy="add")
 ds.create()
 
 # Add tables to super cube and map columns to attribute forms
