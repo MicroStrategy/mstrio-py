@@ -1351,6 +1351,72 @@
       "multiple": false
     }
   },
+  "translations.py": {
+    "project_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "metric_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "metric_type": {
+      "type": "text",
+      "multiple": false
+    },
+    "lang_lcid": {
+      "type": "text",
+      "multiple": false
+    },
+    "lang_2_lcid": {
+      "type": "text",
+      "multiple": false
+    },
+    "lang_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "lang_2_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "language_object": {
+      "type": "text",
+      "multiple": false
+    },
+    "language_object_2": {
+      "type": "text",
+      "multiple": false
+    },
+    "target_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "translation_value": {
+      "type": "text",
+      "multiple": false
+    },
+    "translation_value_altered": {
+      "type": "text",
+      "multiple": false
+    },
+    "translation_value_2": {
+      "type": "text",
+      "multiple": false
+    },
+    "translation_value_2_altered": {
+      "type": "text",
+      "multiple": false
+    },
+    "lang_object_type": {
+      "type": "text",
+      "multiple": false
+    },
+    "path_for_csv": {
+      "type": "text",
+      "multiple": false
+    }
+  },
   "transmitter_mgmt.py": {
     "project_name": {
       "type": "text",

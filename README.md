@@ -89,6 +89,7 @@ It is subject to change until it is released as Generally Available.
 - **Driver** module (see [code_snippets][code_snippet_datasource])
 - **Gateway** module (see [code_snippets][code_snippet_datasource])
 - **Language** module (see [code_snippets][code_snippet_languages])
+- **Translation** module (see [code_snippets][code_snippet_translations])
 
 
 <a id="documentation" name="documentation"></a>
@@ -158,6 +159,8 @@ Error getting cube metadata information. I-Server Error ERR001, (ServiceManager:
 **Note**: MicroStrategy for Jupyter is accessible only to users with assigned Microstrategy privileges:
 `Use Application Jupyter` and `Use Library Web`. For more details, please refer to Microstrategy licensing.
 
+**Note**: MicroStrategy for Jupyter is not supported on Jupyter version 7 or above.
+
 <a id="install-the-mstrio-py-package" name="install-the-mstrio-py-package"></a>
 ## Install the `mstrio-py` Package
 
@@ -183,7 +186,7 @@ jupyter nbextension enable connector-jupyter --py --sys-prefix
 <a id="versioning--changelog" name="versioning--changelog"></a>
 # Versioning & Changelog
 
-Current version: **11.3.10.103** (4 August 2023). Check out [**Changelog**][release_notes] to see what's new.
+Current version: **11.3.11.101** (28 September 2023). Check out [**Changelog**][release_notes] to see what's new.
 
 mstrio-py is constantly developed to support newest MicroStrategy REST APIs. Functionalities may be added to mstrio on monthly basis. It is **recommended** to always install the newest version of mstrio-py, as it will be most stable and still maintain backwards compatibility with various MicroStrategy installations, dating back to 11.1.4.
 
@@ -276,3 +279,4 @@ When features (modules, parameters, attributes, methods etc.) are marked for dep
 [code_snippet_dynamic_recipient_list]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/dynamic_recipient_list.py
 [code_snippet_vldb]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/vldb.py
 [code_snippet_languages]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/languages.py
+[code_snippet_translations]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/translations.py

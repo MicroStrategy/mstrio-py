@@ -2,7 +2,7 @@ from mstrio.utils.error_handlers import ErrorHandler
 
 
 @ErrorHandler(
-    err_msg='Authentication error. Check user credentials or REST API URL and try again'
+    err_msg="Authentication error. Check user credentials or REST API URL and try again"
 )
 def login(connection):
     """Authenticate a user and create an HTTP session on the web server where
@@ -25,7 +25,7 @@ def login(connection):
 
     return connection.post(
         skip_expiration_check=True,
-        url=f'{connection.base_url}/api/auth/login',
+        endpoint='/api/auth/login',
         data={
             'username': connection.username,
             'password': connection._Connection__password,
@@ -47,7 +47,7 @@ def logout(connection, error_msg=None, whitelist=None):
     """
     return connection.post(
         skip_expiration_check=True,
-        url=f'{connection.base_url}/api/auth/logout',
+        endpoint='/api/auth/logout',
         headers={'X-MSTR-ProjectID': None},
     )
 
@@ -64,7 +64,7 @@ def session_renew(connection):
     """
     return connection.put(
         skip_expiration_check=True,
-        url=f'{connection.base_url}/api/sessions',
+        endpoint='/api/sessions',
         headers={'X-MSTR-ProjectID': None},
         timeout=2.0,
     )
@@ -81,12 +81,12 @@ def session_status(connection):
     """
     return connection.get(
         skip_expiration_check=True,
-        url=f'{connection.base_url}/api/sessions',
+        endpoint='/api/sessions',
         headers={'X-MSTR-ProjectID': None},
     )
 
 
-@ErrorHandler(err_msg='Could not get identity token.')
+@ErrorHandler(err_msg="Could not get identity token.")
 def identity_token(connection):
     """Create a new identity token.
 
@@ -101,7 +101,7 @@ def identity_token(connection):
         Complete HTTP response object.
     """
     return connection.post(
-        url=f'{connection.base_url}/api/auth/identityToken',
+        endpoint='/api/auth/identityToken',
     )
 
 
@@ -116,14 +116,14 @@ def validate_identity_token(connection, identity_token):
         Complete HTTP response object.
     """
     return connection.get(
-        url=f'{connection.base_url}/api/auth/identityToken',
+        endpoint='/api/auth/identityToken',
         headers={'X-MSTR-IdentityToken': identity_token},
     )
 
 
 @ErrorHandler(
-    err_msg='Error creating a new Web server session that shares an existing IServer '
-    'session.'
+    err_msg="Error creating a new Web server session that shares an existing IServer "
+    "session."
 )
 def delegate(connection, identity_token, whitelist=None):
     """Returns authentication token and cookies from given X-MSTR-
@@ -139,12 +139,12 @@ def delegate(connection, identity_token, whitelist=None):
     """
     return connection.post(
         skip_expiration_check=True,
-        url=f'{connection.base_url}/api/auth/delegate',
+        endpoint='/api/auth/delegate',
         json={'loginMode': "-1", 'identityToken': identity_token},
     )
 
 
-@ErrorHandler(err_msg='Error getting privileges list.')
+@ErrorHandler(err_msg="Error getting privileges list.")
 def user_privileges(connection):
     """Get the list of privileges for the authenticated user.
 
@@ -157,10 +157,10 @@ def user_privileges(connection):
     Returns:
         Complete HTTP response object.
     """
-    return connection.get(url=f"{connection.base_url}/api/sessions/privileges")
+    return connection.get(endpoint='/api/sessions/privileges')
 
 
-@ErrorHandler(err_msg='Error getting info for authenticated user.')
+@ErrorHandler(err_msg="Error getting info for authenticated user.")
 def get_info_for_authenticated_user(connection, error_msg=None):
     """Get information for the authenticated user.
 
@@ -171,5 +171,4 @@ def get_info_for_authenticated_user(connection, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    url = f'{connection.base_url}/api/sessions/userInfo'
-    return connection.get(url=url)
+    return connection.get(endpoint='/api/sessions/userInfo')

@@ -3,7 +3,7 @@ import logging
 from pandas import DataFrame, concat
 
 from mstrio import config
-from mstrio.api import documents, library, objects
+from mstrio.api import documents, library
 from mstrio.api.schedules import get_contents_schedule
 from mstrio.connection import Connection
 from mstrio.distribution_services.schedule import Schedule
@@ -30,6 +30,8 @@ from mstrio.utils.helper import (
     get_valid_project_id,
     is_document,
 )
+from mstrio.utils.response_processors import objects as objects_processors
+from mstrio.utils.translation_mixin import TranslationMixin
 from mstrio.utils.version_helper import method_version_handler
 
 logger = logging.getLogger(__name__)
@@ -146,7 +148,15 @@ def list_documents_across_projects(
     return output[:limit]
 
 
-class Document(Entity, VldbMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCacheMixin):
+class Document(
+    Entity,
+    VldbMixin,
+    CopyMixin,
+    MoveMixin,
+    DeleteMixin,
+    ContentCacheMixin,
+    TranslationMixin,
+):
     """Python representation of MicroStrategy Document object
 
     _CACHE_TYPE is a variable used by ContentCache class for cache filtering
@@ -157,7 +167,10 @@ class Document(Entity, VldbMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCach
     _CACHE_TYPE = CacheSource.Type.DOCUMENT
     _API_GETTERS = {**Entity._API_GETTERS, 'recipients': library.get_document}
     _API_PATCH = {
-        ('name', 'description', 'folder_id'): (objects.update_object, 'partial_put')
+        ('name', 'description', 'folder_id', 'hidden'): (
+            objects_processors.update,
+            'partial_put',
+        )
     }
     _FROM_DICT_MAP = {
         **Entity._FROM_DICT_MAP,
@@ -167,10 +180,7 @@ class Document(Entity, VldbMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCach
     }
 
     def __init__(
-        self,
-        connection: Connection,
-        name: str | None = None,
-        id: str | None = None,
+        self, connection: Connection, name: str | None = None, id: str | None = None
     ):
         """Initialize Document object by passing name or id.
 
@@ -196,12 +206,12 @@ class Document(Entity, VldbMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCach
             id = document['id']
         super().__init__(connection=connection, object_id=id, name=name)
 
-    def _init_variables(self, **kwargs) -> None:
-        super()._init_variables(**kwargs)
+    def _init_variables(self, default_value, **kwargs) -> None:
+        super()._init_variables(default_value=default_value, **kwargs)
         self._instance_id = ""
-        self._recipients = kwargs.get('recipients')
+        self._recipients = kwargs.get('recipients', default_value)
         self._project_id = self.connection.project_id
-        self._template_info = kwargs.get('templateInfo')
+        self._template_info = kwargs.get('templateInfo', default_value)
         self._folder_id = None
 
     def list_properties(self):
@@ -236,6 +246,7 @@ class Document(Entity, VldbMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCach
         name: str | None = None,
         description: str | None = None,
         folder_id: Folder | str | None = None,
+        hidden: bool | None = None,
     ):
         """Alter Document name, description and/or folder id.
 
@@ -245,7 +256,8 @@ class Document(Entity, VldbMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCach
             folder_id (string | Folder, optional): A globally unique identifier
                 used to distinguish between metadata objects within the same
                 project. It is possible for two metadata objects in different
-                projects to have the same Object Id.
+                projects to have the same Object ID.
+            hidden: Specifies whether the metric is hidden
         """
         description = description or self.description
         properties = filter_params_for_func(self.alter, locals(), exclude=['self'])
@@ -408,7 +420,9 @@ class Document(Entity, VldbMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCach
             return DataFrame(documents)
         else:
             return [
-                cls.from_dict(source=document, connection=connection)
+                cls.from_dict(
+                    source=document, connection=connection, with_missing_value=True
+                )
                 for document in documents
             ]
 

@@ -4,10 +4,10 @@ from mstrio.connection import Connection
 from mstrio.utils.error_handlers import ErrorHandler
 
 if TYPE_CHECKING:
-    from requests_futures.sessions import FuturesSession
+    from mstrio.utils.sessions import FuturesSessionWithRenewal
 
 
-@ErrorHandler(err_msg='Error while creating the folder.')
+@ErrorHandler(err_msg="Error while creating the folder.")
 def create_folder(
     connection: Connection,
     name: str,
@@ -33,19 +33,13 @@ def create_folder(
         Complete HTTP response object.
     """
     project_id = project_id if project_id is not None else connection.project_id
-    body = {
-        "name": name,
-        "description": description,
-        "parent": parent_id,
-    }
+    body = {'name': name, 'description': description, 'parent': parent_id}
     return connection.post(
-        url=connection.base_url + '/api/folders',
-        headers={'X-MSTR-ProjectID': project_id},
-        json=body,
+        endpoint='/api/folders', headers={'X-MSTR-ProjectID': project_id}, json=body
     )
 
 
-@ErrorHandler(err_msg='Error while deleting folder with ID: {id}.')
+@ErrorHandler(err_msg="Error while deleting folder with ID: {id}.")
 def delete_folder(connection: Connection, id: str, project_id: str | None = None):
     """Delete complete folder.
 
@@ -59,12 +53,11 @@ def delete_folder(connection: Connection, id: str, project_id: str | None = None
     """
     project_id = project_id if project_id is not None else connection.project_id
     return connection.delete(
-        url=f"{connection.base_url}/api/folders/{id}",
-        headers={'X-MSTR-ProjectID': project_id},
+        endpoint=f'/api/folders/{id}', headers={'X-MSTR-ProjectID': project_id}
     )
 
 
-@ErrorHandler(err_msg='Error while listing folders.')
+@ErrorHandler(err_msg="Error while listing folders.")
 def list_folders(
     connection: Connection,
     project_id: str | None = None,
@@ -87,15 +80,14 @@ def list_folders(
         Complete HTTP response object.
     """
     return connection.get(
-        url=f"{connection.base_url}/api/folders",
+        endpoint='/api/folders',
         headers={'X-MSTR-ProjectID': project_id},
         params={'offset': offset, 'limit': limit},
     )
 
 
 def list_folders_async(
-    future_session: "FuturesSession",
-    connection: Connection,
+    future_session: 'FuturesSessionWithRenewal',
     project_id: str | None = None,
     offset: int = 0,
     limit: int = 5000,
@@ -103,9 +95,8 @@ def list_folders_async(
     """Get a list of folders asynchronously.
 
     Args:
-        future_session(object): `FuturesSession` object to call MicroStrategy
-            REST Server asynchronously
-        connection: MicroStrategy REST API connection object
+        future_session(object): `FuturesSessionWithRenewal` object to call
+            MicroStrategy REST Server asynchronously
         project_id (string, optional): id of project
         offset (int, optional): Starting point within the collection of returned
             results. Used to control paging behavior. Default is 0.
@@ -116,13 +107,13 @@ def list_folders_async(
     Returns:
         Complete Future object.
     """
-    url = f"{connection.base_url}/api/folders"
+    endpoint = '/api/folders'
     headers = {'X-MSTR-ProjectID': project_id}
     params = {'offset': offset, 'limit': limit}
-    return future_session.get(url=url, headers=headers, params=params)
+    return future_session.get(endpoint=endpoint, headers=headers, params=params)
 
 
-@ErrorHandler(err_msg='Error while getting contents of a folder with ID: {id}.')
+@ErrorHandler(err_msg="Error while getting contents of a folder with ID: {id}.")
 def get_folder_contents(
     connection: Connection,
     id: str,
@@ -148,15 +139,14 @@ def get_folder_contents(
     """
     project_id = project_id if project_id is not None else connection.project_id
     return connection.get(
-        url=f"{connection.base_url}/api/folders/{id}",
+        endpoint=f'/api/folders/{id}',
         headers={'X-MSTR-ProjectID': project_id},
         params={'offset': offset, 'limit': limit},
     )
 
 
 def get_folder_contents_async(
-    future_session: "FuturesSession",
-    connection: Connection,
+    future_session: 'FuturesSessionWithRenewal',
     id: str,
     project_id: str | None = None,
     offset: int = 0,
@@ -165,9 +155,8 @@ def get_folder_contents_async(
     """Get contents of a folder asynchronously.
 
     Args:
-        future_session(object): `FuturesSession` object to call MicroStrategy
-            REST Server asynchronously
-        connection: MicroStrategy REST API connection object
+        future_session(object): `FuturesSessionWithRenewal` object to call
+            MicroStrategy REST Server asynchronously
         id (string): ID of folder
         project_id (string, optional): id of project
         offset (int, optional): Starting point within the collection of returned
@@ -179,14 +168,16 @@ def get_folder_contents_async(
     Returns:
         Complete Future object.
     """
-    project_id = project_id if project_id is not None else connection.project_id
-    url = f"{connection.base_url}/api/folders/{id}"
+    project_id = (
+        project_id if project_id is not None else future_session.connection.project_id
+    )
+    endpoint = f'/api/folders/{id}'
     headers = {'X-MSTR-ProjectID': project_id}
     params = {'offset': offset, 'limit': limit}
-    return future_session.get(url=url, headers=headers, params=params)
+    return future_session.get(endpoint=endpoint, headers=headers, params=params)
 
 
-@ErrorHandler(err_msg='Error while getting contents of a pre-defined folder.')
+@ErrorHandler(err_msg="Error while getting contents of a pre-defined folder.")
 def get_predefined_folder_contents(
     connection: Connection,
     folder_type: int,
@@ -211,15 +202,14 @@ def get_predefined_folder_contents(
         Complete HTTP response object.
     """
     return connection.get(
-        url=f"{connection.base_url}/api/folders/preDefined/{folder_type}",
+        endpoint=f'/api/folders/preDefined/{folder_type}',
         headers={'X-MSTR-ProjectID': project_id},
         params={'offset': offset, 'limit': limit},
     )
 
 
 def get_predefined_folder_contents_async(
-    future_session: "FuturesSession",
-    connection: Connection,
+    future_session: 'FuturesSessionWithRenewal',
     folder_type: int,
     project_id: str | None = None,
     offset: int = 0,
@@ -228,9 +218,8 @@ def get_predefined_folder_contents_async(
     """Get contents of a pre-defined folder.
 
     Args:
-        future_session(object): `FuturesSession` object to call MicroStrategy
-            REST Server asynchronously
-        connection: MicroStrategy REST API connection object
+        future_session(object): `FuturesSessionWithRenewal` object to call
+            MicroStrategy REST Server asynchronously
         folder_type (int): predefined folder type, from `EnumDSSXMLFolderNames`
         project_id (string, optional): id of project
         offset (int, optional): Starting point within the collection of returned
@@ -242,13 +231,13 @@ def get_predefined_folder_contents_async(
     Returns:
         Complete Future object.
     """
-    url = f"{connection.base_url}/api/folders/preDefined/{folder_type}"
+    endpoint = f'/api/folders/preDefined/{folder_type}'
     headers = {'X-MSTR-ProjectID': project_id}
     params = {'offset': offset, 'limit': limit}
-    return future_session.get(url=url, headers=headers, params=params)
+    return future_session.get(endpoint=endpoint, headers=headers, params=params)
 
 
-@ErrorHandler(err_msg='Error while getting contents of My Personal Objects folder.')
+@ErrorHandler(err_msg="Error while getting contents of My Personal Objects folder.")
 def get_my_personal_objects_contents(
     connection: Connection, project_id: str | None = None
 ):
@@ -262,6 +251,6 @@ def get_my_personal_objects_contents(
          Complete HTTP response object.
     """
     return connection.get(
-        url=f"{connection.base_url}/api/folders/myPersonalObjects",
+        endpoint='/api/folders/myPersonalObjects',
         headers={'X-MSTR-ProjectID': project_id},
     )

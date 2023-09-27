@@ -93,7 +93,10 @@ def list_super_cubes(
     )
     if to_dictionary:
         return objects_
-    return [SuperCube.from_dict(obj_, connection) for obj_ in objects_]
+    return [
+        SuperCube.from_dict(source=obj_, connection=connection, with_missing_value=True)
+        for obj_ in objects_
+    ]
 
 
 @dataclass
@@ -111,10 +114,7 @@ class SuperCubeFormExpression:
     column: str
 
     def to_dict(self):
-        return {
-            'tableName': self.table,
-            'columnName': self.column,
-        }
+        return {'tableName': self.table, 'columnName': self.column}
 
 
 @dataclass
@@ -266,8 +266,8 @@ class SuperCube(_Cube, CertifyMixin):
                 parallel=parallel,
             )
 
-    def _init_variables(self, **kwargs):
-        super()._init_variables(**kwargs)
+    def _init_variables(self, default_value=None, **kwargs):
+        super()._init_variables(default_value=default_value, **kwargs)
         self._tables = []
         self._session_id = None
         # used to check publish status after completing publish

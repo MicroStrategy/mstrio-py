@@ -5,16 +5,15 @@ from requests import Response
 from mstrio.utils.error_handlers import ErrorHandler
 
 if TYPE_CHECKING:
-    from requests_futures.sessions import FuturesSession
-
     from mstrio.connection import Connection
+    from mstrio.utils.sessions import FuturesSessionWithRenewal
 
 
-@ErrorHandler(err_msg='Error getting information for a set of recipients.')
+@ErrorHandler(err_msg="Error getting information for a set of recipients.")
 def get_recipients(
     connection,
     search_term,
-    search_pattern="CONTAINS_ANY_WORD",
+    search_pattern='CONTAINS_ANY_WORD',
     offset=0,
     limit=-1,
     enabled_status='ALL',
@@ -44,7 +43,7 @@ def get_recipients(
         HTTP response object returned by the MicroStrategy REST server.
     """
     return connection.get(
-        url=f'{connection.base_url}/api/collaboration/recipients',
+        endpoint='/api/collaboration/recipients',
         params={
             'searchTerm': search_term,
             'searchPattern': search_pattern,
@@ -55,7 +54,7 @@ def get_recipients(
     )
 
 
-@ErrorHandler(err_msg='Error getting information for a set of users')
+@ErrorHandler(err_msg="Error getting information for a set of users")
 def get_users_info(
     connection,
     name_begins,
@@ -86,7 +85,7 @@ def get_users_info(
         HTTP response object returned by the MicroStrategy REST server.
     """
     return connection.get(
-        url=f'{connection.base_url}/api/users/',
+        endpoint='/api/users/',
         params={
             'nameBegins': name_begins,
             'abbreviationBegins': abbreviation_begins,
@@ -99,8 +98,7 @@ def get_users_info(
 
 
 def get_users_info_async(
-    future_session: "FuturesSession",
-    connection,
+    future_session: 'FuturesSessionWithRenewal',
     name_begins,
     abbreviation_begins,
     offset=0,
@@ -112,8 +110,6 @@ def get_users_info_async(
     Args:
         future_session: Future Session object to call MicroStrategy REST
             Server asynchronously
-        connection (object): MicroStrategy connection object returned by
-            `connection.Connection()`.
         name_begins (string): Characters that the user name must begin with.
         abbreviation_begins (string): Characters that the user abbreviation must
             begin with.
@@ -135,13 +131,13 @@ def get_users_info_async(
         'limit': limit,
         'fields': fields,
     }
-    url = f'{connection.base_url}/api/users/'
+    endpoint = '/api/users/'
     headers = {'X-MSTR-ProjectID': None}
-    future = future_session.get(url=url, headers=headers, params=params)
+    future = future_session.get(endpoint=endpoint, headers=headers, params=params)
     return future
 
 
-@ErrorHandler(err_msg='Error creating a new user with username: {username}')
+@ErrorHandler(err_msg="Error creating a new user with username: {username}")
 def create_user(connection, body, username, fields=None):
     """Create a new user. The response includes the user ID, which other
     endpoints use as a request parameter to specify the user to perform an
@@ -175,14 +171,10 @@ def create_user(connection, body, username, fields=None):
         HTTP response object returned by the MicroStrategy REST server.
     """
 
-    return connection.post(
-        url=f'{connection.base_url}/api/users',
-        params={'fields': fields},
-        json=body,
-    )
+    return connection.post(endpoint='/api/users', params={'fields': fields}, json=body)
 
 
-@ErrorHandler(err_msg='Error getting addresses for user with ID {id}')
+@ErrorHandler(err_msg="Error getting addresses for user with ID {id}")
 def get_addresses(connection, id, fields=None):
     """Get all of the addresses for a specific user.
 
@@ -198,11 +190,11 @@ def get_addresses(connection, id, fields=None):
     """
 
     return connection.get(
-        url=f'{connection.base_url}/api/users/{id}/addresses', params={'fields': fields}
+        endpoint=f'/api/users/{id}/addresses', params={'fields': fields}
     )
 
 
-@ErrorHandler(err_msg='Error getting addresses for user with ID {id}')
+@ErrorHandler(err_msg="Error getting addresses for user with ID {id}")
 def get_addresses_v2(connection, id, fields=None):
     """Get all of the addresses for a specific user.
 
@@ -218,12 +210,11 @@ def get_addresses_v2(connection, id, fields=None):
     """
 
     return connection.get(
-        url=f'{connection.base_url}/api/v2/users/{id}/addresses',
-        params={'fields': fields},
+        endpoint=f'/api/v2/users/{id}/addresses', params={'fields': fields}
     )
 
 
-@ErrorHandler(err_msg='Error creating a new address for user with ID {id}')
+@ErrorHandler(err_msg="Error creating a new address for user with ID {id}")
 def create_address(connection, id, body, fields=None):
     """Create a new address for a specific user.
 
@@ -248,15 +239,13 @@ def create_address(connection, id, body, fields=None):
     """
 
     return connection.post(
-        url=f'{connection.base_url}/api/users/{id}/addresses',
-        params={'fields': fields},
-        json=body,
+        endpoint=f'/api/users/{id}/addresses', params={'fields': fields}, json=body
     )
 
 
-@ErrorHandler(err_msg='Error creating a new address for user with ID {id}')
+@ErrorHandler(err_msg="Error creating a new address for user with ID {id}")
 def create_address_v2(
-    connection: "Connection", id: str, body: dict, fields: str | None = None
+    connection: 'Connection', id: str, body: dict, fields: str | None = None
 ) -> Response:
     """Create a new address for a specific user.
 
@@ -280,14 +269,12 @@ def create_address_v2(
         HTTP response object returned by the MicroStrategy REST server.
     """
     return connection.post(
-        url=f'{connection.base_url}/api/v2/users/{id}/addresses',
-        params={'fields': fields},
-        json=body,
+        endpoint=f'/api/v2/users/{id}/addresses', params={'fields': fields}, json=body
     )
 
 
 @ErrorHandler(
-    err_msg='Error updating address with ID {address_id} for user with ID {id}'
+    err_msg="Error updating address with ID {address_id} for user with ID {id}"
 )
 def update_address(connection, id, address_id, body, fields=None):
     """Update a specific address for a specific user.
@@ -305,14 +292,14 @@ def update_address(connection, id, address_id, body, fields=None):
     """
 
     return connection.put(
-        url=f'{connection.base_url}/api/users/{id}/addresses/{address_id}',
+        endpoint=f'/api/users/{id}/addresses/{address_id}',
         params={'fields': fields},
         json=body,
     )
 
 
 @ErrorHandler(
-    err_msg='Error updating address with ID {address_id} for user with ID {id}'
+    err_msg="Error updating address with ID {address_id} for user with ID {id}"
 )
 def update_address_v2(connection, id, address_id, body, fields=None):
     """Update a specific address for a specific user.
@@ -330,14 +317,14 @@ def update_address_v2(connection, id, address_id, body, fields=None):
     """
 
     return connection.put(
-        url=f'{connection.base_url}/api/v2/users/{id}/addresses/{address_id}',
+        endpoint=f'/api/v2/users/{id}/addresses/{address_id}',
         params={'fields': fields},
         json=body,
     )
 
 
 @ErrorHandler(
-    err_msg='Error deleting address with ID {address_id} for a user with ID {id}'
+    err_msg="Error deleting address with ID {address_id} for a user with ID {id}"
 )
 def delete_address(connection, id, address_id, fields=None):
     """Delete a specific address for a specific user.
@@ -355,13 +342,13 @@ def delete_address(connection, id, address_id, fields=None):
     """
 
     return connection.delete(
-        url=f'{connection.base_url}/api/users/{id}/addresses/{address_id}',
+        endpoint=f'/api/users/{id}/addresses/{address_id}',
         headers={'X-MSTR-ProjectID': None},
         params={'fields': fields},
     )
 
 
-@ErrorHandler(err_msg='Error getting security roles for a user with ID {id}')
+@ErrorHandler(err_msg="Error getting security roles for a user with ID {id}")
 def get_user_security_roles(connection, id, project_id=None):
     """Get all of the security roles for a specific user in a specific project.
 
@@ -374,14 +361,13 @@ def get_user_security_roles(connection, id, project_id=None):
         HTTP response object returned by the MicroStrategy REST server.
     """
     return connection.get(
-        url=f'{connection.base_url}/api/users/{id}/securityRoles',
-        params={'projectId': project_id},
+        endpoint=f'/api/users/{id}/securityRoles', params={'projectId': project_id}
     )
 
 
 @ErrorHandler(err_msg="Error getting user {id} privileges for a project")
 def get_user_privileges(connection, id, project_id=None, privilege_level=None):
-    """Get user's privileges of a project including the source of the
+    """Get user"s privileges of a project including the source of the
     privileges.
 
     Args:
@@ -394,14 +380,13 @@ def get_user_privileges(connection, id, project_id=None, privilege_level=None):
     Returns:
         HTTP response object returned by the MicroStrategy REST server.
     """
-    url = f'{connection.base_url}/api/users/{id}/privileges/'
     return connection.get(
-        url=url,
+        endpoint=f'/api/users/{id}/privileges/',
         params={'privilege.level': privilege_level, 'projectId': project_id},
     )
 
 
-@ErrorHandler(err_msg='Error getting user data usage limit for project with ID {id}')
+@ErrorHandler(err_msg="Error getting user data usage limit for project with ID {id}")
 def get_user_data_usage_limit(connection, id, project_id):
     """Get the data usage limit for users, either all users or a specific user,
     in a specific project. A typical use case would be that an administrator
@@ -418,11 +403,10 @@ def get_user_data_usage_limit(connection, id, project_id):
     Returns:
         HTTP response object returned by the MicroStrategy REST server.
     """
-    url = f'{connection.base_url}/api/users/{id}/projects/{project_id}/quotas'
-    return connection.get(url=url)
+    return connection.get(endpoint=f'/api/users/{id}/projects/{project_id}/quotas')
 
 
-@ErrorHandler(err_msg='Error getting information for a user with ID {id}')
+@ErrorHandler(err_msg="Error getting information for a user with ID {id}")
 def get_user_info(connection, id, fields=None):
     """Get information for a specific user.
 
@@ -437,12 +421,10 @@ def get_user_info(connection, id, fields=None):
         HTTP response object returned by the MicroStrategy REST server.
     """
 
-    return connection.get(
-        url=f'{connection.base_url}/api/users/{id}', params={'fields': fields}
-    )
+    return connection.get(endpoint=f'/api/users/{id}', params={'fields': fields})
 
 
-@ErrorHandler(err_msg='Error deleting user with ID {id}')
+@ErrorHandler(err_msg="Error deleting user with ID {id}")
 def delete_user(connection, id):
     """Delete user for specific user id.
 
@@ -455,10 +437,10 @@ def delete_user(connection, id):
         HTTP response object returned by the MicroStrategy REST server.
     """
 
-    return connection.delete(url=f'{connection.base_url}/api/users/{id}')
+    return connection.delete(endpoint=f'/api/users/{id}')
 
 
-@ErrorHandler(err_msg='Error updating information for a user with ID: {id}')
+@ErrorHandler(err_msg="Error updating information for a user with ID: {id}")
 def update_user_info(connection, id, body, fields=None):
     """Update specific information for a specific user.
 
@@ -484,15 +466,13 @@ def update_user_info(connection, id, body, fields=None):
     """
 
     return connection.patch(
-        url=f'{connection.base_url}/api/users/{id}',
-        params={'fields': fields},
-        json=body,
+        endpoint=f'/api/users/{id}', params={'fields': fields}, json=body
     )
 
 
 @ErrorHandler(
-    err_msg='Error getting information for the direct user groups that '
-    'a user with ID {id} belongs to.'
+    err_msg="Error getting information for the direct user groups that "
+    "a user with ID {id} belongs to."
 )
 def get_memberships(connection, id, fields=None):
     """Get information for the direct user groups that a specific user belongs
@@ -510,14 +490,13 @@ def get_memberships(connection, id, fields=None):
     """
 
     return connection.get(
-        url=f'{connection.base_url}/api/users/{id}/memberships',
-        params={'fields': fields},
+        endpoint=f'/api/users/{id}/memberships', params={'fields': fields}
     )
 
 
-@ErrorHandler(err_msg='Error getting security filters for user with ID {id}.')
+@ErrorHandler(err_msg="Error getting security filters for user with ID {id}.")
 def get_security_filters(
-    connection: "Connection",
+    connection: 'Connection',
     id: str,
     projects: str | list[str] | None = None,
     offset: int = 0,
@@ -542,10 +521,10 @@ def get_security_filters(
     Returns:
         Complete HTTP response object. Expected status is 200.
     """
-    url = f"{connection.base_url}/api/users/{id}/securityFilters"
+    endpoint = f'/api/users/{id}/securityFilters'
 
     if projects and isinstance(projects, list):
         projects = ','.join(projects)
 
     params = {'projects.id': projects, 'offset': offset, 'limit': limit}
-    return connection.get(url=url, params=params)
+    return connection.get(endpoint=endpoint, params=params)

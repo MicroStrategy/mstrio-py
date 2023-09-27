@@ -28,6 +28,7 @@ def list_datasource_warehouse_tables(
     datasource_id: str,
     namespace_id: str,
     name: str = None,
+    refresh: bool = False,
     to_dictionary: bool = False,
     limit: int | None = None,
 ) -> list[type["WarehouseTable"]] | list[dict]:
@@ -39,11 +40,12 @@ def list_datasource_warehouse_tables(
         datasource_id (str): ID of a datasource.
         namespace_id (str): ID of a namespace within a given datasource_id.
         name (str): string by which to filter the table name
+        refresh (bool, optional): Refresh warehouse table, default: False.
         to_dictionary (bool, optional): If True, the function will return list
             of dictionaries. Otherwise, list of WarehouseTable objects.
             Defaults to False.
-        limit: limit the number of elements returned. If `None` (default), all
-            objects are returned.
+        limit (int, optional): limit the number of elements returned. If `None`
+            (default), all objects are returned.
 
     Returns:
         Union[list["WarehouseTable"], list[dict]]: A list of WarehouseTable
@@ -65,6 +67,7 @@ def list_datasource_warehouse_tables(
         dict_unpack_value="tables",
         datasource_id=datasource_id,
         namespace_id=namespace_id,
+        refresh=refresh,
     )
     [
         table.update(
@@ -333,8 +336,7 @@ class WarehouseTable(Dictable):
             return tables
 
         return cls._list_available_warehouse_tables(
-            connection=connection,
-            to_dictionary=to_dictionary,
+            connection=connection, to_dictionary=to_dictionary
         )
 
     @classmethod
@@ -383,9 +385,7 @@ class WarehouseTable(Dictable):
 
     @classmethod
     def _list_available_warehouse_tables(
-        cls,
-        connection: Connection,
-        to_dictionary: bool = False,
+        cls, connection: Connection, to_dictionary: bool = False
     ) -> list["WarehouseTable"] | list[dict]:
         """Fetches all available warehouse table in a project mapped to the
            Connection object. This operation is done asynchronously and is
@@ -404,21 +404,19 @@ class WarehouseTable(Dictable):
         connected_datasource_instances: list[
             dict
         ] = list_connected_datasource_instances(connection, to_dictionary=True)
-        urls: dict[str, str] = cls._get_namespaces_urls(
-            connection, connected_datasource_instances
+        endpoints: dict[str, str] = cls._get_namespaces_endpoints(
+            connected_datasource_instances
         )
 
         with FuturesSessionWithRenewal(connection=connection) as session:
-            namespaces: dict[str, list[dict]] = cls._get_namespaces(
-                connection, urls, session
-            )
+            namespaces: dict[str, list[dict]] = cls._get_namespaces(endpoints, session)
 
             warehouse_tables_futures = cls._get_warehouse_tables_futures(
-                connection, session, namespaces
+                session, namespaces
             )
 
             warehouse_tables: list[dict] = cls._get_warehouse_tables(
-                connection, warehouse_tables_futures
+                warehouse_tables_futures, session
             )
 
             available_tables = cls.bulk_from_dict(
@@ -431,12 +429,11 @@ class WarehouseTable(Dictable):
 
     @classmethod
     def _get_warehouse_tables(
-        cls, connection: Connection, warehouse_tables_futures: list[Future]
+        cls, warehouse_tables_futures: list[Future], session: FuturesSessionWithRenewal
     ) -> list[dict]:
         """Retrieves warehouse tables from a list of provided futures.
 
         Args:
-            connection (Connection): Object representation of MSTR Connection.
             warehouse_tables_futures (list[Future]): A list of futures that
             resolve to warehouse tables in a given datasource in a given
             namespace.
@@ -453,7 +450,7 @@ class WarehouseTable(Dictable):
             for future in as_completed(warehouse_tables_futures):
                 namespace_tables = (
                     cls._get_future_with_request_exceptions_handlers_and_pbar(
-                        cls._get_tables_from_future, future, pbar, connection=connection
+                        cls._get_tables_from_future, future, pbar, session=session
                     )
                 )
                 if namespace_tables:
@@ -463,14 +460,13 @@ class WarehouseTable(Dictable):
 
     @classmethod
     def _get_namespaces(
-        cls, connection: Connection, urls: dict, session: FuturesSessionWithRenewal
+        cls, endpoints: dict, session: FuturesSessionWithRenewal
     ) -> dict[str, list[dict]]:
         """Retrieves namespaces for every url using provided session object.
 
         Args:
-            connection (Connection): Object representation of MSTR Connection.
-            urls (dict): A dictionary with datasource ID as a key and list of
-                namespace urls as a value.
+            endpoints (dict): A dictionary with datasource ID as a key and
+                list of namespace endpoints as a value.
             session (FuturesSession): A FuturesSession object used to fetch
                 urls asynchronously.
 
@@ -479,7 +475,7 @@ class WarehouseTable(Dictable):
                 and which values are lists of namespaces.
         """
         namespaces: dict[str, list[dict]] = {}
-        namespaces_futures = cls._get_namespaces_futures(connection, session, urls)
+        namespaces_futures = cls._get_namespaces_futures(session, endpoints)
         with tqdm(
             total=len(namespaces_futures),
             desc="Retrieving namespaces from available datasources...",
@@ -504,15 +500,14 @@ class WarehouseTable(Dictable):
             pbar.update()
 
     @staticmethod
-    def _get_namespaces_urls(
-        connection: "Connection", connected_datasource_instances: list[dict]
+    def _get_namespaces_endpoints(
+        connected_datasource_instances: list[dict],
     ) -> dict[str, str]:
         """Creates urls to api/datasources/{datasource_id}/catalog/namespaces
            that are later used to fetch all namespaces from a specified
            datasource
 
         Args:
-            connection (Connection): Object representation of MSTR Connection.
             connected_datasource_instances (list[dict]): list of dictionaries
                 representing connected datasource instances.
 
@@ -522,7 +517,7 @@ class WarehouseTable(Dictable):
         """
         return {
             connected_datasource_instance.get("id"): (
-                f"{connection.base_url}/api/datasources/"
+                f"/api/datasources/"
                 f"{connected_datasource_instance.get('id')}"
                 f"/catalog/namespaces"
             )
@@ -531,31 +526,26 @@ class WarehouseTable(Dictable):
 
     @staticmethod
     def _get_namespaces_futures(
-        connection: "Connection",
-        session: FuturesSessionWithRenewal,
-        urls: dict[str, str],
+        session: FuturesSessionWithRenewal, endpoints: dict[str, str]
     ) -> list[Future]:
         """Creates Future objects using specified FuturesSession object for each
            url.
 
         Args:
-            connection (Connection): Object representation of MSTR Connection.
             session (FuturesSession): A FuturesSession object used to fetch
                 the url.
-            urls (dict[str, str]): a dictionary with datasource id as a key,
-                and matching namespaces url as a value.
+            endpoints (dict[str, str]): a dictionary with datasource id
+                as a key, and matching namespaces url as a value.
 
         Returns:
             list[Future]: A list of Future objects that later resolve to
                 namespaces within a specified datasource.
         """
         futures = []
-        for datasource_id, url in urls.items():
+        for datasource_id, endpoint in endpoints.items():
             future = session.get(
-                url,
-                headers={
-                    "X-MSTR-ProjectID": connection.project_id,
-                },
+                endpoint=endpoint,
+                headers={"X-MSTR-ProjectID": session.connection.project_id},
             )
             future.datasource_id = datasource_id
             futures.append(future)
@@ -563,15 +553,12 @@ class WarehouseTable(Dictable):
 
     @staticmethod
     def _get_warehouse_tables_futures(
-        connection: "Connection",
-        session: FuturesSessionWithRenewal,
-        namespaces: dict[str, list[dict]],
+        session: FuturesSessionWithRenewal, namespaces: dict[str, list[dict]]
     ) -> list[Future]:
         """Creates Future objects using specified FuturesSession object for each
            namespace for each datasource.
 
         Args:
-            connection (Connection): Object representation of MSTR Connection.
             session (FuturesSession): A FuturesSession object used to fetch
                 the tables.
             namespaces (dict[str, list[dict]]): a dictionary with datasource id
@@ -588,10 +575,7 @@ class WarehouseTable(Dictable):
                 for namespace in namespaces_list:
                     namespace_id = namespace.get("id")
                     future = tables_api.get_available_warehouse_tables_async(
-                        session,
-                        connection,
-                        datasource_id=datasource_id,
-                        namespace_id=namespace_id,
+                        session, datasource_id=datasource_id, namespace_id=namespace_id
                     )
                     future.datasource_id = datasource_id
                     future.namespace_id = namespace_id
@@ -617,13 +601,16 @@ class WarehouseTable(Dictable):
         return []
 
     @staticmethod
-    def _get_tables_from_future(connection: Connection, future: Future) -> list[dict]:
+    def _get_tables_from_future(
+        future: Future, session: FuturesSessionWithRenewal
+    ) -> list[dict]:
         """Retrieves a list of tables from a given future.
 
         Args:
-            connection (Connection): Object representation of MSTR Connection.
             future (Future): A future object that resolves to a dictionary that
                 contains a list of tables.
+            session (FuturesSessionWithRenewal): A FuturesSessionWithRenewal
+                object used to fetch the tables.
 
         Returns:
             list[dict]: A list of tables retrieved from the future.
@@ -633,7 +620,7 @@ class WarehouseTable(Dictable):
         tables = resp.json().get("tables")
         if tables:
             for table in tables:
-                table["connection"] = connection
+                table["connection"] = session.connection
                 table["datasource"] = {"id": future.datasource_id}
                 table["namespace_id"] = future.namespace_id
                 warehouse_tables.append(table)

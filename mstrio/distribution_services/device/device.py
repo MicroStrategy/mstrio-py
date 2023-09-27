@@ -4,7 +4,7 @@ from enum import auto
 from typing import TYPE_CHECKING
 
 from mstrio import config
-from mstrio.api import devices, objects
+from mstrio.api import devices
 from mstrio.distribution_services.device.device_properties import (
     AndroidDeviceProperties,
     EmailDeviceProperties,
@@ -26,6 +26,8 @@ from mstrio.utils.helper import (
     get_default_args_from_func,
     get_objects_id,
 )
+from mstrio.utils.response_processors import objects as objects_processors
+from mstrio.utils.translation_mixin import TranslationMixin
 from mstrio.utils.version_helper import class_version_handler
 
 if TYPE_CHECKING:
@@ -47,8 +49,8 @@ class DeviceType(AutoName):
 
 
 def list_devices(
-    connection: "Connection", to_dictionary: bool = False, limit: int = None, **filters
-) -> list["Device"] | list[dict]:
+    connection: 'Connection', to_dictionary: bool = False, limit: int = None, **filters
+) -> list['Device'] | list[dict]:
     """Get list of Device objects or dicts. Optionally filter the
     devices by specifying filters.
 
@@ -67,15 +69,12 @@ def list_devices(
         >>> list_devices(connection, name='device_name')
     """
     return Device._list_devices(
-        connection=connection,
-        to_dictionary=to_dictionary,
-        limit=limit,
-        **filters,
+        connection=connection, to_dictionary=to_dictionary, limit=limit, **filters
     )
 
 
 @class_version_handler('11.3.0100')
-class Device(Entity, DeleteMixin):
+class Device(Entity, DeleteMixin, TranslationMixin):
     """Devices are Distribution Services components that specify the format
      and transmission process of subscribed reports and documents.
      They are instances of transmitters that contain specific settings
@@ -103,13 +102,13 @@ class Device(Entity, DeleteMixin):
 
     _OBJECT_TYPE = ObjectTypes.SUBSCRIPTION_DEVICE
     _DEVICE_TYPE_MAP = {
-        "android": AndroidDeviceProperties,
-        "email": EmailDeviceProperties,
-        "file": FileDeviceProperties,
-        "ftp": FtpDeviceProperties,
-        "ipad": IOSDeviceProperties,
-        "iphone": IOSDeviceProperties,
-        "printer": PrinterDeviceProperties,
+        'android': AndroidDeviceProperties,
+        'email': EmailDeviceProperties,
+        'file': FileDeviceProperties,
+        'ftp': FtpDeviceProperties,
+        'ipad': IOSDeviceProperties,
+        'iphone': IOSDeviceProperties,
+        'printer': PrinterDeviceProperties,
     }
 
     @staticmethod
@@ -144,7 +143,7 @@ class Device(Entity, DeleteMixin):
             'certified_info',
             'acg',
             'acl',
-        ): objects.get_object_info,
+        ): objects_processors.get_info,
         (
             'id',
             'name',
@@ -156,11 +155,15 @@ class Device(Entity, DeleteMixin):
     }
     _API_DELETE = staticmethod(devices.delete_device)
     _API_PATCH: dict = {
-        ("name", "description", "device_properties"): (devices.update_device, "put")
+        ('name', 'description', 'device_properties'): (devices.update_device, 'put'),
     }
-    _PATCH_PATH_TYPES = {"name": str, "description": str, "device_properties": dict}
+    _PATCH_PATH_TYPES = {
+        'name': str,
+        'description': str,
+        'device_properties': dict,
+    }
 
-    def __init__(self, connection: "Connection", name: str = None, id: str = None):
+    def __init__(self, connection: 'Connection', name: str = None, id: str = None):
         """Initialize Device object."""
 
         if id is None and name is None:
@@ -170,12 +173,10 @@ class Device(Entity, DeleteMixin):
 
         if id is None:
             objects_info = Device._list_devices(
-                connection=connection,
-                name=name,
-                to_dictionary=True,
+                connection=connection, name=name, to_dictionary=True
             )
             if objects_info:
-                object_info, object_info["connection"] = objects_info[0], connection
+                object_info, object_info['connection'] = objects_info[0], connection
                 self._init_variables(**object_info)
             else:
                 raise ValueError(f"There is no Device: '{name}'")
@@ -184,18 +185,17 @@ class Device(Entity, DeleteMixin):
 
     def _init_variables(self, **kwargs) -> None:
         super()._init_variables(**kwargs)
-        device_type = kwargs.get("device_type")
+        device_type = kwargs.get('device_type')
         self._device_type = DeviceType(device_type) if device_type else None
         self._transmitter = (
-            Transmitter.from_dict(kwargs.get("transmitter"), self.connection)
-            if kwargs.get("transmitter")
+            Transmitter.from_dict(kwargs.get('transmitter'), self.connection)
+            if kwargs.get('transmitter')
             else None
         )
-        device_properties = kwargs.get("device_properties")
+        device_properties = kwargs.get('device_properties')
         self.device_properties = (
             self._DEVICE_TYPE_MAP[device_type].from_dict(
-                device_properties[device_type],
-                self.connection,
+                device_properties[device_type], self.connection
             )
             if device_properties and device_type
             else None
@@ -204,13 +204,13 @@ class Device(Entity, DeleteMixin):
     @classmethod
     def create(
         cls,
-        connection: "Connection",
+        connection: 'Connection',
         name: str,
         device_type: DeviceType | str,
         transmitter: Transmitter | str,
         device_properties: dict | Dictable,
         description: str = None,
-    ) -> "Device":
+    ) -> 'Device':
         """Create a new device.
 
         Args:
@@ -232,13 +232,11 @@ class Device(Entity, DeleteMixin):
         )
         transmitter_id = get_objects_id(transmitter, Transmitter)
         body = {
-            "name": name,
-            "description": description,
-            "deviceType": device_type,
-            "transmitter": {
-                "id": transmitter_id,
-            },
-            "deviceProperties": {device_type: device_properties},
+            'name': name,
+            'description': description,
+            'deviceType': device_type,
+            'transmitter': {'id': transmitter_id},
+            'deviceProperties': {device_type: device_properties},
         }
         body = delete_none_values(body, recursion=True)
         response = devices.create_device(connection, body).json()
@@ -290,13 +288,13 @@ class Device(Entity, DeleteMixin):
             requests.HTTPError: if I-Server raises exception
         """
         changes = {k: v[1] for k, v in self._altered_properties.items()}
-        if "device_properties" in changes:
-            device_properties = changes["device_properties"]
-            del changes["device_properties"]
+        if 'device_properties' in changes:
+            device_properties = changes['device_properties']
+            del changes['device_properties']
         else:
             device_properties = self.device_properties
-        changes["device_properties"] = {}
-        changes["device_properties"][self.device_type.value] = (
+        changes['device_properties'] = {}
+        changes['device_properties'][self.device_type.value] = (
             device_properties.to_dict()
             if not isinstance(device_properties, dict)
             else device_properties
@@ -307,15 +305,15 @@ class Device(Entity, DeleteMixin):
     @classmethod
     def _list_devices(
         cls,
-        connection: "Connection",
+        connection: 'Connection',
         to_dictionary: bool = False,
         limit: int = None,
         **filters,
-    ) -> list["Device"] | list[dict]:
+    ) -> list['Device'] | list[dict]:
         objects = fetch_objects(
             connection=connection,
             api=devices.get_devices,
-            dict_unpack_value="devices",
+            dict_unpack_value='devices',
             limit=limit,
             filters=filters,
         )

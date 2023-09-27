@@ -18,6 +18,7 @@ from mstrio.utils.acl import TrusteeACLMixin
 from mstrio.utils.entity import DeleteMixin, Entity, ObjectTypes
 from mstrio.utils.helper import Dictable
 from mstrio.utils.response_processors import users
+from mstrio.utils.translation_mixin import TranslationMixin
 from mstrio.utils.version_helper import method_version_handler
 
 if TYPE_CHECKING:
@@ -84,7 +85,7 @@ def list_users(
     )
 
 
-class User(Entity, DeleteMixin, TrusteeACLMixin):
+class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
     """Object representation of MicroStrategy User object.
 
     Attributes:

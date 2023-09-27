@@ -1,21 +1,19 @@
 from typing import TYPE_CHECKING
 
-from packaging import version
-
 from mstrio.modeling.expression import ExpressionFormat
 from mstrio.utils.error_handlers import ErrorHandler
 from mstrio.utils.helper import get_enum_val
+from mstrio.utils.version_helper import is_server_min_version
 
 if TYPE_CHECKING:
-    from requests_futures.sessions import FuturesSession
-
     from mstrio.connection import Connection
+    from mstrio.utils.sessions import FuturesSessionWithRenewal
 
 CUBE_FIELDS = '-data.metricValues.extras,-data.metricValues.formatted'
 
 
-@ErrorHandler(err_msg='Error getting cube {id} definition.')
-def cube_definition(connection: "Connection", id: str):
+@ErrorHandler(err_msg="Error getting cube {id} definition.")
+def cube_definition(connection: 'Connection', id: str):
     """Get the definition of a specific cube, including attributes and metrics.
     The cube can be either an Intelligent Cube or a Direct Data Access
     (DDA)/MDX cube. The in-memory cube definition provides information about
@@ -32,11 +30,11 @@ def cube_definition(connection: "Connection", id: str):
         Complete HTTP response object.
     """
     connection._validate_project_selected()
-    return connection.get(url=f'{connection.base_url}/api/v2/cubes/{id}')
+    return connection.get(endpoint=f'/api/v2/cubes/{id}')
 
 
-@ErrorHandler(err_msg='Error getting cube {id} metadata information.')
-def cube_info(connection: "Connection", id: str):
+@ErrorHandler(err_msg="Error getting cube {id} metadata information.")
+def cube_info(connection: 'Connection', id: str):
     """Get information for specific cubes in a specific project. The cubes can
     be either Intelligent cubes or Direct Data Access (DDA)/MDX cubes. This
     request returns the cube name, ID, size, status, path, last modification
@@ -50,11 +48,11 @@ def cube_info(connection: "Connection", id: str):
     Returns:
         Complete HTTP response object.
     """
-    return connection.get(url=f'{connection.base_url}/api/cubes/?id={id}')
+    return connection.get(endpoint=f'/api/cubes/?id={id}')
 
 
-@ErrorHandler(err_msg='Error getting cube {id} metadata information.')
-def get_cube_status(connection: "Connection", id: str):
+@ErrorHandler(err_msg="Error getting cube {id} metadata information.")
+def get_cube_status(connection: 'Connection', id: str):
     """Get the status of a specific cube in a specific project.
 
     Args:
@@ -65,12 +63,12 @@ def get_cube_status(connection: "Connection", id: str):
     Returns:
         Complete HTTP response object.
     """
-    return connection.head(url=f'{connection.base_url}/api/cubes/{id}')
+    return connection.head(endpoint=f'/api/cubes/{id}')
 
 
-@ErrorHandler(err_msg='Error creating a new cube instance with ID {cube_id}.')
+@ErrorHandler(err_msg="Error creating a new cube instance with ID {cube_id}.")
 def cube_instance(
-    connection: "Connection",
+    connection: 'Connection',
     cube_id: str,
     body: dict = None,
     offset: int = 0,
@@ -97,19 +95,17 @@ def cube_instance(
     """
     body = body or {}
     params = {'offset': offset, 'limit': limit}
-    if version.parse(connection.iserver_version) >= version.parse("11.2.0200"):
+    if is_server_min_version(connection, '11.2.0200'):
         params['fields'] = CUBE_FIELDS
 
     return connection.post(
-        url=f'{connection.base_url}/api/v2/cubes/{cube_id}/instances',
-        json=body,
-        params=params,
+        endpoint=f'/api/v2/cubes/{cube_id}/instances', json=body, params=params
     )
 
 
-@ErrorHandler(err_msg='Error getting cube {cube_id} contents.')
+@ErrorHandler(err_msg="Error getting cube {cube_id} contents.")
 def cube_instance_id(
-    connection: "Connection",
+    connection: 'Connection',
     cube_id: str,
     instance_id: str,
     offset: int = 0,
@@ -137,18 +133,16 @@ def cube_instance_id(
         Complete HTTP response object.
     """
     params = {'offset': offset, 'limit': limit}
-    if version.parse(connection.iserver_version) >= version.parse("11.2.0200"):
+    if is_server_min_version(connection, '11.2.0200'):
         params['fields'] = CUBE_FIELDS
 
     return connection.get(
-        url=f'{connection.base_url}/api/v2/cubes/{cube_id}/instances/{instance_id}',
-        params=params,
+        endpoint=f'/api/v2/cubes/{cube_id}/instances/{instance_id}', params=params
     )
 
 
 def cube_instance_id_coroutine(
-    future_session: "FuturesSession",
-    connection: "Connection",
+    future_session: 'FuturesSessionWithRenewal',
     cube_id: str,
     instance_id: str,
     offset: int = 0,
@@ -161,19 +155,18 @@ def cube_instance_id_coroutine(
         Complete Future object.
     """
     params = {'offset': offset, 'limit': limit}
-    if version.parse(connection.iserver_version) >= version.parse("11.2.0200"):
+    if is_server_min_version(future_session.connection, '11.2.0200'):
         params['fields'] = CUBE_FIELDS
 
-    url = f'{connection.base_url}/api/v2/cubes/{cube_id}/instances/{instance_id}'
-    future = future_session.get(url, params=params)
-    return future
+    endpoint = f'/api/v2/cubes/{cube_id}/instances/{instance_id}'
+    return future_session.get(endpoint=endpoint, params=params)
 
 
 @ErrorHandler(
-    err_msg='Error getting attribute {attribute_id} elements within cube {cube_id}'
+    err_msg="Error getting attribute {attribute_id} elements within cube {cube_id}"
 )
 def cube_single_attribute_elements(
-    connection: "Connection",
+    connection: 'Connection',
     cube_id: str,
     attribute_id: str,
     offset: int = 0,
@@ -192,17 +185,13 @@ def cube_single_attribute_elements(
     """
 
     return connection.get(
-        url=(
-            f'{connection.base_url}/api/cubes/{cube_id}/attributes/'
-            f'{attribute_id}/elements'
-        ),
+        endpoint=f'/api/cubes/{cube_id}/attributes/{attribute_id}/elements',
         params={'offset': offset, 'limit': limit},
     )
 
 
 def cube_single_attribute_elements_coroutine(
-    future_session: "FuturesSession",
-    connection: "Connection",
+    future_session: 'FuturesSessionWithRenewal',
     cube_id: str,
     attribute_id: str,
     offset: int = 0,
@@ -213,14 +202,14 @@ def cube_single_attribute_elements_coroutine(
     Returns:
         Complete Future object.
     """
-    url = (
-        f'{connection.base_url}/api/cubes/{cube_id}/attributes/{attribute_id}/elements'
+    endpoint = f'/api/cubes/{cube_id}/attributes/{attribute_id}/elements'
+    return future_session.get(
+        endpoint=endpoint, params={'offset': offset, 'limit': limit}
     )
-    return future_session.get(url, params={'offset': offset, 'limit': limit})
 
 
-@ErrorHandler(err_msg='Error sending request to publish cube with ID {cube_id}')
-def publish(connection: "Connection", cube_id: str):
+@ErrorHandler(err_msg="Error sending request to publish cube with ID {cube_id}")
+def publish(connection: 'Connection', cube_id: str):
     """Publish a specific cube in a specific project.
 
     Args:
@@ -231,11 +220,11 @@ def publish(connection: "Connection", cube_id: str):
         Complete HTTP response object.
     """
 
-    return connection.post(url=f'{connection.base_url}/api/v2/cubes/{cube_id}')
+    return connection.post(endpoint=f'/api/v2/cubes/{cube_id}')
 
 
-@ErrorHandler(err_msg='Error getting cube {cube_id} status.')
-def status(connection: "Connection", cube_id: str, throw_error: bool = True):
+@ErrorHandler(err_msg="Error getting cube {cube_id} status.")
+def status(connection: 'Connection', cube_id: str, throw_error: bool = True):
     """Get the status of a specific cube in a specific project. The status is
     returned in HEADER X-MSTR-CubeStatus with a value from EnumDSSCubeStates,
     which is a bit vector.
@@ -251,12 +240,12 @@ def status(connection: "Connection", cube_id: str, throw_error: bool = True):
         Complete HTTP response object.
     """
 
-    return connection.head(url=f'{connection.base_url}/api/cubes/{cube_id}')
+    return connection.head(endpoint=f'/api/cubes/{cube_id}')
 
 
-@ErrorHandler(err_msg='Error creating cube {name} definition.')
+@ErrorHandler(err_msg="Error creating cube {name} definition.")
 def create(
-    connection: "Connection",
+    connection: 'Connection',
     name: str,
     folder_id: str,
     overwrite: bool = None,
@@ -278,13 +267,11 @@ def create(
     }
     params = {'X-MSTR-ProjectID': connection.project_id}
 
-    return connection.post(
-        url=f'{connection.base_url}/api/v2/cubes', json=body, params=params
-    )
+    return connection.post(endpoint='/api/v2/cubes', json=body, params=params)
 
 
-@ErrorHandler(err_msg='Error updating cube {cube_id} definition.')
-def update(connection: "Connection", cube_id: str, definition: dict = None):
+@ErrorHandler(err_msg="Error updating cube {cube_id} definition.")
+def update(connection: 'Connection', cube_id: str, definition: dict = None):
     """
     Update an intelligent cube.
     PUT /api/v2/cubes/{cube_id}
@@ -294,13 +281,11 @@ def update(connection: "Connection", cube_id: str, definition: dict = None):
     body = {'definition': definition}
     params = {'X-MSTR-ProjectID': connection.project_id}
 
-    return connection.put(
-        url=f"{connection.base_url}/api/v2/cubes/{cube_id}", json=body, params=params
-    )
+    return connection.put(endpoint=f'/api/v2/cubes/{cube_id}', json=body, params=params)
 
 
-@ErrorHandler(err_msg='Error getting sql view of cube with ID {cube_id}')
-def get_sql_view(connection: "Connection", cube_id: str, project_id: str = None):
+@ErrorHandler(err_msg="Error getting sql view of cube with ID {cube_id}")
+def get_sql_view(connection: 'Connection', cube_id: str, project_id: str = None):
     """
     Get the sql view of cube.
     GET /api/v2/cubes/{cube_id}/sqlView
@@ -310,12 +295,12 @@ def get_sql_view(connection: "Connection", cube_id: str, project_id: str = None)
         project_id = connection.project_id
 
     return connection.get(
-        url=f"{connection.base_url}/api/v2/cubes/{cube_id}/sqlView",
+        endpoint=f'/api/v2/cubes/{cube_id}/sqlView',
         params={'X-MSTR-projectID': project_id},
     )
 
 
-@ErrorHandler(err_msg='Error creating cube {name}.')
+@ErrorHandler(err_msg="Error creating cube {name}.")
 def create_cube(
     connection: 'Connection',
     body: dict,
@@ -371,14 +356,14 @@ def create_cube(
     }
 
     return connection.post(
-        url=f'{connection.base_url}/api/model/cubes',
+        endpoint='/api/model/cubes',
         headers={'X-MSTR-ProjectID': project_id},
         json=body,
         params=params,
     )
 
 
-@ErrorHandler(err_msg='Error getting cube with ID {id}')
+@ErrorHandler(err_msg="Error getting cube with ID {id}")
 def get_cube(
     connection: 'Connection',
     id: str,
@@ -430,13 +415,13 @@ def get_cube(
     }
 
     return connection.get(
-        url=f'{connection.base_url}/api/model/cubes/{id}',
+        endpoint=f'/api/model/cubes/{id}',
         headers={'X-MSTR-ProjectID': project_id},
         params=params,
     )
 
 
-@ErrorHandler(err_msg='Error updating cube with ID {id}')
+@ErrorHandler(err_msg="Error updating cube with ID {id}")
 def update_cube(
     connection: 'Connection',
     id: str,
@@ -490,20 +475,16 @@ def update_cube(
     }
 
     return connection.put(
-        url=f'{connection.base_url}/api/model/cubes/{id}',
-        headers={
-            'X-MSTR-ProjectID': project_id,
-        },
+        endpoint=f'/api/model/cubes/{id}',
+        headers={'X-MSTR-ProjectID': project_id},
         json=body,
         params=params,
     )
 
 
-@ErrorHandler(err_msg='Error getting metadata of VLDB settings for cube with ID {id}')
+@ErrorHandler(err_msg="Error getting metadata of VLDB settings for cube with ID {id}")
 def get_applicable_vldb_settings(
-    connection: 'Connection',
-    id: str,
-    project_id: str | None = None,
+    connection: 'Connection', id: str, project_id: str | None = None
 ):
     """Get metadata of advanced VLDB settings for cube.
 
@@ -525,6 +506,6 @@ def get_applicable_vldb_settings(
         project_id = connection.project_id
 
     return connection.get(
-        url=f'{connection.base_url}/api/model/cubes/{id}/applicableVldbProperties',
+        endpoint=f'/api/model/cubes/{id}/applicableVldbProperties',
         headers={'X-MSTR-ProjectID': project_id},
     )

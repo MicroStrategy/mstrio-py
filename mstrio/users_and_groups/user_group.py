@@ -6,11 +6,13 @@ from pandas import DataFrame
 from mstrio import config
 from mstrio.access_and_security.privilege_mode import PrivilegeMode
 from mstrio.access_and_security.security_role import SecurityRole
-from mstrio.api import objects, usergroups
+from mstrio.api import usergroups
 from mstrio.connection import Connection
 from mstrio.utils import helper
 from mstrio.utils.acl import TrusteeACLMixin
 from mstrio.utils.entity import DeleteMixin, Entity, ObjectTypes
+from mstrio.utils.response_processors import objects as objects_processors
+from mstrio.utils.translation_mixin import TranslationMixin
 from mstrio.utils.version_helper import method_version_handler
 
 if TYPE_CHECKING:
@@ -66,7 +68,7 @@ def list_user_groups(
     )
 
 
-class UserGroup(Entity, DeleteMixin, TrusteeACLMixin):
+class UserGroup(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
     """Object representation of MicroStrategy User Group object.
 
     Attributes:
@@ -126,7 +128,7 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin):
         "abbreviation": str,
     }
     _API_PATCH: dict = {
-        ('abbreviation'): (objects.update_object, 'partial_put'),
+        'abbreviation': (objects_processors.update, 'partial_put'),
         (
             'name',
             'description',

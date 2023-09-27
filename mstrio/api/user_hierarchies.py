@@ -7,9 +7,9 @@ if TYPE_CHECKING:
     from mstrio.connection import Connection
 
 
-@ErrorHandler(err_msg='Error listing Hierarchies.')
+@ErrorHandler(err_msg="Error listing Hierarchies.")
 def get_user_hierarchies(
-    connection: "Connection",
+    connection: 'Connection',
     project_id: str | None = None,
     changeset_id: str | None = None,
     limit: int = 1000,
@@ -42,7 +42,7 @@ def get_user_hierarchies(
         project_id = connection.project_id
 
     return connection.get(
-        url=f"{connection.base_url}/api/model/hierarchies",
+        endpoint='/api/model/hierarchies',
         headers={
             'X-MSTR-ProjectID': project_id,
             'X-MSTR-MS-Changeset': changeset_id,
@@ -55,9 +55,9 @@ def get_user_hierarchies(
 
 
 @unpack_information
-@ErrorHandler(err_msg='Error creating the user hierarchy.')
+@ErrorHandler(err_msg="Error creating the user hierarchy.")
 def create_user_hierarchy(
-    connection: "Connection", body: dict, error_msg: str | None = None
+    connection: 'Connection', body: dict, error_msg: str | None = None
 ):
     """Creates a new user hierarchy in the changeset,
     based on the definition provided in request body.
@@ -72,16 +72,16 @@ def create_user_hierarchy(
     """
     with changeset_manager(connection) as changeset_id:
         return connection.post(
-            url=f"{connection.base_url}/api/model/hierarchies",
+            endpoint='/api/model/hierarchies',
             headers={'X-MSTR-MS-Changeset': changeset_id},
             json=body,
         )
 
 
 @unpack_information
-@ErrorHandler(err_msg='Error getting the user hierarchy with ID: {id}.')
+@ErrorHandler(err_msg="Error getting the user hierarchy with ID: {id}.")
 def get_user_hierarchy(
-    connection: "Connection",
+    connection: 'Connection',
     id: str,
     project_id: str | None = None,
     changeset_id: str | None = None,
@@ -112,15 +112,15 @@ def get_user_hierarchy(
         project_id = connection.project_id
 
     return connection.get(
-        url=f"{connection.base_url}/api/model/hierarchies/{id}",
+        endpoint=f'/api/model/hierarchies/{id}',
         headers={'X-MSTR-ProjectID': project_id, 'X-MSTR-MS-Changeset': changeset_id},
     )
 
 
 @unpack_information
-@ErrorHandler(err_msg='Error updating the user hierarchy with ID: {id}.')
+@ErrorHandler(err_msg="Error updating the user hierarchy with ID: {id}.")
 def update_user_hierarchy(
-    connection: "Connection", id: str, body: dict, error_msg: str | None = None
+    connection: 'Connection', id: str, body: dict, error_msg: str | None = None
 ):
     """Updates a specific user hierarchy in the changeset,
     based on the definition provided in the request body.
@@ -139,15 +139,15 @@ def update_user_hierarchy(
     """
     with changeset_manager(connection) as changeset_id:
         return connection.patch(
-            url=f"{connection.base_url}/api/model/hierarchies/{id}",
+            endpoint=f'/api/model/hierarchies/{id}',
             headers={'X-MSTR-MS-Changeset': changeset_id},
             json=body,
         )
 
 
-@ErrorHandler(err_msg='Error deleting the user hierarchy with ID: {id}.')
+@ErrorHandler(err_msg="Error deleting the user hierarchy with ID: {id}.")
 def delete_user_hierarchy(
-    connection: "Connection", id: str, error_msg: str | None = None
+    connection: 'Connection', id: str, error_msg: str | None = None
 ):
     """Delete a specific user hierarchy
 
@@ -164,6 +164,6 @@ def delete_user_hierarchy(
     """
     with changeset_manager(connection) as changeset_id:
         return connection.delete(
-            url=f"{connection.base_url}/api/model/hierarchies/{id}",
+            endpoint=f'/api/model/hierarchies/{id}',
             headers={'X-MSTR-MS-Changeset': changeset_id},
         )

@@ -1,4 +1,36 @@
+
 # Changelog
+
+## 11.3.11.101 - 2023/09/28
+
+### New features
+- added support for VLDB properties for `Metric` objects by providing
+  `list_vldb_settings`, `reset_vldb_settings`, `alter_vldb_settings` methods
+  and `vldb_settings` attribute
+- add `refresh` argument to `list_datasource_warehouse_tables` to allow refreshing
+  warehouse tables available in a datasource
+- enhanced `update_physical_table_structure` and `update_physical_table_structure_for_all_tables`
+  methods of `LogicalTable` to work after changing `WarehouseTable` structure
+- added `Translation` class in `mstrio.object_management.translation` package to allow management
+  of Translations for any object with the following methods: `add_translation`, `alter_translation`,
+  `remove_translation`, `to_csv_from_list` and `add_translations_from_csv`
+- added `list_translations` to allow listing translations for objects
+- added `add_translation`, `alter_translation`, `remove_translation` and `list_translations`
+  methods to all objects inheriting from Entity to allow translation management directly
+  through the objects
+
+### Minor changes
+- moved `Rights`, `AggregatedRights`, `Permissions` enums to `mstrio.helpers` module
+
+### Bug fixes
+- updated default values of `PackageSettings` class to allow safe initialization
+- fixed `Project Not Loaded` error when trying to initialize `Project` object when
+  running in a cluster configuration with the project not being loaded on all nodes
+- fixed `full_search`, `get_search_results` to always return correct number of objects
+
+### Removed
+- removed `list_folders`, `create_folder`, `delete_folder` from `mstrio.utils.helper`
+  because they have been superseded by `mstrio.object_management.folder` module
 
 ## 11.3.10.103 - 2023/08/04
 

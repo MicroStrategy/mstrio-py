@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 @unpack_information
 @ErrorHandler(err_msg="Error creating the filter.")
 def create_filter(
-    connection: "Connection",
+    connection: 'Connection',
     body: dict,
     show_expression_as: str | None = None,
     show_filter_tokens: bool = False,
@@ -37,12 +37,12 @@ def create_filter(
     """
     with changeset_manager(connection) as changeset_id:
         return connection.post(
-            url=f"{connection.base_url}/api/model/filters",
-            headers={"X-MSTR-MS-Changeset": changeset_id},
+            endpoint='/api/model/filters',
+            headers={'X-MSTR-MS-Changeset': changeset_id},
             json=body,
             params={
-                "showExpressionAs": show_expression_as,
-                "showFilterTokens": str(show_filter_tokens).lower(),
+                'showExpressionAs': show_expression_as,
+                'showFilterTokens': str(show_filter_tokens).lower(),
             },
         )
 
@@ -50,7 +50,7 @@ def create_filter(
 @unpack_information
 @ErrorHandler(err_msg="Error getting the filter with ID: {id}.")
 def get_filter(
-    connection: "Connection",
+    connection: 'Connection',
     id: str,
     project_id: str | None = None,
     changeset_id: str | None = None,
@@ -91,11 +91,11 @@ def get_filter(
         project_id = connection.project_id
 
     return connection.get(
-        url=f"{connection.base_url}/api/model/filters/{id}",
-        headers={"X-MSTR-ProjectID": project_id, "X-MSTR-MS-Changeset": changeset_id},
+        endpoint=f'/api/model/filters/{id}',
+        headers={'X-MSTR-ProjectID': project_id, 'X-MSTR-MS-Changeset': changeset_id},
         params={
-            "showExpressionAs": show_expression_as,
-            "showFilterTokens": str(show_filter_tokens).lower(),
+            'showExpressionAs': show_expression_as,
+            'showFilterTokens': str(show_filter_tokens).lower(),
         },
     )
 
@@ -103,7 +103,7 @@ def get_filter(
 @unpack_information
 @ErrorHandler(err_msg="Error updating the filter with ID: {id}.")
 def update_filter(
-    connection: "Connection",
+    connection: 'Connection',
     id: str,
     body: dict,
     show_expression_as: str | None = None,
@@ -135,11 +135,11 @@ def update_filter(
     """
     with changeset_manager(connection) as changeset_id:
         return connection.put(
-            url=f"{connection.base_url}/api/model/filters/{id}",
-            headers={"X-MSTR-MS-Changeset": changeset_id},
+            endpoint=f'/api/model/filters/{id}',
+            headers={'X-MSTR-MS-Changeset': changeset_id},
             json=body,
             params={
-                "showExpressionAs": show_expression_as,
-                "showFilterTokens": str(show_filter_tokens).lower(),
+                'showExpressionAs': show_expression_as,
+                'showFilterTokens': str(show_filter_tokens).lower(),
             },
         )

@@ -55,26 +55,26 @@ dependencies = [
     # but we need to force version for SEC
     # backend only (front peers are
     # handled in code ~20 lines below)
-    "urllib3 >= 1.26.0",  # ver 1.25.x is incompatible
-    "Jinja2 >=3, <4",  # UI related, but also dev-dep of pandas but required for testing
-    "certifi >= 2022.12.7",  # SEC safe version
+    "urllib3 >= 1.26.5",  # ver 1.25.x is incompatible
+    "Jinja2 >=3, <4",  # UI related, but optional dep of pandas, required for testing
+    "certifi >= 2023.7.22",  # SEC safe version
 
     # Direct mstrio dependencies
-    "numpy >=1.24, <1.25",
+    "numpy >=1.24.3",
     "packaging >=23",
-    "pandas >=1.1.5, <=1.6",
+    "pandas >=1.1.5",
     "pyhumps >=3.8",
-    "requests >=2.27, <2.29",
-    "requests_futures >=1.0.0, <1.1",
+    "requests >=2.31",
+    "requests_futures >=1.0.0",
     "stringcase >=1.2",
-    "tqdm >=4.41, <4.70",
+    "tqdm >=4.41",
 
     # Dependencies for connector-jupyter
     # direct dependencies
     "jupyter-contrib-nbextensions >=0.5.1, <0.6",
     "ipywidgets >=8.0.2, <9",
     # peer, UI related, force version for SEC
-    "notebook >=6.4.12",
+    "notebook >=6.4.12, <7",  # v7 is not compatible
     "jupyter_core >=4.11.2",
     "lxml >=4.9.1",
     "ipython >=8.10.0, <9",

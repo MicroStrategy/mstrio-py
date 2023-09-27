@@ -1,7 +1,6 @@
 import logging
 from typing import TYPE_CHECKING
 
-from mstrio.api import objects
 from mstrio.object_management.search_operations import (
     SearchDomain,
     SearchPattern,
@@ -18,6 +17,7 @@ from mstrio.utils.helper import (
     get_default_args_from_func,
     get_valid_project_id,
 )
+from mstrio.utils.response_processors import objects as objects_processors
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
@@ -153,11 +153,14 @@ class Object(Entity, ACLMixin, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin):
             'project_id',
             'hidden',
             'target_info',
-        ): objects.get_object_info
+            'hidden',
+        ): objects_processors.get_info
     }
     _API_PATCH: dict = {
-        **Entity._API_PATCH,
-        ('folder_id'): (objects.update_object, 'partial_put'),
+        ('name', 'description', 'abbreviation', 'hidden', 'folder_id'): (
+            objects_processors.update,
+            'partial_put',
+        )
     }
 
     def __init__(self, connection: "Connection", type: ObjectTypes, id: str):
@@ -189,6 +192,7 @@ class Object(Entity, ACLMixin, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin):
         name: str | None = None,
         description: str | None = None,
         abbreviation: str | None = None,
+        hidden: bool | None = None,
     ) -> None:
         """Alter the object properties.
 
@@ -196,6 +200,7 @@ class Object(Entity, ACLMixin, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin):
             name: object name
             description: object description
             abbreviation: abbreviation
+            hidden: Specifies whether the metric is hidden
         """
         func = self.alter
         args = get_args_from_func(func)

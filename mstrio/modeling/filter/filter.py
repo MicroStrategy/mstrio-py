@@ -2,7 +2,7 @@ import logging
 from typing import TYPE_CHECKING
 
 from mstrio import config
-from mstrio.api import filters, objects
+from mstrio.api import filters
 from mstrio.modeling.schema import ObjectSubType
 from mstrio.object_management import SearchPattern, search_operations
 from mstrio.object_management.folder import Folder
@@ -16,6 +16,8 @@ from mstrio.utils.helper import (
     find_object_with_name,
     get_valid_project_id,
 )
+from mstrio.utils.response_processors import objects as objects_processors
+from mstrio.utils.translation_mixin import TranslationMixin
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
 from mstrio.modeling.expression import Expression, ExpressionFormat  # isort:skip
@@ -105,21 +107,22 @@ def list_filters(
         return objects
     return [
         Filter.from_dict(
-            {
+            source={
                 "show_expression_as": show_expression_as
                 if isinstance(show_expression_as, ExpressionFormat)
                 else ExpressionFormat(show_expression_as),
                 "show_filter_tokens": show_filter_tokens,
                 **obj,
             },
-            connection,
+            connection=connection,
+            with_missing_value=True,
         )
         for obj in objects
     ]
 
 
 @class_version_handler('11.3.0000')
-class Filter(Entity, CopyMixin, DeleteMixin, MoveMixin):
+class Filter(Entity, CopyMixin, DeleteMixin, MoveMixin, TranslationMixin):
     """Python representation of MicroStrategy Filter object.
 
     Attributes:
@@ -148,6 +151,7 @@ class Filter(Entity, CopyMixin, DeleteMixin, MoveMixin):
             but bandings
         destination_folder_id: a globally unique identifier used to distinguish
             between metadata objects within the same project
+        hidden: Specifies whether the object is hidden
     """
 
     _OBJECT_TYPE = ObjectTypes.FILTER
@@ -169,7 +173,8 @@ class Filter(Entity, CopyMixin, DeleteMixin, MoveMixin):
             'ancestors',
             'acg',
             'acl',
-        ): objects.get_object_info,
+            'hidden',
+        ): objects_processors.get_info,
         (
             'id',
             'name',
@@ -193,7 +198,7 @@ class Filter(Entity, CopyMixin, DeleteMixin, MoveMixin):
             'destination_folder_id',
             'is_embedded',
         ): (filters.update_filter, "put"),
-        ('folder_id'): (objects.update_object, 'partial_put'),
+        ('folder_id', 'hidden'): (objects_processors.update, 'partial_put'),
     }
     _PATCH_PATH_TYPES = {
         'name': str,
@@ -252,20 +257,22 @@ class Filter(Entity, CopyMixin, DeleteMixin, MoveMixin):
             show_filter_tokens=show_filter_tokens,
         )
 
-    def _init_variables(self, **kwargs) -> None:
-        super()._init_variables(**kwargs)
-        self.primary_locale = kwargs.get('primary_locale')
-        self.is_embedded = kwargs.get('is_embedded')
-        self.destination_folder_id = kwargs.get('destination_folder_id')
+    def _init_variables(self, default_value, **kwargs) -> None:
+        super()._init_variables(default_value=default_value, **kwargs)
+        self.primary_locale = kwargs.get('primary_locale', default_value)
+        self.is_embedded = kwargs.get('is_embedded', default_value)
+        self.destination_folder_id = kwargs.get('destination_folder_id', default_value)
         self.qualification = (
             Expression.from_dict(kwargs.get('qualification'), self.connection)
             if kwargs.get('qualification')
-            else None
+            else default_value
         )
         self._sub_type = (
-            ObjectSubType(kwargs.get('sub_type')) if kwargs.get('sub_type') else None
+            ObjectSubType(kwargs.get('sub_type'))
+            if kwargs.get('sub_type')
+            else default_value
         )
-        self._path = kwargs.get('path')
+        self._path = kwargs.get('path', default_value)
         show_expression_as = kwargs.get('show_expression_as', 'tree')
         self._show_expression_as = (
             show_expression_as
@@ -320,6 +327,8 @@ class Filter(Entity, CopyMixin, DeleteMixin, MoveMixin):
                 - If omitted or false, only `text` and `tree`
                 formats are returned.
                 - If true, all `text`, "tree" and `tokens` formats are returned.
+            hidden (bool, optional): Specifies whether the object is hidden.
+                Default value: False.
 
         Returns:
             Filter object
@@ -369,6 +378,7 @@ class Filter(Entity, CopyMixin, DeleteMixin, MoveMixin):
         destination_folder_id: str | None = None,
         qualification: Expression | dict | None = None,
         is_embedded: bool | None = None,
+        hidden: bool | None = None,
     ):
         """Alter the filter properties.
 
@@ -381,6 +391,8 @@ class Filter(Entity, CopyMixin, DeleteMixin, MoveMixin):
                 written as an expression tree over predicate nodes
             is_embedded (bool, optional): if true indicates that the target
                 object of this reference is embedded within this object
+            hidden (bool, optional): Specifies whether the object is hidden.
+                Default value: False.
         """
         qualification = (
             {}

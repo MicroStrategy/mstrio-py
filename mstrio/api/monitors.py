@@ -4,7 +4,6 @@ from unittest.mock import Mock
 from urllib.parse import quote, urlencode
 
 from packaging import version
-from requests.adapters import Response
 
 from mstrio.helpers import MstrException, PartialSuccess, Success
 from mstrio.utils.error_handlers import ErrorHandler, bulk_operation_response_handler
@@ -16,7 +15,7 @@ from mstrio.utils.helper import (
 from mstrio.utils.sessions import FuturesSessionWithRenewal
 
 if TYPE_CHECKING:
-    from requests_futures.sessions import FuturesSession
+    from requests import Response
 
     from mstrio.connection import Connection
 
@@ -25,7 +24,7 @@ ISERVER_VERSION_11_3_2 = '11.3.0200'
 
 @ErrorHandler(err_msg='Error getting list of all projects from metadata.')
 def get_projects(
-    connection: "Connection",
+    connection: 'Connection',
     offset: int = 0,
     limit: int = -1,
     error_msg: str | None = None,
@@ -46,36 +45,32 @@ def get_projects(
     """
 
     return connection.get(
-        url=f'{connection.base_url}/api/monitors/projects',
+        endpoint='/api/monitors/projects',
         headers={'X-MSTR-ProjectID': None},
         params={'offset': offset, 'limit': limit},
     )
 
 
 def get_projects_async(
-    future_session: "FuturesSession",
-    connection: "Connection",
-    offset: int = 0,
-    limit: int = -1,
+    future_session: 'FuturesSessionWithRenewal', offset: int = 0, limit: int = -1
 ):
     """Get list of all projects from metadata asynchronously.
     Args:
-        connection(object): MicroStrategy connection object returned by
-            `connection.Connection()`.
+        future_session(object): `FuturesSessionWithRenewal` object to call
+            MicroStrategy REST Server asynchronously
         offset(int): Starting point within the collection of returned search
             results. Used to control paging behavior.
         limit(int): Maximum number of items returned for a single search
             request. Used to control paging behavior. Use -1 (default ) for no
             limit (subject to governing settings).
-        error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
         HTTP response object returned by the MicroStrategy REST server.
     """
-    url = f'{connection.base_url}/api/monitors/projects'
+    endpoint = '/api/monitors/projects'
     headers = {'X-MSTR-ProjectID': None}
     params = {'offset': offset, 'limit': limit}
-    future = future_session.get(url=url, headers=headers, params=params)
+    future = future_session.get(endpoint=endpoint, headers=headers, params=params)
     return future
 
 
@@ -84,7 +79,7 @@ def get_projects_async(
     'Server cluster.'
 )
 def get_node_info(
-    connection: "Connection",
+    connection: 'Connection',
     id: str | None = None,
     node_name: str | None = None,
     error_msg: str | None = None,
@@ -103,7 +98,7 @@ def get_node_info(
         error_msg (string, optional): Custom Error Message for Error Handling
     """
     return connection.get(
-        url=f'{connection.base_url}/api/monitors/iServer/nodes',
+        endpoint='/api/monitors/iServer/nodes',
         headers={'X-MSTR-ProjectID': None},
         params={'projects.id': id, 'name': node_name},
     )
@@ -114,7 +109,7 @@ def get_node_info(
     'node_name}.'
 )
 def update_node_properties(
-    connection: "Connection",
+    connection: 'Connection',
     node_name: str,
     project_id: str,
     body: dict,
@@ -126,11 +121,11 @@ def update_node_properties(
     GET /monitors/iServer/nodes.
 
     {
-        "operationList": [
+        'operationList': [
             {
-                "op": "replace",
-                "path": "/status",
-                "value": "loaded"
+                'op': 'replace',
+                'path': '/status',
+                'value': 'loaded'
             }
         ]
     }
@@ -151,10 +146,7 @@ def update_node_properties(
     """
 
     return connection.patch(
-        url=(
-            f'{connection.base_url}/api/monitors/iServer/nodes/{node_name}/projects'
-            f'/{project_id}'
-        ),
+        endpoint=f'/api/monitors/iServer/nodes/{node_name}/projects/{project_id}',
         headers={'X-MSTR-ProjectID': None},
         json=body,
     )
@@ -164,7 +156,7 @@ def update_node_properties(
     err_msg='Error adding node {node_name} to connected Intelligence Server cluster.'
 )
 def add_node(
-    connection: "Connection",
+    connection: 'Connection',
     node_name: str,
     error_msg: str | None = None,
     whitelist: list[tuple] | None = None,
@@ -190,7 +182,7 @@ def add_node(
     """
 
     return connection.put(
-        url=f'{connection.base_url}/api/monitors/iServer/nodes/{node_name}',
+        endpoint=f'/api/monitors/iServer/nodes/{node_name}',
         headers={'X-MSTR-ProjectID': None},
     )
 
@@ -200,7 +192,7 @@ def add_node(
     'cluster.'
 )
 def remove_node(
-    connection: "Connection",
+    connection: 'Connection',
     node_name: str,
     error_msg: str | None = None,
     whitelist: list[tuple] | None = None,
@@ -226,14 +218,14 @@ def remove_node(
     """
 
     return connection.delete(
-        url=f'{connection.base_url}/api/monitors/iServer/nodes/{node_name}',
+        endpoint=f'/api/monitors/iServer/nodes/{node_name}',
         headers={'X-MSTR-ProjectID': None},
     )
 
 
 @ErrorHandler(err_msg='Error getting user connections for {node_name} cluster node.')
 def get_user_connections(
-    connection: "Connection",
+    connection: 'Connection',
     node_name: str,
     offset: int = 0,
     limit: int = 100,
@@ -256,15 +248,14 @@ def get_user_connections(
         HTTP response object returned by the MicroStrategy REST server.
     """
     return connection.get(
-        url=f'{connection.base_url}/api/monitors/userConnections',
+        endpoint='/api/monitors/userConnections',
         headers={'X-MSTR-ProjectID': None},
         params={'clusterNode': node_name, 'offset': offset, 'limit': limit},
     )
 
 
 def get_user_connections_async(
-    future_session: "FuturesSession",
-    connection: "Connection",
+    future_session: 'FuturesSessionWithRenewal',
     node_name: str,
     offset: int = 0,
     limit: int = 100,
@@ -272,8 +263,8 @@ def get_user_connections_async(
     """Get user connections information on specific intelligence server node.
 
     Args:
-        connection(object): MicroStrategy connection object returned by
-            `connection.Connection()`.
+        future_session(object): `FuturesSessionWithRenewal` object to call
+            MicroStrategy REST Server asynchronously
         node_name (string): Node Name.
         offset(int): Starting point within the collection of returned search
             results. Used to control paging behavior.
@@ -285,14 +276,14 @@ def get_user_connections_async(
         HTTP response object returned by the MicroStrategy REST server.
     """
     params = {'clusterNode': node_name, 'offset': offset, 'limit': limit}
-    url = f'{connection.base_url}/api/monitors/userConnections'
+    endpoint = '/api/monitors/userConnections'
     headers = {'X-MSTR-ProjectID': None}
-    future = future_session.get(url=url, headers=headers, params=params)
+    future = future_session.get(endpoint=endpoint, headers=headers, params=params)
     return future
 
 
 def delete_user_connection(
-    connection: "Connection", id: str, error_msg: str | None = None, bulk: bool = False
+    connection: 'Connection', id: str, error_msg: str | None = None, bulk: bool = False
 ):
     """Disconnect a user connection on specific intelligence server node.
 
@@ -305,7 +296,7 @@ def delete_user_connection(
             bulk disconnect
     """
     response = connection.delete(
-        url=f'{connection.base_url}/api/monitors/userConnections/{id}',
+        endpoint=f'/api/monitors/userConnections/{id}',
         headers={'X-MSTR-ProjectID': None},
     )
     if not response.ok and bulk:
@@ -316,24 +307,22 @@ def delete_user_connection(
     return response
 
 
-def delete_user_connection_async(
-    future_session: "FuturesSession", connection: "Connection", id: str
-):
+def delete_user_connection_async(future_session: 'FuturesSessionWithRenewal', id: str):
     """Disconnect a user connection on specific intelligence server node.
 
     Args:
-        connection(object): MicroStrategy connection object returned by
-            `connection.Connection()`.
+        future_session(object): `FuturesSessionWithRenewal` object to call
+            MicroStrategy REST Server asynchronously
         id (str, optional): Project ID
     """
 
-    url = f'{connection.base_url}/api/monitors/userConnections/{id}'
+    endpoint = f'/api/monitors/userConnections/{id}'
     headers = {'X-MSTR-ProjectID': None}
-    future = future_session.delete(url=url, headers=headers)
+    future = future_session.delete(endpoint=endpoint, headers=headers)
     return future
 
 
-def delete_user_connections(connection: "Connection", ids: list[str]):
+def delete_user_connections(connection: 'Connection', ids: list[str]):
     """Delete user connections on specific intelligence server node.
 
     Args:
@@ -344,16 +333,15 @@ def delete_user_connections(connection: "Connection", ids: list[str]):
     Returns:
         HTTP response object returned by the MicroStrategy REST server
     """
-    body = {"userConnectionIds": ids}
+    body = {'userConnectionIds': ids}
     response = connection.post(
-        url=f'{connection.base_url}/api/monitors/deleteUserConnections',
-        json=body,
+        endpoint='/api/monitors/deleteUserConnections', json=body
     )
     return response
 
 
 @ErrorHandler(err_msg='Error getting cube cache {id} info.')
-def get_cube_cache_info(connection: "Connection", id: str):
+def get_cube_cache_info(connection: 'Connection', id: str):
     """Get an single cube cache info.
 
     Args:
@@ -364,11 +352,11 @@ def get_cube_cache_info(connection: "Connection", id: str):
     Returns:
         Complete HTTP response object.
     """
-    return connection.get(url=f'{connection.base_url}/api/monitors/caches/cubes/{id}')
+    return connection.get(endpoint=f'/api/monitors/caches/cubes/{id}')
 
 
 @ErrorHandler(err_msg='Error deleting cube cache with ID {id}')
-def delete_cube_cache(connection: "Connection", id: str, throw_error: bool = True):
+def delete_cube_cache(connection: 'Connection', id: str, throw_error: bool = True):
     """Delete an cube cache.
 
     Args:
@@ -381,14 +369,12 @@ def delete_cube_cache(connection: "Connection", id: str, throw_error: bool = Tru
     Returns:
         Complete HTTP response object.
     """
-    return connection.delete(
-        url=f'{connection.base_url}/api/monitors/caches/cubes/{id}'
-    )
+    return connection.delete(endpoint=f'/api/monitors/caches/cubes/{id}')
 
 
 @ErrorHandler(err_msg='Error altering cube cache {id} status.')
 def alter_cube_cache_status(
-    connection: "Connection",
+    connection: 'Connection',
     id: str,
     active: bool | None = None,
     loaded: bool | None = None,
@@ -416,7 +402,7 @@ def alter_cube_cache_status(
     body = delete_none_values(body, recursion=True)
 
     return connection.patch(
-        url=f'{connection.base_url}/api/monitors/caches/cubes/{id}',
+        endpoint=f'/api/monitors/caches/cubes/{id}',
         headers={'Prefer': 'respond-async'},
         json=body,
     )
@@ -424,7 +410,7 @@ def alter_cube_cache_status(
 
 @ErrorHandler(err_msg='Error getting list of cube caches for node {node}.')
 def get_cube_caches(
-    connection: "Connection",
+    connection: 'Connection',
     node: str,
     offset: int = 0,
     limit: int = 1000,
@@ -459,7 +445,7 @@ def get_cube_caches(
     """
     loaded = 'loaded' if loaded else None
     return connection.get(
-        url=f'{connection.base_url}/api/monitors/caches/cubes',
+        endpoint='/api/monitors/caches/cubes',
         params={
             'clusterNode': node,
             'offset': offset,
@@ -472,8 +458,7 @@ def get_cube_caches(
 
 
 def get_cube_caches_async(
-    future_session: "FuturesSession",
-    connection: "Connection",
+    future_session: 'FuturesSessionWithRenewal',
     node: str,
     offset: int = 0,
     limit: int = 1000,
@@ -486,8 +471,6 @@ def get_cube_caches_async(
     Args:
         future_session(object): Future Session object to call MicroStrategy REST
             Server asynchronously
-        connection: MicroStrategy connection object returned by
-            `connection.Connection()`.
         node (string): Intelligence Server cluster node name
         offset (integer, optional): Starting point within the collection of
             returned results. Used to control paging behavior. Default value: 0.
@@ -506,7 +489,7 @@ def get_cube_caches_async(
         Future with HTTP response returned by the MicroStrategy REST server as
         a result.
     """
-    url = f'{connection.base_url}/api/monitors/caches/cubes'
+    endpoint = '/api/monitors/caches/cubes'
     params = {
         'clusterNode': node,
         'offset': offset,
@@ -515,13 +498,13 @@ def get_cube_caches_async(
         'state.loadedState': loaded,
         'sortBy': sort_by,
     }
-    future = future_session.get(url=url, params=params)
+    future = future_session.get(endpoint=endpoint, params=params)
     return future
 
 
 @ErrorHandler(err_msg='Error getting cube cache manipulation {manipulation_id} status.')
 def get_cube_cache_manipulation_status(
-    connection: "Connection", manipulation_id: str, throw_error: bool = True
+    connection: 'Connection', manipulation_id: str, throw_error: bool = True
 ):
     """Get the manipulation status of cube cache.
 
@@ -535,18 +518,16 @@ def get_cube_cache_manipulation_status(
     Returns:
         Complete HTTP response object.
     """
-    url = (
-        f'{connection.base_url}/api/monitors/caches/cubes/'
-        f'manipulations/{manipulation_id}/status'
+    return connection.get(
+        endpoint=f'/api/monitors/caches/cubes/manipulations/{manipulation_id}/status'
     )
-    return connection.get(url=url)
 
 
 @ErrorHandler(
     err_msg='Error getting database connections for {nodes_names} cluster node.'
 )
 def get_database_connections(
-    connection: "Connection", nodes_names: str, error_msg: str | None = None
+    connection: 'Connection', nodes_names: str, error_msg: str | None = None
 ):
     """Get database connections information on specific intelligence
         server node.
@@ -560,14 +541,14 @@ def get_database_connections(
         HTTP response object returned by the MicroStrategy REST server.
     """
     return connection.get(
-        url=f'{connection.base_url}/api/monitors/dbConnectionInstances',
+        endpoint='/api/monitors/dbConnectionInstances',
         params={'clusterNodes': nodes_names},
     )
 
 
 @ErrorHandler(err_msg='Error deleting database connections {connection_id}.')
 def delete_database_connection(
-    connection: "Connection", connection_id: str, error_msg: str | None = None
+    connection: 'Connection', connection_id: str, error_msg: str | None = None
 ):
     """Disconnect a database connection on specific intelligence server node.
 
@@ -577,29 +558,27 @@ def delete_database_connection(
         connection_id (str, optional): Database Connection Id
         error_msg (string, optional): Custom Error Message for Error Handling
     """
-    url = f'{connection.base_url}/api/monitors/dbConnectionInstances/{connection_id}'
-    return connection.delete(url=url)
+    return connection.delete(
+        endpoint=f'/api/monitors/dbConnectionInstances/{connection_id}'
+    )
 
 
 def delete_database_connection_async(
-    future_session: "FuturesSession", connection: "Connection", connection_id: str
+    future_session: 'FuturesSessionWithRenewal', connection_id: str
 ):
     """Disconnect a database connection on specific intelligence server node.
 
     Args:
         future_session: Future Session object to call MicroStrategy REST
             Server asynchronously
-        connection(object): MicroStrategy connection object returned by
-            `connection.Connection()`.
         connection_id (str, optional): Database Connection Id
-        error_msg (string, optional): Custom Error Message for Error Handling
     """
-    url = f'{connection.base_url}/api/monitors/dbConnectionInstances/{connection_id}'
-    return future_session.delete(url=url)
+    endpoint = f'/api/monitors/dbConnectionInstances/{connection_id}'
+    return future_session.delete(endpoint=endpoint)
 
 
 def get_job(
-    connection: "Connection",
+    connection: 'Connection',
     id: str,
     node_name: str | None = None,
     fields: list[str] | None = None,
@@ -624,19 +603,14 @@ def get_job(
         # fetch jobs on all nodes
         nodes_response = get_node_info(connection).json()
         nodes = nodes_response['nodes']
-        node_names = [node["name"] for node in nodes]
+        node_names = [node['name'] for node in nodes]
 
     if isinstance(node_name, str):
         node_names = [node_names]
 
     with FuturesSessionWithRenewal(connection=connection, max_workers=8) as session:
         futures = [
-            get_jobs_async(
-                future_session=session,
-                connection=connection,
-                node_name=node,
-                fields=fields,
-            )
+            get_jobs_async(future_session=session, node_name=node, fields=fields)
             for node in node_names
         ]
         jobs = []
@@ -666,7 +640,7 @@ def get_job(
 
 @ErrorHandler(err_msg="Error getting job {id}.")
 def get_job_v2(
-    connection: "Connection",
+    connection: 'Connection',
     id: str,
     fields: list[str] | None = None,
     error_msg: str | None = None,
@@ -683,16 +657,14 @@ def get_job_v2(
         HTTP response object returned by the MicroStrategy REST server
     """
     return connection.get(
-        url=f'{connection.base_url}/api/v2/monitors/jobs/{id}',
-        params={
-            'fields': ",".join(fields) if fields else None,
-        },
+        endpoint=f'/api/v2/monitors/jobs/{id}',
+        params={'fields': ','.join(fields) if fields else None},
     )
 
 
 @ErrorHandler(err_msg="Error getting jobs list.")
 def get_jobs(
-    connection: "Connection",
+    connection: 'Connection',
     node_name: str,
     project_id: str | None = None,
     status: str | None = None,
@@ -702,7 +674,7 @@ def get_jobs(
     sort_by: str | None = None,
     fields: list[str] | None = None,
     error_msg: str | None = None,
-) -> Response:
+) -> 'Response':
     """Get list of a jobs.
 
     Args:
@@ -729,20 +701,16 @@ def get_jobs(
         'userFullName': user_full_name,
         'objectId': object_id,
         'sortBy': sort_by,
-        'fields': ",".join(fields) if fields else None,
+        'fields': ','.join(fields) if fields else None,
     }
 
     params_delete_none = delete_none_values(params, recursion=True)
     params_encoded = urlencode(params_delete_none, True, quote_via=quote)
-    return connection.get(
-        url=f'{connection.base_url}/api/monitors/jobs',
-        params=params_encoded,
-    )
+    return connection.get(endpoint='/api/monitors/jobs', params=params_encoded)
 
 
 def get_jobs_async(
-    future_session: "FuturesSession",
-    connection: "Connection",
+    future_session: 'FuturesSessionWithRenewal',
     node_name: str,
     project_id: str | None = None,
     status: str | None = None,
@@ -751,14 +719,12 @@ def get_jobs_async(
     object_id: str | None = None,
     sort_by: str | None = None,
     fields: list[str] | None = None,
-) -> Response:
+) -> 'Response':
     """Get list of a jobs asynchronously.
 
     Args:
         future_session(object): Future Session object to call MicroStrategy REST
             Server asynchronously
-        connection(object): MicroStrategy connection object returned by
-            `connection.Connection()`.
         node_name(str): Node name,
         project_id(str, optional): Project id,
         status(str, optional): Job status to filter by,
@@ -768,9 +734,8 @@ def get_jobs_async(
         sort_by(SortBy, optional): Specifies sorting criteria to
         fields(list, optional): Comma separated top-level field whitelist. This
             allows client to selectively retrieve part of the response model.
-        error_msg (string, optional): Custom Error Message for Error Handling
     Returns:
-        FuturesSession object
+        FuturesSessionWithRenewal object
     """
     params = {
         'nodeName': node_name,  # this needs to be first to work
@@ -780,19 +745,17 @@ def get_jobs_async(
         'userFullName': user_full_name,
         'objectId': object_id,
         'sortBy': sort_by,
-        'fields': ",".join(fields) if fields else None,
+        'fields': ','.join(fields) if fields else None,
     }
 
     params_delete_none = delete_none_values(params, recursion=True)
     params_encoded = urlencode(params_delete_none, True, quote_via=quote)
-    return future_session.get(
-        url=f'{connection.base_url}/api/monitors/jobs', params=params_encoded
-    )
+    return future_session.get(endpoint='/api/monitors/jobs', params=params_encoded)
 
 
 @ErrorHandler(err_msg="Error getting jobs list")
 def get_jobs_v2(
-    connection: "Connection",
+    connection: 'Connection',
     node_name: str,
     user: list[str] | str | None = None,
     description: str | None = None,
@@ -872,20 +835,16 @@ def get_jobs_v2(
         'memoryUsage': memory_usage,
         'elapsedTime': elapsed_time,
         'sortBy': sort_by,
-        'fields': ",".join(fields) if fields else None,
+        'fields': ','.join(fields) if fields else None,
     }
 
     params_delete_none = delete_none_values(params, recursion=True)
     params_encoded = urlencode(params_delete_none, True, quote_via=quote)
-    return connection.get(
-        url=f'{connection.base_url}/api/v2/monitors/jobs',
-        params=params_encoded,
-    )
+    return connection.get(endpoint='/api/v2/monitors/jobs', params=params_encoded)
 
 
 def get_jobs_v2_async(
-    future_session: "FuturesSession",
-    connection: "Connection",
+    future_session: 'FuturesSessionWithRenewal',
     node_name: str,
     user: list[str] | str | None = None,
     description: str | None = None,
@@ -902,14 +861,12 @@ def get_jobs_v2_async(
     elapsed_time: str | None = None,
     sort_by: str | None = None,
     fields: list[str] | None = None,
-) -> Response:
+) -> 'Response':
     """Get list of a jobs asynchronously.
 
     Args:
         future_session(object): Future Session object to call MicroStrategy REST
             Server asynchronously
-        connection(object): MicroStrategy connection object returned by
-            `connection.Connection()`.
         node_name(str): Node name,
         user(str, optional): Field to filter on job owner's full name (exact
             match),
@@ -946,10 +903,9 @@ def get_jobs_v2_async(
             server supports sorting only by single field.
         fields(list, optional): Comma separated top-level field whitelist. This
             allows client to selectively retrieve part of the response model.
-        error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
-        FuturesSession object
+        FuturesSessionWithRenewal object
     """
     params = {
         'nodeName': node_name,  # this needs to be first to work
@@ -967,19 +923,17 @@ def get_jobs_v2_async(
         'memoryUsage': memory_usage,
         'elapsedTime': elapsed_time,
         'sortBy': sort_by,
-        'fields': ",".join(fields) if fields else None,
+        'fields': ','.join(fields) if fields else None,
     }
 
     params_delete_none = delete_none_values(params, recursion=True)
     params_encoded = urlencode(params_delete_none, True, quote_via=quote)
-    return future_session.get(
-        url=f'{connection.base_url}/api/v2/monitors/jobs', params=params_encoded
-    )
+    return future_session.get(endpoint='/api/v2/monitors/jobs', params=params_encoded)
 
 
 @ErrorHandler(err_msg="Error killing job {id}")
 def cancel_job(
-    connection: "Connection",
+    connection: 'Connection',
     id: str,
     fields: list[str] | None = None,
     error_msg: str | None = None,
@@ -1007,7 +961,7 @@ def cancel_job(
 
 @ErrorHandler(err_msg="Error killing job {id}")
 def cancel_job_v1(
-    connection: "Connection",
+    connection: 'Connection',
     id: str,
     fields: list[str] | None = None,
     error_msg: str | None = None,
@@ -1024,16 +978,14 @@ def cancel_job_v1(
     Returns:
         HTTP response object returned by the MicroStrategy REST server
     """
-    params = {'fields': ",".join(fields) if fields else None}
+    params = {'fields': ','.join(fields) if fields else None}
 
-    return connection.delete(
-        url=f'{connection.base_url}/api/monitors/jobs/{id}', params=params
-    )
+    return connection.delete(endpoint=f'/api/monitors/jobs/{id}', params=params)
 
 
 @ErrorHandler(err_msg="Error killing job {id}")
 def cancel_job_v2(
-    connection: "Connection",
+    connection: 'Connection',
     id: str,
     fields: list[str] | None = None,
     error_msg: str | None = None,
@@ -1050,15 +1002,13 @@ def cancel_job_v2(
     Returns:
         HTTP response object returned by the MicroStrategy REST server
     """
-    params = {'fields': ",".join(fields) if fields else None}
+    params = {'fields': ','.join(fields) if fields else None}
 
-    return connection.delete(
-        url=f'{connection.base_url}/api/v2/monitors/jobs/{id}', params=params
-    )
+    return connection.delete(endpoint=f'/api/v2/monitors/jobs/{id}', params=params)
 
 
 def cancel_jobs(
-    connection: "Connection", ids: list[str], fields: list[str] | None = None
+    connection: 'Connection', ids: list[str], fields: list[str] | None = None
 ) -> Success | PartialSuccess | MstrException:
     """Cancel jobs specified by `ids`. Use cancel_jobs_v1 if I-Server version
     is 11.3.2 or cancel_jobs_v2 otherwise.
@@ -1081,11 +1031,11 @@ def cancel_jobs(
     else:
         response = cancel_jobs_v2(connection, ids, fields)
 
-    return bulk_operation_response_handler(response, "jobCancellationStatus")
+    return bulk_operation_response_handler(response, 'jobCancellationStatus')
 
 
 def cancel_jobs_v1(
-    connection: "Connection", ids: list[str], fields: list[str] | None = None
+    connection: 'Connection', ids: list[str], fields: list[str] | None = None
 ):
     """Cancel jobs specified by `ids`.
 
@@ -1098,21 +1048,19 @@ def cancel_jobs_v1(
     Returns:
         HTTP response object returned by the MicroStrategy REST server
     """
-    params = {'fields': ",".join(fields) if fields else None}
+    params = {'fields': ','.join(fields) if fields else None}
 
     if ids:
         body = {'jobIds': ids}
         return connection.post(
-            url=f'{connection.base_url}/api/monitors/cancelJobs',
-            params=params,
-            json=body,
+            endpoint='/api/monitors/cancelJobs', params=params, json=body
         )
     else:
         raise ValueError("No ids have been passed.")
 
 
 def cancel_jobs_v2(
-    connection: "Connection", ids: list[str], fields: list[str] | None = None
+    connection: 'Connection', ids: list[str], fields: list[str] | None = None
 ):
     """Cancel jobs specified by `ids`.
 
@@ -1125,14 +1073,12 @@ def cancel_jobs_v2(
     Returns:
         HTTP response object returned by the MicroStrategy REST server
     """
-    params = {'fields': ",".join(fields) if fields else None}
+    params = {'fields': ','.join(fields) if fields else None}
 
     if ids:
         body = {'jobIds': ids}
         return connection.post(
-            url=f'{connection.base_url}/api/v2/monitors/cancelJobs',
-            params=params,
-            json=body,
+            endpoint='/api/v2/monitors/cancelJobs', params=params, json=body
         )
     else:
         raise ValueError("No ids have been passed.")
@@ -1140,7 +1086,7 @@ def cancel_jobs_v2(
 
 @ErrorHandler(err_msg="Error getting caches")
 def get_contents_caches(
-    connection: "Connection",
+    connection: 'Connection',
     project_id: str,
     node: str,
     offset: int = 0,
@@ -1156,7 +1102,7 @@ def get_contents_caches(
     sort_by: str | None = None,
     fields: str | None = None,
     error_msg: str | None = None,
-) -> Response:
+) -> 'Response':
     """Get cache objects
 
     Args:
@@ -1206,15 +1152,14 @@ def get_contents_caches(
     params_delete_none = delete_none_values(params, recursion=True)
     params_encoded = urlencode(params_delete_none, True, quote_via=quote)
     return connection.get(
-        url=f'{connection.base_url}/api/monitors/caches/contents',
-        params=params_encoded,
+        endpoint='/api/monitors/caches/contents', params=params_encoded
     )
 
 
 @ErrorHandler(err_msg='Error updating caches')
 def update_contents_caches(
-    connection: "Connection", node: str, body: dict, fields: str | None = None
-) -> Response:
+    connection: 'Connection', node: str, body: dict, fields: str | None = None
+) -> 'Response':
     """Alter multiple content cache statuses or remove content caches entirely
         in multiple projects at specific node.
 
@@ -1230,7 +1175,7 @@ def update_contents_caches(
         HTTP response object. Expected status 200.
     """
     return connection.patch(
-        url=f'{connection.base_url}/api/v2/monitors/caches/contents',
+        endpoint='/api/v2/monitors/caches/contents',
         params={'clusterNode': node, 'fields': fields},
         json=body,
     )

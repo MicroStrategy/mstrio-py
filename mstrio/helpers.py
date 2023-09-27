@@ -1,3 +1,5 @@
+from enum import Enum, IntFlag
+
 from mstrio.utils.dict_filter import filter_list_of_dicts
 
 
@@ -89,3 +91,44 @@ class PartialSuccess(Exception):
 
     def __bool__(self):
         return False
+
+
+class Rights(IntFlag):
+    """ "Enumeration constants used to specify the access granted attribute of
+    the DSS objects."""
+
+    EXECUTE = 0b10000000
+    USE = 0b01000000
+    CONTROL = 0b00100000
+    DELETE = 0b00010000
+    WRITE = 0b00001000
+    READ = 0b00000100
+    USE_EXECUTE = 0b00000010  # This constant is deprecated
+    BROWSE = 0b00000001
+    INHERITABLE = 0b100000000000000000000000000000
+
+
+class Permissions(Enum):
+    """Enumeration constants used to specify combination of Rights values
+    similar to workstation Security Access.
+
+    This has to be string-based to discern between 'Denied All'
+    and 'Full Control', which have the same mask.
+    """
+
+    DENIED_ALL = 'Denied All'
+    DEFAULT_ALL = 'Default All'
+    CONSUME = 'Consume'
+    VIEW = 'View'
+    MODIFY = 'Modify'
+    FULL_CONTROL = 'Full Control'
+
+
+class AggregatedRights(IntFlag):
+    """Enumeration constants used to specify combination of Rights values."""
+
+    NONE = 0b00000000
+    CONSUME = 0b01000101
+    VIEW = 0b11000101
+    MODIFY = 0b11011101
+    ALL = 0b11111111

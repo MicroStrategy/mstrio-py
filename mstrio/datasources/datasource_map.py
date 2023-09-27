@@ -4,7 +4,7 @@ from collections.abc import Callable
 from typing import Any
 
 from mstrio import config
-from mstrio.api import datasources, objects
+from mstrio.api import datasources
 from mstrio.connection import Connection
 from mstrio.datasources import DatasourceConnection, DatasourceInstance, DatasourceLogin
 from mstrio.server.language import Language, list_languages
@@ -14,6 +14,7 @@ from mstrio.utils import helper
 from mstrio.utils.entity import DeleteMixin, Entity, EntityBase, ObjectTypes
 from mstrio.utils.helper import delete_none_values, deprecation_warning, get_objects_id
 from mstrio.utils.resources import locales
+from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.version_helper import method_version_handler
 
 logger = logging.getLogger(__name__)
@@ -67,9 +68,8 @@ class Locale(Entity):
             'acl',
             'comments',
             'project_id',
-            'hidden',
             'target_info',
-        ): objects.get_object_info,
+        ): objects_processors.get_info,
     }
     _FROM_DICT_MAP = {**Entity._FROM_DICT_MAP, 'owner': User.from_dict}
 

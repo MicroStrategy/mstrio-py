@@ -18,7 +18,7 @@ def get_gateways(
     """
 
     return connection.get(
-        url=f'{connection.base_url}/api/gateways',
+        endpoint='/api/gateways',
     )
 
 
@@ -35,5 +35,5 @@ def get_gateway(connection: Connection, id: str, error_msg: str | None = None):
         Complete HTTP response object. Expected status is 200.
     """
     return connection.get(
-        url=f'{connection.base_url}/api/gateways/{id}',
+        endpoint=f'/api/gateways/{id}',
     )

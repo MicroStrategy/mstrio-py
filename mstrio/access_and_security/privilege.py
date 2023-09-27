@@ -28,10 +28,7 @@ class Privilege(EntityBase):
     """
 
     def __init__(
-        self,
-        connection: Connection,
-        name: str | None = None,
-        id: str | None = None,
+        self, connection: Connection, name: str | None = None, id: str | None = None
     ) -> None:
         """Initialize Privilege object by passing `name` or `id`. When `id` is
         provided (not `None`), `name` is omitted. To explore all available
@@ -111,7 +108,7 @@ class Privilege(EntityBase):
         if to_dictionary and to_dataframe:
             raise ValueError(
                 "Please select either `to_dictionary=True` or `to_dataframe=True`,"
-                " but not both.",
+                " but not both."
             )
         objects = helper.fetch_objects(
             connection=connection,
@@ -209,13 +206,9 @@ class Privilege(EntityBase):
         privileges = privileges if isinstance(privileges, list) else [privileges]
 
         for privilege in privileges:
-            is_str_name = type(privilege) == str and len(privilege) > 3
-            is_str_id = (
-                type(privilege) == str and len(privilege) > 0 and len(privilege) <= 3
-            )
-            is_int_id = (
-                isinstance(privilege, int) and privilege < 300 and privilege >= 0
-            )
+            is_str_name = isinstance(privilege, str) and len(privilege) > 3
+            is_str_id = isinstance(privilege, str) and 0 < len(privilege) <= 3
+            is_int_id = isinstance(privilege, int) and 0 <= privilege < 300
             privilege_ok = False
 
             if is_str_name:

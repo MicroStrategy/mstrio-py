@@ -4,7 +4,7 @@ from mstrio.utils.error_handlers import ErrorHandler
 
 
 @unpack_information
-@ErrorHandler(err_msg='Error creating an attribute')
+@ErrorHandler(err_msg="Error creating an attribute")
 def create_attribute(
     connection: Connection,
     body: dict,
@@ -42,7 +42,7 @@ def create_attribute(
     """
     with changeset_manager(connection) as changeset_id:
         return connection.post(
-            url=f'{connection.base_url}/api/model/attributes',
+            endpoint='/api/model/attributes',
             headers={'X-MSTR-MS-Changeset': changeset_id},
             params={
                 'showExpressionAs': show_expression_as,
@@ -55,7 +55,7 @@ def create_attribute(
 
 
 @unpack_information
-@ErrorHandler(err_msg='Error getting attribute with ID: {id}')
+@ErrorHandler(err_msg="Error getting attribute with ID: {id}")
 def get_attribute(
     connection: Connection,
     id: str,
@@ -94,7 +94,7 @@ def get_attribute(
     """
     connection._validate_project_selected()
     return connection.get(
-        url=f'{connection.base_url}/api/model/attributes/{id}',
+        endpoint=f'/api/model/attributes/{id}',
         headers={'X-MSTR-MS-Changeset': changeset_id},
         params={
             'showExpressionAs': show_expression_as,
@@ -106,7 +106,7 @@ def get_attribute(
 
 
 @unpack_information
-@ErrorHandler(err_msg='Error updating attribute with ID: {id}')
+@ErrorHandler(err_msg="Error updating attribute with ID: {id}")
 def update_attribute(
     connection: Connection,
     id: str,
@@ -150,7 +150,7 @@ def update_attribute(
     """
     with changeset_manager(connection) as changeset_id:
         return connection.patch(
-            url=f'{connection.base_url}/api/model/attributes/{id}',
+            endpoint=f'/api/model/attributes/{id}',
             headers={'X-MSTR-MS-Changeset': changeset_id},
             params={
                 'showExpressionAs': show_expression_as,

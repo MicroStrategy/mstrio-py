@@ -32,3 +32,4 @@ from .search_operations import (
     start_full_search,
 )
 from .shortcut import Shortcut, ShortcutInfoFlags, get_shortcuts
+from .translation import Translation, list_translations

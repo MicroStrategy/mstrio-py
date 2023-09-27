@@ -1,16 +1,15 @@
 from typing import TYPE_CHECKING
 
-from packaging import version
-
 from mstrio.utils.error_handlers import ErrorHandler
+from mstrio.utils.version_helper import is_server_min_version
 
 if TYPE_CHECKING:
-    from requests_futures.sessions import FuturesSession
+    from mstrio.utils.sessions import FuturesSessionWithRenewal
 
 CUBE_FIELDS = '-data.metricValues.extras,-data.metricValues.formatted'
 
 
-@ErrorHandler(err_msg='Error getting report {report_id} definition. Check report ID.')
+@ErrorHandler(err_msg="Error getting report {report_id} definition. Check report ID.")
 def report_definition(connection, report_id):
     """Get the definition of a specific report, including attributes and
     metrics. This in-memory report definition provides information about all
@@ -26,10 +25,10 @@ def report_definition(connection, report_id):
         Complete HTTP response object.
     """
     connection._validate_project_selected()
-    return connection.get(url=f'{connection.base_url}/api/v2/reports/{report_id}')
+    return connection.get(endpoint=f'/api/v2/reports/{report_id}')
 
 
-@ErrorHandler(err_msg='Error getting report {report_id} contents.')
+@ErrorHandler(err_msg="Error getting report {report_id} contents.")
 def report_instance(connection, report_id, body=None, offset=0, limit=5000):
     """Get the results of a newly created report instance. This in-memory
     report instance can be used by other requests.
@@ -54,17 +53,15 @@ def report_instance(connection, report_id, body=None, offset=0, limit=5000):
     if body is None:
         body = {}
     params = {'offset': offset, 'limit': limit}
-    if version.parse(connection.iserver_version) >= version.parse("11.2.0200"):
+    if is_server_min_version(connection, '11.2.0200'):
         params['fields'] = CUBE_FIELDS
 
     return connection.post(
-        url=f'{connection.base_url}/api/v2/reports/{report_id}/instances/',
-        json=body,
-        params=params,
+        endpoint=f'/api/v2/reports/{report_id}/instances/', json=body, params=params
     )
 
 
-@ErrorHandler(err_msg='Error getting cube contents.')
+@ErrorHandler(err_msg="Error getting cube contents.")
 def report_instance_id(connection, report_id, instance_id, offset=0, limit=5000):
     """Get the results of a previously created report instance, using the in-
     memory report instance created by a POST /api/reports/{reportId}/instances
@@ -90,18 +87,16 @@ def report_instance_id(connection, report_id, instance_id, offset=0, limit=5000)
     """
     connection._validate_project_selected()
     params = {'offset': offset, 'limit': limit}
-    if version.parse(connection.iserver_version) >= version.parse("11.2.0200"):
+    if is_server_min_version(connection, '11.2.0200'):
         params['fields'] = CUBE_FIELDS
 
     return connection.get(
-        url=f'{connection.base_url}/api/v2/reports/{report_id}/instances/{instance_id}',
-        params=params,
+        endpoint=f'/api/v2/reports/{report_id}/instances/{instance_id}', params=params
     )
 
 
 def report_instance_id_coroutine(
-    future_session: "FuturesSession",
-    connection,
+    future_session: "FuturesSessionWithRenewal",
     report_id,
     instance_id,
     offset=0,
@@ -114,15 +109,15 @@ def report_instance_id_coroutine(
         Complete Future object.
     """
     params = {'offset': offset, 'limit': limit}
-    if version.parse(connection.iserver_version) >= version.parse("11.2.0200"):
+    if is_server_min_version(future_session.connection, '11.2.0200'):
         params['fields'] = CUBE_FIELDS
 
-    url = f'{connection.base_url}/api/v2/reports/{report_id}/instances/{instance_id}'
-    future = future_session.get(url, params=params)
+    endpoint = f'/api/v2/reports/{report_id}/instances/{instance_id}'
+    future = future_session.get(endpoint=endpoint, params=params)
     return future
 
 
-@ErrorHandler(err_msg='Error retrieving attribute {attribute_id} elements.')
+@ErrorHandler(err_msg="Error retrieving attribute {attribute_id} elements.")
 def report_single_attribute_elements(
     connection, report_id, attribute_id, offset=0, limit=200000
 ):
@@ -144,19 +139,12 @@ def report_single_attribute_elements(
     Returns:
         Complete HTTP response object
     """
-    url = (
-        f'{connection.base_url}/api/reports/{report_id}/attributes/'
-        f'{attribute_id}/elements'
-    )
-    return connection.get(
-        url=url,
-        params={'offset': offset, 'limit': limit},
-    )
+    endpoint = f'/api/reports/{report_id}/attributes/{attribute_id}/elements'
+    return connection.get(endpoint=endpoint, params={'offset': offset, 'limit': limit})
 
 
 def report_single_attribute_elements_coroutine(
-    future_session: "FuturesSession",
-    connection,
+    future_session: "FuturesSessionWithRenewal",
     report_id,
     attribute_id,
     offset=0,
@@ -167,7 +155,6 @@ def report_single_attribute_elements_coroutine(
     Args:
         future_session(object): Future Session object to call MicroStrategy REST
             Server asynchronously
-        connection: MicroStrategy REST API connection object.
         report_id (str): Unique ID of the report you wish to extract information
             from.
         attribute_id (str): Unique ID of the attribute in the report.
@@ -182,15 +169,14 @@ def report_single_attribute_elements_coroutine(
     Returns:
         Complete Future object
     """
-    url = (
-        f'{connection.base_url}/api/reports/{report_id}'
-        f'/attributes/{attribute_id}/elements'
+    endpoint = f'/api/reports/{report_id}/attributes/{attribute_id}/elements'
+    future = future_session.get(
+        endpoint=endpoint, params={'offset': offset, 'limit': limit}
     )
-    future = future_session.get(url, params={'offset': offset, 'limit': limit})
     return future
 
 
-@ErrorHandler(err_msg='Error getting collection of prompts for report {report_id}')
+@ErrorHandler(err_msg="Error getting collection of prompts for report {report_id}")
 def get_report_prompts(connection, report_id, closed=None, fields=None):
     """Get the collection of prompts and their respective definitions from a
     report.
@@ -206,14 +192,13 @@ def get_report_prompts(connection, report_id, closed=None, fields=None):
             part of the response model.
 
     """
-    url = f'{connection.base_url}/api/reports/{report_id}/prompts'
+    endpoint = f'/api/reports/{report_id}/prompts'
     return connection.get(
-        url=url,
-        params={'closed': closed, 'fields': fields},
+        endpoint=endpoint, params={'closed': closed, 'fields': fields}
     )
 
 
-@ErrorHandler(err_msg='Error getting prompted report {report_id} instance.')
+@ErrorHandler(err_msg="Error getting prompted report {report_id} instance.")
 def get_prompted_instance(connection, report_id, instance_id, closed=None, fields=None):
     """Get the collection of prompts and their respective definitions from a
     report instance. This endpoint will return data only when the report
@@ -232,10 +217,7 @@ def get_prompted_instance(connection, report_id, instance_id, closed=None, field
             part of the response model.
 
     """
-    url = (
-        f'{connection.base_url}/api/reports/{report_id}/instances/{instance_id}/prompts'
-    )
+    endpoint = f'/api/reports/{report_id}/instances/{instance_id}/prompts'
     return connection.get(
-        url=url,
-        params={'closed': closed, 'fields': fields},
+        endpoint=endpoint, params={'closed': closed, 'fields': fields}
     )

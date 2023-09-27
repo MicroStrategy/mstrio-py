@@ -3,10 +3,12 @@ import logging
 from packaging import version
 
 from mstrio import config
-from mstrio.api import events, objects
+from mstrio.api import events
 from mstrio.connection import Connection
 from mstrio.utils import helper
 from mstrio.utils.entity import DeleteMixin, Entity, ObjectTypes
+from mstrio.utils.response_processors import objects as objects_processors
+from mstrio.utils.translation_mixin import TranslationMixin
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
 logger = logging.getLogger(__name__)
@@ -42,7 +44,7 @@ def list_events(
 
 
 @class_version_handler('11.3.0100')
-class Event(Entity, DeleteMixin):
+class Event(Entity, DeleteMixin, TranslationMixin):
     """Class representation of MicroStrategy Event object.
 
     Attributes:
@@ -70,7 +72,7 @@ class Event(Entity, DeleteMixin):
             'certified_info',
             'acg',
             'acl',
-        ): objects.get_object_info,
+        ): objects_processors.get_info,
     }
     _API_DELETE = staticmethod(events.delete_event)
     _API_PATCH = {('name', 'description'): (events.update_event, 'put')}
@@ -94,7 +96,7 @@ class Event(Entity, DeleteMixin):
         self._API_GETTERS[('id', 'name', 'description')] = (
             events.get_event
             if version.parse(connection.web_version) >= version.parse('11.3.0200')
-            else objects.get_object_info
+            else objects_processors.get_info
         )
 
         if id is None and name is None:

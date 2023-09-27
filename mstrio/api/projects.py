@@ -2,16 +2,15 @@ from typing import TYPE_CHECKING
 
 from mstrio.utils.api_helpers import changeset_manager
 from mstrio.utils.error_handlers import ErrorHandler
-from mstrio.utils.helper import response_handler
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
 
 
 @ErrorHandler(
-    err_msg='Selected project {name} does not exist or is not loaded.'
-    ' Please load the project or select a valid project '
-    'or create a new project using `create_new` method'
+    err_msg="Selected project {name} does not exist or is not loaded."
+    " Please load the project or select a valid project "
+    "or create a new project using `create_new` method"
 )
 def get_project(
     connection,
@@ -33,10 +32,10 @@ def get_project(
     Returns:
         Complete HTTP response object.
     """
-    return connection.get(url=f'{connection.base_url}/api/projects/{name}')
+    return connection.get(endpoint=f'/api/projects/{name}')
 
 
-@ErrorHandler(err_msg='Error fetching list of available projects.')
+@ErrorHandler(err_msg="Error fetching list of available projects.")
 def get_projects(connection, error_msg=None, whitelist=None):
     """Get a list of all projects that the authenticated user has access to.
 
@@ -51,11 +50,10 @@ def get_projects(connection, error_msg=None, whitelist=None):
         Complete HTTP response object.
     """
 
-    return connection.get(
-        url=f'{connection.base_url}/api/projects', headers={'X-MSTR-ProjectID': None}
-    )
+    return connection.get(endpoint='/api/projects', headers={'X-MSTR-ProjectID': None})
 
 
+@ErrorHandler(err_msg="Error creating a new project.")
 def create_project(connection, body, error_msg=None):
     """Create a new project, either synchronously or asynchronously.
 
@@ -68,19 +66,14 @@ def create_project(connection, body, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    response = connection.post(
-        url=connection.base_url + '/api/projects',
+    return connection.post(
+        endpoint='/api/projects',
         headers={'X-MSTR-ProjectID': None},
         json=body,
     )
-    if response.status_code != 201:
-        if error_msg is None:
-            error_msg = "Project could not be created."
-        response_handler(response, error_msg)
-    return response
 
 
-@ErrorHandler(err_msg='Error getting project import quota for project with ID {id}')
+@ErrorHandler(err_msg="Error getting project import quota for project with ID {id}")
 def get_project_import_quota(connection, id, error_msg=None):
     """Get the amount of space, in MB, that can be used for the Data Import
     function for a specific project. This is the default value applied to all
@@ -94,10 +87,10 @@ def get_project_import_quota(connection, id, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    return connection.get(url=f'{connection.base_url}/api/projects/{id}/quotas')
+    return connection.get(endpoint=f'/api/projects/{id}/quotas')
 
 
-@ErrorHandler(err_msg='Error setting import quota for project with ID {id}')
+@ErrorHandler(err_msg="Error setting import quota for project with ID {id}")
 def set_project_import_quota(connection, id, body, error_msg=None):
     """Set the amount of space, in MB, that can be used for the Data Import
     function for a specific project.
@@ -113,14 +106,14 @@ def set_project_import_quota(connection, id, body, error_msg=None):
         Complete HTTP response object.
     """
     return connection.put(
-        url=f'{connection.base_url}/api/projects/{id}/quotas',
+        endpoint=f'/api/projects/{id}/quotas',
         headers={'X-MSTR-ProjectID': None},
         json=body,
     )
 
 
 @ErrorHandler(
-    err_msg='Error setting user {user_id} import quota for project with ID {id}'
+    err_msg="Error setting user {user_id} import quota for project with ID {id}"
 )
 def set_user_import_quota(connection, id, user_id, body, error_msg=None):
     """Set the amount of space, in MB, that can be used for the Data Import
@@ -138,13 +131,13 @@ def set_user_import_quota(connection, id, user_id, body, error_msg=None):
         Complete HTTP response object.
     """
     return connection.put(
-        url=f'{connection.base_url}/api/projects/{id}/users/{user_id}/quotas',
+        endpoint=f'/api/projects/{id}/users/{user_id}/quotas',
         headers={'X-MSTR-ProjectID': None},
         json=body,
     )
 
 
-@ErrorHandler(err_msg='Error getting user import quota for project with ID {id}')
+@ErrorHandler(err_msg="Error getting user import quota for project with ID {id}")
 def get_user_import_quota(connection, id, user_id=None, error_msg=None):
     """Get a list of users for whom Data Import quotas have been set and their
     quotas.
@@ -159,13 +152,13 @@ def get_user_import_quota(connection, id, user_id=None, error_msg=None):
         Complete HTTP response object.
     """
     return connection.get(
-        url=f'{connection.base_url}/api/projects/{id}/users/quotas',
+        endpoint=f'/api/projects/{id}/users/quotas',
         headers={'X-MSTR-ProjectID': None},
         params={'user_id': user_id},
     )
 
 
-@ErrorHandler(err_msg='Error fetching project {id} settings configuration.')
+@ErrorHandler(err_msg="Error fetching project {id} settings configuration.")
 def get_project_settings_config(connection, id, error_msg=None):
     """Get project settings configurations.
 
@@ -177,12 +170,12 @@ def get_project_settings_config(connection, id, error_msg=None):
         Complete HTTP response object.
     """
     return connection.get(
-        url=f'{connection.base_url}/api/v2/projects/{id}/settings/config',
+        endpoint=f'/api/v2/projects/{id}/settings/config',
         headers={'X-MSTR-ProjectID': None},
     )
 
 
-@ErrorHandler(err_msg='Error getting project settings for project with ID {id}')
+@ErrorHandler(err_msg="Error getting project settings for project with ID {id}")
 def get_project_settings(connection, id, error_msg=None, whitelist=None):
     """Get project settings.
 
@@ -198,12 +191,12 @@ def get_project_settings(connection, id, error_msg=None, whitelist=None):
         Complete HTTP response object.
     """
     return connection.get(
-        url=f'{connection.base_url}/api/v2/projects/{id}/settings',
+        endpoint=f'/api/v2/projects/{id}/settings',
         headers={'X-MSTR-ProjectID': None},
     )
 
 
-@ErrorHandler(err_msg='Error setting project settings for project with ID {id}')
+@ErrorHandler(err_msg="Error setting project settings for project with ID {id}")
 def set_project_settings(connection, id, body, error_msg=None):
     """Set new project settings.
 
@@ -217,13 +210,13 @@ def set_project_settings(connection, id, body, error_msg=None):
         Complete HTTP response object.
     """
     return connection.put(
-        url=f'{connection.base_url}/api/v2/projects/{id}/settings',
+        endpoint=f'/api/v2/projects/{id}/settings',
         headers={'X-MSTR-ProjectID': None},
         json=body,
     )
 
 
-@ErrorHandler(err_msg='Error updating project settings for project with ID {id}')
+@ErrorHandler(err_msg="Error updating project settings for project with ID {id}")
 def update_project_settings(connection, id, body, error_msg=None):
     """Update project settings.
 
@@ -237,13 +230,13 @@ def update_project_settings(connection, id, body, error_msg=None):
         Complete HTTP response object.
     """
     return connection.patch(
-        url=f'{connection.base_url}/api/v2/projects/{id}/settings',
+        endpoint=f'/api/v2/projects/{id}/settings',
         headers={'X-MSTR-ProjectID': None},
         json=body,
     )
 
 
-@ErrorHandler(err_msg='Error getting engine setting for project with ID {id}')
+@ErrorHandler(err_msg="Error getting engine setting for project with ID {id}")
 def get_engine_settings(connection, id, error_msg=None):
     """Get available and current engine settings for a project.
 
@@ -256,12 +249,12 @@ def get_engine_settings(connection, id, error_msg=None):
         Complete HTTP response object.
     """
     return connection.get(
-        url=f'{connection.base_url}/api/projects/{id}/settings/engine',
+        endpoint=f'/api/projects/{id}/settings/engine',
         headers={'X-MSTR-ProjectID': None},
     )
 
 
-@ErrorHandler(err_msg='Error getting project startup settings.')
+@ErrorHandler(err_msg="Error getting project startup settings.")
 def get_projects_on_startup(connection, error_msg=None, whitelist=None):
     """Get a list of projects along with the nodes on which they would be
     available when the iServer starts up.
@@ -277,12 +270,12 @@ def get_projects_on_startup(connection, error_msg=None, whitelist=None):
         Complete HTTP response object.
     """
     return connection.get(
-        url=f'{connection.base_url}/api/projects/settings/onStartup',
+        endpoint='/api/projects/settings/onStartup',
         headers={'X-MSTR-ProjectID': None},
     )
 
 
-@ErrorHandler(err_msg='Error updating project startup settings.')
+@ErrorHandler(err_msg="Error updating project startup settings.")
 def update_projects_on_startup(connection, body, error_msg=None, whitelist=None):
     """Update status of projects on iServer nodes at start up. You provide
     the request body as of list of replace operations to be performed on the
@@ -306,13 +299,13 @@ def update_projects_on_startup(connection, body, error_msg=None, whitelist=None)
         Complete HTTP response object.
     """
     return connection.patch(
-        url=f'{connection.base_url}/api/projects/settings/onStartup',
+        endpoint='/api/projects/settings/onStartup',
         headers={'X-MSTR-ProjectID': None},
         json=body,
     )
 
 
-@ErrorHandler(err_msg='Error getting VLDB settings for project with ID {id}')
+@ErrorHandler(err_msg="Error getting VLDB settings for project with ID {id}")
 def get_vldb_settings(connection: 'Connection', id: str, error_msg: str | None = None):
     """Get advanced VLDB settings for a project.
 
@@ -325,11 +318,11 @@ def get_vldb_settings(connection: 'Connection', id: str, error_msg: str | None =
         Complete HTTP response object.
     """
     return connection.get(
-        url=f'{connection.base_url}/api/model/projects/{id}?showAdvancedProperties=true'
+        endpoint=f'/api/model/projects/{id}?showAdvancedProperties=true'
     )
 
 
-@ErrorHandler(err_msg='Error updating VLDB settings for project with ID {id}')
+@ErrorHandler(err_msg="Error updating VLDB settings for project with ID {id}")
 def update_vldb_settings(
     connection: 'Connection', id: str, body: dict, error_msg: str | None = None
 ):
@@ -346,14 +339,14 @@ def update_vldb_settings(
     """
     with changeset_manager(connection) as changeset_id:
         return connection.put(
-            url=f'{connection.base_url}/api/model/projects/{id}',
+            endpoint=f'/api/model/projects/{id}',
             headers={'X-MSTR-MS-Changeset': changeset_id},
             json=body,
         )
 
 
 @ErrorHandler(
-    err_msg='Error getting metadata of VLDB settings for project with ID {id}'
+    err_msg="Error getting metadata of VLDB settings for project with ID {id}"
 )
 def get_applicable_vldb_settings(
     connection: 'Connection', id: str, error_msg: str | None = None
@@ -369,12 +362,11 @@ def get_applicable_vldb_settings(
         Complete HTTP response object.
     """
     return connection.get(
-        url=f'{connection.base_url}/api/model/projects/{id}'
-        '/applicableAdvancedProperties'
+        endpoint=f'/api/model/projects/{id}/applicableAdvancedProperties'
     )
 
 
-@ErrorHandler(err_msg='Error deleting project with ID {id}')
+@ErrorHandler(err_msg="Error deleting project with ID {id}")
 def delete_project(connection: 'Connection', id: str, error_msg: str | None = None):
     """Delete a project.
 
@@ -386,4 +378,17 @@ def delete_project(connection: 'Connection', id: str, error_msg: str | None = No
     Returns:
         Complete HTTP response object.
     """
-    return connection.delete(url=f'{connection.base_url}/api/projects/{id}')
+    return connection.delete(endpoint=f'/api/projects/{id}')
+
+
+def get_project_languages(connection: 'Connection', id: str):
+    """Get languages of the project.
+
+    Args:
+        connection (Connection): MicroStrategy REST API connection object
+        id (string): Project ID
+
+    Returns:
+        Complete HTTP response object.
+    """
+    return connection.get(endpoint=f'/api/projects/{id}/languages')

@@ -3,7 +3,7 @@ from enum import auto
 from typing import TYPE_CHECKING
 
 from mstrio import config
-from mstrio.api import objects, user_hierarchies
+from mstrio.api import user_hierarchies
 from mstrio.modeling.schema.helpers import SchemaObjectReference
 from mstrio.types import ObjectTypes
 from mstrio.users_and_groups import User
@@ -18,6 +18,8 @@ from mstrio.utils.helper import (
     get_default_args_from_func,
     get_enum_val,
 )
+from mstrio.utils.response_processors import objects as objects_processors
+from mstrio.utils.translation_mixin import TranslationMixin
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
 if TYPE_CHECKING:
@@ -163,7 +165,7 @@ class HierarchyRelationship(Dictable):
 
 
 @class_version_handler('11.3.0200')
-class UserHierarchy(Entity, CopyMixin, MoveMixin, DeleteMixin):
+class UserHierarchy(Entity, CopyMixin, MoveMixin, DeleteMixin, TranslationMixin):
     """A unique abstraction of hierarchies above the System Hierarchy,
     which can contain an arbitrary number of attributes and paths between
     them. These User Hierarchies allow users to browse through the data
@@ -199,6 +201,7 @@ class UserHierarchy(Entity, CopyMixin, MoveMixin, DeleteMixin):
             the user hierarchy
         destination_folder_id: a globally unique identifier used to distinguish
             between metadata objects within the same project
+        hidden: Specifies whether the object is hidden
     """
 
     _OBJECT_TYPE = ObjectTypes.DIMENSION
@@ -221,7 +224,8 @@ class UserHierarchy(Entity, CopyMixin, MoveMixin, DeleteMixin):
             'ancestors',
             'acg',
             'acl',
-        ): objects.get_object_info,
+            'hidden',
+        ): objects_processors.get_info,
         (
             'id',
             'name',
@@ -250,7 +254,7 @@ class UserHierarchy(Entity, CopyMixin, MoveMixin, DeleteMixin):
             'is_embedded',
             'attributes',
         ): (user_hierarchies.update_user_hierarchy, "put"),
-        ('folder_id'): (objects.update_object, 'partial_put'),
+        ('folder_id', 'hidden'): (objects_processors.update, "partial_put"),
     }
     _API_DELETE = staticmethod(user_hierarchies.delete_user_hierarchy)
     _PATCH_PATH_TYPES = {
@@ -262,6 +266,7 @@ class UserHierarchy(Entity, CopyMixin, MoveMixin, DeleteMixin):
         'is_embedded': bool,
         'attributes': list,
         'relationships': list,
+        'hidden': bool,
     }
     _REST_ATTR_MAP = {
         "object_id": "id",
@@ -368,6 +373,7 @@ class UserHierarchy(Entity, CopyMixin, MoveMixin, DeleteMixin):
                 in the IETF BCP 47 language tag format, such as "en-US"
             relationships (list, optional): the list of attribute
                 relationships stored in the system hierarchy
+
         Returns:
             UserHierarchy object
         """
@@ -416,6 +422,7 @@ class UserHierarchy(Entity, CopyMixin, MoveMixin, DeleteMixin):
         is_embedded: bool = False,
         destination_folder_id: str | None = None,
         relationships: list[HierarchyRelationship] | list[dict] | None = None,
+        hidden: bool | None = None,
     ):
         """Alter the user hierarchies properties.
 
@@ -434,6 +441,8 @@ class UserHierarchy(Entity, CopyMixin, MoveMixin, DeleteMixin):
                 used to distinguish between objects within the same project
             relationships (list, optional): the list of attribute
                 relationships stored in the system hierarchy
+            hidden (bool, optional): Specifies whether the object is hidden.
+                Default value: False.
         """
         func = self.alter
         args = get_args_from_func(func)

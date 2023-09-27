@@ -1,16 +1,15 @@
 import logging
 from contextlib import suppress
-from enum import Enum, IntFlag
 from typing import TYPE_CHECKING, Any, Optional, TypeVar
 
 import pandas as pd
 
 from mstrio import config
-from mstrio.api import objects
 from mstrio.connection import Connection
-from mstrio.helpers import IServerError
+from mstrio.helpers import AggregatedRights, IServerError, Permissions, Rights
 from mstrio.types import ObjectTypes
 from mstrio.utils.helper import Dictable, exception_handler, filter_obj_list
+from mstrio.utils.response_processors import objects as objects_processors
 
 if TYPE_CHECKING:
     from mstrio.server import Project
@@ -18,47 +17,6 @@ if TYPE_CHECKING:
     from mstrio.utils.entity import Entity
 
 logger = logging.getLogger(__name__)
-
-
-class Rights(IntFlag):
-    """ "Enumeration constants used to specify the access granted attribute of
-    the DSS objects."""
-
-    EXECUTE = 0b10000000
-    USE = 0b01000000
-    CONTROL = 0b00100000
-    DELETE = 0b00010000
-    WRITE = 0b00001000
-    READ = 0b00000100
-    USE_EXECUTE = 0b00000010  # This constant is deprecated
-    BROWSE = 0b00000001
-    INHERITABLE = 0b100000000000000000000000000000
-
-
-class Permissions(Enum):
-    """Enumeration constants used to specify combination of Rights values
-    similar to workstation Security Access.
-
-    TODO: This has to be string-based to discern between 'Denied All'
-    and 'Full Control', which have the same mask.
-    """
-
-    DENIED_ALL = 'Denied All'
-    DEFAULT_ALL = 'Default All'
-    CONSUME = 'Consume'
-    VIEW = 'View'
-    MODIFY = 'Modify'
-    FULL_CONTROL = 'Full Control'
-
-
-class AggregatedRights(IntFlag):
-    """Enumeration constants used to specify combination of Rights values."""
-
-    NONE = 0b00000000
-    CONSUME = 0b01000101
-    VIEW = 0b11000101
-    MODIFY = 0b11011101
-    ALL = 0b11111111
 
 
 AGGREGATED_RIGHTS_MAP = {
@@ -666,12 +624,12 @@ def modify_rights(
     for id in ids:
         for trustee in trustees:
             if inheritable is None and object_type is ObjectTypes.FOLDER:
-                response = objects.get_object_info(
+                response = objects_processors.get_info(
                     connection=connection,
                     id=id,
                     object_type=object_type.value,
                     project_id=project,
-                ).json()
+                )
                 tmp = [
                     ace['inheritable']
                     for ace in response.get('acl', [])
@@ -698,15 +656,15 @@ def modify_rights(
                 body["propagateACLToChildren"] = propagate_to_children
                 body["propagationBehavior"] = "overwrite_recursive"
 
-            response = objects.update_object(
+            response = objects_processors.update(
                 connection=connection,
                 id=id,
                 body=body,
                 object_type=object_type.value,
                 project_id=project,
             )
-        if len(ids) == 1 and response.ok:
-            return response.json()
+        if len(ids) == 1:
+            return response
 
 
 def _parse_acl_rights_bin_to_dict(rights_bin: int) -> dict[Rights, bool]:

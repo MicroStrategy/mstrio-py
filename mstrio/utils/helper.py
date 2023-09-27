@@ -10,12 +10,10 @@ from datetime import datetime
 from enum import Enum
 from functools import reduce, wraps
 from json.decoder import JSONDecodeError
-from typing import TYPE_CHECKING, Any, Optional, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 
 import humps
-import pandas as pd
 
-from mstrio import __version__ as mstrio_version
 from mstrio import config
 from mstrio.helpers import (
     IServerError,
@@ -58,7 +56,7 @@ def deprecation_warning(
         deprecated (str): name of a functionality that is deprecated
         new (str): name of a functionality that replaces deprecated one
         version (str): version from which deprecated functionality won't be
-        supported
+            supported
         module (bool, optional): Whether deprecated functionality is a module.
         Defaults to True.
         change_compatible_immediately (bool, optional): Whether the new
@@ -102,7 +100,7 @@ def url_check(url):
 
 def version_cut(version):
     res = ".".join([str(int(i)) for i in version.split(".")])
-    return res[:6]
+    return res[:-2]
 
 
 def get_args_from_func(func: Callable[[Any], Any]):
@@ -136,12 +134,12 @@ def camel_to_snake(
             for key, value in source.items()
         }
 
-    if type(response) == list:
-        return [convert_dict(source) for source in response if type(source) == dict]
-    elif type(response) == dict:
+    if isinstance(response, list):
+        return [convert_dict(source) for source in response if isinstance(source, dict)]
+    elif isinstance(response, dict):
         return convert_dict(response)
-    else:
-        raise ValueError("Not supported data type for camel_to_snake conversion")
+
+    raise ValueError("Not supported data type for camel_to_snake conversion")
 
 
 def snake_to_camel(
@@ -160,12 +158,12 @@ def snake_to_camel(
             for key, value in source.items()
         }
 
-    if type(response) == list:
-        return [convert_dict(source) for source in response if type(source) == dict]
-    elif type(response) == dict:
+    if isinstance(response, list):
+        return [convert_dict(source) for source in response if isinstance(source, dict)]
+    elif isinstance(response, dict):
         return convert_dict(response)
-    else:
-        raise ValueError("Not supported data type for snake_to_camel conversion")
+
+    raise ValueError("Not supported data type for snake_to_camel conversion")
 
 
 def check_duplicated_column_names(data_frame):
@@ -237,11 +235,8 @@ def response_handler(response, msg, throw_error=True, verbose=True, whitelist=No
                 and server_msg == 'HTTP 405 Method Not Allowed'
             ):
                 msg = (
-                    "This REST API functionality is not yet supported on this version "
-                    f"of the I-Server: {version_cut(config.iserver_version)}. Please "
-                    "upgrade the I-Server version or downgrade the mstrio-py package "
-                    f"(current version: {version_cut(mstrio_version)}) in order for "
-                    "the versions to match."
+                    "This REST API functionality is not supported on this version "
+                    f"of the I-Server: {version_cut(config.iserver_version)}."
                 )
                 exception_handler(msg, exception_type=VersionException)
             elif iserver_code == -2147206497:  # MSI_REQUEST_TIMEOUT on server-side
@@ -411,7 +406,6 @@ def fetch_objects_async(
             futures = [
                 async_api(
                     future_session=session,
-                    connection=connection,
                     offset=offset,
                     limit=chunk_size,
                     **param_value_dict,
@@ -624,7 +618,7 @@ def validate_param_value(
         msg = f"'{param_name}' needs to be of type {data_type}"
         exception_handler(msg, inv_type)
         return False
-    if type(param_val) == list:
+    if isinstance(param_val, list):
         return all(
             __validate_single_param_value(
                 value,
@@ -693,164 +687,6 @@ def get_objects_id(obj, obj_class):
     elif isinstance(obj, obj_class):
         return obj.id
     return None
-
-
-def list_folders(
-    connection,
-    name: str | None = None,
-    to_dataframe: bool = False,
-    limit: int | None = None,
-    **filters,
-) -> list[dict] | pd.DataFrame:
-    """List folders.
-
-    Args:
-        connection: MicroStrategy connection object returned by
-            `connection.Connection()`.
-        name (string, optional): exact name of a folder to filter results.
-            If `None`, all folders will be retrieved.
-        to_dataframe (bool, optional): determine if result of retrieval will
-            be returned as a list of dicts or DataFrame.
-        limit: limit the number of elements returned. If `None` (default), all
-            objects are returned.
-        **filters: Available filter parameters: ['id', 'name', 'subtype',
-            'type','date_created', 'date_modified', 'version', 'acg', 'owner']
-
-    Returns:
-        When `to_dataframe` set to False (default value) then DataFrame with
-        folders, otherwise list of dictionaries with folders.
-    """
-    from mstrio.api import objects
-
-    DSS_XML_SEARCH_TYPE_EXACTLY = 2
-    FOLDER_TYPE = 8
-
-    msg = "Error while creating an instance for searching objects"
-    res_e = objects.create_search_objects_instance(
-        connection=connection,
-        name=name,
-        pattern=DSS_XML_SEARCH_TYPE_EXACTLY,
-        object_type=FOLDER_TYPE,
-        error_msg=msg,
-    )
-    search_id = res_e.json()['id']
-    msg = "Error while retrieving folders from the environment."
-    fldrs = fetch_objects_async(
-        connection,
-        api=objects.get_objects,
-        async_api=objects.get_objects_async,
-        limit=limit,
-        chunk_size=1000,
-        error_msg=msg,
-        filters=filters,
-        search_id=search_id,
-    )
-
-    if to_dataframe:
-        return pd.DataFrame(fldrs)
-    else:
-        return fldrs
-
-
-def create_folder(
-    connection,
-    folder_name: str,
-    folder_description: str | None = None,
-    parent_name: str | None = None,
-    parent_id: str | None = None,
-):
-    """Create a folder.
-
-    Args:
-        connection: MicroStrategy connection object returned by
-            `connection.Connection()`.
-        folder_name (string): name of the folder which will be created
-        folder_description (string, optional): description of the folder which
-            will be created
-        parent_name (string, optional): name of the folder in which new folder
-            will be created
-        parent_id (string, optional): id of the folder in which new folder
-            will be created
-        error_msg (string, optional): error message
-
-    Returns:
-        full response about the creation of the folder
-
-    Raises:
-        Exception when:
-            - neither `parent_name` nor `parent_id` is specified
-            - both `parent_name` and `parent_id` are specified
-            - parent folder was not found or multiple folders with the same
-              name exists when providing `parent_name`
-    """
-    from mstrio.api import folders
-
-    if parent_id is None and parent_name is None:
-        exception_handler("Please specify either 'parent_name' or 'parent_id'.")
-    if parent_name is not None and parent_id is not None:
-        exception_handler(
-            "Please specify either 'parent_name' or 'parent_id' but not both."
-        )
-    if parent_id is None:
-        fldrs = list_folders(connection=connection, name=parent_name)
-        if len(fldrs) != 1:
-            msg = f"Parent folder with name '{parent_name}' was either not found "
-            msg += "or multiple folders with the same name exists."
-            exception_handler(msg)
-        parent_id = fldrs[0]['id']
-    return folders.create_folder(
-        connection=connection,
-        name=folder_name,
-        parent_id=parent_id,
-        description=folder_description,
-    )
-
-
-def delete_folder(
-    connection, id: str | None = None, name: str | None = None, error_msg=None
-):
-    """Delete a folder.
-
-    Args:
-        connection: MicroStrategy connection object returned by
-            `connection.Connection()`.
-        id (string, optional): id of the folder which will be deleted
-        name (string, optional): name of the folder which will be deleted
-        error_msg (string, optional): error message
-
-    Returns:
-        full response about the deletion of the folder
-
-    Raises:
-        Exception when:
-            - neither `name` nor `id` is specified
-            - both `name` and `id` are specified
-            - folder was not found or multiple folders with the same name
-              exists when providing `name`
-    """
-    from mstrio.api import objects
-
-    if id is None and name is None:
-        exception_handler(
-            "Please specify either 'name' or 'id' of the folder to be deleted."
-        )
-    if name is not None and id is not None:
-        msg = (
-            "Please specify either 'name' or 'id' of the folder to be deleted "
-            "but not both."
-        )
-        exception_handler(msg)
-    if id is None:
-        fldrs = list_folders(connection=connection, name=name)
-        if len(fldrs) != 1:
-            msg = f"Folder with name '{name}' was either not found "
-            msg += "or multiple folders with the same name exists."
-            exception_handler(msg)
-        id = fldrs[0]['id']
-    FOLDER_TYPE = 8
-    return objects.delete_object(
-        connection=connection, id=id, object_type=FOLDER_TYPE, error_msg=error_msg
-    )
 
 
 def merge_id_and_type(
@@ -1130,14 +966,11 @@ class Dictable:
             '_connection',
             'connection',
             '_type',
+            '_WITH_MISSING_VALUE',
         ]
         cleaned_dict = self.__dict__.copy()
-        properties = {
-            elem[0]
-            for elem in inspect.getmembers(
-                self.__class__, lambda x: isinstance(x, property)
-            )
-        }
+
+        properties = get_object_properties(self)
         for prop in properties:
             to_be_deleted = '_' + prop
             cleaned_dict[prop] = cleaned_dict.pop(to_be_deleted, None)
@@ -1163,8 +996,9 @@ class Dictable:
     def from_dict(
         cls: T,
         source: dict[str, Any],
-        connection: Optional["Connection"] = None,
+        connection: 'Connection | None' = None,
         to_snake_case: bool = True,
+        with_missing_value: bool = False,
     ) -> T:
         """Creates an object from a dictionary. The dictionary's keys in camel
         case are changed to object's attribute names (by default in snake case)
@@ -1180,6 +1014,9 @@ class Dictable:
             to_snake_case (bool, optional): Set to True if attribute names
                 should be converted from camel case to snake case. Defaults to
                 True.
+            with_missing_value: (bool, optional): If True, class attributes
+                possible to fetch and missing in `source` will be set as
+                `MissingValue` objects.
 
         Returns:
             T: An object of type T.
@@ -1205,8 +1042,9 @@ class Dictable:
     def bulk_from_dict(
         cls: T,
         source_list: list[dict[str, Any]],
-        connection: Optional["Connection"] = None,
+        connection: 'Connection | None' = None,
         to_snake_case: bool = True,
+        with_missing_value: bool = False,
     ) -> list[T]:
         """Creates multiple objects from a list of dictionaries. For each
         dictionary provided the keys in camel case are changed to object's
@@ -1223,13 +1061,19 @@ class Dictable:
             to_snake_case (bool, optional): Set to True if attribute names
                 should be converted from camel case to snake case. Defaults to
                 True.
+            with_missing_value: (bool, optional): If True, class attributes
+                possible to fetch and missing in `source` will be set as
+                `MissingValue` objects.
 
         Returns:
             T: A list of objects of type T.
         """
         return [
             cls.from_dict(
-                source=source, connection=connection, to_snake_case=to_snake_case
+                source=source,
+                connection=connection,
+                to_snake_case=to_snake_case,
+                with_missing_value=with_missing_value,
             )
             for source in source_list
         ]
@@ -1335,7 +1179,7 @@ def find_object_with_name(
     cls,
     name: str,
     listing_function: callable,
-    search_pattern: Optional['SearchPattern'] = None,
+    search_pattern: 'SearchPattern | None' = None,
 ) -> dict:
     """Find objects with given name if no id is given.
 
@@ -1386,3 +1230,21 @@ def find_object_with_name(
         return results[0].to_dict()
     else:
         raise ValueError(f"There is no {cls.__name__} with the given name: '{name}'")
+
+
+def get_object_properties(
+    obj: object,
+) -> set[str]:
+    """Extract private object properties.
+
+    Args:
+        obj (object): An object which properties will be extracted.
+
+    Returns:
+        set[str]: Names of object properties in a set.
+    """
+
+    return {
+        elem[0]
+        for elem in inspect.getmembers(obj.__class__, lambda x: isinstance(x, property))
+    }

@@ -4,7 +4,7 @@ from enum import auto
 from typing import TYPE_CHECKING
 
 from mstrio import config
-from mstrio.api import objects, transmitters
+from mstrio.api import transmitters
 from mstrio.types import ObjectTypes
 from mstrio.users_and_groups import User
 from mstrio.utils.entity import DeleteMixin, Entity
@@ -15,6 +15,8 @@ from mstrio.utils.helper import (
     get_args_from_func,
     get_default_args_from_func,
 )
+from mstrio.utils.response_processors import objects as objects_processors
+from mstrio.utils.translation_mixin import TranslationMixin
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
 if TYPE_CHECKING:
@@ -128,7 +130,7 @@ def list_transmitters(
 
 
 @class_version_handler('11.3.0100')
-class Transmitter(Entity, DeleteMixin):
+class Transmitter(Entity, DeleteMixin, TranslationMixin):
     """Object representation of MicroStrategy Transmitter object
 
     Attributes:
@@ -163,7 +165,7 @@ class Transmitter(Entity, DeleteMixin):
             'ancestors',
             'certified_info',
             'acl',
-        ): objects.get_object_info,
+        ): objects_processors.get_info,
         (
             'id',
             'name',

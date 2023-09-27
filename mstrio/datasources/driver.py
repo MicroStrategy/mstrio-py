@@ -2,7 +2,10 @@ from mstrio.connection import Connection
 from mstrio.types import ObjectTypes
 from mstrio.utils.entity import Entity
 from mstrio.utils.helper import _prepare_objects as filter_objects
-from mstrio.utils.response_processors import drivers, objects
+from mstrio.utils.helper import delete_none_values
+from mstrio.utils.response_processors import drivers
+from mstrio.utils.response_processors import objects as objects_processors
+from mstrio.utils.translation_mixin import TranslationMixin
 from mstrio.utils.version_helper import class_version_handler
 
 
@@ -24,7 +27,7 @@ def list_drivers(
 
 
 @class_version_handler('11.3.0960')
-class Driver(Entity):
+class Driver(Entity, TranslationMixin):
     """Object representation of Microstrategy Driver
 
     Attributes:
@@ -53,9 +56,7 @@ class Driver(Entity):
     """
 
     _OBJECT_TYPE = ObjectTypes.DRIVER
-    _FROM_DICT_MAP = {
-        **Entity._FROM_DICT_MAP,
-    }
+    _FROM_DICT_MAP = {**Entity._FROM_DICT_MAP}
     _API_GETTERS = {
         (
             'name',
@@ -74,20 +75,15 @@ class Driver(Entity):
             'certified_info',
             'acg',
             'acl',
-        ): objects.get_info,
-        (
-            'id',
-            'name',
-            'is_enabled',
-            'is_odbc',
-        ): drivers.get,
+        ): objects_processors.get_info,
+        ('id', 'name', 'is_enabled', 'is_odbc'): drivers.get,
+    }
+    _API_PATCH: dict = {
+        'enabled': (drivers.update, 'patch'),
     }
 
     def __init__(
-        self,
-        connection: Connection,
-        id: str | None = None,
-        name: str | None = None,
+        self, connection: Connection, id: str | None = None, name: str | None = None
     ):
         """Initialize Driver object by passing ID or name.
         When `id` is provided, `name` is omitted.
@@ -122,28 +118,15 @@ class Driver(Entity):
         self.is_enabled = kwargs.get('is_enabled')
         self.is_odbc = kwargs.get('is_odbc')
 
-    def alter(
-        self,
-        is_enabled: bool | None = None,
-    ):
+    def alter(self, is_enabled: bool | None = None):
         """Update properties of a Driver
 
         Args:
            is_enabled (bool, optional): specifies if a Driver is enabled
         """
-
-        body = {
-            'operationList': [
-                {
-                    'op': 'replace',
-                    'path': '/enabled',
-                    'value': is_enabled,
-                }
-            ]
-        }
-
-        response_data = drivers.update(self.connection, id=self.id, body=body)
-        self._set_object_attributes(**response_data)
+        properties = {'enabled': is_enabled}
+        not_none_properties = delete_none_values(properties, recursion=False)
+        self._alter_properties(**not_none_properties)
 
     @classmethod
     def list(

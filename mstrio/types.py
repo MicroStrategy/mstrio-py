@@ -1,5 +1,12 @@
 from enum import Enum
-from typing import Union
+
+
+# A sentinel object to detect if a attribute has been returned by REST API
+class _MissingType:
+    pass
+
+
+MISSING = _MissingType()
 
 
 class ObjectTypes(Enum):
@@ -132,6 +139,6 @@ class ExtendedType(Enum):
         return self.value
 
 
-TypeOrSubtype = Union[
-    int, ObjectTypes, ObjectSubTypes, list[Union[int, ObjectTypes, ObjectSubTypes]]
-]
+TypeOrSubtype = (
+    int | ObjectTypes | ObjectSubTypes | list[int | ObjectTypes | ObjectSubTypes]
+)

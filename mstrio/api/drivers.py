@@ -18,11 +18,11 @@ def get_drivers(
     """
 
     return connection.get(
-        url=f'{connection.base_url}/api/drivers',
+        endpoint='/api/drivers',
     )
 
 
-@ErrorHandler(err_msg='Error getting Driver with ID {id}')
+@ErrorHandler(err_msg="Error getting Driver with ID {id}")
 def get_driver(connection: Connection, id: str, error_msg: str | None = None):
     """Get driver by a specific ID.
 
@@ -35,11 +35,11 @@ def get_driver(connection: Connection, id: str, error_msg: str | None = None):
         Complete HTTP response object. Expected status is 200.
     """
     return connection.get(
-        url=f'{connection.base_url}/api/drivers/{id}',
+        endpoint=f'/api/drivers/{id}',
     )
 
 
-@ErrorHandler(err_msg='Error updating Driver with ID {id}')
+@ErrorHandler(err_msg="Error updating Driver with ID {id}")
 def update_driver(
     connection: Connection,
     id: str,
@@ -58,6 +58,6 @@ def update_driver(
         Complete HTTP response object. Expected status is 200.
     """
     return connection.patch(
-        url=f'{connection.base_url}/api/drivers/{id}',
+        endpoint=f'/api/drivers/{id}',
         json=body,
     )

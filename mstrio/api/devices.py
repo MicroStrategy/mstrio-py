@@ -8,7 +8,7 @@ from mstrio.utils.time_helper import DatetimeFormats, override_datetime_format
     DatetimeFormats.FULLDATETIME.value,
     ('dateCreated', 'dateModified'),
 )
-@ErrorHandler(err_msg='Error creating Device.')
+@ErrorHandler(err_msg="Error creating Device.")
 def create_device(connection: Connection, body: dict, error_msg: str | None = None):
     """Create a new device.
 
@@ -20,8 +20,8 @@ def create_device(connection: Connection, body: dict, error_msg: str | None = No
     Returns:
         Complete HTTP response object. Expected status is 201.
     """
-    url = f"{connection.base_url}/api/v2/devices/"
-    return connection.post(url=url, json=body)
+    endpoint = '/api/v2/devices/'
+    return connection.post(endpoint=endpoint, json=body)
 
 
 @override_datetime_format(
@@ -29,7 +29,7 @@ def create_device(connection: Connection, body: dict, error_msg: str | None = No
     DatetimeFormats.FULLDATETIME.value,
     ('dateCreated', 'dateModified'),
 )
-@ErrorHandler(err_msg='Error getting Device with ID {id}')
+@ErrorHandler(err_msg="Error getting Device with ID {id}")
 def get_device(connection: Connection, id: str, error_msg: str | None = None):
     """Get device by a specific id.
 
@@ -41,11 +41,11 @@ def get_device(connection: Connection, id: str, error_msg: str | None = None):
     Returns:
         Complete HTTP response object. Expected status is 200.
     """
-    url = f"{connection.base_url}/api/v2/devices/{id}"
-    return connection.get(url=url)
+    endpoint = f'/api/v2/devices/{id}'
+    return connection.get(endpoint=endpoint)
 
 
-@ErrorHandler(err_msg='Error deleting Device with ID {id}')
+@ErrorHandler(err_msg="Error deleting Device with ID {id}")
 def delete_device(connection: Connection, id: str, error_msg: str | None = None):
     """Delete a device.
 
@@ -57,8 +57,8 @@ def delete_device(connection: Connection, id: str, error_msg: str | None = None)
     Returns:
         Complete HTTP response object. Expected status is 204.
     """
-    url = f"{connection.base_url}/api/v2/devices/{id}"
-    return connection.delete(url=url)
+    endpoint = f'/api/v2/devices/{id}'
+    return connection.delete(endpoint=endpoint)
 
 
 @override_datetime_format(
@@ -66,7 +66,7 @@ def delete_device(connection: Connection, id: str, error_msg: str | None = None)
     DatetimeFormats.FULLDATETIME.value,
     ('dateCreated', 'dateModified'),
 )
-@ErrorHandler(err_msg='Error updating Device with ID {id}')
+@ErrorHandler(err_msg="Error updating Device with ID {id}")
 def update_device(
     connection: Connection, id: str, body: dict, error_msg: str | None = None
 ):
@@ -81,8 +81,8 @@ def update_device(
     Returns:
         Complete HTTP response object. Expected status is 200.
     """
-    url = f"{connection.base_url}/api/v2/devices/{id}"
-    return connection.put(url=url, json=body)
+    endpoint = f'/api/v2/devices/{id}'
+    return connection.put(endpoint=endpoint, json=body)
 
 
 @ErrorHandler(err_msg="Error getting Devices.")
@@ -111,6 +111,6 @@ def get_devices(
     Returns:
         Complete HTTP response object. Expected status is 200.
     """
-    url = f"{connection.base_url}/api/v2/devices/"
+    endpoint = '/api/v2/devices/'
     params = {'fields': fields, 'deviceType': device_type}
-    return connection.get(url=url, params=params)
+    return connection.get(endpoint=endpoint, params=params)

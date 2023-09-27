@@ -17,14 +17,16 @@ from mstrio.types import ObjectSubTypes, ObjectTypes
 from mstrio.users_and_groups import User
 from mstrio.utils.entity import CopyMixin, Entity, EntityBase, MoveMixin
 from mstrio.utils.helper import (
+    _prepare_objects,
     exception_handler,
-    fetch_objects_async,
     get_args_from_func,
     get_enum_val,
     get_objects_id,
     merge_id_and_type,
 )
+from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.sessions import FuturesSessionWithRenewal
+from mstrio.utils.translation_mixin import TranslationMixin
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
 if TYPE_CHECKING:
@@ -34,7 +36,7 @@ logger = logging.getLogger(__name__)
 
 
 @class_version_handler('11.3.0100')
-class SearchObject(Entity, CopyMixin, MoveMixin):
+class SearchObject(Entity, CopyMixin, MoveMixin, TranslationMixin):
     """Search object describing criteria that specify a search for objects.
 
     Attributes:
@@ -61,7 +63,7 @@ class SearchObject(Entity, CopyMixin, MoveMixin):
     _FROM_DICT_MAP = {**Entity._FROM_DICT_MAP, 'owner': User.from_dict}
     _API_PATCH: dict = {
         **Entity._API_PATCH,
-        ('folder_id'): (objects.update_object, 'partial_put'),
+        'folder_id': (objects_processors.update, 'partial_put'),
     }
 
     def __init__(self, connection: "Connection", id: str) -> None:
@@ -547,18 +549,16 @@ def _get_search_result_list_format(
 ):
     from mstrio.utils.object_mapping import map_objects_list
 
-    objects = fetch_objects_async(
+    response = browsing.get_search_results(
         connection=connection,
-        api=browsing.get_search_results,
-        async_api=browsing.get_search_results_async,
         search_id=search_id,
         project_id=project_id,
         limit=limit,
         offset=offset,
-        chunk_size=1000,
-        dict_unpack_value=None,
-        filters=filters,
     )
+
+    objects = _prepare_objects(response.json(), filters)
+
     if to_dictionary:
         return objects
     return map_objects_list(connection, objects)
@@ -625,8 +625,7 @@ def find_objects_with_id(
             project_id = project.id if isinstance(project, Project) else project
 
             future = objects.get_object_info_async(
-                futures_session=session,
-                connection=connection,
+                future_session=session,
                 id=object_id,
                 object_type=obj_type.value,
                 project_id=project_id,

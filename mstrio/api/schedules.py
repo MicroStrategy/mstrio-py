@@ -6,7 +6,7 @@ from mstrio.connection import Connection
 from mstrio.utils.error_handlers import ErrorHandler
 
 
-@ErrorHandler(err_msg='Error getting schedules list.')
+@ErrorHandler(err_msg="Error getting schedules list.")
 def list_schedules(connection, fields=None, error_msg=None):
     """Get list of a schedules.
 
@@ -20,9 +20,7 @@ def list_schedules(connection, fields=None, error_msg=None):
         HTTP response object returned by the MicroStrategy REST server
     """
 
-    response = connection.get(
-        url=f'{connection.base_url}/api/schedules', params={'fields': fields}
-    )
+    response = connection.get(endpoint='/api/schedules', params={'fields': fields})
     if response.ok:
         # Fix for incorrect 'eventId' (expecting 'id')
         event_based_in_list = False
@@ -39,7 +37,7 @@ def list_schedules(connection, fields=None, error_msg=None):
     return response
 
 
-@ErrorHandler(err_msg='Error getting schedule {id} information.')
+@ErrorHandler(err_msg="Error getting schedule {id} information.")
 def get_schedule(connection, id, fields=None, error_msg=None):
     """Get information of a specific schedule by `schedule_id`.
 
@@ -55,7 +53,7 @@ def get_schedule(connection, id, fields=None, error_msg=None):
     """
 
     response = connection.get(
-        url=f'{connection.base_url}/api/schedules/{id}', params={'fields': fields}
+        endpoint=f'/api/schedules/{id}', params={'fields': fields}
     )
     if response.ok:
         # Fix for incorrect 'eventId' (expecting 'id')
@@ -69,7 +67,7 @@ def get_schedule(connection, id, fields=None, error_msg=None):
     return response
 
 
-@ErrorHandler(err_msg='Error getting schedule information.')
+@ErrorHandler(err_msg="Error getting schedule information.")
 def create_schedule(connection, body, fields=None, error_msg=None):
     """Create a new schedule using data from `body`.
 
@@ -89,7 +87,7 @@ def create_schedule(connection, body, fields=None, error_msg=None):
         body['event']['eventId'] = body['event'].pop('id')
 
     response = connection.post(
-        url=f'{connection.base_url}/api/schedules', json=body, params={'fields': fields}
+        endpoint='/api/schedules', json=body, params={'fields': fields}
     )
     if response.ok:
         # Fix for incorrect 'eventId' (expecting 'id')
@@ -103,7 +101,7 @@ def create_schedule(connection, body, fields=None, error_msg=None):
     return response
 
 
-@ErrorHandler(err_msg='Error getting schedule {id} information.')
+@ErrorHandler(err_msg="Error getting schedule {id} information.")
 def update_schedule(connection, id, body, fields=None, error_msg=None):
     """Alter a schedule specified by `schedule_id`, using data from `body`.
 
@@ -124,7 +122,7 @@ def update_schedule(connection, id, body, fields=None, error_msg=None):
         body['event']['eventId'] = body['event'].pop('id')
 
     response = connection.put(
-        url=f'{connection.base_url}/api/schedules/{id}',
+        endpoint=f'/api/schedules/{id}',
         json=body,
         params={'fields': fields},
     )
@@ -140,7 +138,7 @@ def update_schedule(connection, id, body, fields=None, error_msg=None):
     return response
 
 
-@ErrorHandler(err_msg='Error getting schedule {id} information.')
+@ErrorHandler(err_msg="Error getting schedule {id} information.")
 def delete_schedule(connection, id, fields=None, error_msg=None):
     """Delete a schedule specified by `schedule_id`.
 
@@ -154,12 +152,10 @@ def delete_schedule(connection, id, fields=None, error_msg=None):
     Returns:
         HTTP response object returned by the MicroStrategy REST server
     """
-    return connection.delete(
-        url=f'{connection.base_url}/api/schedules/{id}', params={'fields': fields}
-    )
+    return connection.delete(endpoint=f'/api/schedules/{id}', params={'fields': fields})
 
 
-@ErrorHandler(err_msg='Error getting schedule information')
+@ErrorHandler(err_msg="Error getting schedule information")
 def get_contents_schedule(
     connection: "Connection", project_id: str, body: dict, fields: str | None = None
 ) -> Response:
@@ -178,7 +174,7 @@ def get_contents_schedule(
         HTTP response object. Expected status: 200
     """
     return connection.post(
-        url=f'{connection.base_url}/api/schedules/results',
+        endpoint='/api/schedules/results',
         headers={'X-MSTR-ProjectID': project_id},
         params={'fields': fields},
         json=body,

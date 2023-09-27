@@ -122,7 +122,7 @@ class VldbSetting(Dictable):
 
     def __repr__(self) -> str:
         value_repr, default_value_repr = str(self.value), str(self.default_value)
-        if type(self.value) == str:
+        if isinstance(self.value, str):
             value_repr, default_value_repr = (
                 f"'{value_repr}'",
                 f"'{default_value_repr}'",
@@ -413,9 +413,7 @@ class ModelVldbMixin:
             setting = self.vldb_settings[name]
             if setting.value != setting.default_value:
                 key = f'[{setting.property_set}].[{setting.name}]'
-                body['advancedProperties']['vldbProperties'][key] = {
-                    'value': setting.default_value
-                }
+                body['advancedProperties']['vldbProperties'][key] = {'value': None}
 
         self._MODEL_VLDB_API['PUT_ADVANCED'](self.connection, self.id, body)
 

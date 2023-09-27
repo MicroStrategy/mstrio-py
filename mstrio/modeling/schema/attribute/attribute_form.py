@@ -1,7 +1,6 @@
 from enum import auto
 from typing import TYPE_CHECKING
 
-from mstrio.api import objects
 from mstrio.connection import Connection
 from mstrio.modeling.expression import Expression, FactExpression
 from mstrio.modeling.schema.helpers import (
@@ -17,12 +16,14 @@ from mstrio.utils.helper import (
     exception_handler,
     filter_params_for_func,
 )
+from mstrio.utils.response_processors import objects as objects_processors
+from mstrio.utils.translation_mixin import TranslationMixin
 
 if TYPE_CHECKING:
     from mstrio.modeling.schema.attribute.attribute_form import AttributeForm
 
 
-class AttributeForm(Entity):  # noqa
+class AttributeForm(Entity, TranslationMixin):  # noqa
     """The Attribute Form Object
 
     Args:
@@ -160,7 +161,7 @@ class AttributeForm(Entity):  # noqa
             'acg',
             'acl',
             'target_info',
-        ): objects.get_object_info
+        ): objects_processors.get_info
     }
 
     def __init__(self, connection: Connection, id: str) -> None:

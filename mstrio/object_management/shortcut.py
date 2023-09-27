@@ -1,11 +1,13 @@
 from enum import IntFlag
 from typing import Any, TypeVar
 
-from mstrio.api import browsing, objects
+from mstrio.api import browsing
 from mstrio.connection import Connection
 from mstrio.utils.entity import CopyMixin, Entity, MoveMixin, ObjectTypes
 from mstrio.utils.enum_helper import get_enum_val
 from mstrio.utils.helper import fetch_objects, get_valid_project_id
+from mstrio.utils.response_processors import objects as objects_processors
+from mstrio.utils.translation_mixin import TranslationMixin
 
 
 class ShortcutInfoFlags(IntFlag):
@@ -14,7 +16,7 @@ class ShortcutInfoFlags(IntFlag):
     DssDossierShortcutInfoDefault = 0b00
 
 
-class Shortcut(Entity, CopyMixin, MoveMixin):
+class Shortcut(Entity, CopyMixin, MoveMixin, TranslationMixin):
     _OBJECT_TYPE = ObjectTypes.SHORTCUT_TYPE
     _API_GETTERS = {
         (
@@ -51,15 +53,15 @@ class Shortcut(Entity, CopyMixin, MoveMixin):
             'acg',
             'acl',
             'target_info',
-        ): objects.get_object_info,
+            'hidden',
+        ): objects_processors.get_info,
     }
-    _FROM_DICT_MAP = {
-        **Entity._FROM_DICT_MAP,
-        'shortcut_info_flag': ShortcutInfoFlags,
-    }
+    _FROM_DICT_MAP = {**Entity._FROM_DICT_MAP, 'shortcut_info_flag': ShortcutInfoFlags}
     _API_PATCH: dict = {
-        **Entity._API_PATCH,
-        ('folder_id'): (objects.update_object, 'partial_put'),
+        ('name', 'description', 'abbreviation', 'hidden', 'folder_id'): (
+            objects_processors.update,
+            'partial_put',
+        )
     }
 
     def __init__(

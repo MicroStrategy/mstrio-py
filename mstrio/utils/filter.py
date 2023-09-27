@@ -108,7 +108,7 @@ class Filter:
 
         ro = {"attributes": []}
         for i in self.attr_selected:
-            if type(i) == list:
+            if isinstance(i, list):
                 forms = [{"id": form} for form in i[1:]]
                 ro["attributes"].append({"id": i[0], "forms": forms})
             else:
