@@ -4,7 +4,7 @@ from mstrio.utils.error_handlers import ErrorHandler
 
 
 @unpack_information
-@ErrorHandler(err_msg='Error getting transformation with ID: {id}')
+@ErrorHandler(err_msg="Error getting transformation with ID: {id}")
 def get_transformation(
     connection: Connection,
     id: str,
@@ -29,14 +29,14 @@ def get_transformation(
         HTTP response object. Expected status: 200
     """
     return connection.get(
-        url=f'{connection.base_url}/api/model/transformations/{id}',
+        endpoint=f'/api/model/transformations/{id}',
         headers={'X-MSTR-MS-Changeset': changeset_id},
         params={'showExpressionAs': show_expression_as},
     )
 
 
 @unpack_information
-@ErrorHandler(err_msg='Error creating a transformation')
+@ErrorHandler(err_msg="Error creating a transformation")
 def create_transformation(
     connection: Connection, body: dict, show_expression_as: list[str] | None = None
 ):
@@ -59,7 +59,7 @@ def create_transformation(
     """
     with changeset_manager(connection) as changeset_id:
         return connection.post(
-            url=f'{connection.base_url}/api/model/transformations',
+            endpoint='/api/model/transformations',
             headers={'X-MSTR-MS-Changeset': changeset_id},
             params={'showExpressionAs': show_expression_as},
             json=body,
@@ -67,7 +67,7 @@ def create_transformation(
 
 
 @unpack_information
-@ErrorHandler(err_msg='Error updating transformation with ID: {id}')
+@ErrorHandler(err_msg="Error updating transformation with ID: {id}")
 def update_transformation(
     connection: Connection,
     id: str,
@@ -95,7 +95,7 @@ def update_transformation(
     """
     with changeset_manager(connection) as changeset_id:
         return connection.patch(
-            url=f'{connection.base_url}/api/model/transformations/{id}',
+            endpoint=f'/api/model/transformations/{id}',
             headers={'X-MSTR-MS-Changeset': changeset_id},
             params={'showExpressionAs': show_expression_as},
             json=body,

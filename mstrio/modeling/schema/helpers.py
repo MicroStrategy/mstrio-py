@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from enum import auto
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Any
 
 from mstrio.helpers import NotSupportedError
 from mstrio.utils.enum_helper import AutoName
@@ -243,9 +243,9 @@ class SchemaObjectReference(Dictable):
     @classmethod
     def create_from(
         cls,
-        schema_object: Union["Attribute", "UserHierarchy"],
+        schema_object: 'Attribute | UserHierarchy',
         is_embedded: bool = None,
-    ) -> "SchemaObjectReference":
+    ) -> 'SchemaObjectReference':
         """Converts a schema object into a schema object reference
 
         Args:
@@ -264,9 +264,7 @@ class SchemaObjectReference(Dictable):
         }
         return cls.from_dict(reference_body)
 
-    def to_object(
-        self, connection: "Connection"
-    ) -> Union["Attribute", "UserHierarchy"]:
+    def to_object(self, connection: 'Connection') -> 'Attribute | UserHierarchy':
         """Converts a schema object reference into a schema object.
 
         Args:
@@ -450,11 +448,17 @@ class TableColumn(Dictable):
     primary_locale: str | None = None
 
     @classmethod
-    def from_dict(cls, source, connection, to_snake_case=True) -> 'TableColumn':
+    def from_dict(
+        cls,
+        source: dict[str, Any],
+        connection: 'Connection | None' = None,
+        to_snake_case: bool = True,
+        with_missing_value: bool = False,
+    ) -> 'TableColumn':
         source = source.copy()
 
         if information := source.get('information'):
             source.update(information)
             source['id'] = source.pop('objectId')
 
-        return super().from_dict(source, connection, to_snake_case)
+        return super().from_dict(source, connection, to_snake_case, with_missing_value)

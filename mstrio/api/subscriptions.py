@@ -6,12 +6,13 @@ from mstrio.utils.error_handlers import ErrorHandler
 from mstrio.utils.helper import exception_handler, response_handler
 
 if TYPE_CHECKING:
-    from requests_futures.sessions import FuturesSession
+    from concurrent.futures import Future
 
     from mstrio.connection import Connection
+    from mstrio.utils.sessions import FuturesSessionWithRenewal
 
 
-@ErrorHandler(err_msg='Error getting subscription list.')
+@ErrorHandler(err_msg="Error getting subscription list.")
 def list_subscriptions(
     connection, project_id, fields=None, offset=0, limit=-1, error_msg=None
 ):
@@ -34,15 +35,14 @@ def list_subscriptions(
         HTTP response object returned by the MicroStrategy REST server.
     """
     return connection.get(
-        url=f'{connection.base_url}/api/subscriptions',
+        endpoint='/api/subscriptions',
         params={'offset': offset, 'limit': limit, 'fields': fields},
         headers={'X-MSTR-ProjectID': project_id},
     )
 
 
 def list_subscriptions_async(
-    future_session: "FuturesSession",
-    connection,
+    future_session: 'FuturesSessionWithRenewal',
     project_id,
     fields=None,
     offset=0,
@@ -53,8 +53,6 @@ def list_subscriptions_async(
     Args:
         future_session: Future Session object to call MicroStrategy REST
             Server asynchronously
-        connection (object): MicroStrategy connection object returned by
-            `connection.Connection()`.
         project_id (str): ID of the project
         fields (list, optional): Comma separated top-level field whitelist. This
             allows client to selectively retrieve part of the response model.
@@ -68,15 +66,15 @@ def list_subscriptions_async(
         Complete Future object.
     """
     params = {'offset': offset, 'limit': limit, 'fields': fields}
-    url = f'{connection.base_url}/api/subscriptions'
+    endpoint = '/api/subscriptions'
     headers = {'X-MSTR-ProjectID': project_id}
 
-    return future_session.get(url=url, headers=headers, params=params)
+    return future_session.get(endpoint=endpoint, headers=headers, params=params)
 
 
-@ErrorHandler(err_msg='Error getting Dynamic Recipient List list.')
+@ErrorHandler(err_msg="Error getting Dynamic Recipient List list.")
 def list_dynamic_recipient_lists(
-    connection: "Connection",
+    connection: 'Connection',
     project_id: str,
     offset: int = 0,
     limit: int = -1,
@@ -102,27 +100,24 @@ def list_dynamic_recipient_lists(
         HTTP response object returned by the MicroStrategy REST server.
     """
     return connection.get(
-        url=f'{connection.base_url}/api/dynamicRecipientLists',
+        endpoint='/api/dynamicRecipientLists',
         params={'offset': offset, 'limit': limit, 'fields': fields},
         headers={'X-MSTR-ProjectID': project_id},
     )
 
 
 def list_dynamic_recipient_lists_async(
-    future_session: "FuturesSession",
-    connection: "Connection",
+    future_session: 'FuturesSessionWithRenewal',
     project_id: str,
     offset: int = 0,
     limit: int = -1,
     fields: str | None = None,
-) -> Response:
+) -> 'Future':
     """Get a list of Dynamic Recipient Lists asynchronously.
 
     Args:
         future_session: Future Session object to call MicroStrategy REST
             Server asynchronously
-        connection (object): MicroStrategy connection object returned by
-            `connection.Connection()`.
         project_id (str): ID of the project
         offset (integer, optional): Starting point within the collection of
             returned search results. Used to control paging behavior.
@@ -136,13 +131,13 @@ def list_dynamic_recipient_lists_async(
         Complete Future object.
     """
     return future_session.get(
-        url=f'{connection.base_url}/api/dynamicRecipientLists',
+        endpoint='/api/dynamicRecipientLists',
         headers={'X-MSTR-ProjectID': project_id},
         params={'offset': offset, 'limit': limit, 'fields': fields},
     )
 
 
-@ErrorHandler(err_msg='Error getting subscription {subscription_id} information.')
+@ErrorHandler(err_msg="Error getting subscription {subscription_id} information.")
 def get_subscription(
     connection, subscription_id, project_id, fields=None, error_msg=None
 ):
@@ -161,15 +156,15 @@ def get_subscription(
         HTTP response object returned by the MicroStrategy REST server
     """
     return connection.get(
-        url=f'{connection.base_url}/api/subscriptions/{subscription_id}',
+        endpoint=f'/api/subscriptions/{subscription_id}',
         params={'fields': fields},
         headers={'X-MSTR-ProjectID': project_id},
     )
 
 
-@ErrorHandler(err_msg='Error getting Dynamic Recipient List {list_id} information.')
+@ErrorHandler(err_msg="Error getting Dynamic Recipient List {list_id} information.")
 def get_dynamic_recipient_list(
-    connection: "Connection",
+    connection: 'Connection',
     id: str,
     project_id: str,
     fields: str | None = None,
@@ -190,13 +185,13 @@ def get_dynamic_recipient_list(
         HTTP response object returned by the MicroStrategy REST server
     """
     return connection.get(
-        url=f'{connection.base_url}/api/dynamicRecipientLists/{id}',
+        endpoint=f'/api/dynamicRecipientLists/{id}',
         params={'fields': fields},
         headers={'X-MSTR-ProjectID': project_id},
     )
 
 
-@ErrorHandler(err_msg='Error creating new subscription.')
+@ErrorHandler(err_msg="Error creating new subscription.")
 def create_subscription(connection, project_id, body, fields=None, error_msg=None):
     """Create a new subscription.
 
@@ -204,114 +199,7 @@ def create_subscription(connection, project_id, body, fields=None, error_msg=Non
         connection (object): MicroStrategy connection object returned by
             `connection.Connection()`.
         project_id (str): ID of the project
-        body: JSON-formatted body of the new subscription, example;
-        {"name": "My new subscription",
-        "allowDeliveryChanges": false,
-        "allowPersonalizationChanges": false,
-        "allowUnsubscribe": false,
-        "sendNow": false,
-        "schedules": [
-            {
-            "id": "string"
-            }
-        ],
-        "contents": [
-            {
-            "id": "string",
-            "type": "report",
-            "personalization": {
-                "compressed": false,
-                "formatMode": "DEFAULT",
-                "viewMode": "DEFAULT",
-                "formatType": "PLAIN_TEXT",
-                "delimiter": "string",
-                "bursting": {
-                "slicingAttributes": [
-                    "string"
-                ],
-                "addressAttributeId": "string",
-                "deviceId": "string",
-                "formId": "string"
-                },
-                "prompt": {
-                "enabled": false,
-                "instanceId": "string"
-                }
-            }
-            }
-        ],
-        "recipients": [
-            {
-            "id": "string",
-            "includeType": "TO"
-            }
-        ],
-        "delivery": {
-            "mode": "EMAIL",
-            "expiration": "2020-09-21T10:35:01.911Z",
-            "contactSecurity": true,
-            "email": {
-            "subject": "string",
-            "message": "string",
-            "filename": "string",
-            "spaceDelimiter": "string",
-            "includeLink": true,
-            "includeData": true,
-            "sendToInbox": true,
-            "overwriteOlderVersion": true,
-            "zip": {
-                "filename": "string",
-                "password": "string",
-                "passwordProtect": true
-            }
-            },
-            "file": {
-            "filename": "string",
-            "spaceDelimiter": "string",
-            "burstSubFolder": "string",
-            "zip": {
-                "filename": "string",
-                "password": "string",
-                "passwordProtect": true
-            }
-            },
-            "printer": {
-            "copies": 0,
-            "rangeStart": 0,
-            "rangeEnd": 0,
-            "collated": true,
-            "orientation": "PORTRAIT",
-            "usePrintRange": true
-            },
-            "ftp": {
-            "spaceDelimiter": "string",
-            "filename": "string",
-            "zip": {
-                "filename": "string",
-                "password": "string",
-                "passwordProtect": true
-            }
-            },
-            "cache": {
-            "cacheType": "RESERVED",
-            "shortcutCacheFormat": "RESERVED"
-            },
-            "mobile": {
-            "clientType": "RESERVED",
-            "deviceId": "string",
-            "doNotCreateUpdateCaches": true,
-            "overwriteOlderVersion": true,
-            "reRunHl": true
-            },
-            "historyList": {
-            "deviceId": "string",
-            "doNotCreateUpdateCaches": true,
-            "overwriteOlderVersion": true,
-            "reRunHl": true
-            },
-            "iserverExpiration": "string"
-        }
-        }
+        body: JSON-formatted body of the new subscription
         fields(list, optional): Comma separated top-level field whitelist. This
             allows client to selectively retrieve part of the response model.
         error_msg(str, optional): Customized error message.
@@ -320,16 +208,16 @@ def create_subscription(connection, project_id, body, fields=None, error_msg=Non
         HTTP response object returned by the MicroStrategy REST server.
     """
     return connection.post(
-        url=f'{connection.base_url}/api/subscriptions',
+        endpoint='/api/subscriptions',
         params={'fields': fields},
         headers={'X-MSTR-ProjectID': project_id},
         json=body,
     )
 
 
-@ErrorHandler(err_msg='Error creating new Dynamic Recipient List.')
+@ErrorHandler(err_msg="Error creating new Dynamic Recipient List.")
 def create_dynamic_recipient_list(
-    connection: "Connection",
+    connection: 'Connection',
     project_id: str,
     body: dict,
     fields: list[str] | None = None,
@@ -350,7 +238,7 @@ def create_dynamic_recipient_list(
         HTTP response object returned by the MicroStrategy REST server.
     """
     return connection.post(
-        url=f'{connection.base_url}/api/dynamicRecipientLists',
+        endpoint='/api/dynamicRecipientLists',
         params={'fields': fields},
         headers={'X-MSTR-ProjectID': project_id},
         json=body,
@@ -374,7 +262,7 @@ def remove_subscription(
         HTTP response object returned by the MicroStrategy REST server.
     """
     response = connection.delete(
-        url=connection.base_url + '/api/subscriptions/' + subscription_id,
+        endpoint='/api/subscriptions/' + subscription_id,
         headers={'X-MSTR-ProjectID': project_id},
     )
     if not response.ok:
@@ -387,12 +275,9 @@ def remove_subscription(
     return response
 
 
+@ErrorHandler(err_msg="Error deleting Dynamic Recipient List ID: {id}.")
 def remove_dynamic_recipient_list(
-    connection: "Connection",
-    id: str,
-    project_id: str,
-    error_msg: str | None = None,
-    exception_type: Exception | None = None,
+    connection: 'Connection', id: str, project_id: str, error_msg: str | None = None
 ) -> Response:
     """Delete a Dynamic Recipient List.
 
@@ -407,21 +292,13 @@ def remove_dynamic_recipient_list(
     Returns:
         HTTP response object returned by the MicroStrategy REST server.
     """
-    response = connection.delete(
-        url=connection.base_url + '/api/dynamicRecipientLists/' + id,
+    return connection.delete(
+        endpoint=f'/api/dynamicRecipientLists/{id}',
         headers={'X-MSTR-ProjectID': project_id},
     )
-    if not response.ok:
-        if error_msg is None:
-            error_msg = f"Error deleting Dynamic Recipient List id: {id}"
-        if exception_type is None:
-            response_handler(response, error_msg)
-        else:
-            exception_handler(error_msg, exception_type)
-    return response
 
 
-@ErrorHandler(err_msg='Error updating subscription {subscription_id}')
+@ErrorHandler(err_msg="Error updating subscription {subscription_id}")
 def update_subscription(
     connection, subscription_id, project_id, body, fields=None, error_msg=None
 ):
@@ -440,16 +317,16 @@ def update_subscription(
         HTTP response object returned by the MicroStrategy REST server.
     """
     return connection.put(
-        url=f'{connection.base_url}/api/subscriptions/{subscription_id}',
+        endpoint=f'/api/subscriptions/{subscription_id}',
         params={'fields': fields},
         headers={'X-MSTR-ProjectID': project_id},
         json=body,
     )
 
 
-@ErrorHandler(err_msg='Error updating Dynamic Recipient List {list_id}')
+@ErrorHandler(err_msg="Error updating Dynamic Recipient List {list_id}")
 def update_dynamic_recipient_list(
-    connection: "Connection",
+    connection: 'Connection',
     id: str,
     project_id: str,
     body: dict,
@@ -472,14 +349,14 @@ def update_dynamic_recipient_list(
         HTTP response object returned by the MicroStrategy REST server.
     """
     return connection.put(
-        url=f'{connection.base_url}/api/dynamicRecipientLists/{id}',
+        endpoint=f'/api/dynamicRecipientLists/{id}',
         params={'fields': fields},
         headers={'X-MSTR-ProjectID': project_id},
         json=body,
     )
 
 
-@ErrorHandler(err_msg='Error getting recipients list.')
+@ErrorHandler(err_msg="Error getting recipients list.")
 def available_recipients(
     connection,
     project_id,
@@ -521,7 +398,7 @@ def available_recipients(
         HTTP response object returned by the MicroStrategy REST server
     """
     return connection.post(
-        url=f'{connection.base_url}/api/subscriptions/recipients/results',
+        endpoint='/api/subscriptions/recipients/results',
         params={
             'fields': fields,
             'deliveryType': delivery_type,
@@ -533,7 +410,7 @@ def available_recipients(
     )
 
 
-@ErrorHandler(err_msg='Error getting available bursting attributes list.')
+@ErrorHandler(err_msg="Error getting available bursting attributes list.")
 def bursting_attributes(
     connection, project_id, content_id, content_type, fields=None, error_msg=None
 ):
@@ -555,13 +432,13 @@ def bursting_attributes(
         HTTP response object returned by the MicroStrategy REST server
     """
     return connection.get(
-        url=f'{connection.base_url}/api/subscriptions/bursting',
+        endpoint='/api/subscriptions/bursting',
         params={'fields': fields, 'contentId': content_id, 'contentType': content_type},
         headers={'X-MSTR-ProjectID': project_id},
     )
 
 
-@ErrorHandler(err_msg='Error sending subscription {subscription_id}')
+@ErrorHandler(err_msg="Error sending subscription {subscription_id}")
 def send_subscription(
     connection, subscription_id, project_id, body, fields=None, error_msg=None
 ):
@@ -581,7 +458,7 @@ def send_subscription(
         HTTP response object returned by the MicroStrategy REST server
     """
     return connection.get(
-        url=f'{connection.base_url}/api/subscriptions/{subscription_id}/send',
+        endpoint=f'/api/subscriptions/{subscription_id}/send',
         params={'fields': fields},
         headers={'X-MSTR-ProjectID': project_id},
         json=body,

@@ -3,7 +3,7 @@ from enum import auto
 from typing import TYPE_CHECKING
 
 from mstrio import config
-from mstrio.api import datasources, objects
+from mstrio.api import datasources
 from mstrio.datasources.datasource_login import DatasourceLogin
 from mstrio.users_and_groups.user import User
 from mstrio.utils import helper
@@ -14,6 +14,8 @@ from mstrio.utils.helper import (
     get_default_args_from_func,
     get_objects_id,
 )
+from mstrio.utils.response_processors import objects as objects_processors
+from mstrio.utils.translation_mixin import TranslationMixin
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
 if TYPE_CHECKING:
@@ -79,7 +81,7 @@ class ExecutionMode(AutoName):
 
 
 @class_version_handler('11.3.0000')
-class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
+class DatasourceConnection(Entity, CopyMixin, DeleteMixin, TranslationMixin):
     """Datasource connection configuration object that represents a connection
     to the datasource.
 
@@ -156,7 +158,7 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
             'ancestors',
             'certified_info',
             'acl',
-        ): objects.get_object_info,
+        ): objects_processors.get_info,
         (
             'id',
             'name',
@@ -186,7 +188,7 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
         ): datasources.get_datasource_connection,
     }
     _API_PATCH: dict = {
-        ('abbreviation'): (objects.update_object, 'partial_put'),
+        'abbreviation': (objects_processors.update, 'partial_put'),
         (
             "name",
             "description",

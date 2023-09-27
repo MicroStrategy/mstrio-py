@@ -5,12 +5,12 @@ from mstrio.types import ObjectTypes
 from mstrio.utils.error_handlers import ErrorHandler
 
 if TYPE_CHECKING:
-    from requests_futures.sessions import FuturesSession
+    from mstrio.utils.sessions import FuturesSessionWithRenewal
 
 logger = logging.getLogger(__name__)
 
 
-@ErrorHandler(err_msg='Error getting information for the object with ID {id}')
+@ErrorHandler(err_msg="Error getting information for the object with ID {id}")
 def get_object_info(
     connection,
     id,
@@ -41,26 +41,24 @@ def get_object_info(
         HTTP response object returned by the MicroStrategy REST server.
     """
     if object_type == ObjectTypes.PROJECT.value:
-        headers = {'X-MSTR-ProjectID': None}
-    elif project_id:
-        headers = {'X-MSTR-ProjectID': project_id}
-    else:
-        headers = {'X-MSTR-ProjectID': connection.project_id}
+        project_id = str(id)
+    elif project_id is None:
+        project_id = connection.project_id
 
-    if not project_id and not connection.project_id:
+    if not project_id:
         logger.info(
             'Project was not selected. Search is performed for the non-project area'
         )
 
     return connection.get(
-        url=f'{connection.base_url}/api/objects/{id}',
-        headers=headers,
+        endpoint=f'/api/objects/{id}',
+        headers={'X-MSTR-ProjectID': project_id},
         params={'type': object_type},
     )
 
 
 def get_object_info_async(
-    futures_session: "FuturesSession", connection, id, object_type, project_id=None
+    future_session: 'FuturesSessionWithRenewal', id, object_type, project_id=None
 ):
     """Get information for a specific object in a specific project; if you do
     not specify a project ID, you get information for the object just in the
@@ -71,40 +69,35 @@ def get_object_info_async(
     provided in EnumDSSXMLObjectTypes.
 
     Args:
-        futures_session (FuturesSession): Future Session object to call
-            MicroStrategy REST Server asynchronously
-        connection (Connection): MicroStrategy connection object returned by
-            `connection.Connection()`.
+        future_session (FuturesSessionWithRenewal): Future Session object
+            to call MicroStrategy REST Server asynchronously
         id (str): Object ID
         object_type (int): One of EnumDSSXMLObjectTypes. Ex. 34 (User or
         UserGroup), 44 (Security Role), 32 (Project), 8 (Folder), 36 (type of
         I-Server configuration), 58 (Security Filter)
         project_id(str): ID of a project in which the object is located.
-        error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
         HTTP response object returned by the MicroStrategy REST server.
     """
     if object_type == ObjectTypes.PROJECT.value:
-        headers = {'X-MSTR-ProjectID': None}
-    elif project_id:
-        headers = {'X-MSTR-ProjectID': project_id}
-    else:
-        headers = {'X-MSTR-ProjectID': connection.project_id}
+        project_id = str(id)
+    elif project_id is None:
+        project_id = future_session.connection.project_id
 
-    if not project_id and not connection.project_id:
+    if not project_id:
         logger.info(
-            'Project was not selected. Search is performed for the non-project area'
+            "Project was not selected. Search is performed for the non-project area"
         )
 
-    return futures_session.get(
-        url=f'{connection.base_url}/api/objects/{id}',
-        headers=headers,
+    return future_session.get(
+        endpoint=f'/api/objects/{id}',
+        headers={'X-MSTR-ProjectID': project_id},
         params={'type': object_type},
     )
 
 
-@ErrorHandler(err_msg='Error deleting object with ID {id}')
+@ErrorHandler(err_msg="Error deleting object with ID {id}")
 def delete_object(connection, id, object_type, project_id=None, error_msg=None):
     """Get information for a specific object in a specific project; if you do
     not specify a project ID, you get information for the object in all
@@ -127,22 +120,19 @@ def delete_object(connection, id, object_type, project_id=None, error_msg=None):
     Returns:
         HTTP response object returned by the MicroStrategy REST server.
     """
-
-    if object_type == 32:
-        headers = {'X-MSTR-ProjectID': str(id)}
-    elif project_id:
-        headers = {'X-MSTR-ProjectID': project_id}
-    else:
-        headers = {'X-MSTR-ProjectID': connection.project_id}
+    if object_type == ObjectTypes.PROJECT.value:
+        project_id = str(id)
+    elif project_id is None:
+        project_id = connection.project_id
 
     return connection.delete(
-        url=f'{connection.base_url}/api/objects/{id}',
-        headers=headers,
+        endpoint=f'/api/objects/{id}',
+        headers={'X-MSTR-ProjectID': project_id},
         params={'type': object_type},
     )
 
 
-@ErrorHandler(err_msg='Error updating object with ID {id}')
+@ErrorHandler(err_msg="Error updating object with ID {id}")
 def update_object(
     connection, id, body, object_type, project_id=None, error_msg=None, verbose=True
 ):
@@ -168,22 +158,20 @@ def update_object(
     Returns:
         HTTP response object returned by the MicroStrategy REST server.
     """
-    if object_type == 32:
-        headers = {'X-MSTR-ProjectID': str(id)}
-    elif project_id:
-        headers = {'X-MSTR-ProjectID': project_id}
-    else:
-        headers = {'X-MSTR-ProjectID': connection.project_id}
+    if object_type == ObjectTypes.PROJECT.value:
+        project_id = str(id)
+    elif project_id is None:
+        project_id = connection.project_id
 
     return connection.put(
-        url=f'{connection.base_url}/api/objects/{id}',
-        headers=headers,
+        endpoint=f'/api/objects/{id}',
+        headers={'X-MSTR-ProjectID': project_id},
         params={'type': object_type},
         json=body,
     )
 
 
-@ErrorHandler(err_msg='Error creating a copy of object with ID {id}')
+@ErrorHandler(err_msg="Error creating a copy of object with ID {id}")
 def copy_object(
     connection, id, name, folder_id, object_type, project_id=None, error_msg=None
 ):
@@ -213,25 +201,24 @@ def copy_object(
     Returns:
         HTTP response object returned by the MicroStrategy REST server.
     """
-    if object_type == 32:
-        headers = {'X-MSTR-ProjectID': str(id)}
-    elif project_id:
-        headers = {'X-MSTR-ProjectID': project_id}
-    elif connection.project_id:
-        headers = {'X-MSTR-ProjectID': connection.project_id}
-    else:
+    if object_type == ObjectTypes.PROJECT.value:
+        project_id = str(id)
+    elif project_id is None:
+        project_id = connection.project_id
+
+    if not project_id:
         raise ValueError("Project needs to be specified.")
 
-    body = {"name": name, "folderId": folder_id}
+    body = {'name': name, 'folderId': folder_id}
     return connection.post(
-        url=f'{connection.base_url}/api/objects/{id}/copy',
-        headers=headers,
+        endpoint=f'/api/objects/{id}/copy',
+        headers={'X-MSTR-ProjectID': project_id},
         params={'type': object_type},
         json=body,
     )
 
 
-@ErrorHandler(err_msg='Error getting VLDB settings for object with ID {id}')
+@ErrorHandler(err_msg="Error getting VLDB settings for object with ID {id}")
 def get_vldb_settings(connection, id, object_type, project_id=None, error_msg=None):
     """Get vldb settings for an object.
 
@@ -255,14 +242,14 @@ def get_vldb_settings(connection, id, object_type, project_id=None, error_msg=No
         headers = {'X-MSTR-ProjectID': connection.project_id}
 
     return connection.get(
-        url=f"{connection.base_url}/api/objects/{id}/vldb/propertySets",
+        endpoint=f'/api/objects/{id}/vldb/propertySets',
         params={'type': object_type},
         headers=headers,
     )
 
 
 @ErrorHandler(
-    err_msg='Error resetting all custom vldb settings for object with ID {id}'
+    err_msg="Error resetting all custom vldb settings for object with ID {id}"
 )
 def delete_vldb_settings(connection, id, object_type, project_id=None, error_msg=None):
     """Delete all customized vldb settings in one object, this operation will
@@ -288,14 +275,14 @@ def delete_vldb_settings(connection, id, object_type, project_id=None, error_msg
         headers = {'X-MSTR-ProjectID': connection.project_id}
 
     return connection.delete(
-        url=f"{connection.base_url}/api/objects/{id}/vldb/propertySets",
+        endpoint=f'/api/objects/{id}/vldb/propertySets',
         params={'type': object_type},
         headers=headers,
     )
 
 
 @ErrorHandler(
-    err_msg='Error resetting all custom vldb settings for object with ID {id}'
+    err_msg="Error resetting all custom vldb settings for object with ID {id}"
 )
 def set_vldb_settings(
     connection, id, object_type, name, body, project_id=None, error_msg=None
@@ -325,14 +312,14 @@ def set_vldb_settings(
         headers = {'X-MSTR-ProjectID': connection.project_id}
 
     return connection.put(
-        url=f"{connection.base_url}/api/objects/{id}/vldb/propertySets/{name}",
+        endpoint=f'/api/objects/{id}/vldb/propertySets/{name}',
         params={'type': object_type},
         headers=headers,
         json=body,
     )
 
 
-@ErrorHandler(err_msg='Error getting objects.')
+@ErrorHandler(err_msg="Error getting objects.")
 def create_search_objects_instance(
     connection,
     name=None,
@@ -362,7 +349,7 @@ def create_search_objects_instance(
     """
     connection._validate_project_selected()
     return connection.post(
-        url=f"{connection.base_url}/api/objects",
+        endpoint='/api/objects',
         headers={'X-MSTR-ProjectID': connection.project_id},
         params={
             'name': name,
@@ -374,7 +361,7 @@ def create_search_objects_instance(
     )
 
 
-@ErrorHandler(err_msg='Error getting objects using search with ID {search_id}')
+@ErrorHandler(err_msg="Error getting objects using search with ID {search_id}")
 def get_objects(
     connection, search_id, offset=0, limit=-1, get_tree=False, error_msg=None
 ):
@@ -400,7 +387,7 @@ def get_objects(
     """
     connection._validate_project_selected
     return connection.get(
-        url=f"{connection.base_url}/api/objects",
+        endpoint='/api/objects',
         headers={'X-MSTR-ProjectID': connection.project_id},
         params={
             'searchId': search_id,
@@ -412,8 +399,7 @@ def get_objects(
 
 
 def get_objects_async(
-    future_session: "FuturesSession",
-    connection,
+    future_session: 'FuturesSessionWithRenewal',
     search_id,
     offset=0,
     limit=-1,
@@ -424,8 +410,6 @@ def get_objects_async(
     Args:
         future_session(object): Future Session object to call MicroStrategy REST
             Server asynchronously
-        connection(object): MicroStrategy connection object returned by
-            `connection.Connection()`.
         search_id: ID for the results of a previous search stored in I-Server
             memory
         offset: starting point within the collection of returned results. Used
@@ -440,20 +424,20 @@ def get_objects_async(
     Returns:
         HTTP response returned by the MicroStrategy REST server
     """
-    connection._validate_project_selected()
-    url = connection.base_url + '/api/objects'
-    headers = {'X-MSTR-ProjectID': connection.project_id}
+    future_session.connection._validate_project_selected()
+    endpoint = '/api/objects'
+    headers = {'X-MSTR-ProjectID': future_session.connection.project_id}
     params = {
         'searchId': search_id,
         'offset': offset,
         'limit': limit,
         'getTree': get_tree,
     }
-    future = future_session.get(url=url, headers=headers, params=params)
+    future = future_session.get(endpoint=endpoint, headers=headers, params=params)
     return future
 
 
-@ErrorHandler(err_msg='Error certifying object with ID {id}')
+@ErrorHandler(err_msg="Error certifying object with ID {id}")
 def toggle_certification(connection, id, object_type=3, certify=True):
     """Certify/Uncertify a multi-table dataset.
 
@@ -470,11 +454,58 @@ def toggle_certification(connection, id, object_type=3, certify=True):
     Returns:
         HTTP response object returned by the MicroStrategy REST server.
     """
-    url = (
-        f'{connection.base_url}/api/objects/{id}/certify/?type={str(object_type)}'
-        f'&certify={str(certify)}'
+    endpoint = (
+        f'/api/objects/{id}/certify/?type={str(object_type)}&certify={str(certify)}'
     )
     return connection.put(
-        url=url,
+        endpoint=endpoint,
         headers={'Content-Type': 'application/json', 'Accept': 'application/json'},
+    )
+
+
+@ErrorHandler(err_msg='Error updating translations for object with ID {id}')
+def update_translations(
+    connection, project_id: str, id: str, object_type: int, body: dict, fields
+):
+    """Update translations for a specific object.
+    Args:
+        connection (Connection): MicroStrategy connection object returned by
+            `connection.Connection()`
+        project_id (str): ID of the project in which the object is located
+        id (str): ID of the object
+        object_type (int): Type of the object
+        body (json): body of the request
+        fields(list, optional): Comma separated top-level field whitelist. This
+            allows client to selectively retrieve part of the response model
+    Returns:
+        HTTP response object returned by the Microstrategy REST server."""
+
+    object_type = ObjectTypes(object_type).name
+    return connection.patch(
+        endpoint=f'/api/objects/{object_type}/{id}/translations',
+        headers={'X-MSTR-ProjectID': project_id},
+        params={'fields': fields},
+        json=body,
+    )
+
+
+@ErrorHandler(err_msg='Error getting translations for object with ID {id}')
+def get_translations(connection, project_id: str, id: str, object_type: int, fields):
+    """Get translations for a specific object.
+    Args:
+        connection (Connection): MicroStrategy connection object returned by
+            `connection.Connection()`
+        project_id (str): ID of the project in which the object is located
+        id (str): ID of the object
+        object_type (int): Type of the object
+        fields(list, optional): Comma separated top-level field whitelist. This
+            allows client to selectively retrieve part of the response model
+    Returns:
+        HTTP response object returned by the Microstrategy REST server."""
+
+    object_type = ObjectTypes(object_type).name
+    return connection.get(
+        endpoint=f'/api/objects/{object_type}/{id}/translations',
+        headers={'X-MSTR-ProjectID': project_id},
+        params={'fields': fields},
     )

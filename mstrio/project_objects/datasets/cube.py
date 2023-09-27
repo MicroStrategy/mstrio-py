@@ -31,6 +31,7 @@ from mstrio.utils.parser import Parser
 from mstrio.utils.response_processors import cubes as cube_processors
 from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.sessions import FuturesSessionWithRenewal
+from mstrio.utils.translation_mixin import TranslationMixin
 
 if TYPE_CHECKING:
     from .cube_cache import CubeCache
@@ -165,11 +166,19 @@ def list_all_cubes(
             if cube_subtype == int(ObjectSubTypes.OLAP_CUBE):
                 from .olap_cube import OlapCube
 
-                all_cubes.append(OlapCube.from_dict(object_, connection))
+                all_cubes.append(
+                    OlapCube.from_dict(
+                        source=object_, connection=connection, with_missing_value=True
+                    )
+                )
             elif cube_subtype == int(ObjectSubTypes.SUPER_CUBE):
                 from .super_cube import SuperCube
 
-                all_cubes.append(SuperCube.from_dict(object_, connection))
+                all_cubes.append(
+                    SuperCube.from_dict(
+                        source=object_, connection=connection, with_missing_value=True
+                    )
+                )
         return all_cubes
 
 
@@ -262,7 +271,7 @@ def load_cube(
         return ret_cubes
 
 
-class _Cube(Entity, VldbMixin, DeleteMixin):
+class _Cube(Entity, VldbMixin, DeleteMixin, TranslationMixin):
     """Access, filter, publish, and extract data from MicroStrategy in-memory
     cubes.
 
@@ -304,6 +313,7 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
             'comments',
             'template_info',
             'target_info',
+            'hidden',
         ): objects_processors.get_info,
         ('server_mode', 'size', 'path', 'status', 'owner_id'): cube_processors.get_info,
     }
@@ -355,8 +365,8 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
         connection._validate_project_selected()
         self._get_definition()
 
-    def _init_variables(self, **kwargs):
-        super()._init_variables(**kwargs)
+    def _init_variables(self, default_value, **kwargs):
+        super()._init_variables(default_value=default_value, **kwargs)
         self.instance_id = kwargs.get('instance_id')
         self._parallel = kwargs.get('parallel', True)
         self._initial_limit = 1000
@@ -377,11 +387,11 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
         # these properties were not fetched from self.__info() and all will be
         # lazily fetched when calling any of properties: `owner_id`, `path`,
         # `size`, `status`
-        self.owner_id = None
-        self.path = None
-        self.server_mode = None
-        self.size = None
-        self.status = None
+        self.owner_id = default_value
+        self.path = default_value
+        self.server_mode = default_value
+        self.size = default_value
+        self.status = default_value
         self.__filter = None
 
         # caches will be lazily retrieved from I-Server when calling  for cube's
@@ -393,6 +403,7 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
         name: str | None = None,
         description: str | None = None,
         abbreviation: str | None = None,
+        hidden: bool | None = None,
     ):
         """Alter Cube properties.
 
@@ -400,6 +411,7 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
             name: new name of the Dataset
             description: new description of the Dataset
             abbreviation: new abbreviation of the Dataset
+            hidden: Specifies whether the metric is hidden
         """
         func = self.alter
         args = func.__code__.co_varnames[: func.__code__.co_argcount]
@@ -862,7 +874,6 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
         return [
             cubes.cube_single_attribute_elements_coroutine(
                 future_session,
-                connection=self._connection,
                 cube_id=self._id,
                 attribute_id=attribute['id'],
                 offset=0,

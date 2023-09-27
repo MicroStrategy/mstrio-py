@@ -49,7 +49,7 @@ class Encoder:
     def encode(self):
         """Encode data in base 64."""
         for col in self.__data_frame:
-            if type(self.__data_frame[col][0]) == dt.date:
+            if isinstance(self.__data_frame[col][0], dt.date):
                 self.__data_frame[col] = self.__data_frame[col].astype('str')
         self.__b64_data = b64encode(
             self.__data_frame.to_json(

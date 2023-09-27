@@ -2,7 +2,7 @@ from mstrio.connection import Connection
 from mstrio.utils.error_handlers import ErrorHandler
 
 
-@ErrorHandler(err_msg='Error creating Contact.')
+@ErrorHandler(err_msg="Error creating Contact.")
 def create_contact(connection: Connection, body: dict, error_msg: str | None = None):
     """Create a new contact.
 
@@ -14,11 +14,11 @@ def create_contact(connection: Connection, body: dict, error_msg: str | None = N
     Returns:
         Complete HTTP response object. Expected status is 201.
     """
-    url = f"{connection.base_url}/api/contacts/"
-    return connection.post(url=url, json=body)
+    endpoint = '/api/contacts/'
+    return connection.post(endpoint=endpoint, json=body)
 
 
-@ErrorHandler(err_msg='Error getting Contact with ID {id}')
+@ErrorHandler(err_msg="Error getting Contact with ID {id}")
 def get_contact(connection: Connection, id: str, error_msg: str | None = None):
     """Get contact by a specific id.
 
@@ -30,11 +30,11 @@ def get_contact(connection: Connection, id: str, error_msg: str | None = None):
     Returns:
         Complete HTTP response object. Expected status is 200.
     """
-    url = f"{connection.base_url}/api/contacts/{id}"
-    return connection.get(url=url)
+    endpoint = f'/api/contacts/{id}'
+    return connection.get(endpoint=endpoint)
 
 
-@ErrorHandler(err_msg='Error deleting Contact with ID {id}')
+@ErrorHandler(err_msg="Error deleting Contact with ID {id}")
 def delete_contact(connection: Connection, id: str, error_msg: str | None = None):
     """Delete a contact.
 
@@ -46,11 +46,11 @@ def delete_contact(connection: Connection, id: str, error_msg: str | None = None
     Returns:
         Complete HTTP response object. Expected status is 204.
     """
-    url = f"{connection.base_url}/api/contacts/{id}"
-    return connection.delete(url=url)
+    endpoint = f'/api/contacts/{id}'
+    return connection.delete(endpoint=endpoint)
 
 
-@ErrorHandler(err_msg='Error updating Contact with ID {id}')
+@ErrorHandler(err_msg="Error updating Contact with ID {id}")
 def update_contact(
     connection: Connection, id: str, body: dict, error_msg: str | None = None
 ):
@@ -65,8 +65,8 @@ def update_contact(
     Returns:
         Complete HTTP response object. Expected status is 200.
     """
-    url = f"{connection.base_url}/api/contacts/{id}"
-    return connection.put(url=url, json=body)
+    endpoint = f'/api/contacts/{id}'
+    return connection.put(endpoint=endpoint, json=body)
 
 
 @ErrorHandler(err_msg="Error getting Contacts.")
@@ -93,6 +93,6 @@ def get_contacts(
     Returns:
         Complete HTTP response object. Expected status is 200.
     """
-    url = f"{connection.base_url}/api/contacts/"
+    endpoint = '/api/contacts/'
     params = {'fields': fields, 'offset': offset, 'limit': limit}
-    return connection.get(url=url, params=params)
+    return connection.get(endpoint=endpoint, params=params)

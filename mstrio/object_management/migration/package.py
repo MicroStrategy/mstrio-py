@@ -132,8 +132,10 @@ class PackageSettings(Dictable):
         self,
         default_action: DefaultAction = DefaultAction.USE_EXISTING,
         update_schema: UpdateSchema | None = None,
-        acl_on_replacing_objects: AclOnReplacingObjects | None = None,
-        acl_on_new_objects: AclOnNewObjects | None = None,
+        acl_on_replacing_objects: AclOnReplacingObjects = (
+            AclOnReplacingObjects.USE_EXISTING
+        ),
+        acl_on_new_objects: AclOnNewObjects = AclOnNewObjects.KEEP_ACL_AS_SOURCE_OBJECT,
     ):
         self.default_action = default_action
         self.update_schema = (
@@ -143,9 +145,9 @@ class PackageSettings(Dictable):
         )
         self.acl_on_replacing_objects = acl_on_replacing_objects
         self.acl_on_new_objects = (
-            acl_on_new_objects
-            if isinstance(acl_on_new_objects, list)
-            else [acl_on_new_objects]
+            [acl_on_new_objects]
+            if isinstance(acl_on_new_objects, PackageSettings.AclOnNewObjects)
+            else acl_on_new_objects
         )
 
 

@@ -4,7 +4,6 @@ from enum import auto
 import pandas as pd
 
 from mstrio.api import incremental_refresh_reports as refresh_api
-from mstrio.api import objects
 from mstrio.connection import Connection
 from mstrio.modeling import (
     Expression,
@@ -26,6 +25,8 @@ from mstrio.utils.helper import (
     get_valid_project_id,
 )
 from mstrio.utils.parser import Parser
+from mstrio.utils.response_processors import objects as objects_processors
+from mstrio.utils.translation_mixin import TranslationMixin
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 from mstrio.utils.wip import WipLevels, module_wip
 
@@ -66,7 +67,9 @@ def list_incremental_refresh_reports(
 
 
 @class_version_handler('11.3.0600')
-class IncrementalRefreshReport(Entity, CopyMixin, MoveMixin, DeleteMixin):
+class IncrementalRefreshReport(
+    Entity, CopyMixin, MoveMixin, DeleteMixin, TranslationMixin
+):
     class IncrementType(AutoName):
         REPORT = auto()
         FILTER = auto()
@@ -102,7 +105,8 @@ class IncrementalRefreshReport(Entity, CopyMixin, MoveMixin, DeleteMixin):
             'ancestors',
             'acg',
             'acl',
-        ): objects.get_object_info,
+            'hidden',
+        ): objects_processors.get_info,
         (
             'id',
             'name',
@@ -138,7 +142,8 @@ class IncrementalRefreshReport(Entity, CopyMixin, MoveMixin, DeleteMixin):
             'destination_folder_id',
             'is_embedded',
             'folder_id',
-        ): (objects.update_object, 'partial_put'),
+            'hidden',
+        ): (objects_processors.update, 'partial_put'),
     }
     _PATCH_PATH_TYPES = {
         'name': str,
@@ -150,9 +155,9 @@ class IncrementalRefreshReport(Entity, CopyMixin, MoveMixin, DeleteMixin):
         'increment_type': str,
         'filter': dict,
         'advanced_properties': dict,
+        'hidden': bool,
     }
 
-    _API_DELETE = staticmethod(objects.delete_object)
     _ALLOW_NONE_ATTRIBUTES = ['filter', 'template']
     _KEEP_CAMEL_CASE = ['vldbProperties', 'metricJoinTypes', 'attributeJoinTypes']
 
@@ -427,6 +432,7 @@ class IncrementalRefreshReport(Entity, CopyMixin, MoveMixin, DeleteMixin):
         description: str | None = None,
         primary_locale: str | None = None,
         is_embedded: bool | None = None,
+        hidden: bool | None = None,
     ):
         if isinstance(target_cube, OlapCube):
             target_cube = SchemaObjectReference(

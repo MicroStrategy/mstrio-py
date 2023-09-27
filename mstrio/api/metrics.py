@@ -4,7 +4,7 @@ from mstrio.utils.error_handlers import ErrorHandler
 
 
 @unpack_information
-@ErrorHandler(err_msg='Error creating a metric')
+@ErrorHandler(err_msg="Error creating a metric")
 def create_metric(
     connection: Connection,
     body: dict,
@@ -33,8 +33,8 @@ def create_metric(
     """
     with changeset_manager(connection) as changeset_id:
         return connection.post(
-            url=f"{connection.base_url}/api/model/metrics",
-            headers={"X-MSTR-MS-Changeset": changeset_id},
+            endpoint='/api/model/metrics',
+            headers={'X-MSTR-MS-Changeset': changeset_id},
             params={
                 'showExpressionAs': show_expression_as,
                 'showFilterTokens': str(show_filter_tokens).lower(),
@@ -44,7 +44,7 @@ def create_metric(
 
 
 @unpack_information
-@ErrorHandler(err_msg='Error getting metric with ID: {id}')
+@ErrorHandler(err_msg="Error getting metric with ID: {id}")
 def get_metric(
     connection: Connection,
     id: str,
@@ -74,7 +74,7 @@ def get_metric(
         HTTP response object. Expected status: 200
     """
     return connection.get(
-        url=f'{connection.base_url}/api/model/metrics/{id}',
+        endpoint=f'/api/model/metrics/{id}',
         headers={'X-MSTR-MS-Changeset': changeset_id},
         params={
             'showExpressionAs': show_expression_as,
@@ -84,7 +84,7 @@ def get_metric(
 
 
 @unpack_information
-@ErrorHandler(err_msg='Error updating metric with ID: {id}')
+@ErrorHandler(err_msg="Error updating metric with ID: {id}")
 def update_metric(
     connection: Connection,
     id: str,
@@ -98,7 +98,7 @@ def update_metric(
     Args:
         connection: MicroStrategy REST API connection object
         id: ID of a metric
-        body: Metric creation data
+        body: Metric update data
         show_expression_as: Specifies the format in which the expressions are
            returned in response
            Available values: "tokens", "tree"
@@ -116,11 +116,49 @@ def update_metric(
     """
     with changeset_manager(connection) as changeset_id:
         return connection.put(
-            url=f'{connection.base_url}/api/model/metrics/{id}',
+            endpoint=f'/api/model/metrics/{id}',
             headers={'X-MSTR-MS-Changeset': changeset_id},
             params={
                 'showExpressionAs': show_expression_as,
                 'showFilterTokens': str(show_filter_tokens).lower(),
             },
             json=body,
+        )
+
+
+@ErrorHandler(err_msg="Error getting VLDB settings for a metric with ID: {id}")
+def get_vldb_settings(connection: Connection, id: str):
+    """Get definition of VLDB settings for a metric with id
+
+    Args:
+        connection: MicroStrategy REST API connection object
+        id: ID of a metric
+
+    Return:
+        HTTP response object. Expected status: 200
+    """
+    return connection.get(
+        endpoint=f'/api/model/metrics/{id}?showAdvancedProperties=true'
+    )
+
+
+@ErrorHandler(err_msg="Error getting metadata of VLDB settings for metric with ID {id}")
+def get_applicable_vldb_settings(
+    connection: 'Connection', id: str, error_msg: str = None
+):
+    """Get metadata of advanced VLDB settings for a metric.
+
+    Args:
+        connection (Connection): MicroStrategy REST API connection object
+        id (string): Metric ID
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object.
+    """
+
+    with changeset_manager(connection) as changeset_id:
+        return connection.get(
+            endpoint=f'/api/model/metrics/{id}/applicableAdvancedProperties',
+            headers={'X-MSTR-MS-Changeset': changeset_id},
         )

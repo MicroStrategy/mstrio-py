@@ -2,11 +2,13 @@ import logging
 from typing import TYPE_CHECKING
 
 from mstrio import config
-from mstrio.api import datasources, objects
+from mstrio.api import datasources
 from mstrio.users_and_groups.user import User
 from mstrio.utils import helper
 from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, ObjectTypes
 from mstrio.utils.helper import get_args_from_func, get_default_args_from_func
+from mstrio.utils.response_processors import objects as objects_processors
+from mstrio.utils.translation_mixin import TranslationMixin
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
 if TYPE_CHECKING:
@@ -44,7 +46,7 @@ def list_datasource_logins(
 
 
 @class_version_handler('11.2.0500')
-class DatasourceLogin(Entity, CopyMixin, DeleteMixin):
+class DatasourceLogin(Entity, CopyMixin, DeleteMixin, TranslationMixin):
     """A user login configuration object to access a particular datasource. Also
     formerly known as database login.
 
@@ -80,7 +82,7 @@ class DatasourceLogin(Entity, CopyMixin, DeleteMixin):
             'ancestors',
             'certified_info',
             'acl',
-        ): objects.get_object_info,
+        ): objects_processors.get_info,
         (
             'id',
             'name',
@@ -92,7 +94,7 @@ class DatasourceLogin(Entity, CopyMixin, DeleteMixin):
         ): datasources.get_datasource_login,
     }
     _API_PATCH: dict = {
-        ("abbreviation"): (objects.update_object, "partial_put"),
+        "abbreviation": (objects_processors.update, "partial_put"),
         ("name", "username", "description", "password"): (
             datasources.update_datasource_login,
             "patch",

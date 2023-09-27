@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from enum import auto
 
 from mstrio import config
-from mstrio.api import objects, transformations
+from mstrio.api import transformations
 from mstrio.connection import Connection
 from mstrio.modeling.expression import Expression, ExpressionFormat
 from mstrio.modeling.schema import SchemaObjectReference
@@ -21,6 +21,8 @@ from mstrio.utils.helper import (
     find_object_with_name,
     get_valid_project_id,
 )
+from mstrio.utils.response_processors import objects as objects_processors
+from mstrio.utils.translation_mixin import TranslationMixin
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
 logger = logging.getLogger(__name__)
@@ -117,7 +119,9 @@ def list_transformations(
         )
         return [
             Transformation.from_dict(
-                {**obj_, 'show_expression_as': show_expression_as}, connection
+                source={**obj_, 'show_expression_as': show_expression_as},
+                connection=connection,
+                with_missing_value=True,
             )
             for obj_ in objects_
         ]
@@ -131,7 +135,7 @@ class MappingType(AutoName):
 
 
 @class_version_handler('11.3.0500')
-class Transformation(Entity, MoveMixin, DeleteMixin):
+class Transformation(Entity, MoveMixin, DeleteMixin, TranslationMixin):
     """Python representation of MicroStrategy Transformation object.
 
     Attributes:
@@ -154,6 +158,7 @@ class Transformation(Entity, MoveMixin, DeleteMixin):
             internationalized), the field will be omitted.
         acg: access rights (See EnumDSSXMLAccessRightFlags for possible values)
         acl: object access control list
+        hidden: Specifies whether the object is hidden
     """
 
     _OBJECT_TYPE = ObjectTypes.ROLE
@@ -178,7 +183,8 @@ class Transformation(Entity, MoveMixin, DeleteMixin):
             'acg',
             'acl',
             'ext_type',
-        ): objects.get_object_info,
+            'hidden',
+        ): objects_processors.get_info,
     }
     _API_PATCH = {
         (
@@ -188,6 +194,7 @@ class Transformation(Entity, MoveMixin, DeleteMixin):
             'attributes',
             'destination_folder_id',
         ): (transformations.update_transformation, 'partial_put'),
+        'hidden': (objects_processors.update, "partial_put"),
     }
     _FROM_DICT_MAP = {
         **Entity._FROM_DICT_MAP,
@@ -247,21 +254,21 @@ class Transformation(Entity, MoveMixin, DeleteMixin):
             show_expression_as=show_expression_as,
         )
 
-    def _init_variables(self, **kwargs) -> None:
-        super()._init_variables(**kwargs)
-        self._sub_type = kwargs.get('sub_type')
-        self._is_embedded = kwargs.get('is_embedded')
+    def _init_variables(self, default_value, **kwargs) -> None:
+        super()._init_variables(default_value=default_value, **kwargs)
+        self._sub_type = kwargs.get('sub_type', default_value)
+        self._is_embedded = kwargs.get('is_embedded', default_value)
         self._attributes = (
             [
                 TransformationAttribute.from_dict(attr, self._connection)
                 for attr in kwargs.get('attributes')
             ]
             if kwargs.get('attributes')
-            else None
+            else default_value
         )
-        self._mapping_type = kwargs.get('mapping_type')
+        self._mapping_type = kwargs.get('mapping_type', default_value)
         self._version_id = kwargs.get('version_id')
-        self._primary_locale = kwargs.get('primary_locale')
+        self._primary_locale = kwargs.get('primary_locale', default_value)
         show_expression_as = kwargs.get('show_expression_as', 'tree')
         self._show_expression_as = (
             show_expression_as
@@ -361,6 +368,7 @@ class Transformation(Entity, MoveMixin, DeleteMixin):
         attributes: list | None = None,
         mapping_type: MappingType | None = None,
         description: str | None = None,
+        hidden: bool | None = None,
     ):
         """Alter transformation properties.
 
@@ -373,6 +381,8 @@ class Transformation(Entity, MoveMixin, DeleteMixin):
             attributes: list of base transformation attributes
             mapping_type: transformation's mapping type
             description: transformation's description
+            hidden (bool, optional): Specifies whether the object is hidden.
+                Default value: False.
         """
 
         name = name or self.name
@@ -420,10 +430,7 @@ class TransformationAttributeForm(Dictable):
             a function to the operator's child nodes.
     """
 
-    _FROM_DICT_MAP = {
-        "lookup_table": SchemaObjectReference,
-        "expression": Expression,
-    }
+    _FROM_DICT_MAP = {"lookup_table": SchemaObjectReference, "expression": Expression}
 
     id: str
     name: str

@@ -3,7 +3,7 @@ from mstrio.utils.api_helpers import changeset_manager
 from mstrio.utils.error_handlers import ErrorHandler
 
 
-@ErrorHandler(err_msg='Error getting attribute {id} relationship.')
+@ErrorHandler(err_msg="Error getting attribute {id} relationship.")
 def get_attribute_relationships(connection: Connection, id: str, project_id: str):
     """Get relationship(s) of an attribute
 
@@ -17,10 +17,7 @@ def get_attribute_relationships(connection: Connection, id: str, project_id: str
     """
     with changeset_manager(connection) as changeset_id:
         return connection.get(
-            url=(
-                f'{connection.base_url}/api/model/systemHierarchy/attributes/'
-                f'{id}/relationships'
-            ),
+            endpoint=f'/api/model/systemHierarchy/attributes/{id}/relationships',
             headers={
                 'X-MSTR-MS-Changeset': changeset_id,
                 'X-MSTR-ProjectID': project_id,
@@ -46,10 +43,7 @@ def update_attribute_relationships(
     """
     with changeset_manager(connection) as changeset_id:
         return connection.put(
-            url=(
-                f'{connection.base_url}/api/model/systemHierarchy/attributes/'
-                f'{id}/relationships'
-            ),
+            endpoint=f'/api/model/systemHierarchy/attributes/{id}/relationships',
             headers={'X-MSTR-MS-Changeset': changeset_id},
             json=body,
         )

@@ -160,10 +160,10 @@ class Dossier(Document):
         """
         super().__init__(connection=connection, name=name, id=id)
 
-    def _init_variables(self, **kwargs):
-        super()._init_variables(**kwargs)
-        self._current_chapter = kwargs.get('current_chapter')
-        self._chapters = kwargs.get('chapters')
+    def _init_variables(self, default_value, **kwargs):
+        super()._init_variables(default_value=default_value, **kwargs)
+        self._current_chapter = kwargs.get('current_chapter', default_value)
+        self._chapters = kwargs.get('chapters', default_value)
 
     @classmethod
     def _list_all(
@@ -208,7 +208,9 @@ class Dossier(Document):
             return DataFrame(dossiers)
         else:
             return [
-                cls.from_dict(source=dossier, connection=connection)
+                cls.from_dict(
+                    source=dossier, connection=connection, with_missing_value=True
+                )
                 for dossier in dossiers
             ]
 

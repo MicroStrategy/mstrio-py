@@ -1,7 +1,7 @@
 from mstrio.utils.error_handlers import ErrorHandler
 
 
-@ErrorHandler(err_msg='Error triggering event {id}')
+@ErrorHandler(err_msg="Error triggering event {id}")
 def trigger_event(connection, id, fields=None, error_msg=None):
     """Trigger an event.
 
@@ -14,11 +14,11 @@ def trigger_event(connection, id, fields=None, error_msg=None):
     Returns:
         HTTP response object returned by the MicroStrategy REST server.
     """
-    url = f'{connection.base_url}/api/events/{id}/trigger'
-    return connection.post(url=url, params={'fields': fields})
+    endpoint = f'/api/events/{id}/trigger'
+    return connection.post(endpoint=endpoint, params={'fields': fields})
 
 
-@ErrorHandler(err_msg='Error getting events list.')
+@ErrorHandler(err_msg="Error getting events list.")
 def list_events(connection, fields=None, error_msg=None):
     """Get list of a events.
 
@@ -30,12 +30,10 @@ def list_events(connection, fields=None, error_msg=None):
     Returns:
         HTTP response object returned by the MicroStrategy REST server.
     """
-    return connection.get(
-        url=f'{connection.base_url}/api/events', params={'fields': fields}
-    )
+    return connection.get(endpoint='/api/events', params={'fields': fields})
 
 
-@ErrorHandler(err_msg='Error getting event {id} information.')
+@ErrorHandler(err_msg="Error getting event {id} information.")
 def get_event(connection, id, fields=None, error_msg=None):
     """Get information of a specific event
 
@@ -51,12 +49,12 @@ def get_event(connection, id, fields=None, error_msg=None):
         HTTP response object returned by the MicroStrategy REST server
     """
     return connection.get(
-        url=f'{connection.base_url}/api/events/{id}',
+        endpoint=f'/api/events/{id}',
         params={'fields': fields},
     )
 
 
-@ErrorHandler(err_msg='Error creating event')
+@ErrorHandler(err_msg="Error creating event")
 def create_event(connection, body, fields=None, error_msg=None):
     """Create an event.
 
@@ -71,11 +69,11 @@ def create_event(connection, body, fields=None, error_msg=None):
     Returns:
         HTTP response object returned by the MicroStrategy REST server.
     """
-    url = f'{connection.base_url}/api/events'
-    return connection.post(url=url, params={'fields': fields}, json=body)
+    endpoint = '/api/events'
+    return connection.post(endpoint=endpoint, params={'fields': fields}, json=body)
 
 
-@ErrorHandler(err_msg='Error updating event {id}')
+@ErrorHandler(err_msg="Error updating event {id}")
 def update_event(connection, id, body, fields=None, error_msg=None):
     """Update an event.
 
@@ -90,11 +88,11 @@ def update_event(connection, id, body, fields=None, error_msg=None):
     Returns:
         HTTP response object returned by the MicroStrategy REST server.
     """
-    url = f'{connection.base_url}/api/events/{id}'
-    return connection.put(url=url, params={'fields': fields}, json=body)
+    endpoint = f'/api/events/{id}'
+    return connection.put(endpoint=endpoint, params={'fields': fields}, json=body)
 
 
-@ErrorHandler(err_msg='Error deleting event {id}')
+@ErrorHandler(err_msg="Error deleting event {id}")
 def delete_event(connection, id, error_msg=None):
     """Delete an event.
 
@@ -107,5 +105,5 @@ def delete_event(connection, id, error_msg=None):
     Returns:
         HTTP response object returned by the MicroStrategy REST server.
     """
-    url = f'{connection.base_url}/api/events/{id}'
-    return connection.delete(url=url)
+    endpoint = f'/api/events/{id}'
+    return connection.delete(endpoint=endpoint)

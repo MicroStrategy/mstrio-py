@@ -83,23 +83,25 @@ def get_connection(
         return None
 
     # get identity token
-    r = requests.post(
+    response = requests.post(
         base_url + '/api/auth/identityToken',
         headers=headers,
         cookies=jar,
         verify=ssl_verify,
     )
-    if r.ok:
+    if response.ok:
         # create connection to I-Server
         return Connection(
             base_url,
-            identity_token=r.headers['X-MSTR-IdentityToken'],
+            identity_token=response.headers['X-MSTR-IdentityToken'],
             project_id=project_id,
             project_name=project_name,
             ssl_verify=ssl_verify,
         )
-    else:
-        logger.error(f'HTTP {r.status_code} - {r.reason}, Message {r.text}')
+
+    logger.error(
+        f'HTTP {response.status_code} - {response.reason}, Message {response.text}'
+    )
 
 
 class Connection:
@@ -389,33 +391,52 @@ class Connection:
 
     @sessions.log_request(logger)
     @sessions.renew_session
-    def get(self, url, **kwargs):
-        return self._session.get(url, **kwargs)
+    def _request(
+        self, method_name: str, url: str, endpoint: str, **kwargs
+    ) -> requests.Response:
+        if url and endpoint:
+            raise ValueError(
+                'Either `url` or `endpoint` argument should be provided, not both.'
+            )
 
-    @sessions.log_request(logger)
-    @sessions.renew_session
-    def post(self, url, **kwargs):
-        return self._session.post(url, **kwargs)
+        if endpoint:
+            url = self.base_url + endpoint
 
-    @sessions.log_request(logger)
-    @sessions.renew_session
-    def put(self, url, **kwargs):
-        return self._session.put(url, **kwargs)
+        name2method = {
+            'GET': self._session.get,
+            'POST': self._session.post,
+            'PUT': self._session.put,
+            'PATCH': self._session.patch,
+            'DELETE': self._session.delete,
+            'HEAD': self._session.head,
+        }
+        method = name2method[method_name.upper()]
 
-    @sessions.log_request(logger)
-    @sessions.renew_session
-    def patch(self, url, **kwargs):
-        return self._session.patch(url, **kwargs)
+        return method(url, **kwargs)
 
-    @sessions.log_request(logger)
-    @sessions.renew_session
-    def delete(self, url, **kwargs):
-        return self._session.delete(url, **kwargs)
+    def get(self, url=None, *, endpoint=None, **kwargs):
+        """Sends a GET request."""
+        return self._request('GET', url, endpoint, **kwargs)
 
-    @sessions.log_request(logger)
-    @sessions.renew_session
-    def head(self, url, **kwargs):
-        return self._session.head(url, **kwargs)
+    def post(self, url=None, *, endpoint=None, **kwargs):
+        """Sends a POST request."""
+        return self._request('POST', url, endpoint, **kwargs)
+
+    def put(self, url=None, *, endpoint=None, **kwargs):
+        """Sends a PUT request."""
+        return self._request('PUT', url, endpoint, **kwargs)
+
+    def patch(self, url=None, *, endpoint=None, **kwargs):
+        """Sends a PATCH request."""
+        return self._request('PATCH', url, endpoint, **kwargs)
+
+    def delete(self, url=None, *, endpoint=None, **kwargs):
+        """Sends a DELETE request."""
+        return self._request('DELETE', url, endpoint, **kwargs)
+
+    def head(self, url=None, *, endpoint=None, **kwargs):
+        """Sends a HEAD request."""
+        return self._request('HEAD', url, endpoint, **kwargs)
 
     def _status(self):
         return authentication.session_status(connection=self)

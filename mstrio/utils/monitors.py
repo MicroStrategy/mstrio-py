@@ -48,7 +48,6 @@ def all_nodes_async(
         futures = [
             async_api(
                 future_session=session,
-                connection=connection,
                 node_name=n,
                 **param_value_dict,
             )

@@ -3,7 +3,7 @@ from enum import auto
 from typing import TYPE_CHECKING, Optional
 
 from mstrio import config
-from mstrio.api import datasources, objects
+from mstrio.api import datasources
 from mstrio.datasources import DatasourceConnection, Dbms, list_datasource_connections
 from mstrio.server.project import Project
 from mstrio.users_and_groups.user import User
@@ -15,6 +15,8 @@ from mstrio.utils.helper import (
     get_default_args_from_func,
     get_objects_id,
 )
+from mstrio.utils.response_processors import objects as objects_processors
+from mstrio.utils.translation_mixin import TranslationMixin
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 from mstrio.utils.vldb_mixin import ModelVldbMixin
 
@@ -139,7 +141,9 @@ class DatasourceType(AutoName):
 
 
 @class_version_handler('11.3.0000')
-class DatasourceInstance(Entity, CopyMixin, DeleteMixin, ModelVldbMixin):
+class DatasourceInstance(
+    Entity, CopyMixin, DeleteMixin, ModelVldbMixin, TranslationMixin
+):
     """Object representation of MicroStrategy DataSource Instance object.
 
     Attributes:
@@ -186,7 +190,7 @@ class DatasourceInstance(Entity, CopyMixin, DeleteMixin, ModelVldbMixin):
             'ancestors',
             'certified_info',
             'acl',
-        ): objects.get_object_info,
+        ): objects_processors.get_info,
         (
             'id',
             'name',
@@ -208,7 +212,7 @@ class DatasourceInstance(Entity, CopyMixin, DeleteMixin, ModelVldbMixin):
         ): datasources.get_datasource_instance,
     }
     _API_PATCH: dict = {
-        ('abbreviation'): (objects.update_object, 'partial_put'),
+        'abbreviation': (objects_processors.update, 'partial_put'),
         (
             "name",
             "description",

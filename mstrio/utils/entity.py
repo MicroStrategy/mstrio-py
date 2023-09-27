@@ -15,12 +15,13 @@ from pandas import DataFrame
 from mstrio import config
 from mstrio.api import objects
 from mstrio.connection import Connection
-from mstrio.helpers import NotSupportedError, VersionException
-from mstrio.types import ExtendedType, ObjectSubTypes, ObjectTypes
+from mstrio.helpers import NotSupportedError, Rights, VersionException
+from mstrio.types import MISSING, ExtendedType, ObjectSubTypes, ObjectTypes
 from mstrio.utils import helper
-from mstrio.utils.acl import ACE, ACLMixin, Rights
+from mstrio.utils.acl import ACE, ACLMixin
 from mstrio.utils.dependence_mixin import DependenceMixin
 from mstrio.utils.helper import rename_dict_keys
+from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.time_helper import (
     DatetimeFormats,
     bulk_str_to_datetime,
@@ -160,15 +161,20 @@ class EntityBase(helper.Dictable):
     _API_PATCH: dict[tuple[str], tuple[Callable | str]] = {}
     _PATCH_PATH_TYPES: dict[str, type] = {}  # used in update_properties method
     _API_DELETE: Callable = staticmethod(objects.delete_object)
+    _WITH_MISSING_VALUE: bool = False
 
-    def __init__(self, connection: Connection, object_id: str, **kwargs) -> None:
-        self._init_variables(connection=connection, id=object_id, **kwargs)
+    def __init__(
+        self, connection: Connection, object_id: str, default_value=None, **kwargs
+    ) -> None:
+        self._init_variables(
+            connection=connection, id=object_id, default_value=default_value, **kwargs
+        )
         if config.fetch_on_init and self._find_func("id") is not None:
             self.fetch("id")
         if config.verbose:
             logger.info(self)
 
-    def _init_variables(self, **kwargs) -> None:
+    def _init_variables(self, default_value=None, **kwargs) -> None:
         """Initializes object's attributes from kwargs. This method is often
         overridden by subclasses of Entity / EntityBase to abstract the process
         of initialization as it automatically sets attributes mutual for all
@@ -187,13 +193,13 @@ class EntityBase(helper.Dictable):
             {key: type(val) for key, val in kwargs.items()}
         )
         self._connection = kwargs.get("connection")
-        self._id = kwargs.get("id")
+        self._id = kwargs.get("id", default_value)
         self._type = (
             self._OBJECT_TYPE
             if 'type' in self._FROM_DICT_MAP
             else kwargs.get("type", self._OBJECT_TYPE)
         )
-        self.name = kwargs.get("name")
+        self.name = kwargs.get("name", default_value)
         self._altered_properties = {}
 
     def fetch(self, attr: str | None = None) -> None:  # NOSONAR
@@ -236,13 +242,17 @@ class EntityBase(helper.Dictable):
 
                 if self._OBJECT_SUBTYPES and (subtype := json['subtype']):
                     self._check_object_subtype(subtype)
-                if type(json) == dict:
+                if isinstance(json, dict):
                     object_dict = {
                         key if isinstance(key, str) and len(json) == 1 else k: v
                         for k, v in json.items()
                     }
+
+                    if self._WITH_MISSING_VALUE:
+                        self._add_missing_attributes(key, json)
+
                     self._set_object_attributes(**object_dict)
-                elif type(json) == list:
+                elif isinstance(json, list):
                     self._set_object_attributes(**{key: json})
 
             # keep track of fetched attributes
@@ -278,6 +288,19 @@ class EntityBase(helper.Dictable):
             False if subtype is not supported.
         """
         return subtype in [item.value for item in cls._OBJECT_SUBTYPES]
+
+    def _add_missing_attributes(self, key, json) -> None:
+        # Set the keys that are missing in the response to None
+        expected_keys = {key} if isinstance(key, str) else {*key}
+        response_dict = self._rest_to_python(helper.camel_to_snake(json))
+        received_keys = response_dict.keys()
+        missing_keys = expected_keys - received_keys - self._fetched_attributes
+
+        if missing_keys:
+            properties = helper.get_object_properties(self)
+            for key in missing_keys:
+                name = f'_{key}' if key in properties else key
+                self.__setattr__(name, None)
 
     def _add_to_fetched(self, keys: str | tuple) -> None:
         """Adds name/-s of attribute/-s to the `_fetched_attributes` set.
@@ -398,12 +421,7 @@ class EntityBase(helper.Dictable):
         object_info = self._rest_to_python(object_info)
 
         # determine which attributes should be private
-        properties = {
-            elem[0]
-            for elem in inspect.getmembers(
-                self.__class__, lambda x: isinstance(x, property)
-            )
-        }
+        properties = helper.get_object_properties(self)
 
         for key, val in object_info.items():  # type: ignore
             # update _AVAILABLE_ATTRIBUTES map
@@ -469,7 +487,8 @@ class EntityBase(helper.Dictable):
         source: dict[str, Any],
         connection: Connection,
         to_snake_case: bool = True,
-    ) -> T:
+        with_missing_value: bool = False,
+    ) -> type[T]:
         """Overrides `Dictable.from_dict()` to instantiate an object from
             a dictionary without calling any additional getters.
 
@@ -479,7 +498,10 @@ class EntityBase(helper.Dictable):
                 constructed.
             connection (Connection): A MicroStrategy Connection object.
             to_snake_case (bool, optional): Set to True if attribute names
-            should be converted from camel case to snake case. Defaults to True.
+                should be converted from camel case to snake case, default True.
+            with_missing_value: (bool, optional): If True, class attributes
+                possible to fetch and missing in `source` will be set as
+                `MissingValue` objects.
 
         Returns:
             T: An object of type T.
@@ -487,7 +509,11 @@ class EntityBase(helper.Dictable):
 
         obj = cls.__new__(cls)  # Does not call __init__
         object_source = helper.camel_to_snake(source) if to_snake_case else source
-        obj._init_variables(connection=connection, **object_source)
+        obj._WITH_MISSING_VALUE = with_missing_value
+        default_value = MISSING if with_missing_value else None
+        obj._init_variables(
+            connection=connection, default_value=default_value, **object_source
+        )
         return obj
 
     def __str__(self) -> str:
@@ -756,7 +782,7 @@ class EntityBase(helper.Dictable):
                 json = (
                     response if isinstance(response, (dict, list)) else response.json()
                 )
-                if type(json) == dict:
+                if isinstance(json, dict):
                     self._set_object_attributes(**json)
             else:
                 changed.append(False)
@@ -867,7 +893,7 @@ class EntityBase(helper.Dictable):
         type_map = {**self._AVAILABLE_ATTRIBUTES, **self._PATCH_PATH_TYPES}
         value_type = type_map.get(name, 'Not Found')
 
-        if value_type != 'Not Found' and type(value) != value_type:
+        if value_type != 'Not Found' and not isinstance(value, value_type):
             raise TypeError(
                 f"'{name}' has incorrect type. Expected type: '{value_type}'"
             )
@@ -897,9 +923,17 @@ class EntityBase(helper.Dictable):
         if hasattr(self, "_fetched_attributes"):
             if name in self._PATCH_PATH_TYPES and name in self._fetched_attributes:
                 track_changes()
-            # if value not equal to None then treat as fetched
-            if value is not None:
+            # if object was initialized from `search_operations.full_search`
+            # and value is not instance of MissingValue class then treat as
+            # fetched
+            if self._WITH_MISSING_VALUE:
+                if value is not MISSING:
+                    self._add_to_fetched(name)
+            # Otherwise if object was initialized from `__init__` and value
+            # is not None then treat as fetched
+            elif value is not None:
                 self._add_to_fetched(name)
+
         super().__setattr__(name, value)
 
     def __getattribute__(self, name: str) -> Any:
@@ -982,6 +1016,7 @@ class Entity(EntityBase, ACLMixin, DependenceMixin):
             report)
         acg: Access rights (See EnumDSSXMLAccessRightFlags for possible values)
         acl: Object access control list
+        hidden: Specifies if a object is hidden
     """
 
     _API_GETTERS: dict[str | tuple, Callable] = {
@@ -1007,12 +1042,21 @@ class Entity(EntityBase, ACLMixin, DependenceMixin):
             'project_id',
             'hidden',
             'target_info',
-        ): objects.get_object_info
+            'hidden',
+        ): objects_processors.get_info,
     }
     _API_PATCH: dict = {
-        ('name', 'description', 'abbreviation'): (objects.update_object, 'partial_put')
+        ('name', 'description', 'abbreviation', 'hidden'): (
+            objects_processors.update,
+            'partial_put',
+        )
     }
-    _PATCH_PATH_TYPES = {"name": str, "description": str, "abbreviation": str}
+    _PATCH_PATH_TYPES = {
+        "name": str,
+        "description": str,
+        "abbreviation": str,
+        'hidden': bool,
+    }
     _FROM_DICT_MAP = {
         **EntityBase._FROM_DICT_MAP,
         'ext_type': ExtendedType,
@@ -1022,50 +1066,57 @@ class Entity(EntityBase, ACLMixin, DependenceMixin):
         'acg': Rights,
     }
 
-    def _init_variables(self, **kwargs) -> None:
+    def _init_variables(self, default_value=None, **kwargs) -> None:
         """Initialize variables given kwargs."""
         from mstrio.users_and_groups.user import User
         from mstrio.utils.certified_info import CertifiedInfo
 
-        super()._init_variables(**kwargs)
-        self._date_created = map_str_to_datetime(
-            "date_created", kwargs.get("date_created"), self._FROM_DICT_MAP
-        )
-        self._date_modified = map_str_to_datetime(
-            "date_modified", kwargs.get("date_modified"), self._FROM_DICT_MAP
-        )
-        self.description = kwargs.get("description")
-        self.abbreviation = kwargs.get("abbreviation")
-        self._subtype = kwargs.get("subtype")
-        self._ext_type = (
-            ExtendedType(kwargs["ext_type"]) if kwargs.get("ext_type") else None
-        )
-        self._version = kwargs.get("version")
-        self._owner = (
-            User.from_dict(
-                kwargs.get("owner"),
-                self.connection,
+        super()._init_variables(default_value=default_value, **kwargs)
+        self._date_created = (
+            map_str_to_datetime(
+                "date_created", kwargs.get("date_created"), self._FROM_DICT_MAP
             )
-            if kwargs.get("owner")
-            else None
+            if kwargs.get("date_created")
+            else default_value
         )
-        self._icon_path = kwargs.get("icon_path")
-        self._view_media = kwargs.get("view_media")
-        self._ancestors = kwargs.get("ancestors")
+        self._date_modified = (
+            map_str_to_datetime(
+                "date_modified", kwargs.get("date_modified"), self._FROM_DICT_MAP
+            )
+            if kwargs.get("date_modified")
+            else default_value
+        )
+        self.description = kwargs.get("description", default_value)
+        self.abbreviation = kwargs.get("abbreviation", default_value)
+        self._subtype = kwargs.get("subtype", default_value)
+        self._ext_type = (
+            ExtendedType(kwargs["ext_type"])
+            if kwargs.get("ext_type")
+            else default_value
+        )
+        self._version = kwargs.get("version", default_value)
+        self._owner = (
+            User.from_dict(kwargs.get("owner"), self.connection)
+            if kwargs.get("owner")
+            else default_value
+        )
+        self._icon_path = kwargs.get("icon_path", default_value)
+        self._view_media = kwargs.get("view_media", default_value)
+        self._ancestors = kwargs.get("ancestors", default_value)
         self._certified_info = (
             CertifiedInfo.from_dict(kwargs.get("certified_info"), self.connection)
             if kwargs.get("certified_info")
-            else None
+            else default_value
         )
-        self._hidden = kwargs.get("hidden")
+        self._hidden = kwargs.get("hidden", default_value)
         self._project_id = kwargs.get("project_id")
-        self._comments = kwargs.get("comments")
-        self._target_info = kwargs.get("target_info")
-        self._acg = Rights(kwargs.get("acg")) if kwargs.get("acg") else None
+        self._comments = kwargs.get("comments", default_value)
+        self._target_info = kwargs.get("target_info", default_value)
+        self._acg = Rights(kwargs.get("acg")) if kwargs.get("acg") else default_value
         self._acl = (
             [ACE.from_dict(ac, self._connection) for ac in kwargs.get("acl")]
             if kwargs.get("acl")
-            else None
+            else default_value
         )
 
     @property

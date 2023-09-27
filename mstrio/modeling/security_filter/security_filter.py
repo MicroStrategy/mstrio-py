@@ -3,7 +3,7 @@ from enum import Enum
 from typing import TYPE_CHECKING
 
 from mstrio import config
-from mstrio.api import objects, security_filters
+from mstrio.api import security_filters
 from mstrio.modeling import ExpressionFormat
 from mstrio.modeling.schema import ObjectSubType, SchemaObjectReference
 from mstrio.object_management.folder import Folder
@@ -26,6 +26,8 @@ from mstrio.utils.helper import (
     get_valid_project_id,
     get_valid_project_name,
 )
+from mstrio.utils.response_processors import objects as objects_processors
+from mstrio.utils.translation_mixin import TranslationMixin
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
 from mstrio.modeling.expression import Expression  # isort:skip
@@ -170,7 +172,7 @@ class UpdateOperator(Enum):
 
 
 @class_version_handler('11.3.0100')
-class SecurityFilter(Entity, CopyMixin, DeleteMixin, MoveMixin):
+class SecurityFilter(Entity, CopyMixin, DeleteMixin, MoveMixin, TranslationMixin):
     """Python representation of MicroStrategy Security Filter object.
 
     Attributes:
@@ -203,6 +205,7 @@ class SecurityFilter(Entity, CopyMixin, DeleteMixin, MoveMixin):
             the top level attribute list
         bottom_level(list of SchemaObjectReference or list of dicts, optional):
             the bottom level attribute list
+        hidden: Specifies whether the object is hidden
     """
 
     _OBJECT_TYPE = ObjectTypes.SECURITY_FILTER
@@ -226,7 +229,8 @@ class SecurityFilter(Entity, CopyMixin, DeleteMixin, MoveMixin):
             'ancestors',
             'acg',
             'acl',
-        ): objects.get_object_info,
+            'hidden',
+        ): objects_processors.get_info,
         (
             'id',
             'name',
@@ -255,7 +259,7 @@ class SecurityFilter(Entity, CopyMixin, DeleteMixin, MoveMixin):
             'top_level',
             'bottom_level',
         ): (security_filters.update_security_filter, "put"),
-        ('folder_id',): (objects.update_object, 'partial_put'),
+        ('folder_id', 'hidden'): (objects_processors.update, 'partial_put'),
     }
     _PATCH_PATH_TYPES = {
         'name': str,
@@ -265,6 +269,7 @@ class SecurityFilter(Entity, CopyMixin, DeleteMixin, MoveMixin):
         'is_embedded': bool,
         'top_level': list,
         'below_level': list,
+        'hidden': bool,
     }
     _ALLOW_NONE_ATTRIBUTES = ['qualification']
 
@@ -371,7 +376,7 @@ class SecurityFilter(Entity, CopyMixin, DeleteMixin, MoveMixin):
         show_filter_tokens: bool = False,
         top_level: list[dict] | list[SchemaObjectReference] | None = None,
         bottom_level: list[dict] | list[SchemaObjectReference] | None = None,
-    ) -> type["SecurityFilter"]:
+    ) -> "SecurityFilter":
         """Create a new security filter in a specific project.
 
         Args:
@@ -451,6 +456,7 @@ class SecurityFilter(Entity, CopyMixin, DeleteMixin, MoveMixin):
                 f"Successfully created security filter named: '{name}' with ID: '"
                 f"{response['id']}'"
             )
+
         return cls.from_dict(
             source={
                 **response,
@@ -469,6 +475,7 @@ class SecurityFilter(Entity, CopyMixin, DeleteMixin, MoveMixin):
         is_embedded: bool | None = None,
         top_level: list[dict] | list[SchemaObjectReference] | None = None,
         bottom_level: list[dict] | list[SchemaObjectReference] | None = None,
+        hidden: bool | None = None,
     ):
         """Alter the security filter properties.
 
@@ -485,6 +492,8 @@ class SecurityFilter(Entity, CopyMixin, DeleteMixin, MoveMixin):
                 the top level attribute list
             bottom_level(list of SchemaObjectReference or list of dicts,
                 optional): the bottom level attribute list
+            hidden (bool, optional): Specifies whether the object is hidden.
+                Default value: False.
         """
         properties = filter_params_for_func(self.alter, locals(), exclude=['self'])
         self._alter_properties(**properties)

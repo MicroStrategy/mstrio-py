@@ -4,7 +4,7 @@ from enum import Enum, auto
 from typing import TYPE_CHECKING, Optional
 
 from mstrio import config
-from mstrio.api import metrics, objects
+from mstrio.api import metrics
 from mstrio.connection import Connection
 from mstrio.modeling.expression import Expression, ExpressionFormat
 from mstrio.modeling.metric import Dimensionality, FormatProperty, MetricFormat
@@ -25,7 +25,10 @@ from mstrio.utils.helper import (
     find_object_with_name,
     get_valid_project_id,
 )
+from mstrio.utils.response_processors import objects as objects_processors
+from mstrio.utils.translation_mixin import TranslationMixin
 from mstrio.utils.version_helper import method_version_handler
+from mstrio.utils.vldb_mixin import ModelVldbMixin
 
 if TYPE_CHECKING:
     from mstrio.modeling.metric import Metric
@@ -125,7 +128,9 @@ def list_metrics(
         )
         return [
             Metric.from_dict(
-                {**obj_, 'show_expression_as': show_expression_as}, connection
+                source={**obj_, 'show_expression_as': show_expression_as},
+                connection=connection,
+                with_missing_value=True,
             )
             for obj_ in objects_
         ]
@@ -240,7 +245,9 @@ class Threshold(Dictable):
     enable: bool = True
 
 
-class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa: F811
+class Metric(  # noqa: F811
+    Entity, CopyMixin, MoveMixin, DeleteMixin, ModelVldbMixin, TranslationMixin
+):
     """Python representation of MicroStrategy Metric object.
 
     Attributes:
@@ -295,7 +302,7 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa: F811
 
         Attributes:
             filter (SchemaObjectReference, optional): reference to the filter
-                to be used for the connditionality
+                to be used for the conditionality
             embed_method (EmbedMethod, optional): value of the enumerator that
                 specifies the type of filter interaction between the metric and
                 report filters
@@ -410,7 +417,7 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa: F811
             'acl',
             'target_info',
             'hidden',
-        ): objects.get_object_info,
+        ): objects_processors.get_info,
     }
     _API_PATCH = {
         (
@@ -434,7 +441,7 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa: F811
             'metric_format_type',
             'thresholds',
         ): (metrics.update_metric, 'partial_put'),
-        ('folder_id', 'hidden'): (objects.update_object, 'partial_put'),
+        ('folder_id', 'hidden'): (objects_processors.update, 'partial_put'),
     }
     _FROM_DICT_MAP = {
         **Entity._FROM_DICT_MAP,
@@ -455,16 +462,30 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa: F811
             Threshold.from_dict(content, connection) for content in source
         ],
     }
-    _REST_ATTR_MAP = {
-        'dimty': 'dimensionality',
+    _REST_ATTR_MAP = {'dimty': 'dimensionality'}
+    _MODEL_VLDB_API = {
+        'GET_ADVANCED': metrics.get_vldb_settings,
+        'PUT_ADVANCED': metrics.update_metric,
+        'GET_APPLICABLE': method_version_handler('11.3.0900')(
+            metrics.get_applicable_vldb_settings
+        ),
     }
 
     @classmethod
     @method_version_handler('11.3.0500')
-    def from_dict(cls, source: dict, connection: Optional['Connection'] = None):
+    def from_dict(
+        cls,
+        source: dict,
+        connection: Optional['Connection'] = None,
+        with_missing_value: bool = False,
+    ):
         new_source = source.copy()
         new_source['dimensionality'] = source.get('dimty')
-        return super().from_dict(new_source, connection)
+        return super().from_dict(
+            source=new_source,
+            connection=connection,
+            with_missing_value=with_missing_value,
+        )
 
     @method_version_handler('11.3.0500')
     def __init__(
@@ -518,58 +539,68 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa: F811
         )
 
     @method_version_handler('11.3.0500')
-    def _init_variables(self, **kwargs) -> None:
-        super()._init_variables(**kwargs)
+    def _init_variables(self, default_value, **kwargs) -> None:
+        super()._init_variables(default_value=default_value, **kwargs)
         self._sub_type = (
-            ObjectSubType(kwargs.get('sub_type')) if kwargs.get('sub_type') else None
+            ObjectSubType(kwargs.get('sub_type'))
+            if kwargs.get('sub_type')
+            else default_value
         )
-        self._is_embedded = kwargs.get('is_embedded')
-        self.destination_folder_id = kwargs.get('destination_folder_id')
+        self._is_embedded = kwargs.get('is_embedded', default_value)
+        self.destination_folder_id = kwargs.get('destination_folder_id', default_value)
 
         self.expression = (
-            Expression.from_dict(exp) if (exp := kwargs.get('expression')) else None
+            Expression.from_dict(exp)
+            if (exp := kwargs.get('expression'))
+            else default_value
         )
         self.dimensionality = (
             Dimensionality.from_dict(dimty)
             if (dimty := kwargs.get('dimensionality'))
-            else None
+            else default_value
         )
         self.conditionality = (
             Metric.Conditionality.from_dict(cond)
             if (cond := kwargs.get('conditionality'))
-            else None
+            else default_value
         )
         self.metric_subtotals = (
             [Metric.MetricSubtotal.from_dict(subtotal) for subtotal in subtotals]
             if (subtotals := kwargs.get('metric_subtotals'))
-            else None
+            else default_value
         )
-        self.aggregate_from_base = kwargs.get('aggregate_from_base')
+        self.aggregate_from_base = kwargs.get('aggregate_from_base', default_value)
         self.formula_join_type = (
             Metric.FormulaJoinType(join_type)
             if (join_type := kwargs.get('formula_join_type'))
-            else None
+            else default_value
         )
         self.smart_total = (
-            Metric.SmartTotal(tot) if (tot := kwargs.get('smart_total')) else None
+            Metric.SmartTotal(tot)
+            if (tot := kwargs.get('smart_total'))
+            else default_value
         )
         self.data_type = (
-            DataType.from_dict(dtype) if (dtype := kwargs.get('data_type')) else None
+            DataType.from_dict(dtype)
+            if (dtype := kwargs.get('data_type'))
+            else default_value
         )
         self.format = (
-            MetricFormat.from_dict(form) if (form := kwargs.get('format')) else None
+            MetricFormat.from_dict(form)
+            if (form := kwargs.get('format'))
+            else default_value
         )
-        self.subtotal_from_base = kwargs.get('subtotal_from_base')
-        self.column_name_alias = kwargs.get('column_name_alias')
+        self.subtotal_from_base = kwargs.get('subtotal_from_base', default_value)
+        self.column_name_alias = kwargs.get('column_name_alias', default_value)
         self.metric_format_type = (
             Metric.MetricFormatType(fromat_type)
             if (fromat_type := kwargs.get('metric_format_type'))
-            else None
+            else default_value
         )
         self.thresholds = (
             [Threshold.from_dict(threshold) for threshold in thresholds]
             if (thresholds := kwargs.get('thresholds'))
-            else None
+            else default_value
         )
 
         show_expression_as = kwargs.get('show_expression_as', 'tree')
@@ -612,7 +643,7 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa: F811
                 by `connection.Connection()`
             name: metric's name
             sub_type: metric's sub_type
-            destination_folder_id: A globally unique identifier used to
+            destination_folder: A globally unique identifier used to
                 distinguish between metadata objects within the same project.
                 It is possible for two metadata objects in different projects
                 to have the same Object Id
@@ -644,6 +675,8 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa: F811
                 Available values:
                 - `ExpressionFormat.TREE` or `tree`
                 - `ExpressionFormat.TOKENS or `tokens` (default)
+            hidden (bool, optional): Specifies whether the object is hidden.
+                Default value: False.
 
         Returns:
             Metric class object.
@@ -762,16 +795,6 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa: F811
                 - `ExpressionFormat.TOKENS or `tokens` (default)
             hidden: Specifies whether the metric is hidden
         """
-        # REST doesn't return hidden attribute if its value is False.
-        # If attribute is not present in response, the mstrio engine
-        # interprets this as 'no value' and sets its value to None.
-        # But if attribute's value is not None, and REST returns nothing
-        # the engine does nothing, and doesn't change its value.
-        # So if 'hidden' has value True, and is changed to False,
-        # the REST will return nothing, and locally its value will stay True.
-        # This line is to update local value of 'hidden'.
-        self._hidden = hidden
-
         name = name or self.name
         properties = filter_params_for_func(self.alter, locals(), exclude=['self'])
         self._alter_properties(**properties)
@@ -795,7 +818,3 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa: F811
     @property
     def project_id(self):
         return self._project_id if self._project_id else self.connection.project_id
-
-    @property
-    def hidden(self):
-        return self._hidden or False

@@ -9,6 +9,7 @@ from mstrio.types import ObjectSubTypes, ObjectTypes
 from mstrio.utils.entity import DeleteMixin, Entity
 from mstrio.utils.helper import Dictable, delete_none_values
 from mstrio.utils.response_processors import languages, objects
+from mstrio.utils.translation_mixin import TranslationMixin
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
 logger = logging.getLogger(__name__)
@@ -64,7 +65,7 @@ def list_interface_languages(
 
 
 @class_version_handler(version='11.3.1060')
-class Language(Entity, DeleteMixin):
+class Language(Entity, DeleteMixin, TranslationMixin):
     """Python representation of a Microstrategy Language object.
 
     Attributes:

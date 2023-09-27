@@ -1,7 +1,7 @@
 from mstrio.utils.error_handlers import ErrorHandler
 
 
-@ErrorHandler(err_msg='Error getting bookmarks from shortcut {shortcut_id}')
+@ErrorHandler(err_msg="Error getting bookmarks from shortcut {shortcut_id}")
 def get_bookmarks_from_shortcut(connection, shortcut_id, error_msg=None):
     """Get a Bookmark list from a Shortcut Object.
 
@@ -13,11 +13,10 @@ def get_bookmarks_from_shortcut(connection, shortcut_id, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    url = f"{connection.base_url}/api/shortcuts/{shortcut_id}/bookmarks"
-    return connection.get(url=url)
+    return connection.get(endpoint=f'/api/shortcuts/{shortcut_id}/bookmarks')
 
 
-@ErrorHandler(err_msg='Error updating information for shortcut {shortcut_id}')
+@ErrorHandler(err_msg="Error updating information for shortcut {shortcut_id}")
 def update_information_for_shortcut(connection, shortcut_id, body, error_msg=None):
     """Update info for a shortcut.
 
@@ -29,11 +28,10 @@ def update_information_for_shortcut(connection, shortcut_id, body, error_msg=Non
     Returns:
         Complete HTTP response object.
     """
-    url = connection.base_url + f"​/api/shortcuts/{shortcut_id}"
-    return connection.patch(url=url, json=body)
+    return connection.patch(endpoint=f'/api/shortcuts/{shortcut_id}', json=body)
 
 
-@ErrorHandler(err_msg='Error adding a new bookmark.')
+@ErrorHandler(err_msg="Error adding a new bookmark.")
 def refresh_document_instance(connection, error_msg=None):
     """Add a new bookmark into current shortcut object.
 
@@ -44,11 +42,10 @@ def refresh_document_instance(connection, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    url = connection.base_url + "​/api​/bookmarks"
-    return connection.put(url=url)
+    return connection.put(endpoint='/api/bookmarks')
 
 
-@ErrorHandler(err_msg='Error deleting bookmarks.')
+@ErrorHandler(err_msg="Error deleting bookmarks.")
 def delete_bookmarks(connection, shortcut_id: str, bookmark_ids: list, error_msg=None):
     """Bulk deletion of bookmarks.
 
@@ -61,12 +58,11 @@ def delete_bookmarks(connection, shortcut_id: str, bookmark_ids: list, error_msg
     Returns:
         Complete HTTP response object.
     """
-    body = {"shortcutId": shortcut_id, "bookmarkIds": bookmark_ids}
-    url = f'{connection.base_url}/api/bookmarks'
-    return connection.delete(url=url, json=body)
+    body = {'shortcutId': shortcut_id, 'bookmarkIds': bookmark_ids}
+    return connection.delete(endpoint='/api/bookmarks', json=body)
 
 
-@ErrorHandler(err_msg='Error deleting bookmark with ID {bookmark_id}')
+@ErrorHandler(err_msg="Error deleting bookmark with ID {bookmark_id}")
 def delete_single_bookmark(
     connection, shortcut_id: str, bookmark_id: str, error_msg=None
 ):
@@ -81,12 +77,12 @@ def delete_single_bookmark(
     Returns:
         Complete HTTP response object.
     """
-    body = {"shortcutId": shortcut_id}
-    url = f'{connection.base_url}/api/bookmarks/{bookmark_id}'
-    return connection.delete(url=url, json=body)
+    body = {'shortcutId': shortcut_id}
+    endpoint = f'/api/bookmarks/{bookmark_id}'
+    return connection.delete(endpoint=endpoint, json=body)
 
 
-@ErrorHandler(err_msg='Error updating bookmark {bookmark_id}')
+@ErrorHandler(err_msg="Error updating bookmark {bookmark_id}")
 def update_bookmark(connection, bookmark_id, body, error_msg=None):
     """Update a bookmark.
 
@@ -99,11 +95,11 @@ def update_bookmark(connection, bookmark_id, body, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    url = f"{connection.base_url}/api/bookmarks/{bookmark_id}"
-    return connection.put(url=url, json=body)
+    endpoint = f'/api/bookmarks/{bookmark_id}'
+    return connection.put(endpoint=endpoint, json=body)
 
 
-@ErrorHandler(err_msg='Error adding bookmark {bookmark_name}')
+@ErrorHandler(err_msg="Error adding bookmark {bookmark_name}")
 def add_bookmark(
     connection, bookmark_name, instance_id, shortcut_id, error_msg=None
 ):  # shortcut needs to be created to add a bookmark!
@@ -116,12 +112,12 @@ def add_bookmark(
     Returns:
         Complete HTTP response object.
     """
-    body = {"name": bookmark_name, "instanceId": instance_id}
-    url = f'{connection.base_url}/api/bookmarks'
-    return connection.post(url=url, json=body)
+    body = {'name': bookmark_name, 'instanceId': instance_id}
+    endpoint = '/api/bookmarks'
+    return connection.post(endpoint=endpoint, json=body)
 
 
-@ErrorHandler(err_msg='Error getting shortcuts for document {document_id}')
+@ErrorHandler(err_msg="Error getting shortcuts for document {document_id}")
 def get_document_shortcut(connection, document_id, instance_id, error_msg=None):
     """Retrieve a published shortcut from the document definition.
 
@@ -135,5 +131,5 @@ def get_document_shortcut(connection, document_id, instance_id, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    endpoint_url = f'/api/documents/{document_id}/instances/{instance_id}/shortcut'
-    return connection.get(connection.base_url + endpoint_url)
+    endpoint = f'/api/documents/{document_id}/instances/{instance_id}/shortcut'
+    return connection.get(endpoint=endpoint)

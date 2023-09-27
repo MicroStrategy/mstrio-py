@@ -6,8 +6,8 @@ if TYPE_CHECKING:
     from mstrio.connection import Connection
 
 
-@ErrorHandler(err_msg='Error listing Transmitters.')
-def get_transmitters(connection: "Connection", error_msg: str | None = None):
+@ErrorHandler(err_msg="Error listing Transmitters.")
+def get_transmitters(connection: 'Connection', error_msg: str | None = None):
     """Get a list of all transmitters that the authenticated user has access
     to.
 
@@ -18,12 +18,11 @@ def get_transmitters(connection: "Connection", error_msg: str | None = None):
     Returns:
         Complete HTTP response object. Expected status is 200.
     """
-    url = f"{connection.base_url}/api/transmitters"
-    return connection.get(url=url)
+    return connection.get(endpoint='/api/transmitters')
 
 
-@ErrorHandler(err_msg='Error creating Transmitter.')
-def create_transmitter(connection: "Connection", body, error_msg: str | None = None):
+@ErrorHandler(err_msg="Error creating Transmitter.")
+def create_transmitter(connection: 'Connection', body, error_msg: str | None = None):
     """Create a new transmitter.
 
     Args:
@@ -34,12 +33,11 @@ def create_transmitter(connection: "Connection", body, error_msg: str | None = N
     Returns:
         Complete HTTP response object. Expected status is 201.
     """
-    url = f"{connection.base_url}/api/transmitters"
-    return connection.post(url=url, json=body)
+    return connection.post(endpoint='/api/transmitters', json=body)
 
 
-@ErrorHandler(err_msg='Error getting Transmitter with ID {id}')
-def get_transmitter(connection: "Connection", id: str, error_msg: str | None = None):
+@ErrorHandler(err_msg="Error getting Transmitter with ID {id}")
+def get_transmitter(connection: 'Connection', id: str, error_msg: str | None = None):
     """Get transmitter by a specific id.
 
     Args:
@@ -50,13 +48,12 @@ def get_transmitter(connection: "Connection", id: str, error_msg: str | None = N
     Returns:
         Complete HTTP response object. Expected status is 200.
     """
-    url = f"{connection.base_url}/api/transmitters/{id}"
-    return connection.get(url=url)
+    return connection.get(endpoint=f'/api/transmitters/{id}')
 
 
-@ErrorHandler(err_msg='Error updating Transmitter with ID {id}')
+@ErrorHandler(err_msg="Error updating Transmitter with ID {id}")
 def update_transmitter(
-    connection: "Connection", id: str, body: dict, error_msg: str | None = None
+    connection: 'Connection', id: str, body: dict, error_msg: str | None = None
 ):
     """Update a transmitter.
 
@@ -69,12 +66,11 @@ def update_transmitter(
     Returns:
         Complete HTTP response object. Expected status is 200.
     """
-    url = f"{connection.base_url}/api/transmitters/{id}"
-    return connection.put(url=url, json=body)
+    return connection.put(endpoint=f'/api/transmitters/{id}', json=body)
 
 
-@ErrorHandler(err_msg='Error deleting Transmitter with ID {id}')
-def delete_transmitter(connection: "Connection", id: str, error_msg: str | None = None):
+@ErrorHandler(err_msg="Error deleting Transmitter with ID {id}")
+def delete_transmitter(connection: 'Connection', id: str, error_msg: str | None = None):
     """Delete a transmitter.
 
     Args:
@@ -85,5 +81,4 @@ def delete_transmitter(connection: "Connection", id: str, error_msg: str | None 
     Returns:
         Complete HTTP response object. Expected status is 204.
     """
-    url = f"{connection.base_url}/api/transmitters/{id}"
-    return connection.delete(url=url)
+    return connection.delete(endpoint=f'/api/transmitters/{id}')

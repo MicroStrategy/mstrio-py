@@ -1,7 +1,7 @@
 from mstrio.utils.error_handlers import ErrorHandler
 
 
-@ErrorHandler(err_msg='Error getting document with ID {id}')
+@ErrorHandler(err_msg="Error getting document with ID {id}")
 def get_document(connection, id, error_msg=None):
     """Get information for a document with document Id.
 
@@ -13,11 +13,11 @@ def get_document(connection, id, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    url = f"{connection.base_url}/api/library/{id}"
-    return connection.get(url=url)
+    endpoint = f'/api/library/{id}'
+    return connection.get(endpoint=endpoint)
 
 
-@ErrorHandler(err_msg='Error unpublishing document with ID {id}')
+@ErrorHandler(err_msg="Error unpublishing document with ID {id}")
 def unpublish_document(connection, id, error_msg=None):
     """Unpublish a previously published document. This makes the document no
     longer available in the library of each user it was originally published
@@ -31,11 +31,11 @@ def unpublish_document(connection, id, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    url = f'{connection.base_url}/api/library/{id}'
-    return connection.delete(url=url)
+    endpoint = f'/api/library/{id}'
+    return connection.delete(endpoint=endpoint)
 
 
-@ErrorHandler(err_msg='Error unpublishing document with ID {document_id}')
+@ErrorHandler(err_msg="Error unpublishing document with ID {document_id}")
 def unpublish_document_for_user(connection, document_id, user_id, error_msg=None):
     """Unpublish a previously published document. This makes the document no
     longer available in the library of each user specified in `user_id`
@@ -50,11 +50,11 @@ def unpublish_document_for_user(connection, document_id, user_id, error_msg=None
         Complete HTTP response object.
     """
     connection._validate_project_selected()
-    url = f"{connection.base_url}/api/library/{document_id}/recipients/{user_id}"
-    return connection.delete(url=url)
+    endpoint = f'/api/library/{document_id}/recipients/{user_id}'
+    return connection.delete(endpoint=endpoint)
 
 
-@ErrorHandler(err_msg='Error getting library.')
+@ErrorHandler(err_msg="Error getting library.")
 def get_library(connection, error_msg=None):
     """Get the library for the authenticated user.
 
@@ -65,11 +65,11 @@ def get_library(connection, error_msg=None):
     Returns:
         Complete HTTP response object.
     """
-    url = f'{connection.base_url}/api/library'
-    return connection.get(url=url, headers={'X-MSTR-ProjectID': None})
+    endpoint = '/api/library'
+    return connection.get(endpoint=endpoint, headers={'X-MSTR-ProjectID': None})
 
 
-@ErrorHandler(err_msg='Error publishing document.')
+@ErrorHandler(err_msg="Error publishing document.")
 def publish_document(connection, body, error_msg=None):
     """Publish a document to users or user groups in a specific project.
 
@@ -83,5 +83,5 @@ def publish_document(connection, body, error_msg=None):
         Complete HTTP response object.
     """
     connection._validate_project_selected()
-    url = f'{connection.base_url}/api/library'
-    return connection.post(url=url, json=body)
+    endpoint = '/api/library'
+    return connection.post(endpoint=endpoint, json=body)

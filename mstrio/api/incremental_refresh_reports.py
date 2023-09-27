@@ -50,7 +50,7 @@ def get_incremental_refresh_report(
         HTTP response object. Expected status: 200
     """
     return connection.get(
-        url=f'{connection.base_url}/api/model/incrementalRefresh/{id}',
+        endpoint=f'/api/model/incrementalRefresh/{id}',
         headers={'X-MSTR-ProjectID': project_id} if project_id else None,
         params={
             'showExpressionAs': show_expression_as,
@@ -105,7 +105,7 @@ def create_incremental_refresh_report(
         HTTP response object. Expected status: 201
     """
     return connection.post(
-        url=f'{connection.base_url}/api/model/incrementalRefresh',
+        endpoint='/api/model/incrementalRefresh',
         headers={'X-MSTR-ProjectID': project_id} if project_id else None,
         params={
             'showExpressionAs': show_expression_as,
@@ -162,7 +162,7 @@ def update_incremental_refresh_report(
         HTTP response object. Expected status: 200
     """
     return connection.put(
-        url=f'{connection.base_url}/api/model/incrementalRefresh/{id}',
+        endpoint=f'/api/model/incrementalRefresh/{id}',
         headers={'X-MSTR-ProjectID': project_id} if project_id else None,
         params={
             'showExpressionAs': show_expression_as,
@@ -191,10 +191,7 @@ def get_incremental_refresh_report_vldb_properties(
         HTTP response object. Expected status: 200
     """
     return connection.get(
-        url=(
-            f'{connection.base_url}/api/model/incrementalRefresh/'
-            f'{id}/applicableVldbProperties'
-        ),
+        endpoint=f'/api/model/incrementalRefresh/{id}/applicableVldbProperties',
         headers={'X-MSTR-ProjectID': project_id},
     )
 
@@ -216,7 +213,7 @@ def execute_incremental_refresh_report(
         HTTP response object. Expected status: 202
     """
     return connection.post(
-        url=f'{connection.base_url}/api/incrementalRefresh/{id}',
+        endpoint=f'/api/incrementalRefresh/{id}',
         headers={'X-MSTR-ProjectID': project_id},
         params={'fields': fields},
     )
@@ -244,10 +241,7 @@ def request_incremental_refresh_report_preview_data(
         HTTP response object. Expected status: 202
     """
     return connection.post(
-        url=(
-            f'{connection.base_url}/api/incrementalRefresh/{id}/instances'
-            f'/{instance_id}/data'
-        ),
+        endpoint=f'/api/incrementalRefresh/{id}/instances/{instance_id}/data',
         headers={'X-MSTR-ProjectID': project_id},
         params={'fields': fields},
     )
@@ -279,10 +273,7 @@ def get_incremental_refresh_report_preview_data(
         HTTP response object. Expected status: 200
     """
     return connection.get(
-        url=(
-            f'{connection.base_url}/api/incrementalRefresh/{id}/instances'
-            f'/{instance_id}/data'
-        ),
+        endpoint=f'/api/incrementalRefresh/{id}/instances/{instance_id}/data',
         headers={'X-MSTR-ProjectID': project_id},
         params={
             'offset': offset,
@@ -304,7 +295,7 @@ def create_incremental_refresh_report_instance(connection: Connection, id: str):
             HTTP response object. Expected status: 201
     """
     return connection.post(
-        url=f'{connection.base_url}/api/model/incrementalRefresh/{id}/instances',
+        endpoint=f'/api/model/incrementalRefresh/{id}/instances',
     )
 
 
@@ -323,7 +314,7 @@ def delete_incremental_refresh_report_instance(
             HTTP response object. Expected status: 201
     """
     return connection.delete(
-        url=f'{connection.base_url}/api/model/incrementalRefresh/{id}/instances',
+        endpoint=f'/api/model/incrementalRefresh/{id}/instances',
         headers={
             'X-MSTR-MS-INSTANCE': instance_id,
         },

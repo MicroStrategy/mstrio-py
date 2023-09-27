@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from enum import auto
 
 from mstrio import config
-from mstrio.api import objects, schedules
+from mstrio.api import schedules
 from mstrio.connection import Connection
 from mstrio.distribution_services.event import Event
 from mstrio.distribution_services.schedule import ScheduleEnums, ScheduleTime
@@ -11,11 +11,13 @@ from mstrio.users_and_groups.user import User
 from mstrio.utils import helper
 from mstrio.utils.entity import DeleteMixin, Entity, ObjectTypes
 from mstrio.utils.enum_helper import AutoName, get_enum_val
+from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.time_helper import (
     DatetimeFormats,
     map_datetime_to_str,
     map_str_to_datetime,
 )
+from mstrio.utils.translation_mixin import TranslationMixin
 from mstrio.utils.version_helper import method_version_handler
 
 logger = logging.getLogger(__name__)
@@ -56,7 +58,7 @@ def list_schedules(
         ]
 
 
-class Schedule(Entity, DeleteMixin):
+class Schedule(Entity, DeleteMixin, TranslationMixin):
     """Class representation of MicroStrategy Schedule object.
 
     Attributes:
@@ -107,7 +109,7 @@ class Schedule(Entity, DeleteMixin):
             'certified_info',
             'acg',
             'acl',
-        ): objects.get_object_info,
+        ): objects_processors.get_info,
     }
 
     _FROM_DICT_MAP = {
@@ -121,7 +123,7 @@ class Schedule(Entity, DeleteMixin):
         'stop_date': DatetimeFormats.DATE,
     }
     _API_PATCH: dict = {
-        ('abbreviation'): (objects.update_object, 'partial_put'),
+        'abbreviation': (objects_processors.update, 'partial_put'),
         (
             'name',
             'description',

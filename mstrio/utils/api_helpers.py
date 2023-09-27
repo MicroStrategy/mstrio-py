@@ -145,10 +145,7 @@ def async_get(
             async_wrapper, kwargs, exclude=['connection', 'session', 'error_msg', 'id']
         )
         futures = [
-            async_wrapper(
-                session=session, connection=connection, id=id, **param_value_dict
-            )
-            for id in ids
+            async_wrapper(session=session, id=id, **param_value_dict) for id in ids
         ]
         for f in as_completed(futures):
             response = f.result()

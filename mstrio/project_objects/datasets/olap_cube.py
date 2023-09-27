@@ -102,7 +102,10 @@ def list_olap_cubes(
     )
     if to_dictionary:
         return objects_
-    return [OlapCube.from_dict(obj_, connection) for obj_ in objects_]
+    return [
+        OlapCube.from_dict(source=obj_, connection=connection, with_missing_value=True)
+        for obj_ in objects_
+    ]
 
 
 @class_version_handler('11.3.0000')
@@ -266,8 +269,8 @@ class OlapCube(ModelVldbMixin, _Cube):
                 show_filter_tokens=show_filter_tokens,
             )
 
-    def _init_variables(self, **kwargs):
-        super()._init_variables(**kwargs)
+    def _init_variables(self, default_value, **kwargs):
+        super()._init_variables(default_value=default_value, **kwargs)
         if is_server_min_version(self.connection, '11.3.0800'):
             self._API_GETTERS[
                 (
@@ -288,25 +291,27 @@ class OlapCube(ModelVldbMixin, _Cube):
         self.template = (
             Template.from_dict(template)
             if (template := kwargs.get('template'))
-            else None
+            else default_value
         )
         self.filter = (
-            Expression.from_dict(filter) if (filter := kwargs.get('filter')) else None
+            Expression.from_dict(filter)
+            if (filter := kwargs.get('filter'))
+            else default_value
         )
         self.options = (
             CubeOptions.from_dict(options)
             if (options := kwargs.get('options'))
-            else None
+            else default_value
         )
         self.advanced_properties = (
             AdvancedProperties.from_dict(advanced_properties)
             if (advanced_properties := kwargs.get('advanced_properties'))
-            else None
+            else default_value
         )
         self.time_based_settings = (
             TimeBasedSettings.from_dict(time_based_settings)
             if (time_based_settings := kwargs.get('time_based_settings'))
-            else None
+            else default_value
         )
         if template:
             self.__set_definition()
@@ -701,14 +706,14 @@ class OlapCube(ModelVldbMixin, _Cube):
 
         return True
 
-    def publish(self) -> None:
+    def publish(self) -> dict:
         """Publish an OLAP Cube. Request to publish an OLAP Cube is an
         asynchronous operation, so the result of it can be seen after calling
         method `refresh_status()` inherited from Cube class.
         Returns:
             A dictionary with two keys identifying task IDs.
         """
-        response = cubes.publish(self._connection, self._id)
+        response = cubes.publish(self.connection, self._id)
         logger.info(f"Request for publishing cube '{self.name}' was sent.")
         return response.json()
 

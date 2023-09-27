@@ -13,6 +13,7 @@ from mstrio.helpers import IServerError
 from mstrio.utils import helper
 from mstrio.utils.entity import DeleteMixin, Entity, ObjectTypes
 from mstrio.utils.settings.base_settings import BaseSettings
+from mstrio.utils.translation_mixin import TranslationMixin
 from mstrio.utils.version_helper import method_version_handler
 from mstrio.utils.vldb_mixin import ModelVldbMixin
 from mstrio.utils.wip import wip
@@ -100,7 +101,7 @@ def compare_project_settings(
     return df
 
 
-class Project(Entity, ModelVldbMixin, DeleteMixin):
+class Project(Entity, ModelVldbMixin, DeleteMixin, TranslationMixin):
     """Object representation of MicroStrategy Project (Project) object.
 
     Attributes:
@@ -225,11 +226,11 @@ class Project(Entity, ModelVldbMixin, DeleteMixin):
                         connection, name, whitelist=[('ERR001', 500)]
                     )
                     http_status = response.status_code
-                    i_server_status = response.json().get('code')
-                    id_ = response.json().get('id')
+                    data = response.json()
+                    i_server_status = data.get('code')
             if config.verbose:
                 logger.info(f"Project '{name}' successfully created.")
-            return cls(connection, name=name, id=id_)
+            return cls.from_dict(data, connection=connection)
         else:
             return None
 

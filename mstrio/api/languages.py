@@ -2,7 +2,7 @@ from mstrio.connection import Connection
 from mstrio.utils.error_handlers import ErrorHandler
 
 
-@ErrorHandler(err_msg='Error creating a language.')
+@ErrorHandler(err_msg="Error creating a language.")
 def create_language(connection: Connection, body: dict, fields: str | None = None):
     """Create a new language.
 
@@ -17,13 +17,13 @@ def create_language(connection: Connection, body: dict, fields: str | None = Non
     Returns:
         HTTP response object returned by the MicroStrategy REST server."""
     return connection.post(
-        url=f'{connection.base_url}/api/languages',
+        endpoint='/api/languages',
         params={'fields': fields},
         json=body,
     )
 
 
-@ErrorHandler(err_msg='Error getting languages list.')
+@ErrorHandler(err_msg="Error getting languages list.")
 def list_languages(
     connection: Connection,
     acl: list[str] = None,
@@ -49,7 +49,7 @@ def list_languages(
     Returns:
         HTTP response object returned by the MicroStrategy REST server."""
     return connection.get(
-        url=f'{connection.base_url}/api/languages',
+        endpoint='/api/languages',
         params={
             'acl': acl,
             'hidden': str(hidden).lower(),
@@ -61,7 +61,7 @@ def list_languages(
     )
 
 
-@ErrorHandler(err_msg='Error getting interface languages list.')
+@ErrorHandler(err_msg="Error getting interface languages list.")
 def list_interface_languages(connection: Connection, fields: str | None = None):
     """Get a list of interface languages.
 
@@ -73,12 +73,10 @@ def list_interface_languages(connection: Connection, fields: str | None = None):
 
     Returns:
         HTTP response object returned by the MicroStrategy REST server."""
-    return connection.get(
-        url=f'{connection.base_url}/api/interfaceLanguages', params={'fields': fields}
-    )
+    return connection.get(endpoint='/api/interfaceLanguages', params={'fields': fields})
 
 
-@ErrorHandler(err_msg='Error getting language with ID: {id}')
+@ErrorHandler(err_msg="Error getting language with ID: {id}")
 def get_language(connection: Connection, id: str, fields: str | None = None):
     """Get a language by id.
 
@@ -92,12 +90,10 @@ def get_language(connection: Connection, id: str, fields: str | None = None):
 
     Returns:
         HTTP response object returned by the MicroStrategy REST server."""
-    return connection.get(
-        url=f'{connection.base_url}/api/languages/{id}', params={'fields': fields}
-    )
+    return connection.get(endpoint=f'/api/languages/{id}', params={'fields': fields})
 
 
-@ErrorHandler(err_msg='Error getting formatting settings for language with ID: {id}')
+@ErrorHandler(err_msg="Error getting formatting settings for language with ID: {id}")
 def get_language_formatting_settings(
     connection: Connection, id: str, fields: str | None = None
 ):
@@ -115,12 +111,12 @@ def get_language_formatting_settings(
     Returns:
         HTTP response object returned by the MicroStrategy REST server."""
     return connection.get(
-        url=f'{connection.base_url}/api/languages/{id}/formattingSettings',
+        endpoint=f'/api/languages/{id}/formattingSettings',
         params={'fields': fields},
     )
 
 
-@ErrorHandler(err_msg='Error updating formatting settings for language with ID: {id}')
+@ErrorHandler(err_msg="Error updating formatting settings for language with ID: {id}")
 def update_language_formatting_settings(
     connection: Connection, id: str, body: dict, fields: str | None = None
 ):
@@ -138,13 +134,13 @@ def update_language_formatting_settings(
     Returns:
         HTTP response object returned by the MicroStrategy REST server."""
     return connection.patch(
-        url=f'{connection.base_url}/api/languages/{id}/formattingSettings',
+        endpoint=f'/api/languages/{id}/formattingSettings',
         params={'fields': fields},
         json=body,
     )
 
 
-@ErrorHandler(err_msg='Error updating language with ID: {id}')
+@ErrorHandler(err_msg="Error updating language with ID: {id}")
 def update_language(
     connection: Connection, id: str, body: dict, fields: str | None = None
 ):
@@ -162,7 +158,7 @@ def update_language(
     Returns:
         HTTP response object returned by the MicroStrategy REST server."""
     return connection.patch(
-        url=f'{connection.base_url}/api/languages/{id}',
+        endpoint=f'/api/languages/{id}',
         params={'fields': fields},
         json=body,
     )

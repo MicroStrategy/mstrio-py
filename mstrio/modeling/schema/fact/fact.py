@@ -1,7 +1,7 @@
 import logging
 
 from mstrio import config
-from mstrio.api import facts, objects
+from mstrio.api import facts
 from mstrio.connection import Connection
 from mstrio.modeling.expression import ExpressionFormat, FactExpression
 from mstrio.modeling.schema.helpers import (
@@ -22,6 +22,8 @@ from mstrio.utils.helper import (
     find_object_with_name,
     get_valid_project_id,
 )
+from mstrio.utils.response_processors import objects as objects_processors
+from mstrio.utils.translation_mixin import TranslationMixin
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
 logger = logging.getLogger(__name__)
@@ -101,18 +103,16 @@ def list_facts(
         )
         return [
             Fact.from_dict(
-                {
-                    'show_expression_as': show_expression_as,
-                    **obj,
-                },
-                connection,
+                source={'show_expression_as': show_expression_as, **obj},
+                connection=connection,
+                with_missing_value=True,
             )
             for obj in objects
         ]
 
 
 @class_version_handler('11.3.0100')
-class Fact(Entity, CopyMixin, DeleteMixin, MoveMixin):
+class Fact(Entity, CopyMixin, DeleteMixin, MoveMixin, TranslationMixin):
     """Python representation for Microstrategy `Fact` object.
 
     Attributes:
@@ -151,6 +151,7 @@ class Fact(Entity, CopyMixin, DeleteMixin, MoveMixin):
             values)
         acl: object access control list
         version_id: the version number this object is currently carrying
+        hidden: Specifies whether the object is hidden
     """
 
     _OBJECT_TYPE = ObjectTypes.FACT
@@ -183,12 +184,15 @@ class Fact(Entity, CopyMixin, DeleteMixin, MoveMixin):
             'acg',
             'acl',
             'target_info',
-        ): objects.get_object_info,
+            'hidden',
+        ): objects_processors.get_info,
     }
     _API_PATCH = {
         ('data_type', 'expressions'): (facts.update_fact, 'partial_put'),
-        ('name', 'description'): (objects.update_object, 'partial_put'),
-        ('folder_id'): (objects.update_object, 'partial_put'),
+        ('name', 'description', 'folder_id', 'hidden'): (
+            objects_processors.update,
+            'partial_put',
+        ),
     }
 
     _FROM_DICT_MAP = {
@@ -262,24 +266,26 @@ class Fact(Entity, CopyMixin, DeleteMixin, MoveMixin):
             show_expression_as=show_expression_as,
         )
 
-    def _init_variables(self, **kwargs) -> None:
+    def _init_variables(self, default_value, **kwargs) -> None:
         """Initialize all properties when creating `Fact` object from
         a dictionary."""
-        super()._init_variables(**kwargs)
-        self._sub_type = kwargs.get('sub_type')
-        self._is_embedded = kwargs.get('is_embedded')
-        self._destination_folder_id = kwargs.get('destination_folder_id')
+        super()._init_variables(default_value=default_value, **kwargs)
+        self._sub_type = kwargs.get('sub_type', default_value)
+        self._is_embedded = kwargs.get('is_embedded', default_value)
+        self._destination_folder_id = kwargs.get('destination_folder_id', default_value)
         data_type = kwargs.get('data_type')
-        self.data_type = None if data_type is None else DataType.from_dict(data_type)
+        self.data_type = (
+            default_value if data_type is None else DataType.from_dict(data_type)
+        )
         expressions = kwargs.get('expressions')
         self._expressions = (
-            None
+            default_value
             if expressions is None
             else [FactExpression.from_dict(expression) for expression in expressions]
         )
         entry_level = kwargs.get('entry_level')
         self._entry_level = (
-            None
+            default_value
             if entry_level is None
             else [SchemaObjectReference.from_dict(obj) for obj in entry_level]
         )
@@ -375,6 +381,7 @@ class Fact(Entity, CopyMixin, DeleteMixin, MoveMixin):
         name: str | None = None,
         description: str | None = None,
         data_type: DataType | dict | None = None,
+        hidden: bool | None = None,
     ):
         """Alter fact properties.
 
@@ -382,6 +389,8 @@ class Fact(Entity, CopyMixin, DeleteMixin, MoveMixin):
             name (optional, str): fact's name
             description (optional, str): fact's description
             data_type (optional, object or dict): fact's data type definition
+            hidden (bool, optional): Specifies whether the object is hidden.
+                Default value: False.
         """
         properties = filter_params_for_func(self.alter, locals(), exclude=['self'])
         if data_type:

@@ -30,10 +30,7 @@ class DatabaseConnections:
         self.connection = connection
 
     def list_connections(
-        self,
-        nodes: str | list[str] = None,
-        limit: int | None = None,
-        **filters,
+        self, nodes: str | list[str] = None, limit: int | None = None, **filters
     ) -> list[dict[str, Any]]:
         """Get all active database connections. Optionally filter the
          connections by specifying the `filters` keyword arguments.
@@ -117,9 +114,7 @@ class DatabaseConnections:
             connection=self.connection, max_workers=threads
         ) as session:
             futures = [
-                monitors.delete_database_connection_async(
-                    session, self.connection, conn["id"]
-                )
+                monitors.delete_database_connection_async(session, conn["id"])
                 for conn in connections
             ]
             statuses: list[dict[str, str | int]] = []

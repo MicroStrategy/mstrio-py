@@ -26,7 +26,7 @@ from mstrio.object_management import (
 )
 from mstrio.project_objects import Dossier
 from mstrio.types import ObjectSubTypes, ObjectTypes
-from mstrio.utils.entity import Rights
+from mstrio.helpers import Rights
 
 from mstrio.connection import get_connection
 

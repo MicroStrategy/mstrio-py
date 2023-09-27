@@ -3,7 +3,6 @@ import logging
 from tqdm import tqdm
 
 from mstrio import config
-from mstrio.api import objects
 from mstrio.api import tables as tables_api
 from mstrio.connection import Connection
 from mstrio.modeling.schema import ObjectSubType, SchemaObjectReference
@@ -30,6 +29,9 @@ from mstrio.utils.helper import (
     get_default_args_from_func,
     get_valid_project_id,
 )
+from mstrio.utils.response_processors import objects as objects_processors
+from mstrio.utils.response_processors import tables
+from mstrio.utils.translation_mixin import TranslationMixin
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
 NO_PROJECT_ERR_MSG = "You must specify or select a project."
@@ -261,7 +263,7 @@ def list_changeset_tables(
 
 
 @class_version_handler('11.3.0100')
-class LogicalTable(Entity, DeleteMixin, MoveMixin):
+class LogicalTable(Entity, DeleteMixin, MoveMixin, TranslationMixin):
     """An object representation of a logical table, referred to as Table in
     Command Manager. A logical table describes the higher-level data model
     objects (facts, attributes, etc.) that the architect wishes to use to model
@@ -336,6 +338,7 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
         secondary_data_sources: MicroStrategy support mapping the table to more
             than one data source. This attribute is a list of object
             representations of a reference to a datasource.
+        hidden: Specifies whether the object is hidden
     """
 
     _OBJECT_TYPE: ObjectTypes = ObjectTypes.TABLE
@@ -372,7 +375,8 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
             "project_id",
             "hidden",
             "target_info",
-        ): objects.get_object_info,
+            'hidden',
+        ): objects_processors.get_info,
         (
             "id",
             "is_embedded",
@@ -405,7 +409,7 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
             "physical_table",
             "secondary_data_sources",
         ): (tables_api.patch_table, "partial_put"),
-        "folder_id": (objects.update_object, "partial_put"),
+        ("folder_id", 'hidden'): (objects_processors.update, "partial_put"),
     }
     _PATCH_PATH_TYPES = {
         "name": str,
@@ -418,6 +422,7 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
         "physical_table": dict,
         "secondary_data_sources": list,
         "folder_id": str,
+        "hidden": bool,
     }
 
     def __init__(
@@ -489,69 +494,71 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
                 )
         super().__init__(connection=connection, object_id=id)
 
-    def _init_variables(self, **kwargs) -> None:
-        super()._init_variables(**kwargs)
+    def _init_variables(self, default_value, **kwargs) -> None:
+        super()._init_variables(default_value=default_value, **kwargs)
 
-        attributes = kwargs.get("attributes")
+        attributes = kwargs.get('attributes')
         self.attributes = (
             Attribute.bulk_from_dict(source_list=attributes, connection=self.connection)
             if attributes
-            else None
+            else default_value
         )
 
-        ancestors = kwargs.get("ancestors")
-        self.folder_id = ancestors[-1].get("id") if ancestors else None
-        self.destination_folder_id = kwargs.get("destination_folder_id")
+        ancestors = kwargs.get('ancestors')
+        self.folder_id = ancestors[-1].get('id') if ancestors else default_value
+        self.destination_folder_id = kwargs.get('destination_folder_id', default_value)
 
-        facts = kwargs.get("facts")
+        facts = kwargs.get('facts')
         if facts:
-            [f.update(f.pop("information")) for f in facts]
+            [f.update(f.pop('information')) for f in facts]
         self.facts = (
             Fact.bulk_from_dict(source_list=facts, connection=self.connection)
             if facts
-            else None
+            else default_value
         )
-        self.is_logical_size_locked = kwargs.get("is_logical_size_locked")
-        self.is_part_of_partition = kwargs.get("is_part_of_partition")
-        self.is_true_key = kwargs.get("is_true_key")
-        self.logical_size = kwargs.get("logical_size")
+        self.is_logical_size_locked = kwargs.get(
+            'is_logical_size_locked', default_value
+        )
+        self.is_part_of_partition = kwargs.get('is_part_of_partition', default_value)
+        self.is_true_key = kwargs.get('is_true_key', default_value)
+        self.logical_size = kwargs.get('logical_size', default_value)
 
-        physical_table = kwargs.get("physical_table")
+        physical_table = kwargs.get('physical_table')
         self.physical_table = (
             PhysicalTable.from_dict(source=physical_table, connection=self.connection)
             if physical_table
-            else None
+            else default_value
         )
 
-        primary_data_source = kwargs.get("primary_data_source")
+        primary_data_source = kwargs.get('primary_data_source')
         self.primary_data_source = (
             SchemaObjectReference.from_dict(source=primary_data_source)
             if primary_data_source
-            else None
+            else default_value
         )
-        self.primary_locale = kwargs.get("primary_locale")
+        self.primary_locale = kwargs.get('primary_locale', default_value)
 
-        secondary_data_sources = kwargs.get("secondary_data_sources")
+        secondary_data_sources = kwargs.get('secondary_data_sources')
         self.secondary_data_sources = (
             SchemaObjectReference.bulk_from_dict(
                 source_list=secondary_data_sources, connection=self.connection
             )
             if secondary_data_sources
-            else None
+            else default_value
         )
 
-        sub_type = kwargs.get("sub_type")
-        self._sub_type = ObjectSubType(sub_type) if sub_type else None
+        sub_type = kwargs.get('sub_type')
+        self._sub_type = ObjectSubType(sub_type) if sub_type else default_value
 
-        table_key = kwargs.get("table_key")
+        table_key = kwargs.get('table_key')
         self.table_key = (
             SchemaObjectReference.bulk_from_dict(
                 source_list=table_key, connection=self.connection
             )
             if table_key
-            else None
+            else default_value
         )
-        self._version = kwargs.get("version_id")
+        self._version = kwargs.get('version_id')
 
     @classmethod
     def create(
@@ -578,7 +585,7 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
         column_merge_option: None
         | (TableColumnMergeOption) = TableColumnMergeOption.REUSE_ANY,
         table_prefix_option: TablePrefixOption | None = None,
-    ) -> type["LogicalTable"]:
+    ) -> "LogicalTable":
         """Create a new table in a specific project.
 
         Args:
@@ -649,6 +656,7 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
                     prefix setting on warehouse catalog.
                 If 'TablePrefixOption.ADD_NAMESPACE', create a prefix same
                     with namespace.
+
         Returns:
             LogicalTable object
 
@@ -767,8 +775,11 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
                 f"with ID: '{response['id']}'"
             )
 
-        # TODO remove when new proper endpoint will be implemented
         table = cls.from_dict(source=response, connection=connection)
+
+        # destination_folder attribute is ignored by Modeling Service
+        # logical table object is always placed in the default folder
+        # so move to different folder after creation
         if destination_folder:
             table.move(destination_folder)
 
@@ -818,6 +829,7 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
         enclose_sql_in_parentheses: bool | None = None,
         columns: list[TableColumn] | list[dict] | None = None,
         folder_id: str | None = None,
+        hidden: bool | None = None,
     ) -> None:  # NOSONAR
         """Alters properties specified by keyword arguments.
 
@@ -867,6 +879,8 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
                 table. Defaults to None.
             folder_id (Optional[str], optional): The ID of a folder to which a
                 logical  table should be moved. Defaults to None.
+            hidden (bool, optional): Specifies whether the object is hidden.
+                Default value: False.
 
             Throws:
                 TypeError if:
@@ -938,60 +952,113 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
         self._alter_properties(**properties)
 
     def update_physical_table_structure(
-        self, col_merge_option: TableColumnMergeOption | str
+        self,
+        col_merge_option: TableColumnMergeOption | str | None = None,
+        ignore_table_prefix: bool | None = None,
     ) -> None:
         """Updates a structure of a physical table upon which the logical table
            depends.
 
         Args:
-            col_merge_option (TableColumnMergeOption | str): A new
-                structure for a physical table upon which the logical table
-                depends.
+            col_merge_option (enum, optional): Defines a column merge option
+                Available values: 'reuse_any', 'reuse_compatible_data_type',
+                'reuse_matched_data_type'.
+                If 'TableColumnMergeOption.REUSE_ANY', updates the column
+                    data type to use the most recent column definition.
+                If 'TableColumnMergeOption.REUSE_COMPATIBLE_DATA_TYPE',
+                    updates the column data type to use the data type with
+                    the largest precision or scale.
+                If 'TableColumnMergeOption.REUSE_MATCHED_DATA_TYPE', renames
+                    the column in newly added table to allow it to have
+                    different data types.
+                If this value is not set, use the option that set on DBRole
+                catalog setting.
 
-        Throws:
-            TypeError: Attempting to update a structure of a physical table
-                which type is "Warehouse Partition Table"
+            ignore_table_prefix (bool, optional): If true, get all tables under
+                current DB. There are three following situations:
+
+                    - If there is only one table that has same name as updated
+                        table, update table structure using this table.
+                    - If there is no table that has same name as updated table,
+                        throw error.
+                    - If there are multiple tables has same name as updated
+                        table, throw error.
+
+                If false, remain the current behavior.
+
+                If not set, get the setting value from warehouse catalog. This
+                behavior is same as column merge options.
 
         Examples:
-            >>> LogicalTable(connection,
-                             id='FF529E1446BE3DF75ECD4B8E18618747')
-                             .update_physical_table_structure(
-                                 TableColumnMergeOption.REUSE_ANY
-                             )
+            >>> LogicalTable(
+            >>>     connection, id='FF529E1446BE3DF75ECD4B8E18618747'
+            >>> ).update_physical_table_structure(
+            >>>     col_merge_option=TableColumnMergeOption.REUSE_ANY
+            >>> )
         """
-        self.__validate_physical_table_type()
-        col_merge_option = get_enum_val(col_merge_option, TableColumnMergeOption)
-
-        res = tables_api.patch_table(
-            connection=self.connection,
-            id=self.id,
-            body=None,
-            column_merge_option=col_merge_option,
+        col_merge_option = (
+            get_enum_val(col_merge_option, TableColumnMergeOption)
+            if col_merge_option
+            else None
         )
-        if res.ok:
-            data = res.json().get("physicalTable")
-            logger.info(
-                f"Successfully modified a structure of a physical table '"
-                f"{data.get('tableName')}' "
-                f"with ID: '{data.get('information').get('objectId')}' "
-                f"in a '{data.get('namespace')}' namespace "
-                f"with a '{data.get('tablePrefix')}' table prefix."
-            )
+
+        table_data = tables.update_structure(
+            self.connection, self.id, col_merge_option, ignore_table_prefix
+        )
+
+        self._set_object_attributes(**table_data)
+
+        data = table_data.get("physicalTable")
+
+        logger.info(
+            "Successfully modified a structure of a physical table '"
+            "%s' with ID: '%s' in a '%s' namespace with a '%s' table prefix.",
+            data.get('tableName'),
+            data.get('information').get('objectId'),
+            data.get('namespace'),
+            data.get('tablePrefix'),
+        )
 
     @classmethod
     def update_physical_table_structure_for_all_tables(
         cls,
         connection: "Connection",
-        col_merge_option: TableColumnMergeOption | str,
+        col_merge_option: TableColumnMergeOption | str | None = None,
+        ignore_table_prefix: bool | None = None,
     ):
         """Updates structure for every table in a project mapped to a
            connection.
 
         Args:
             connection (Connection): Object representation of MSTR Connection.
-            col_merge_option (TableColumnMergeOption | str): A new
-                structure for a physical table upon which the logical table
-                depends.
+            col_merge_option (enum, optional): Defines a column merge option
+                Available values: 'reuse_any', 'reuse_compatible_data_type',
+                'reuse_matched_data_type'.
+                If 'TableColumnMergeOption.REUSE_ANY', updates the column
+                    data type to use the most recent column definition.
+                If 'TableColumnMergeOption.REUSE_COMPATIBLE_DATA_TYPE',
+                    updates the column data type to use the data type with
+                    the largest precision or scale.
+                If 'TableColumnMergeOption.REUSE_MATCHED_DATA_TYPE', renames
+                    the column in newly added table to allow it to have
+                    different data types.
+                If this value is not set, use the option that set on DBRole
+                catalog setting.
+
+            ignore_table_prefix (bool, optional): If true, get all tables under
+                current DB. There are three following situations:
+
+                    - If there is only one table that has same name as updated
+                        table, update table structure using this table.
+                    - If there is no table that has same name as updated table,
+                        throw error.
+                    - If there are multiple tables has same name as updated
+                        table, throw error.
+
+                If false, remain the current behavior.
+
+                If not set, get the setting value from warehouse catalog. This
+                behavior is same as column merge options.
         """
         col_merge_option = get_enum(col_merge_option, TableColumnMergeOption)
         logical_tables = list_logical_tables(connection)
@@ -999,13 +1066,10 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
             total=len(logical_tables), desc="Updating structures..."
         ) as progress_bar:
             for table in logical_tables:
-                if (
-                    table.physical_table.table_type
-                    != PhysicalTableType.WAREHOUSE_PARTITION
-                ):
-                    table.update_physical_table_structure(
-                        col_merge_option=col_merge_option
-                    )
+                table.update_physical_table_structure(
+                    col_merge_option=col_merge_option,
+                    ignore_table_prefix=ignore_table_prefix,
+                )
                 progress_bar.update()
 
     def __validate_physical_table_type(self) -> bool:
@@ -1014,7 +1078,7 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
             "Warehouse Partition Table"
 
         Returns:
-            bool: True if the type of a physical table is not
+            bool: True if the type of physical table is not
                 "Warehouse Partition Table", else False
         """
         if self.physical_table.table_type == PhysicalTableType.WAREHOUSE_PARTITION:

@@ -2,7 +2,7 @@ import logging
 from typing import TYPE_CHECKING
 
 from mstrio import config
-from mstrio.api import folders, objects
+from mstrio.api import folders
 from mstrio.object_management import PredefinedFolders
 from mstrio.types import ObjectTypes
 from mstrio.users_and_groups import User
@@ -12,6 +12,8 @@ from mstrio.utils.helper import (
     get_default_args_from_func,
     get_valid_project_id,
 )
+from mstrio.utils.response_processors import objects as objects_processors
+from mstrio.utils.translation_mixin import TranslationMixin
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
@@ -62,9 +64,7 @@ def list_folders(
     # otherwise fetch is performed from a non-project area.
     if project_id or project_name:
         project_id = get_valid_project_id(
-            connection=connection,
-            project_id=project_id,
-            project_name=project_name,
+            connection=connection, project_id=project_id, project_name=project_name
         )
     objects = fetch_objects_async(
         connection,
@@ -193,7 +193,7 @@ def get_predefined_folder_contents(
         return map_objects_list(connection, objects)
 
 
-class Folder(Entity, CopyMixin, MoveMixin, DeleteMixin):
+class Folder(Entity, CopyMixin, MoveMixin, DeleteMixin, TranslationMixin):
     """Object representation of MicroStrategy Folder object.
 
     Attributes:
@@ -226,8 +226,10 @@ class Folder(Entity, CopyMixin, MoveMixin, DeleteMixin):
     _FROM_DICT_MAP = {**Entity._FROM_DICT_MAP, 'owner': User.from_dict}
 
     _API_PATCH: dict = {
-        **Entity._API_PATCH,
-        ('folder_id'): (objects.update_object, 'partial_put'),
+        ('name', 'description', 'abbreviation', 'hidden', 'folder_id'): (
+            objects_processors.update,
+            'partial_put',
+        )
     }
 
     _OBJECT_TYPE = ObjectTypes.FOLDER
@@ -280,12 +282,18 @@ class Folder(Entity, CopyMixin, MoveMixin, DeleteMixin):
             )
         return cls.from_dict(source=response, connection=connection)
 
-    def alter(self, name: str | None = None, description: str | None = None) -> None:
+    def alter(
+        self,
+        name: str | None = None,
+        description: str | None = None,
+        hidden: bool | None = None,
+    ) -> None:
         """Alter the folder properties.
 
         Args:
             name: folder name
             description: folder description
+            hidden: Specifies whether the metric is hidden
         """
         func = self.alter
         default_dict = get_default_args_from_func(func)

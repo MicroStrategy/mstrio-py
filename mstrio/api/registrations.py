@@ -2,8 +2,8 @@ from mstrio.utils.error_handlers import ErrorHandler
 
 
 @ErrorHandler(
-    err_msg='Error obtaining the list of registered nodes from the MicroStrategy '
-    'deployment.'
+    err_msg="Error obtaining the list of registered nodes from the MicroStrategy "
+    "deployment."
 )
 def get_nodes(connection, error_msg=None):
     """Obtain the list of registered nodes from the MicroStrategy deployment.
@@ -13,12 +13,12 @@ def get_nodes(connection, error_msg=None):
             'connection.Connection().
         error_msg (string, optional): Custom Error Message for Error Handling
     """
-    return connection.get(url=f'{connection.base_url}/api/registrations/nodes')
+    return connection.get(endpoint='/api/registrations/nodes')
 
 
 @ErrorHandler(
-    err_msg='Error obtaining the list of registered services available from '
-    'the MicroStrategy deployment'
+    err_msg="Error obtaining the list of registered services available from "
+    "the MicroStrategy deployment"
 )
 def get_services(connection, error_msg=None):
     """Obtain the list of registered services available from the MicroStrategy
@@ -29,12 +29,12 @@ def get_services(connection, error_msg=None):
             'connection.Connection().
         error_msg (string, optional): Custom Error Message for Error Handling
     """
-    return connection.get(url=f'{connection.base_url}/api/registrations/services')
+    return connection.get(endpoint='/api/registrations/services')
 
 
 @ErrorHandler(
-    err_msg='Error obtaining the metadata information for the registered services'
-    ' available from the MicroStrategy deployment.'
+    err_msg="Error obtaining the metadata information for the registered services"
+    " available from the MicroStrategy deployment."
 )
 def get_services_metadata(connection, error_msg=None):
     """Obtain the metadata information for the registered services available
@@ -42,17 +42,15 @@ def get_services_metadata(connection, error_msg=None):
 
     Args:
         connection(object): MicroStrategy connection object returned by
-            'connection.Connection().
+            "connection.Connection().
         error_msg (string, optional): Custom Error Message for Error Handling
     """
-    return connection.get(
-        url=f'{connection.base_url}/api/registrations/services/metadata'
-    )
+    return connection.get(endpoint='/api/registrations/services/metadata')
 
 
-@ErrorHandler(err_msg='Error to start/stop service')
+@ErrorHandler(err_msg="Error to start/stop service")
 def start_stop_service(
-    connection, login, password, name, id, address, action="START", error_msg=None
+    connection, login, password, name, id, address, action='START', error_msg=None
 ):
     """Start or stop registered service.
 
@@ -77,6 +75,5 @@ def start_stop_service(
         "login": login,
         "password": password,
     }
-    url = f'{connection.base_url}/api/registrations/services/control'
-    response = connection.post(url=url, json=body)
-    return response
+    endpoint = '/api/registrations/services/control'
+    return connection.post(endpoint=endpoint, json=body)

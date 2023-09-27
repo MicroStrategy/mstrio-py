@@ -63,7 +63,7 @@ def list_cube_caches(
         nodes = cluster_.list_nodes(project=connection.project_id, to_dictionary=True)
         nodes = [node.get('name') for node in nodes]
 
-    nodes = [nodes] if type(nodes) == str else nodes
+    nodes = [nodes] if isinstance(nodes, str) else nodes
     caches = []
     for node in nodes:
         caches += fetch_objects_async(

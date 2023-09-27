@@ -11,6 +11,7 @@ from mstrio.types import ObjectTypes
 from mstrio.users_and_groups import User
 from mstrio.utils.entity import Entity
 from mstrio.utils.helper import fetch_objects, get_valid_project_id
+from mstrio.utils.translation_mixin import TranslationMixin
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
 if TYPE_CHECKING:
@@ -159,7 +160,7 @@ def list_namespaces(
 
 
 @class_version_handler('11.3.0100')
-class PhysicalTable(Entity):
+class PhysicalTable(Entity, TranslationMixin):
     """An object representation of a metadata of physical table. A physical
         table describes the metadata of a warehouse table. It contains a set of
         columns with a schema definition. Currently, two types of physical
@@ -250,9 +251,9 @@ class PhysicalTable(Entity):
         except LookupError:
             pass
 
-    def _init_variables(self, **kwargs) -> None:
+    def _init_variables(self, default_value, **kwargs) -> None:
         if kwargs.get("id"):
-            super()._init_variables(**kwargs)
+            super()._init_variables(default_value=default_value, **kwargs)
         elif kwargs.get("information"):
             # available when fetched as a part of a logical table
             information = kwargs.pop("information")
@@ -263,7 +264,7 @@ class PhysicalTable(Entity):
                     **information,
                 }
             )
-            super()._init_variables(**kwargs)
+            super()._init_variables(default_value=default_value, **kwargs)
 
             columns = kwargs.get("columns")
             self.columns = (

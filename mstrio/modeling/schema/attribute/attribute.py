@@ -4,7 +4,7 @@ from copy import deepcopy
 from typing import TYPE_CHECKING, Optional
 
 from mstrio import config
-from mstrio.api import attributes, hierarchies, objects, tables
+from mstrio.api import attributes, hierarchies, tables
 from mstrio.connection import Connection
 from mstrio.modeling.expression import Expression, ExpressionFormat, FactExpression
 from mstrio.modeling.schema.attribute import (
@@ -33,6 +33,8 @@ from mstrio.utils.helper import (
     find_object_with_name,
     get_valid_project_id,
 )
+from mstrio.utils.response_processors import objects as objects_processors
+from mstrio.utils.translation_mixin import TranslationMixin
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
 if TYPE_CHECKING:
@@ -138,14 +140,16 @@ def list_attributes(
         )
         return [
             Attribute.from_dict(
-                {**obj_, 'show_expression_as': show_expression_as}, connection
+                source={**obj_, 'show_expression_as': show_expression_as},
+                connection=connection,
+                with_missing_value=True,
             )
             for obj_ in objects_
         ]
 
 
 @class_version_handler('11.3.0100')
-class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
+class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin, TranslationMixin):  # noqa
     """Python representation of MicroStrategy Attribute object.
 
     Attributes:
@@ -214,7 +218,7 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
             'acl',
             'target_info',
             'hidden',
-        ): objects.get_object_info,
+        ): objects_processors.get_info,
     }
     _API_PATCH = {
         (
@@ -231,7 +235,7 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
             'sorts',
         ): (attributes.update_attribute, 'partial_put'),
         'relationships': (hierarchies.update_attribute_relationships, 'partial_put'),
-        ('folder_id', 'hidden'): (objects.update_object, 'partial_put'),
+        ('folder_id', 'hidden'): (objects_processors.update, 'partial_put'),
     }
     _FROM_DICT_MAP = {
         **Entity._FROM_DICT_MAP,
@@ -383,10 +387,10 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
                 by `connection.Connection()`
             name: attribute's name
             sub_type: attribute's sub_type
-            destination_folder_id: A globally unique identifier used to
+            destination_folder: A globally unique identifier used to
                 distinguish between metadata objects within the same project.
                 It is possible for two metadata objects in different projects
-                to have the same Object Id.
+                to have the same Object ID.
             forms: attribute's forms list
             key_form: a key form of an attribute
             displays: The collections of attribute displays and browse displays
@@ -407,6 +411,8 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
                 Available values:
                 - `ExpressionFormat.TREE` or `tree` (default)
                 - `ExpressionFormat.TOKENS or `tokens`
+            hidden (bool, optional): Specifies whether the object is hidden.
+                Default value: False.
 
         Returns:
             Attribute class object.
@@ -510,41 +516,43 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
             show_expression_as=show_expression_as,
         )
 
-    def _init_variables(self, **kwargs) -> None:
-        super()._init_variables(**kwargs)
-        self._sub_type = kwargs.get('sub_type')
-        self._is_embedded = kwargs.get('is_embedded')
-        self._destination_folder_id = kwargs.get('destination_folder_id')
+    def _init_variables(self, default_value, **kwargs) -> None:
+        super()._init_variables(default_value=default_value, **kwargs)
+        self._sub_type = kwargs.get('sub_type', default_value)
+        self._is_embedded = kwargs.get('is_embedded', default_value)
+        self._destination_folder_id = kwargs.get('destination_folder_id', default_value)
         self._forms = (
             [
                 AttributeForm.from_dict(expr, self._connection)
                 for expr in kwargs.get('forms')
             ]
             if kwargs.get('forms')
-            else None
+            else default_value
         )
         self._attribute_lookup_table = (
             SchemaObjectReference.from_dict(kwargs.get('attribute_lookup_table'))
             if kwargs.get('attribute_lookup_table')
-            else None
+            else default_value
         )
         self._key_form = (
             FormReference.from_dict(kwargs.get('key_form'))
             if kwargs.get('key_form')
-            else None
+            else default_value
         )
         self._displays = (
             AttributeDisplays.from_dict(kwargs.get('displays'))
             if kwargs.get('displays')
-            else None
+            else default_value
         )
         self._sorts = (
             AttributeSorts.from_dict(kwargs.get('sorts'))
             if kwargs.get('sorts')
-            else None
+            else default_value
         )
         self._relationships = (
-            [kwargs.get('relationships')] if kwargs.get('relationships') else None
+            [kwargs.get('relationships')]
+            if kwargs.get('relationships')
+            else default_value
         )
         show_expression_as = kwargs.get('show_expression_as', 'tree')
         self._show_expression_as = (
@@ -594,16 +602,6 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
             relationships: the list of relationships that one attribute has.
             hidden: Specifies whether the attribute is hidden.
         """
-        # REST doesn't return hidden attribute if its value is False.
-        # If attribute is not present in response, the mstrio engine
-        # interprets this as 'no value' and sets its value to None.
-        # But if attribute's value is not None, and REST returns nothing
-        # the engine does nothing, and doesn't change its value.
-        # So if 'hidden' has value True, and is changed to False,
-        # the REST will return nothing, and locally its value will stay True.
-        # This line is to update local value of 'hidden'.
-        self._hidden = hidden
-
         key_form = self.validate_key_form(
             key_form or self.key_form, forms or self.forms
         )
@@ -1230,7 +1228,3 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
     @property
     def relationships(self):
         return self._relationships
-
-    @property
-    def hidden(self):
-        return self._hidden or False

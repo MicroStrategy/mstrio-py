@@ -1,6 +1,6 @@
 from requests.exceptions import SSLError
 
-from mstrio.utils.helper import exception_handler, response_handler
+from mstrio.utils.helper import response_handler
 
 
 def server_status(connection):
@@ -12,19 +12,14 @@ def server_status(connection):
     """
 
     try:
-        response = connection.get(
-            skip_expiration_check=True, url=connection.base_url + '/api/status'
-        )
-    except SSLError:
-        exception_handler(
-            (
-                "SSL certificate error.\nPlease double check that the link you "
-                "are using comes from a trusted source. If you trust the URL "
-                "provided please specify parameter 'ssl_verify' to 'False' in the "
-                "'Connection' class.\n\nCheck readme for more details."
-            ),
-            SSLError,
-        )
+        response = connection.get(skip_expiration_check=True, endpoint='/api/status')
+    except SSLError as exc:
+        raise SSLError(
+            "SSL certificate error.\nPlease double check that the link you "
+            "are using comes from a trusted source. If you trust the URL "
+            "provided please specify parameter 'ssl_verify' to 'False' in the "
+            "'Connection' class.\n\nCheck readme for more details."
+        ) from exc
 
     if not response.ok:
         response_handler(response, "Failed to check server status")

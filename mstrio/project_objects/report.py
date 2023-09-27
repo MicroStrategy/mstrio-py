@@ -4,7 +4,6 @@ from packaging import version
 from tqdm.auto import tqdm
 
 from mstrio import config
-from mstrio.api import objects
 from mstrio.api import reports as reports_api
 from mstrio.api.schedules import get_contents_schedule
 from mstrio.connection import Connection
@@ -32,7 +31,9 @@ from mstrio.utils.helper import (
     sort_object_properties,
 )
 from mstrio.utils.parser import Parser
+from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.sessions import FuturesSessionWithRenewal
+from mstrio.utils.translation_mixin import TranslationMixin
 
 
 def list_reports(
@@ -109,11 +110,22 @@ def list_reports(
     ]
     if to_dictionary:
         return reports
-    return [Report.from_dict(report_dict, connection) for report_dict in reports]
+    return [
+        Report.from_dict(
+            source=report_dict, connection=connection, with_missing_value=True
+        )
+        for report_dict in reports
+    ]
 
 
 class Report(
-    Entity, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin, ContentCacheMixin
+    Entity,
+    CertifyMixin,
+    CopyMixin,
+    MoveMixin,
+    DeleteMixin,
+    ContentCacheMixin,
+    TranslationMixin,
 ):
     """Access, filter, publish, and extract data from in-memory reports.
 
@@ -175,8 +187,10 @@ class Report(
     _SIZE_LIMIT = 10000000  # this sets desired chunk size in bytes
 
     _API_PATCH: dict = {
-        **Entity._API_PATCH,
-        ('folder_id',): (objects.update_object, 'partial_put'),
+        ('name', 'description', 'abbreviation', 'hidden', 'folder_id'): (
+            objects_processors.update,
+            'partial_put',
+        )
     }
 
     def __init__(
@@ -202,7 +216,11 @@ class Report(
             progress_bar(bool, optional): If True (default), show the download
                 progress bar.
         """
+        if not id:
+            raise ValueError("Report ID cannot be an empty string.")
+
         connection._validate_project_selected()
+
         super().__init__(
             connection,
             id,
@@ -211,8 +229,8 @@ class Report(
             progress_bar=progress_bar,
         )
 
-    def _init_variables(self, **kwargs):
-        super()._init_variables(**kwargs)
+    def _init_variables(self, default_value, **kwargs):
+        super()._init_variables(default_value=default_value, **kwargs)
         self.instance_id = kwargs.get("instance_id")
         self._parallel = kwargs.get("parallel", True)
         self._initial_limit = 1000
@@ -233,6 +251,7 @@ class Report(
         name: str | None = None,
         description: str | None = None,
         abbreviation: str | None = None,
+        hidden: bool | None = None,
     ):
         """Alter Report properties.
 
@@ -240,6 +259,7 @@ class Report(
             name: new name of the Report
             description: new description of the Report
             abbreviation: new abbreviation of the Report
+            hidden: Specifies whether the metric is hidden
         """
         func = self.alter
         args = func.__code__.co_varnames[: func.__code__.co_argcount]

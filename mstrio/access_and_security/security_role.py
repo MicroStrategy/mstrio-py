@@ -4,10 +4,12 @@ from typing import TYPE_CHECKING, Any, Union
 from pandas import DataFrame
 
 from mstrio import config
-from mstrio.api import objects, security
+from mstrio.api import security
 from mstrio.connection import Connection
 from mstrio.utils import helper
 from mstrio.utils.entity import DeleteMixin, Entity, ObjectTypes
+from mstrio.utils.response_processors import objects as objects_processors
+from mstrio.utils.translation_mixin import TranslationMixin
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
 if TYPE_CHECKING:
@@ -55,7 +57,7 @@ def list_security_roles(
 
 
 @class_version_handler('11.2.0000')
-class SecurityRole(Entity, DeleteMixin):
+class SecurityRole(Entity, DeleteMixin, TranslationMixin):
     """A security role is a set of privileges that can be assigned to users and
     reused from project to project. Security roles enable you to assign a
     unique set of privileges to users on a per project basis. They are created
@@ -99,7 +101,7 @@ class SecurityRole(Entity, DeleteMixin):
         ): security.get_security_role
     }
     _API_PATCH: dict = {
-        ('abbreviation'): (objects.update_object, 'partial_put'),
+        'abbreviation': (objects_processors.update, 'partial_put'),
         ('name', 'description'): (security.update_security_role, 'patch'),
     }
 
@@ -547,7 +549,7 @@ class SecurityRole(Entity, DeleteMixin):
 
         response = security.update_security_role(self.connection, self.id, body)
         response = response.json()
-        if type(response) == dict:
+        if isinstance(response, dict):
             self._set_object_attributes(**response)
 
     @property

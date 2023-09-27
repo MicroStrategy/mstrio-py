@@ -189,7 +189,7 @@ class Environment:
             return compare_project_settings(projects, show_diff_only)
 
         all_projects = self.list_projects()
-        if type(projects) == list:
+        if isinstance(projects, list):
             if len(projects) < 2:
                 helper.exception_handler(
                     "Provide more than one project object or name in list",
