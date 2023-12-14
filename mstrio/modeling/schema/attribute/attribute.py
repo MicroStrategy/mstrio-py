@@ -602,6 +602,9 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin, TranslationMixin):  #
             relationships: the list of relationships that one attribute has.
             hidden: Specifies whether the attribute is hidden.
         """
+        name = name if name else self.name
+        hidden = hidden if self.hidden != hidden else None
+
         key_form = self.validate_key_form(
             key_form or self.key_form, forms or self.forms
         )
@@ -778,6 +781,7 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin, TranslationMixin):  #
         key_form_expressions = [
             expr
             for form in self.forms
+            if form.expressions
             if form.id == self.key_form.id
             for expr in form.expressions
         ]

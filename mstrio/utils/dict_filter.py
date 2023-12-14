@@ -1,3 +1,4 @@
+import fnmatch
 import logging
 from collections.abc import Callable, Iterable
 from enum import Enum
@@ -6,7 +7,9 @@ from typing import TYPE_CHECKING, Any, TypeVar, Union
 if TYPE_CHECKING:
     from mstrio.utils.entity import EntityBase
 
-    SupportedExpression = Union[list, str, dict, int, float, bool, EntityBase, Enum]
+    SupportedExpression = Union[
+        list, str, dict, int, float, bool, EntityBase, Enum, tuple
+    ]
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +28,7 @@ IS = 'is'
 IN = 'in'
 DICT_COMPARE = 'dict'
 ENTITY_COMPARE = 'entity'
+STARTS = 'starts'
 
 
 def check_valid_param(dict_object: dict[KT, VT], params: Iterable) -> None:
@@ -61,7 +65,7 @@ def parse_filter_expression(param: str, expression: SupportedExpression) -> tupl
         filter_value = expression
     elif isinstance(expression, str):
         # extract the operation from the expression if it exists
-        if expression and expression[0] in [SMALLER, LARGER, NOT, EQUAL]:
+        if expression and expression[0] in [SMALLER, LARGER, NOT, EQUAL, STARTS]:
             op = expression[0]
             if expression[0] in [SMALLER, LARGER, NOT] and expression[1] == EQUAL:
                 op += expression[1]
@@ -86,10 +90,12 @@ def parse_filter_expression(param: str, expression: SupportedExpression) -> tupl
     elif isinstance(expression, EntityBase):
         op = ENTITY_COMPARE
         filter_value = expression
+    elif isinstance(expression, tuple):
+        op, filter_value = expression
     else:
         raise TypeError(
             f"'{param}' filter value must be either a string, "
-            "bool, int, float dict or list"
+            "bool, int, float, dict, tuple or list"
         )
     return (op, filter_value)
 
@@ -161,6 +167,8 @@ def make_dict_filter(param: str, op: str, filter_value: Any) -> Callable:
             return value <= filter_value
         elif op == IN:
             return value in filter_value
+        elif op == STARTS:
+            return fnmatch.fnmatch(value, f'{filter_value}*')
         elif op == DICT_COMPARE:
             return all(
                 (

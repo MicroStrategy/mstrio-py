@@ -220,14 +220,14 @@ class EntityBase(helper.Dictable):
         if (
             attr is not None
         ):  # if attr is specified fetch endpoint matched to the attribute name
-            function = self._find_func(attr)
-            if not function:
+            function_ = self._find_func(attr)
+            if not function_:
                 raise ValueError(
                     f"The attribute `{attr}` cannot be fetched for this object"
                 )
             else:
                 functions = {
-                    attr: func for attr, func in functions.items() if func == function
+                    attr: func for attr, func in functions.items() if func == function_
                 }
 
         for key, func in functions.items():  # call respective API getters
@@ -436,9 +436,14 @@ class EntityBase(helper.Dictable):
 
             setattr(self, key, val)
 
-    def list_properties(self) -> dict:
+    def list_properties(self, excluded_properties: list[str] | None = None) -> dict:
         """Fetches all attributes from the server and converts all properties of
         the object to a dictionary.
+
+        Args:
+            excluded_properties (list[str], optional): A list of
+                object properties that should be excluded from the dict.
+                Defaults to None.
 
         Returns:
             dict: A dictionary which keys are object's attribute names, and
@@ -449,9 +454,10 @@ class EntityBase(helper.Dictable):
             for a in attr:
                 with contextlib.suppress(VersionException):
                     getattr(self, a)
-
         properties = inspect.getmembers(
-            self.__class__, lambda x: isinstance(x, property)
+            self.__class__,
+            lambda x: isinstance(x, property)
+            and x.fget.__name__ not in (excluded_properties or []),
         )
         properties = {elem[0]: elem[1].fget(self) for elem in properties}
         attributes = {
@@ -601,7 +607,7 @@ class EntityBase(helper.Dictable):
             TypeError: If `objects` is not of type `T` or list of type `T`
             objects.
         """
-        file = joinpath(path, name) if path else name
+        file_ = joinpath(path, name) if path else name
         list_of_objects = []
         if not name.endswith('.csv'):
             msg = (
@@ -627,13 +633,13 @@ class EntityBase(helper.Dictable):
             else:
                 list_of_objects.append(obj.list_properties())
 
-        with open(file, 'w') as f:
+        with open(file_, 'w') as f:
             fieldnames = list_of_objects[0].keys()
             w = csv.DictWriter(f, fieldnames=fieldnames)
             w.writeheader()
             w.writerows(list_of_objects)
         if config.verbose:
-            logger.info(f"Object exported successfully to '{file}'")
+            logger.info(f"Object exported successfully to '{file_}'")
 
     def update_properties(self) -> None:
         """Save compatible local changes of the object attributes to the
@@ -778,7 +784,6 @@ class EntityBase(helper.Dictable):
 
             if response:
                 changed.append(True)
-
                 json = (
                     response if isinstance(response, (dict, list)) else response.json()
                 )
@@ -1011,6 +1016,7 @@ class Entity(EntityBase, ACLMixin, DependenceMixin):
         icon_path: Object icon path
         view_media: View media settings
         ancestors: List of ancestor folders
+        location: path to the Object
         certified_info: Certification status, time of certification, and
             information about the certifier (currently only for document and
             report)
@@ -1064,6 +1070,7 @@ class Entity(EntityBase, ACLMixin, DependenceMixin):
         'date_modified': DatetimeFormats.FULLDATETIME,
         'acl': [ACE.from_dict],
         'acg': Rights,
+        'location': str,
     }
 
     def _init_variables(self, default_value=None, **kwargs) -> None:
@@ -1103,6 +1110,7 @@ class Entity(EntityBase, ACLMixin, DependenceMixin):
         self._icon_path = kwargs.get("icon_path", default_value)
         self._view_media = kwargs.get("view_media", default_value)
         self._ancestors = kwargs.get("ancestors", default_value)
+        self._location = None
         self._certified_info = (
             CertifiedInfo.from_dict(kwargs.get("certified_info"), self.connection)
             if kwargs.get("certified_info")
@@ -1118,6 +1126,10 @@ class Entity(EntityBase, ACLMixin, DependenceMixin):
             if kwargs.get("acl")
             else default_value
         )
+
+    def get(self, name):
+        """Get object's attribute by its name."""
+        return getattr(self, name)
 
     @property
     def subtype(self) -> ObjectSubTypes:
@@ -1182,6 +1194,15 @@ class Entity(EntityBase, ACLMixin, DependenceMixin):
     @property
     def target_info(self) -> dict:
         return self._target_info
+
+    @property
+    def location(self) -> str:
+        if self.ancestors and not self._location:
+            self._location = ''
+            for anc in self.ancestors:
+                self._location += '/' + anc.get('name')
+            self._location += '/' + self.name
+        return self._location
 
 
 class CopyMixin:

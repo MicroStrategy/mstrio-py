@@ -417,6 +417,7 @@ def fetch_objects_async(
             response = f.result()
             if not response.ok:
                 response_handler(response, error_msg, throw_error=False)
+                continue
             objects = _prepare_objects(response.json(), filters, dict_unpack_value)
             all_objects.extend(objects)
     return all_objects

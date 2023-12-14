@@ -1026,7 +1026,7 @@ class Subscription(EntityBase):
                 msg = (
                     f"'{recipient}' is not a valid recipient ID for selected content "
                     "and delivery mode. Available recipients: \n"
-                    f"{pformat(available_recipients,indent=2)}"
+                    f"{pformat(available_recipients, indent=2)}"
                 )
                 helper.exception_handler(msg, ValueError)
 

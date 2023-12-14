@@ -5,9 +5,10 @@ This script will not work without replacing parameters with real values.
 Its basic goal is to present what can be done with this module and to
 ease its usage.
 """
-
+from mstrio.datasources import DatasourceInstance
 from mstrio.server import compare_project_settings, Environment, Project
 from mstrio.connection import get_connection
+from mstrio.server.setting_types import FailedEmailDelivery
 
 # Define a variable which can be later used in a script
 PROJECT_NAME = $project_name  # Insert name of project to interact with
@@ -81,6 +82,13 @@ project1 = Project(connection=conn, name=PROJECT_1_NAME)
 project2 = Project(connection=conn, name=PROJECT_2_NAME)
 df_cmp = compare_project_settings(projects=[project, project1, project2], show_diff_only=True)
 
+# Get the list of all settings and their values
+project_settings = project.settings.list_properties()
+# Get the list of all settings and their values with the settings description
+project_settings_with_description = project.settings.list_properties(show_description=True)
+# Get the list of all settings configuration (type, min/max value, options, etc.)
+project_settings_types = project.settings.setting_types
+
 # Define variables which can be later used in a script
 CSV_FILE_EXPORT = $csv_file_export  # Name of file to which settings are exported
 CSV_FILE_IMPORT = $csv_file_import  # Name of file from which settings are imported
@@ -88,10 +96,22 @@ CSV_FILE_IMPORT = $csv_file_import  # Name of file from which settings are impor
 # save/load settings of a project to/from a file (format can be 'csv',
 # 'json' or 'pickle')
 project.settings.to_csv(name=CSV_FILE_EXPORT)
+# Export settings of a project to a csv file with the settings description
+project.settings.to_csv(name=CSV_FILE_EXPORT, show_description=True)
 project.settings.import_from(file=CSV_FILE_IMPORT)
 
 # change a setting of a project
 project.settings.cubeIndexGrowthUpperBound = 501
+
+# Change setting with the use of Enum
+project.settings.appendInfoForEmailDelivery = [
+    FailedEmailDelivery.SUBSCRIPTION_NAME,
+    FailedEmailDelivery.SUBSCRIPTION_RECIPIENT_NAME,
+    FailedEmailDelivery.DELIVERY_STATUS,
+    FailedEmailDelivery.DELIVERY_EMAIL_ADDRESS,
+]
+# Update multiple settings at once
+project.settings.alter(maxEmailSubscriptionCount=100, maxExecutingJobsPerUser=50)
 project.settings.update()
 
 # print currently set value of Unified Quoting Behavior VldbSetting
@@ -110,3 +130,12 @@ for project in env.list_projects():
 NEW_DATA_ENGINE_VERSION = $new_data_engine_version # Insert number related to new data engine version
 for project in env.list_projects():
     project.update_data_engine_version(NEW_DATA_ENGINE_VERSION)
+
+# Define variables which can be later used in a script
+DATASOURCE_ID = $datasource_id  # Insert ID of datasource to add to project
+# Get datasource instance with a given ID
+datasource = DatasourceInstance(connection=conn, id=DATASOURCE_ID)
+# Add datasource to project
+project.add_datasource(datasources=[datasource])
+# Remove datasource from project
+project.remove_datasource(datasources=[datasource])

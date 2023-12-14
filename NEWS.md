@@ -1,6 +1,44 @@
 
 # Changelog
 
+## 11.3.12.101 - 2023/12/15
+
+### New features
+- changed `list_users` to allow filtering on `enabled` field
+- added support for `ldapdn`, `language`,`owner` and `default_timezone` for `Users`
+- added support for `ldapdn` for `UserGroups`
+- added `add_datasource()` and `remove_datasource()` methods to `Project` class to allow 
+  adding and removing datasources from the project
+- added `data_language_settings` and `metadata_language_settings` properties to `Project` class 
+  to allow interacting with project internalization:
+  - `add_language()`, `alter_language()`, `remove_language()`, `alter_current_mode()`, 
+  `alter_default_language()` methods for the `data_language_settings` property
+  - `add_language()`, `remove_language()` for the `metadata_language_settings` property
+- added new optional argument `show_description` to `ProjectSettings.list_properties()`,
+  `ProjectSettings.to_csv()`, `ServerSettings.list_properties()`, `ServerSettings.to_csv()`
+  to show description for each setting
+- added `Enums` in `mstrio.server.setting_types` to allow altering `Enum` settings by providing
+  `Enum` values instead of `string`
+
+### Minor changes
+- updated code snippets for datasources to use `Language` class and `list_languages` function from `mstrio.server.language` package
+  instead of `Locale` class and `list_locales` function
+- members in user groups are now instances of `User` or `UserGroup` class instead of dictionaries
+- addresses in `User` class are now instances of `Address` class instead of dictionaries
+
+### Bug fixes
+- changed endpoint of `list_users`, allowing for listing users in environments with large number of users more efficiently
+
+### Deprecated
+- possibility of providing `initials` as a filter in `list_users` is deprecated and will be removed in the future
+
+### Removed
+- removed `Locale` class and `list_locales` function from `mstrio.datasources.datasource_map` module
+- removed `update()` method from `OlapCube` class
+- removed `mstrio.api.exceptions` and `mstrio.helpers.exceptions` modules
+- removed `overwrite`, `attributes` and `meterics` parameters in `OlapCube.create()` method
+- removed ability to pass instance of `Locale` class as argument in `mstrio.datasources.datasource_map` module
+
 ## 11.3.11.101 - 2023/09/28
 
 ### New features

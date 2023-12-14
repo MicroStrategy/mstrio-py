@@ -12,12 +12,9 @@ from mstrio.datasources import (
     DatasourceMap,
     DatasourceType,
     Dbms,
-    DBType,
     Driver,
     ExecutionMode,
     Gateway,
-    GatewayType,
-    Locale,
     list_available_dbms,
     list_datasource_connections,
     list_datasource_instances,
@@ -25,10 +22,9 @@ from mstrio.datasources import (
     list_datasource_mappings,
     list_drivers,
     list_gateways,
-    list_locales,
 )
 from mstrio.connection import get_connection
-
+from mstrio.server import list_languages, Language
 
 # Define variables which can be later used in a script
 PROJECT_ID = $project_id  # Project ID to connect to
@@ -303,25 +299,20 @@ for ds_id in DATASOURCE_INSTANCE_ID_DSN_LIST:
 # Manage connection mappings
 
 # List all locales
-locales_list = list_locales(connection=conn)
-print(locales_list)
+language_list = list_languages(connection=conn)
+print(language_list)
 
 # Define variables which can be later used in a script
-LOCALE_ID = $locale_id
-LOCALE_NAME = $locale_name
-LOCALE_ABBREVIATION = $locale_abbreviation
+LANGUAGE_ID = $language_id
+LANGUAGE_NAME = $language_name
 
-# Initialize locale object by id
-locale = Locale(conn, id=LOCALE_ID)
-print(locale)
+# Initialize language object by id
+language = Language(conn, id=LANGUAGE_ID)
+print(language)
 
-# Initialize locale object by name
-locale = Locale(conn, name=LOCALE_NAME)
-print(locale)
-
-# Initialize locale object by abbreviation
-locale = Locale(conn, abbreviation=LOCALE_ABBREVIATION)
-print(locale)
+# Initialize language object by name
+language = Language(conn, name=LANGUAGE_NAME)
+print(language)
 
 # List all connection mappings
 connection_mapping_list = list_datasource_mappings(connection=conn)
@@ -360,24 +351,17 @@ connection_mapping_list = list_datasource_mappings(
 )
 print(connection_mapping_list)
 
-# List connection mappings filtered by locale ID
+# List connection mappings filtered by language ID
 connection_mapping_list = list_datasource_mappings(
     connection=conn,
-    locale=LOCALE_ID,
+    locale=LANGUAGE_ID,
 )
 print(connection_mapping_list)
 
-# List connection mappings filtered by locale name
+# List connection mappings filtered by language name
 connection_mapping_list = list_datasource_mappings(
     connection=conn,
-    locale=LOCALE_NAME,
-)
-print(connection_mapping_list)
-
-# List connection mappings filtered by locale abbreviation
-connection_mapping_list = list_datasource_mappings(
-    connection=conn,
-    locale=LOCALE_ABBREVIATION,
+    locale=LANGUAGE_NAME,
 )
 print(connection_mapping_list)
 
@@ -433,7 +417,7 @@ connection_mapping = DatasourceMap.create(
     ds_connection=DATASOURCE_CONNECTION_ID,
     datasource=DATASOURCE_INSTANCE_ID,
     login=DATASOURCE_LOGIN_ID,
-    locale=LOCALE_ID
+    locale=LANGUAGE_ID
 )
 print(connection_mapping)
 
@@ -445,19 +429,7 @@ connection_mapping = DatasourceMap.create(
     ds_connection=DATASOURCE_CONNECTION_ID,
     datasource=DATASOURCE_INSTANCE_ID,
     login=DATASOURCE_LOGIN_ID,
-    locale=LOCALE_NAME
-)
-print(connection_mapping)
-
-# Create a connection mapping with locale's abbreviation
-connection_mapping = DatasourceMap.create(
-    connection=conn,
-    project=PROJECT_ID,
-    user=USER_OR_USER_GROUP_ID,
-    ds_connection=DATASOURCE_CONNECTION_ID,
-    datasource=DATASOURCE_INSTANCE_ID,
-    login=DATASOURCE_LOGIN_ID,
-    locale=LOCALE_ABBREVIATION
+    locale=LANGUAGE_NAME
 )
 print(connection_mapping)
 
@@ -476,15 +448,11 @@ connection_mapping.alter(
 print(connection_mapping)
 
 # Alter connection mapping's locale by id
-connection_mapping.alter(locale=LOCALE_ID)
+connection_mapping.alter(locale=LANGUAGE_ID)
 print(connection_mapping)
 
 # Alter connection mapping's locale by name
-connection_mapping.alter(locale=LOCALE_NAME)
-print(connection_mapping)
-
-# Alter connection mapping's locale by abbreviation
-connection_mapping.alter(locale=LOCALE_ABBREVIATION)
+connection_mapping.alter(locale=LANGUAGE_NAME)
 print(connection_mapping)
 
 # Delete a connection mapping

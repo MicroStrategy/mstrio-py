@@ -56,9 +56,9 @@ def get_recipients(
 
 @ErrorHandler(err_msg="Error getting information for a set of users")
 def get_users_info(
-    connection,
-    name_begins,
-    abbreviation_begins,
+    connection: 'Connection',
+    name_begins: str,
+    abbreviation_begins: str,
     offset=0,
     limit=-1,
     fields=None,
@@ -528,3 +528,40 @@ def get_security_filters(
 
     params = {'projects.id': projects, 'offset': offset, 'limit': limit}
     return connection.get(endpoint=endpoint, params=params)
+
+
+@ErrorHandler(err_msg="Error getting settings for user with ID {id}")
+def get_settings(connection: 'Connection', id: str, fields=None):
+    """Get all of the additional settings for a specific user.
+
+    Args:
+        connection (object): MicroStrategy connection object returned by
+            `connection.Connection()`.
+        id (str): User ID.
+        fields (list, optional): Comma separated top-level field whitelist. This
+            allows client to selectively retrieve part of the response model.
+
+    Returns:
+        HTTP response object returned by the MicroStrategy REST server.
+    """
+
+    return connection.get(
+        endpoint=f'/api/users/{id}/settings', params={'fields': fields}
+    )
+
+
+@ErrorHandler(err_msg="Error patching settings for user with ID {id}")
+def update_user_settings(connection: 'Connection', id: str, json: dict = None):
+    """Update additional settings for a specific user.
+
+    Args:
+        connection (object): MicroStrategy connection object returned by
+            `connection.Connection()`.
+        id (str): User ID.
+        fields (list, optional): Comma separated top-level field whitelist. This
+            allows client to selectively retrieve part of the response model.
+
+    Returns:
+        HTTP response object returned by the MicroStrategy REST server.
+    """
+    return connection.patch(endpoint=f'/api/users/{id}/settings', json=json)

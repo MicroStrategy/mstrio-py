@@ -108,16 +108,16 @@ class Language(Entity, DeleteMixin, TranslationMixin):
                 years: use the letter y
             To specify 12 hour clock use AM/PM afterwards, example: h:mm AM/PM
 
-        Examples of default formatting settings:
+         Default formatting settings examples:
             minutes15: h:mm AM/PM -> 9:44 AM
             minutes30: h:mm AM/PM -> 9:44 AM
             hour: h:mm AM/PM -> 9:44 AM
-            day" M/d -> 7/26
+            day: M/d -> 7/26
             week: M/d -> 7/26
             hour_of_day: h:mm AM/PM -> 9:44 AM
             month: MMM -> Jul
             quarter: qqq -> Q3
-            year=: yyyy -> 2023"""
+            year: yyyy -> 2023"""
 
         minutes15: str
         minutes30: str

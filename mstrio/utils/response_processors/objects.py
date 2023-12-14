@@ -54,7 +54,7 @@ def update(connection, id: str, body: dict, object_type: int, project_id: str = 
     Returns:
         HTTP response object returned by the MicroStrategy REST server.
     """
-
+    body['ownerId'] = body.pop('owner') if body.get('owner') else None
     obj_info = objects_api.update_object(
         connection, id, body, object_type, project_id
     ).json()

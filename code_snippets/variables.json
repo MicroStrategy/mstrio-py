@@ -374,15 +374,11 @@
       "type": "text",
       "multiple": true
     },
-    "locale_id": {
+    "language_id": {
       "type": "text",
       "multiple": false
     },
-    "locale_name": {
-      "type": "text",
-      "multiple": false
-    },
-    "locale_abbreviation": {
+    "language_name": {
       "type": "text",
       "multiple": false
     },
@@ -955,6 +951,10 @@
       "multiple": false
     },
     "new_data_engine_version": {
+      "type": "text",
+      "multiple": false
+    },
+    "datasource_id": {
       "type": "text",
       "multiple": false
     }
@@ -1875,6 +1875,64 @@
       "multiple": false
     },
     "cube_id": {
+      "type": "text",
+      "multiple": false
+    }
+  },
+  "project_languages_mgmt.py": {
+    "project_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "data_language_id_1": {
+      "type": "text",
+      "multiple": false
+    },
+    "data_language_name_1": {
+      "type": "text",
+      "multiple": false
+    },
+    "data_language_column_1": {
+      "type": "text",
+      "multiple": false
+    },
+    "data_language_table_1": {
+      "type": "text",
+      "multiple": false
+    },
+    "data_language_column_1_altered": {
+      "type": "text",
+      "multiple": false
+    },
+    "alter_path": {
+      "type": "text",
+      "multiple": false
+    },
+    "data_language_id_2": {
+      "type": "text",
+      "multiple": false
+    },
+    "data_language_name_2": {
+      "type": "text",
+      "multiple": false
+    },
+    "data_language_connection_id_2": {
+      "type": "text",
+      "multiple": false
+    },
+    "meta_language_id_1": {
+      "type": "text",
+      "multiple": false
+    },
+    "meta_language_name_1": {
+      "type": "text",
+      "multiple": false
+    },
+    "meta_language_id_2": {
+      "type": "text",
+      "multiple": false
+    },
+    "meta_language_name_2": {
       "type": "text",
       "multiple": false
     }

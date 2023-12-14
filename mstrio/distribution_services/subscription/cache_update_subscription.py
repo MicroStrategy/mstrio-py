@@ -138,7 +138,7 @@ class CacheUpdateSubscription(Subscription):
         )
 
     def alter(
-        cls,
+        self,
         name: str | None = None,
         allow_delivery_changes: bool | None = None,
         allow_personalization_changes: bool | None = None,

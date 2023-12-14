@@ -1,6 +1,8 @@
+from mstrio.api import usergroups as usergroups_api
 from mstrio.api import users as users_api
 from mstrio.connection import Connection
-from mstrio.utils.helper import fetch_objects_async
+from mstrio.utils.helper import deprecation_warning, fetch_objects, fetch_objects_async
+from mstrio.utils.version_helper import method_version_handler
 
 
 def get(connection: Connection, id: str):
@@ -40,6 +42,19 @@ def get_security_roles(connection: Connection, id: str):
         dict representing user security roles
     """
     return users_api.get_user_security_roles(connection=connection, id=id).json()
+
+
+def get_settings(connection: Connection, id: str):
+    """Get settings for a specified user.
+
+    Args:
+        connection: MicroStrategy REST API connection object
+        id: ID of the user
+
+    Returns:
+        dict representing user security roles
+    """
+    return users_api.get_settings(connection=connection, id=id).json()
 
 
 def get_privileges(connection: Connection, id: str):
@@ -91,7 +106,7 @@ def get_all(
     msg: str,
     name_begins: str,
     abbreviation_begins: str,
-    filters,
+    filters: dict,
 ):
     """Get list of users.
 
@@ -106,16 +121,44 @@ def get_all(
     Returns:
         list of dicts representing users
     """
-    return fetch_objects_async(
+    if filters.get('initials'):
+        deprecation_warning(
+            deprecated="possibility of providing 'initials' as a filter",
+            new="New options to filter on 'full_name' and 'enabled' fields instead",
+            version="11.3.13.101",
+            module=False,
+        )
+        return fetch_objects_async(
+            connection=connection,
+            api=users_api.get_users_info,
+            async_api=users_api.get_users_info_async,
+            limit=limit,
+            chunk_size=1000,
+            error_msg=msg,
+            name_begins=name_begins,
+            abbreviation_begins=abbreviation_begins,
+            filters=filters,
+        )
+    if filters.get('name') or name_begins:
+        name_begins_filter = ('starts', name_begins) if name_begins else None
+
+        filters['name'] = filters.get('name') or name_begins_filter
+
+    if filters.get('abbreviation') or abbreviation_begins:
+        abbreviation_begins_filter = (
+            ('starts', abbreviation_begins) if abbreviation_begins else None
+        )
+        filters['abbreviation'] = (
+            filters.get('abbreviation') or abbreviation_begins_filter
+        )
+    # Getting information from members of 'Everyone' user group
+    return fetch_objects(
         connection=connection,
-        api=users_api.get_users_info,
-        async_api=users_api.get_users_info_async,
+        api=usergroups_api.get_members,
         limit=limit,
-        chunk_size=1000,
         error_msg=msg,
-        name_begins=name_begins,
-        abbreviation_begins=abbreviation_begins,
         filters=filters,
+        id='C82C6B1011D2894CC0009D9F29718E4F',
     )
 
 
@@ -194,3 +237,23 @@ def get_security_filters(connection: Connection, id: str, projects: str | list[s
     return users_api.get_security_filters(
         connection=connection, id=id, projects=projects
     ).json()
+
+
+@method_version_handler('11.3.0700')
+def update_user_settings(connection: Connection, id: str, body: str):
+    """Update user settings.
+
+    Args:
+        connection: MicroStrategy REST API connection object
+        id: ID of the user
+
+    Returns:
+        True if successfully updated, False otherwise
+    """
+    response = users_api.update_user_settings(connection=connection, id=id, json=body)
+    if response.ok:
+        # Body is returned as endpoint returns 204 with empty response, which
+        # would fail when using response.json() .
+        # In order to alter user correctly, we return body to reflect changes
+        return body
+    return response

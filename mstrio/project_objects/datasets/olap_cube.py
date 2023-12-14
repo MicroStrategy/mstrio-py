@@ -15,7 +15,6 @@ from mstrio.object_management import SearchPattern, full_search
 from mstrio.types import ExtendedType, ObjectSubTypes, ObjectTypes
 from mstrio.utils.enum_helper import get_enum_val
 from mstrio.utils.helper import (
-    deprecation_warning,
     exception_handler,
     filter_params_for_func,
     get_valid_project_id,
@@ -28,7 +27,7 @@ from mstrio.utils.version_helper import (
 )
 from mstrio.utils.vldb_mixin import ModelVldbMixin
 
-from .cube import _Cube, load_cube
+from .cube import _Cube
 from .helpers import (
     AdvancedProperties,
     AttributeTemplateUnit,
@@ -436,9 +435,6 @@ class OlapCube(ModelVldbMixin, _Cube):
         name: str,
         folder_id: str,
         description: str | None = None,
-        overwrite: bool | None = None,
-        attributes: list[dict] | None = None,
-        metrics: list[dict] | None = None,
         template: Template | dict | None = None,
         filter: Expression | dict | None = None,
         options: CubeOptions | dict | None = None,
@@ -468,16 +464,6 @@ class OlapCube(ModelVldbMixin, _Cube):
             name (str): OLAP Cube name.
             folder_id (str): ID of the folder where OLAP Cube should be saved.
             description (str, optional): OLAP Cube description.
-            overwrite (bool, optional): Default value (False) not allow to
-                overwrite the object with the same name.
-            attributes (list[dict], optional): List with dicts of attributes
-                dicts to be in the working set of OLAP Cube. Each attribute dict
-                should have keys: `id`, `name` and `type`. Attributes can be
-                found with method `OlapCube.available_attributes`.
-            metrics (list[dict], optional): List with dicts of metrics to be
-                in the working set of OLAP Cube. Each metric dict should have
-                keys: `id`, `name` and `type`. Metrics can be found with
-                method `OlapCube.available_metrics`.
             template (Template, dict, optional): Template defining
                 OLAP Cube structure with references to attributes in
                 rows and to metrics in columns.
@@ -520,41 +506,6 @@ class OlapCube(ModelVldbMixin, _Cube):
             Newly created OLAP Cube or None in case of incorrectly provided
                 arguments.
         """
-
-        if attributes or metrics or overwrite:
-            attributes = attributes or []
-            metrics = metrics or []
-
-            OlapCube.__check_objects(attributes, 'attribute')
-            OlapCube.__check_objects(metrics, 'metric')
-
-            definition = {
-                'availableObjects': {'attributes': attributes, 'metrics': metrics}
-            }
-            cube_id = cubes.create(
-                connection, name, folder_id, overwrite, description, definition
-            ).json()['id']
-
-            deprecation_warning(
-                deprecated=(
-                    "possibility of providing 'attributes', 'metrics' and 'overwrite' "
-                    "parameters during cube creation process"
-                ),
-                new=(
-                    "new 'template', 'filter', 'options', 'advanced_properties' and "
-                    "'time_based_settings' parameters"
-                ),
-                version='11.3.11.101',  # NOSONAR
-                module=False,
-            )
-
-            logger.info(
-                f"Successfully created OLAP Cube named: '{name}' "
-                f"with ID: '{cube_id}'."
-            )
-
-            return load_cube(connection, cube_id)
-
         return cls.__create(
             connection=connection,
             name=name,
@@ -597,55 +548,6 @@ class OlapCube(ModelVldbMixin, _Cube):
             )
             raise ValueError(msg)
         return True
-
-    def update(self, attributes=None, metrics=None) -> bool:
-        """Update an OLAP Cube. When Cube is unpublished, then it is possible to
-         add or remove attributes and metrics to/from its definition and
-         rearrange existing one. When cube is published it is possible only to
-         rearrange attributes and metrics existing in its definition. After this
-         operation cube will have only attributes and metrics provided in
-         parameters.
-         Args:
-            attributes(list of dicts, optional): list with dicts of attributes
-                dicts to be in the working set of OLAP Cube. Each attribute dict
-                should have keys: `id`, `name` and `type`. Attributes can be
-                found with method `OlapCube.available_attributes`.
-            metrics(list of dicts, optional): list with dicts of metrics to be
-                in the working set of OLAP Cube. Each metric dict should have
-                keys: `id`, `name` and `type`. Metrics can be found with
-                method `OlapCube.available_metrics`.
-        Returns:
-            True when update was successful. False otherwise.
-        Raises:
-            `requests.exceptions.HTTPError` when response returned from request
-            to I-Server to update new OLAP Cube was not ok.
-        """
-
-        metrics = metrics or []
-        attributes = attributes or []
-
-        deprecation_warning(
-            deprecated="'update' method",
-            new="'alter' method",
-            version='11.3.11.101',  # NOSONAR
-            module=False,
-        )
-
-        if not OlapCube.__check_attributes_update(
-            attributes, self.attributes, self.status
-        ):
-            return False
-        if not OlapCube.__check_metrics_update(metrics, self.metrics, self.status):
-            return False
-
-        definition = {
-            'availableObjects': {'attributes': attributes, 'metrics': metrics},
-        }
-
-        res = cubes.update(self._connection, self._id, definition)
-        # refresh definition of cube
-        self._get_definition()
-        return res.ok
 
     @staticmethod
     def __check_attributes_update(

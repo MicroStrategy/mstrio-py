@@ -52,6 +52,7 @@ Since version **11.3.0.1**, **mstrio-py** includes also administration modules:
 
 - **Project** management module (see [code_snippets][code_snippet_project])
 with **VLDB settings** management (see [code_snippets][code_snippet_vldb])
+- **Project languages** management module (see [code_snippets][code_snippet_project_languages])
 - **Server** management module (see [code_snippets][code_snippet_server])
 - **User** and **User Group** management modules (see [code_snippets][code_snippet_user])
 - **Schedules** management module (see [code_snippets][code_snippet_schedules])
@@ -161,6 +162,8 @@ Error getting cube metadata information. I-Server Error ERR001, (ServiceManager:
 
 **Note**: MicroStrategy for Jupyter is not supported on Jupyter version 7 or above.
 
+**Note**: MicroStrategy for Jupyter is supported on Python 3.10 only.
+
 <a id="install-the-mstrio-py-package" name="install-the-mstrio-py-package"></a>
 ## Install the `mstrio-py` Package
 
@@ -186,7 +189,7 @@ jupyter nbextension enable connector-jupyter --py --sys-prefix
 <a id="versioning--changelog" name="versioning--changelog"></a>
 # Versioning & Changelog
 
-Current version: **11.3.11.101** (28 September 2023). Check out [**Changelog**][release_notes] to see what's new.
+Current version: **11.3.12.101** (15 December 2023). Check out [**Changelog**][release_notes] to see what's new.
 
 mstrio-py is constantly developed to support newest MicroStrategy REST APIs. Functionalities may be added to mstrio on monthly basis. It is **recommended** to always install the newest version of mstrio-py, as it will be most stable and still maintain backwards compatibility with various MicroStrategy installations, dating back to 11.1.4.
 
@@ -280,3 +283,4 @@ When features (modules, parameters, attributes, methods etc.) are marked for dep
 [code_snippet_vldb]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/vldb.py
 [code_snippet_languages]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/languages.py
 [code_snippet_translations]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/translations.py
+[code_snippet_project_languages]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/project_languages_mgmt.py

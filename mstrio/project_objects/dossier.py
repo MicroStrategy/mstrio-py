@@ -229,6 +229,7 @@ class Dossier(Document):
         name: str | None = None,
         description: str | None = None,
         folder_id: Folder | str | None = None,
+        hidden: bool | None = None,
     ):
         """Alter Dossier name, description and/or folder id.
 
@@ -239,8 +240,9 @@ class Dossier(Document):
                 used to distinguish between metadata objects within the same
                 project. It is possible for two metadata objects in different
                 projects to have the same Object Id.
+            hidden (bool, optional): specifies whether the dossier is hidden
         """
-        super().alter(name, description, folder_id)
+        super().alter(name, description, folder_id, hidden)
 
     def publish(self, recipients: UserOrGroup | list[UserOrGroup] | None = None):
         """Publish the dossier for authenticated user. If `recipients`

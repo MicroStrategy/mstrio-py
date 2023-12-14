@@ -1,0 +1,14 @@
+# peer dependency (dep of dep), but we need to force version for SEC
+urllib3 >= 2.0.7
+Jinja2 >= 3  # Optional dep of pandas, required for testing
+certifi >= 2023.7.22  # SEC safe version
+
+# Direct mstrio dependencies
+numpy >= 1.24.3
+packaging >= 23
+pandas >= 1.1.5
+pyhumps >= 3.8
+requests >= 2.31
+requests_futures >= 1.0.0
+stringcase >= 1.2
+tqdm >= 4.41

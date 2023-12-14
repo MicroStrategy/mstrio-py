@@ -1,22 +1,33 @@
 import logging
 import time
 from enum import Enum, IntEnum
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from pandas import DataFrame, Series
 from tqdm import tqdm
 
 from mstrio import config
+from mstrio.api import datasources as datasources_api
 from mstrio.api import monitors, projects
 from mstrio.connection import Connection
 from mstrio.helpers import IServerError
+from mstrio.server.project_languages import (
+    DataLanguageSettings,
+    MetadataLanguageSettings,
+)
 from mstrio.utils import helper
 from mstrio.utils.entity import DeleteMixin, Entity, ObjectTypes
+from mstrio.utils.enum_helper import get_enum_val
+from mstrio.utils.response_processors import datasources as datasources_processors
+from mstrio.utils.response_processors import projects as projects_processors
 from mstrio.utils.settings.base_settings import BaseSettings
 from mstrio.utils.translation_mixin import TranslationMixin
-from mstrio.utils.version_helper import method_version_handler
+from mstrio.utils.version_helper import method_version_handler, is_server_min_version
 from mstrio.utils.vldb_mixin import ModelVldbMixin
 from mstrio.utils.wip import wip
+
+if TYPE_CHECKING:
+    from mstrio.datasources import DatasourceInstance
 
 logger = logging.getLogger(__name__)
 
@@ -123,6 +134,8 @@ class Project(Entity, ModelVldbMixin, DeleteMixin, TranslationMixin):
         acl: Object access control list
         status: Project
         ancestors: List of ancestor folders
+        data_language_settings: Project data language settings
+        metadata_language_settings: Project metadata language settings
     """
 
     _OBJECT_TYPE = ObjectTypes.PROJECT
@@ -130,14 +143,27 @@ class Project(Entity, ModelVldbMixin, DeleteMixin, TranslationMixin):
         **Entity._API_GETTERS,
         ('status', 'alias'): projects.get_project,
         'nodes': monitors.get_node_info,
+        (
+            'data_language_settings',
+            'metadata_language_settings',
+        ): projects_processors.get_project_internalization,
     }
     _API_DELETE = staticmethod(projects.delete_project)
-    _FROM_DICT_MAP = {**Entity._FROM_DICT_MAP, 'status': ProjectStatus}
+    _FROM_DICT_MAP = {
+        **Entity._FROM_DICT_MAP,
+        'status': ProjectStatus,
+        'data_language_settings': DataLanguageSettings.from_dict,
+        'metadata_language_settings': MetadataLanguageSettings.from_dict,
+    }
     _STATUS_PATH = "/status"
     _MODEL_VLDB_API = {
         'GET_ADVANCED': projects.get_vldb_settings,
         'PUT_ADVANCED': projects.update_vldb_settings,
         'GET_APPLICABLE': projects.get_applicable_vldb_settings,
+    }
+    _REST_ATTR_MAP = {
+        'data': 'data_language_settings',
+        'metadata': 'metadata_language_settings',
     }
 
     def __init__(
@@ -193,6 +219,8 @@ class Project(Entity, ModelVldbMixin, DeleteMixin, TranslationMixin):
         self._status = kwargs.get("status")
         self._alias = kwargs.get("alias")
         self._nodes = kwargs.get("nodes")
+        self._data_language_settings = kwargs.get("data_language_settings")
+        self._metadata_language_settings = kwargs.get("metadata_language_settings")
 
     @classmethod
     def _create(
@@ -604,6 +632,116 @@ class Project(Entity, ModelVldbMixin, DeleteMixin, TranslationMixin):
             else:
                 logger.warning('Project will not load on startup.')
 
+    @method_version_handler('11.3.0100')
+    def add_datasource(
+        self, datasources: list['DatasourceInstance | str']
+    ) -> list['DatasourceInstance']:
+        """Add datasources to the project.
+
+        Args:
+            datasources (list["DatasourceInstance", str]): List of datasource
+                objects or datasource IDs to be added to the project.
+
+        Returns:
+            List of datasource objects for the project.
+        """
+        from mstrio.datasources import DatasourceInstance, list_datasource_instances
+
+        operation_list = []
+        valid_datasource_ids = [
+            datasource.id for datasource in list_datasource_instances(self.connection)
+        ]
+        datasource_ids = [
+            datasource.id if isinstance(datasource, DatasourceInstance) else datasource
+            for datasource in datasources
+        ]
+
+        for datasource_id in datasource_ids:
+            if datasource_id not in valid_datasource_ids:
+                raise ValueError(f"Datasource with ID {datasource_id} doesn't exist.")
+
+            operation_list.append(
+                {
+                    'op': 'add',
+                    'path': '/id',
+                    'value': datasource_id,
+                }
+            )
+
+        response = datasources_processors.update_project_datasources(
+            connection=self.connection,
+            id=self.id,
+            body={'operationList': operation_list},
+        )
+
+        if config.verbose:
+            logger.info(
+                f"Datasources were successfully added to the project {self.id}."
+            )
+
+        return [
+            DatasourceInstance.from_dict(datasource, self.connection)
+            for datasource in response
+        ]
+
+    @method_version_handler('11.3.0100')
+    def remove_datasource(self, datasources: list['DatasourceInstance | str']) -> None:
+        """Remove datasources from the project.
+
+        Args:
+            datasources (list["DatasourceInstance", str]): List of datasource
+                objects or datasource IDs to be removed from the project.
+        """
+        from mstrio.datasources import DatasourceInstance, list_datasource_instances
+
+        operation_list = []
+        valid_datasource_ids = [
+            datasource.id
+            for datasource in list_datasource_instances(
+                self.connection, project=self.id
+            )
+        ]
+        datasource_ids = [
+            datasource.id if isinstance(datasource, DatasourceInstance) else datasource
+            for datasource in datasources
+        ]
+
+        for datasource_id in datasource_ids:
+            if datasource_id not in valid_datasource_ids:
+                raise ValueError(
+                    f"Datasource with ID {datasource_id} does not exist in the "
+                    f"project {self.id}."
+                )
+
+            operation_list.append(
+                {
+                    'op': 'remove',
+                    'path': '/id',
+                    'value': datasource_id,
+                }
+            )
+
+        datasources_api.update_project_datasources(
+            connection=self.connection,
+            id=self.id,
+            body={'operationList': operation_list},
+        )
+
+        if config.verbose:
+            logger.info(
+                f"Datasources were successfully removed from the project {self.id}."
+            )
+
+    def list_properties(self, excluded_properties: list[str] | None = None) -> dict:
+        if not is_server_min_version(self.connection, '11.3.1200'):
+            excluded_properties = [
+                'data_language_settings',
+                'metadata_language_settings',
+            ] + (excluded_properties or [])
+            return super().list_properties(excluded_properties)
+
+        return super().list_properties(excluded_properties)
+
     @property
     def load_on_startup(self):
         """View nodes (servers) to load project on startup."""
@@ -641,6 +779,24 @@ class Project(Entity, ModelVldbMixin, DeleteMixin, TranslationMixin):
     def nodes(self):
         return self._nodes
 
+    @property
+    @method_version_handler(version='11.3.1200')
+    def data_language_settings(self) -> DataLanguageSettings:
+        if not hasattr(self._data_language_settings, '_connection'):
+            self._data_language_settings._connection = self.connection
+        if not hasattr(self._data_language_settings, '_project_id'):
+            self._data_language_settings._project_id = self.id
+        return self._data_language_settings
+
+    @property
+    @method_version_handler(version='11.3.1200')
+    def metadata_language_settings(self) -> MetadataLanguageSettings:
+        if not hasattr(self._metadata_language_settings, '_connection'):
+            self._metadata_language_settings._connection = self.connection
+        if not hasattr(self._metadata_language_settings, '_project_id'):
+            self._metadata_language_settings._project_id = self.id
+        return self._metadata_language_settings
+
 
 class ProjectSettings(BaseSettings):
     """Object representation of MicroStrategy Project (Project) Settings.
@@ -664,6 +820,7 @@ class ProjectSettings(BaseSettings):
         'maxCubeSizeForDownload': 'B',
         'maxDataUploadSize': 'B',
         'maxMstrFileSize': 'B',
+        'maxHistoryListInboxMessage': 'B',
         'maxMemoryPerDataFetch': 'B',
         'maxElementCacheMemoryConsumption': 'B',
         'maxObjectCacheMemoryConsumption': 'B',
@@ -738,6 +895,17 @@ class ProjectSettings(BaseSettings):
             elif response.status_code == 207:
                 partial_succ = response.json()
                 logging.info(f'Project settings partially successful.\n{partial_succ}')
+
+    def __setattr__(self, key, value) -> None:
+        if isinstance(value, Enum):
+            value = get_enum_val(value, type(value))
+
+        if isinstance(value, list):
+            value = [
+                get_enum_val(v, type(v)) if isinstance(v, Enum) else v for v in value
+            ]
+
+        super().__setattr__(key, value)
 
     @wip()
     def enable_caching(self) -> None:

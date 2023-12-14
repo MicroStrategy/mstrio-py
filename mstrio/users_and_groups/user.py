@@ -2,7 +2,7 @@ import json
 import logging
 from datetime import datetime
 from enum import Enum, IntFlag
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import pandas as pd
 from pandas import DataFrame, read_csv
@@ -12,11 +12,13 @@ from mstrio import config
 from mstrio.access_and_security.privilege_mode import PrivilegeMode
 from mstrio.access_and_security.security_role import SecurityRole
 from mstrio.connection import Connection
+from mstrio.server.language import Language
 from mstrio.users_and_groups.user_connections import UserConnections
 from mstrio.utils import helper, time_helper
 from mstrio.utils.acl import TrusteeACLMixin
 from mstrio.utils.entity import DeleteMixin, Entity, ObjectTypes
-from mstrio.utils.helper import Dictable
+from mstrio.utils.helper import Dictable, filter_params_for_func
+from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.response_processors import users
 from mstrio.utils.translation_mixin import TranslationMixin
 from mstrio.utils.version_helper import method_version_handler
@@ -70,7 +72,7 @@ def list_users(
             objects are returned.
         **filters: Available filter parameters: ['id', 'name', 'abbreviation',
             'description', 'type', 'subtype', 'date_created', 'date_modified',
-            'version', 'acg', 'icon_path', 'owner', 'initials']
+            'version', 'acg', 'icon_path', 'owner', 'initials', 'enabled']
 
     Examples:
         >>> list_users(connection, name_begins='user', initials='UR')
@@ -108,6 +110,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
         password_modifiable: If user password can be modified
         require_new_password: If user is required to change new password
         standard_auth: If standard authentication is allowed for user
+        ldapdn: information about user's LDAP distinguished name
         date_created: Creation time, DateTime object
         date_modified: Last modification time, DateTime object
         type: Object type
@@ -116,6 +119,8 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
         version: Version ID
         acg: Access rights (See EnumDSSXMLAccessRightFlags for possible values)
         acl: Object access control list
+        default_timezone:  Information about user default timezone
+        language: Information about user language
     """
 
     _PATCH_PATH_TYPES = {
@@ -132,6 +137,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
         "ldapdn": str,
         "trust_id": str,
         "abbreviation": str,
+        "owner": str,
     }
     _OBJECT_TYPE = ObjectTypes.USER
     _API_GETTERS = {
@@ -158,10 +164,13 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
             'acl',
             'trust_id',
             'initials',
+            'default_timezone',
+            'ldapdn',
         ): users.get,
         'addresses': users.get_addresses,
         'security_roles': users.get_security_roles,
         'privileges': users.get_privileges,
+        ('default_timezone', 'language'): users.get_settings,
     }
     _API_PATCH: dict = {
         (
@@ -183,11 +192,50 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
             'memberships',
             'addresses',
             'security_roles',
-        ): (users.update, 'patch')
+            'default_timezone',
+        ): (users.update, 'patch'),
+        ('owner'): (objects_processors.update, 'partial_put'),
+        ('default_timezone', 'language'): (users.update_user_settings, 'partial_put'),
     }
+
+    @staticmethod
+    def _parse_owner(
+        source: dict, connection: 'Connection', to_snake_case: bool = True
+    ):
+        """Parses owner from the API response."""
+        from mstrio.users_and_groups import User
+
+        return User.from_dict(source, connection, to_snake_case)
+
+    @staticmethod
+    def _parse_language(
+        source: dict, connection: 'Connection', to_snake_case: bool = True
+    ):
+        """Parses language from the API response."""
+        if not source['value']:
+            return None
+        source['id'] = source.pop('value')
+
+        return Language.from_dict(source, connection, to_snake_case)
+
+    @staticmethod
+    def _parse_addresses(
+        source: list[dict], connection: 'Connection', to_snake_case: bool = True
+    ):
+        """Parse Adresses from the API response."""
+        from mstrio.users_and_groups.contact import ContactAddress
+
+        return [
+            ContactAddress.from_dict(contact, connection, to_snake_case)
+            for contact in source
+        ]
+
     _FROM_DICT_MAP = {
         **Entity._FROM_DICT_MAP,
         'password_expiration_date': time_helper.DatetimeFormats.FULLDATETIME,
+        'language': _parse_language,
+        'owner': _parse_owner,
+        'addresses': _parse_addresses,
     }
 
     def __init__(
@@ -252,13 +300,14 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
         self.require_new_password = kwargs.get("require_new_password")
         self.ldapdn = kwargs.get("ldapdn")
         self.trust_id = kwargs.get("trust_id")
-
         self._initials = kwargs.get("initials")
         self._addresses = kwargs.get("addresses")
         self._memberships = kwargs.get("memberships")
         self._security_roles = kwargs.get("security_roles")
         self._privileges = kwargs.get("privileges")
         self._security_filters = kwargs.get("security_filters")
+        self._default_timezone = kwargs.get("default_timezone")
+        self._language = kwargs.get("language")
 
     @classmethod
     def create(
@@ -277,6 +326,9 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
         trust_id: str | None = None,
         database_auth_login: str | None = None,
         memberships: list | None = None,
+        language: 'str | Language | None' = None,
+        default_timezone: 'str| dict | None' = None,
+        owner: 'User | str | None' = None,
     ) -> "User":
         """Create a new user on the I-Server. Returns User object.
 
@@ -299,6 +351,9 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
             trust_id: Unique user ID provided by trusted authentication provider
             database_auth_login: Database Authentication Login
             memberships: specify User Group IDs which User will be member off.
+            owner: owner of user
+            default_timezone: default timezone for user
+            language: language for user
         """
         password_expiration_date = time_helper.map_datetime_to_str(
             name='password_expiration_date',
@@ -327,7 +382,13 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
                 f"Successfully created user named: '{response.get('username')}' "
                 f"with ID: '{response.get('id')}'"
             )
-        return cls.from_dict(source=response, connection=connection)
+        # User objects are created with default language and timezone
+        # in order to change them, you have to go through separate API calls
+        user_created = cls.from_dict(source=response, connection=connection)
+        user_created.alter(
+            language=language, default_timezone=default_timezone, owner=owner
+        )
+        return user_created
 
     @classmethod
     def _create_users_from_csv(
@@ -407,6 +468,9 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
         ldapdn: str | None = None,
         trust_id: str | None = None,
         database_auth_login: str | None = None,
+        owner: 'User | str | None' = None,
+        default_timezone: 'str| dict | None' = None,
+        language: 'str | Language | None' = None,
     ) -> None:
         """Alter user properties.
 
@@ -426,17 +490,22 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
             ldapdn: User's LDAP distinguished name
             trust_id: Unique user ID provided by trusted authentication provider
             database_auth_login: Database Authentication Login
+            owner: owner of user
+            default_timezone: default timezone for user
+            language: language for user
         """
-        func = self.alter
-        args = helper.get_args_from_func(func)
-        defaults = helper.get_default_args_from_func(func)
-        default_dict = dict(zip(args[-len(defaults) :], defaults)) if defaults else {}
-        local = locals()
-        properties = {}
-        for property_key in default_dict.keys():
-            if local[property_key] is not None:
-                properties[property_key] = local[property_key]
-
+        owner = owner.id if isinstance(owner, User) else owner
+        if language:
+            language = {
+                'value': (language.id if isinstance(language, Language) else language)
+            }
+        if default_timezone:
+            default_timezone = {
+                'id': default_timezone['id']
+                if isinstance(default_timezone, dict)
+                else default_timezone
+            }
+        properties = filter_params_for_func(self.alter, locals(), exclude=['self'])
         self._alter_properties(**properties)
 
     def _create_address_v1(self, name, address, default):
@@ -512,7 +581,9 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
         if response:
             if config.verbose:
                 logger.info(f"Added address '{address}' for user '{self.name}'")
-            self._addresses = response.get('addresses')
+            self._addresses = self._parse_addresses(
+                response.get('addresses'), self.connection
+            )
 
     def update_address(
         self,
@@ -538,7 +609,9 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
         if not id:
             helper.exception_handler("Please specify 'id' parameter in the method.")
 
-        address_for_update = helper.filter_list_of_dicts(self.addresses, id=id)[0]
+        address_for_update = helper.filter_list_of_dicts(
+            [address.to_dict() for address in self.addresses], id=id
+        )[0]
 
         body = {
             'name': name if name else address_for_update['name'],
@@ -572,7 +645,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
                 associated with this address name/id
             id: ID of the address.
         """
-        initial_addresses = self.addresses
+        initial_addresses = [address.to_dict() for address in self.addresses]
         if name is None and id is None and address is None or (name and id and address):
             helper.exception_handler(
                 "Please specify either 'name' or 'id' parameter in the method."
@@ -601,7 +674,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
                         f"Removed address '{addr['name']}' with id {addr['id']} "
                         f"from user '{self.name}'"
                     )
-                self._addresses = new_addresses
+                self._addresses = self._parse_addresses(new_addresses, self.connection)
 
     def add_to_user_groups(
         self, user_groups: "str | UserGroup | list[str | UserGroup]"
@@ -642,9 +715,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
         self.remove_from_user_groups(user_groups=existing_ids)
 
     def assign_security_role(
-        self,
-        security_role: SecurityRole | str,
-        project: Optional["Project | str"] = None,
+        self, security_role: SecurityRole | str, project: 'Project | str'
     ) -> None:  # NOSONAR
         """Assigns a Security Role to the user for given project.
 
@@ -664,11 +735,10 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
             logger.info(
                 f"Assigned Security Role '{security_role.name}' to user: '{self.name}'"
             )
+        self.fetch('security_roles')
 
     def revoke_security_role(
-        self,
-        security_role: SecurityRole | str,
-        project: Optional["Project | str"] = None,
+        self, security_role: SecurityRole | str, project: 'Project | str'
     ) -> None:  # NOSONAR
         """Removes a Security Role from the user for given project.
 
@@ -688,6 +758,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
             logger.info(
                 f"Revoked Security Role '{security_role.name}' from user: '{self.name}'"
             )
+        self.fetch('security_roles')
 
     @method_version_handler('11.3.0200')
     def list_security_filters(
@@ -1062,6 +1133,16 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
     def privileges(self):
         self.fetch('privileges')
         return self._privileges
+
+    @property
+    @method_version_handler('11.3.0500')
+    def default_timezone(self):
+        return self._default_timezone
+
+    @property
+    @method_version_handler('11.3.0700')
+    def language(self):
+        return self._language
 
     @property
     def security_filters(self):

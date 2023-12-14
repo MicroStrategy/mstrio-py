@@ -200,7 +200,7 @@ def get_datasource_namespaces_async(
 
 
 def get_datasource_instances(
-    connection, ids=None, database_type=None, project=None, error_msg=None
+    connection, ids=None, database_types=None, project=None, error_msg=None
 ):
     """Get information for all database sources.
 
@@ -220,8 +220,8 @@ def get_datasource_instances(
         endpoint = f'/api/projects/{project}/datasources'
         response = connection.get(endpoint=endpoint)
     else:
-        database_type = None if database_type is None else database_type.join(',')
-        ids = None if ids is None else ids.join(',')
+        database_type = ','.join(database_types) if database_types else None
+        ids = ','.join(ids) if ids else None
         endpoint = '/api/datasources'
         response = connection.get(
             endpoint=endpoint, params={'id': ids, 'database.type': database_type}
@@ -713,3 +713,25 @@ def get_applicable_vldb_settings(
     return connection.get(
         endpoint=f'/api/model/datasources/{id}' '/applicableAdvancedProperties'
     )
+
+
+@ErrorHandler(err_msg="Error updating datasources for project with ID {id}")
+def update_project_datasources(
+    connection: 'Connection',
+    id: str,
+    body: dict,
+    error_msg: str | None = None,
+):
+    """Update project datasources.
+
+    Args:
+        connection (Connection): MicroStrategy REST API connection object
+        id (string): Project ID
+        body (dict): JSON-formatted data used to update project datasources
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object.
+    """
+
+    return connection.patch(endpoint=f'/api/projects/{id}/datasources', json=body)

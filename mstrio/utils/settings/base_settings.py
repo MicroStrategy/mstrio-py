@@ -107,13 +107,17 @@ class BaseSettings(metaclass=ABCMeta):
                 )
         return current
 
-    def to_csv(self, name: str) -> None:
+    def to_csv(self, name: str, show_description: bool = False) -> None:
         """Export the current project settings to the csv file.
 
         Args:
             name (str): Name of file
+            show_description (bool): if True return, description and value
+                for each setting, else, return values only
         """
-        CSVSettingsIO.to_file(file=name, settings_obj=self)
+        CSVSettingsIO.to_file(
+            file=name, settings_obj=self, show_description=show_description
+        )
 
     def to_json(self, name: str) -> None:
         """Export the current project settings to the json file
@@ -149,25 +153,35 @@ class BaseSettings(metaclass=ABCMeta):
         if config.verbose:
             logger.info(f"Settings imported from '{file}'")
 
-    def list_properties(self, show_names: bool = True) -> dict:
+    def list_properties(
+        self, show_names: bool = True, show_description: bool = False
+    ) -> dict:
         """Return settings and their values as dictionary.
 
         Args:
-            show_names: if True, return meaningful setting values, else, return
-                exact setting values
+            show_names (bool): if True, return meaningful setting values,
+                else, return exact setting values
+            show_description (bool): if True return, description and value
+                for each setting, else, return values only
         """
-        if show_names:
-            return {
-                key: self.__dict__[key]._get_value()
-                for key in sorted(self.__dict__)
-                if not key.startswith('_')
+        return {
+            key: {
+                'value': (
+                    self.__dict__[key]._get_value()
+                    if show_names
+                    else self.__dict__[key].value
+                ),
+                'description': self.__dict__[key].description,
             }
-        else:
-            return {
-                key: self.__dict__[key].value
-                for key in sorted(self.__dict__)
-                if not key.startswith('_')
-            }
+            if show_description
+            else (
+                self.__dict__[key]._get_value()
+                if show_names
+                else self.__dict__[key].value
+            )
+            for key in sorted(self.__dict__)
+            if not key.startswith('_')
+        }
 
     def to_dataframe(self) -> DataFrame:
         """Return a `DataFrame` object containing settings and their values."""
