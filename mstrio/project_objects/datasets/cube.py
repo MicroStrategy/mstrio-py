@@ -587,7 +587,7 @@ class _Cube(Entity, VldbMixin, DeleteMixin, TranslationMixin):
             cube_id=self._id,
             body=self._prepare_instance_body(),
             offset=0,
-            limit=self._initial_limit,
+            limit=limit or self._initial_limit,
         )
         inst_pbar.close()
         return response

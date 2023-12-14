@@ -433,7 +433,7 @@ class Translation(Dictable):
             connection=connection, project_id=project_id, with_fallback=True
         )
         project_languages = projects.get_project_languages(
-            connection=connection, id=project_id
+            connection=connection, id=project_id, path='metadata'
         )
         for lang in project_languages:
             languages_list.append(project_languages.get(lang).get('name'))

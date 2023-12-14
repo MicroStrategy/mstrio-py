@@ -475,7 +475,7 @@ class Report(
             report_id=self._id,
             body=body,
             offset=0,
-            limit=self._initial_limit,
+            limit=limit or self._initial_limit,
         )
         inst_pbar.close()
         return response

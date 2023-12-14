@@ -311,7 +311,16 @@ def get_user_group_info(connection, id, error_msg=None):
 
     return connection.get(
         endpoint=f'/api/usergroups/{id}',
-        headers={'X-MSTR-ProjectID': None},
+        headers={
+            'X-MSTR-ProjectID': None,
+        },
+        params={
+            'fields': 'id,name,type,subtype,ext_type,abbreviation,dateCreated,'
+            'dateModified,version,owner,ancestors,acg,acl,ldapdn',
+        },
+        # we do not want to get information about members from
+        # this endpoint as this is not enough to differentiate between users
+        # and user groups
     )
 
 

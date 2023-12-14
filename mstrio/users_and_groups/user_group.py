@@ -1,5 +1,5 @@
 import logging
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from pandas import DataFrame
 
@@ -8,12 +8,19 @@ from mstrio.access_and_security.privilege_mode import PrivilegeMode
 from mstrio.access_and_security.security_role import SecurityRole
 from mstrio.api import usergroups
 from mstrio.connection import Connection
-from mstrio.utils import helper
+from mstrio.types import ObjectSubTypes
 from mstrio.utils.acl import TrusteeACLMixin
 from mstrio.utils.entity import DeleteMixin, Entity, ObjectTypes
+from mstrio.utils.helper import (
+    exception_handler,
+    fetch_objects_async,
+    filter_list_of_dicts,
+    filter_params_for_func,
+)
 from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.translation_mixin import TranslationMixin
 from mstrio.utils.version_helper import method_version_handler
+from mstrio.utils.response_processors import usergroups as usergroups_processors
 
 if TYPE_CHECKING:
     from mstrio.access_and_security.privilege import Privilege
@@ -94,6 +101,25 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
         acl: Object access control list
     """
 
+    @staticmethod
+    def _parse_members(
+        source: list[dict], connection: 'Connection', to_snake_case: bool = True
+    ):
+        """Parse members from response."""
+        from mstrio.users_and_groups.user import User
+
+        return [
+            User.from_dict(member, connection, to_snake_case)
+            if member['subtype'] == ObjectSubTypes.USER.value
+            else UserGroup.from_dict(member, connection, to_snake_case)
+            for member in source
+        ]
+
+    _FROM_DICT_MAP = {
+        **Entity._FROM_DICT_MAP,
+        "members": _parse_members,
+    }
+
     _SUPPORTED_PATCH_OPERATIONS = {
         "add": "add",
         "remove": "remove",
@@ -115,6 +141,7 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
             'ancestors',
             'acg',
             'acl',
+            'ldapdn',
         ): usergroups.get_user_group_info,
         'memberships': usergroups.get_memberships,
         'members': usergroups.get_members,
@@ -136,7 +163,8 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
             'security_roles',
             'members',
             'privileges',
-        ): (usergroups.update_user_group_info, 'patch'),
+            'ldapdn',
+        ): (usergroups_processors.update_user_group_info, 'patch'),
     }
 
     def __init__(
@@ -155,7 +183,7 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
             id: ID of User Group
         """
         if id is None and name is None:
-            helper.exception_handler(
+            exception_handler(
                 "Please specify either 'name' or 'id' parameter in the constructor."
             )
 
@@ -166,7 +194,7 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
             if user_groups:
                 id = user_groups[0]
             else:
-                helper.exception_handler(
+                exception_handler(
                     f"There is no User Group with the given name: '{name}'",
                     exception_type=ValueError,
                 )
@@ -174,6 +202,7 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
 
     def _init_variables(self, **kwargs) -> None:
         super()._init_variables(**kwargs)
+        self.ldapdn = kwargs.get("ldapdn")
 
         self._memberships = kwargs.get('memberships')
         self._members = kwargs.get('members')
@@ -190,6 +219,7 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
         description: str | None = None,
         memberships: list[str] | None = None,
         members: list[str] | None = None,
+        ldapdn: str | None = None,
     ):
         """Create a new User Group on the I-Server. Returns `UserGroup` object.
 
@@ -202,6 +232,7 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
                 will be member
             members: Specify Users which will be members of newly created User
                 Group
+            ldapdn: User group's LDAP distinguished name
         """
         memberships = memberships or []
         members = members or []
@@ -210,6 +241,7 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
             "description": description,
             "memberships": memberships,
             "members": members,
+            "ldapdn": ldapdn,
         }
         response = usergroups.create_user_group(connection, body)
         if response.ok:
@@ -231,7 +263,7 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
         **filters,
     ) -> list["UserGroup"]:
         msg = "Error getting information for a set of User Groups."
-        objects = helper.fetch_objects_async(
+        objects = fetch_objects_async(
             connection,
             usergroups.get_info_all_user_groups,
             usergroups.get_info_all_user_groups_async,
@@ -263,23 +295,20 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
         )
         return [group['id'] for group in group_dicts]
 
-    def alter(self, name: str | None = None, description: str | None = None):
+    def alter(
+        self,
+        name: str | None = None,
+        description: str | None = None,
+        ldapdn: str = None,
+    ):
         """Alter User Group name or/and description.
 
         Args:
             name: New name of the User Group
             description: New description of the User Group
         """
-        func = self.alter
-        args = helper.get_args_from_func(func)
-        defaults = helper.get_default_args_from_func(func)
-        default_dict = dict(zip(args[-len(defaults) :], defaults)) if defaults else {}
-        local = locals()
-        properties = {}
-        for property_key in default_dict.keys():
-            if local[property_key] is not None:
-                properties[property_key] = local[property_key]
 
+        properties = filter_params_for_func(self.alter, locals(), exclude=['self'])
         self._alter_properties(**properties)
 
     def add_users(self, users: "str | User | list[str | User]") -> None:
@@ -293,6 +322,7 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
             logger.info(f"Added {succeeded} user(s) to group {self.name}")
         if failed and config.verbose:
             logger.info(f"User(s) {failed} is/are already a member of '{self.name}'")
+        self.fetch('members')
 
     def remove_users(self, users: "str | User | list[str | User]") -> None:
         """Remove members from User Group.
@@ -305,10 +335,11 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
             logger.info(f"Removed user(s) '{succeeded}' from group {self.name}")
         if failed and config.verbose:
             logger.warning(f"User(s) {failed} is/are not members of '{self.name}'")
+        self.fetch('members')
 
     def remove_all_users(self) -> None:
         """Remove all members from user group."""
-        to_be_removed = [member['id'] for member in self.members]
+        to_be_removed = [member.id for member in self.members]
         self.remove_users(to_be_removed)
 
     def list_members(self, **filters) -> list[dict]:
@@ -323,7 +354,9 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
                 full_name', enabled'
         """
         self.fetch('members')
-        return helper.filter_list_of_dicts(self.members, **filters)
+        return filter_list_of_dicts(
+            [member.to_dict() for member in self.members], **filters
+        )
 
     def add_to_user_groups(
         self, groups: "str | UserGroup | list[str | UserGroup]"
@@ -421,7 +454,7 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
                 "omitted. Only directly granted privileges can be revoked by this "
                 "method."
             )
-            helper.exception_handler(msg, exception_type=Warning)
+            exception_handler(msg, exception_type=Warning)
 
         succeeded, failed = self._update_nested_properties(
             to_revoke, "privileges", "remove", existing_ids
@@ -491,7 +524,7 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
                     "['ALL'/'INHERITED'/'GRANTED']. See: `privilege.PrivilegeMode` "
                     "enum."
                 )
-                helper.exception_handler(msg, ValueError)
+                exception_handler(msg, ValueError)
 
         privileges = []
         if mode == PrivilegeMode.ALL:
@@ -515,8 +548,8 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
 
     def assign_security_role(
         self,
-        security_role: SecurityRole | str,
-        project: Optional["Project | str"] = None,
+        security_role: 'SecurityRole | str',
+        project: 'Project | str',
     ) -> None:  # NOSONAR
         """Assigns a Security Role to the User Group for given project.
 
@@ -536,11 +569,10 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
             logger.info(
                 f"Assigned Security Role '{security_role.name}' to group: '{self.name}'"
             )
+        self.fetch('security_roles')
 
     def revoke_security_role(
-        self,
-        security_role: SecurityRole | str,
-        project: Optional["Project | str"] = None,
+        self, security_role: SecurityRole | str, project: 'Project | str'
     ) -> None:  # NOSONAR
         """Removes a Security Role from the User Group for given project.
 
@@ -561,6 +593,7 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
                 f"Revoked Security Role '{security_role.name}' from group: "
                 f"'{self.name}'"
             )
+        self.fetch('security_roles')
 
     @method_version_handler('11.3.0200')
     def list_security_filters(

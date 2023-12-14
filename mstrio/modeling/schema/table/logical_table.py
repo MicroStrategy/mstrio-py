@@ -732,11 +732,9 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin, TranslationMixin):
             "tablePrefix": getattr(
                 physical_table, "table_prefix", physical_table_prefix
             ),
-            "columns": [
-                col.to_dict() if isinstance(col, TableColumn) else col for col in cols
-            ]
-            if (cols := getattr(physical_table, "columns", columns))
-            else None,
+            "columns": cls.__prepare_columns(
+                getattr(physical_table, "columns", columns)
+            ),
             "sqlStatement": getattr(physical_table, "sql_statement", sql_statement),
         }
 
@@ -942,7 +940,7 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin, TranslationMixin):
                 "table_prefix": properties.pop("physical_table_prefix", None),
                 "table_name": properties.pop("physical_table_name", None),
                 "sql_statement": properties.pop("sql_statement", None),
-                "columns": properties.pop("columns", None),
+                "columns": self.__prepare_columns(properties.pop("columns", None)),
             }
         )
         properties["physical_table"] = delete_none_values(
@@ -1087,6 +1085,41 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin, TranslationMixin):
                 exception_type=TypeError,
             )
         return True
+
+    @staticmethod
+    def __prepare_columns(
+        columns: list[TableColumn] | list[dict] | None,
+    ) -> list[dict] | None:
+        """Prepares columns for sending requests
+
+        Args:
+            columns (list[TableColumn] | list[dict] | None): Columns to prepare
+
+        Returns:
+            list[dict]: Prepared columns
+        """
+        if not columns:
+            return None
+
+        columns = [
+            col.to_dict() if isinstance(col, TableColumn) else col for col in columns
+        ]
+        return [
+            {
+                "information": {
+                    "objectId": column.get("id"),
+                    "name": column.get("name"),
+                    "subType": column.get("subType"),
+                    "dateCreated": column.get("dateCreated"),
+                    "dateModified": column.get("dateModified"),
+                    "versionId": column.get("versionId"),
+                    "primaryLocale": column.get("primaryLocale"),
+                },
+                "columnName": column.get("columnName"),
+                "dataType": column.get("dataType"),
+            }
+            for column in columns
+        ]
 
     def list_columns(self, to_dictionary: bool = False):
         """Lists columns of the table in a dictionary or objects form

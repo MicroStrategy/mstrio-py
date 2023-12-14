@@ -490,6 +490,7 @@ def get_cube_caches_async(
         a result.
     """
     endpoint = '/api/monitors/caches/cubes'
+    loaded = 'loaded' if loaded else None
     params = {
         'clusterNode': node,
         'offset': offset,

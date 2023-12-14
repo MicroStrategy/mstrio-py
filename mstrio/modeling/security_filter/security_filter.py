@@ -386,7 +386,7 @@ class SecurityFilter(Entity, CopyMixin, DeleteMixin, MoveMixin, TranslationMixin
             destination_folder (str or object): a globally unique identifier or
                 unique folder name used to distinguish between metadata objects
                 within the same project
-            qualification (Expression or dict, optional): new security filter
+            qualification (Expression or dict): new security filter
                 definition written as an expression tree over predicate nodes.
                 It can be provided as `Qualification` object or dictionary.
             description (str, optional): optional description of a new

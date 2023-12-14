@@ -166,6 +166,11 @@ class ACLMixin:
         """Add Access Control Element (ACE) to the object ACL.
 
         Note:
+            To add rights for the `Root Folder` and the `Freeform Objects`,
+            apply the required rights for these folders:
+                - Root Folder: D43364C684E34A5F9B2F9AD7108F7828
+                - Freeform Objects: 93D8CF3849C1F85DC1A48E8B9E4271F1
+
             Argument `propagate_to_children` is used only for objects with
             type `ObjectTypes.FOLDER`.
 
@@ -206,6 +211,11 @@ class ACLMixin:
         """Remove Access Control Element (ACE) from the object ACL.
 
         Note:
+            To remove rights from the `Root Folder` and the `Freeform Objects`,
+            remove them from these folders:
+                - Root Folder: D43364C684E34A5F9B2F9AD7108F7828
+                - Freeform Objects: 93D8CF3849C1F85DC1A48E8B9E4271F1
+
             Argument `propagate_to_children` is used only for objects with
             type `ObjectTypes.FOLDER`.
 
@@ -246,6 +256,11 @@ class ACLMixin:
         """Alter an existing Access Control Element (ACE) of the object ACL.
 
         Note:
+            To alter rights for the `Root Folder` and the `Freeform Objects`,
+            change the required rights for these folders:
+                - Root Folder: D43364C684E34A5F9B2F9AD7108F7828
+                - Freeform Objects: 93D8CF3849C1F85DC1A48E8B9E4271F1
+
             Argument `propagate_to_children` is used only for objects with
             type `ObjectTypes.FOLDER`.
 

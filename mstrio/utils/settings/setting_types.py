@@ -67,7 +67,7 @@ class EnumSetting(SettingValue):
 
     # initially empty options that require additional action
     # to be available (e.g. creating a TimeZone object)
-    _DYNAMICALLY_ADDED_OPTIONS = {'defaultTimezone': str}
+    _DYNAMICALLY_ADDED_OPTIONS = {'defaultTimezone': str, 'defaultCalendar': str}
 
     def __init__(self, config: dict):
         super().__init__(config)

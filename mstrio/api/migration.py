@@ -193,6 +193,7 @@ def delete_package_holder(
 def create_import(
     connection: Connection,
     id: str,
+    prefer: str = 'respond-async',
     project_id: str | None = None,
     generate_undo: bool = False,
     error_msg: str | None = None,
@@ -203,20 +204,18 @@ def create_import(
         connection (Connection): Object representation of connection to
             MSTR Server.
         id (str): ID of the package for which import process will be
-        created.
-        generate_undo (bool, optional): Generate undo package or not. Defaults
-        to False.
+            created.
+        prefer (str, optional): Allow client to set preferences. Currently,
+            respond-async is the only supported mode.
         project_id (Optional[str]): Optional ID of a project. Defaults to None.
+        generate_undo (bool, optional): Generate undo package or not. Defaults
+            to False.
         error_msg (Optional[str]): Optional error message. Defaults to None.
 
     Returns:
         requests.Response: Response object containing all of the information
         returned by the server.
     """
-
-    # TODO: Change to a parameter when any other values are supported
-    prefer = 'respond-async'
-
     project_id = project_id if project_id is not None else connection.project_id
     return connection.post(
         endpoint='/api/packages/imports',
@@ -256,6 +255,7 @@ def get_import(
 def delete_import(
     connection: Connection,
     id: str,
+    prefer: str = 'respond-async',
     project_id: str | None = None,
     error_msg: str | None = None,
 ) -> requests.Response:
@@ -265,6 +265,8 @@ def delete_import(
         connection (Connection): Object representation of connection to
             MSTR Server.
         id (str): Import process ID.
+        prefer (str, optional): Allow client to set preferences. Currently,
+            respond-async is the only supported mode.
         project_id (Optional[str]): Optional ID of a project. Defaults to None.
         error_msg (Optional[str]): Optional error message. Defaults to None.
 
@@ -272,9 +274,6 @@ def delete_import(
         requests.Response: Response object containing all of the information
         returned by the server.
     """
-    # TODO: Change to a parameter when any other values are supported
-    prefer = 'respond-async'
-
     project_id = project_id if project_id is not None else connection.project_id
     return connection.delete(
         endpoint=f'/api/packages/imports/{id}',

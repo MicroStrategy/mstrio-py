@@ -184,7 +184,9 @@ class CSVSettingsIO(SettingsIO):
     SERVER_VERSION = 2
 
     @classmethod
-    def to_file(cls, file: str, settings_obj: "BaseSettings") -> None:
+    def to_file(
+        cls, file: str, settings_obj: "BaseSettings", show_description: bool = False
+    ) -> None:
         cls.validate_file_name(file)
         # newline = '' to disable universal newlines translation
         # It should always be safe to specify newline='', since the csv module
@@ -193,14 +195,31 @@ class CSVSettingsIO(SettingsIO):
         with open(file, 'w', newline='') as f:
             # Add lines for workstation compatibility
             version = cls.get_version(settings_obj)
+            fieldnames = [
+                'Name',
+                'Value',
+                *(('Description',) if show_description else ()),
+            ]
             f.write(
-                f"#__page__,{settings_obj._TYPE}\n#__version__,{version}\nName, Value\n"
+                f"#__page__,{settings_obj._TYPE}\n"
+                f"#__version__,{version}\n"
+                f"{','.join(fieldnames)}\n"
             )
-            w = csv.DictWriter(f, fieldnames=['Name', 'Value'], quoting=csv.QUOTE_ALL)
+            w = csv.DictWriter(f, fieldnames=fieldnames, quoting=csv.QUOTE_ALL)
 
-            settings_dict = settings_obj.list_properties(show_names=False)
+            settings_dict = settings_obj.list_properties(
+                show_names=False, show_description=show_description
+            )
             rows = [
-                {'Name': setting, 'Value': value}
+                {
+                    'Name': setting,
+                    'Value': value.get('value') if show_description else value,
+                    **(
+                        {'Description': value.get('description')}
+                        if show_description
+                        else {}
+                    ),
+                }
                 for setting, value in settings_dict.items()
             ]
             w.writerows(rows)
@@ -210,7 +229,11 @@ class CSVSettingsIO(SettingsIO):
     @classmethod
     def from_file(cls, file: str, settings_obj: "BaseSettings") -> dict:
         with open(file) as f:
-            settings_dict = dict(csv.reader(f, quoting=csv.QUOTE_ALL))
+            settings_dict = {
+                # Add only name and value and ignore description
+                name: value
+                for name, value, *desc in csv.reader(f, quoting=csv.QUOTE_ALL)
+            }
             return cls.process_csv_settings(settings_dict, settings_obj)
 
     @classmethod

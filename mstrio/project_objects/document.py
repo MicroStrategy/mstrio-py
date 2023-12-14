@@ -257,7 +257,7 @@ class Document(
                 used to distinguish between metadata objects within the same
                 project. It is possible for two metadata objects in different
                 projects to have the same Object ID.
-            hidden: Specifies whether the metric is hidden
+            hidden: Specifies whether the document is hidden
         """
         description = description or self.description
         properties = filter_params_for_func(self.alter, locals(), exclude=['self'])
@@ -292,7 +292,7 @@ class Document(
             recipients = [recipient.id for recipient in recipients]
         elif all(isinstance(el, UserGroup) for el in recipients):
             users = [user for group in recipients for user in group.members]
-            recipients = [user["id"] for user in users]
+            recipients = [user.id for user in users]
         elif any(not isinstance(el, str) for el in recipients):
             raise ValueError(
                 'Please provide either list of User, UserGroup or str elements.'
@@ -324,7 +324,7 @@ class Document(
                 recipients = [recipient.id for recipient in recipients]
             elif all(isinstance(el, UserGroup) for el in recipients):
                 users = [user for group in recipients for user in group.members]
-                recipients = [user["id"] for user in users]
+                recipients = [user.id for user in users]
             elif any(not isinstance(el, str) for el in recipients):
                 raise ValueError(
                     'Please provide either list User and UserGroup elements or str '

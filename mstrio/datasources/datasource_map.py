@@ -1,4 +1,3 @@
-import contextlib
 import logging
 from collections.abc import Callable
 from typing import Any
@@ -11,201 +10,12 @@ from mstrio.server.language import Language, list_languages
 from mstrio.server.project import Project
 from mstrio.users_and_groups import User, UserGroup
 from mstrio.utils import helper
-from mstrio.utils.entity import DeleteMixin, Entity, EntityBase, ObjectTypes
-from mstrio.utils.helper import delete_none_values, deprecation_warning, get_objects_id
-from mstrio.utils.resources import locales
-from mstrio.utils.response_processors import objects as objects_processors
+from mstrio.utils.entity import DeleteMixin, EntityBase
+from mstrio.utils.helper import delete_none_values, get_objects_id
+from mstrio.utils.response_processors import datasources as datasources_processors
 from mstrio.utils.version_helper import method_version_handler
 
 logger = logging.getLogger(__name__)
-
-
-class Locale(Entity):
-    """Object representation of Microstrategy Locale
-
-    Attributes:
-        connection: A MicroStrategy connection object
-        id: Object ID
-        name: Object name
-        description: Object description
-        abbreviation: Object abbreviation
-        type: Object type
-        subtype: Object subtype
-        ext_type: Object extended type
-        date_created: Creation time, DateTime object
-        date_modified: Last modification time, DateTime object
-        version: Version ID
-        owner: Owner ID and name
-        icon_path: Object icon path
-        view_media: View media settings
-        ancestors: List of ancestor folders
-        certified_info: Certification status, time of certification, and
-            information about the certifier (currently only for document and
-            report)
-        acg: Access rights (See EnumDSSXMLAccessRightFlags for possible values)
-        acl: Object access control list
-    """
-
-    _OBJECT_TYPE = ObjectTypes.LOCALE
-    _API_GETTERS = {
-        (
-            'id',
-            'name',
-            'description',
-            'abbreviation',
-            'type',
-            'subtype',
-            'ext_type',
-            'date_created',
-            'date_modified',
-            'version',
-            'owner',
-            'icon_path',
-            'view_media',
-            'ancestors',
-            'certified_info',
-            'acg',
-            'acl',
-            'comments',
-            'project_id',
-            'target_info',
-        ): objects_processors.get_info,
-    }
-    _FROM_DICT_MAP = {**Entity._FROM_DICT_MAP, 'owner': User.from_dict}
-
-    def __init__(
-        self,
-        connection: 'Connection',
-        id: str | None = None,
-        name: str | None = None,
-        abbreviation: str | None = None,
-    ):
-        """Initialize the Locale object and populate it with I-Server data.
-
-        Args:
-            connection: MicroStrategy connection object returned
-                by `connection.Connection()`.
-            id: Locale's ID
-            name: Locale's name
-            abbreviation: Locale's abbreviation
-        """
-        deprecation_warning(
-            deprecated='Locale, list_locales',
-            new='Language, list_languages',
-            version='11.3.11.102',  # NOSONAR
-            module=False,
-        )
-        if not (id or name or abbreviation):
-            raise ValueError(
-                "Please specify 'id' or 'name' or 'abbreviation' parameter in the "
-                "constructor."
-            )
-        elif not (locale_id := id):
-            if name:
-                locale_id = self._get_by_name(name, connection).id
-            elif abbreviation:
-                locale_id = self._get_by_abbreviation(abbreviation, connection).id
-
-        super().__init__(connection=connection, object_id=locale_id)
-
-    @staticmethod
-    def _list(connection: 'Connection', to_dictionary: bool = False):
-        if to_dictionary:
-            return locales.get_locales(connection=connection)
-
-        return [
-            Locale.from_dict(locale, connection)
-            for locale in locales.get_locales(connection=connection)
-        ]
-
-    @staticmethod
-    def _get(connection: Connection, query: str) -> type['Locale']:
-        with contextlib.suppress(ValueError):
-            return Locale._get_by_id(id=query, connection=connection)
-
-        with contextlib.suppress(ValueError):
-            return Locale._get_by_name(name=query, connection=connection)
-
-        try:
-            return Locale._get_by_abbreviation(
-                abbreviation=query, connection=connection
-            )
-        except ValueError:
-            raise ValueError(
-                f'Locale with id or name or abbreviation: {query} does not exists.'
-            )
-
-    @staticmethod
-    def _get_by_id(id: str, connection: 'Connection') -> type['Locale']:
-        data = [loc for loc in locales.get_locales(connection) if loc['id'] == id]
-
-        try:
-            return Locale.from_dict(data[0], connection)
-        except LookupError:
-            raise ValueError(f"Locale with id: {id} does not exists.")
-
-    @staticmethod
-    def _get_by_name(name: str, connection: 'Connection') -> type['Locale']:
-        data = [loc for loc in locales.get_locales(connection) if loc['name'] == name]
-
-        try:
-            return Locale.from_dict(data[0], connection)
-        except LookupError:
-            raise ValueError(f"Locale with name: {name} does not exists.")
-
-    @staticmethod
-    def _get_by_abbreviation(
-        abbreviation: str, connection: 'Connection'
-    ) -> type['Locale']:
-        data = [
-            locale
-            for locale in locales.get_locales(connection=connection)
-            if locale['abbreviation'] == abbreviation
-        ]
-
-        try:
-            return Locale.from_dict(data[0], connection)
-        except LookupError:
-            raise ValueError(
-                f"Locale with abbreviation: {abbreviation} does not exists."
-            )
-
-    def __repr__(self):
-        return (
-            f"Locale(connection, name='{self.name}', abbreviation='"
-            f"{self.abbreviation}',"
-            f" id='{self.id}')"
-        )
-
-    def to_dict(self, camel_case: bool = True) -> dict:
-        return {'id': self.id, 'name': self.name}
-
-
-def list_locales(
-    connection: 'Connection', to_dictionary: bool = False
-) -> list[Locale] | list[dict]:
-    """Get list of locales as objects or dicts.
-
-    Args:
-        connection: MicroStrategy connection object returned by
-            `connection.Connection()`
-        to_dictionary: If True returns dict, by default (False) returns
-            Locale objects.
-
-    Returns:
-        list['Locale'] by default
-        list[dict] if `to_dictionary` is True
-
-    Examples:
-        >>> list_locales(connection)
-    """
-    deprecation_warning(
-        deprecated='Locale, list_locales',
-        new='Language, list_languages',
-        version='11.3.11.102',  # NOSONAR
-        module=False,
-    )
-    return Locale._list(connection, to_dictionary)
 
 
 @method_version_handler('11.3.0000')
@@ -218,11 +28,13 @@ def list_datasource_mappings(
     ds_connection: DatasourceConnection | str | None = None,
     datasource: DatasourceInstance | str | None = None,
     login: DatasourceLogin | str | None = None,
-    locale: Language | Locale | str | None = None,
+    locale: Language | str | None = None,
     default_connection_map: bool = False,
 ) -> list['DatasourceMap'] | list[dict]:
     """Get list of connection mappings: objects or dicts.
     Optionally filter by specifying filters.
+    When returned as dictionaries, connection mappings that have default locale
+        will have 'locale' property with empty name and id.
 
     Args:
         connection: MicroStrategy connection object returned by
@@ -325,7 +137,7 @@ class DatasourceMap(EntityBase, DeleteMixin):
         datasource: DatasourceInstance | None = None,
         user: User | UserGroup | None = None,
         login: DatasourceLogin | None = None,
-        locale: Language | Locale | None = None,
+        locale: Language | None = None,
     ):
         """Initialise connection mapping by passing the ID or by passing
         True for `default_connection_map` and the project for which to
@@ -425,13 +237,11 @@ class DatasourceMap(EntityBase, DeleteMixin):
         ds_connection: DatasourceConnection | str | None = None,
         datasource: DatasourceInstance | str | None = None,
         login: DatasourceLogin | str | None = None,
-        locale: Language | Locale | str | None = None,
+        locale: Language | str | None = None,
         default_connection_map: bool = False,
     ) -> list['DatasourceMap'] | list[dict]:
         project_id = get_objects_id(project, Project)
 
-        if isinstance(locale, Locale):
-            locale = locale.to_dict()
         if isinstance(locale, Language):
             locale = {'id': locale.id, 'name': locale.name}
         elif isinstance(locale, str):
@@ -461,12 +271,10 @@ class DatasourceMap(EntityBase, DeleteMixin):
             recursion=False,
         )
 
-        mappings = helper.fetch_objects(
+        mappings = datasources_processors.get_mappings(
             connection=connection,
-            api=datasources.get_datasource_mappings,
             project_id=project_id,
             limit=limit,
-            dict_unpack_value='mappings',
             default_connection_map=default_connection_map,
             filters=filters if filters else None,
         )
@@ -487,7 +295,7 @@ class DatasourceMap(EntityBase, DeleteMixin):
         ds_connection: DatasourceConnection | str,
         datasource: DatasourceInstance | str,
         login: DatasourceLogin | str,
-        locale: Language | Locale | str | None = None,
+        locale: Language | str | None = None,
         locale_id: str | None = None,
         locale_name: str | None = None,
     ) -> 'DatasourceMap':
@@ -521,8 +329,6 @@ class DatasourceMap(EntityBase, DeleteMixin):
             'datasource': {'id': datasource_id},
             'login': {'id': login_id},
         }
-        if locale and isinstance(locale, Locale):
-            body['locale'] = locale.to_dict()
         if locale and isinstance(locale, Language):
             body['locale'] = {'id': locale.id, 'name': locale.name}
         elif locale and isinstance(locale, str):
@@ -571,7 +377,7 @@ class DatasourceMap(EntityBase, DeleteMixin):
         ds_connection: DatasourceConnection | str | None = None,
         datasource: DatasourceInstance | str | None = None,
         login: DatasourceLogin | str | None = None,
-        locale: Language | Locale | str | None = None,
+        locale: Language | str | None = None,
     ):
         """Replace the connection mapping with a newly created one
         with field values copied unless new ones are specified.
@@ -615,6 +421,7 @@ class DatasourceMap(EntityBase, DeleteMixin):
         self._id = new_conn_map.id
         self.fetch()
 
+    @staticmethod
     def _get_locale(connection: Connection, query: str):
         locales_list = list_languages(connection=connection, base_language_lcid=0)
         for locale in locales_list:

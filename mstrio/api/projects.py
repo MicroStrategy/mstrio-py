@@ -381,14 +381,57 @@ def delete_project(connection: 'Connection', id: str, error_msg: str | None = No
     return connection.delete(endpoint=f'/api/projects/{id}')
 
 
-def get_project_languages(connection: 'Connection', id: str):
-    """Get languages of the project.
+@ErrorHandler(err_msg="Error getting languages for project with ID {id}")
+def get_project_languages(
+    connection: 'Connection',
+    id: str,
+    fields: str | None = None,
+    error_msg: str | None = None,
+):
+    """Get languages for a specified project
 
     Args:
-        connection (Connection): MicroStrategy REST API connection object
+        connection (Connection): MicroStrategy connection object returned by
+            `connection.Connection()`
         id (string): Project ID
+        fields (string, optional): A whitelist of top-level fields separated by
+            commas. Allow the client to selectively retrieve fields in the
+            response.
+        error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
         Complete HTTP response object.
     """
-    return connection.get(endpoint=f'/api/projects/{id}/languages')
+    return connection.get(
+        endpoint=f'/api/projects/{id}/languages',
+        params={'fields': fields},
+    )
+
+
+@ErrorHandler(err_msg="Error updating languages for project with ID {id}")
+def update_project_languages(
+    connection: 'Connection',
+    id: str,
+    body: dict,
+    fields: str | None = None,
+    error_msg: str | None = None,
+):
+    """Update project language configurations.
+
+    Args:
+        connection (Connection): MicroStrategy REST API connection object
+        id (string): Project ID
+        body: Languages update info.
+        fields (string, optional): A whitelist of top-level fields separated by
+            commas. Allow the client to selectively retrieve fields in the
+            response.
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object.
+    """
+    return connection.patch(
+        endpoint=f'/api/projects/{id}/languages',
+        json=body,
+        params={'fields': fields},
+    )
