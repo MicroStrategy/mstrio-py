@@ -6,13 +6,17 @@
 
 # mstrio: Simple and Secure Access to MicroStrategy Data <!-- omit in toc -->
 
+**MicroStrategy for Jupyter Extension will no longer be developed and supported
+and will be removed from the mstrio-py package starting from MicroStrategy One, March 2024.
+You can still use the mstrio-py library and all its current and upcoming features.**
+
 **mstrio** provides a high-level interface for [Python][py_github] and [R][r_github] and is designed to give **data scientists**, **developers**, and **administrators** simple and secure access to their MicroStrategy environment. It wraps [MicroStrategy REST APIs][mstr_rest_docs] into simple workflows, allowing users to fetch data from cubes and reports, create new datasets, add new data to existing datasets, and manage Users/User Groups, Servers, Projects, and more. Since it enforces MicroStrategy’s user and object security model, you don’t need to worry about setting up separate security rules.
 
 With mstrio-py for **data science**, it’s easy to integrate cross-departmental, trustworthy business data in machine learning workflows and enable decision-makers to take action on predictive insights in MicroStrategy Reports, Dossiers, HyperIntelligence Cards, and customized, embedded analytical applications.
 
 With mstrio-py for **system administration**, it’s easy to minimize costs by automating critical, time-consuming administrative tasks, even enabling administrators to leverage the power of Python to address complex administrative workflows for maintaining a MicroStrategy environment.
 
-**MicroStrategy for Jupyter** is an extension for Jupyter Notebook which provides a graphical user interface for mstrio-py methods with the help of which user can perform all of the import and export actions without writing a single line of code manually. MicroStrategy for Jupyter is contained within mstrio-py package and is available after installation and enabling as Jupyter extension
+**MicroStrategy for Jupyter** is an extension for Jupyter Notebook which provides a graphical user interface for mstrio-py methods with the help of which user can perform all of the import and export actions without writing a single line of code manually. MicroStrategy for Jupyter is contained within mstrio-py package and is available after installation and enabling as Jupyter extension.
 
 # Table of Contents <!-- omit in toc -->
 
@@ -189,7 +193,7 @@ jupyter nbextension enable connector-jupyter --py --sys-prefix
 <a id="versioning--changelog" name="versioning--changelog"></a>
 # Versioning & Changelog
 
-Current version: **11.3.12.101** (15 December 2023). Check out [**Changelog**][release_notes] to see what's new.
+Current version: **11.3.12.102** (23 February 2024). Check out [**Changelog**][release_notes] to see what's new.
 
 mstrio-py is constantly developed to support newest MicroStrategy REST APIs. Functionalities may be added to mstrio on monthly basis. It is **recommended** to always install the newest version of mstrio-py, as it will be most stable and still maintain backwards compatibility with various MicroStrategy installations, dating back to 11.1.4.
 

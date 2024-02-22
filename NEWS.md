@@ -1,6 +1,13 @@
 
 # Changelog
 
+## 11.3.12.102 - 2024/02/23
+
+### Deprecated
+- MicroStrategy for Jupyter Extension will no longer be developed and supported
+  and will be removed from the mstrio-py package starting from MicroStrategy One, March 2024.
+  You can still use the mstrio-py library and all its current and upcoming features.
+
 ## 11.3.12.101 - 2023/12/15
 
 ### New features
