@@ -629,3 +629,9 @@ class Connection:
     @property
     def headers(self):
         return self._session.headers
+
+    @property
+    def environment(self):
+        from mstrio.server import Environment
+
+        return Environment(connection=self)

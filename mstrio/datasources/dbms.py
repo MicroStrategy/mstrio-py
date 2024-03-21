@@ -44,8 +44,6 @@ class Dbms(EntityBase):
     Attributes:
         name: Database management system (DBMS) name.
         id: Database management system (DBMS) ID.
-        type: Database management system (DBMS) type.
-        version: Database management system (DBMS) version.
     """
 
     _OBJECT_TYPE = None
@@ -57,8 +55,6 @@ class Dbms(EntityBase):
         connection: "Connection",
         name: str = None,
         id: str = None,
-        type: str = None,
-        version: str = None,
     ):
         """Initialize Dbms object."""
         if name is None and id is None:

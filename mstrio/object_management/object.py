@@ -154,13 +154,18 @@ class Object(Entity, ACLMixin, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin):
             'hidden',
             'target_info',
             'hidden',
+            'comments',
         ): objects_processors.get_info
     }
     _API_PATCH: dict = {
-        ('name', 'description', 'abbreviation', 'hidden', 'folder_id'): (
-            objects_processors.update,
-            'partial_put',
-        )
+        (
+            'name',
+            'description',
+            'abbreviation',
+            'hidden',
+            'folder_id',
+            'comments',
+        ): (objects_processors.update, 'partial_put'),
     }
 
     def __init__(self, connection: "Connection", type: ObjectTypes, id: str):
@@ -193,6 +198,7 @@ class Object(Entity, ACLMixin, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin):
         description: str | None = None,
         abbreviation: str | None = None,
         hidden: bool | None = None,
+        comments: str | None = None,
     ) -> None:
         """Alter the object properties.
 
@@ -201,6 +207,7 @@ class Object(Entity, ACLMixin, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin):
             description: object description
             abbreviation: abbreviation
             hidden: Specifies whether the metric is hidden
+            comments: long description of the object
         """
         func = self.alter
         args = get_args_from_func(func)

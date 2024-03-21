@@ -39,6 +39,10 @@ def list_subscriptions(
     Specify either `project_id` or `project_name`.
     When `project_id` is provided (not `None`), `project_name` is omitted.
 
+    Note:
+    When `project_id` is `None` and `project_name` is `None`,
+    then its value is overwritten by `project_id` from `connection` object.
+
     Args:
         connection(object): MicroStrategy connection object
         project_id: Project ID
@@ -56,6 +60,7 @@ def list_subscriptions(
         connection=connection,
         project_id=project_id,
         project_name=project_name,
+        with_fallback=not project_name,
     )
     chunk_size = (
         1000

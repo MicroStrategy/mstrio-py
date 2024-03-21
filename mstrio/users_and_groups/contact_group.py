@@ -355,9 +355,11 @@ class ContactGroup(EntityBase, DeleteMixin):
         """
         members_ids = [member.id for member in self.members]
         new_members = [
-            ContactGroupMember.from_contact_or_contact_group(obj)
-            if not isinstance(obj, ContactGroupMember)
-            else obj
+            (
+                ContactGroupMember.from_contact_or_contact_group(obj)
+                if not isinstance(obj, ContactGroupMember)
+                else obj
+            )
             for obj in members
             if obj.id not in members_ids
         ]

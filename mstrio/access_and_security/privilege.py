@@ -228,9 +228,9 @@ class Privilege(EntityBase):
                 validated.append({'id': privilege.id, 'name': privilege.name})
             else:
                 docs_url = (
-                    "https://lw.microstrategy.com/msdz/msdl/GARelease_Current/docs/"
-                    + "ReferenceFiles/reference/com/microstrategy/webapi/"
-                    + "EnumDSSXMLPrivilegeTypes.html"
+                    "https://www2.microstrategy.com/producthelp/Current"
+                    + "/ReferenceFiles/reference/com/microstrategy/webapi"
+                    + "/EnumDSSXMLPrivilegeTypes.html"
                 )
                 msg = (
                     f"'{privilege}' is not a valid privilege. Possible values can be "

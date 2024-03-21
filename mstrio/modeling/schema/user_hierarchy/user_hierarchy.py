@@ -104,9 +104,11 @@ class HierarchyAttribute(Dictable):
         )
         self.filters = (
             [
-                SchemaObjectReference.from_dict(obj_ref)
-                if not isinstance(obj_ref, SchemaObjectReference)
-                else object_id
+                (
+                    SchemaObjectReference.from_dict(obj_ref)
+                    if not isinstance(obj_ref, SchemaObjectReference)
+                    else object_id
+                )
                 for obj_ref in filters
             ]
             if filters
@@ -225,6 +227,7 @@ class UserHierarchy(Entity, CopyMixin, MoveMixin, DeleteMixin, TranslationMixin)
             'acg',
             'acl',
             'hidden',
+            'comments',
         ): objects_processors.get_info,
         (
             'id',
@@ -254,7 +257,11 @@ class UserHierarchy(Entity, CopyMixin, MoveMixin, DeleteMixin, TranslationMixin)
             'is_embedded',
             'attributes',
         ): (user_hierarchies.update_user_hierarchy, "put"),
-        ('folder_id', 'hidden'): (objects_processors.update, "partial_put"),
+        (
+            'folder_id',
+            'hidden',
+            'comments',
+        ): (objects_processors.update, 'partial_put'),
     }
     _API_DELETE = staticmethod(user_hierarchies.delete_user_hierarchy)
     _PATCH_PATH_TYPES = {
@@ -423,6 +430,7 @@ class UserHierarchy(Entity, CopyMixin, MoveMixin, DeleteMixin, TranslationMixin)
         destination_folder_id: str | None = None,
         relationships: list[HierarchyRelationship] | list[dict] | None = None,
         hidden: bool | None = None,
+        comments: str | None = None,
     ):
         """Alter the user hierarchies properties.
 
@@ -443,6 +451,7 @@ class UserHierarchy(Entity, CopyMixin, MoveMixin, DeleteMixin, TranslationMixin)
                 relationships stored in the system hierarchy
             hidden (bool, optional): Specifies whether the object is hidden.
                 Default value: False.
+            comments (str, optional): long description of the user hierarchy
         """
         func = self.alter
         args = get_args_from_func(func)

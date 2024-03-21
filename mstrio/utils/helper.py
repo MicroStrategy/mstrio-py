@@ -128,9 +128,11 @@ def camel_to_snake(
 
     def convert_dict(source):
         return {
-            humps.decamelize(key): value
-            if not isinstance(value, dict) or key in whitelist
-            else convert_dict(value)
+            humps.decamelize(key): (
+                value
+                if not isinstance(value, dict) or key in whitelist
+                else convert_dict(value)
+            )
             for key, value in source.items()
         }
 
@@ -152,9 +154,11 @@ def snake_to_camel(
 
     def convert_dict(source):
         return {
-            humps.camelize(key): value
-            if not isinstance(value, dict) or key in whitelist
-            else convert_dict(value)
+            humps.camelize(key): (
+                value
+                if not isinstance(value, dict) or key in whitelist
+                else convert_dict(value)
+            )
             for key, value in source.items()
         }
 
@@ -1098,6 +1102,18 @@ def is_dossier(view_media: int):
     """Documents and dossiers have the same type and subtype when returned
     from search api. They can be distinguished only by view_media value.
     """
+    deprecation_warning(
+        "function `is_dossier`", "function `is_dashboard`", "11.5.03", False
+    )
+    return (
+        view_media & 4160749568 == 1879048192 or view_media & 4160749568 == 1610612736
+    )
+
+
+def is_dashboard(view_media: int):
+    """Documents and dashboards have the same type and subtype when returned
+    from search api. They can be distinguished only by view_media value.
+    """
     return (
         view_media & 4160749568 == 1879048192 or view_media & 4160749568 == 1610612736
     )
@@ -1131,7 +1147,7 @@ def rename_dict_keys(source: dict, mapping: dict) -> dict:
 def verify_project_status(
     project: 'Project', correct_statuses: list[str] | str, node: str | None = None
 ) -> bool:
-    """Veriy if provided status is correct for given project.
+    """Verify if provided status is correct for given project.
 
     Args:
         project (Project): Project for which statuses will be verified.

@@ -13,6 +13,7 @@ from mstrio.utils.datasources import (
     alter_instance_list_resp,
     alter_instance_resp,
     alter_patch_req_body,
+    alter_conn_resp_embedded,
 )
 from mstrio.utils.error_handlers import ErrorHandler
 from mstrio.utils.helper import exception_handler, response_handler
@@ -382,6 +383,48 @@ def test_datasource_connection(connection, body, error_msg=None):
     return connection.post(endpoint=endpoint, json=body)
 
 
+@ErrorHandler(
+    err_msg="Error getting Embedded Connection for Datasource with ID {datasource_id}"
+)
+def get_embedded_connection(connection, datasource_id, error_msg=None):
+    """Get embedded connection for a specific datasource.
+
+    Args:
+        connection: MicroStrategy REST API connection object
+        datasource_id (string): Datasource ID
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object. HTTP STATUS 200/400
+    """
+    endpoint = f'/api/datasources/{datasource_id}'
+    response = connection.get(endpoint=endpoint)
+    response = alter_conn_resp_embedded(response)
+    return response
+
+
+@ErrorHandler(
+    err_msg="Error updating Embedded Connection for Datasource with ID {datasource_id}"
+)
+def update_embedded_connection(connection, datasource_id, body, error_msg=None):
+    """Update embedded connection based on datasource ID.
+
+    Args:
+        connection: MicroStrategy REST API connection object
+        datasource_id (string): Datasource ID
+        body: update operation info
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object. HTTP STATUS 200/400
+    """
+    endpoint = f'/api/datasources/{datasource_id}'
+    for op_dict in body['operationList']:
+        op_dict['path'] = f'/database/embeddedConnection{op_dict["path"]}'
+    response = connection.patch(endpoint=endpoint, json=body)
+    return response
+
+
 @ErrorHandler(err_msg="Error fetching connection mappings.")
 def get_datasource_mappings(
     connection: Connection,
@@ -735,3 +778,44 @@ def update_project_datasources(
     """
 
     return connection.patch(endpoint=f'/api/projects/{id}/datasources', json=body)
+
+
+@ErrorHandler(err_msg='Error providing a query to datasource with ID: {id}')
+def execute_query(connection, project_id, id, body, fields=None, row_limit=-1):
+    """Execute an SQL query for the given datasource ID.
+    Args:
+        connection (Connection): MicroStrategy connection object returned by
+            `connection.Connection()`
+        project_id (str): ID of the project
+        id (str): ID of the datasource
+        body (json): body of the request, it should contain the query in BASE64
+            encoded string
+        fields (list, optional): Comma separated top-level field whitelist. This
+            allows client to selectively retrieve part of the response model
+        row_limit (int, optional): maximum number of rows to retrieve
+    Returns:
+        HTTP response object returned by the Microstrategy REST server."""
+
+    return connection.post(
+        endpoint=f'/api/datasources/{id}/sqlexecution',
+        headers={'projectId': project_id},
+        params={'fields': fields, 'rowLimit': row_limit},
+        json=body,
+    )
+
+
+@ErrorHandler(err_msg='Error getting query result for query with ID: {id}')
+def get_query_results(connection, id, fields=None):
+    """Get the result for a specific query.
+    Args:
+        connection (Connection): MicroStrategy connection object returned by
+            `connection.Connection()`
+        id (str): ID of the query
+        fields(list, optional): Comma separated top-level field whitelist. This
+            allows client to selectively retrieve part of the response model
+    Returns:
+        HTTP response object returned by the Microstrategy REST server."""
+
+    return connection.get(
+        endpoint=f'/api/datasources/sqlexecution/{id}', params={'fields': fields}
+    )

@@ -53,9 +53,11 @@ def list_languages(
         params={
             'acl': acl,
             'hidden': str(hidden).lower(),
-            'isLanguageSupported': str(is_language_supported).lower()
-            if is_language_supported
-            else is_language_supported,
+            'isLanguageSupported': (
+                str(is_language_supported).lower()
+                if is_language_supported
+                else is_language_supported
+            ),
             'fields': fields,
         },
     )

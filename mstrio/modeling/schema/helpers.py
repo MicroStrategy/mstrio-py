@@ -144,6 +144,7 @@ class ObjectSubType(AutoName):
     REPORT_WRITING_DOCUMENT = auto()
     DOCUMENT_THEME = auto()
     DOSSIER = auto()
+    DASHBOARD = 'dossier'
     DRILL_MAP = auto()
     DBMS = auto()
     MD_SECURITY_FILTER = auto()

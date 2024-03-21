@@ -185,11 +185,12 @@ class Fact(Entity, CopyMixin, DeleteMixin, MoveMixin, TranslationMixin):
             'acl',
             'target_info',
             'hidden',
+            'comments',
         ): objects_processors.get_info,
     }
     _API_PATCH = {
         ('data_type', 'expressions'): (facts.update_fact, 'partial_put'),
-        ('name', 'description', 'folder_id', 'hidden'): (
+        ('name', 'description', 'folder_id', 'hidden', 'comments'): (
             objects_processors.update,
             'partial_put',
         ),
@@ -348,13 +349,15 @@ class Fact(Entity, CopyMixin, DeleteMixin, MoveMixin, TranslationMixin):
                 "subType": ObjectSubType.FACT.value,
                 "isEmbedded": is_embedded,
                 "description": description,
-                "destinationFolderId": destination_folder.id
-                if isinstance(destination_folder, Folder)
-                else destination_folder,
+                "destinationFolderId": (
+                    destination_folder.id
+                    if isinstance(destination_folder, Folder)
+                    else destination_folder
+                ),
             },
-            "dataType": data_type.to_dict()
-            if isinstance(data_type, DataType)
-            else data_type,
+            "dataType": (
+                data_type.to_dict() if isinstance(data_type, DataType) else data_type
+            ),
             "expressions": [
                 (e.to_dict() if isinstance(e, Dictable) else e) for e in expressions
             ],
@@ -382,6 +385,7 @@ class Fact(Entity, CopyMixin, DeleteMixin, MoveMixin, TranslationMixin):
         description: str | None = None,
         data_type: DataType | dict | None = None,
         hidden: bool | None = None,
+        comments: str | None = None,
     ):
         """Alter fact properties.
 
@@ -391,6 +395,7 @@ class Fact(Entity, CopyMixin, DeleteMixin, MoveMixin, TranslationMixin):
             data_type (optional, object or dict): fact's data type definition
             hidden (bool, optional): Specifies whether the object is hidden.
                 Default value: False.
+            comments (optional, str): fact's long description
         """
         properties = filter_params_for_func(self.alter, locals(), exclude=['self'])
         if data_type:

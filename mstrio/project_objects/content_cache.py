@@ -156,9 +156,11 @@ class ContentCache(Cache, ContentCacheMixin):
             'operationList': [
                 {
                     'op': op,
-                    'path': f'/contentCaches/{self.combined_id}/status/{status}'
-                    if status
-                    else f'/contentCaches/{self.combined_id}',
+                    'path': (
+                        f'/contentCaches/{self.combined_id}/status/{status}'
+                        if status
+                        else f'/contentCaches/{self.combined_id}'
+                    ),
                     'value': value,
                 }
             ]

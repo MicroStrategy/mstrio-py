@@ -143,6 +143,7 @@ class Device(Entity, DeleteMixin, TranslationMixin):
             'certified_info',
             'acg',
             'acl',
+            'comments',
         ): objects_processors.get_info,
         (
             'id',
@@ -156,6 +157,7 @@ class Device(Entity, DeleteMixin, TranslationMixin):
     _API_DELETE = staticmethod(devices.delete_device)
     _API_PATCH: dict = {
         ('name', 'description', 'device_properties'): (devices.update_device, 'put'),
+        'comments': (objects_processors.update, 'partial_put'),
     }
     _PATCH_PATH_TYPES = {
         'name': str,
@@ -252,6 +254,7 @@ class Device(Entity, DeleteMixin, TranslationMixin):
         name: str | None = None,
         description: str | None = None,
         device_properties: Dictable | dict | None = None,
+        comments: str | None = None,
     ):
         """Alter the device object properties.
 
@@ -260,6 +263,7 @@ class Device(Entity, DeleteMixin, TranslationMixin):
             description: device object description
             device_properties: properties of the device, specific for each
                 device type
+            comments: long description of the device object
         """
         device_properties = device_properties or self.device_properties
         device_properties = (

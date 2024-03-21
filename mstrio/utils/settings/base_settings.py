@@ -165,19 +165,21 @@ class BaseSettings(metaclass=ABCMeta):
                 for each setting, else, return values only
         """
         return {
-            key: {
-                'value': (
+            key: (
+                {
+                    'value': (
+                        self.__dict__[key]._get_value()
+                        if show_names
+                        else self.__dict__[key].value
+                    ),
+                    'description': self.__dict__[key].description,
+                }
+                if show_description
+                else (
                     self.__dict__[key]._get_value()
                     if show_names
                     else self.__dict__[key].value
-                ),
-                'description': self.__dict__[key].description,
-            }
-            if show_description
-            else (
-                self.__dict__[key]._get_value()
-                if show_names
-                else self.__dict__[key].value
+                )
             )
             for key in sorted(self.__dict__)
             if not key.startswith('_')

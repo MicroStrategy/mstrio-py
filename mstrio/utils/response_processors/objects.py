@@ -1,5 +1,6 @@
 from mstrio.api import objects as objects_api
 from mstrio.connection import Connection
+from mstrio.utils.helper import rename_dict_keys
 
 
 def get_info(
@@ -54,14 +55,26 @@ def update(connection, id: str, body: dict, object_type: int, project_id: str = 
     Returns:
         HTTP response object returned by the MicroStrategy REST server.
     """
-    body['ownerId'] = body.pop('owner') if body.get('owner') else None
+    if owner := body.pop('owner', None):
+        body['ownerId'] = owner
+
+    if comments := body.pop('comments', None):
+        body['longDescription'] = comments
+
     obj_info = objects_api.update_object(
         connection, id, body, object_type, project_id
     ).json()
 
+    if (
+        comments
+        and not obj_info.get('comments')
+        and not obj_info.get('longDescription')
+    ):
+        obj_info = get_info(connection, id, object_type, project_id)
+
     obj_info['hidden'] = obj_info.get('hidden', False)
 
-    return obj_info
+    return rename_dict_keys(obj_info, {'longDescription': 'comments'})
 
 
 def update_translations(

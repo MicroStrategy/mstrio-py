@@ -401,9 +401,9 @@ class WarehouseTable(Dictable):
                 or WarehouseTable objects.
         """
 
-        connected_datasource_instances: list[
-            dict
-        ] = list_connected_datasource_instances(connection, to_dictionary=True)
+        connected_datasource_instances: list[dict] = (
+            list_connected_datasource_instances(connection, to_dictionary=True)
+        )
         endpoints: dict[str, str] = cls._get_namespaces_endpoints(
             connected_datasource_instances
         )
@@ -481,10 +481,10 @@ class WarehouseTable(Dictable):
             desc="Retrieving namespaces from available datasources...",
         ) as pbar:
             for future in as_completed(namespaces_futures):
-                namespaces[
-                    future.datasource_id
-                ] = cls._get_future_with_request_exceptions_handlers_and_pbar(
-                    cls._get_namespaces_from_future, future, pbar
+                namespaces[future.datasource_id] = (
+                    cls._get_future_with_request_exceptions_handlers_and_pbar(
+                        cls._get_namespaces_from_future, future, pbar
+                    )
                 )
         return namespaces
 

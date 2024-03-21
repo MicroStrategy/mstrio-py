@@ -2,9 +2,10 @@ from typing import TYPE_CHECKING, Union
 
 from mstrio.api import library
 from mstrio.connection import Connection
+from mstrio.project_objects.dashboard import Dashboard, list_dashboards
 from mstrio.project_objects.document import Document, list_documents
 from mstrio.project_objects.dossier import list_dossiers
-from mstrio.utils.helper import get_valid_project_id
+from mstrio.utils.helper import deprecation_warning, get_valid_project_id
 
 if TYPE_CHECKING:
     from mstrio.project_objects.dossier import Dossier
@@ -30,12 +31,16 @@ class Library:
             )
         except ValueError:
             self._documents = None
+            self._dashboards = None
             self._dossiers = None
             self._contents = None
             return
 
         self._documents = list_documents(self.connection, project_id=project_id, id=ids)
         self._dossiers = list_dossiers(self.connection, project_id=project_id, id=ids)
+        self._dashboards = list_dashboards(
+            self.connection, project_id=project_id, id=ids
+        )
         self._contents = self._documents + self._dossiers
 
     def __get_library_ids(self):
@@ -46,10 +51,20 @@ class Library:
 
     @property
     def dossiers(self):
+        deprecation_warning(
+            'property `dossiers`', 'property `dashboards`', '11.5.03', False
+        )
         if self.connection.project_id is not None:
             ids = self.__get_library_ids()
             self._dossiers = list_dossiers(self.connection, id=ids)
         return self._dossiers
+
+    @property
+    def dashboards(self):
+        if self.connection.project_id is not None:
+            ids = self.__get_library_ids()
+            self._dashboards = list_dashboards(self.connection, id=ids)
+        return self._dashboards
 
     @property
     def documents(self):
@@ -64,11 +79,12 @@ class Library:
             self._contents = self.dossiers + self.documents
         return self._contents
 
-    def publish(self, contents: Union[list, "Document", "Dossier", str]):
-        """Publishes dossier or document to the authenticated user's library.
+    def publish(self, contents: Union[list, "Dashboard", "Document", "Dossier", str]):
+        """Publishes dashboard, dossier or document to the authenticated
+        user's library.
 
-        contents: dossiers or documents to be published, can be Dossier/Document
-            class object or ID
+        contents: dashboards, dossiers or documents to be published,
+            can be Dashboard/Dossier/Document class object or ID
         """
         if not isinstance(contents, list):
             contents = [contents]
@@ -77,11 +93,12 @@ class Library:
             body = {'id': doc_id, 'recipients': [{'id': self.user_id}]}
             library.publish_document(self.connection, body=body)
 
-    def unpublish(self, contents: Union[list, "Document", "Dossier", str]):
-        """Publishes dossier or document to the authenticated user's library.
+    def unpublish(self, contents: Union[list, "Dashboard", "Document", "Dossier", str]):
+        """Publishes dashboard, dossier or document to the authenticated
+        user's library.
 
-        contents: dossiers or documents to be published, can be Dossier/Document
-            class object or ID
+        contents: dashboards, dossiers or documents to be published,
+            can be Dashboard/Dossier/Document class object or ID
         """
         if not isinstance(contents, list):
             contents = [contents]

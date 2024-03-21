@@ -315,9 +315,11 @@ class IncrementalRefreshReport(
             cls.from_dict(
                 obj
                 | {
-                    'show_expression_as': show_expression_as
-                    if isinstance(show_expression_as, ExpressionFormat)
-                    else ExpressionFormat(show_expression_as),
+                    'show_expression_as': (
+                        show_expression_as
+                        if isinstance(show_expression_as, ExpressionFormat)
+                        else ExpressionFormat(show_expression_as)
+                    ),
                     'show_filter_tokens': show_filter_tokens,
                     'show_advanced_properties': show_advanced_properties,
                 },
@@ -367,12 +369,12 @@ class IncrementalRefreshReport(
             'targetCube': target_cube,
             'incrementType': get_enum_val(increment_type, cls.IncrementType),
             'refreshType': get_enum_val(refresh_type, cls.RefreshType),
-            'template': template.to_dict()
-            if isinstance(template, Template)
-            else template,
-            'filter': filter.to_dict()
-            if isinstance(filter, Expression)
-            else (filter or {}),
+            'template': (
+                template.to_dict() if isinstance(template, Template) else template
+            ),
+            'filter': (
+                filter.to_dict() if isinstance(filter, Expression) else (filter or {})
+            ),
             'advanced_properties': advanced_properties,
         }
 

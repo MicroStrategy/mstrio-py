@@ -16,4 +16,5 @@ from .email_subscription import EmailSubscription
 from .file_subscription import FileSubscription
 from .ftp_subscription import FTPSubscription
 from .history_list_subscription import HistoryListSubscription
+from .mobile_subscription import MobileSubscription
 from .subscription_manager import SubscriptionManager, list_subscriptions

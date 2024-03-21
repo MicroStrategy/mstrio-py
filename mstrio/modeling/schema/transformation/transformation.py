@@ -184,6 +184,7 @@ class Transformation(Entity, MoveMixin, DeleteMixin, TranslationMixin):
             'acl',
             'ext_type',
             'hidden',
+            'comments',
         ): objects_processors.get_info,
     }
     _API_PATCH = {
@@ -194,7 +195,7 @@ class Transformation(Entity, MoveMixin, DeleteMixin, TranslationMixin):
             'attributes',
             'destination_folder_id',
         ): (transformations.update_transformation, 'partial_put'),
-        'hidden': (objects_processors.update, "partial_put"),
+        ('hidden', 'comments'): (objects_processors.update, "partial_put"),
     }
     _FROM_DICT_MAP = {
         **Entity._FROM_DICT_MAP,
@@ -369,6 +370,7 @@ class Transformation(Entity, MoveMixin, DeleteMixin, TranslationMixin):
         mapping_type: MappingType | None = None,
         description: str | None = None,
         hidden: bool | None = None,
+        comments: str | None = None,
     ):
         """Alter transformation properties.
 
@@ -383,6 +385,7 @@ class Transformation(Entity, MoveMixin, DeleteMixin, TranslationMixin):
             description: transformation's description
             hidden (bool, optional): Specifies whether the object is hidden.
                 Default value: False.
+            comments: long description of the transformation
         """
 
         name = name or self.name

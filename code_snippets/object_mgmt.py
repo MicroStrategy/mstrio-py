@@ -24,7 +24,7 @@ from mstrio.object_management import (
     SearchResultsFormat,
     start_full_search
 )
-from mstrio.project_objects import Dossier
+from mstrio.project_objects import Dashboard
 from mstrio.types import ObjectSubTypes, ObjectTypes
 from mstrio.helpers import Rights
 
@@ -109,7 +109,7 @@ object.alter(name=OBJECT_NAME, description=OBJECT_DESCRIPTION)
 # Define variables which can be later used in a script
 REPORT_ID = $report_id
 DOCUMENT_ID = $document_id
-DOSSIER_ID = $dossier_id
+DASHBOARD_ID = $dashboard_id
 
 # certify object
 Object(conn, ObjectTypes.REPORT_DEFINITION, REPORT_ID).certify()
@@ -197,11 +197,11 @@ results = full_search(
     root=FOLDER_ID
 )
 
-# return cubes that are used by the given dossier (it can be performed with the
+# return cubes that are used by the given dashboard (it can be performed with the
 # function `full_search` or method `get_connected_cubes` from `Document` class
 # or method `get_dependencies` from `Entity` class)
-cubes = Dossier(conn, id=DOSSIER_ID).get_connected_cubes()
-cubes = Dossier(conn, id=DOSSIER_ID).list_dependencies(
+cubes = Dashboard(conn, id=DASHBOARD_ID).get_connected_cubes()
+cubes = Dashboard(conn, id=DASHBOARD_ID).list_dependencies(
     project=PROJECT_ID, object_types=[ObjectSubTypes.OLAP_CUBE, ObjectSubTypes.SUPER_CUBE]
 )
 cubes = full_search(
@@ -212,8 +212,8 @@ cubes = full_search(
     used_by_object_type=ObjectTypes.DOCUMENT_DEFINITION
 )
 
-# we can also list cubes that use given dossier
-cubes_using_dossier = Dossier(conn, id=DOSSIER_ID).list_dependents(
+# we can also list cubes that use given dashboard
+cubes_using_dashboard = Dashboard(conn, id=DASHBOARD_ID).list_dependents(
     project=PROJECT_ID, object_types=[ObjectSubTypes.OLAP_CUBE, ObjectSubTypes.SUPER_CUBE]
 )
 

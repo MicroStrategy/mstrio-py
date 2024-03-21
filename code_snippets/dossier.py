@@ -1,4 +1,7 @@
-"""This is the demo script to show how to manage dossiers. Its basic goal is
+"""Warning: `Dossier` module is deprecated and will be removed in the future,
+use `Dashboard` (code_snippets/dashboard.py) module instead
+
+This is the demo script to show how to manage dossiers. Its basic goal is
 to present what can be done with this module and to ease its usage.
 """
 

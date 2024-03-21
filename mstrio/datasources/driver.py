@@ -75,11 +75,13 @@ class Driver(Entity, TranslationMixin):
             'certified_info',
             'acg',
             'acl',
+            'comments',
         ): objects_processors.get_info,
         ('id', 'name', 'is_enabled', 'is_odbc'): drivers.get,
     }
     _API_PATCH: dict = {
         'enabled': (drivers.update, 'patch'),
+        'comments': (objects_processors.update, 'partial_put'),
     }
 
     def __init__(
@@ -118,11 +120,12 @@ class Driver(Entity, TranslationMixin):
         self.is_enabled = kwargs.get('is_enabled')
         self.is_odbc = kwargs.get('is_odbc')
 
-    def alter(self, is_enabled: bool | None = None):
+    def alter(self, is_enabled: bool | None = None, comments: str | None = None):
         """Update properties of a Driver
 
         Args:
            is_enabled (bool, optional): specifies if a Driver is enabled
+           comments: long description of the Driver
         """
         properties = {'enabled': is_enabled}
         not_none_properties = delete_none_values(properties, recursion=False)

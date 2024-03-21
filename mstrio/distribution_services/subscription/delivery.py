@@ -42,11 +42,8 @@ class ShortcutCacheFormat(AutoUpperName):
 
 
 class ClientType(AutoUpperName):
-    RESERVED = auto()
-    BLACKBERRY = auto()
     PHONE = auto()
     TABLET = auto()
-    ANDROID = auto()
 
 
 class LibraryCacheTypes(AutoName):
@@ -340,7 +337,7 @@ class Delivery(DeliveryDictable):
         """Delivery properties for Mobile subscriptions
 
         Attributes:
-            client_type: The mobile client type
+            mobile_client_type: The mobile client type
             device_id: The mobile target project
             do_not_create_update_caches: Whether the subscription will use
                 a existing cache
@@ -351,7 +348,7 @@ class Delivery(DeliveryDictable):
         """
 
         VALIDATION_DICT = {
-            "client_type": [str, False],
+            "mobile_client_type": [str, False],
             "device_id": [str, False],
             "do_not_create_update_caches": [bool, False],
             "overwrite_older_version": [bool, False],
@@ -360,13 +357,13 @@ class Delivery(DeliveryDictable):
 
         def __init__(
             self,
-            client_type: ClientType = ClientType.RESERVED.name,
+            mobile_client_type: ClientType = ClientType.PHONE.name,
             device_id: str | None = None,
             do_not_create_update_caches: bool = False,
             overwrite_older_version: bool = False,
             re_run_hl: bool = False,
         ):
-            self.client_type = client_type
+            self.mobile_client_type = mobile_client_type
             self.device_id = device_id
             self.do_not_create_update_caches = do_not_create_update_caches
             self.overwrite_older_version = overwrite_older_version
@@ -440,7 +437,7 @@ class Delivery(DeliveryDictable):
         collated: bool = False,
         orientation: Orientation = Orientation.PORTRAIT.name,
         use_print_range: bool = False,
-        client_type: ClientType = ClientType.RESERVED.name,
+        mobile_client_type: ClientType = ClientType.PHONE.name,
         device_id: str | None = None,
         do_not_create_update_caches: bool = False,
         re_run_hl: bool = False,
@@ -448,9 +445,7 @@ class Delivery(DeliveryDictable):
         email: Email | None = None,
         file: File | None = None,
         cache_type: CacheType | str = CacheType.RESERVED,
-        shortcut_cache_format: (
-            ShortcutCacheFormat | str
-        ) = ShortcutCacheFormat.RESERVED,
+        shortcut_cache_format: ShortcutCacheFormat | str = ShortcutCacheFormat.RESERVED,
         library_cache_types: list[LibraryCacheTypes | str] = None,
         reuse_dataset_cache: bool = False,
         is_all_library_users: bool = False,
@@ -503,7 +498,7 @@ class Delivery(DeliveryDictable):
             )
         elif self.DeliveryMode(mode) == self.DeliveryMode.MOBILE:
             self.mobile = self.Mobile(
-                client_type,
+                mobile_client_type,
                 device_id,
                 do_not_create_update_caches,
                 overwrite_older_version,

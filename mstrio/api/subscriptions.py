@@ -440,8 +440,8 @@ def bursting_attributes(
 
 @ErrorHandler(err_msg="Error sending subscription {subscription_id}")
 def send_subscription(
-    connection, subscription_id, project_id, body, fields=None, error_msg=None
-):
+    connection, subscription_id, project_id, fields=None, error_msg=None
+) -> Response:
     """Send the existing subscription immediately.
 
     Args:
@@ -449,7 +449,6 @@ def send_subscription(
             `connection.Connection()`
         subscription_id (str): ID of subscription
         project_id (str): ID of the project
-        body (dict): body of the request
         fields (list, optional): Comma separated top-level field whitelist. This
             allows client to selectively retrieve part of the response model.
         error_msg (str, optional): Customized error message.
@@ -457,9 +456,8 @@ def send_subscription(
     Returns:
         HTTP response object returned by the MicroStrategy REST server
     """
-    return connection.get(
+    return connection.post(
         endpoint=f'/api/subscriptions/{subscription_id}/send',
         params={'fields': fields},
         headers={'X-MSTR-ProjectID': project_id},
-        json=body,
     )

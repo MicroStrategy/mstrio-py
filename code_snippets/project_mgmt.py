@@ -5,9 +5,9 @@ This script will not work without replacing parameters with real values.
 Its basic goal is to present what can be done with this module and to
 ease its usage.
 """
-from mstrio.datasources import DatasourceInstance
-from mstrio.server import compare_project_settings, Environment, Project
 from mstrio.connection import get_connection
+from mstrio.datasources import DatasourceInstance
+from mstrio.server import Environment, Project, compare_project_settings
 from mstrio.server.setting_types import FailedEmailDelivery
 
 # Define a variable which can be later used in a script
@@ -113,6 +113,26 @@ project.settings.appendInfoForEmailDelivery = [
 # Update multiple settings at once
 project.settings.alter(maxEmailSubscriptionCount=100, maxExecutingJobsPerUser=50)
 project.settings.update()
+
+# Get the list of all cache settings and their values
+project_cache_settings = project.settings.list_caching_properties()
+# Get the list of all cache settings and their values with the settings description
+project_cache_settings_with_description = project.settings.list_caching_properties(show_description=True)
+
+# change a cache setting of a project
+project.settings.maxReportCacheMemoryConsumption = 250
+
+# update multiple cache settings at once
+project.settings.alter(maxReportCacheMemoryConsumption=250, maxReportCacheCount=5000)
+project.settings.update()
+
+# delete object and element cache of a project
+project.settings.delete_object_cache()
+project.settings.delete_element_cache()
+
+# delete object and element cache for all projects on environment
+env.delete_server_object_cache()
+env.delete_server_element_cache()
 
 # print currently set value of Unified Quoting Behavior VldbSetting
 print(project.vldb_settings['Quoting Behavior'].value)

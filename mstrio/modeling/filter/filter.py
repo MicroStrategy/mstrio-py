@@ -108,9 +108,11 @@ def list_filters(
     return [
         Filter.from_dict(
             source={
-                "show_expression_as": show_expression_as
-                if isinstance(show_expression_as, ExpressionFormat)
-                else ExpressionFormat(show_expression_as),
+                "show_expression_as": (
+                    show_expression_as
+                    if isinstance(show_expression_as, ExpressionFormat)
+                    else ExpressionFormat(show_expression_as)
+                ),
                 "show_filter_tokens": show_filter_tokens,
                 **obj,
             },
@@ -174,6 +176,7 @@ class Filter(Entity, CopyMixin, DeleteMixin, MoveMixin, TranslationMixin):
             'acg',
             'acl',
             'hidden',
+            'comments',
         ): objects_processors.get_info,
         (
             'id',
@@ -198,7 +201,11 @@ class Filter(Entity, CopyMixin, DeleteMixin, MoveMixin, TranslationMixin):
             'destination_folder_id',
             'is_embedded',
         ): (filters.update_filter, "put"),
-        ('folder_id', 'hidden'): (objects_processors.update, 'partial_put'),
+        (
+            'folder_id',
+            'hidden',
+            'comments',
+        ): (objects_processors.update, 'partial_put'),
     }
     _PATCH_PATH_TYPES = {
         'name': str,
@@ -338,9 +345,11 @@ class Filter(Entity, CopyMixin, DeleteMixin, MoveMixin, TranslationMixin):
             "information": {
                 "name": name,
                 "description": description,
-                "destinationFolderId": destination_folder.id
-                if isinstance(destination_folder, Folder)
-                else destination_folder,
+                "destinationFolderId": (
+                    destination_folder.id
+                    if isinstance(destination_folder, Folder)
+                    else destination_folder
+                ),
                 "primaryLocale": primary_locale,
                 "isEmbedded": is_embedded,
             }
@@ -379,6 +388,7 @@ class Filter(Entity, CopyMixin, DeleteMixin, MoveMixin, TranslationMixin):
         qualification: Expression | dict | None = None,
         is_embedded: bool | None = None,
         hidden: bool | None = None,
+        comments: str | None = None,
     ):
         """Alter the filter properties.
 
@@ -393,6 +403,7 @@ class Filter(Entity, CopyMixin, DeleteMixin, MoveMixin, TranslationMixin):
                 object of this reference is embedded within this object
             hidden (bool, optional): Specifies whether the object is hidden.
                 Default value: False.
+            comments (str, optional): long description of the filter
         """
         qualification = (
             {}

@@ -206,7 +206,7 @@ attr = Attribute.create(
 attr = Attribute.create(conn, **ATTRIBUTE_DATA, show_expression_as=ExpressionFormat.TOKENS)
 
 # Any changes to a schema objects must be followed by schema_reload
-# in order to use them in reports, dossiers and so on
+# in order to use them in reports, dashboards and so on
 schema_manager = SchemaManagement(connection=conn, project_id=conn.project_id)
 task = schema_manager.reload(update_types=[SchemaUpdateType.LOGICAL_SIZE])
 

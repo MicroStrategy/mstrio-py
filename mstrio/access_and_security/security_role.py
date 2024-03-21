@@ -84,6 +84,7 @@ class SecurityRole(Entity, DeleteMixin, TranslationMixin):
     _OBJECT_TYPE = ObjectTypes.SECURITY_ROLE
     _PATCH_PATH_TYPES = {"name": str, "description": str}
     _API_GETTERS = {
+        **Entity._API_GETTERS,
         (
             'id',
             'name',
@@ -98,10 +99,13 @@ class SecurityRole(Entity, DeleteMixin, TranslationMixin):
             'projects',
             'acg',
             'acl',
-        ): security.get_security_role
+        ): security.get_security_role,
     }
     _API_PATCH: dict = {
-        'abbreviation': (objects_processors.update, 'partial_put'),
+        (
+            'abbreviation',
+            'comments',
+        ): (objects_processors.update, 'partial_put'),
         ('name', 'description'): (security.update_security_role, 'patch'),
     }
 
@@ -231,12 +235,18 @@ class SecurityRole(Entity, DeleteMixin, TranslationMixin):
         )
         return [role.get('id') for role in sr_dicts]  # type: ignore
 
-    def alter(self, name: str | None = None, description: str | None = None):
+    def alter(
+        self,
+        name: str | None = None,
+        description: str | None = None,
+        comments: str | None = None,
+    ):
         """Alter Security Role name or/and description.
 
         Args:
             name: new name of the Security Role
             description: new description of the Security Role
+            comments: long description of the Security Role
         """
         func = self.alter
         args = helper.get_args_from_func(func)
@@ -257,6 +267,10 @@ class SecurityRole(Entity, DeleteMixin, TranslationMixin):
         Args:
             project_name(str, optional): Project name
         """
+
+        # UserGroup is imported here to avoid circular imports
+        from mstrio.users_and_groups.user_group import UserGroup
+
         if project_name is not None:
             [filtered_project] = helper.filter_list_of_dicts(
                 self.projects, name=project_name
@@ -267,7 +281,9 @@ class SecurityRole(Entity, DeleteMixin, TranslationMixin):
             for project in self.projects:
                 for member in project['members']:
                     members.append(member)
-        return members
+        for m in members:
+            m['subtype'] = m['subType']
+        return UserGroup._parse_members(members, self.connection)
 
     def grant_to(
         self,
@@ -311,9 +327,7 @@ class SecurityRole(Entity, DeleteMixin, TranslationMixin):
             obj.id if isinstance(obj, (User, UserGroup)) else str(obj)
             for obj in members_list
         ]
-        existing_ids = [
-            obj['id'] for obj in self.list_members(project_name=project_name)
-        ]
+        existing_ids = [obj.id for obj in self.list_members(project_name=project_name)]
         succeeded = list(set(members_list) - set(existing_ids))
         failed = list(set(existing_ids).intersection(set(members_list)))
 
@@ -372,9 +386,7 @@ class SecurityRole(Entity, DeleteMixin, TranslationMixin):
             for obj in members_list
         ]
 
-        existing_ids = [
-            obj['id'] for obj in self.list_members(project_name=project_name)
-        ]
+        existing_ids = [obj.id for obj in self.list_members(project_name=project_name)]
         succeeded = list(set(members_list).intersection(set(existing_ids)))
         failed = list(set(members_list) - set(succeeded))
 

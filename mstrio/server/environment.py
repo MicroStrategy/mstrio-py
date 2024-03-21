@@ -1,12 +1,16 @@
+import logging
 from typing import Optional, Union
 
 from pandas import DataFrame
 
+from mstrio import config
 from mstrio.api import monitors
 from mstrio.server.project import Project, compare_project_settings
 from mstrio.server.server import ServerSettings
 from mstrio.utils import helper
-from mstrio.utils.version_helper import class_version_handler
+from mstrio.utils.version_helper import class_version_handler, method_version_handler
+
+logger = logging.getLogger(__name__)
 
 
 @class_version_handler('11.3.0000')
@@ -18,6 +22,8 @@ class Environment:
     Attributes:
         connection: A MicroStrategy connection object.
         server_settings: Intelligence Server settings object.
+        nodes: List of I-Server nodes and their properties.
+        node_names: List of I-Server node names.
     """
 
     def __init__(self, connection):
@@ -28,6 +34,7 @@ class Environment:
                 by `connection.Connection()`.
         """
         self.connection = connection
+        self._nodes = None
 
     @property
     def server_settings(self) -> ServerSettings:
@@ -105,6 +112,22 @@ class Environment:
             to_dictionary=to_dictionary,
             **filters,
         )
+
+    @method_version_handler('11.3.0800')
+    def delete_server_object_cache(self) -> None:
+        """Delete object cache for all projects on the environment."""
+        for project in self.list_loaded_projects():
+            project.delete_object_cache()
+        if config.verbose:
+            logger.info('Server object cache deleted.')
+
+    @method_version_handler('11.3.0800')
+    def delete_server_element_cache(self) -> None:
+        """Delete element cache for all projects on the environment."""
+        for project in self.list_loaded_projects():
+            project.delete_element_cache()
+        if config.verbose:
+            logger.info('Server element cache deleted.')
 
     def list_nodes(
         self,
@@ -223,3 +246,17 @@ class Environment:
             )
 
         return compare_project_settings(projects, show_diff_only)
+
+    def is_cluster(self):
+        return len(self.nodes) > 1
+
+    @property
+    def nodes(self):
+        if not self._nodes:
+            self._nodes = self.list_nodes()
+
+        return self._nodes
+
+    @property
+    def node_names(self):
+        return [node['name'] for node in self.nodes]

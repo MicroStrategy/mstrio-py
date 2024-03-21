@@ -143,3 +143,21 @@ class GatewayType(AutoCapitalizedName):
     COMMUNITY = auto()
     NATIVE = auto()
     RELATIONAL = auto()
+
+
+class CharEncoding(AutoName):
+    UTF8 = auto()
+    NON_UTF8 = "multibyte"
+
+
+class DriverType(AutoName):
+    RESERVED = auto()
+    ODBC = auto()
+    NATIVE = auto()
+
+
+class ExecutionMode(AutoName):
+    RESERVED = auto()
+    ASYNC_CONNECTION = auto()
+    ASYNC_STATEMENT = auto()
+    SYNCHRONOUS = auto()

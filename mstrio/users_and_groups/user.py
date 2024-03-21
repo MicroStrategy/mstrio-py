@@ -167,6 +167,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
             'default_timezone',
             'ldapdn',
         ): users.get,
+        'comments': objects_processors.get_info,
         'addresses': users.get_addresses,
         'security_roles': users.get_security_roles,
         'privileges': users.get_privileges,
@@ -194,7 +195,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
             'security_roles',
             'default_timezone',
         ): (users.update, 'patch'),
-        ('owner'): (objects_processors.update, 'partial_put'),
+        ('owner', 'comments'): (objects_processors.update, 'partial_put'),
         ('default_timezone', 'language'): (users.update_user_settings, 'partial_put'),
     }
 
@@ -222,7 +223,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
     def _parse_addresses(
         source: list[dict], connection: 'Connection', to_snake_case: bool = True
     ):
-        """Parse Adresses from the API response."""
+        """Parse Addresses from the API response."""
         from mstrio.users_and_groups.contact import ContactAddress
 
         return [
@@ -471,6 +472,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
         owner: 'User | str | None' = None,
         default_timezone: 'str| dict | None' = None,
         language: 'str | Language | None' = None,
+        comments: str | None = None,
     ) -> None:
         """Alter user properties.
 
@@ -493,6 +495,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
             owner: owner of user
             default_timezone: default timezone for user
             language: language for user
+            comments: long description of the object
         """
         owner = owner.id if isinstance(owner, User) else owner
         if language:
@@ -501,9 +504,11 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
             }
         if default_timezone:
             default_timezone = {
-                'id': default_timezone['id']
-                if isinstance(default_timezone, dict)
-                else default_timezone
+                'id': (
+                    default_timezone['id']
+                    if isinstance(default_timezone, dict)
+                    else default_timezone
+                )
             }
         properties = filter_params_for_func(self.alter, locals(), exclude=['self'])
         self._alter_properties(**properties)
@@ -615,12 +620,12 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
 
         body = {
             'name': name if name else address_for_update['name'],
-            'physicalAddress': address
-            if address
-            else address_for_update['physicalAddress'],
-            'deliveryType': delivery_type
-            if delivery_type
-            else address_for_update['deliveryType'],
+            'physicalAddress': (
+                address if address else address_for_update['physicalAddress']
+            ),
+            'deliveryType': (
+                delivery_type if delivery_type else address_for_update['deliveryType']
+            ),
             'deviceId': device_id if device_id else address_for_update['deviceId'],
             'isDefault': default if default else address_for_update['isDefault'],
         }

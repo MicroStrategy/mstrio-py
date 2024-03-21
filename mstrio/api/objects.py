@@ -53,7 +53,7 @@ def get_object_info(
     return connection.get(
         endpoint=f'/api/objects/{id}',
         headers={'X-MSTR-ProjectID': project_id},
-        params={'type': object_type},
+        params={'type': object_type, 'comments': True},
     )
 
 
@@ -227,7 +227,7 @@ def get_vldb_settings(connection, id, object_type, project_id=None, error_msg=No
             `connection.Connection()`.
         id (str): Object ID
         object_type (int): DssXmlTypeReportDefinition(3) for Dataset and
-            DssXmlTypeDocumentDefinition(55) for document/dossier
+            DssXmlTypeDocumentDefinition(55) for dashboard/document/dossier
         project_id(str): ID of a project in which the object is located.
         error_msg (string, optional): Custom Error Message for Error Handling
 
@@ -260,7 +260,7 @@ def delete_vldb_settings(connection, id, object_type, project_id=None, error_msg
             `connection.Connection()`.
         id (str): Object ID
         object_type (int): DssXmlTypeReportDefinition(3) for Dataset and
-            DssXmlTypeDocumentDefinition(55) for document/dossier
+            DssXmlTypeDocumentDefinition(55) for dashboard/document/dossier
         project_id(str): ID of a project in which the object is located.
         error_msg (string, optional): Custom Error Message for Error Handling
 
@@ -294,7 +294,7 @@ def set_vldb_settings(
             `connection.Connection()`.
         id (str): Object ID
         object_type (int): DssXmlTypeReportDefinition(3) for Dataset and
-            DssXmlTypeDocumentDefinition(55) for document/dossier
+            DssXmlTypeDocumentDefinition(55) for dashboard/document/dossier
         name: property set name
         body: [{"name": "string",
                 "value": {}}]

@@ -25,6 +25,8 @@ def store_search_instance(
     used_by_object: str | None = None,
     used_by_recursive: bool | None = None,
     used_by_one_of: bool | None = None,
+    begin_modification_time: str | None = None,
+    end_modification_time: str | None = None,
     error_msg: str | None = None,
 ):
     """
@@ -75,6 +77,12 @@ def store_search_instance(
         used_by_one_of(boolean): Control the Intelligence server to also
             find objects that are used by one of or all of given objects
             indirectly. Default value is false.
+        begin_modification_time(string, optional): Field to filter request
+            to return records newer than a given date in
+            format 'yyyy-MM-dd'T'HH:mm:ssZ', for example 2021-04-04T06:33:32Z.
+        end_modification_time(string, optional): Field to filter request
+            to return records  older than a given date in
+            format 'yyyy-MM-dd'T'HH:mm:ssZ', for example 2022-04-04T06:33:32Z.
         error_msg(string, optional): Custom Error Message for Error Handling
 
     Returns:
@@ -95,6 +103,8 @@ def store_search_instance(
             'usedByRecursive': used_by_recursive,
             'usesOneOf': uses_one_of,
             'usedByOneOf': used_by_one_of,
+            'beginModificationTime': begin_modification_time,
+            'endModificationTime': end_modification_time,
         },
     )
 
@@ -248,8 +258,9 @@ def get_quick_search_result_from_object(
     connection: 'Connection',
     project_id: str,
     search_object_id: str,
-    subtypes: None
-    | Union['ObjectSubTypes', list['ObjectSubTypes'], int, list[int]] = None,
+    subtypes: (
+        None | Union['ObjectSubTypes', list['ObjectSubTypes'], int, list[int]]
+    ) = None,
     include_ancestors: bool | None = None,
     include_acl: bool | None = None,
     limit: int | None = None,

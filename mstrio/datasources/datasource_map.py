@@ -60,6 +60,14 @@ def list_datasource_mappings(
     Examples:
         >>> list_datasource_mappings(connection)
     """
+    if default_connection_map:
+        project_id = project.id if isinstance(project, Project) else project
+        project = helper.get_valid_project_id(
+            connection=connection,
+            project_id=project_id,
+            with_fallback=True,
+        )
+
     return DatasourceMap._list(
         connection=connection,
         project=project,

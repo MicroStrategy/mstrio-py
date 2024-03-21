@@ -109,6 +109,7 @@ class Schedule(Entity, DeleteMixin, TranslationMixin):
             'certified_info',
             'acg',
             'acl',
+            'comments',
         ): objects_processors.get_info,
     }
 
@@ -123,7 +124,10 @@ class Schedule(Entity, DeleteMixin, TranslationMixin):
         'stop_date': DatetimeFormats.DATE,
     }
     _API_PATCH: dict = {
-        'abbreviation': (objects_processors.update, 'partial_put'),
+        (
+            'abbreviation',
+            'comments',
+        ): (objects_processors.update, 'partial_put'),
         (
             'name',
             'description',
@@ -487,6 +491,7 @@ class Schedule(Entity, DeleteMixin, TranslationMixin):
         days_of_month: list[str] | None = None,
         monthly_pattern: ScheduleEnums.MonthlyPattern | None = None,
         yearly_pattern: ScheduleEnums.YearlyPattern | None = None,
+        comments: str | None = None,
     ) -> None:
         """Alter Schedule properties.
 
@@ -547,6 +552,7 @@ class Schedule(Entity, DeleteMixin, TranslationMixin):
             yearly_pattern (ScheduleEnums.YearlyPattern, optional):
                 The yearly recurrence pattern of the schedule. Possible values
                 are DAY, DAY_OF_WEEK. Defaults to None.
+            comments: long description of the schedule. Defaults to None.
         Returns:
             None
         """
@@ -613,16 +619,18 @@ class Schedule(Entity, DeleteMixin, TranslationMixin):
             delattr(self, 'event')
 
     @method_version_handler('11.3.0000')
-    def delete(self) -> bool:
+    def delete(self, force_with_dependents: bool = False) -> bool:
         """Delete the schedule.
 
+        Args:
+            force_with_dependents (bool, optional):
+                If True, then no additional prompt will be shown before deleting
+                the schedule. WARNING: This will also delete ALL SUBSCRIPTIONS
+                that use this schedule. Defaults to False.
         Returns:
             bool: True if deletion was successful else False.
         """
-        # When the server behavior changes, and deleting last schedule
-        # from subscription will no longer delete subscription,
-        # move 'force' param to method definition
-        force = False
+
         self._DELETE_CONFIRM_MSG = (
             "This schedule may be part of a subscription. "
             "Deleting such a schedule will remove the subscription as well. "
@@ -632,7 +640,7 @@ class Schedule(Entity, DeleteMixin, TranslationMixin):
         )
         self._DELETE_SUCCESS_MSG = f"Deleted schedule '{self.name}' with ID: {self.id}."
 
-        return super().delete(force=force)
+        return super().delete(force=force_with_dependents)
 
     @property
     def expired(self):
