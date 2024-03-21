@@ -56,7 +56,7 @@ Privilege(target_conn, name='Create package').add_to_user(user2)
 Privilege(target_conn, name='Manage Migration Packages').add_to_user(user2)
 
 # Define variables which can be later used in a script
-DOSSIER_ID = $dossier_id
+DASHBOARD_ID = $dashboard_id
 REPORT_ID = $report_id
 
 # Create PackageConfig with information what object should be migrated and how.
@@ -74,7 +74,7 @@ package_content_info = PackageContentInfo(
     include_dependents=True,
 )
 package_content_info2 = PackageContentInfo(
-    id=DOSSIER_ID,
+    id=DASHBOARD_ID,
     type=ObjectTypes.DOCUMENT_DEFINITION,
     action=PackageContentInfo.Action.USE_EXISTING,
     include_dependents=True,

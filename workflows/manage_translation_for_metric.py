@@ -5,6 +5,7 @@ present what can be done with this module and to ease its usage.
 
 from mstrio.connection import get_connection
 from io import StringIO
+from mstrio.datasources import DatasourceInstance
 from mstrio.object_management import list_translations, Translation
 from mstrio.modeling.metric import Metric
 from mstrio.server import Language
@@ -178,8 +179,154 @@ METRIC.list_translations()
 METRIC.list_translations(languages=[LANG_LCID, LANG_2_ID])
 
 # Export translations to CSV
-CSV_LIST = Translation.to_csv_from_list(connection=CONN, object_list=[METRIC])
-CSV_LIST_IOSTRING = StringIO(CSV_LIST)
+CSV_LIST = StringIO(Translation.to_csv_from_list(connection=CONN, object_list=[METRIC]))
+# Export translations to CSV with extra columns
+CSV_LIST_EXTRA_COLUMNS = Translation.to_csv_from_list(
+    connection=CONN,
+    object_list=[METRIC],
+    add_object_creation_date=True,
+    add_object_description=True,
+    add_object_last_modified_date=True,
+    add_object_path=True,
+    add_object_version=True,
+)
+# Export translations to CSV with specific languages only
+CSV_LIST_SPECIFIED_LANGUAGES = StringIO(
+    Translation.to_csv_from_list(
+        connection=CONN, object_list=[METRIC], languages=[LANG_ID, LANG_2_ID]
+    )
+)
+# Export translations to CSV in denormalized format and specific separator
+CSV_LIST_DENORMALIZED = Translation.to_csv_from_list(
+    connection=CONN, object_list=[METRIC], denormalized_form=True, separator=','
+)
 
 # Add translations from CSV
-Translation.add_translations_from_csv(connection=CONN, csv_file=CSV_LIST_IOSTRING)
+Translation.add_translations_from_csv(connection=CONN, file_path=CSV_LIST)
+# Add translations from CSV with removing translations and automatching target_ids
+Translation.add_translations_from_csv(
+    connection=CONN,
+    file_path=CSV_LIST_SPECIFIED_LANGUAGES,
+    delete=True,
+    automatch_target_ids=True,
+)
+
+# Export translations to JSON
+JSON_LIST = StringIO(
+    Translation.to_json_from_list(connection=CONN, object_list=[METRIC])
+)
+# Export translations to JSON with extra columns
+JSON_LIST_EXTRA_COLUMNS = Translation.to_json_from_list(
+    connection=CONN,
+    object_list=[METRIC],
+    add_object_creation_date=True,
+    add_object_description=True,
+    add_object_last_modified_date=True,
+    add_object_path=True,
+    add_object_version=True,
+)
+# Export translations to JSON with specific languages only
+JSON_LIST_SPECIFIED_LANGUAGES = StringIO(
+    Translation.to_json_from_list(
+        connection=CONN, object_list=[METRIC], languages=[LANG_ID, LANG_2_ID]
+    )
+)
+# Export translations to JSON in denormalized format
+JSON_LIST_DENORMALIZED = Translation.to_json_from_list(
+    connection=CONN, object_list=[METRIC], denormalized_form=True
+)
+
+# Add translations from JSON
+Translation.add_translations_from_json(connection=CONN, file_path=JSON_LIST)
+# Add translations from JSON with removing translations and automatching target_ids
+Translation.add_translations_from_json(
+    connection=CONN,
+    file_path=JSON_LIST_SPECIFIED_LANGUAGES,
+    delete=True,
+    automatch_target_ids=True,
+)
+
+# Export translations to database
+# The flag force=True will be used in the examples
+# That flag means no confirmation will be asked before overwriting the specified table
+# If the flag is not used, the user will be asked for confirmation before overwriting
+DATASOURCE = DatasourceInstance(connection=CONN, id='A23BBC514D336D5B4FCE919FE19661A3')
+Translation.to_database_from_list(
+    connection=CONN,
+    object_list=[METRIC],
+    table_name='test_table',
+    datasource=DATASOURCE,
+    force=True,
+)
+# Export translations to database with extra columns
+Translation.to_database_from_list(
+    connection=CONN,
+    object_list=[METRIC],
+    table_name='test_table',
+    datasource=DATASOURCE,
+    add_object_creation_date=True,
+    add_object_description=True,
+    add_object_last_modified_date=True,
+    add_object_path=True,
+    add_object_version=True,
+    force=True,
+)
+# Export translations to database with specific languages only
+Translation.to_database_from_list(
+    connection=CONN,
+    object_list=[METRIC],
+    table_name='test_table',
+    datasource=DATASOURCE,
+    languages=[LANG_ID, LANG_2_ID],
+    force=True,
+)
+# Export translations to database in denormalized format
+Translation.to_database_from_list(
+    connection=CONN,
+    object_list=[METRIC],
+    table_name='test_table_denormalized',
+    datasource=DATASOURCE,
+    denormalized_form=True,
+    force=True,
+)
+
+# Add translations from database
+Translation.add_translations_from_database(
+    connection=CONN, table_name='test_table', datasource=DATASOURCE
+)
+# Add translations from database with removing translations and automatching target_ids
+Translation.add_translations_from_database(
+    connection=CONN,
+    table_name='test_table',
+    datasource=DATASOURCE,
+    delete=True,
+    automatch_target_ids=True,
+)
+
+# Export translations to dataframe
+DATAFRAME = Translation.to_dataframe_from_list(connection=CONN, object_list=[METRIC])
+# Export translations to dataframe with extra columns
+DATAFRAME_EXTRA_COLUMNS = Translation.to_dataframe_from_list(
+    connection=CONN,
+    object_list=[METRIC],
+    add_object_creation_date=True,
+    add_object_description=True,
+    add_object_last_modified_date=True,
+    add_object_path=True,
+    add_object_version=True,
+)
+# Export translations to dataframe with specific languages only
+DATAFRAME_SPECIFIED_LANGUAGES = Translation.to_dataframe_from_list(
+    connection=CONN, object_list=[METRIC], languages=[LANG_ID, LANG_2_ID]
+)
+# Export translations to dataframe in denormalized format
+DATAFRAME_DENORMALIZED = Translation.to_dataframe_from_list(
+    connection=CONN, object_list=[METRIC], denormalized_form=True
+)
+
+# Add translations from dataframe
+Translation.add_translations_from_dataframe(connection=CONN, dataframe=DATAFRAME)
+# Add translations from dataframe with removing translations and automatching target_ids
+Translation.add_translations_from_dataframe(
+    connection=CONN, dataframe=DATAFRAME, delete=True, automatch_target_ids=True
+)

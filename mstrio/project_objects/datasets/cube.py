@@ -314,8 +314,12 @@ class _Cube(Entity, VldbMixin, DeleteMixin, TranslationMixin):
             'template_info',
             'target_info',
             'hidden',
+            'comments',
         ): objects_processors.get_info,
         ('server_mode', 'size', 'path', 'status', 'owner_id'): cube_processors.get_info,
+    }
+    _API_PATCH: dict = {
+        'comments': (objects_processors.update, 'partial_put'),
     }
     _FROM_DICT_MAP = {
         **Entity._FROM_DICT_MAP,
@@ -404,6 +408,7 @@ class _Cube(Entity, VldbMixin, DeleteMixin, TranslationMixin):
         description: str | None = None,
         abbreviation: str | None = None,
         hidden: bool | None = None,
+        comments: str | None = None,
     ):
         """Alter Cube properties.
 
@@ -412,6 +417,7 @@ class _Cube(Entity, VldbMixin, DeleteMixin, TranslationMixin):
             description: new description of the Dataset
             abbreviation: new abbreviation of the Dataset
             hidden: Specifies whether the metric is hidden
+            comments: new long description of the Dataset
         """
         func = self.alter
         args = func.__code__.co_varnames[: func.__code__.co_argcount]

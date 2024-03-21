@@ -190,9 +190,11 @@ class ScheduleTime(Dictable):
                 self.days_of_week = []
             else:
                 days_of_week = [
-                    ScheduleEnums.DaysOfWeek(item)
-                    if not isinstance(item, ScheduleEnums.DaysOfWeek)
-                    else item
+                    (
+                        ScheduleEnums.DaysOfWeek(item)
+                        if not isinstance(item, ScheduleEnums.DaysOfWeek)
+                        else item
+                    )
                     for item in days_of_week
                 ]
                 self.days_of_week = days_of_week
@@ -410,27 +412,27 @@ class ScheduleTime(Dictable):
         start_time: str | None = None,
         stop_time: str | None = None,
         execution_repeat_interval: int | None = None,
-        daily_pattern: ScheduleEnums.DailyPattern
-        | str
-        | None = ScheduleEnums.DailyPattern.NONE,
+        daily_pattern: (
+            ScheduleEnums.DailyPattern | str | None
+        ) = ScheduleEnums.DailyPattern.NONE,
         repeat_interval: int | None = None,
         days_of_week: list[ScheduleEnums.DaysOfWeek] | list[str] | None = None,
         day: int | None = None,
         month: int | None = None,
-        week_offset: ScheduleEnums.WeekOffset
-        | str
-        | None = ScheduleEnums.WeekOffset.NONE,
-        day_of_week: ScheduleEnums.DaysOfWeek
-        | str
-        | None = ScheduleEnums.DaysOfWeek.NONE,
+        week_offset: (
+            ScheduleEnums.WeekOffset | str | None
+        ) = ScheduleEnums.WeekOffset.NONE,
+        day_of_week: (
+            ScheduleEnums.DaysOfWeek | str | None
+        ) = ScheduleEnums.DaysOfWeek.NONE,
         weekday_offset: str | None = None,
         days_of_month: list[str] | None = None,
-        monthly_pattern: ScheduleEnums.MonthlyPattern
-        | str
-        | None = ScheduleEnums.MonthlyPattern.NONE,
-        yearly_pattern: ScheduleEnums.YearlyPattern
-        | str
-        | None = ScheduleEnums.YearlyPattern.NONE,
+        monthly_pattern: (
+            ScheduleEnums.MonthlyPattern | str | None
+        ) = ScheduleEnums.MonthlyPattern.NONE,
+        yearly_pattern: (
+            ScheduleEnums.YearlyPattern | str | None
+        ) = ScheduleEnums.YearlyPattern.NONE,
     ):
         """
         Uses provided properties to create object representation of details of a

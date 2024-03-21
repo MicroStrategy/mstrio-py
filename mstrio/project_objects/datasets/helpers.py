@@ -134,18 +134,22 @@ class AdvancedProperties(Dictable):
 
     def to_dict(self, camel_case: bool = True) -> dict:
         result = {
-            'metric_join_types': {
-                value.metric.object_id: value.to_dict(camel_case)
-                for value in self.metric_join_types
-            }
-            if self.metric_join_types
-            else None,
-            'attribute_join_types': {
-                value.attribute.object_id: value.to_dict(camel_case)
-                for value in self.attribute_join_types
-            }
-            if self.attribute_join_types
-            else None,
+            'metric_join_types': (
+                {
+                    value.metric.object_id: value.to_dict(camel_case)
+                    for value in self.metric_join_types
+                }
+                if self.metric_join_types
+                else None
+            ),
+            'attribute_join_types': (
+                {
+                    value.attribute.object_id: value.to_dict(camel_case)
+                    for value in self.attribute_join_types
+                }
+                if self.attribute_join_types
+                else None
+            ),
         }
         return (
             snake_to_camel(result, whitelist=self._KEEP_CAMEL_CASE)

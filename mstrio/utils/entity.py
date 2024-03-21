@@ -126,8 +126,8 @@ class EntityBase(helper.Dictable):
         owner (User): The object's owner information.
         icon_path (str): A path to a location where the object's icon is stored.
         view_media (int): The enumeration constant used to represent the default
-            mode of a RSD or a dossier, and available modes of a RSD or a
-            dossier.
+            mode of a RSD or a dashboard/dossier, and available modes
+            of a RSD or a dashboard/dossier.
         ancestors (list[dict]): A list of the object's ancestor folders.
         certified_info (CertifiedInfo): The object's certification status,
             time of certification, and information about the certifier
@@ -149,9 +149,9 @@ class EntityBase(helper.Dictable):
     _OBJECT_TYPE: ObjectTypes = (
         ObjectTypes.NOT_SUPPORTED
     )  # MSTR object type defined in ObjectTypes
-    _OBJECT_SUBTYPES: list[
-        ObjectSubTypes
-    ] | None = None  # None means subtype won't be verified.
+    _OBJECT_SUBTYPES: list[ObjectSubTypes] | None = (
+        None  # None means subtype won't be verified.
+    )
     _REST_ATTR_MAP: dict[str, str] = {}
     _API_GETTERS: dict[str | tuple, Callable] = {}
     _FROM_DICT_MAP: dict[str, Callable] = {
@@ -1048,11 +1048,10 @@ class Entity(EntityBase, ACLMixin, DependenceMixin):
             'project_id',
             'hidden',
             'target_info',
-            'hidden',
         ): objects_processors.get_info,
     }
     _API_PATCH: dict = {
-        ('name', 'description', 'abbreviation', 'hidden'): (
+        ('name', 'description', 'abbreviation', 'hidden', 'comments'): (
             objects_processors.update,
             'partial_put',
         )
@@ -1062,6 +1061,7 @@ class Entity(EntityBase, ACLMixin, DependenceMixin):
         "description": str,
         "abbreviation": str,
         'hidden': bool,
+        "comments": str,
     }
     _FROM_DICT_MAP = {
         **EntityBase._FROM_DICT_MAP,
@@ -1366,7 +1366,8 @@ class CertifyMixin:
 class VldbMixin:
     """VLDBMixin class adds vldb management for supporting objects.
 
-    Objects currently supporting VLDB settings are dataset, document, dossier.
+    Objects currently supporting VLDB settings are dataset, dashboard, document,
+    dossier.
     Must be mixedin with Entity or its subclasses.
     """
 

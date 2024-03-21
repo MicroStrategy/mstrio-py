@@ -830,7 +830,7 @@
       "type": "text",
       "multiple": false
     },
-    "dossier_id": {
+    "dashboard_id": {
       "type": "text",
       "multiple": false
     },
@@ -900,7 +900,7 @@
       "type": "text",
       "multiple": false
     },
-    "dossier_id": {
+    "dashboard_id": {
       "type": "text",
       "multiple": false
     },
@@ -1408,11 +1408,23 @@
       "type": "text",
       "multiple": false
     },
-    "lang_object_type": {
+    "datasource_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "table_name": {
       "type": "text",
       "multiple": false
     },
     "path_for_csv": {
+      "type": "text",
+      "multiple": false
+    },
+    "path_for_json": {
+      "type": "text",
+      "multiple": false
+    },
+    "separator": {
       "type": "text",
       "multiple": false
     }
@@ -1510,7 +1522,7 @@
       "type": "text",
       "multiple": false
     },
-    "dossier_name": {
+    "dashboard_name": {
       "type": "text",
       "multiple": false
     },
@@ -1759,6 +1771,56 @@
       "multiple": false
     },
     "new_dossier_description": {
+      "type": "text",
+      "multiple": false
+    },
+    "folder_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "user_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "cache_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "other_cache_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "cache_status": {
+      "type": "text",
+      "multiple": false
+    },
+    "user_name": {
+      "type": "text",
+      "multiple": false
+    }
+  },
+  "dashboard.py": {
+    "project_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "project_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "dashboard_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "dashboard_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "new_dashboard_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "new_dashboard_description": {
       "type": "text",
       "multiple": false
     },

@@ -154,9 +154,11 @@ def list_security_filters(
     return [
         SecurityFilter.from_dict(
             {
-                "show_expression_as": show_expression_as
-                if isinstance(show_expression_as, ExpressionFormat)
-                else ExpressionFormat(show_expression_as),
+                "show_expression_as": (
+                    show_expression_as
+                    if isinstance(show_expression_as, ExpressionFormat)
+                    else ExpressionFormat(show_expression_as)
+                ),
                 "show_filter_tokens": show_filter_tokens,
                 **obj,
             },
@@ -230,6 +232,7 @@ class SecurityFilter(Entity, CopyMixin, DeleteMixin, MoveMixin, TranslationMixin
             'acg',
             'acl',
             'hidden',
+            'comments',
         ): objects_processors.get_info,
         (
             'id',
@@ -259,7 +262,11 @@ class SecurityFilter(Entity, CopyMixin, DeleteMixin, MoveMixin, TranslationMixin
             'top_level',
             'bottom_level',
         ): (security_filters.update_security_filter, "put"),
-        ('folder_id', 'hidden'): (objects_processors.update, 'partial_put'),
+        (
+            'folder_id',
+            'hidden',
+            'comments',
+        ): (objects_processors.update, 'partial_put'),
     }
     _PATCH_PATH_TYPES = {
         'name': str,
@@ -422,22 +429,28 @@ class SecurityFilter(Entity, CopyMixin, DeleteMixin, MoveMixin, TranslationMixin
             "information": {
                 "name": name,
                 "description": description,
-                "destinationFolderId": destination_folder.id
-                if isinstance(destination_folder, Folder)
-                else destination_folder,
+                "destinationFolderId": (
+                    destination_folder.id
+                    if isinstance(destination_folder, Folder)
+                    else destination_folder
+                ),
                 "primaryLocale": primary_locale,
                 "isEmbedded": is_embedded,
             },
-            "topLevel": [SchemaObjectReference.to_dict(level) for level in top_level]
-            if top_level
-            and all(isinstance(level, SchemaObjectReference) for level in top_level)
-            else top_level,
-            "bottomLevel": [
-                SchemaObjectReference.to_dict(level) for level in bottom_level
-            ]
-            if bottom_level
-            and all(isinstance(level, SchemaObjectReference) for level in bottom_level)
-            else bottom_level,
+            "topLevel": (
+                [SchemaObjectReference.to_dict(level) for level in top_level]
+                if top_level
+                and all(isinstance(level, SchemaObjectReference) for level in top_level)
+                else top_level
+            ),
+            "bottomLevel": (
+                [SchemaObjectReference.to_dict(level) for level in bottom_level]
+                if bottom_level
+                and all(
+                    isinstance(level, SchemaObjectReference) for level in bottom_level
+                )
+                else bottom_level
+            ),
         }
         body = delete_none_values(body, recursion=True)
         body["qualification"] = (
@@ -476,6 +489,7 @@ class SecurityFilter(Entity, CopyMixin, DeleteMixin, MoveMixin, TranslationMixin
         top_level: list[dict] | list[SchemaObjectReference] | None = None,
         bottom_level: list[dict] | list[SchemaObjectReference] | None = None,
         hidden: bool | None = None,
+        comments: str | None = None,
     ):
         """Alter the security filter properties.
 
@@ -494,19 +508,16 @@ class SecurityFilter(Entity, CopyMixin, DeleteMixin, MoveMixin, TranslationMixin
                 optional): the bottom level attribute list
             hidden (bool, optional): Specifies whether the object is hidden.
                 Default value: False.
+            comments (str, optional): Long description of the security filter.s
         """
         properties = filter_params_for_func(self.alter, locals(), exclude=['self'])
         self._alter_properties(**properties)
 
     def apply(
         self,
-        users_and_groups: list[User]
-        | list[UserGroup]
-        | list[str]
-        | User
-        | UserGroup
-        | str
-        | None = None,
+        users_and_groups: (
+            list[User] | list[UserGroup] | list[str] | User | UserGroup | str | None
+        ) = None,
     ):
         """Updates members information for a specific security filter.
         Grants a security filter to users or user groups.
@@ -526,13 +537,9 @@ class SecurityFilter(Entity, CopyMixin, DeleteMixin, MoveMixin, TranslationMixin
 
     def revoke(
         self,
-        users_and_groups: list[User]
-        | list[UserGroup]
-        | list[str]
-        | User
-        | UserGroup
-        | str
-        | None = None,
+        users_and_groups: (
+            list[User] | list[UserGroup] | list[str] | User | UserGroup | str | None
+        ) = None,
     ):
         """Updates members information for a specific security filter.
         Revokes a security filter from users or groups.
@@ -553,13 +560,9 @@ class SecurityFilter(Entity, CopyMixin, DeleteMixin, MoveMixin, TranslationMixin
     def _update_members(
         self,
         op: UpdateOperator,
-        users_and_groups: list[User]
-        | list[UserGroup]
-        | list[str]
-        | User
-        | UserGroup
-        | str
-        | None = None,
+        users_and_groups: (
+            list[User] | list[UserGroup] | list[str] | User | UserGroup | str | None
+        ) = None,
     ):
         """Update members of security filter."""
         users_or_groups = self._retrieve_ids_from_list(users_and_groups)
@@ -584,13 +587,9 @@ class SecurityFilter(Entity, CopyMixin, DeleteMixin, MoveMixin, TranslationMixin
 
     @staticmethod
     def _retrieve_ids_from_list(
-        objects: list[User]
-        | list[UserGroup]
-        | list[str]
-        | User
-        | UserGroup
-        | str
-        | None = None,
+        objects: (
+            list[User] | list[UserGroup] | list[str] | User | UserGroup | str | None
+        ) = None,
     ) -> list[str]:
         """Parsing a list which can contain at the same time User object(s),
         UserGroup object(s), id(s) to a list with id(s)."""

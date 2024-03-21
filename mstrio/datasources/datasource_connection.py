@@ -1,14 +1,15 @@
 import logging
-from enum import auto
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from mstrio import config
 from mstrio.api import datasources
 from mstrio.datasources.datasource_login import DatasourceLogin
+from mstrio.datasources.embedded_connection import EmbeddedConnection
+from mstrio.datasources.helpers import CharEncoding, DriverType, ExecutionMode
 from mstrio.users_and_groups.user import User
 from mstrio.utils import helper
 from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, ObjectTypes
-from mstrio.utils.enum_helper import AutoName, get_enum_val
+from mstrio.utils.enum_helper import get_enum_val
 from mstrio.utils.helper import (
     get_args_from_func,
     get_default_args_from_func,
@@ -60,24 +61,6 @@ def list_datasource_connections(
         limit=limit,
         **filters,
     )
-
-
-class CharEncoding(AutoName):
-    UTF8 = auto()
-    NON_UTF8 = "multibyte"
-
-
-class DriverType(AutoName):
-    RESERVED = auto()
-    ODBC = auto()
-    NATIVE = auto()
-
-
-class ExecutionMode(AutoName):
-    RESERVED = auto()
-    ASYNC_CONNECTION = auto()
-    ASYNC_STATEMENT = auto()
-    SYNCHRONOUS = auto()
 
 
 @class_version_handler('11.3.0000')
@@ -158,6 +141,7 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin, TranslationMixin):
             'ancestors',
             'certified_info',
             'acl',
+            'comments',
         ): objects_processors.get_info,
         (
             'id',
@@ -188,7 +172,10 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin, TranslationMixin):
         ): datasources.get_datasource_connection,
     }
     _API_PATCH: dict = {
-        'abbreviation': (objects_processors.update, 'partial_put'),
+        (
+            'abbreviation',
+            'comments',
+        ): (objects_processors.update, 'partial_put'),
         (
             "name",
             "description",
@@ -340,6 +327,7 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin, TranslationMixin):
         resource: str | None = None,
         scope: str | None = None,
         enable_sso: bool | None = None,
+        comments: str | None = None,
     ) -> None:
         """Alter the datasource connection properties.
 
@@ -380,6 +368,7 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin, TranslationMixin):
                 usage.
             scope: List of delegated permissions that the app is requesting.
             enable_sso: Specifies whether to use Single Sign-On.
+            comments: long description of the object
         """
         datasource_login = (
             {'id': get_objects_id(datasource_login, DatasourceLogin)}
@@ -512,6 +501,29 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin, TranslationMixin):
                 f"with ID: '{response.get('id')}'"
             )
         return cls.from_dict(source=response, connection=connection)
+
+    @classmethod
+    def from_dict(
+        cls,
+        source: dict[str, Any],
+        connection: 'Connection',
+        to_snake_case: bool = True,
+    ) -> 'DatasourceConnection | EmbeddedConnection':
+        """Create a DatasourceConnection object from a dictionary.
+
+        Args:
+            source: Dictionary with DatasourceConnection properties
+            connection: MicroStrategy connection object returned by
+                `connection.Connection()`.
+            to_snake_case: If True, keys in the source dictionary are converted
+                to snake_case.
+
+        Returns:
+            DatasourceConnection object.
+        """
+        if source.get("is_embedded"):
+            return EmbeddedConnection.from_dict(source, connection, to_snake_case)
+        return super().from_dict(source, connection, to_snake_case)
 
     @method_version_handler('11.3.0100')
     def test_connection(self) -> bool:

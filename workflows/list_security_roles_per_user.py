@@ -41,22 +41,18 @@ def list_security_roles_per_user(
     )
     all_security_roles = []
     for member in user_group_.list_members():
-        if not member.get('fullName', None):
+        if isinstance(member, UserGroup):
             if not include_user_groups:
                 continue
             member_type = 'user_group'
-            tmp_ug = UserGroup(connection=connection, id=member['id'])
-            security_roles = tmp_ug.security_roles
         else:
             member_type = 'user'
-            tmp_u = User(connection=connection, id=member['id'])
-            security_roles = tmp_u.security_roles
         m = {
             'type': member_type,
-            'id': member['id'],
-            'name': member['name'],
-            'username': member.get('username', None),
-            'security_roles': security_roles,
+            'id': member.id,
+            'name': member.name,
+            'username': member.to_dict().get('username', None),
+            'security_roles': member.security_roles,
         }
         print('Security roles:', flush=True)
         for project_ in m['security_roles']:

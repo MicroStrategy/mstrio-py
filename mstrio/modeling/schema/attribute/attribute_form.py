@@ -161,7 +161,11 @@ class AttributeForm(Entity, TranslationMixin):  # noqa
             'acg',
             'acl',
             'target_info',
+            'comments',
         ): objects_processors.get_info
+    }
+    _API_PATCH: dict = {
+        'comments': (objects_processors.update, 'partial_put'),
     }
 
     def __init__(self, connection: Connection, id: str) -> None:
@@ -433,3 +437,15 @@ class AttributeForm(Entity, TranslationMixin):  # noqa
         ):
             return True
         return False
+
+    def alter(
+        self,
+        comments: str | None = None,
+    ):
+        """Alter attribute properties.
+
+        Args:
+            comments: long description of the attribute
+        """
+        properties = filter_params_for_func(self.alter, locals(), exclude=['self'])
+        self._alter_properties(**properties)

@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 from requests import Response
 
 from mstrio.utils.error_handlers import ErrorHandler
-from mstrio.utils.helper import get_valid_project_id
+from mstrio.utils.helper import deprecation_warning, get_valid_project_id
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
@@ -59,6 +59,55 @@ def get_dossiers(
     )
 
 
+@ErrorHandler(err_msg="Error getting available dashboards.")
+def get_dashboards(
+    connection: 'Connection',
+    offset: int = 0,
+    limit: int = -1,
+    search_term: str | None = None,
+    certified_status: str | None = None,
+    search_pattern: str | None = None,
+    fields: str | None = None,
+    project_id: str | None = None,
+    error_msg: str | None = None,
+) -> Response:
+    """Get the list of available dashboards.
+
+    Args:
+        connection(object): MicroStrategy REST API connection object
+        offset(int): Starting point within the collection of returned search
+            results. Used to control paging behavior.
+        limit(int): Maximum number of items returned for a single request.
+            Used to control paging behavior.
+        search_term(str, optional): The value that the search searchPattern is
+            set to.
+        certified_status(str, optional): Define a search criteria of the
+            certified status of the object
+        search_pattern(str, optional): The kind of search pattern that will be
+            applied to the search,
+        fields(str, optional): A whitelist of top-level fields separated by
+            commas. Allow the client to selectively retrieve fields in the
+            response.
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object.
+    """
+    endpoint = '/api/dossiers'
+    return connection.get(
+        endpoint=endpoint,
+        headers={'X-MSTR-ProjectID': project_id},
+        params={
+            'searchTerm': search_term,
+            'searchPattern': search_pattern,
+            'offset': offset,
+            'limit': limit,
+            'certifiedStatus': certified_status,
+            'fields': fields,
+        },
+    )
+
+
 def get_dossiers_async(
     future_session: 'FuturesSessionWithRenewal',
     offset: int = 0,
@@ -70,6 +119,53 @@ def get_dossiers_async(
     project_id: str | None = None,
 ):
     """Get the list of available dossiers asynchronously.
+
+    Args:
+        future_session: FuturesSessionWithRenewal object
+        offset(int): Starting point within the collection of returned search
+            results. Used to control paging behavior.
+        limit(int): Maximum number of items returned for a single request.
+            Used to control paging behavior.
+        search_term(str, optional): The value that the search searchPattern is
+            set to.
+        certified_status(str, optional): Define a search criteria of the
+            certified status of the object
+        search_pattern(str, optional): The kind of search pattern that will be
+            applied to the search,
+        fields(str, optional): A whitelist of top-level fields separated by
+            commas. Allow the client to selectively retrieve fields in the
+            response.
+        project_id(str, optional): Project ID of the project to use. If not
+            set then the project selected in `connection` will be used.
+
+    Returns:
+        Complete HTTP response object.
+    """
+    future_session.connection._validate_project_selected()
+    endpoint = '/api/dossiers'
+    headers = ({'X-MSTR-ProjectID': project_id},)
+    params = {
+        'searchTerm': search_term,
+        'searchPattern': search_pattern,
+        'offset': offset,
+        'limit': limit,
+        'certifiedStatus': certified_status,
+        'fields': fields,
+    }
+    return future_session.get(endpoint=endpoint, params=params, headers=headers)
+
+
+def get_dashboards_async(
+    future_session: 'FuturesSessionWithRenewal',
+    offset: int = 0,
+    limit: int = -1,
+    search_term: str | None = None,
+    certified_status: str | None = None,
+    search_pattern: str | None = None,
+    fields: str | None = None,
+    project_id: str | None = None,
+):
+    """Get the list of available dashboards asynchronously.
 
     Args:
         future_session: FuturesSessionWithRenewal object
@@ -204,7 +300,7 @@ def get_documents_async(
 
 @ErrorHandler(err_msg="Error getting document {document_id}")
 def get_document_status(connection, document_id, instance_id, error_msg=None):
-    """Get the status of a document or dossier instance.
+    """Get the status of a dashboard, document or dossier instance.
 
     Args:
         connection: MicroStrategy REST API connection object
@@ -224,7 +320,7 @@ def get_document_status(connection, document_id, instance_id, error_msg=None):
 @ErrorHandler(err_msg="Error getting prompts for document {document_id}")
 def get_prompts_for_instance(connection, document_id, instance_id, error_msg=None):
     """Get the collection of prompts and their respective definitions from a
-    document/dossier instance.
+    dashboard/document/dossier instance.
 
     Args:
         connection: MicroStrategy REST API connection object
@@ -243,8 +339,8 @@ def get_prompts_for_instance(connection, document_id, instance_id, error_msg=Non
 def get_attribute_element_for_prompt(
     connection, document_id, instance_id, prompt_identifier, error_msg=None
 ):
-    """Get available attribute element for document/dossier's attribute element
-    prompt.
+    """Get available attribute element for dashboard/document/dossier's
+    attribute element prompt.
 
     Args:
         connection: MicroStrategy REST API connection object
@@ -553,7 +649,7 @@ def refresh_document_instance(connection, document_id, instance_id, error_msg=No
 @ErrorHandler(err_msg="Error getting collection of prompts for document {document_id}")
 def get_prompts(connection, document_id, error_msg=None):
     """Get the collection of prompts and their respective definitions from a
-    document/dossier definition.
+    dashboard/document/dossier definition.
 
     Args:
         connection: MicroStrategy REST API connection object
@@ -569,9 +665,10 @@ def get_prompts(connection, document_id, error_msg=None):
 
 @ErrorHandler(err_msg="Error answering prompt for instance {instance_id}")
 def answer_prompts(connection, document_id, instance_id, body, error_msg=None):
-    """Answer specified prompts on the document/dossier instance, prompts can
-    either be answered with default answers(if available), the appropriate
-    answers, or if the prompt is not required the prompt can simply be closed.
+    """Answer specified prompts on the dashboard/document/dossier instance,
+    prompts can either be answered with default answers(if available),
+    the appropriate answers, or if the prompt is not required
+    the prompt can simply be closed.
 
     Args:
         connection: MicroStrategy REST API connection object
@@ -625,8 +722,42 @@ def create_dossier_instance(connection, dossier_id, body, error_msg=None):
     )
 
 
+@ErrorHandler(err_msg="Error creating instance for dashboard {dashboard_id}")
+def create_dashboard_instance(connection, dashboard_id, body, error_msg=None):
+    """Execute a specific dossier and create an instance of the dossier.
+
+    Args:
+        connection: MicroStrategy REST API connection object
+        dashboard_id (string): Dashboard ID
+        body: JSON-formatted information used to format the document
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object.
+    """
+    endpoint = f'/api/dossiers/{dashboard_id}/instances'
+    return connection.post(
+        endpoint=endpoint, headers={'X-MSTR-ProjectID': None}, json=body
+    )
+
+
 @ErrorHandler(err_msg="Error getting hierarchy for dossier {id}")
 def get_dossier_hierarchy(connection: 'Connection', id: str) -> Response:
+    """Get the hierarchy of a specific dossier in a specific project.
+
+    Args:
+        connection: MicroStrategy REST API connection object
+        id (string): Dossier ID
+
+    Returns:
+        Complete HTTP response object.
+    """
+    endpoint = f'/api/v2/dossiers/{id}/definition/'
+    return connection.get(endpoint=endpoint)
+
+
+@ErrorHandler(err_msg="Error getting hierarchy for dashboard {id}")
+def get_dashboard_hierarchy(connection: 'Connection', id: str) -> Response:
     """Get the hierarchy of a specific dossier in a specific project.
 
     Args:
@@ -676,24 +807,61 @@ def get_dossier_hierarchy_from_instance(
     return connection.get(endpoint=endpoint, headers={'X-MSTR-ProjectID': None})
 
 
-@ErrorHandler(err_msg="Error getting definition and results for dossier {dossier_id}")
-def get_definition_and_results_of_visualization(
-    connection, dossier_id, instance_id, chapter_key, visualization_key, error_msg=None
+@ErrorHandler(err_msg="Error getting dossier hierarchy from instance {instance_id}")
+def get_dashboard_hierarchy_from_instance(
+    connection, dashboard_id, instance_id, error_msg=None
 ):
-    """Get the definition and data result of a grid/graph visualization in a
-    specific dossier in a specific project.
+    """Get the hierarchy of a specific dashboard in a specific project from
+    instance.
 
     Args:
         connection: MicroStrategy REST API connection object
-        dossier_id (string): Dossier ID
+        dashboard_id (string): Dashboard ID
         instance_id (string): Document Instance ID
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
         Complete HTTP response object.
     """
+    endpoint = f'api/v2/dossiers/{dashboard_id}/instances/{instance_id}/definition'
+    return connection.get(endpoint=endpoint, headers={'X-MSTR-ProjectID': None})
+
+
+@ErrorHandler(
+    err_msg="Error getting definition and results for dashboard/dossier {dossier_id}"
+)
+def get_definition_and_results_of_visualization(
+    connection,
+    dossier_id,
+    instance_id,
+    chapter_key,
+    visualization_key,
+    dashboard_id=None,
+    error_msg=None,
+):
+    """Get the definition and data result of a grid/graph visualization in a
+    specific dashboard/dossier in a specific project.
+
+    Args:
+        connection: MicroStrategy REST API connection object
+        dossier_id (string): Dossier ID
+        instance_id (string): Document Instance ID
+        chapter_key (string): Chapter Key
+        visualization_key (string): Visualization Key
+        dashboard_id (string, optional): Dashboard ID
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object.
+    """
+    if dossier_id:
+        dashboard_id = dossier_id
+        deprecation_warning(
+            "argument `dossier_id`", "argument `dashboard_id`", "11.5.03", False
+        )
+
     endpoint = (
-        f'/api/v2/dossiers/{dossier_id}'
+        f'/api/v2/dossiers/{dashboard_id}'
         f'/instances/{instance_id}/chapters/{chapter_key}'
         f'/visualizations/{visualization_key}'
     )

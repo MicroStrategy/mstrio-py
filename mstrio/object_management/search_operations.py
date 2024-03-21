@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Optional
 
 from mstrio.api import browsing, objects
 from mstrio.connection import Connection
+from mstrio.helpers import IServerError
 from mstrio.object_management.search_enums import (
     CertifiedStatus,
     SearchDomain,
@@ -284,6 +285,8 @@ def full_search(
     used_by_object_type: ObjectTypes | str | None = None,
     used_by_recursive: bool = False,
     used_by_one_of: bool = False,
+    begin_modification_time: str | None = None,
+    end_modification_time: str | None = None,
     results_format: SearchResultsFormat | str = SearchResultsFormat.LIST,
     limit: int | None = None,
     offset: int | None = None,
@@ -291,6 +294,10 @@ def full_search(
     **filters,
 ) -> list[dict] | list[Entity]:
     """Perform a full metadata search and return results.
+
+    Note:
+        If you have a large number of objects in your environment, try to use
+        `limit` and `offset` parameters to retrieve the results in batches.
 
     Args:
         connection (object): MicroStrategy connection object returned by
@@ -337,6 +344,12 @@ def full_search(
         used_by_one_of(boolean): Control the Intelligence server to also
             find objects that are used by one of or all of given objects
             indirectly. Default value is false.
+        begin_modification_time(string, optional): Field to filter request
+            to return records newer than a given date in
+            format 'yyyy-MM-dd'T'HH:mm:ssZ', for example 2021-04-04T06:33:32Z.
+        end_modification_time(string, optional): Field to filter request
+            to return records older than a given date in
+            format 'yyyy-MM-dd'T'HH:mm:ssZ', for example 2022-04-04T06:33:32Z.
         results_format(SearchResultsFormat): either a list or a tree format
         to_dictionary (bool): If False returns objects, by default
             (True) returns dictionaries.
@@ -383,6 +396,8 @@ def start_full_search(
     used_by_object_type: ObjectTypes | ObjectSubTypes | int | None = None,
     used_by_recursive: bool = False,
     used_by_one_of: bool = False,
+    begin_modification_time: str | None = None,
+    end_modification_time: str | None = None,
 ) -> dict:
     """Search the metadata for objects in a specific project that
     match specific search criteria, and save the results in IServer memory.
@@ -432,6 +447,12 @@ def start_full_search(
         used_by_one_of(boolean): Control the Intelligence server to also
             find objects that are used by one or all given objects
             indirectly. Default value is false.
+        begin_modification_time(string, optional): Field to filter request
+            to return records newer than a given date in
+            format 'yyyy-MM-dd'T'HH:mm:ssZ', for example 2021-04-04T06:33:32Z.
+        end_modification_time(string, optional): Field to filter request
+            to return records older than a given date in
+            format 'yyyy-MM-dd'T'HH:mm:ssZ', for example 2022-04-04T06:33:32Z.
 
     Returns:
         dictionary consisting of id (Search ID) and total items number
@@ -486,6 +507,8 @@ def start_full_search(
         used_by_object=used_by_object,
         used_by_recursive=used_by_recursive,
         used_by_one_of=used_by_one_of,
+        begin_modification_time=begin_modification_time,
+        end_modification_time=end_modification_time,
     )
     return resp.json()
 
@@ -503,6 +526,10 @@ def get_search_results(
 ):
     """Retrieve the results of a full metadata search previously stored in
     an instance in IServer memory, may be obtained by `start_full_search`.
+
+    Note:
+        If you have a large number of objects in your environment, try to use
+        `limit` and `offset` parameters to retrieve the results in batches.
 
     Args:
         connection (object): MicroStrategy connection object returned by
@@ -549,14 +576,22 @@ def _get_search_result_list_format(
 ):
     from mstrio.utils.object_mapping import map_objects_list
 
-    response = browsing.get_search_results(
-        connection=connection,
-        search_id=search_id,
-        project_id=project_id,
-        limit=limit,
-        offset=offset,
-    )
-
+    try:
+        response = browsing.get_search_results(
+            connection=connection,
+            search_id=search_id,
+            project_id=project_id,
+            limit=limit,
+            offset=offset,
+        )
+    except IServerError as e:
+        if 'Java heap space' in str(e):
+            logger.warning(
+                "If you have a large number of objects in your environment, "
+                "try to use `limit` and `offset` parameters "
+                "to retrieve the results in batches."
+            )
+        raise e
     objects = _prepare_objects(response.json(), filters)
 
     if to_dictionary:
@@ -571,13 +606,22 @@ def _get_search_result_tree_format(
     limit: int | None = None,
     offset: int | None = None,
 ):
-    resp = browsing.get_search_results_tree_format(
-        connection=connection,
-        search_id=search_id,
-        project_id=project_id,
-        limit=limit,
-        offset=offset,
-    )
+    try:
+        resp = browsing.get_search_results_tree_format(
+            connection=connection,
+            search_id=search_id,
+            project_id=project_id,
+            limit=limit,
+            offset=offset,
+        )
+    except IServerError as e:
+        if 'Java heap space' in str(e):
+            logger.warning(
+                "If you have a large number of objects in your environment, "
+                "try to use `limit` and `offset` parameters "
+                "to retrieve the results in batches."
+            )
+        raise e
     if resp.content:
         return resp.json()
     return {}
@@ -638,9 +682,11 @@ def find_objects_with_id(
     return [
         {
             'project_id': future.project_id,
-            'object_data': result.json()
-            if to_dictionary
-            else map_object(connection, result.json()),
+            'object_data': (
+                result.json()
+                if to_dictionary
+                else map_object(connection, result.json())
+            ),
         }
         for future in as_completed(futures)
         if (result := future.result()) and result.ok

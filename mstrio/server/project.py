@@ -22,7 +22,7 @@ from mstrio.utils.response_processors import datasources as datasources_processo
 from mstrio.utils.response_processors import projects as projects_processors
 from mstrio.utils.settings.base_settings import BaseSettings
 from mstrio.utils.translation_mixin import TranslationMixin
-from mstrio.utils.version_helper import method_version_handler, is_server_min_version
+from mstrio.utils.version_helper import is_server_min_version, method_version_handler
 from mstrio.utils.vldb_mixin import ModelVldbMixin
 from mstrio.utils.wip import wip
 
@@ -335,12 +335,18 @@ class Project(Entity, ModelVldbMixin, DeleteMixin, TranslationMixin):
                 cls.from_dict(source=obj, connection=connection) for obj in raw_project
             ]
 
-    def alter(self, name: str | None = None, description: str | None = None):
+    def alter(
+        self,
+        name: str | None = None,
+        description: str | None = None,
+        comments: str | None = None,
+    ):
         """Alter project name or/and description.
 
         Args:
             name: new name of the project.
             description: new description of the project.
+            comments: long description of the project.
         """
         properties = helper.filter_params_for_func(
             self.alter, locals(), exclude=['self']
@@ -581,6 +587,24 @@ class Project(Entity, ModelVldbMixin, DeleteMixin, TranslationMixin):
         """Disable caching settings for the current project on the I-Server."""
         self.settings.disable_caching()
         self.update_settings()
+
+    @method_version_handler('11.3.0800')
+    def delete_object_cache(self) -> None:
+        """Delete object cache for the current project on the I-Server."""
+        monitors.delete_caches(self.connection, self.id, 'object')
+        if config.verbose:
+            logger.info(
+                f"Object cache was successfully deleted for project '{self.id}'"
+            )
+
+    @method_version_handler('11.3.0800')
+    def delete_element_cache(self) -> None:
+        """Delete element cache for the current project on the I-Server."""
+        monitors.delete_caches(self.connection, self.id, 'element')
+        if config.verbose:
+            logger.info(
+                f"Element cache was successfully deleted for project '{self.id}'"
+            )
 
     def fetch_settings(self) -> None:
         """Fetch the current project settings from the I-Server."""
@@ -962,13 +986,19 @@ class ProjectSettings(BaseSettings):
             )
 
     @wip()
-    def list_caching_properties(self) -> dict:
+    def list_caching_properties(self, show_description: bool = False) -> dict:
         """
         Fetch current project settings connected with caching from I-Server
+
+        Args:
+            show_description (bool): if True return, description and value
+                for each setting, else, return values only
         """
         self.fetch()
         return {
             k: v
-            for (k, v) in self.list_properties().items()
+            for (k, v) in self.list_properties(
+                show_description=show_description
+            ).items()
             if any(word in k.lower() for word in ("cache", "caching"))
         }

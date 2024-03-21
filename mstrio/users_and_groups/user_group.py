@@ -18,9 +18,9 @@ from mstrio.utils.helper import (
     filter_params_for_func,
 )
 from mstrio.utils.response_processors import objects as objects_processors
+from mstrio.utils.response_processors import usergroups as usergroups_processors
 from mstrio.utils.translation_mixin import TranslationMixin
 from mstrio.utils.version_helper import method_version_handler
-from mstrio.utils.response_processors import usergroups as usergroups_processors
 
 if TYPE_CHECKING:
     from mstrio.access_and_security.privilege import Privilege
@@ -109,9 +109,11 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
         from mstrio.users_and_groups.user import User
 
         return [
-            User.from_dict(member, connection, to_snake_case)
-            if member['subtype'] == ObjectSubTypes.USER.value
-            else UserGroup.from_dict(member, connection, to_snake_case)
+            (
+                User.from_dict(member, connection, to_snake_case)
+                if member['subtype'] == ObjectSubTypes.USER.value
+                else UserGroup.from_dict(member, connection, to_snake_case)
+            )
             for member in source
         ]
 
@@ -143,6 +145,7 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
             'acl',
             'ldapdn',
         ): usergroups.get_user_group_info,
+        'comments': objects_processors.get_info,
         'memberships': usergroups.get_memberships,
         'members': usergroups.get_members,
         'security_roles': usergroups.get_security_roles,
@@ -155,7 +158,10 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
         "abbreviation": str,
     }
     _API_PATCH: dict = {
-        'abbreviation': (objects_processors.update, 'partial_put'),
+        (
+            'abbreviation',
+            'comments',
+        ): (objects_processors.update, 'partial_put'),
         (
             'name',
             'description',
@@ -300,12 +306,14 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
         name: str | None = None,
         description: str | None = None,
         ldapdn: str = None,
+        comments: str | None = None,
     ):
         """Alter User Group name or/and description.
 
         Args:
             name: New name of the User Group
             description: New description of the User Group
+            comments: Long description of the User Group
         """
 
         properties = filter_params_for_func(self.alter, locals(), exclude=['self'])
@@ -342,7 +350,7 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
         to_be_removed = [member.id for member in self.members]
         self.remove_users(to_be_removed)
 
-    def list_members(self, **filters) -> list[dict]:
+    def list_members(self, **filters) -> list["User | UserGroup"]:
         """List user group members.
 
         Optionally filter the results by passing filter keyword arguments.
@@ -354,9 +362,13 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
                 full_name', enabled'
         """
         self.fetch('members')
-        return filter_list_of_dicts(
+        if not filters:
+            return self.members
+        filtered_dicts = filter_list_of_dicts(
             [member.to_dict() for member in self.members], **filters
         )
+        filtered_ids = [member['id'] for member in filtered_dicts]
+        return [member for member in self.members if member.id in filtered_ids]
 
     def add_to_user_groups(
         self, groups: "str | UserGroup | list[str | UserGroup]"

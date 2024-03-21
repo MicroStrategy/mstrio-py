@@ -801,13 +801,13 @@ def get_jobs_v2(
         subscription_recipient(str, optional): Field to filter on subscription
             recipient's full name (exact match),
         memory_usage(str, optional): Field to filter on the job elapsed time,
-            for example 'gte:100' means filering jobs with memoryUsage greater
-            than or equal to 100 MB. Valid oprators are:
+            for example 'gte:100' means filtering jobs with memoryUsage greater
+            than or equal to 100 MB. Valid operators are:
             gte - greater than or equal
             lte - less than or equal
         elapsed_time(str, optional): Field to filter on the job elapsed time,
-            for example 'gte:100' means filering jobs with elapsedTime greater
-            than or equal to 100 seconds. Valid oprators are:
+            for example 'gte:100' means filtering jobs with elapsedTime greater
+            than or equal to 100 seconds. Valid operators are:
             gte - greater than or equal
             lte - less than or equal
         sort_by(SortBy, optional): Specify sorting criteria, for example
@@ -889,13 +889,13 @@ def get_jobs_v2_async(
         subscription_recipient(str, optional): Field to filter on subscription
             recipient's full name (exact match),
         memory_usage(str, optional): Field to filter on the job elapsed time,
-            for example 'gte:100' means filering jobs with memoryUsage greater
-            than or equal to 100 MB. Valid oprators are:
+            for example 'gte:100' means filtering jobs with memoryUsage greater
+            than or equal to 100 MB. Valid operators are:
             gte - greater than or equal
             lte - less than or equal
         elapsed_time(str, optional): Field to filter on the job elapsed time,
-            for example 'gte:100' means filering jobs with elapsedTime greater
-            than or equal to 100 seconds. Valid oprators are:
+            for example 'gte:100' means filtering jobs with elapsedTime greater
+            than or equal to 100 seconds. Valid operators are:
             gte - greater than or equal
             lte - less than or equal
         sort_by(SortBy, optional): Specify sorting criteria, for example
@@ -1119,7 +1119,7 @@ def get_contents_caches(
         status(str, optional): Status of the content cache,
         content_type(str, optional): type of content,
         content_format(str, optional): Format of the content cache, intended for
-            document and dossier cache,
+            dashboard, document and dossier cache,
         size(str, optional): Size of the content cache (in KB),
         owner(str, optional): Owner of the content cache. Exact match on the
             owner's full name,
@@ -1179,4 +1179,26 @@ def update_contents_caches(
         endpoint='/api/v2/monitors/caches/contents',
         params={'clusterNode': node, 'fields': fields},
         json=body,
+    )
+
+
+@ErrorHandler(err_msg='Error deleting caches')
+def delete_caches(connection: 'Connection', project_id: str, cache_type: str):
+    """Delete element or object caches for a specific project.
+
+    Args:
+        connection(object): MicroStrategy connection object returned by
+            `connection.Connection()`,
+        project_id(str): Project id,
+        cache_type(str): Cache type
+            Available values:
+            - 'element'
+            - 'object'
+
+    Returns:
+        HTTP response object. Expected status 204.
+    """
+
+    return connection.delete(
+        endpoint=f'/api/monitors/projects/{project_id}/caches/{cache_type}',
     )

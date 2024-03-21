@@ -10,6 +10,14 @@ def alter_conn_resp(response):
     return response
 
 
+def alter_conn_resp_embedded(response):
+    response_json = response.json()['database']['embeddedConnection']
+    response.encoding, response._content = 'utf-8', json.dumps(response_json).encode(
+        'utf-8'
+    )
+    return response
+
+
 def alter_conn_list_resp(response):
     response_json = response.json()
     for conn in response_json["connections"]:
@@ -49,6 +57,11 @@ def alter_instance_list_resp(response):
 
 def alter_instance_json(response_json):
     response_json['datasource_connection'] = response_json["database"].get("connection")
+    if response_json["database"].get("connection").get('isEmbedded'):
+        response_json['datasource_connection'] |= response_json["database"].get(
+            "embeddedConnection", {}
+        )
+        response_json['datasource_connection']['ds_id'] = response_json["id"]
     response_json['database_type'] = response_json["database"].get("type")
     response_json['database_version'] = response_json["database"].get("version")
     response_json['primary_datasource'] = response_json["database"].get(

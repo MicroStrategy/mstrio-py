@@ -165,6 +165,7 @@ class Transmitter(Entity, DeleteMixin, TranslationMixin):
             'ancestors',
             'certified_info',
             'acl',
+            'comments',
         ): objects_processors.get_info,
         (
             'id',
@@ -179,7 +180,8 @@ class Transmitter(Entity, DeleteMixin, TranslationMixin):
         ("name", "description", "email_transmitter_properties"): (
             transmitters.update_transmitter,
             "put",
-        )
+        ),
+        'comments': (objects_processors.update, 'partial_put'),
     }
     _PATCH_PATH_TYPES = {
         "name": str,
@@ -291,6 +293,7 @@ class Transmitter(Entity, DeleteMixin, TranslationMixin):
         name: str | None = None,
         description: str | None = None,
         email_transmitter_properties: dict | EmailTransmitterProperties | None = None,
+        comments: str | None = None,
     ):
         """Alter transmitter properties.
 
@@ -300,6 +303,7 @@ class Transmitter(Entity, DeleteMixin, TranslationMixin):
             email_transmitter_properties (dict or object): properties specific
                 to email transmitter. Only in transmitter with type `email`
                 altering those properties is possible
+            comments: long description of the transmitter
         """
         email_transmitter_properties = (
             email_transmitter_properties.to_dict()

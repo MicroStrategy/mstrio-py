@@ -218,6 +218,7 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin, TranslationMixin):  #
             'acl',
             'target_info',
             'hidden',
+            'comments',
         ): objects_processors.get_info,
     }
     _API_PATCH = {
@@ -235,7 +236,10 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin, TranslationMixin):  #
             'sorts',
         ): (attributes.update_attribute, 'partial_put'),
         'relationships': (hierarchies.update_attribute_relationships, 'partial_put'),
-        ('folder_id', 'hidden'): (objects_processors.update, 'partial_put'),
+        ('folder_id', 'hidden', 'comments'): (
+            objects_processors.update,
+            'partial_put',
+        ),
     }
     _FROM_DICT_MAP = {
         **Entity._FROM_DICT_MAP,
@@ -428,14 +432,16 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin, TranslationMixin):  #
                 'subType': get_enum_val(sub_type, ObjectSubType),
                 'isEmbedded': is_embedded,
                 'description': description,
-                'destinationFolderId': destination_folder.id
-                if isinstance(destination_folder, Folder)
-                else destination_folder,
+                'destinationFolderId': (
+                    destination_folder.id
+                    if isinstance(destination_folder, Folder)
+                    else destination_folder
+                ),
             },
             'forms': [form.to_dict() for form in forms] if forms else None,
-            'attributeLookupTable': attribute_lookup_table.to_dict()
-            if attribute_lookup_table
-            else None,
+            'attributeLookupTable': (
+                attribute_lookup_table.to_dict() if attribute_lookup_table else None
+            ),
             'keyForm': key_form.to_dict() if key_form else None,
             'displays': displays.to_dict() if displays else None,
             'sorts': sorts.to_dict() if sorts else None,
@@ -575,6 +581,7 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin, TranslationMixin):  #
         sorts: AttributeSorts | None = None,
         relationships: Relationship | None = None,
         hidden: bool | None = None,
+        comments: str | None = None,
     ):
         """Alter attribute properties.
 
@@ -601,6 +608,7 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin, TranslationMixin):  #
                 of the attribute.
             relationships: the list of relationships that one attribute has.
             hidden: Specifies whether the attribute is hidden.
+            comments: long description of the attribute
         """
         name = name if name else self.name
         hidden = hidden if self.hidden != hidden else None
@@ -1098,6 +1106,7 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin, TranslationMixin):  #
         time_role: AttributeForm.TimeRole | None = None,
         is_form_group: bool | None = None,
         is_multilingual: bool | None = None,
+        comments: str | None = None,
     ):
         """Alter attribute form with a given `form_id`.
 
@@ -1127,7 +1136,9 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin, TranslationMixin):  #
                 a form group (if true) or a simple form (if false).
             is_multilingual: A boolean field indicating whether this field is
                 multilingual. Any key form of the attribute is not allowed
-                to be set as multilingual."""
+                to be set as multilingual.
+            comments: long description of the AttributeForm
+        """
         form_properties = filter_params_for_func(
             AttributeForm.local_alter, locals(), exclude=['self']
         )

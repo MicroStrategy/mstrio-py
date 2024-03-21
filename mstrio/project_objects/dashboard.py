@@ -13,17 +13,12 @@ from mstrio.types import ObjectSubTypes
 from mstrio.users_and_groups import UserOrGroup
 from mstrio.utils import helper
 from mstrio.utils.cache import CacheSource
-from mstrio.utils.helper import Dictable, get_valid_project_id, is_dossier
+from mstrio.utils.helper import Dictable, get_valid_project_id, is_dashboard
 
 logger = logging.getLogger(__name__)
 
 
-helper.deprecation_warning(
-    "mstrio.project_objects.dossier", "mstrio.project_objects.dashboard", "11.5.03"
-)
-
-
-def list_dossiers(
+def list_dashboards(
     connection: Connection,
     name: str | None = None,
     to_dictionary: bool = False,
@@ -32,8 +27,8 @@ def list_dossiers(
     project_id: str | None = None,
     project_name: str | None = None,
     **filters,
-) -> list["Dossier"] | list[dict] | DataFrame:
-    """Get all Dossiers stored on the server.
+) -> list["Dashboard"] | list[dict] | DataFrame:
+    """Get all Dashboards stored on the server.
 
     Optionally use `to_dictionary` or `to_dataframe` to choose output format.
     If `to_dictionary` is True, `to_dataframe` is omitted.
@@ -41,10 +36,10 @@ def list_dossiers(
     Args:
         connection(object): MicroStrategy connection object returned
             by 'connection.Connection()'
-        name: characters that the dossier name must contain
-        to_dictionary(bool, optional): if True, return Dossiers as
+        name: characters that the dashboard name must contain
+        to_dictionary(bool, optional): if True, return Dashboards as
             list of dicts
-        to_dataframe(bool, optional): if True, return Dossiers as
+        to_dataframe(bool, optional): if True, return Dashboards as
             pandas DataFrame
         limit(int): limit the number of elements returned. If `None` (default),
             all objects are returned.
@@ -55,10 +50,10 @@ def list_dossiers(
             'owner', 'ext_type', 'view_media', 'certified_info', 'project_id']
 
     Returns:
-            List of dossiers or list of dictionaries or DataFrame object
+            List of dashboards or list of dictionaries or DataFrame object
     """
 
-    return Dossier._list_all(
+    return Dashboard._list_all(
         connection,
         to_dictionary=to_dictionary,
         name=name,
@@ -70,15 +65,15 @@ def list_dossiers(
     )
 
 
-def list_dossiers_across_projects(
+def list_dashboards_across_projects(
     connection: Connection,
     name: str | None = None,
     to_dictionary: bool = False,
     to_dataframe: bool = False,
     limit: int | None = None,
     **filters,
-) -> list["Dossier"] | list[dict] | DataFrame:
-    """Get all Dossiers stored on the server.
+) -> list["Dashboard"] | list[dict] | DataFrame:
+    """Get all Dashboards stored on the server.
 
     Optionally use `to_dictionary` or `to_dataframe` to choose output format.
     If `to_dictionary` is True, `to_dataframe` is omitted.
@@ -86,10 +81,10 @@ def list_dossiers_across_projects(
     Args:
         connection(object): MicroStrategy connection object returned
             by 'connection.Connection()'
-        name: characters that the dossier name must contain
-        to_dictionary(bool, optional): if True, return Dossiers as
+        name: characters that the dashboard name must contain
+        to_dictionary(bool, optional): if True, return Dashboards as
             list of dicts
-        to_dataframe(bool, optional): if True, return Dossiers as
+        to_dataframe(bool, optional): if True, return Dashboards as
             pandas DataFrame
         limit: limit the number of elements returned. If `None` (default), all
             objects are returned.
@@ -98,7 +93,7 @@ def list_dossiers_across_projects(
             'owner', 'ext_type', 'view_media', 'certified_info', 'project_id']
 
     Returns:
-        List of dossiers or list of dictionaries or DataFrame object
+        List of dashboards or list of dictionaries or DataFrame object
     """
     project_id_before = connection.project_id
     env = Environment(connection)
@@ -115,7 +110,7 @@ def list_dossiers_across_projects(
                     f'to it'
                 )
             continue
-        dossiers = Dossier._list_all(
+        dashboards = Dashboard._list_all(
             connection,
             to_dictionary=to_dictionary,
             name=name,
@@ -125,26 +120,26 @@ def list_dossiers_across_projects(
         )
 
         if to_dataframe:
-            output = concat([output, dossiers], ignore_index=True)
+            output = concat([output, dashboards], ignore_index=True)
         else:
-            output.extend(dossiers)
+            output.extend(dashboards)
 
     connection.select_project(project_id=project_id_before)
     return output[:limit]
 
 
-class Dossier(Document):
-    _CACHE_TYPE = CacheSource.Type.DOSSIER
+class Dashboard(Document):
+    _CACHE_TYPE = CacheSource.Type.DASHBOARD
 
     _API_GETTERS = {
         **Document._API_GETTERS,
-        ('chapters', 'current_chapter'): documents.get_dossier_hierarchy,
+        ('chapters', 'current_chapter'): documents.get_dashboard_hierarchy,
     }
     _FROM_DICT_MAP = {
         **Document._FROM_DICT_MAP,
         'chapters': (
             lambda source, connection: [
-                DossierChapter.from_dict(content, connection) for content in source
+                DashboardChapter.from_dict(content, connection) for content in source
             ]
         ),
     }
@@ -155,13 +150,13 @@ class Dossier(Document):
         name: str | None = None,
         id: str | None = None,
     ):
-        """Initialize Dossier object by passing name or id.
+        """Initialize Dashboard object by passing name or id.
 
         Args:
             connection (object): MicroStrategy connection object returned
                 by `connection.Connection()`
-            name (string, optional): name of Dossier
-            id (string, optional): ID of Dossier
+            name (string, optional): name of Dashboard
+            id (string, optional): ID of Dashboard
         """
         super().__init__(connection=connection, name=name, id=id)
 
@@ -182,7 +177,7 @@ class Dossier(Document):
         project_id: str | None = None,
         project_name: str | None = None,
         **filters,
-    ) -> list["Dossier"] | list[dict] | DataFrame:
+    ) -> list["Dashboard"] | list[dict] | DataFrame:
         if to_dictionary and to_dataframe:
             helper.exception_handler(
                 "Please select either to_dictionary=True or to_dataframe=True, but not "
@@ -204,23 +199,23 @@ class Dossier(Document):
             pattern=search_pattern,
             **filters,
         )
-        dossiers = [obj for obj in objects if is_dossier(obj['view_media'])]
-        dossiers = dossiers[:limit]
+        dashboards = [obj for obj in objects if is_dashboard(obj['view_media'])]
+        dashboards = dashboards[:limit]
 
         if to_dictionary:
-            return dossiers
+            return dashboards
         elif to_dataframe:
-            return DataFrame(dossiers)
+            return DataFrame(dashboards)
         else:
             return [
                 cls.from_dict(
-                    source=dossier, connection=connection, with_missing_value=True
+                    source=dashboard, connection=connection, with_missing_value=True
                 )
-                for dossier in dossiers
+                for dashboard in dashboards
             ]
 
     def list_properties(self) -> dict:
-        """List properties for the dossier."""
+        """List properties for the dashboard."""
         properties = super().list_properties()
         additional_values = {
             'chapters': self.chapters,
@@ -236,54 +231,54 @@ class Dossier(Document):
         folder_id: Folder | str | None = None,
         hidden: bool | None = None,
     ):
-        """Alter Dossier name, description and/or folder id.
+        """Alter Dashboard name, description and/or folder id.
 
         Args:
-            name (string, optional): new name of the Dossier
-            description (string, optional): new description of the Dossier
+            name (string, optional): new name of the Dashboard
+            description (string, optional): new description of the Dashboard
             folder_id (string | Folder, optional): A globally unique identifier
                 used to distinguish between metadata objects within the same
                 project. It is possible for two metadata objects in different
                 projects to have the same Object Id.
-            hidden (bool, optional): specifies whether the dossier is hidden
+            hidden (bool, optional): specifies whether the dashboard is hidden
         """
         super().alter(name, description, folder_id, hidden)
 
     def publish(self, recipients: UserOrGroup | list[UserOrGroup] | None = None):
-        """Publish the dossier for authenticated user. If `recipients`
-        parameter is specified publishes the dossier for the given users.
+        """Publish the dashboard for authenticated user. If `recipients`
+        parameter is specified publishes the dashboard for the given users.
 
         Args:
             recipients(UserOrGroup | list[UserOrGroup], optional): list of users
-                or user groups to publish the dossier to (can be a list of IDs
+                or user groups to publish the dashboard to (can be a list of IDs
                 or a list of User and UserGroup elements)
         """
         super().publish(recipients)
 
     def unpublish(self, recipients: UserOrGroup | list[UserOrGroup] | None = None):
-        """Unpublish the dossier for all users it was previously published to.
-        If `recipients` parameter is specified unpublishes the dossier for the
+        """Unpublish the dashboard for all users it was previously published to.
+        If `recipients` parameter is specified unpublishes the dashboard for the
         given users.
 
         Args:
             recipients(UserOrGroup | list[UserOrGroup], optional): list of users
-                or user groups to publish the dossier to (can be a list of IDs
+                or user groups to publish the dashboard to (can be a list of IDs
                 or a list of User and UserGroup elements)
         """
         super().unpublish(recipients)
 
     def share_to(self, users: UserOrGroup | list[UserOrGroup]):
-        """Shares the dossier to the listed users' libraries.
+        """Shares the dashboard to the listed users' libraries.
 
         Args:
             users(UserOrGroup | list[UserOrGroup]): list of users or user
-                groups to publish the dossier to (can be a list of IDs or a
+                groups to publish the dashboard to (can be a list of IDs or a
                 list of User and UserGroup elements).
         """
         self.publish(users)
 
     @property
-    def chapters(self) -> list["DossierChapter"]:
+    def chapters(self) -> list["DashboardChapter"]:
         return self._chapters
 
     @property
@@ -394,13 +389,13 @@ class ChapterPage(Dictable):
     selectors: list[PageSelector] | None = None
 
     def list_properties(self, camel_case=True) -> dict:
-        """Lists properties of dossier chapter page."""
+        """Lists properties of dashboard chapter page."""
         return self.to_dict(camel_case=camel_case)
 
 
 @dataclass
-class DossierChapter(Dictable):
-    """Object that describes a Dossier Chapter
+class DashboardChapter(Dictable):
+    """Object that describes a Dashboard Chapter
 
     Attributes:
         key (string): key/id of the chapter
@@ -416,5 +411,5 @@ class DossierChapter(Dictable):
     filters: list[dict] | None = None
 
     def list_properties(self, camel_case=True) -> dict:
-        """Lists properties of dossier chapter."""
+        """Lists properties of dashboard chapter."""
         return self.to_dict(camel_case=camel_case)

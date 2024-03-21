@@ -12,6 +12,7 @@ from mstrio.modeling import (
     SchemaObjectReference,
 )
 from mstrio.object_management import SearchPattern, full_search
+from mstrio.server import Job
 from mstrio.types import ExtendedType, ObjectSubTypes, ObjectTypes
 from mstrio.utils.enum_helper import get_enum_val
 from mstrio.utils.helper import (
@@ -608,16 +609,16 @@ class OlapCube(ModelVldbMixin, _Cube):
 
         return True
 
-    def publish(self) -> dict:
+    def publish(self) -> Job:
         """Publish an OLAP Cube. Request to publish an OLAP Cube is an
         asynchronous operation, so the result of it can be seen after calling
         method `refresh_status()` inherited from Cube class.
         Returns:
-            A dictionary with two keys identifying task IDs.
+            Job instance.
         """
         response = cubes.publish(self.connection, self._id)
         logger.info(f"Request for publishing cube '{self.name}' was sent.")
-        return response.json()
+        return Job.from_dict(response.json(), self.connection)
 
     def export_sql_view(self):
         """Export SQL View of an OLAP Cube.
@@ -673,12 +674,16 @@ class OlapCube(ModelVldbMixin, _Cube):
             'template': template if not template_cube else None,
             'filter': filter.to_dict() if isinstance(filter, Expression) else filter,
             'options': options,
-            'advancedProperties': advanced_properties.to_dict()
-            if isinstance(advanced_properties, AdvancedProperties)
-            else advanced_properties,
-            'timeBased': time_based_settings.to_dict()
-            if isinstance(time_based_settings, TimeBasedSettings)
-            else time_based_settings,
+            'advancedProperties': (
+                advanced_properties.to_dict()
+                if isinstance(advanced_properties, AdvancedProperties)
+                else advanced_properties
+            ),
+            'timeBased': (
+                time_based_settings.to_dict()
+                if isinstance(time_based_settings, TimeBasedSettings)
+                else time_based_settings
+            ),
         }
 
         data = cube_processors.create(
@@ -838,9 +843,11 @@ class OlapCube(ModelVldbMixin, _Cube):
 
         return [
             {
-                attribute.name: 'Default forms are used.'
-                if not attribute.forms
-                else [(form.id, form.name) for form in attribute.forms]
+                attribute.name: (
+                    'Default forms are used.'
+                    if not attribute.forms
+                    else [(form.id, form.name) for form in attribute.forms]
+                )
             }
             for attribute in attributes
         ]

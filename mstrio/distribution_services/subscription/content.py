@@ -24,6 +24,7 @@ class Content(Dictable):
         CUBE = auto()
         DOSSIER = auto()
         UNSUPPORTED = auto()
+        DASHBOARD = 'dossier'
 
     class Properties(Dictable):
         """Class representation of personalization properties
@@ -254,10 +255,10 @@ class Content(Dictable):
         class SubscriptionFilter(Dictable):
             """Subscription filter. The format of the subscription filters are
                 exactly the same as the view filters. Please refer to
-                https://lw.microstrategy.com/msdz/MSDL/GARelease_Current/docs
-                /projects/RESTSDK/Content/topics/REST_API
-                /REST_API_Filtering_RptsCubes_ViewFilter_CodeSamples.htm
-                #multiple_filters_on_attribute_forms
+                https://microstrategy.github.io/rest-api-docs/common-workflows
+                /analytics/filter-data/filter-report-and-cube-instances
+                /filter-report-and-cube-instances-using-view-filters
+                /code-sample#multiple-filters-on-attribute-forms
                 for detailed information. But it should be noted that
                 subscription filters only support Filter on attribute forms
                 and Multiple filters on attribute forms.

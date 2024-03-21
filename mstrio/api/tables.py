@@ -33,7 +33,7 @@ def get_table(
         Complete HTTP response object. Expected status is 200.
     """
     if project_id is None:
-        connection._validate_project_selected(),
+        connection._validate_project_selected()
         project_id = connection.project_id
 
     return connection.get(
@@ -73,7 +73,7 @@ def get_tables(
         Complete HTTP response object. Expected status is 200.
     """
     if project_id is None:
-        connection._validate_project_selected(),
+        connection._validate_project_selected()
         project_id = connection.project_id
 
     return connection.get(
@@ -175,9 +175,9 @@ def post_table(
             headers={'X-MSTR-MS-Changeset': changeset_id},
             json=data,
             params={
-                'checkSecondaryDataSourceTable': 'true'
-                if check_secondary_data_source_table
-                else 'false',
+                'checkSecondaryDataSourceTable': (
+                    'true' if check_secondary_data_source_table else 'false'
+                ),
                 'columnMergeOption': column_merge_option,
                 'tablePrefixOption': table_prefix_option,
                 'fields': fields,
@@ -195,7 +195,7 @@ def get_available_warehouse_tables(
     error_msg: str | None = None,
 ):
     if project_id is None:
-        connection._validate_project_selected(),
+        connection._validate_project_selected()
         project_id = connection.project_id
 
     return connection.get(
@@ -303,8 +303,10 @@ def update_structure(
             params={
                 'columnMergeOption': column_merge_option,
                 'fields': fields,
-                'ignoreTablePrefix': str(ignore_table_prefix).lower()
-                if isinstance(ignore_table_prefix, bool)
-                else ignore_table_prefix,
+                'ignoreTablePrefix': (
+                    str(ignore_table_prefix).lower()
+                    if isinstance(ignore_table_prefix, bool)
+                    else ignore_table_prefix
+                ),
             },
         )

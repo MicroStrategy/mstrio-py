@@ -1,11 +1,39 @@
 
 # Changelog
 
-## 11.3.12.102 - 2024/02/23
+
+## 11.4.3.101 - 2024/03/22
+
+### New features
+- added `delete_object_cache()` and `delete_element_cache()` methods to `Project` class to allow deleting 
+  object and element cache
+- added new optional argument `show_description` to `ProjectSettings.list_caching_properties()` to show description 
+  for each setting
+- added `delete_server_object_cache()` and `delete_server_element_cache()` methods to `Environment` class to allow deleting 
+  object and element cache from all projects
+- added `MobileSubscription` class in `mstrio.distribution_services.subscription` package to allow
+  management of the new subscription type
+- added new bulk methods to the `Translation` class: `to_json_from_list`, `add_translations_from_json`,
+  `to_database_from_list`, `add_translations_from_database`, `to_dataframe_from_list` and
+  `add_translations_from_dataframe`
+- updated old Translation methods: `to_csv_from_list` and `add_translations_from_csv` with new functionalities
+  present in the new bulk methods for json, databases and dataframes
+- added support for the `comments` field in MSTR objects to view and edit their long description
+- added `EmbeddedConnection` class to allow access to embedded connection templates in `DatasourceInstance`
+- added support for Python 3.12
+
+### Minor changes
+- updated script template for datasource scripts
+- `enableHtmlContentInDossier` server setting is now read-only for environments on Update 13 and newer,
+  and cannot be changed using mstrio-py since it is being superseded by `allowHtmlContent`
 
 ### Deprecated
-- MicroStrategy for Jupyter Extension will no longer be developed and supported
-  and will be removed from the mstrio-py package starting from MicroStrategy One, March 2024.
+- `mstrio.project_objects.dossier` module is superseded by
+  `mstrio.project_objects.dashboard` and will be removed in the future, after 1-year deprecation period
+
+### Removed
+- MicroStrategy for Jupyter Extension is no longer developed and supported
+  and was removed from the mstrio-py package in March 2024.
   You can still use the mstrio-py library and all its current and upcoming features.
 
 ## 11.3.12.101 - 2023/12/15
@@ -30,8 +58,9 @@
 ### Minor changes
 - updated code snippets for datasources to use `Language` class and `list_languages` function from `mstrio.server.language` package
   instead of `Locale` class and `list_locales` function
-- members in user groups are now instances of `User` or `UserGroup` class instead of dictionaries
+- members in user groups and security roles are now instances of `User` or `UserGroup` class instead of dictionaries
 - addresses in `User` class are now instances of `Address` class instead of dictionaries
+- added `force_with_dependents` flag in `Schedule.delete()` method that allows to delete `Schedule` with dependent subscriptions without prompt
 
 ### Bug fixes
 - changed endpoint of `list_users`, allowing for listing users in environments with large number of users more efficiently

@@ -37,3 +37,13 @@ def update_project_datasources(connection: Connection, id: str, body: dict):
         .json()
         .get('datasources')
     )
+
+
+def execute_query(connection: Connection, body: dict, id: str, project_id: str):
+    return datasources_api.execute_query(
+        connection=connection, id=id, project_id=project_id, body=body
+    ).json()
+
+
+def get_query_results(connection: Connection, id: str):
+    return datasources_api.get_query_results(connection=connection, id=id).json()

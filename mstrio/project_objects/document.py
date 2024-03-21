@@ -299,7 +299,7 @@ class Document(
             )
         for recipient in recipients:
             if not self.__validate_user(recipient):
-                recipients.remove(recipient)
+                recipients.remove(recipient)  # noqa B038
         body = {'id': self.id, 'recipients': recipients}
         library.publish_document(self.connection, body)
         self.fetch(attr='recipients')

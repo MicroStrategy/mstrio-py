@@ -72,10 +72,14 @@ class Event(Entity, DeleteMixin, TranslationMixin):
             'certified_info',
             'acg',
             'acl',
+            'comments',
         ): objects_processors.get_info,
     }
     _API_DELETE = staticmethod(events.delete_event)
-    _API_PATCH = {('name', 'description'): (events.update_event, 'put')}
+    _API_PATCH = {
+        ('name', 'description'): (events.update_event, 'put'),
+        'comments': (objects_processors.update, 'partial_put'),
+    }
 
     def __init__(
         self,
@@ -144,12 +148,18 @@ class Event(Entity, DeleteMixin, TranslationMixin):
         response = events.create_event(connection, body)
         return cls.from_dict(response.json(), connection)
 
-    def alter(self, name: str | None = None, description: str | None = None):
+    def alter(
+        self,
+        name: str | None = None,
+        description: str | None = None,
+        comments: str | None = None,
+    ):
         """Alter the Event's properties
 
         Args:
             name: New name for the Event
             description: New description for the Event
+            comments: long description of the Event
         """
         args = helper.delete_none_values(
             {

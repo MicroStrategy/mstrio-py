@@ -55,6 +55,8 @@ class ServerSettings(BaseSettings):
                     'catalogMaxMemoryConsumption': 'B',
                 }
             )
+        if version.parse(connection.iserver_version) >= version.parse("11.4.0300"):
+            self._READ_ONLY.append('enableHtmlContentInDossier')
         super(BaseSettings, self).__setattr__('_connection', connection)
         self._configure_settings()
         self.fetch()

@@ -278,8 +278,7 @@ class Subscription(EntityBase):
                 SHORTCUTWITHBOOKMARK]
             cache_shortcut_cache_format (str,enum): [RESERVED, JSON, BINARY,
                 BOTH]
-            mobile_client_type (str,enum): [RESERVED, BLACKBERRY, PHONE, TABLET,
-                ANDROID]
+            mobile_client_type (str,enum): [PHONE, TABLET]
             device_id (str): the mobile target project,
             do_not_create_update_caches (bool): whether the current subscription
                 will overwrite earlier versions of the same report or document
@@ -353,7 +352,7 @@ class Subscription(EntityBase):
                 printer_orientation,
                 printer_use_print_range,
                 expiration_time_zone=delivery_expiration_timezone,
-                client_type=mobile_client_type,
+                mobile_client_type=mobile_client_type,
                 device_id=device_id,
                 do_not_create_update_caches=do_not_create_update_caches,
                 re_run_hl=re_run_hl,
@@ -451,20 +450,23 @@ class Subscription(EntityBase):
         contents = contents if isinstance(contents, list) else [contents]
         content_type_msg = "Contents must be dictionaries or Content objects."
         return [
-            content.to_dict(camel_case=True)
-            if isinstance(content, Content)
-            else content
-            if isinstance(content, dict)
-            else helper.exception_handler(content_type_msg, TypeError)
+            (
+                content.to_dict(camel_case=True)
+                if isinstance(content, Content)
+                else (
+                    content
+                    if isinstance(content, dict)
+                    else helper.exception_handler(content_type_msg, TypeError)
+                )
+            )
             for content in contents
         ]
 
     def execute(self):
         """Executes a subscription with given name or GUID for given project."""
-        self.alter(
-            send_now=True,
-            custom_msg=f"Executed subscription '{self.name}' with ID '{self.id}'.",
-        )
+        subscriptions.send_subscription(self.connection, self.id, self.project_id)
+        if config.verbose:
+            logger.info(f"Executed subscription '{self.name}' with ID: {self.id}.")
 
     @method_version_handler('11.2.0203')
     def delete(self, force: bool = False) -> bool:
@@ -676,7 +678,7 @@ class Subscription(EntityBase):
         expiration_time_zone: str | None = None,
         cache_type: CacheType | None = None,
         shortcut_cache_format: ShortcutCacheFormat | None = None,
-        client_type: ClientType | None = None,
+        mobile_client_type: ClientType | None = None,
         device_id: str | None = None,
         do_not_create_update_caches: bool | None = None,
         re_run_hl: bool | None = None,
@@ -807,9 +809,10 @@ class Subscription(EntityBase):
         printer_orientation: str = Orientation.PORTRAIT,
         printer_use_print_range: bool = False,
         cache_cache_type: CacheType | str = CacheType.RESERVED,
-        cache_shortcut_cache_format: ShortcutCacheFormat
-        | str = ShortcutCacheFormat.RESERVED,
-        mobile_client_type: str = ClientType.RESERVED,
+        cache_shortcut_cache_format: (
+            ShortcutCacheFormat | str
+        ) = ShortcutCacheFormat.RESERVED,
+        mobile_client_type: str = ClientType.PHONE,
         device_id: str | None = None,
         do_not_create_update_caches: bool = True,
         re_run_hl: bool = True,
@@ -879,8 +882,7 @@ class Subscription(EntityBase):
                 SHORTCUTWITHBOOKMARK]
             cache_shortcut_cache_format (str,enum):
                 [RESERVED, JSON, BINARY, BOTH]
-            mobile_client_type (str,enum):
-                [RESERVED, BLACKBERRY, PHONE, TABLET, ANDROID]
+            mobile_client_type (str,enum): [PHONE, TABLET]
             device_id (str): the mobile target project,
             do_not_create_update_caches (bool): whether the current subscription
                 will overwrite earlier versions of the same report or document
@@ -925,11 +927,15 @@ class Subscription(EntityBase):
         contents = contents if isinstance(contents, list) else [contents]
         content_type_msg = "Contents must be dictionaries or Content objects."
         contents = [
-            content.to_dict(camel_case=True)
-            if isinstance(content, Content)
-            else content
-            if isinstance(content, dict)
-            else helper.exception_handler(content_type_msg, TypeError)
+            (
+                content.to_dict(camel_case=True)
+                if isinstance(content, Content)
+                else (
+                    content
+                    if isinstance(content, dict)
+                    else helper.exception_handler(content_type_msg, TypeError)
+                )
+            )
             for content in contents
         ]
 

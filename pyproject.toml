@@ -8,6 +8,7 @@ path = "mstrio/__init__.py"
 [tool.hatch.build.targets.sdist]
 include = [
     "/code_snippets",
+    "/script-templates",
     "/mstrio",
     "/workflows",
     "/NEWS.md",
@@ -15,19 +16,18 @@ include = [
     "/USAGE.md",
     "/requirements.txt",
     "/setup.cfg",
-    "/connector-jupyter",
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["mstrio", "connector-jupyter"]
+packages = ["mstrio"]
 
 [project]
 name = "mstrio-py"
 description = "Python interface for the MicroStrategy REST API"
 authors = [
-    { name = "MicroStrategy", email = "pkowal@microstrategy.com" }
+    { name = "MicroStrategy", email = "bkaczynski@microstrategy.com" }
 ]
-requires-python = ">=3.10,<3.12"
+requires-python = ">=3.10,<3.13"
 license = {text = "Apache License 2.0"}
 readme = "README.md"
 dynamic = ["version"]
@@ -40,6 +40,7 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3 :: Only",
     "Intended Audience :: Developers",
     "Intended Audience :: System Administrators",
@@ -56,30 +57,19 @@ dependencies = [
     # backend only (front peers are
     # handled in code ~20 lines below)
     "urllib3 >= 2.0.7",
-    "Jinja2 >=3, <4",  # UI related, but optional dep of pandas, required for testing
-    "certifi >= 2023.7.22",  # SEC safe version
+    "Jinja2 >= 3.1.3",  # Optional dep of pandas, required for testing
+    "certifi >= 2024.2.2",  # SEC safe version
 
     # Direct mstrio dependencies
-    "numpy >=1.24.3",
-    "packaging >=23",
-    "pandas >=1.1.5, <=2.1.3",
-    "pyhumps >=3.8",
-    "requests >=2.31",
-    "requests_futures >=1.0.0",
-    "stringcase >=1.2",
-    "tqdm >=4.41",
-
-    # Dependencies for connector-jupyter
-    # direct dependencies
-    "jupyter-contrib-nbextensions >=0.5.1, <0.6",
-    "ipywidgets >=8.0.2, <9",
-    # peer, UI related, force version for SEC
-    "notebook >=6.4.12, <7",  # v7 is not compatible
-    "jupyter_core >=4.11.2",
-    "lxml >=4.9.1",
-    "ipython >=8.10.0, <9",
-    "nbconvert >=7, <8",
-    "mistune >=2.0.4",
+    "numpy >= 1.24.3",
+    "packaging >= 23",
+    "pandas >= 1.1.5",
+    "pyhumps >= 3.8",
+    "pypika >= 0.48.9",
+    "requests >= 2.31",
+    "requests_futures >= 1.0.0",
+    "stringcase >= 1.2",
+    "tqdm >= 4.41",
 ]
 
 [project.optional-dependencies]
@@ -97,13 +87,14 @@ dev = [
     "python-decouple",
     "black",
     "flake8-black",
+    "pyarrow",  # required for testing, future required pandas' dependency
 ]
 
 [project.urls]
 "Bug Tracker" = "https://github.com/MicroStrategy/mstrio-py/issues"
 "Documentation" = "https://www2.microstrategy.com/producthelp/Current/mstrio-py/"
 "Source Code" = "https://github.com/MicroStrategy/mstrio-py"
-"Quick Manual" = "https://www2.microstrategy.com/producthelp/current/MSTR-for-Jupyter/Content/mstr_for_jupyter.htm"
+"Quick Manual" = "https://www2.microstrategy.com/producthelp/current/FederatedAnalytics/en-us/Content/mstr_for_jupyter.htm"
 
 [tool.mypy]
 python_version = 3.10
@@ -142,7 +133,7 @@ extend-exclude = '''
 /(
     | __pycache__
     | code_snippets
-    | connector-jupyter
+    | script-templates
     | workflows
     | validation_scripts
     | .tox

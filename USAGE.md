@@ -218,4 +218,4 @@ Updating Datasets that were **not** created using the MicroStrategy REST API is 
 - Server management module (see [code_snippets](https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/server_mgmt.py))
 - User and Usergroup management modules (see [code_snippets](https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/user_mgmt.py))
 - Subscription and Schedules management modules (see [code_snippets](https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/subscription_mgmt.py))
-- Document and Dossiers in User Library modules (see [code_snippets](https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/user_library.py))
+- Document and Dashboards in User Library modules (see [code_snippets](https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/user_library.py))

@@ -5,7 +5,7 @@ from mstrio.api import browsing
 from mstrio.connection import Connection
 from mstrio.utils.entity import CopyMixin, Entity, MoveMixin, ObjectTypes
 from mstrio.utils.enum_helper import get_enum_val
-from mstrio.utils.helper import fetch_objects, get_valid_project_id
+from mstrio.utils.helper import deprecation_warning, fetch_objects, get_valid_project_id
 from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.translation_mixin import TranslationMixin
 
@@ -14,6 +14,9 @@ class ShortcutInfoFlags(IntFlag):
     DssDossierShortcutInfoBookmark = 0b10
     DssDossierShortcutInfoTOC = 0b01
     DssDossierShortcutInfoDefault = 0b00
+    DssDashboardShortcutInfoBookmark = 0b10
+    DssDashboardShortcutInfoTOC = 0b01
+    DssDashboardShortcutInfoDefault = 0b00
 
 
 class Shortcut(Entity, CopyMixin, MoveMixin, TranslationMixin):
@@ -70,8 +73,9 @@ class Shortcut(Entity, CopyMixin, MoveMixin, TranslationMixin):
         id: str,
         project_id: str = None,
         project_name: str = None,
-        shortcut_info_flag: ShortcutInfoFlags
-        | int = ShortcutInfoFlags.DssDossierShortcutInfoTOC,
+        shortcut_info_flag: (
+            ShortcutInfoFlags | int
+        ) = ShortcutInfoFlags.DssDossierShortcutInfoTOC,
     ):
         """Initialize the Shortcut object and populate it with I-Server data.
 
@@ -126,6 +130,7 @@ class Shortcut(Entity, CopyMixin, MoveMixin, TranslationMixin):
         self._prompted = kwargs.get('prompted')
         self._datasets_cache_info_hash = kwargs.get('datasets_cache_info_hash')
         self._dossier_version_hash = kwargs.get('dossier_version_hash')
+        self._dashboard_version_hash = kwargs.get('dossier_version_hash')
 
     T = TypeVar('T')
 
@@ -184,7 +189,17 @@ class Shortcut(Entity, CopyMixin, MoveMixin, TranslationMixin):
 
     @property
     def dossier_version_hash(self):
+        deprecation_warning(
+            'property `dossier_version_hash`',
+            'property `dashboard_version_hash`',
+            '11.5.03',
+            False,
+        )
         return self._dossier_version_hash
+
+    @property
+    def dashboard_version_hash(self):
+        return self._dashboard_version_hash
 
 
 def get_shortcuts(
@@ -192,8 +207,9 @@ def get_shortcuts(
     shortcut_ids: list[str],
     project_id: str = None,
     project_name: str = None,
-    shortcut_info_flag: ShortcutInfoFlags
-    | int = ShortcutInfoFlags.DssDossierShortcutInfoDefault,
+    shortcut_info_flag: (
+        ShortcutInfoFlags | int
+    ) = ShortcutInfoFlags.DssDossierShortcutInfoDefault,
     to_dictionary: bool = False,
     limit: int | None = None,
     **filters,

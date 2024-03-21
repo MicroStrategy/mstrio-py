@@ -97,6 +97,7 @@ class ObjectType(AutoName):
     CUBE = auto()
     DOCUMENT = auto()
     DOSSIER = auto()
+    DASHBOARD = 'dossier'
 
 
 class PUName(AutoName):

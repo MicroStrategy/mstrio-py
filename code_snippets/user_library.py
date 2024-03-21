@@ -1,12 +1,12 @@
 """This is the demo script to show how administrator can manage documents and
-dossiers in users' libraries.
+dashboards in users' libraries.
 
 This script will not work without replacing parameters with real values.
 Its basic goal is to present what can be done with this module and to
 ease its usage.
 """
 
-from mstrio.project_objects import Document, Dossier, list_documents, list_dossiers
+from mstrio.project_objects import Dashboard, Document, list_documents,list_dashboards
 from mstrio.users_and_groups import list_user_groups, list_users, User, UserGroup
 
 from mstrio.connection import get_connection
@@ -16,20 +16,20 @@ PROJECT_NAME = $project_name  # Project to connect to
 
 conn = get_connection(workstationData, project_name=PROJECT_NAME)
 
-# list all dossiers and documents within a project to which we have connection
-dossiers = list_dossiers(connection=conn)
+# list all dashboards and documents within a project to which we have connection
+dashboards = list_dashboards(connection=conn)
 docs = list_documents(connection=conn)
 
 # Define variables which can be later used in a script
 DOCUMENT_NAME = $document_name
-DOSSIER_NAME = $dossier_name
+DASHBOARD_NAME = $dashboard_name
 
-# get document and dossier from by name or id and publish them to a library of
+# get document and dashboard from by name or id and publish them to a library of
 # an authenticated user
 doc = Document(connection=conn, name=DOCUMENT_NAME)
-doss = Dossier(connection=conn, name=DOSSIER_NAME)
+dashboard = Dashboard(connection=conn, name=DASHBOARD_NAME)
 doc.publish()
-doss.publish()
+dashboard.publish()
 
 # Define variables which can be later used in a script
 USER_ID_1 = $user_id_1
@@ -40,14 +40,14 @@ users = list_users(connection=conn)
 user_1 = User(connection=conn, id=USER_ID_1)
 user_2 = User(connection=conn, id=USER_ID_2)
 
-# share one dossier/document to a given user(s) by passing user object(s)
+# share one dashboard/document to a given user(s) by passing user object(s)
 # or id(s)
-doss.publish(recipients=user_1)
-doss.publish(recipients=[USER_ID_1, USER_ID_2])
-# analogously we can take away dossier(s)/document(s) from the library of the
+dashboard.publish(recipients=user_1)
+dashboard.publish(recipients=[USER_ID_1, USER_ID_2])
+# analogously we can take away dashboard(s)/document(s) from the library of the
 # given user(s)
-doss.unpublish(recipients=[user_1, user_2])
-doss.unpublish(recipients=USER_ID_1)
+dashboard.unpublish(recipients=[user_1, user_2])
+dashboard.unpublish(recipients=USER_ID_1)
 
 # Define a variable which can be later used in a script
 USER_GROUP_NAME = $user_group_name

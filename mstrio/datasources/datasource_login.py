@@ -82,6 +82,7 @@ class DatasourceLogin(Entity, CopyMixin, DeleteMixin, TranslationMixin):
             'ancestors',
             'certified_info',
             'acl',
+            'comments',
         ): objects_processors.get_info,
         (
             'id',
@@ -94,7 +95,10 @@ class DatasourceLogin(Entity, CopyMixin, DeleteMixin, TranslationMixin):
         ): datasources.get_datasource_login,
     }
     _API_PATCH: dict = {
-        "abbreviation": (objects_processors.update, "partial_put"),
+        ('abbreviation', 'comments'): (
+            objects_processors.update,
+            'partial_put',
+        ),
         ("name", "username", "description", "password"): (
             datasources.update_datasource_login,
             "patch",
@@ -137,6 +141,7 @@ class DatasourceLogin(Entity, CopyMixin, DeleteMixin, TranslationMixin):
         username: str = None,
         description: str = None,
         password: str = None,
+        comments: str | None = None,
     ) -> None:
         """Alter the datasource login properties.
 
@@ -145,6 +150,7 @@ class DatasourceLogin(Entity, CopyMixin, DeleteMixin, TranslationMixin):
             username: username
             description: login object description
             password: database password to be used by the database login
+            comments: long description of the login object
         """
         func = self.alter
         args = get_args_from_func(func)

@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING
 
+from mstrio.connection import Connection
 from mstrio.utils.error_handlers import ErrorHandler
 from mstrio.utils.version_helper import is_server_min_version
 
@@ -220,4 +221,32 @@ def get_prompted_instance(connection, report_id, instance_id, closed=None, field
     endpoint = f'/api/reports/{report_id}/instances/{instance_id}/prompts'
     return connection.get(
         endpoint=endpoint, params={'closed': closed, 'fields': fields}
+    )
+
+
+@ErrorHandler(
+    err_msg="Error getting prompted report {report_id} attribute element prompt."
+)
+def get_report_attribute_element_prompt(
+    connection: 'Connection',
+    report_id: str,
+    instance_id: str,
+    prompt_id: str,
+    offset: int = 0,
+    limit: int = 100,
+    search_pattern: str | None = None,
+    fields: str | None = None,
+):
+    """Get available attribute element for attribute element prompt"""
+    endpoint = (
+        f'/api/reports/{report_id}/instances/{instance_id}/prompts/{prompt_id}/elements'
+    )
+    return connection.get(
+        endpoint=endpoint,
+        params={
+            'offset': offset,
+            'limit': limit,
+            'searchPattern': search_pattern,
+            'fields': fields,
+        },
     )

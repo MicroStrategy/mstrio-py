@@ -202,15 +202,17 @@ class MetricPredicate(PredicateNode):
             'predicate_tree': {
                 'function': self.function.value,
                 'parameters': [item.to_dict() for item in self.parameters],
-                'level': [item.to_dict() for item in self.level]
-                if self.level
-                else None,
+                'level': (
+                    [item.to_dict() for item in self.level] if self.level else None
+                ),
                 'level_type': self.level_type,
                 'metric': self.metric.to_dict(),
                 'metric_function': self.metric_function.value,
-                'break_by': [item.to_dict() for item in self.break_by]
-                if self.break_by
-                else None,
+                'break_by': (
+                    [item.to_dict() for item in self.break_by]
+                    if self.break_by
+                    else None
+                ),
                 'null_include': self.null_include,
                 'is_independent': self.is_independent.value,
             }
@@ -311,9 +313,9 @@ class SetFromRelationshipPredicate(PredicateNode):
                 'guide': self.guide.to_dict() if self.guide else None,
                 'is_independent': self.is_independent.value,
             },
-            'children': [item.to_dict() for item in self.children]
-            if self.children
-            else None,
+            'children': (
+                [item.to_dict() for item in self.children] if self.children else None
+            ),
         }
 
         return delete_none_values(result, recursion=True)
@@ -419,12 +421,14 @@ class ElementListPredicate(PredicateNode):
         result = {
             'predicate_tree': {
                 'attribute': self.attribute.to_dict() if self.attribute else None,
-                'elements': [item.to_dict() for item in self.elements]
-                if self.elements
-                else None,
-                'elements_prompt': self.elements_prompt.to_dict()
-                if self.elements_prompt
-                else None,
+                'elements': (
+                    [item.to_dict() for item in self.elements]
+                    if self.elements
+                    else None
+                ),
+                'elements_prompt': (
+                    self.elements_prompt.to_dict() if self.elements_prompt else None
+                ),
                 'function': self.function.value,
             }
         }

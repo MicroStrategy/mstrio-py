@@ -226,10 +226,14 @@ class Folder(Entity, CopyMixin, MoveMixin, DeleteMixin, TranslationMixin):
     _FROM_DICT_MAP = {**Entity._FROM_DICT_MAP, 'owner': User.from_dict}
 
     _API_PATCH: dict = {
-        ('name', 'description', 'abbreviation', 'hidden', 'folder_id'): (
-            objects_processors.update,
-            'partial_put',
-        )
+        (
+            'name',
+            'description',
+            'abbreviation',
+            'hidden',
+            'folder_id',
+            'comments',
+        ): (objects_processors.update, 'partial_put')
     }
 
     _OBJECT_TYPE = ObjectTypes.FOLDER
@@ -287,6 +291,7 @@ class Folder(Entity, CopyMixin, MoveMixin, DeleteMixin, TranslationMixin):
         name: str | None = None,
         description: str | None = None,
         hidden: bool | None = None,
+        comments: str | None = None,
     ) -> None:
         """Alter the folder properties.
 
@@ -294,6 +299,7 @@ class Folder(Entity, CopyMixin, MoveMixin, DeleteMixin, TranslationMixin):
             name: folder name
             description: folder description
             hidden: Specifies whether the metric is hidden
+            comments: long description of the folder
         """
         func = self.alter
         default_dict = get_default_args_from_func(func)

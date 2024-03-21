@@ -242,9 +242,11 @@ class SchemaManagement:
             self.__init__, self, exclude=['self'], include_defaults=False
         )
         params = [
-            f"{param}"
-            if (param == "connection" and isinstance(value, Connection))
-            else f'{param}={repr(value)}'
+            (
+                f"{param}"
+                if (param == "connection" and isinstance(value, Connection))
+                else f'{param}={repr(value)}'
+            )
             for param, value in param_dict.items()
         ]
         formatted_params = ', '.join(params)
@@ -315,9 +317,9 @@ class SchemaManagement:
 
     def reload(
         self,
-        update_types: list[Union[str, "SchemaUpdateType"]]
-        | Union[str, "SchemaUpdateType"]
-        | None = None,
+        update_types: (
+            list[Union[str, "SchemaUpdateType"]] | Union[str, "SchemaUpdateType"] | None
+        ) = None,
         respond_async: bool = True,
     ) -> Optional["SchemaTask"]:
         """Reload (update) the schema. This operation can be performed

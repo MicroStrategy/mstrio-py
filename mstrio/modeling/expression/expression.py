@@ -286,9 +286,11 @@ def list_functions(
         {
             **obj,
             'object_id': obj.get('id'),
-            'sub_type': ObjectSubType.FUNCTION
-            if obj.get('subtype') == ObjectSubTypes.FUNCTION.value
-            else None,
+            'sub_type': (
+                ObjectSubType.FUNCTION
+                if obj.get('subtype') == ObjectSubTypes.FUNCTION.value
+                else None
+            ),
         }
         for obj in objects
     ]

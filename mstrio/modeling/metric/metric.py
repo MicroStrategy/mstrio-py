@@ -417,6 +417,7 @@ class Metric(  # noqa: F811
             'acl',
             'target_info',
             'hidden',
+            'comments',
         ): objects_processors.get_info,
     }
     _API_PATCH = {
@@ -441,7 +442,7 @@ class Metric(  # noqa: F811
             'metric_format_type',
             'thresholds',
         ): (metrics.update_metric, 'partial_put'),
-        ('folder_id', 'hidden'): (objects_processors.update, 'partial_put'),
+        ('folder_id', 'hidden', 'comments'): (objects_processors.update, 'partial_put'),
     }
     _FROM_DICT_MAP = {
         **Entity._FROM_DICT_MAP,
@@ -742,9 +743,9 @@ class Metric(  # noqa: F811
     @method_version_handler('11.3.0500')
     def alter(
         self,
-        name: str = None,
-        destination_folder_id: str = None,
-        expression: Expression = None,
+        name: str | None = None,
+        destination_folder_id: str | None = None,
+        expression: Expression | None = None,
         description: str | None = None,
         dimensionality: Dimensionality | None = None,
         conditionality: Conditionality | None = None,
@@ -760,6 +761,7 @@ class Metric(  # noqa: F811
         thresholds: list[Threshold] | None = None,
         show_expression_as: ExpressionFormat | str = ExpressionFormat.TOKENS,
         hidden: bool | None = None,
+        comments: str | None = None,
     ):
         """Alter a metric's specified properties
 

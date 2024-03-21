@@ -115,7 +115,9 @@ class CacheSource(Dictable):
         REPORT = auto()
         DOCUMENT = auto()
         DOSSIER = auto()
+        DASHBOARD = 'dossier'
         DOCDOSSIER = auto()
+        DOCDASHBOARD = 'docdossier'
         CUBE = auto()
 
     _FROM_DICT_MAP = {
@@ -135,8 +137,8 @@ class CacheSource(Dictable):
 class ContentCacheMixin:
     """ContentCacheMixin class adds ContentCache management for supporting cache
 
-    Objects currently supported are ContentCache for documents, dossiers and
-    reports.
+    Objects currently supported are ContentCache for dashboard, documents,
+    dossiers and reports.
     """
 
     @staticmethod
@@ -208,10 +210,10 @@ class ContentCacheMixin:
                 {
                     'op': op,
                     'path': (
-                        f'/contentCaches/{content_cache.combined_id}/status/{status}'
-                    )
-                    if status
-                    else f'/contentCaches/{content_cache.combined_id}',
+                        (f'/contentCaches/{content_cache.combined_id}/status/{status}')
+                        if status
+                        else f'/contentCaches/{content_cache.combined_id}'
+                    ),
                     'value': value,
                 }
             )

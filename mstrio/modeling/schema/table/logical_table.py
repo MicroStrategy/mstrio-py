@@ -376,6 +376,7 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin, TranslationMixin):
             "hidden",
             "target_info",
             'hidden',
+            'comments',
         ): objects_processors.get_info,
         (
             "id",
@@ -409,7 +410,11 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin, TranslationMixin):
             "physical_table",
             "secondary_data_sources",
         ): (tables_api.patch_table, "partial_put"),
-        ("folder_id", 'hidden'): (objects_processors.update, "partial_put"),
+        (
+            "folder_id",
+            "hidden",
+            "comments",
+        ): (objects_processors.update, "partial_put"),
     }
     _PATCH_PATH_TYPES = {
         "name": str,
@@ -582,8 +587,9 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin, TranslationMixin):
         is_true_key: bool | None = None,
         enclose_sql_in_parentheses: bool | None = None,
         check_secondary_data_source_table: bool | None = None,
-        column_merge_option: None
-        | (TableColumnMergeOption) = TableColumnMergeOption.REUSE_ANY,
+        column_merge_option: None | (
+            TableColumnMergeOption
+        ) = TableColumnMergeOption.REUSE_ANY,
         table_prefix_option: TablePrefixOption | None = None,
     ) -> "LogicalTable":
         """Create a new table in a specific project.
@@ -743,9 +749,11 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin, TranslationMixin):
                 "name": table_name,
                 "description": table_description,
                 "subType": get_enum_val(sub_type, ObjectSubType),
-                "destinationFolderId": destination_folder.id
-                if isinstance(destination_folder, Folder)
-                else destination_folder,
+                "destinationFolderId": (
+                    destination_folder.id
+                    if isinstance(destination_folder, Folder)
+                    else destination_folder
+                ),
                 "isEmbedded": is_embedded,
             },
             "logicalSize": logical_size,
@@ -818,8 +826,9 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin, TranslationMixin):
         description: str | None = None,
         is_logical_size_locked: bool | None = None,
         primary_data_source: SchemaObjectReference | None = None,
-        secondary_data_sources: None
-        | (list[SchemaObjectReference] | list[dict]) = None,
+        secondary_data_sources: None | (
+            list[SchemaObjectReference] | list[dict]
+        ) = None,
         physical_table_object_name: str | None = None,
         physical_table_name: str | None = None,
         physical_table_prefix: str | None = None,
@@ -828,6 +837,7 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin, TranslationMixin):
         columns: list[TableColumn] | list[dict] | None = None,
         folder_id: str | None = None,
         hidden: bool | None = None,
+        comments: str | None = None,
     ) -> None:  # NOSONAR
         """Alters properties specified by keyword arguments.
 
@@ -879,6 +889,8 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin, TranslationMixin):
                 logical  table should be moved. Defaults to None.
             hidden (bool, optional): Specifies whether the object is hidden.
                 Default value: False.
+            comments (str, optional): Comments added to the object. Defaults to
+                None.
 
             Throws:
                 TypeError if:

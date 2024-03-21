@@ -12,6 +12,7 @@ from .datasource_connection import (
     ExecutionMode,
     list_datasource_connections,
 )
+from .embedded_connection import EmbeddedConnection
 from .datasource_instance import (
     DatasourceInstance,
     DatasourceType,

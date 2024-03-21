@@ -106,9 +106,11 @@ class ContactAddress(Dictable):
         )
 
         params = [
-            f"{param}={self.delivery_type}"
-            if param == 'delivery_type'
-            else f'{param}={repr(value)}'
+            (
+                f"{param}={self.delivery_type}"
+                if param == 'delivery_type'
+                else f'{param}={repr(value)}'
+            )
             for param, value in param_dict.items()
         ]
         formatted_params = ', '.join(params)
