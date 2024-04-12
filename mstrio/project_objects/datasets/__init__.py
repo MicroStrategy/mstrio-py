@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 # flake8: noqa
 from .cube import list_all_cubes, load_cube
 from .cube_cache import (

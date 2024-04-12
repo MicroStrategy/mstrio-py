@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 import itertools
 import logging
 from concurrent.futures import as_completed

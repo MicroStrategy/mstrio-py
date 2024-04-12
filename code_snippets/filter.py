@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 """This is the sample script to show how to manage filters.
 
 This script will not work without replacing parameters with real values.

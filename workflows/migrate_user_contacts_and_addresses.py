@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 from mstrio.connection import get_connection
 from mstrio.users_and_groups.contact import list_contacts
 from mstrio.users_and_groups.user import User

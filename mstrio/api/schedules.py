@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 import json
 
 from requests.adapters import Response

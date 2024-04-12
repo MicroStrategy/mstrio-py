@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 from enum import Enum
 
 _COMMON_ENUM_FIELDS = {

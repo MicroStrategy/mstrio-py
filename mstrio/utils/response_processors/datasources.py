@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 from mstrio.api import datasources as datasources_api
 from mstrio.connection import Connection
 from mstrio.utils import helper

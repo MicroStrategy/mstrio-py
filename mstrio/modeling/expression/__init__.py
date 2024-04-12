@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 # flake8: noqa
 from .dynamic_date_time import (
     AdjustmentMonthlyByDay,

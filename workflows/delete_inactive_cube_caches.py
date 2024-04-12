@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 """Delete inactive caches which were not used for 30 days. IDs of deleted caches
 will be printed."""
 

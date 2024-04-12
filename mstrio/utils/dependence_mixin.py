@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 from typing import TYPE_CHECKING, Optional, Union
 
 from mstrio.helpers import NotSupportedError

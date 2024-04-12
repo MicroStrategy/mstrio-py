@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 from mstrio.utils.error_handlers import ErrorHandler
 
 

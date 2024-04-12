@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 """This is the demo script to show how to manage content cache. Its basic goal
 is to present what can be done with this module and to ease its usage.
 """

@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 import logging
 from collections import defaultdict
 from enum import auto

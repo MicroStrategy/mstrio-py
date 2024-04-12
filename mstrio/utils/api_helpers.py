@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 from concurrent.futures import as_completed
 from contextlib import contextmanager
 from functools import wraps

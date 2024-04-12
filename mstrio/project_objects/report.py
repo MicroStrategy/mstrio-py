@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 import pandas as pd
 import requests
 from packaging import version

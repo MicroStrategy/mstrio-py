@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 import functools
 import logging
 

@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 # NOSONAR
 import logging
 from collections import defaultdict

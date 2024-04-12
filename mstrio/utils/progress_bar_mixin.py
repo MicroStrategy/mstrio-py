@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 from tqdm.auto import tqdm
 
 

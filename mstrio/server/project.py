@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 import logging
 import time
 from enum import Enum, IntEnum

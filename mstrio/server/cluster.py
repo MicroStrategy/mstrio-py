@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 import getpass
 import logging
 from collections.abc import Iterable

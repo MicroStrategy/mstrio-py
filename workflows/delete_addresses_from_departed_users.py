@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 """Remove each address from every departed user (those which are disabled).
 For each successfully removed address a message will be printed.
 """

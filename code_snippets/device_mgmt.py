@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 """This is the demo script to show how to manage devices.
 This script will not work without replacing parameters with real values.
 Its basic goal is to present what can be done with this module and to

@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 """List security roles for every user in a user group. It is possible to provide
 either name or id of user group. Without any changes this script will be
 executed for user group 'System Administrators'."""

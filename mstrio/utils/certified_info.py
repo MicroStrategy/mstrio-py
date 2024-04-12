@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 from mstrio.connection import Connection
 from mstrio.users_and_groups.user import User
 from mstrio.utils.entity import auto_match_args_entity

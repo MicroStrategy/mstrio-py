@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 from enum import Enum, IntFlag
 
 from mstrio.utils.dict_filter import filter_list_of_dicts

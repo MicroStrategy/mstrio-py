@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 from mstrio.connection import Connection
 
 from ..schedule import Schedule

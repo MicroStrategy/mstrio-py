@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 from mstrio.connection import Connection
 from mstrio.distribution_services.schedule.schedule import Schedule
 from mstrio.distribution_services.subscription import Subscription

@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 import datetime as dt
 from collections import defaultdict
 

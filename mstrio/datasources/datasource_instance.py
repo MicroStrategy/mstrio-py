@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 import logging
 from enum import auto
 from typing import TYPE_CHECKING, Optional

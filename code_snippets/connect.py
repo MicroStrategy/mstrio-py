@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 """
 This demo script shows how to connect to MicroStrategy Environment. This script
 will not work without replacing parameters with real values. Its basic goal is

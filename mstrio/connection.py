@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 import logging
 import os
 from base64 import b64encode

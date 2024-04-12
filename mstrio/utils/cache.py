@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 import logging
 from dataclasses import dataclass
 from enum import auto

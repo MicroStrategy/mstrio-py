@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 import logging
 import math
 import time

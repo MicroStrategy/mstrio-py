@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 import json
 import logging
 from abc import ABCMeta, abstractmethod

@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 """Warning: `Dossier` module is deprecated and will be removed in the future,
 use `Dashboard` (code_snippets/dashboard.py) module instead
 

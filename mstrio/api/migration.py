@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 import requests
 
 from mstrio.connection import Connection

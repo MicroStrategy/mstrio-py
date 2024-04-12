@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 """mstrio: Simple and Secure Access to MicroStrategy Data
 
 Mstrio provides a high-level interface for Python and is designed

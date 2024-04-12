@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 from mstrio.api import cubes as cubes_api
 from mstrio.connection import Connection
 from mstrio.modeling.expression import ExpressionFormat

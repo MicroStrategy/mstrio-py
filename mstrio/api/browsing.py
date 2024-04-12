@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 import json
 from typing import TYPE_CHECKING, Optional, Union
 

@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 from mstrio.connection import get_connection
 
 from mstrio.distribution_services.subscription.email_subscription import (

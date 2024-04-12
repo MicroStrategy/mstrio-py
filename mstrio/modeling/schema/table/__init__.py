@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 # flake8: noqa
 from .logical_table import *
 from .physical_table import *

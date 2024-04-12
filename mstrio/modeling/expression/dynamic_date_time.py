@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 from dataclasses import asdict, dataclass
 from enum import Enum, auto
 from typing import TYPE_CHECKING, Optional

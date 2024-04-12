@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 import time
 from mstrio.connection import get_connection
 from mstrio.project_objects.datasets.cube import CubeStates

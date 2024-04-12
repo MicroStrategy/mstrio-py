@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 """This is the demo script to show how to export data from MicroStrategy with
 SuperCube. It is possible to create and publish single or multi-table SuperCube.
 

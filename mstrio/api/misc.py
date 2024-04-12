@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 from requests.exceptions import SSLError
 
 from mstrio.utils.helper import response_handler

@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 def convert_settings_to_byte(settings: dict, mapping: dict) -> dict:
     def convert(setting, value):
         unit = mapping.get(setting)

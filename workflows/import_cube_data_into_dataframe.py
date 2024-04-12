@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 from time import sleep
 from mstrio.connection import get_connection
 from mstrio.project_objects.datasets import list_all_cubes, OlapCube

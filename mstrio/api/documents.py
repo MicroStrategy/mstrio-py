@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 from typing import TYPE_CHECKING
 
 from requests import Response

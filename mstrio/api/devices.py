@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 from mstrio.connection import Connection
 from mstrio.utils.error_handlers import ErrorHandler
 from mstrio.utils.time_helper import DatetimeFormats, override_datetime_format

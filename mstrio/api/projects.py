@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 from typing import TYPE_CHECKING
 
 from mstrio.utils.api_helpers import changeset_manager

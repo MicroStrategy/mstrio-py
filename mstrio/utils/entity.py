@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 import contextlib
 import csv
 import inspect

@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 from collections.abc import Callable
 
 from mstrio.api import monitors

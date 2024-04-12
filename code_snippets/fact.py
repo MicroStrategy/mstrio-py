@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 """This is the sample script to show how to manage schema facts.
 This script will not work without replacing parameters with real values.
 Its basic goal is to present what can be done with this module and to ease

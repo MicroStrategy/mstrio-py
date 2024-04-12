@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 """Add email address with a form `{username}@microstrategy.com` to every user
 which is enabled but doesn't have an email address. For each successfully added
 email address a message will be printed.

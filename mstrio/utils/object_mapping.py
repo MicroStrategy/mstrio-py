@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 import sys
 from enum import Enum
 from typing import TYPE_CHECKING

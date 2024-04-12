@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 from mstrio.connection import get_connection
 from mstrio.object_management.folder import Folder
 from mstrio.helpers import AggregatedRights

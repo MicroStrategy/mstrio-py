@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 import inspect
 import logging
 from collections.abc import Callable

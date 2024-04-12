@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 from datetime import datetime
 from enum import auto
 

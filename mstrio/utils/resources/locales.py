@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 from mstrio.server.language import list_languages
 from mstrio.utils.version_helper import is_server_min_version
 

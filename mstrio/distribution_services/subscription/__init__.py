@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 # flake8: noqa
 from .base_subscription import Subscription
 from .cache_update_subscription import CacheUpdateSubscription

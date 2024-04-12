@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 """This is the demo script meant to show how administrator can perform a
 migration of objects from one environment to another.
 

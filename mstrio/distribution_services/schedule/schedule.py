@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 import logging
 from datetime import datetime, timezone
 from enum import auto

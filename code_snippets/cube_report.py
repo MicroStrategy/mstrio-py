@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 """This is the demo script to show how to import data from OlapCubes and
 Reports. It is possible to select attributes, metrics and attribute forms which
 is presented.

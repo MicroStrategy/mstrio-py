@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 import datetime as dt
 from base64 import b64encode
 

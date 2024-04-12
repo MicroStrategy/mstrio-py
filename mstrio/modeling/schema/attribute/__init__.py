@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 # flake8: noqa
 from .attribute_form import AttributeForm
 from .relationship import Relationship, RelationshipType

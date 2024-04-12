@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 # Privileges
 from mstrio.access_and_security.privilege import Privilege
 from mstrio.users_and_groups import list_user_groups, list_users, User, UserGroup

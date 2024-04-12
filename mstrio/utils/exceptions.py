@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 from mstrio.helpers import NotSupportedError  # NOQA
 from mstrio.utils.helper import deprecation_warning
 

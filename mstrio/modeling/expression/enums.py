@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 from enum import Enum, auto
 
 from mstrio.utils.enum_helper import AutoName

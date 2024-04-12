@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 from dataclasses import dataclass
 
 from mstrio.utils.helper import Dictable

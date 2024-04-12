@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 """List names and IDs of empty user groups."""
 
 from typing import List

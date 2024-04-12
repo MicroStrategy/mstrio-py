@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 from mstrio.distribution_services.subscription.subscription_manager import (
     list_subscriptions,
 )

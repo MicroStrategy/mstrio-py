@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 from mstrio.connection import get_connection
 from mstrio.datasources import list_datasource_connections
 from mstrio.server import Project, list_languages

@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 from mstrio.api import languages as languages_api
 from mstrio.connection import Connection
 from mstrio.utils.helper import fetch_objects

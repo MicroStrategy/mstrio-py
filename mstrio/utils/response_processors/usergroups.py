@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 from mstrio.api import usergroups as usergroups_api
 
 

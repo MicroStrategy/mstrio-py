@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 # flake8: noqa
 from .content_cache import ContentCache
 from .datasets import *

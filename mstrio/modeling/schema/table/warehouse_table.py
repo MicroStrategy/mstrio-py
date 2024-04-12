@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 import logging
 from concurrent.futures import Future, as_completed
 from functools import cached_property

@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 import logging
 from collections.abc import Callable
 from copy import deepcopy

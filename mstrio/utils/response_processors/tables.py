@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 from mstrio.api import tables as tables_api
 from mstrio.connection import Connection
 

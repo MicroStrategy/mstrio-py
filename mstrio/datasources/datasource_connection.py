@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 import logging
 from typing import TYPE_CHECKING, Any
 

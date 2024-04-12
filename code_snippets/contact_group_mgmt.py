@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 """This is the demo script to show how to manage contact groups.
 
 This script will not work without replacing parameters with real values.

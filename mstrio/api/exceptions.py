@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 from mstrio.helpers import (  # NOQA
     IServerException,
     MstrException,

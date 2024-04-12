@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 """List user privileges for all active users."""
 
 from typing import List

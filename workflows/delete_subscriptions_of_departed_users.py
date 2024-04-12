@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 """Delete all subscription in all projects which owners are departed users.
 For which project message about successful (or not) deletion will be printed.
 """

@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 from mstrio.api import projects as projects_api
 from mstrio.connection import Connection
 

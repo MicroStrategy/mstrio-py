@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 from itertools import chain
 
 import numpy as np

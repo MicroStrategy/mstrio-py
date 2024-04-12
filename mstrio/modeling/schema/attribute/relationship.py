@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 from enum import auto
 
 from mstrio.modeling.schema.helpers import SchemaObjectReference

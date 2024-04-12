@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 def _map_data_type(datatype):
     if datatype == 'object':
         return "STRING"

@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 from mstrio.connection import Connection
 from mstrio.types import ObjectTypes
 from mstrio.utils.entity import Entity

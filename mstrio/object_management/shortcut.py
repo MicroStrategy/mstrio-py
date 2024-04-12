@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 from enum import IntFlag
 from typing import Any, TypeVar
 

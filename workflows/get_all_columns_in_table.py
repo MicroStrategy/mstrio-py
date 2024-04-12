@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 """List all the columns for all available tables"""
 from typing import Optional, Union
 

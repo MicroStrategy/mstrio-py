@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 import fnmatch
 import logging
 from collections.abc import Callable, Iterable

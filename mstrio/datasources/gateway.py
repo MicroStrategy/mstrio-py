@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 from mstrio.connection import Connection
 from mstrio.datasources.helpers import DBType, GatewayType
 from mstrio.utils.entity import EntityBase

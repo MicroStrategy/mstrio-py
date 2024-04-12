@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 # flake8: noqa
 from .cluster import Cluster, GroupBy, ServiceAction
 from .environment import Environment

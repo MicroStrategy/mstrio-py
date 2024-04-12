@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 import inspect
 from functools import wraps
 from inspect import getattr_static, getmembers

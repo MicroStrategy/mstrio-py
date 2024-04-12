@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 import csv
 from mstrio.connection import get_connection
 from mstrio.helpers import AggregatedRights

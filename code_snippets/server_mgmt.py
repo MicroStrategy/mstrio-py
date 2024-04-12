@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 """This is the demo script to show how administrator can manage server and the
 cluster with its nodes.
 

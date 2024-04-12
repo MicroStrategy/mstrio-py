@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 # flake8: noqa
 # isort: off
 from .dimensionality import Dimensionality, DimensionalityUnit

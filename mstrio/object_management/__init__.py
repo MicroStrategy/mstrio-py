@@ -1,3 +1,4 @@
+# -*- coding: future_typing -*-
 # flake8: noqa
 from .object import Object, list_objects
 from .predefined_folders import PredefinedFolders
