@@ -27,7 +27,7 @@ def login(connection):
         return connection.post(
             skip_expiration_check=True,
             endpoint='/api/auth/login',
-            data={
+            json={
                 'username': connection.api_token,
                 'loginMode': connection.login_mode,
                 'applicationType': 35,
