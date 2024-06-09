@@ -155,6 +155,7 @@ class Connection:
         certificate_path: str | None = None,
         proxies: dict | None = None,
         identity_token: str | None = None,
+        api_token: str | None = None,
         verbose: bool = True,
     ):
         """Establish a connection with MicroStrategy REST API.
@@ -191,6 +192,7 @@ class Connection:
                 'http://host.name': 'foo.bar:4012'})
             identity_token (str, optional): Identity token for delegated
                 session. Used for connection initialized by GUI.
+            api_token (str, optional): API token token for the users.
             verbose (bool, optional): True by default. Controls the amount of
                 feedback from the I-Server.
         """
@@ -202,6 +204,7 @@ class Connection:
         self.login_mode = login_mode
         self.certificate_path = certificate_path
         self.identity_token = identity_token
+        self.api_token = api_token
         self._session = self.__configure_session(ssl_verify, certificate_path, proxies)
         self._web_version = None
         self._iserver_version = None

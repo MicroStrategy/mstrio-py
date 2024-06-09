@@ -23,16 +23,27 @@ def login(connection):
         Complete HTTP response object.
     """
 
-    return connection.post(
-        skip_expiration_check=True,
-        endpoint='/api/auth/login',
-        data={
-            'username': connection.username,
-            'password': connection._Connection__password,
-            'loginMode': connection.login_mode,
-            'applicationType': 35,
-        },
-    )
+    if connection.login_mode == 4096:
+        return connection.post(
+            skip_expiration_check=True,
+            endpoint='/api/auth/login',
+            data={
+                'username': connection.api_token,
+                'loginMode': connection.login_mode,
+                'applicationType': 35,
+            },
+        )
+    else:
+        return connection.post(
+            skip_expiration_check=True,
+            endpoint='/api/auth/login',
+            data={
+                'username': connection.username,
+                'password': connection._Connection__password,
+                'loginMode': connection.login_mode,
+                'applicationType': 35,
+            },
+        )
 
 
 @ErrorHandler(err_msg="Failed to logout.")
