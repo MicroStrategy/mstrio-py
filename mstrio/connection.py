@@ -181,7 +181,7 @@ class Connection:
                 or Project Name.
             login_mode (int, optional): Specifies the authentication mode to
                 use. Supported authentication modes are: Standard (1)
-                (default) or LDAP (16)
+                (default), LDAP (16) or API token (4096)
             ssl_verify (bool, optional): If True (default), verifies the
                 server's SSL certificates with each request
             certificate_path (str, optional): Path to SSL certificate file, if
@@ -192,7 +192,7 @@ class Connection:
                 'http://host.name': 'foo.bar:4012'})
             identity_token (str, optional): Identity token for delegated
                 session. Used for connection initialized by GUI.
-            api_token (str, optional): API token token for the users.
+            api_token (str, optional): API token token for the users
             verbose (bool, optional): True by default. Controls the amount of
                 feedback from the I-Server.
         """
