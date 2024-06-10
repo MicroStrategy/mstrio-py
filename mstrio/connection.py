@@ -192,7 +192,7 @@ class Connection:
                 'http://host.name': 'foo.bar:4012'})
             identity_token (str, optional): Identity token for delegated
                 session. Used for connection initialized by GUI.
-            api_token (str, optional): API token token for the users
+            api_token (str, optional): API token token for the user
             verbose (bool, optional): True by default. Controls the amount of
                 feedback from the I-Server.
         """
