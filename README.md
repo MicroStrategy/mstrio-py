@@ -49,11 +49,12 @@ with **VLDB settings** management (see [code_snippets][code_snippet_vldb])
 - **Server** management module (see [code_snippets][code_snippet_server])
 - **User** and **User Group** management modules (see [code_snippets][code_snippet_user])
 - **Schedules** management module (see [code_snippets][code_snippet_schedules])
-- **Subscription** management modules including **Email Subscription**,  **Cache Update Subscription**, **File Subscription**, **FTP Subscription** and **History List Subscription** (see [code_snippets][code_snippet_subs])
+- **Subscription** management modules including **Email Subscription**,  **Cache Update Subscription**, **File Subscription**, **FTP Subscription**, **History List Subscription** and **Mobile Subscription** (see [code_snippets][code_snippet_subs])
 - **User Library** module (see [code_snippets][code_snippet_library])
 - **User Connections** management module
 - **Privilege** and **Security Role** management modules (see [code_snippets][code_snippet_privilege])
-- **Cube Cache** management modules (see [code_snippets][code_snippet_cache])
+- **Cube Cache** management module (see [code_snippets][code_snippet_cache])
+- **Report Cache** management module (see [code_snippets][code_snippet_report_cache])
 - **Intelligent Cube** management modules (see [code_snippets][code_snippet_olap])
 with **VLDB settings** management (see [code_snippets][code_snippet_vldb])
 - **Security filter** module (see [code_snippets][code_snippet_security_filter])
@@ -84,6 +85,8 @@ It is subject to change until it is released as Generally Available.
 - **Gateway** module (see [code_snippets][code_snippet_datasource])
 - **Language** module (see [code_snippets][code_snippet_languages])
 - **Translation** module (see [code_snippets][code_snippet_translations])
+- **Report** module (see [code_snippets][code_snippet_report])
+- **Incremental Refresh Report** module (see [code_snippets][code_snippet_irr])
 
 
 <a id="documentation" name="documentation"></a>
@@ -143,7 +146,7 @@ pip install mstrio-py
 <a id="versioning--changelog" name="versioning--changelog"></a>
 # Versioning & Changelog
 
-Current version: **11.4.3.101** (22 March 2024). Check out [**Changelog**][release_notes] to see what's new.
+Current version: **11.4.6.101** (21 June 2024). Check out [**Changelog**][release_notes] to see what's new.
 
 mstrio-py is constantly developed to support newest MicroStrategy REST APIs. Functionalities may be added to mstrio on monthly basis. It is **recommended** to always install the newest version of mstrio-py, as it will be most stable and still maintain backwards compatibility with various MicroStrategy installations, dating back to 11.1.4.
 
@@ -228,3 +231,6 @@ When features (modules, parameters, attributes, methods etc.) are marked for dep
 [code_snippet_languages]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/languages.py
 [code_snippet_translations]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/translations.py
 [code_snippet_project_languages]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/project_languages_mgmt.py
+[code_snippet_irr]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/incremental_refresh_report.py
+[code_snippet_report_cache]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/report_cache.py
+[code_snippet_report]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/reports.py

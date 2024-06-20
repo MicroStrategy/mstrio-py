@@ -1,9 +1,6 @@
 from mstrio.connection import Connection
 from mstrio.utils.api_helpers import unpack_information
 from mstrio.utils.error_handlers import ErrorHandler
-from mstrio.utils.wip import WipLevels, module_wip
-
-module_wip(globals(), level=WipLevels.WARNING)
 
 
 @unpack_information
@@ -13,8 +10,8 @@ def get_incremental_refresh_report(
     id: str,
     project_id: str | None = None,
     show_expression_as: list[str] | None = None,
-    show_filter_tokens: bool | None = None,
-    show_advanced_properties: bool | None = None,
+    show_filter_tokens: bool = False,
+    show_advanced_properties: bool = True,
 ):
     """Get a definition of incremental refresh report
 
@@ -67,8 +64,8 @@ def create_incremental_refresh_report(
     body: dict,
     project_id: str | None = None,
     show_expression_as: list[str] | None = None,
-    show_filter_tokens: bool | None = None,
-    show_advanced_properties: bool | None = None,
+    show_filter_tokens: bool = False,
+    show_advanced_properties: bool = True,
 ):
     """Create a new incremental refresh report,
     based on the definition provided in request body.
@@ -124,8 +121,8 @@ def update_incremental_refresh_report(
     body: dict,
     project_id: str | None = None,
     show_expression_as: list[str] | None = None,
-    show_filter_tokens: bool | None = None,
-    show_advanced_properties: bool | None = None,
+    show_filter_tokens: bool = False,
+    show_advanced_properties: bool = True,
 ):
     """Update a specified incremental refresh report,
     based on the definition provided in request body.
@@ -176,9 +173,7 @@ def update_incremental_refresh_report(
 @unpack_information
 @ErrorHandler(err_msg="Error getting an incremental refresh report's vldb properties")
 def get_incremental_refresh_report_vldb_properties(
-    connection: Connection,
-    id: str,
-    project_id: str,
+    connection: Connection, id: str, project_id: str | None = None
 ):
     """Get vldb properties of an incremental refresh report.
 
@@ -192,7 +187,7 @@ def get_incremental_refresh_report_vldb_properties(
     """
     return connection.get(
         endpoint=f'/api/model/incrementalRefresh/{id}/applicableVldbProperties',
-        headers={'X-MSTR-ProjectID': project_id},
+        headers={'X-MSTR-ProjectID': project_id} if project_id else None,
     )
 
 

@@ -4,10 +4,7 @@ from mstrio.api import datasources
 from mstrio.datasources.datasource_login import DatasourceLogin
 from mstrio.datasources.helpers import CharEncoding, DriverType, ExecutionMode
 from mstrio.utils.entity import EntityBase
-from mstrio.utils.helper import (
-    get_args_from_func,
-    get_default_args_from_func,
-)
+from mstrio.utils.helper import get_args_from_func, get_default_args_from_func
 from mstrio.utils.version_helper import class_version_handler
 
 if TYPE_CHECKING:

@@ -1,6 +1,24 @@
 """This is the demo script to show how to manage translations. This script will
 not work without replacing parameters with real values. Its basic goal is to
 present what can be done with this module and to ease its usage.
+
+1. Connect to the environment using data from the workstation
+2. Define variables which can be later used in a script
+3. Add, alter and remove translations to/from an object by using Translation
+   class
+4. Get list of translations for an object
+5. Get metric object based on provided ID
+6. Add, alter and remove translations to/from the metric object by using
+   its method
+7. Get list of translations for the metric object by using its method
+8. Export translations to CSV file with few different options
+9. Add translations from CSV file with few different options
+10. Export translations to JSON file with few different options
+11. Add translations from JSON file with few different options
+12. Export translations to database with few different options
+13. Add translations from database with few different options
+14 Export translations to dataframe with few different options
+15. Add translations from dataframe with few different options
 """
 
 from mstrio.connection import get_connection

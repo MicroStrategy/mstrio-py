@@ -1,3 +1,17 @@
+"""
+Manage project settings.
+Change project settings, copy settings from one project to another.
+Export project settings to CSV.
+
+1. Connect to the environment using data from the workstation
+2. Get project object based on provided id
+3. Get another project object based on provided id
+4. Change single setting for a project
+5. Apply all settings from one project to another
+6. Export settings to a CSV file and import them to another project
+7. Export settings to a CSV file with their descriptions
+"""
+
 from mstrio.connection import get_connection
 from mstrio.server import Project
 

@@ -391,3 +391,36 @@ def get_search_suggestions(
         ),
         headers={'X-MSTR-ProjectID': project_id},
     )
+
+
+@ErrorHandler(err_msg="Error getting specified objects.")
+def get_search_objects(
+    connection: 'Connection',
+    body: dict,
+    include_ancestors: bool = False,
+    show_navigation_path: bool = False,
+    fields: str | None = None,
+    error_msg: str | None = None,
+):
+    """Search for objects in the metadata.
+
+    Args:
+        connection: MicroStrategy REST API connection object
+        body: A dictionary specifying the search criteria
+        include_ancestors: Include ancestors in the search results
+        show_navigation_path: Show navigation path in the search results
+        fields: Comma-separated list of fields to include in the search results
+        error_msg: Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object.
+    """
+    return connection.post(
+        endpoint='/api/searches/objects',
+        json=body,
+        params={
+            'includeAncestors': include_ancestors,
+            'showNavigationPath': show_navigation_path,
+            'fields': fields,
+        },
+    )

@@ -6,8 +6,10 @@ ease its usage.
 """
 
 from mstrio.connection import get_connection
+from mstrio.server import Environment
 from mstrio.project_objects.content_cache import ContentCache
 from mstrio.project_objects.report import Report, list_reports
+from mstrio.project_objects.prompt import Prompt
 
 # Define a variable which can be later used in a script
 PROJECT_NAME = $project_name  # Insert name of project here
@@ -20,6 +22,16 @@ cache_list = Report.list_caches(conn)
 
 # list all reports
 reports = list_reports(connection=conn)
+
+# List properties for all reports in all projects
+# Prepare a list of all projects
+env = Environment(connection=conn)
+projects = env.list_loaded_projects()
+# List properties for all reports in all projects
+for project in projects:
+    reports = list_reports(connection=conn, project_id=project.id)
+    for report in reports:
+        print(report.list_properties())
 
 # Define a variable which can be later used in a script
 REPORT_ID = $report_id  # Insert ID of report here
@@ -143,3 +155,33 @@ Report.delete_all_caches(connection=conn, owner=USER_NAME, force=True)  # withou
 # Delete all loaded report caches
 Report.delete_all_caches(connection=conn, status='loaded')  # with confirmation prompt
 Report.delete_all_caches(connection=conn, status='loaded', force=True)  # without confirmation prompt
+
+# Managing report prompts
+REPORT = Report(connection=conn, id=REPORT_ID)
+
+# Getting a list or available prompts for a report
+PROMPTS = REPORT.prompts
+
+# Define variables which can be later used in a script
+PROMPT_TYPE = $prompt_type
+PROMPT_KEY = $prompt_key
+PROMPT_KEY_2 = $prompt_key_2
+PROMPT_ANSWERS = $prompt_answers
+
+# Prepare a prompt
+PROMPT = Prompt(type=PROMPT_TYPE, key=PROMPT_KEY, answers=PROMPT_ANSWERS)
+# Prepare a prompt with default answer
+PROMPT_2 = Prompt(type=PROMPT_TYPE, key=PROMPT_KEY_2, use_default=True)
+
+# Answer prompts via to_dataframe method
+df = REPORT.to_dataframe(prompt_answers=[PROMPT, PROMPT_2])
+
+# Execute a report with page-by attribute elements -define page_by_attribute_id variable.
+PAGE_BY_ELEMENTS = REPORT.page_by_elements
+PAGE_BY_ATTRS = REPORT.page_by_attributes
+PAGE_BY_ATTRS_ID = PAGE_BY_ATTRS[0]['id']
+
+page_by_dataframe = REPORT.to_dataframe(page_element_id=PAGE_BY_ATTRS_ID)
+
+# Get sql property of a report
+sql = REPORT.sql

@@ -5,6 +5,7 @@ import os
 import re
 import time
 import warnings
+from base64 import b64encode
 from collections.abc import Callable
 from datetime import datetime
 from enum import Enum
@@ -13,6 +14,7 @@ from json.decoder import JSONDecodeError
 from typing import TYPE_CHECKING, Any, TypeVar
 
 import humps
+from pypika import Query
 
 from mstrio import config
 from mstrio.helpers import (
@@ -386,6 +388,7 @@ def fetch_objects_async(
     objects = _prepare_objects(response.json(), filters, dict_unpack_value)
     all_objects.extend(objects)
     current_count = offset + chunk_size
+    # TODO Total count of subscriptions is not always true (see. US523782)
     total_objects = int(response.headers.get('x-mstr-total-count'))
     total_objects = min(limit, total_objects) if limit else total_objects
 
@@ -1120,10 +1123,10 @@ def is_dashboard(view_media: int):
 
 
 def is_document(view_media: int):
-    """Documents and dossiers have the same type and subtype when returned
+    """Documents and dashboards have the same type and subtype when returned
     from search api. They can be distinguished only by view_media value.
     """
-    return not is_dossier(view_media)
+    return not is_dashboard(view_media)
 
 
 def rename_dict_keys(source: dict, mapping: dict) -> dict:
@@ -1265,3 +1268,14 @@ def get_object_properties(
         elem[0]
         for elem in inspect.getmembers(obj.__class__, lambda x: isinstance(x, property))
     }
+
+
+def encode_as_b64(query: str | Query) -> str:
+    """Encodes a query as base64.
+
+    Args:
+        query (str | Query): query to be encoded
+
+    Returns:
+        Base64 format encoded query."""
+    return b64encode(str(query).encode('utf-8')).decode('utf-8')

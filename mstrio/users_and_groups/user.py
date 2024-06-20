@@ -17,11 +17,11 @@ from mstrio.users_and_groups.user_connections import UserConnections
 from mstrio.utils import helper, time_helper
 from mstrio.utils.acl import TrusteeACLMixin
 from mstrio.utils.entity import DeleteMixin, Entity, ObjectTypes
-from mstrio.utils.helper import Dictable, filter_params_for_func
+from mstrio.utils.helper import Dictable, VersionException, filter_params_for_func
 from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.response_processors import users
 from mstrio.utils.translation_mixin import TranslationMixin
-from mstrio.utils.version_helper import method_version_handler
+from mstrio.utils.version_helper import is_server_min_version, method_version_handler
 
 if TYPE_CHECKING:
     from mstrio.access_and_security.privilege import Privilege
@@ -108,6 +108,9 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
         owner: owner ID and name
         ancestors: List of ancestor folders
         password_modifiable: If user password can be modified
+        password_auto_expire: If user password is set to auto expire
+        password_expiration_date: Date when User password expires
+        password_expiration_frequency: Frequency of password expiration in days
         require_new_password: If user is required to change new password
         standard_auth: If standard authentication is allowed for user
         ldapdn: information about user's LDAP distinguished name
@@ -131,7 +134,9 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
         "password": str,
         "enabled": bool,
         "password_modifiable": bool,
+        "password_auto_expire": bool,
         "password_expiration_date": str,
+        "password_expiration_frequency": int,
         "standard_auth": bool,
         "require_new_password": bool,
         "ldapdn": str,
@@ -157,6 +162,9 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
             'full_name',
             'enabled',
             'password_modifiable',
+            'password_auto_expire',
+            'password_expiration_date',
+            'password_expiration_frequency',
             'require_new_password',
             'standard_auth',
             'memberships',
@@ -184,7 +192,9 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
             'description',
             'password_modifiable',
             'require_new_password',
+            'password_auto_expire',
             'password_expiration_date',
+            'password_expiration_frequency',
             'standard_auth',
             'ldapdn',
             'trust_id',
@@ -297,6 +307,9 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
         self.full_name = kwargs.get("full_name")
         self.enabled = kwargs.get("enabled")
         self.password_modifiable = kwargs.get("password_modifiable")
+        self.password_auto_expire = kwargs.get("password_auto_expire")
+        self.password_expiration_date = kwargs.get("password_expiration_date")
+        self.password_expiration_frequency = kwargs.get("password_expiration_frequency")
         self.standard_auth = kwargs.get("standard_auth")
         self.require_new_password = kwargs.get("require_new_password")
         self.ldapdn = kwargs.get("ldapdn")
@@ -320,7 +333,9 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
         description: str | None = None,
         enabled: bool = True,
         password_modifiable: bool = True,
+        password_auto_expire: bool | None = None,
         password_expiration_date: str | datetime | None = None,
+        password_expiration_frequency: int | None = None,
         require_new_password: bool = True,
         standard_auth: bool = True,
         ldapdn: str | None = None,
@@ -342,8 +357,12 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
             description: user description
             enabled: specifies if user is allowed to log in
             password_modifiable: Specifies if user password can be modified
+            password_auto_expire: specifies if password will expire
+                automatically
             password_expiration_date: Expiration date of user password either
                 as a datetime or string: "yyyy-MM-dd HH:mm:ss" in UTC
+            password_expiration_frequency: frequency of password expiration
+                specified in days
             require_new_password: Specifies if user is required to provide a new
                 password.
             standard_auth: Specifies whether standard authentication is allowed
@@ -376,6 +395,16 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
             "databaseAuthLogin": database_auth_login,
             "memberships": memberships,
         }
+        if password_auto_expire or password_expiration_frequency:
+            if not is_server_min_version(
+                connection=connection, version_str='11.4.0600'
+            ):
+                raise VersionException(
+                    'Password auto expiration requires version 11.4.0600 or higher'
+                )
+            body['passwordAutoExpire'] = password_auto_expire
+            body['passwordExpirationFrequency'] = password_expiration_frequency
+
         body = helper.delete_none_values(body, recursion=True)
         response = users.create(connection, body, username)
         if config.verbose:
@@ -463,7 +492,9 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
         password: str | None = None,
         enabled: bool | None = None,
         password_modifiable: bool | None = None,
+        password_auto_expire: bool | None = None,
         password_expiration_date: str | None = None,
+        password_expiration_frequency: str | None = None,
         standard_auth: bool | None = None,
         require_new_password: bool | None = None,
         ldapdn: str | None = None,
@@ -483,8 +514,12 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
             password: user password
             enabled: specifies if user is allowed to log in
             password_modifiable: Specifies if user password can be modified
+            password_auto_expire: specifies if password will expire
+                automatically
             password_expiration_date: Expiration date of user password,
                 "yyyy-MM-dd HH:mm:ss" in UTC
+            password_expiration_frequency: frequency of password expiration
+                specified in days
             standard_auth: Specifies whether standard authentication is allowed
                 for user.
             require_new_password: Specifies if user is required to provide a new
@@ -497,6 +532,14 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
             language: language for user
             comments: long description of the object
         """
+        if (
+            password_auto_expire or password_expiration_frequency
+        ) and not is_server_min_version(
+            connection=self.connection, version_str='11.4.0600'
+        ):
+            raise VersionException(
+                'Password auto expiration requires version 11.4.0600 or higher'
+            )
         owner = owner.id if isinstance(owner, User) else owner
         if language:
             language = {

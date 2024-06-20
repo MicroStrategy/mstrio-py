@@ -1,5 +1,15 @@
 """Delete inactive caches which were not used for 30 days. IDs of deleted caches
-will be printed."""
+will be printed.
+
+1. Connect to the environment using data from workstation
+2. Validate if the project is selected
+3. List all cube caches for the provided nodes (if nodes are not specified, then
+   all nodes' names are loaded from the cluster)
+4. Delete inactive caches which are older than specified number of days
+   (by default 30)
+5. Return every deleted cache object in a list
+6. Print ids of all deleted caches
+"""
 
 from datetime import datetime, timezone
 from typing import List, Union

@@ -1,6 +1,9 @@
 import logging
+import time
 from enum import auto
 from typing import TYPE_CHECKING, Optional
+
+from pypika import Query
 
 from mstrio import config
 from mstrio.api import datasources
@@ -11,10 +14,12 @@ from mstrio.utils import helper
 from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, ObjectTypes
 from mstrio.utils.enum_helper import AutoName, get_enum_val
 from mstrio.utils.helper import (
+    encode_as_b64,
     get_args_from_func,
     get_default_args_from_func,
     get_objects_id,
 )
+from mstrio.utils.response_processors import datasources as datasources_processors
 from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.translation_mixin import TranslationMixin
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
@@ -121,7 +126,7 @@ def list_connected_datasource_instances(
         in datasource_connections_ids
         # remove xquery datasources because they are not available
         # in Workstation and listing namespaces for them can cause
-        # IServer to become unresponsive.
+        # old IServer to become unresponsive.
         and ds_instance.get('database_type') != 'xquery'
     ]
 
@@ -519,3 +524,87 @@ class DatasourceInstance(
         )
         if response.ok:
             self.fetch()
+
+    @method_version_handler('11.3.1060')
+    def execute_query(
+        self,
+        project_id: str | Project,
+        query: str,
+        max_retries: int = 10,
+        retry_delay: int = 5,
+    ) -> dict:
+        """Execute an SQL query on the given datasource.
+
+        Args:
+            project_id (str | Project): project ID
+            query (str): query to be executed
+            max_retries (int, optional): maximum number of retries in case
+                the query execution fails. Default is 10.
+            retry_delay (int, optional): time to wait
+                between retries in seconds. Default is 5.
+
+        Returns:
+            Dictionary containing execution results data for the query.
+        """
+        project_id = project_id.id if isinstance(project_id, Project) else project_id
+        return DatasourceInstance._execute_query(
+            connection=self.connection,
+            query=query,
+            datasource_id=self.id,
+            project_id=project_id,
+            max_retries=max_retries,
+            retry_delay=retry_delay,
+        )
+
+    @staticmethod
+    def _execute_query(
+        connection: 'Connection',
+        query: str | Query,
+        datasource_id: str,
+        project_id: str,
+        max_retries: int = 10,
+        retry_delay: int = 5,
+    ) -> dict:
+        """Execute an SQL query on the given datasource.
+
+        Args:
+            connection (Connection): MicroStrategy connection object returned by
+                `connection.Connection()`
+            query (str): query to be executed
+            datasource_id (str): ID of the DatasourceInstance to execute the
+                query on
+            project_id (str): ID of the project
+            max_retries (int): maximum number of retries
+                in case the query execution fails. Default is 10.
+            retry_delay (int): time to wait between retries in seconds.
+                Default is 5.
+
+        Returns:
+            Dictionary containing execution results data for the query.
+        """
+        execution_id = datasources_processors.execute_query(
+            connection=connection,
+            body={'query': encode_as_b64(query)},
+            id=datasource_id,
+            project_id=project_id,
+        ).get('id')
+        for _ in range(max_retries):
+            execution = datasources_processors.get_query_results(
+                connection=connection, id=execution_id
+            )
+            if execution.get('status') == 3:
+                return execution
+            elif execution.get('status') == 4:
+                if 'Error type: Odbc success with info.' in execution.get('message'):
+                    return execution
+                else:
+                    raise ValueError(
+                        f"Query execution failed with the following error: "
+                        f"{execution.get('message')}"
+                    )
+            if config.verbose:
+                logger.info(
+                    f"The query is still running. Retrying in {retry_delay} seconds."
+                )
+            time.sleep(retry_delay)
+        logger.error("The query did not finish within the maximum number of retries.")

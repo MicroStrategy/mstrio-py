@@ -1,5 +1,11 @@
 """Remove each address from every departed user (those which are disabled).
 For each successfully removed address a message will be printed.
+
+1. Connect to the environment using data from workstation
+2. Get all users that are disabled
+3. For every retrieved user remove all its email addresses
+4. Return list which contains information about removed addresses such as user's id,
+   username and address
 """
 
 from typing import List

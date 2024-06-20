@@ -1,11 +1,22 @@
 """List security roles for every user in a user group. It is possible to provide
 either name or id of user group. Without any changes this script will be
-executed for user group 'System Administrators'."""
+executed for user group 'System Administrators'.
+
+1. Connect to the environment using data from workstation
+2. Get user group object based on provided name or id (in this case name of user
+   group is 'System Administrators')
+3. Get list of all members of user group
+4. For each member check whether it is user or user group (if additional argument
+   is set to True, then skip user groups)
+5. Prepare dictionary with type, id, name, username and list of security roles
+6. For each project print its name and name of every security role which is
+   inside the given project for the given member of "main" user group
+"""
 
 from typing import List
 
 from mstrio.connection import Connection, get_connection
-from mstrio.users_and_groups import User, UserGroup
+from mstrio.users_and_groups import UserGroup
 
 
 def list_security_roles_per_user(

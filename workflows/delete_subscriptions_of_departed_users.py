@@ -1,5 +1,11 @@
 """Delete all subscription in all projects which owners are departed users.
 For which project message about successful (or not) deletion will be printed.
+
+1. Connect to the environment using data from workstation
+2. Get all projects that the authenticated user has access to
+3. Get all disabled users
+4. For each project for each user get the list of subscriptions and delete them
+5. For each deletion process message is displayed informing about the result
 """
 
 from mstrio.api.projects import get_projects

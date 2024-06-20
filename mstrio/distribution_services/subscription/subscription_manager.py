@@ -7,7 +7,11 @@ from mstrio import config
 from mstrio.api import subscriptions as subscriptions_
 from mstrio.connection import Connection
 from mstrio.utils import helper
-from mstrio.utils.version_helper import class_version_handler, method_version_handler
+from mstrio.utils.version_helper import (
+    class_version_handler,
+    is_server_min_version,
+    method_version_handler,
+)
 
 from . import (
     CacheUpdateSubscription,
@@ -15,6 +19,7 @@ from . import (
     FileSubscription,
     FTPSubscription,
     HistoryListSubscription,
+    MobileSubscription,
     Subscription,
 )
 from .content import Content
@@ -30,6 +35,7 @@ def list_subscriptions(
     project_name: str | None = None,
     to_dictionary: bool = False,
     limit: int | None = None,
+    last_run: bool = False,
     **filters,
 ) -> list["Subscription"] | list[dict]:
     """Get all subscriptions per project as list of Subscription objects or
@@ -51,6 +57,7 @@ def list_subscriptions(
             otherwise (default) returns a list of subscription objects
         limit: limit the number of elements returned. If `None` (default), all
             objects are returned.
+        last_run: If True, adds the last time that the subscription ran.
         **filters: Available filter parameters: ['id', 'multiple_contents',
             'name', 'editable', 'allow_delivery_changes'
             'allow_personalization_changes', 'allow_unsubscribe',
@@ -67,6 +74,12 @@ def list_subscriptions(
         if version.parse(connection.iserver_version) >= version.parse('11.3.0300')
         else 1000000
     )
+    if (
+        not is_server_min_version(connection, '11.4.0600')
+        and last_run
+        and config.verbose
+    ):
+        logger.info('`last_run` argument is available from iServer Version 11.4.0600')
     msg = 'Error getting subscription list.'
     objects = helper.fetch_objects_async(
         connection=connection,
@@ -78,6 +91,7 @@ def list_subscriptions(
         error_msg=msg,
         dict_unpack_value="subscriptions",
         project_id=project_id,
+        last_run=last_run,
     )
 
     if to_dictionary:
@@ -100,6 +114,7 @@ subscription_type_from_delivery_mode_dict = {
     DeliveryMode.FILE: FileSubscription,
     DeliveryMode.FTP: FTPSubscription,
     DeliveryMode.HISTORY_LIST: HistoryListSubscription,
+    DeliveryMode.MOBILE: MobileSubscription,
 }
 
 
@@ -153,7 +168,11 @@ class SubscriptionManager:
         )
 
     def list_subscriptions(
-        self, to_dictionary: bool = False, limit: int | None = None, **filters
+        self,
+        to_dictionary: bool = False,
+        limit: int | None = None,
+        last_run: bool = False,
+        **filters,
     ):
         """Get all subscriptions as list of Subscription objects or
         dictionaries.
@@ -165,6 +184,7 @@ class SubscriptionManager:
                 otherwise returns a list of subscription objects
             limit: limit the number of elements returned. If `None` (default),
                 all objects are returned.
+            last_run: If True, adds the last time that the subscription ran.
             **filters: Available filter parameters: ['id', 'name', 'editable',
                 'allowDeliveryChanges', 'allowPersonalizationChanges',
                 'allowUnsubscribe', 'dateCreated', 'dateModified', 'owner',
@@ -175,6 +195,7 @@ class SubscriptionManager:
             project_id=self.project_id,
             to_dictionary=to_dictionary,
             limit=limit,
+            last_run=last_run,
             **filters,
         )
 

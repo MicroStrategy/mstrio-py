@@ -12,6 +12,7 @@ from mstrio.modeling import (
     SchemaObjectReference,
 )
 from mstrio.object_management import Folder, SearchPattern, full_search
+from mstrio.object_management.folder import get_folder_id_from_path
 from mstrio.project_objects import OlapCube
 from mstrio.project_objects.datasets.helpers import AdvancedProperties, Template
 from mstrio.types import ObjectSubTypes, ObjectTypes
@@ -28,11 +29,9 @@ from mstrio.utils.parser import Parser
 from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.translation_mixin import TranslationMixin
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
-from mstrio.utils.wip import WipLevels, module_wip
+from mstrio.utils.vldb_mixin import ModelVldbMixin
 
 logger = logging.getLogger(__name__)
-
-module_wip(globals(), level=WipLevels.WARNING)
 
 
 @method_version_handler('11.3.0600')
@@ -45,31 +44,138 @@ def list_incremental_refresh_reports(
     to_dictionary: bool = False,
     limit: int | None = None,
     folder_id: str | None = None,
-    filters: dict | None = None,
+    folder_path: str | None = None,
     show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
     show_filter_tokens: bool = False,
-    show_advanced_properties: bool = False,
-) -> list[type['IncrementalRefreshReport']] | list[dict]:
-    return IncrementalRefreshReport.list(
-        connection,
-        name,
-        pattern,
-        project_id,
-        project_name,
-        to_dictionary,
-        limit,
-        folder_id,
-        filters,
-        show_expression_as,
-        show_filter_tokens,
-        show_advanced_properties,
+    show_advanced_properties: bool = True,
+    **filters,
+) -> list["IncrementalRefreshReport"] | list[dict]:
+    """Get a list of Incremental Refresh Reports.
+    Optionally filter reports by specifying 'name'.
+
+    Optionally use `to_dictionary` to choose output format.
+
+    Wildcards available for 'name':
+        ? - any character
+        * - 0 or more of any characters
+        e.g. name = ?onny will return Sonny and Tonny
+
+    Specify either `project_id` or `project_name`.
+    When `project_id` is provided (not `None`), `project_name` is omitted.
+
+    Note:
+        When `project_id` is `None` and `project_name` is `None`,
+        then its value is overwritten by `project_id` from `connection` object.
+
+    Args:
+        connection: MicroStrategy connection object returned by
+            `connection.Connection()`
+        name (string, optional): value the search pattern is set to, which
+            will be applied to the names of reports being searched
+        pattern (SearchPattern enum or int, optional): pattern to search
+            for, such as Begin With or Contains. Possible values are available
+            in ENUM mstrio.object_management.SearchPattern.
+            Default value is BEGIN WITH (4).
+        project_id (string, optional): Project ID
+        project_name (string, optional): Project name
+        to_dictionary (bool, optional): If True returns dict, by default (False)
+            returns Report objects
+        limit (integer, optional): limit the number of elements returned. If
+            None all object are returned.
+        folder_id (string, optional): ID of a folder where the search
+            will be performed. Defaults to None.
+        folder_path (str, optional): Path of the folder in which to look for
+            reports. Can be provided as an alternative to the `folder_id`
+            parameter. If both are provided, `folder_id` is used.
+            The path has to be provided in the following format:
+                if it's inside of a project, example:
+                    /MicroStrategy Tutorial/Public Objects
+                if it's a root folder, example:
+                    /CASTOR_SERVER_CONFIGURATION/Users
+        show_expression_as (ExpressionFormat or str, optional): specify how
+            expressions should be presented
+            Available values:
+            - None
+            (expression is returned in "text" format)
+            - `ExpressionFormat.TREE` or `tree`
+            (expression is returned in `text` and `tree` formats)
+            - `ExpressionFormat.TOKENS` or `tokens`
+            (expression is returned in `text` and `tokens` formats)
+        show_filter_tokens (bool, optional): Specify whether "qualification"
+            is returned in "tokens" format,
+            along with `text` and `tree` formats.
+            - If omitted or false, only `text` and `tree`
+            formats are returned.
+            - If true, all `text`, `tree` and `tokens` formats are returned.
+        show_advanced_properties (bool, optional): Specify whether to retrieve
+            the values of the advanced properties. If false, nothing will be
+            returned for the advanced properties, default True.
+        filters: Available filter parameters: ['id', 'name', 'type',
+            'subtype', 'date_created', 'date_modified', 'version', 'owner',
+            'ext_type', 'view_media', 'certified_info']
+    """
+    project_id = get_valid_project_id(
+        connection=connection,
+        project_id=project_id,
+        project_name=project_name,
+        with_fallback=not project_name,
     )
+    filters = filters or {}
+
+    if folder_path and not folder_id:
+        folder_id = get_folder_id_from_path(connection=connection, path=folder_path)
+    if folder_id:
+        filters = filters | {'root': folder_id}
+
+    objects = full_search(
+        connection,
+        object_types=ObjectSubTypes.INCREMENTAL_REFRESH_REPORT,
+        project=project_id,
+        name=name,
+        pattern=pattern,
+        limit=limit,
+        **filters,
+    )
+
+    if to_dictionary:
+        return objects
+
+    return [
+        IncrementalRefreshReport.from_dict(
+            obj
+            | {
+                'show_expression_as': (
+                    show_expression_as
+                    if isinstance(show_expression_as, ExpressionFormat)
+                    else ExpressionFormat(show_expression_as)
+                ),
+                'show_filter_tokens': show_filter_tokens,
+                'show_advanced_properties': show_advanced_properties,
+            },
+            connection,
+        )
+        for obj in objects
+    ]
 
 
 @class_version_handler('11.3.0600')
 class IncrementalRefreshReport(
-    Entity, CopyMixin, MoveMixin, DeleteMixin, TranslationMixin
+    Entity, CopyMixin, MoveMixin, DeleteMixin, TranslationMixin, ModelVldbMixin
 ):
+    """Python representation of MicroStrategy Incremental Refresh Report object.
+
+    Attributes:
+        name: (str) Name of the Incremental Refresh Report
+        id: (str) ID of the Incremental Refresh Report
+        description: (str) Description of the Incremental Refresh Report
+        destination_folder_id: (str) ID of the folder
+        target_cube: (SchemaObjectReference) Reference to an Intelligent Cube
+        refresh_type: (str) Mode the report will be refreshed in
+        increment_type: (str) Mode the report will be executed in
+        template: (Template) Template of information layout across dimensions
+        filter: (Expression) Filtering expression for the report
+    """
+
     class IncrementType(AutoName):
         REPORT = auto()
         FILTER = auto()
@@ -157,6 +263,11 @@ class IncrementalRefreshReport(
         'advanced_properties': dict,
         'hidden': bool,
     }
+    _MODEL_VLDB_API = {
+        'GET_ADVANCED': refresh_api.get_incremental_refresh_report,
+        'PUT_ADVANCED': refresh_api.update_incremental_refresh_report,
+        'GET_APPLICABLE': refresh_api.get_incremental_refresh_report_vldb_properties,
+    }
 
     _ALLOW_NONE_ATTRIBUTES = ['filter', 'template']
     _KEEP_CAMEL_CASE = ['vldbProperties', 'metricJoinTypes', 'attributeJoinTypes']
@@ -170,6 +281,41 @@ class IncrementalRefreshReport(
         show_filter_tokens: bool = False,
         show_advanced_properties: bool = False,
     ):
+        """Initialize an Incremental Refresh Report object.
+
+        Args:
+            connection: MicroStrategy connection object returned by
+                `connection.Connection()`
+            id (str, optional): ID of the Incremental Refresh Report
+            name (str, optional): Name of the Incremental Refresh Report
+            show_expression_as (ExpressionFormat or str, optional): specify how
+                expressions should be presented
+                Available values:
+                - None
+                (expression is returned in "text" format)
+                - `ExpressionFormat.TREE` or `tree`
+                (expression is returned in `text` and `tree` formats)
+                - `ExpressionFormat.TOKENS` or `tokens`
+                (expression is returned in `text` and `tokens` formats)
+            show_filter_tokens (bool, optional): Specify whether "qualification"
+                is returned in "tokens" format,
+                along with `text` and `tree` formats.
+                - If omitted or false, only `text` and `tree`
+                formats are returned.
+                - If true, all `text`, "tree" and `tokens` formats are returned.
+            show_advanced_properties (bool, optional): Specify whether to
+                retrieve the values of the advanced properties.
+                The advanced properties are presented in the following groups:
+                    "vldbProperties": A list of properties as determined by
+                        the common infrastructure.
+                    "metricJoinTypes": A list of Metric Join Types, one for each
+                        metric that appears in the template.
+                    "attributeJoinTypes": A list of Attribute Join Types, one
+                        for each attribute that appears in the template.
+                If omitted or false, nothing will be returned for the advanced
+                    properties.
+                If true, all applicable advanced properties are returned.
+        """
         connection._validate_project_selected()
 
         if id is None:
@@ -182,13 +328,15 @@ class IncrementalRefreshReport(
                 connection=connection,
                 cls=self.__class__,
                 name=name,
-                listing_function=self.list,
+                listing_function=list_incremental_refresh_reports,
             )
-            id = reports['id']
+            object_id = reports['id']
+        else:
+            object_id = id
 
         super().__init__(
             connection=connection,
-            object_id=id,
+            object_id=object_id,
             show_expression_as=show_expression_as,
             show_filter_tokens=show_filter_tokens,
             show_advanced_properties=show_advanced_properties,
@@ -254,6 +402,14 @@ class IncrementalRefreshReport(
         project_id: str | None = None,
         project_name: str | None = None,
     ) -> None:
+        """Execute (run) the report.
+
+        Args:
+            fields (str, optional): A comma-separated list of fields to include
+                in the response. By default, all fields are returned.
+            project_id (str, optional): Project ID
+            project_name (str, optional): Project name
+        """
         project_id = get_valid_project_id(
             self.connection, project_id, project_name, with_fallback=True
         )
@@ -272,87 +428,82 @@ class IncrementalRefreshReport(
             )
 
     @classmethod
-    def list(
-        cls,
-        connection: Connection,
-        name: str | None = None,
-        pattern: SearchPattern | int = SearchPattern.CONTAINS,
-        project_id: str | None = None,
-        project_name: str | None = None,
-        to_dictionary: bool = False,
-        limit: int | None = None,
-        folder_id: str | None = None,
-        filters: dict | None = None,
-        show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
-        show_filter_tokens: bool = False,
-        show_advanced_properties: bool = False,
-    ) -> list[type['IncrementalRefreshReport']] | list[dict]:
-        project_id = get_valid_project_id(
-            connection=connection,
-            project_id=project_id,
-            project_name=project_name,
-            with_fallback=not project_name,
-        )
-        filters = filters or {}
-
-        if folder_id:
-            filters = filters | {'root': folder_id}
-
-        objects = full_search(
-            connection,
-            object_types=ObjectSubTypes.INCREMENTAL_REFRESH_REPORT,
-            project=project_id,
-            name=name,
-            pattern=pattern,
-            limit=limit,
-            **filters,
-        )
-
-        if to_dictionary:
-            return objects
-
-        return [
-            cls.from_dict(
-                obj
-                | {
-                    'show_expression_as': (
-                        show_expression_as
-                        if isinstance(show_expression_as, ExpressionFormat)
-                        else ExpressionFormat(show_expression_as)
-                    ),
-                    'show_filter_tokens': show_filter_tokens,
-                    'show_advanced_properties': show_advanced_properties,
-                },
-                connection,
-            )
-            for obj in objects
-        ]
-
-    @classmethod
     def create(
         cls,  # NOSONAR
         connection: Connection,
         name: str,
-        destination_folder: Folder | str,
-        target_cube: OlapCube | SchemaObjectReference | dict,
-        increment_type: IncrementType | str,
-        refresh_type: RefreshType | str,
-        template: Template | dict = None,
+        destination_folder: Folder | str | None = None,
+        destination_folder_path: str | None = None,
+        target_cube: OlapCube | SchemaObjectReference | dict | None = None,
+        increment_type: IncrementType | str | None = None,
+        refresh_type: RefreshType | str | None = None,
+        template: Template | dict | None = None,
         filter: Expression | dict | None = None,
         advanced_properties: dict | None = None,
         description: str | None = None,
         primary_locale: str | None = None,
-        is_embedded: bool = False,
         show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
         show_filter_tokens: bool = False,
         show_advanced_properties: bool = False,
     ) -> 'IncrementalRefreshReport':
+        """Create a new Incremental Refresh Report.
+
+        Args:
+            connection: MicroStrategy connection object returned by
+                `connection.Connection()`
+            name (str, optional): Name of the Incremental Refresh Report
+            destination_folder (Folder, str): Folder object or folder ID where
+                the new object will be saved
+            destination_folder_path (str, optional): Path of the folder in which
+                to create the report. If both folder and path parameters are
+                provided, `destination_folder` is used.
+                The path has to be provided in the following format:
+                    if it's inside of a project, example:
+                        /MicroStrategy Tutorial/Public Objects
+                    if it's a root folder, example:
+                        /CASTOR_SERVER_CONFIGURATION/Users
+            target_cube (OlapCube, SchemaObjectReference, dict, optional):
+                Reference to an Intelligent Cube
+            increment_type (IncrementType, str, optional): Mode the report will
+                be executed in. Accepted values: 'report', 'filter'
+            refresh_type (RefreshType, str, optional): Mode the report will be
+                refreshed in. Accepted values: 'update', 'insert', 'delete',
+                'update_only', 'replace'
+            template (Template, dict, optional): Template of information layout
+                across dimensions
+            filter (Expression, dict, optional): Filtering expression for the
+                report. Accepted values: 'tree', 'tokens'
+            advanced_properties (dict, optional): Advanced properties of the
+                report
+            description (str, optional): Description of the MSTR object
+            primary_locale (str, optional): The primary locale of the object,
+                in the IETF BCP 47 language tag format, such as "en-US"
+            show_expression_as (ExpressionFormat or str, optional): specify how
+                expressions should be presented
+                Available values:
+                - None
+                (expression is returned in "text" format)
+                - `ExpressionFormat.TREE` or `tree`
+                (expression is returned in `text` and `tree` formats)
+                - `ExpressionFormat.TOKENS` or `tokens`
+                (expression is returned in `text` and `tokens` formats)
+            show_filter_tokens (bool, optional): Specify whether "qualification"
+                is returned in "tokens" format,
+                along with `text` and `tree` formats.
+                - If omitted or false, only `text` and `tree`
+                formats are returned.
+                - If true, all `text`, "tree" and `tokens` formats are returned.
+        """
+
+        if destination_folder_path and not destination_folder:
+            destination_folder = get_folder_id_from_path(
+                connection=connection, path=destination_folder_path
+            )
         information = {
             'name': name,
             'description': description,
             'destinationFolderId': get_objects_id(destination_folder, Folder),
             'primaryLocale': primary_locale,
-            'isEmbedded': is_embedded,
         }
 
         if isinstance(target_cube, SchemaObjectReference):
@@ -406,18 +557,63 @@ class IncrementalRefreshReport(
         cls,
         connection: Connection,
         name: str,
-        destination_folder: Folder | str,
-        target_cube: OlapCube | SchemaObjectReference | dict,
-        refresh_type: RefreshType | str,
+        destination_folder: Folder | str | None = None,
+        destination_folder_path: str | None = None,
+        target_cube: OlapCube | SchemaObjectReference | dict | None = None,
+        refresh_type: RefreshType | str | None = None,
         filter: Expression | dict | None = None,
         advanced_properties: dict | None = None,
         description: str | None = None,
         primary_locale: str | None = None,
-        is_embedded: bool = False,
         show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
         show_filter_tokens: bool = False,
         show_advanced_properties: bool = False,
     ) -> 'IncrementalRefreshReport':
+        """Create a new Incremental Refresh Report, using a data layout template
+        from an existing Intelligent Cube.
+
+        Args:
+            connection: MicroStrategy connection object returned by
+                `connection.Connection()`
+            name (str, optional): Name of the Incremental Refresh Report
+            destination_folder (Folder, str): Folder object or folder ID where
+                the new object will be saved
+            destination_folder_path (str, optional): Path of the folder in which
+                to create the report. If both folder and path parameters are
+                provided, `destination_folder` is used.
+                The path has to be provided in the following format:
+                    if it's inside of a project, example:
+                        /MicroStrategy Tutorial/Public Objects
+                    if it's a root folder, example:
+                        /CASTOR_SERVER_CONFIGURATION/Users
+            target_cube (OlapCube, SchemaObjectReference, dict, optional):
+                Reference to an Intelligent Cube
+            refresh_type (RefreshType, str, optional): Mode the report will be
+                refreshed in. Accepted values: 'update', 'insert', 'delete',
+                'update_only', 'replace'
+            filter (Expression, dict, optional): Filtering expression for the
+                report. Accepted values: 'tree', 'tokens'
+            advanced_properties (dict, optional): Advanced properties of the
+                report
+            description (str, optional): Description of the MSTR object
+            primary_locale (str, optional): The primary locale of the object,
+                in the IETF BCP 47 language tag format, such as "en-US"
+            show_expression_as (ExpressionFormat or str, optional): specify how
+                expressions should be presented
+                Available values:
+                - None
+                (expression is returned in "text" format)
+                - `ExpressionFormat.TREE` or `tree`
+                (expression is returned in `text` and `tree` formats)
+                - `ExpressionFormat.TOKENS` or `tokens`
+                (expression is returned in `text` and `tokens` formats)
+            show_filter_tokens (bool, optional): Specify whether "qualification"
+                is returned in "tokens" format,
+                along with `text` and `tree` formats.
+                - If omitted or false, only `text` and `tree`
+                formats are returned.
+                - If true, all `text`, "tree" and `tokens` formats are returned.
+        """
         parameters = filter_params_for_func(cls.create_from_cube, locals(), ['cls'])
 
         return cls.create(**parameters, increment_type=cls.IncrementType.REPORT)
@@ -433,9 +629,28 @@ class IncrementalRefreshReport(
         advanced_properties: dict | None = None,
         description: str | None = None,
         primary_locale: str | None = None,
-        is_embedded: bool | None = None,
-        hidden: bool | None = None,
     ):
+        """Alter the Incremental Refresh Report object's properties.
+
+        Args:
+            name (str, optional): Name of the Incremental Refresh Report.
+            target_cube (OlapCube, SchemaObjectReference, dict, optional):
+                Reference to an Intelligent Cube
+            increment_type (IncrementType, str, optional): Mode the report will
+                be executed in. Accepted values: 'report', 'filter'
+            refresh_type (RefreshType, str, optional): Mode the report will be
+                refreshed in. Accepted values: 'update', 'insert', 'delete',
+                'update_only', 'replace'
+            template (Template, dict, optional): Template of information layout
+                across dimensions
+            filter (Expression, dict, optional): Filtering expression for the
+                report. Accepted values: 'tree', 'tokens'
+            advanced_properties (dict, optional): Advanced properties of the
+                report
+            description (str, optional): Description of the MSTR object
+            primary_locale (str, optional): The primary locale of the object,
+                in the IETF BCP 47 language tag format, such as "en-US"
+        """
         if isinstance(target_cube, OlapCube):
             target_cube = SchemaObjectReference(
                 object_id=target_cube.id,
@@ -448,20 +663,18 @@ class IncrementalRefreshReport(
         self._alter_properties(**arguments)
 
     def change_increment_type_to_filter(self) -> None:
+        """Change the Incremental Refresh Report's type to 'Filter'.
+        This will reset the template to default.
+        """
         self.fetch()
         self.template = None
         self.alter(increment_type=IncrementalRefreshReport.IncrementType.FILTER)
 
     def reset_template_to_default(self) -> None:
+        """Reset the Incremental Refresh Report's template to default."""
         if self.increment_type == IncrementalRefreshReport.IncrementType.REPORT:
             self.change_increment_type_to_filter()
             self.alter(increment_type=IncrementalRefreshReport.IncrementType.REPORT)
-
-    def list_applicable_vldb_properties(self) -> dict:
-        response = refresh_api.get_incremental_refresh_report_vldb_properties(
-            self.connection, id=self.id, project_id=self.connection.project_id
-        )
-        return response.json()
 
     def get_preview_data(
         self,
@@ -469,6 +682,16 @@ class IncrementalRefreshReport(
         limit: int | None = None,
         fields: str | None = None,
     ) -> pd.DataFrame:
+        """Get preview data for the Incremental Refresh Report.
+
+        Args:
+            offset (int): Starting point within the collection of returned
+                results. Used to control paging behavior. Default is 0.
+            limit (int): limit the number of elements returned.
+                If `None` (default), all objects are returned.
+            fields (str, optional): A whitelist of top-level fields separated by
+                commas.
+        """
         response = refresh_api.create_incremental_refresh_report_instance(
             self.connection, self.id
         )

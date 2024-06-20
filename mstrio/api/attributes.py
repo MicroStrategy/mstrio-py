@@ -161,3 +161,29 @@ def update_attribute(
             },
             json=body,
         )
+
+
+@ErrorHandler(err_msg="Error getting attribute with ID: {id}")
+def get_attribute_elements(
+    connection: Connection,
+    id: str,
+    fields: str | None = None,
+):
+    """Get definition of a single attribute by ID.
+
+    Args:
+        connection: MicroStrategy REST API connection object
+        id: ID of an attribute
+        fields: A whitelist of top-level fields separated by commas.
+            Allow the client to selectively retrieve fields in the response.
+
+    Return:
+        HTTP response object. Expected status: 200
+    """
+    connection._validate_project_selected()
+    return connection.get(
+        endpoint=f'/api/attributes/{id}/elements',
+        params={
+            'fields': fields,
+        },
+    )

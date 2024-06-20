@@ -2,6 +2,17 @@
 and import them back. This script will not work without replacing parameters
 with real values. Its basic goal is to present what can be done with this
 module and to ease its usage.
+
+1. Connect to the environment using data from workstation
+2. Search for first ten metrics with "Revenue" in their name
+3. Define export destination datasource (in this case "Tutorial Postgres")
+4. Export translations to database without extra parameters
+5. Import translations from database standard way
+6. Export translations to database with specific languages only
+7. Import translations from database with removing translations
+   and auto matching target's ids
+8. Export translations to database with extra columns
+9. Import translations from database standard way
 """
 
 from mstrio.connection import get_connection

@@ -4,6 +4,7 @@ from requests import Response
 
 from mstrio.utils.error_handlers import ErrorHandler
 from mstrio.utils.helper import exception_handler, response_handler
+from mstrio.utils.version_helper import is_server_min_version
 
 if TYPE_CHECKING:
     from concurrent.futures import Future
@@ -14,8 +15,14 @@ if TYPE_CHECKING:
 
 @ErrorHandler(err_msg="Error getting subscription list.")
 def list_subscriptions(
-    connection, project_id, fields=None, offset=0, limit=-1, error_msg=None
-):
+    connection: 'Connection',
+    project_id: str,
+    fields=None,
+    offset: int = 0,
+    limit: int = -1,
+    last_run: bool = False,
+    error_msg: str | None = None,
+) -> Response:
     """Get a list of subscriptions.
 
     Args:
@@ -29,16 +36,26 @@ def list_subscriptions(
         limit (integer, optional): Maximum number of items returned for a single
             search request. Used to control paging behavior. Use -1 for no limit
             (subject to governing settings).
+        last_run (bool, optional): If True, adds the last time that
+            the subscription ran.
         error_msg (str, optional): Customized error message.
 
     Returns:
         HTTP response object returned by the MicroStrategy REST server.
     """
-    return connection.get(
+
+    params = {'offset': offset, 'limit': limit, 'fields': fields}
+
+    if is_server_min_version(connection, '11.4.0600'):
+        params['lastRun'] = last_run
+
+    response = connection.get(
         endpoint='/api/subscriptions',
-        params={'offset': offset, 'limit': limit, 'fields': fields},
+        params=params,
         headers={'X-MSTR-ProjectID': project_id},
     )
+
+    return response
 
 
 def list_subscriptions_async(
@@ -47,6 +64,7 @@ def list_subscriptions_async(
     fields=None,
     offset=0,
     limit=-1,
+    last_run: bool = False,
 ):
     """Get a list of subscriptions asynchronously.
 
@@ -61,11 +79,16 @@ def list_subscriptions_async(
         limit (integer, optional): Maximum number of items returned for a single
             search request. Used to control paging behavior. Use -1 for no limit
             (subject to governing settings).
+        last_run (bool, optional): If True, adds the last time that
+            the subscription ran.
 
     Returns:
         Complete Future object.
     """
     params = {'offset': offset, 'limit': limit, 'fields': fields}
+    if is_server_min_version(future_session.connection, '11.4.0600'):
+        params['lastRun'] = last_run
+
     endpoint = '/api/subscriptions'
     headers = {'X-MSTR-ProjectID': project_id}
 
@@ -461,3 +484,27 @@ def send_subscription(
         params={'fields': fields},
         headers={'X-MSTR-ProjectID': project_id},
     )
+
+
+@ErrorHandler(err_msg="Error getting status for subscription {id}")
+def get_subscription_status(
+    connection: 'Connection',
+    id: str,
+    error_msg: str | None = None,
+    whitelist: list | None = None,
+) -> Response:
+    """Get the status of the existing subscription.
+
+    Args:
+        connection (object): MicroStrategy connection object returned by
+            `connection.Connection()`
+        id (str): ID of subscription
+        error_msg (str, optional): Customized error message.
+        whitelist(list, optional): list of tuples of I-Server Error and HTTP
+            errors codes respectively, which will not be handled
+            i.e. whitelist = [('ERR001', 500),('ERR004', 404)]
+
+    Returns:
+        HTTP response object returned by the MicroStrategy REST server
+    """
+    return connection.get(endpoint=f'/api/subscriptions/{id}/status')

@@ -12,7 +12,6 @@ from .datasource_connection import (
     ExecutionMode,
     list_datasource_connections,
 )
-from .embedded_connection import EmbeddedConnection
 from .datasource_instance import (
     DatasourceInstance,
     DatasourceType,
@@ -22,5 +21,6 @@ from .datasource_instance import (
 from .datasource_login import DatasourceLogin, list_datasource_logins
 from .datasource_map import DatasourceMap, list_datasource_mappings
 from .driver import Driver, list_drivers
+from .embedded_connection import EmbeddedConnection
 from .gateway import Gateway, list_gateways
 from .helpers import DBType, GatewayType

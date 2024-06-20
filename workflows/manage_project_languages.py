@@ -1,3 +1,21 @@
+"""
+Manage project languages.
+List languages, convert them to objects. Add or remove language from project.
+
+1. Connect to the environment using data from the workstation
+2. Get project object based on provided name ('MicroStrategy Tutorial')
+3. Get list of all available datasource connections
+4. Get a datasource connection with a given name ('XQuery(1)') to use it for
+   the data language
+5. Get the list of all available languages
+6. Get 3 languages needed to be added to a project: Polish, Danish and Dutch
+7. Convert Polish and Danish languages to DataLocalizationLanguage objects
+8. Add those 2 languages to the settings of the project
+9. Convert Dutch language to SimpleLanguage object
+10. Add it to the settings of the project
+11. Remove those 3 languages from the settings of the project
+"""
+
 from mstrio.connection import get_connection
 from mstrio.datasources import list_datasource_connections
 from mstrio.server import Project, list_languages
