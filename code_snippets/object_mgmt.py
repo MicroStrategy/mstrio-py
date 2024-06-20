@@ -22,7 +22,9 @@ from mstrio.object_management import (
     SearchObject,
     SearchPattern,
     SearchResultsFormat,
-    start_full_search
+    start_full_search,
+    quick_search_by_id,
+    QuickSearchData
 )
 from mstrio.project_objects import Dashboard
 from mstrio.types import ObjectSubTypes, ObjectTypes
@@ -167,6 +169,14 @@ objects = quick_search(
 objects = quick_search_from_object(
     conn, PROJECT_ID, search_object, include_ancestors=True, include_acl=True
 )
+
+# perform quick search based on a project IDs and object IDs
+quick_search_data = QuickSearchData(
+    project_id=PROJECT_ID,
+    object_ids=[OBJECT_ID],
+)
+
+objects_by_id = quick_search_by_id(conn, search_data=quick_search_data)
 
 # search the metadata for objects in a specific project that match specific
 # search criteria (e.g. super cubes which name ends with `cube`) and save the

@@ -8,7 +8,7 @@ from mstrio.utils.version_helper import class_version_handler
 
 @class_version_handler('11.3.0960')
 class MobileSubscription(Subscription):
-    """Class representation of MicroStrategy Mopbile Subscription
+    """Class representation of MicroStrategy Mobile Subscription
     object."""
 
     def __init__(

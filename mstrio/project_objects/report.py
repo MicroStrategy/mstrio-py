@@ -4,11 +4,13 @@ from packaging import version
 from tqdm.auto import tqdm
 
 from mstrio import config
+from mstrio.api import attributes as attributes_api
 from mstrio.api import reports as reports_api
 from mstrio.api.schedules import get_contents_schedule
 from mstrio.connection import Connection
 from mstrio.distribution_services.schedule import Schedule
 from mstrio.object_management.search_operations import SearchPattern, full_search
+from mstrio.project_objects.prompt import Prompt
 from mstrio.users_and_groups.user import User
 from mstrio.utils.cache import CacheSource, ContentCacheMixin
 from mstrio.utils.certified_info import CertifiedInfo
@@ -20,6 +22,7 @@ from mstrio.utils.entity import (
     MoveMixin,
     ObjectSubTypes,
     ObjectTypes,
+    VldbMixin,
 )
 from mstrio.utils.filter import Filter
 from mstrio.utils.helper import (
@@ -45,6 +48,7 @@ def list_reports(
     to_dictionary: bool = False,
     limit: int | None = None,
     folder_id: str | None = None,
+    folder_path: str | None = None,
     **filters,
 ) -> list[type['Report']] | list[dict]:
     """Get list of Report objects or dicts with them.
@@ -81,6 +85,14 @@ def list_reports(
             None all object are returned.
         folder_id (string, optional): ID of a folder where the search
             will be performed. Defaults to None.
+        folder_path (str, optional): Path of the folder in which the search
+            will be performed. Can be provided as an alternative to `folder_id`
+            parameter. If both are provided, `folder_id` is used.
+                    the path has to be provided in the following format:
+                        if it's inside of a project, example:
+                            /MicroStrategy Tutorial/Public Objects/Metrics
+                        if it's a root folder, example:
+                            /CASTOR_SERVER_CONFIGURATION/Users
         **filters: Available filter parameters: ['id', 'name', 'type',
             'subtype', 'date_created', 'date_modified', 'version', 'owner',
             'ext_type', 'view_media', 'certified_info']
@@ -103,6 +115,7 @@ def list_reports(
         pattern=search_pattern,
         limit=limit,
         root=folder_id,
+        root_path=folder_path,
         **filters,
     )
     reports = [
@@ -126,6 +139,7 @@ class Report(
     DeleteMixin,
     ContentCacheMixin,
     TranslationMixin,
+    VldbMixin,
 ):
     """Access, filter, publish, and extract data from in-memory reports.
 
@@ -158,13 +172,20 @@ class Report(
         ancestors: List of ancestor folders
         certified_info: Information whether report is certified or not,
             CertifiedInfo object
+        sql: SQL View of the Report
         attributes: List of attributes
         metrics: List of metrics
+        page_by_attributes: List of attributes selected for Page By
         attr_elements: All attributes elements of report
+        page_by_elements: Elements of attributes selected for Page By in the
+            report. The IDs are in the terse format used for page selection,
+            which is different than the one used in the attr_elements field.
+        current_page_by: Attribute elements selected for Page By in the report
         selected_attributes: IDs of filtered attributes
         selected_metrics: IDs of filtered metrics
         selected_attr_elements: IDs of filtered attribute elements
         dataframe: content of a report extracted into a Pandas `DataFrame`
+        prompts: List of report prompts
         acg: Access rights (See EnumDSSXMLAccessRightFlags for possible values)
         acl: Object access control list
     """
@@ -196,7 +217,8 @@ class Report(
     def __init__(
         self,
         connection: Connection,
-        id: str,
+        id: str | None = None,
+        name: str | None = None,
         instance_id: str | None = None,
         parallel: bool = True,
         progress_bar: bool = True,
@@ -208,6 +230,7 @@ class Report(
                 `connection.Connection()`.
             id (str): Identifier of a pre-existing report containing
                 the required data.
+            name (str): Name of the report to be looked up if ID is not provided
             instance_id (str): Identifier of an instance if report instance has
                 been already initialized, NULL by default.
             parallel (bool, optional): If True (default), utilize optimal number
@@ -216,18 +239,32 @@ class Report(
             progress_bar(bool, optional): If True (default), show the download
                 progress bar.
         """
-        if not id:
-            raise ValueError("Report ID cannot be an empty string.")
 
         connection._validate_project_selected()
 
-        super().__init__(
-            connection,
-            id,
-            instance_id=instance_id,
-            parallel=parallel,
-            progress_bar=progress_bar,
-        )
+        if id is None and name is None:
+            raise ValueError(
+                "Please specify either 'id' or 'name' parameter in the constructor."
+            )
+
+        if id is None:
+            result: list[dict] = list_reports(connection, name=name, to_dictionary=True)
+
+            if result:
+                object_data = result[0]
+                self._init_variables(**object_data, connection=connection)
+            else:
+                raise ValueError(f"There is no Report named: '{name}'.")
+        elif id == '':
+            raise ValueError("Report ID cannot be an empty string.")
+        else:
+            super().__init__(
+                connection,
+                id,
+                instance_id=instance_id,
+                parallel=parallel,
+                progress_bar=progress_bar,
+            )
 
     def _init_variables(self, default_value, **kwargs):
         super()._init_variables(default_value=default_value, **kwargs)
@@ -240,9 +277,14 @@ class Report(
         self._subtotals = {}
         self._dataframe = None
         self._attr_elements = None
+        self._page_by_elements = {}
+        self._sql = None
+        self._current_page_by = []
+        self._prompts = None
 
         self._attributes = []
         self._metrics = []
+        self._page_by_attributes = []
         self.__definition_retrieved = False
         self.__filter = None
 
@@ -272,7 +314,12 @@ class Report(
                 properties[property_key] = local[property_key]
         self._alter_properties(**properties)
 
-    def to_dataframe(self, limit: int | None = None) -> pd.DataFrame:
+    def to_dataframe(
+        self,
+        limit: int | None = None,
+        page_element_id: str | list[str] | dict[str, str] | None = None,
+        prompt_answers: list[Prompt] | None = None,
+    ) -> pd.DataFrame:
         """Extract contents of a report instance into a Pandas `DataFrame`.
 
         Args:
@@ -282,6 +329,17 @@ class Report(
                 Setting limit manually will force the number of rows per chunk.
                 Depending on system resources, a higher limit (e.g. 50,000) may
                 reduce the total time required to extract the entire dataset.
+            page_element_id (str, list[str] or dict[str, str], optional): ID of
+                the attribute elements chosen for Page By, for example,
+                `'h4;8D679D3511D3E4981000E787EC6DE8A4'`.
+                If passed as a list, the attribute elements should be listed in
+                the same order as the attributes in the `page_by_attributes`
+                field. If passed as a dictionary, the keys should be the
+                attribute IDs and the values should be the attribute
+                element IDs.
+            prompt_answers (None or list of Prompts, optional): List of Prompt
+                class objects answering the prompts of the report. Only needed
+                if the report has prompts.
 
         Returns:
             Pandas Data Frame containing the report contents.
@@ -289,7 +347,20 @@ class Report(
         if limit:
             self._initial_limit = limit
 
-        if self.instance_id is None:
+        attr_ids = [a['id'] for a in self.page_by_attributes]
+        if isinstance(page_element_id, str):
+            page_element_id = [page_element_id]
+        if isinstance(page_element_id, dict):
+            page_element_id = [page_element_id.get(attr_id, "") for attr_id in attr_ids]
+
+        if page_element_id:
+            page_element_id = [
+                str(el_id).partition(';')[0] + ';' + attr
+                for el_id, attr in zip(page_element_id, attr_ids)
+            ]
+
+        if self.instance_id is None or page_element_id != self._current_page_by:
+            self._current_page_by = page_element_id
             res = self.__initialize_report(self._initial_limit)
         else:
             # try to get first chunk from already initialized instance of report
@@ -301,9 +372,29 @@ class Report(
             except requests.HTTPError:
                 res = self.__initialize_report(self._initial_limit)
 
-        # Gets the pagination totals from the response object
         _instance = res.json()
         self.instance_id = _instance['instanceId']
+
+        # Answer prompts if provided
+        if prompt_answers:
+            json = {"prompts": [prompt.to_dict() for prompt in prompt_answers]}
+            reports_api.answer_report_prompts(
+                connection=self._connection,
+                report_id=self.id,
+                instance_id=self.instance_id,
+                body=json,
+            )
+            # Get the instance results again, as they weren't generated
+            # properly until the prompts were answered
+            _instance = reports_api.report_instance_id(
+                connection=self.connection,
+                report_id=self.id,
+                instance_id=self.instance_id,
+                offset=0,
+                limit=self._initial_limit,
+            ).json()
+
+        # Gets the pagination totals from the response object
         paging = _instance['data']['paging']
 
         # initialize parser and process first response
@@ -426,7 +517,6 @@ class Report(
         return [
             reports_api.report_instance_id_coroutine(
                 future_session,
-                connection=self._connection,
                 report_id=self._id,
                 instance_id=instance_id,
                 offset=_offset,
@@ -468,6 +558,9 @@ class Report(
         ):
             self._subtotals["visible"] = False
             body["subtotals"] = {"visible": self._subtotals["visible"]}
+
+        if self._current_page_by:
+            body["currentPageBy"] = [{"id": el} for el in self._current_page_by]
 
         # Request a new instance, set instance id
         response = reports_api.report_instance(
@@ -594,14 +687,21 @@ class Report(
             )
 
         full_attributes = []
+        full_page_by_attributes = []
         for row in grid["rows"]:
             if row["type"] == "attribute":
                 full_attributes.append(row)
         for column in grid["columns"]:
             if column["type"] == "attribute":
                 full_attributes.append(column)
+        for paging in grid["pageBy"]:
+            if paging["type"] == "attribute":
+                full_page_by_attributes.append(paging)
         self._attributes = [
             {'name': attr['name'], 'id': attr['id']} for attr in full_attributes
+        ]
+        self._page_by_attributes = [
+            {'name': attr['name'], 'id': attr['id']} for attr in full_page_by_attributes
         ]
 
         # Retrieve metrics from the report grid (only selected metrics)
@@ -660,16 +760,19 @@ class Report(
 
             return fetch_for_attribute_given_limit(limit)[0]
 
+        attrs = []
         attr_elements = []
         if self.attributes:
-            pbar = tqdm(
-                self.attributes,
-                desc="Loading attribute elements",
-                leave=False,
-                disable=(not self._progress_bar),
-            )
-            attr_elements = [fetch_for_attribute(attribute) for attribute in pbar]
-            pbar.close()
+            attrs += self.attributes
+        if self.page_by_attributes:
+            attrs += self.page_by_attributes
+        pbar = tqdm(
+            attrs,
+            desc="Loading attribute elements",
+            leave=False,
+            disable=(not self._progress_bar),
+        )
+        attr_elements = [fetch_for_attribute(attribute) for attribute in pbar]
 
         return attr_elements
 
@@ -679,9 +782,15 @@ class Report(
         Implements GET /reports/<report_id>/attributes/<attribute_id>/elements.
         """
 
+        attrs = []
         attr_elements = []
         if self.attributes:
-            threads = get_parallel_number(len(self.attributes))
+            attrs += self.attributes
+        if self.page_by_attributes:
+            attrs += self.page_by_attributes
+
+        if attrs:
+            threads = get_parallel_number(len(attrs))
             with FuturesSessionWithRenewal(
                 connection=self._connection, max_workers=threads
             ) as session:
@@ -694,7 +803,7 @@ class Report(
                     disable=(not self._progress_bar),
                 )
                 for i, future in enumerate(pbar):
-                    attr = self.attributes[i]
+                    attr = attrs[i]
                     response = future.result()
                     if not response.ok:
                         response_handler(
@@ -729,13 +838,12 @@ class Report(
         return [
             reports_api.report_single_attribute_elements_coroutine(
                 future_session,
-                connection=self._connection,
                 report_id=self._id,
                 attribute_id=attribute['id'],
                 offset=0,
                 limit=limit,
             )
-            for attribute in self.attributes
+            for attribute in self.attributes + self.page_by_attributes
         ]
 
     def list_properties(self):
@@ -810,6 +918,12 @@ class Report(
         return self._metrics
 
     @property
+    def page_by_attributes(self):
+        if not self.__definition_retrieved:
+            self._get_definition()
+        return self._page_by_attributes
+
+    @property
     def attr_elements(self):
         if not self.__definition_retrieved:
             self._get_definition()
@@ -824,6 +938,26 @@ class Report(
                 self._attr_elements = self.__get_attr_elements()
             self._filter._populate_attr_elements(self._attr_elements)
         return self._attr_elements
+
+    @property
+    def page_by_elements(self):
+        """Elements of attributes selected for Page By in the report.
+        The IDs are in the terse format used for page selection.
+        """
+        for attr in self.page_by_attributes:
+            attr_id = attr['id']
+            if attr_id not in self._page_by_elements:
+                response = attributes_api.get_attribute_elements(
+                    connection=self._connection, id=attr['id']
+                )
+                element_ids = [el['id'] for el in response.json()]
+                self._page_by_elements[attr_id] = element_ids
+        return self._page_by_elements
+
+    @property
+    def current_page_by(self):
+        """Selected page of the report broken down by selected attributes."""
+        return self._current_page_by
 
     @property
     def _filter(self):
@@ -860,3 +994,39 @@ class Report(
                 exception_type=Warning,
             )
         return self._dataframe
+
+    @property
+    def sql(self) -> str:
+        """SQL View of the Report."""
+        if self._sql is None:
+            temp_instance_id = (
+                self.instance_id
+                if self.instance_id
+                else reports_api.report_instance(
+                    connection=self.connection,
+                    report_id=self.id,
+                    execution_stage='resolve_prompts',
+                )
+                .json()
+                .get('instanceId')
+            )
+            self._sql = (
+                reports_api.report_sql(
+                    connection=self._connection,
+                    report_id=self.id,
+                    instance_id=temp_instance_id,
+                )
+                .json()
+                .get('sqlStatement')
+            )
+        return self._sql
+
+    @property
+    def prompts(self) -> dict:
+        """Prompts of the report."""
+        if self._prompts is None:
+            prompts = reports_api.get_report_prompts(
+                connection=self.connection, report_id=self.id
+            ).json()
+            self._prompts = [Prompt.from_dict(prompt) for prompt in prompts]
+        return self._prompts

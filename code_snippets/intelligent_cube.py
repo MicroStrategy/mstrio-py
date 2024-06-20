@@ -1,4 +1,4 @@
-"""This is the demo script to show how to manage intelligent (OLAP) cubes. 
+"""This is the demo script to show how to manage intelligent (OLAP) cubes.
 
 This script will not work without replacing parameters with real values.
 Its basic goal is to present what can be done with this module and to ease
@@ -197,6 +197,10 @@ new_olap_cube_from_attributes_and_metrics.refresh_status()
 new_olap_cube.refresh_status()
 new_olap_cube_from_attributes_and_metrics.show_status()
 new_olap_cube.show_status()
+
+# Refresh cubes
+new_olap_cube_from_attributes_and_metrics.refresh()
+new_olap_cube.refresh()
 
 # Export sql view of an OLAP Cube
 sql_view = new_olap_cube_from_attributes_and_metrics.export_sql_view()

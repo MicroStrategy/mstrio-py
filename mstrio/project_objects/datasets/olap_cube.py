@@ -3,6 +3,7 @@ from typing import Optional
 
 import pandas as pd
 
+from mstrio import config
 from mstrio.api import cubes
 from mstrio.connection import Connection
 from mstrio.modeling import (
@@ -267,6 +268,13 @@ class OlapCube(ModelVldbMixin, _Cube):
                     else ExpressionFormat(show_expression_as)
                 ),
                 show_filter_tokens=show_filter_tokens,
+            )
+
+        if config.verbose and self._subtype != ObjectSubTypes.OLAP_CUBE.value:
+            logger.warning(
+                f"Warning: Object type mismatch. Object with provided ID: "
+                f"'{id}' is not an OlapCube but an instance of: "
+                f"'{ObjectSubTypes(self._subtype).name}'."
             )
 
     def _init_variables(self, default_value, **kwargs):
@@ -617,7 +625,8 @@ class OlapCube(ModelVldbMixin, _Cube):
             Job instance.
         """
         response = cubes.publish(self.connection, self._id)
-        logger.info(f"Request for publishing cube '{self.name}' was sent.")
+        if config.verbose:
+            logger.info(f"Request for publishing cube '{self.name}' was sent.")
         return Job.from_dict(response.json(), self.connection)
 
     def export_sql_view(self):
@@ -697,10 +706,11 @@ class OlapCube(ModelVldbMixin, _Cube):
             show_expression_as=show_expression_as, show_filter_tokens=show_filter_tokens
         )
 
-        logger.info(
-            f"Successfully created OLAP Cube named: '{name}' "
-            f"with ID: '{data['information']['objectId']}'."
-        )
+        if config.verbose:
+            logger.info(
+                f"Successfully created OLAP Cube named: '{name}' "
+                f"with ID: '{data['information']['objectId']}'."
+            )
 
         return cls.from_dict(source=data, connection=connection)
 
@@ -798,10 +808,11 @@ class OlapCube(ModelVldbMixin, _Cube):
             )
         )
 
-        logger.info(
-            "Successfully assigned new partition attribute to "
-            f"OLAP Cube named: '{self.name}'."
-        )
+        if config.verbose:
+            logger.info(
+                "Successfully assigned new partition attribute to "
+                f"OLAP Cube named: '{self.name}'."
+            )
 
     @method_version_handler('11.3.0800')
     def remove_partition_attribute(self) -> None:
@@ -814,11 +825,11 @@ class OlapCube(ModelVldbMixin, _Cube):
         self.alter(
             options=CubeOptions(data_partition=DataPartition(partition_attribute=None))
         )
-
-        logger.info(
-            "Successfully removed assigned partition attribute from "
-            f"OLAP Cube named: '{self.name}'."
-        )
+        if config.verbose:
+            logger.info(
+                "Successfully removed assigned partition attribute from "
+                f"OLAP Cube named: '{self.name}'."
+            )
 
     @method_version_handler('11.3.0800')
     def list_attribute_forms(self) -> list[dict[list[tuple], str]]:

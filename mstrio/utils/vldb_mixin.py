@@ -1,4 +1,5 @@
 import logging
+from collections import UserDict
 from collections.abc import Callable
 from dataclasses import dataclass
 from enum import auto
@@ -156,6 +157,22 @@ class VldbSetting(Dictable):
         return self.to_dict()
 
 
+class VldbSettingsDict(UserDict[str, VldbSetting]):
+    """Custom dictionary class for VLDB settings.
+    It allows to get VldbSetting object by its key or display name."""
+
+    def __getitem__(self, key):
+        if key in super().keys():
+            val = super().__getitem__(key)
+        else:
+            dict_names_to_keys = {
+                getattr(setting, 'display_name'): key for key, setting in self.items()
+            }
+            modified_key = dict_names_to_keys.get(key, key)
+            val = super().__getitem__(modified_key)
+        return val
+
+
 @class_version_handler('11.3.0800')
 class ModelVldbMixin:
     """ModelVldbMixin class adds VLDB management for supported objects through
@@ -175,7 +192,7 @@ class ModelVldbMixin:
     """
 
     _MODEL_VLDB_API: dict[str, Callable]
-    _vldb_settings: dict[str, VldbSetting] = {}
+    _vldb_settings: VldbSettingsDict = {}
 
     def _fetch(self):
         applicable_properties = self._MODEL_VLDB_API['GET_APPLICABLE'](
@@ -184,8 +201,7 @@ class ModelVldbMixin:
         advanced_properties = self._MODEL_VLDB_API['GET_ADVANCED'](
             self.connection, self.id
         ).json()['advancedProperties']['vldbProperties']
-        self._vldb_settings = {}
-
+        self._vldb_settings = VldbSettingsDict()
         for key, applicable in applicable_properties.items():
             vldb_setting = VldbSetting.from_dict(
                 {
@@ -225,7 +241,7 @@ class ModelVldbMixin:
         groups: list[int] | list[str] | None = None,
         to_dictionary: bool = False,
         to_dataframe: bool = False,
-    ) -> dict[str, VldbSetting]:
+    ) -> dict[str, VldbSetting] | DataFrame:
         """List VLDB settings according to given parameters.
 
         Args:
@@ -278,6 +294,7 @@ class ModelVldbMixin:
                 raise TypeError(msg)
 
         if names:
+            names = self.__convert_names_to_keys(names)
             vldb_settings = self.__filter_settings(vldb_settings, 'name', names)
 
         if not vldb_settings:
@@ -308,7 +325,8 @@ class ModelVldbMixin:
         Args:
             names_to_values (dict[str, str | int | float | bool]): Dict with
                 VlDB settings names as keys and newly requested to set values
-                as dictionary values.
+                as dictionary values. As VLDB Setting name you can provide both:
+                key or display name.
 
         Raises:
             ValueError: If there are no VldbSetting objects for some
@@ -328,6 +346,7 @@ class ModelVldbMixin:
         body = {'advancedProperties': {'vldbProperties': {}}}
 
         for name, value in names_to_values.items():
+            name = self.__convert_names_to_keys(name)
             if name not in self.vldb_settings:
                 msg = f"There is no VldbSetting with name '{name}'."
                 raise ValueError(msg)
@@ -421,8 +440,18 @@ class ModelVldbMixin:
         if config.verbose:
             logger.info(f"VLDB settings for object with ID '{self.id}' were reset.")
 
+    def __convert_names_to_keys(self, names: str | list[str]) -> str | list[str]:
+        dict_names_to_keys = {
+            getattr(setting, 'display_name'): key
+            for key, setting in self.vldb_settings.items()
+        }
+        if isinstance(names, str):
+            return dict_names_to_keys.get(names, names)
+        else:
+            return [dict_names_to_keys.get(name, name) for name in names]
+
     @property
-    def vldb_settings(self) -> dict[str, VldbSetting]:
+    def vldb_settings(self) -> VldbSettingsDict[str, VldbSetting]:
         if not self._vldb_settings:
             self._fetch()
         return self._vldb_settings

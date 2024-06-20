@@ -177,6 +177,29 @@ def get_folder_contents_async(
     return future_session.get(endpoint=endpoint, headers=headers, params=params)
 
 
+@ErrorHandler(err_msg="Error while getting ID of a pre-defined folder.")
+def get_predefined_folder_id(
+    connection: Connection,
+    folder_type: int,
+    project_id: str | None = None,
+):
+    """Get ID of a pre-defined folder.
+
+    Args:
+        connection: MicroStrategy REST API connection object
+        folder_type (int): predefined folder type, from `EnumDSSXMLFolderNames`
+        project_id (string, optional): id of project
+
+    Returns:
+        Complete HTTP response object.
+    """
+    return connection.get(
+        endpoint=f'/api/folders/preDefined/{folder_type}/id',
+        headers={'X-MSTR-ProjectID': project_id},
+        params={'folderType': folder_type},
+    )
+
+
 @ErrorHandler(err_msg="Error while getting contents of a pre-defined folder.")
 def get_predefined_folder_contents(
     connection: Connection,

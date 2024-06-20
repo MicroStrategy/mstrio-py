@@ -10,10 +10,10 @@ from mstrio.utils.api_helpers import (
 from mstrio.utils.datasources import (
     alter_conn_list_resp,
     alter_conn_resp,
+    alter_conn_resp_embedded,
     alter_instance_list_resp,
     alter_instance_resp,
     alter_patch_req_body,
-    alter_conn_resp_embedded,
 )
 from mstrio.utils.error_handlers import ErrorHandler
 from mstrio.utils.helper import exception_handler, response_handler

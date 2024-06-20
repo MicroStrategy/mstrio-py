@@ -110,6 +110,9 @@ class Content(Dictable):
                 PAGE = auto()
 
             class PageSize(AutoName):
+                A0 = auto()
+                A1 = auto()
+                A2 = auto()
                 A3 = auto()
                 A4 = auto()
                 A5 = auto()

@@ -1,3 +1,18 @@
+"""
+Manage active and inactive users.
+Perform administrative tasks such as setting default language, listing
+subscriptions.
+
+1. Connect to environment using data from workstation
+2. Get language object based on provided id
+3. For each active user set up language which was retrieved in step 2
+   as the default one
+4. Get list of all inactive users
+5. Print number of inactive users
+6. For each inactive user get list of its subscriptions and print them with
+   user name
+"""
+
 from mstrio.distribution_services.subscription.subscription_manager import (
     list_subscriptions,
 )

@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 from enum import auto
 from pprint import pformat
 from typing import Any
@@ -19,6 +20,9 @@ from mstrio.distribution_services.subscription.delivery import (
     ShortcutCacheFormat,
     ZipSettings,
 )
+from mstrio.distribution_services.subscription.subscription_status import (
+    SubscriptionStatus,
+)
 from mstrio.helpers import NotSupportedError
 from mstrio.users_and_groups import User
 from mstrio.utils import helper, time_helper
@@ -29,7 +33,8 @@ from mstrio.utils.helper import (
     get_default_args_from_func,
     get_valid_project_id,
 )
-from mstrio.utils.version_helper import method_version_handler
+from mstrio.utils.response_processors import subscriptions as subscriptions_processors
+from mstrio.utils.version_helper import is_server_min_version, method_version_handler
 
 logger = logging.getLogger(__name__)
 
@@ -65,8 +70,17 @@ class Subscription(EntityBase):
             "contents",
             "recipients",
             "delivery",
-        ): subscriptions.get_subscription
+        ): subscriptions.get_subscription,
+        "status": subscriptions_processors.get_subscription_status,
+        "last_run": subscriptions_processors.get_subscription_last_run,
     }
+
+    @staticmethod
+    def _parse_status(source: dict, connection: 'Connection'):
+        """Parse Subscription Status from the API response."""
+
+        return SubscriptionStatus.from_dict(source, connection) if source else None
+
     _FROM_DICT_MAP = {
         "owner": User.from_dict,
         "contents": (
@@ -82,6 +96,8 @@ class Subscription(EntityBase):
         ),
         "date_created": time_helper.DatetimeFormats.YMDHMS,
         "date_modified": time_helper.DatetimeFormats.YMDHMS,
+        "last_run": time_helper.DatetimeFormats.YMDHMS,
+        "status": _parse_status,
     }
     _API_PATCH = [subscriptions.update_subscription]
     _RECIPIENTS_TYPES = RecipientsTypes
@@ -140,6 +156,9 @@ class Subscription(EntityBase):
         self.date_modified = time_helper.map_str_to_datetime(
             "date_modified", kwargs.get("date_modified"), self._FROM_DICT_MAP
         )
+        self._last_run = time_helper.map_str_to_datetime(
+            'last_run', kwargs.get('last_run'), self._FROM_DICT_MAP
+        )
         self.owner = (
             User.from_dict(kwargs.get('owner'), self.connection)
             if kwargs.get('owner')
@@ -168,6 +187,7 @@ class Subscription(EntityBase):
             else None
         )
         self.project_id = project_id
+        self._status = kwargs.get('status')
 
     @method_version_handler('11.3.0000')
     def alter(
@@ -1080,3 +1100,75 @@ class Subscription(EntityBase):
                 )
         else:
             return expiration_time_zone
+
+    def _is_valid_delivery_mode(self) -> bool:
+        valid_modes = [
+            'EMAIL',
+            'HISTORY_LIST',
+            'CACHE',
+            'FTP',
+            'FILE',
+            'MOBILE',
+        ]
+        # Get subscription delivery mode from API to avoid max depth recursion
+        sub_mode = (
+            subscriptions.get_subscription(
+                connection=self.connection,
+                subscription_id=self.id,
+                project_id=self.project_id,
+            )
+            .json()
+            .get('delivery', {})
+            .get('mode')
+        )
+        return sub_mode in valid_modes
+
+    @property
+    @method_version_handler(version='11.4.0600')
+    def status(self) -> SubscriptionStatus | None:
+        if not self._is_valid_delivery_mode():
+            msg = (
+                f"Subscription with delivery mode: "
+                f"{self.delivery.mode} is not supported."
+            )
+            raise NotSupportedError(msg)
+        self.fetch('status')
+        return self._status
+
+    @property
+    @method_version_handler(version='11.4.0600')
+    def last_run(self) -> datetime | None:
+        if not self._is_valid_delivery_mode():
+            msg = (
+                f"Subscription with delivery mode: "
+                f"{self.delivery.mode} is not supported."
+            )
+            raise NotSupportedError(msg)
+        return self._last_run
+
+    def _get_excluded_properties(
+        self, excluded_properties: list[str] | None = None
+    ) -> list[str]:
+        excluded_properties = excluded_properties or []
+
+        if (
+            not is_server_min_version(self.connection, '11.4.0600')
+            or not self._is_valid_delivery_mode()
+        ):
+            excluded_properties.extend(
+                prop
+                for prop in ['status', 'last_run']
+                if prop not in excluded_properties
+            )
+        return excluded_properties
+
+    def list_properties(self, excluded_properties: list[str] | None = None) -> dict:
+        excluded_properties = self._get_excluded_properties(excluded_properties)
+        return super().list_properties(excluded_properties)
+
+    def fetch(self, attr: str | None = None) -> None:
+        excluded_properties = self._get_excluded_properties()
+        self._API_GETTERS = {
+            k: v for k, v in self._API_GETTERS.items() if k not in excluded_properties
+        }
+        super().fetch(attr)

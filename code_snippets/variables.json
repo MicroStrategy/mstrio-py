@@ -573,6 +573,52 @@
       "multiple": false
     }
   },
+  "incremental_refresh_report.py": {
+    "project_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "folder_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "folder_path": {
+      "type": "text",
+      "multiple": false
+    },
+    "report_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "cube_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "template_attribute_ids": {
+      "type": "text",
+      "multiple": true
+    },
+    "template_metric_ids": {
+      "type": "text",
+      "multiple": true
+    },
+    "new_template_attribute_ids": {
+      "type": "text",
+      "multiple": true
+    },
+    "new_template_metric_ids": {
+      "type": "text",
+      "multiple": true
+    },
+    "publish_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "delete_id": {
+      "type": "text",
+      "multiple": false
+    }
+  },
   "intelligent_cube.py": {
     "project_name": {
       "type": "text",
@@ -913,6 +959,24 @@
       "multiple": false
     },
     "search_pattern": {
+      "type": "text",
+      "multiple": false
+    }
+  },
+  "report_cache.py": {
+    "project_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "cache_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "warehouse_table": {
+      "type": "text",
+      "multiple": false
+    },
+    "project_id_2": {
       "type": "text",
       "multiple": false
     }
@@ -1887,6 +1951,22 @@
       "multiple": false
     },
     "wh_table_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "prompt_type": {
+      "type": "text",
+      "multiple": false
+    },
+    "prompt_key": {
+      "type": "text",
+      "multiple": false
+    },
+    "prompt_key_2": {
+      "type": "text",
+      "multiple": false
+    },
+    "prompt_answers": {
       "type": "text",
       "multiple": false
     }

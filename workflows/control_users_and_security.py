@@ -1,3 +1,15 @@
+"""
+Change password for one or more users.
+
+1. Connect to the environment using data from workstation
+2. Change password for all users which name begins with 'User_S'
+3. Change password for only first user which name begins with 'User_S'
+4. Change password for only first user which name begins with 'User_S' and
+   require new password on the next login
+5. Change password for all users which name begins with 'User_S' and require
+   new password on the next login
+"""
+
 from mstrio.connection import get_connection
 from mstrio.users_and_groups.user import list_users
 

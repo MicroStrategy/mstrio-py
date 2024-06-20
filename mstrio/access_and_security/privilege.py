@@ -202,13 +202,16 @@ class Privilege(EntityBase):
             connection=connection, to_dictionary=True
         )
         validated = []
+        max_privilege_id = max([int(privilege['id']) for privilege in all_privileges])
 
         privileges = privileges if isinstance(privileges, list) else [privileges]
 
         for privilege in privileges:
             is_str_name = isinstance(privilege, str) and len(privilege) > 3
             is_str_id = isinstance(privilege, str) and 0 < len(privilege) <= 3
-            is_int_id = isinstance(privilege, int) and 0 <= privilege < 300
+            is_int_id = (
+                isinstance(privilege, int) and 0 <= privilege <= max_privilege_id
+            )
             privilege_ok = False
 
             if is_str_name:

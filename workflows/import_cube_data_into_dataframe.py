@@ -1,3 +1,18 @@
+"""
+Create a dataframe from a Cube.
+List available cubes, retrieve their attributes and metrics. Operate with given
+cube.
+
+1. Connect to the environment using data from workstation
+2. List available cubes (with limit of 10)
+3. Get cube with given id and check its available attributes and metrics
+4. Choose attributes and metrics for filtering
+5. Publish cube before applying filters
+6. Apply filters to the cube specifying attributes and metrics
+7. Create a dataframe from the filtered cube
+8. Print first few rows of newly created dataframe
+"""
+
 from time import sleep
 from mstrio.connection import get_connection
 from mstrio.project_objects.datasets import list_all_cubes, OlapCube

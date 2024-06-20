@@ -83,7 +83,7 @@ docs/_build/
 target/
 
 # Jupyter Notebook
-.ipynb*
+*.ipynb*
 
 # pyenv
 .python-version

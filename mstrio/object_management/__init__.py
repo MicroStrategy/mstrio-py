@@ -19,6 +19,7 @@ from .search_enums import (
 )
 from .search_operations import (
     CertifiedStatus,
+    QuickSearchData,
     SearchDomain,
     SearchObject,
     SearchPattern,
@@ -28,6 +29,7 @@ from .search_operations import (
     get_search_results,
     get_search_suggestions,
     quick_search,
+    quick_search_by_id,
     quick_search_from_object,
     start_full_search,
 )

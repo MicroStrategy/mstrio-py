@@ -17,4 +17,5 @@ from .dossier import (
     list_dossiers_across_projects,
 )
 from .library import Library
+from .prompt import Prompt
 from .report import Report, list_reports

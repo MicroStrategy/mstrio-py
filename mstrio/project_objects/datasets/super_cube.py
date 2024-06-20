@@ -257,6 +257,12 @@ class SuperCube(_Cube, CertifyMixin):
                 parallel=parallel,
                 progress_bar=progress_bar,
             )
+            if config.verbose and self._subtype != ObjectSubTypes.SUPER_CUBE.value:
+                logger.warning(
+                    f"Warning: Object type mismatch. Object with provided "
+                    f"ID: '{id}' is not a SuperCube but an instance of: "
+                    f"'{ObjectSubTypes(self._subtype).name}'."
+                )
         else:
             self._init_variables(
                 connection=connection,
@@ -512,36 +518,38 @@ class SuperCube(_Cube, CertifyMixin):
             for index, chunk in enumerate(pbar):
                 pbar.set_description(f"Uploading {ix + 1}/{len(self._tables)}")
 
-                # base64 encode the data
-                encoder = Encoder(data_frame=chunk, dataset_type='multi')
-                b64_enc = encoder.encode
+                # if the chunk is empty we skip uploading it entirely
+                if not chunk.empty:
+                    # base64 encode the data
+                    encoder = Encoder(data_frame=chunk, dataset_type='multi')
+                    b64_enc = encoder.encode
 
-                # form body of the request
-                body = {
-                    "tableName": _name,
-                    "index": self.__update_indexes.get(_name, 0) + index + 1,
-                    "data": b64_enc,
-                }
+                    # form body of the request
+                    body = {
+                        "tableName": _name,
+                        "index": self.__update_indexes.get(_name, 0) + index + 1,
+                        "data": b64_enc,
+                    }
 
-                # make request to upload the data
-                response = datasets.upload(
-                    connection=self._connection,
-                    id=self._id,
-                    session_id=self._session_id,
-                    body=body,
-                    throw_error=False,
-                )
-
-                if not response.ok:
-                    # on error, cancel the previously uploaded data
-                    datasets.publish_cancel(
+                    # make request to upload the data
+                    response = datasets.upload(
                         connection=self._connection,
                         id=self._id,
                         session_id=self._session_id,
+                        body=body,
+                        throw_error=False,
                     )
-                    self.reset_session()
-                    pbar.close()
-                    return
+
+                    if not response.ok:
+                        # on error, cancel the previously uploaded data
+                        datasets.publish_cancel(
+                            connection=self._connection,
+                            id=self._id,
+                            session_id=self._session_id,
+                        )
+                        self.reset_session()
+                        pbar.close()
+                        return
 
                 pbar.set_postfix(rows=min((index + 1) * chunksize, total))
             pbar.close()
