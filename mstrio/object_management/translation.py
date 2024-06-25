@@ -1,7 +1,5 @@
 import logging
-from base64 import b64encode
 from dataclasses import dataclass
-from time import sleep
 
 import pandas as pd
 import pypika as sql
@@ -19,7 +17,7 @@ from mstrio.utils.helper import (
     get_valid_project_id,
     get_valid_project_name,
 )
-from mstrio.utils.response_processors import datasources, objects, projects
+from mstrio.utils.response_processors import objects, projects
 from mstrio.utils.version_helper import is_server_min_version, method_version_handler
 
 logger = logging.getLogger(__name__)
@@ -606,25 +604,21 @@ class Translation(Dictable):
         )
         if config.verbose:
             logger.info("Getting query status on dropping table.")
-        Translation._execute_query(
+        DatasourceInstance._execute_query(
             connection=connection,
-            query_str=Translation._encode_as_b64(
-                sql.Query.drop_table(table_name).if_exists()
-            ),
+            query=sql.Query.drop_table(table_name).if_exists(),
             datasource_id=datasource,
             project_id=project_id,
         )
 
         if config.verbose:
             logger.info("Getting query status on creating table.")
-        Translation._execute_query(
+        DatasourceInstance._execute_query(
             connection=connection,
-            query_str=Translation._encode_as_b64(
-                Translation._create_table_query(
-                    dataframe=dataframe,
-                    table_name=table_name,
-                    database_type=database_type,
-                )
+            query=Translation._create_table_query(
+                dataframe=dataframe,
+                table_name=table_name,
+                database_type=database_type,
             ),
             datasource_id=datasource,
             project_id=project_id,
@@ -632,14 +626,12 @@ class Translation(Dictable):
 
         if config.verbose:
             logger.info("Getting query status on populating table.")
-        Translation._execute_query(
+        DatasourceInstance._execute_query(
             connection=connection,
-            query_str=Translation._encode_as_b64(
-                Translation._create_data_query(
-                    dataframe=dataframe,
-                    table_name=table_name,
-                    database_type=database_type,
-                )
+            query=Translation._create_data_query(
+                dataframe=dataframe,
+                table_name=table_name,
+                database_type=database_type,
             ),
             datasource_id=datasource,
             project_id=project_id,
@@ -687,11 +679,9 @@ class Translation(Dictable):
             datasource = datasource.id
         if config.verbose:
             logger.info("Fetching translation data from the table.")
-        execution_data = Translation._execute_query(
+        execution_data = DatasourceInstance._execute_query(
             connection=connection,
-            query_str=Translation._encode_as_b64(
-                sql.Query.from_(table_name).select('*')
-            ),
+            query=sql.Query.from_(table_name).select('*'),
             datasource_id=datasource,
             project_id=project_id,
         )
@@ -977,47 +967,6 @@ class Translation(Dictable):
             return language.lcid
         else:
             raise ValueError("Please provide a valid base language.")
-
-    @staticmethod
-    def _execute_query(
-        connection: Connection, query_str: str, datasource_id: str, project_id: str
-    ) -> dict:
-        """Execute an SQL query on the given datasource.
-
-        Args:
-            connection (Connection): MicroStrategy connection object returned by
-                `connection.Connection()`
-            query_str (str): query to be executed
-            datasource_id (str): ID of the DatasourceInstance to execute the
-                query on
-            project_id (str): ID of the project
-
-        Returns:
-            Dictionary containing execution results data for the query.
-        """
-        execution_id = datasources.execute_query(
-            connection=connection,
-            body={'query': query_str},
-            id=datasource_id,
-            project_id=project_id,
-        ).get('id')
-        while True:
-            execution = datasources.get_query_results(
-                connection=connection, id=execution_id
-            )
-            if execution.get('status') == 3:
-                return execution
-            elif execution.get('status') == 4:
-                if 'Error type: Odbc success with info.' in execution.get('message'):
-                    return execution
-                else:
-                    raise ValueError(
-                        f"Query execution failed with the following error: "
-                        f"{execution.get('message')}"
-                    )
-            if config.verbose:
-                logger.info("The query is still running. Retrying in 5 seconds.")
-            sleep(5)
 
     @staticmethod
     def _create_table_query(
@@ -1613,14 +1562,3 @@ class Translation(Dictable):
             else:
                 new_translations.append(translation)
         return new_translations
-
-    @staticmethod
-    def _encode_as_b64(query: sql.Query) -> str:
-        """Encodes a query as base64.
-
-        Args:
-            query (Query): query to be encoded
-
-        Returns:
-            Base64 format encoded query."""
-        return b64encode(str(query).encode('utf-8')).decode('utf-8')

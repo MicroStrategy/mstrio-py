@@ -1,3 +1,18 @@
+"""
+Manage access control lists (ACLs).
+Assign ACLs to user groups and its children for folders.
+
+1. Connect to the environment using data from workstation
+2. Assign ACL with View aggregated rights to user group with name 'Mobile' for
+   user 'Administrator'
+3. Assign ACL with View aggregated rights to user group with name 'Mobile' for
+   user 'Administrator' with propagation to children of this user group
+4. Assign ACL with every right except Execution to folder with given id for user
+   'Administrator'
+5. Assign ACL with every right except Execution to folder with given id for user
+   'Administrator' with propagation to children of this folder
+"""
+
 from mstrio.connection import get_connection
 from mstrio.object_management.folder import Folder
 from mstrio.helpers import AggregatedRights

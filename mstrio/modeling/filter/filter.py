@@ -117,7 +117,6 @@ def list_filters(
                 **obj,
             },
             connection=connection,
-            with_missing_value=True,
         )
         for obj in objects
     ]

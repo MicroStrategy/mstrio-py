@@ -1,6 +1,11 @@
 """Add email address with a form `{username}@microstrategy.com` to every user
 which is enabled but doesn't have an email address. For each successfully added
 email address a message will be printed.
+
+1. Connect to the environment using data from workstation
+2. Get list of all users that are enabled
+3. Add email address to every user which doesn't have one (it is created with username
+   of the user and the domain provided in the function)
 """
 
 from typing import List

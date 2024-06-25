@@ -53,6 +53,7 @@ def check_valid_param(dict_object: dict[KT, VT], params: Iterable) -> None:
 def parse_filter_expression(param: str, expression: SupportedExpression) -> tuple:
     """Parse the filter expression only once"""
     from mstrio.utils.entity import EntityBase
+    from mstrio.utils.helper import Dictable
 
     op = None
 
@@ -92,6 +93,9 @@ def parse_filter_expression(param: str, expression: SupportedExpression) -> tupl
         filter_value = expression
     elif isinstance(expression, tuple):
         op, filter_value = expression
+    elif isinstance(expression, Dictable):
+        op = DICT_COMPARE
+        filter_value = expression.to_dict()
     else:
         raise TypeError(
             f"'{param}' filter value must be either a string, "

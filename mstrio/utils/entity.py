@@ -1372,6 +1372,7 @@ class VldbMixin:
     """
 
     _parameter_error = "Please specify the project parameter."
+    _vldb_settings: dict = {}
 
     def list_vldb_settings(self: Entity, project: str | None = None) -> list:
         """List VLDB settings."""
@@ -1410,6 +1411,7 @@ class VldbMixin:
             body,
             project,
         )
+        self.fetch_vldb_settings()
         if config.verbose and response.ok:
             logger.info('VLDB settings altered.')
 
@@ -1425,8 +1427,28 @@ class VldbMixin:
         response = objects.delete_vldb_settings(
             connection, self.id, self._OBJECT_TYPE.value, project
         )
+        self.fetch_vldb_settings()
         if config.verbose and response.ok:
             logger.info('VLDB settings reset to default.')
+
+    def fetch_vldb_settings(self):
+        for property_set in self.list_vldb_settings():
+            for property in property_set['properties']:
+                default_value = property.get('defaultValue')
+                info = {
+                    'property_set_name': property_set['name'],
+                    'name': property['name'],
+                    'default_value': default_value,
+                    'value': property.get('value', default_value),
+                    'type': property.get('type'),
+                }
+                self._vldb_settings[property['name']] = info
+
+    @property
+    def vldb_settings(self) -> dict:
+        if not self._vldb_settings:
+            self.fetch_vldb_settings()
+        return self._vldb_settings
 
 
 def auto_match_args_entity(

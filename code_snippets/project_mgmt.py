@@ -136,10 +136,14 @@ env.delete_server_element_cache()
 
 # print currently set value of Unified Quoting Behavior VldbSetting
 print(project.vldb_settings['Quoting Behavior'].value)
-# enable Unified Quoting Behavior
+# the same setting can be accessed using setting name from WS (display_name)
+print(project.vldb_settings['Unified Quoting Behavior'].value)
+# enable Unified Quoting Behavior using name as key
 project.alter_vldb_settings(names_to_values={'Quoting Behavior': 1})
-# disable Unified Quoting Behavior
-project.alter_vldb_settings(names_to_values={'Quoting Behavior': 0})
+# disable Unified Quoting Behavior using display_name as key
+project.alter_vldb_settings(names_to_values={'Unified Quoting Behavior': 0})
+# edit Cartesian Join Governing setting
+project.alter_vldb_settings(names_to_values={'Cartesian Join Governing': 1})
 
 # print currently available data engine versions
 print(project.get_data_engine_versions())

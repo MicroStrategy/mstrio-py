@@ -10,6 +10,26 @@ if TYPE_CHECKING:
 CUBE_FIELDS = '-data.metricValues.extras,-data.metricValues.formatted'
 
 
+@ErrorHandler(err_msg="Error getting SQL for report {report_id}.")
+def report_sql(connection, report_id, instance_id):
+    """Get the SQL code for a specific report. This is the SQL that is sent to
+    the data warehouse to retrieve the data for the report.
+
+    Args:
+        connection: MicroStrategy REST API connection object
+        report_id (str): Unique ID of the report
+        instance_id (str): Unique ID of the in-memory instance of a published
+            report.
+
+    Returns:
+        Complete HTTP response object.
+    """
+    connection._validate_project_selected()
+    return connection.get(
+        endpoint=f'/api/v2/reports/{report_id}/instances/{instance_id}/sqlView'
+    )
+
+
 @ErrorHandler(err_msg="Error getting report {report_id} definition. Check report ID.")
 def report_definition(connection, report_id):
     """Get the definition of a specific report, including attributes and
@@ -30,7 +50,9 @@ def report_definition(connection, report_id):
 
 
 @ErrorHandler(err_msg="Error getting report {report_id} contents.")
-def report_instance(connection, report_id, body=None, offset=0, limit=5000):
+def report_instance(
+    connection, report_id, body=None, offset=0, limit=5000, execution_stage=None
+):
     """Get the results of a newly created report instance. This in-memory
     report instance can be used by other requests.
 
@@ -46,6 +68,8 @@ def report_instance(connection, report_id, body=None, offset=0, limit=5000):
             incrementally extract all 50,000 rows in 1,000 row chunks. Depending
             on system resources, using a higher limit setting (e.g. 10,000) may
             reduce the total time required to extract the entire dataset.
+        execution_stage (str, optional): Execution stage of the report
+            Available values: 'resolve_prompts', 'execute_data'
 
     Returns:
         Complete HTTP response object.
@@ -56,6 +80,8 @@ def report_instance(connection, report_id, body=None, offset=0, limit=5000):
     params = {'offset': offset, 'limit': limit}
     if is_server_min_version(connection, '11.2.0200'):
         params['fields'] = CUBE_FIELDS
+    if execution_stage:
+        params['executionStage'] = execution_stage
 
     return connection.post(
         endpoint=f'/api/v2/reports/{report_id}/instances/', json=body, params=params
@@ -197,6 +223,43 @@ def get_report_prompts(connection, report_id, closed=None, fields=None):
     return connection.get(
         endpoint=endpoint, params={'closed': closed, 'fields': fields}
     )
+
+
+@ErrorHandler(err_msg="Error providing prompt answers for report {report_id}.")
+def answer_report_prompts(
+    connection: 'Connection', report_id: str, instance_id: str, body: dict
+):
+    """Provide answers to the prompts in a report instance.
+
+    Args:
+        connection (Connection): MicroStrategy REST API connection object.
+        report_id (str): Unique ID of the report
+        instance_id (str): Unique ID of the in-memory instance of a published
+            report
+        body (dict): dict containing the prompt answers
+            A proper body for this request needs the following structure
+            (answers are only needed if useDefault is False)
+            (only one between key, name and id is required):
+                {
+                    "prompts": [
+                        {
+                            "key": "prompt_key",
+                            "name": "prompt_name",
+                            "id": "prompt_id",
+                            "type": "prompt_type",
+                            "useDefault": False,
+                            "answers": [],
+                        }
+                    ]
+                }
+            The available prompt types are:
+                    UNSUPPORTED, VALUE, ELEMENTS, EXPRESSION, OBJECTS, LEVEL
+
+    Returns:
+        HTTP response object returned by the MicroStrategy REST server.
+    """
+    endpoint = f'/api/reports/{report_id}/instances/{instance_id}/prompts/answers'
+    return connection.put(endpoint=endpoint, json=body)
 
 
 @ErrorHandler(err_msg="Error getting prompted report {report_id} instance.")

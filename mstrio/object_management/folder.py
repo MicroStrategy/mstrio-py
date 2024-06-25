@@ -193,6 +193,71 @@ def get_predefined_folder_contents(
         return map_objects_list(connection, objects)
 
 
+def get_folder_id_from_path(connection: "Connection", path: str) -> str:
+    """Get folder id from folder path.
+
+    Args:
+        connection (Connection): MicroStrategy connection object returned by
+            `connection.Connection()`
+        path (str): path of the Folder
+            the path has to be provided in the following format:
+                if it's inside of a project, example:
+                    /MicroStrategy Tutorial/Public Objects/Metrics
+                if it's a root folder, example:
+                    /CASTOR_SERVER_CONFIGURATION/Users
+
+    Returns:
+        Folder id.
+    """
+    if path[0] == '/':
+        path = path[1:]
+    if path[-1] == '/':
+        path = path[:-1]
+    folders_in_path = path.split('/')
+    project_id = (
+        get_valid_project_id(project_name=folders_in_path[0], connection=connection)
+        if folders_in_path[0] != 'CASTOR_SERVER_CONFIGURATION'
+        else None
+    )
+    try:
+        if project_id:
+            original_project_id = connection.project_id
+            connection.project_id = project_id
+            # This root Project folder is hardcoded in every Environment
+            folder = Folder(
+                connection=connection, id='D43364C684E34A5F9B2F9AD7108F7828'
+            )
+        else:
+            castor_id = (
+                folders.get_predefined_folder_id(connection=connection, folder_type=39)
+                .json()
+                .get('id')
+            )
+            folder = Folder(connection=connection, id=castor_id)
+        for i in range(1, len(folders_in_path)):
+            temp_ids = [
+                item.get('id')
+                for item in folder.get_contents(to_dictionary=True)
+                if item.get('type') == 8 and item.get('name') == folders_in_path[i]
+            ]
+            if not temp_ids:
+                error_message = (
+                    f"Couldn't find folder with given name {folders_in_path[i]} "
+                    f"while exploring the path. Check if provided path is correct."
+                )
+                raise ValueError(error_message)
+            folder = Folder(
+                connection=connection,
+                id=temp_ids[0],
+            )
+        return folder.id
+    finally:
+        if project_id:
+            connection.project_id = (
+                original_project_id if original_project_id else connection.project_id
+            )
+
+
 class Folder(Entity, CopyMixin, MoveMixin, DeleteMixin, TranslationMixin):
     """Object representation of MicroStrategy Folder object.
 
@@ -239,7 +304,13 @@ class Folder(Entity, CopyMixin, MoveMixin, DeleteMixin, TranslationMixin):
     _OBJECT_TYPE = ObjectTypes.FOLDER
     _SIZE_LIMIT = 10000000  # this sets desired chunk size in bytes
 
-    def __init__(self, connection: "Connection", id: str, name: str | None = None):
+    def __init__(
+        self,
+        connection: "Connection",
+        id: str | None = None,
+        path: str | None = None,
+        name: str | None = None,
+    ):
         """Initialize folder object by its identifier.
 
         Note:
@@ -249,10 +320,24 @@ class Folder(Entity, CopyMixin, MoveMixin, DeleteMixin, TranslationMixin):
         Args:
             connection: MicroStrategy connection object returned by
                 `connection.Connection()`.
-            id (str): Identifier of a pre-existing folder containing
+            id (str, optional): Identifier of a pre-existing folder containing
                 the required data.
+            path (str, optional): path of a a pre-existing folder containing
+                the required data. Can be provided as an alternative to
+                `id` parameter. If both are provided, `id` is used.
+                    the path has to be provided in the following format:
+                        if it's inside of a project, example:
+                            /MicroStrategy Tutorial/Public Objects/Metrics
+                        if it's a root folder, example:
+                            /CASTOR_SERVER_CONFIGURATION/Users
             name (str): name of folder.
         """
+        if not id:
+            if path:
+                id = get_folder_id_from_path(connection, path)
+            else:
+                raise ValueError("Either 'id' or 'path' has to be provided.")
+
         super().__init__(connection, id, name=name)
 
     @classmethod
@@ -260,7 +345,8 @@ class Folder(Entity, CopyMixin, MoveMixin, DeleteMixin, TranslationMixin):
         cls,
         connection: "Connection",
         name: str,
-        parent: str,
+        parent: str | None = None,
+        parent_path: str | None = None,
         description: str | None = None,
     ) -> "Folder":
         """Create a new folder in a folder selected within connection object
@@ -272,12 +358,27 @@ class Folder(Entity, CopyMixin, MoveMixin, DeleteMixin, TranslationMixin):
             name (str): name of a new folder.
             parent (str): id of a parent folder in which new folder will be
                 created.
+            parent_path (str, optional): path of a parent folder in which new
+                folder will be created. Can be provided as an alternative to
+                `parent` parameter. If both are provided, `parent` is used.
+                    the path has to be provided in the following format:
+                        if it's inside of a project, example:
+                            /MicroStrategy Tutorial/Public Objects/Metrics
+                        if it's a root folder, example:
+                            /CASTOR_SERVER_CONFIGURATION/Users
             description (str, optional): optional description of a new folder.
 
         Returns:
             newly created folder
         """
         connection._validate_project_selected()
+
+        if not parent:
+            if parent_path:
+                parent = get_folder_id_from_path(connection, parent_path)
+            else:
+                raise ValueError("Either 'parent' or 'parent_path' has to be provided.")
+
         response = folders.create_folder(connection, name, parent, description).json()
         if config.verbose:
             logger.info(
@@ -310,15 +411,22 @@ class Folder(Entity, CopyMixin, MoveMixin, DeleteMixin, TranslationMixin):
                 properties[property_key] = local[property_key]
         self._alter_properties(**properties)
 
-    def get_contents(self, to_dictionary: bool = False, **filters) -> list:
-        """Get contents of folder. It can contains other folders or different
+    def get_contents(
+        self, to_dictionary: bool = False, include_subfolders=False, **filters
+    ) -> list:
+        """Get contents of a folder. It can contain other folders or different
         kinds of objects.
 
         Args:
             to_dictionary (bool, optional): If True returns dicts, by default
                 (False) returns objects.
-            **filters: Available filter parameters: ['id', 'name',
-                'description', 'date_created', 'date_modified', 'acg']
+            include_subfolders (bool, optional): If True returns contents of all
+                subfolders as well. False by default.
+                Note that using this option may result in a large number of
+                objects being fetched, especially if coupled with filters.
+            **filters: Available filter parameters: ['name', 'id', 'type',
+                'subtype', 'date_created', 'date_modified', 'version',
+                'acg', 'owner', 'ext_type']
 
         Returns:
             Contents as Python objects (when `to_dictionary` is `False` (default
@@ -333,6 +441,25 @@ class Folder(Entity, CopyMixin, MoveMixin, DeleteMixin, TranslationMixin):
             id=self.id,
             filters=filters,
         )
+
+        if include_subfolders:
+            if filters:
+                child_folders = fetch_objects_async(
+                    self.connection,
+                    folders.get_folder_contents,
+                    folders.get_folder_contents_async,
+                    limit=None,
+                    chunk_size=1000,
+                    id=self.id,
+                    filters={'type': 8},
+                )
+            else:
+                child_folders = [child for child in objects if child.get('type') == 8]
+            for child_folder in child_folders:
+                folder = Folder(connection=self.connection, id=child_folder.get('id'))
+                objects += folder.get_contents(
+                    to_dictionary=True, include_subfolders=True, **filters
+                )
 
         if to_dictionary:
             return objects

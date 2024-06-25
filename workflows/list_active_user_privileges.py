@@ -1,4 +1,12 @@
-"""List user privileges for all active users."""
+"""List user privileges for all active users.
+
+1. Connect to the environment using data from workstation
+2. Get all active users
+3. For each of retrieved users prepare dictionary with user's id, name,
+   username and list of privileges and save it to table
+4. For each of retrieved users print user's name, username and each of its
+   privileges' name
+"""
 
 from typing import List
 

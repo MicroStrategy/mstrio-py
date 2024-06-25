@@ -1,4 +1,10 @@
-"""List names and IDs of empty user groups."""
+"""List names and IDs of empty user groups.
+
+1. Connect to the environment using data from workstation
+2. Get all user groups
+3. Filter out user groups that have no members
+4. Print names and ids of filtered user groups
+"""
 
 from typing import List
 

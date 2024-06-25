@@ -762,7 +762,6 @@ class Project(Entity, ModelVldbMixin, DeleteMixin, TranslationMixin):
                 'data_language_settings',
                 'metadata_language_settings',
             ] + (excluded_properties or [])
-            return super().list_properties(excluded_properties)
 
         return super().list_properties(excluded_properties)
 

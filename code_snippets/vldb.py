@@ -32,8 +32,11 @@ vldb_setting_properties = project.vldb_settings[SETTING_NAME1].list_properties()
 print(vldb_setting_properties)
 
 # Listing VLDB settings with different conditions
+project_settings = project.vldb_settings
+print(project_settings)
 project_settings = project.list_vldb_settings()
 print(project_settings)
+
 project_settings_as_dicts = project.list_vldb_settings(to_dictionary=True)
 print(project_settings_as_dicts)
 project_settings_as_dataframe = project.list_vldb_settings(to_dataframe=True)
@@ -47,6 +50,8 @@ print(project_settings_from_group_by_id)
 project_settings_from_names = project.list_vldb_settings(
     names=[SETTING_NAME1, SETTING_NAME2, SETTING_NAME3])
 print(project_settings_from_names)
+project_settings = project.vldb_settings
+print(project_settings[SETTING_NAME1])
 
 # Define variables which can be later used in a script
 SETTING_VALUE1 = $setting_value1  # Insert new value for first VLDB setting

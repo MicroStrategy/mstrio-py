@@ -215,16 +215,15 @@ class Connection:
         self.last_active = None
         self.timeout = None
 
+        # delegate identity token or connect and create new session
+        if self.identity_token:
+            self.delegate()
+        else:
+            self.connect()
+
         if self.__check_version():
             # save the version of IServer in config file
             config.iserver_version = self.iserver_version
-            # delegate identity token or connect and create new session
-
-            if self.identity_token:
-                self.delegate()
-            else:
-                self.connect()
-
             self.select_project(project_id, project_name)
         else:
             msg = (

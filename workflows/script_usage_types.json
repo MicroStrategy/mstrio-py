@@ -20,5 +20,9 @@
     "migrate_user_contacts_and_addresses.py":"Standard",
     "send_dashboard_email_subscription_after_cube_refresh.py":"Standard",
     "user_group_maintenance.py":"Standard",
-    "export_and_import_translations_to_database.py":"Standard"
+    "export_and_import_translations_to_database.py":"Standard",
+    "duplicate_user_subscriptions.py": "Standard",
+    "get_subscriptions_by_emails.py": "Standard",
+    "manage_pre_post_execution.py": "Standard",
+    "create_mobile_subscription.py": "Standard"
 }

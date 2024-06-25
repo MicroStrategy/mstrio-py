@@ -13,6 +13,7 @@ from mstrio.connection import Connection
 from mstrio.helpers import NotSupportedError
 from mstrio.object_management.search_operations import SearchPattern, full_search
 from mstrio.project_objects.datasets import cube_cache
+from mstrio.server import Job
 from mstrio.types import ObjectSubTypes, ObjectTypes
 from mstrio.users_and_groups.user import User
 from mstrio.utils.certified_info import CertifiedInfo
@@ -187,6 +188,7 @@ def load_cube(
     cube_id: str | None = None,
     cube_name: str | None = None,
     folder_id: str | None = None,
+    folder_path: str | None = None,
     instance_id: str | None = None,
 ) -> 'OlapCube | SuperCube | list[OlapCube | SuperCube]':
     """Load single cube specified by either 'cube_id' or both 'cube_name' and
@@ -204,6 +206,14 @@ def load_cube(
         cube_id(string, optional): ID of cube
         cube_name(string, optional): name of cube
         folder_id(string, optional): ID of folder in which the cube is stored
+        folder_path (str, optional): Path of the folder in which the cube is
+                stored. Can be provided as an alternative to `folder_id`
+                parameter. If both are provided, `folder_id` is used.
+                    the path has to be provided in the following format:
+                        if it's inside of a project, example:
+                            /MicroStrategy Tutorial/Public Objects/Metrics
+                        if it's a root folder, example:
+                            /CASTOR_SERVER_CONFIGURATION/Users
         instance_id (str, optional): Identifier of an instance if cube instance
             has been already initialized. Will be used if only one cube is
             found. `None` by default.
@@ -224,9 +234,9 @@ def load_cube(
                 "`cube_id`."
             )
             exception_handler(msg, Warning, False)
-        elif folder_id:
+        elif folder_id or folder_path:
             msg = (
-                "Both `cube_id` and `folder_id` provided. "
+                "Both `cube_id` and `folder_id` or `folder_path` provided. "
                 "Loading cube based on `cube_id` from all folders."
             )
             exception_handler(msg, Warning, False)
@@ -248,6 +258,7 @@ def load_cube(
             object_types=[ObjectSubTypes.OLAP_CUBE, ObjectSubTypes.SUPER_CUBE],
             pattern=SearchPattern.EXACTLY,
             root=folder_id,
+            root_path=folder_path,
         )
 
     ret_cubes = []
@@ -549,7 +560,6 @@ class _Cube(Entity, VldbMixin, DeleteMixin, TranslationMixin):
         return [
             cubes.cube_instance_id_coroutine(
                 future_session,
-                connection=self._connection,
                 cube_id=self._id,
                 instance_id=instance_id,
                 offset=_offset,
@@ -887,6 +897,22 @@ class _Cube(Entity, VldbMixin, DeleteMixin, TranslationMixin):
             )
             for attribute in self.attributes
         ]
+
+    def refresh(self) -> Job:
+        """Refresh a Cube without interaction.
+        This method sends an asynchronous request to refresh a Cube, which
+        results in the creation of a `Job` instance. The result of the operation
+        can be monitored by checking the status of the returned `Job` instance
+        or by calling the `refresh_status()` method on the Cube.
+        Refreshing a Cube is effectively the same as republishing it.
+        Returns:
+            Job: An instance representing the asynchronous job created for the
+            Cube refresh operation.
+        """
+        response = cubes.publish(self.connection, self._id)
+        if config.verbose:
+            logger.info(f"Request for refreshing cube '{self.name}' was sent.")
+        return Job.from_dict(response.json(), self.connection)
 
     def unpublish(self, force: bool = False) -> bool:
         """Unpublish Cube by removing all of its caches.

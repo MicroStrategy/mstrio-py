@@ -96,7 +96,7 @@ def _adapt_date_to_format(date: str, format_str: str) -> tuple | str:
 def str_to_datetime(date: str, format_str: str) -> datetime | None:
     """Change date format to datetime, based on `format_str` provided.
     If `date` is already a datetime object, return it. Make the date aware."""
-    if date is None:
+    if date is None or date == '':
         return date
 
     if not isinstance(date, datetime):

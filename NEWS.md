@@ -1,15 +1,42 @@
 
 # Changelog
 
+## 11.4.6.101 - 2024/06/21
+
+### New features
+- added `refresh()` method to `OlapCube` and `SuperCube` classes to allow cubes republish without interaction, creating a `Job`
+- added support for providing a folder path instead of a folder ID to methods within the `Folder` class,
+  and also `quick_search`, `full_search` and all methods inheriting from them that accept a folder ID argument
+- added `include_subfolders` flag to `get_contents` method of `Folder` class to allow getting the contents of
+  the children of the specified folder recursively
+- added the `sql` property to `Report` class, that allows getting the SQL View of a report without executing it
+- added `IncrementalRefreshReport` class in `mstrio.object_management.incremental_refresh_report` package to allow managing Incremental Refresh Reports
+- added `list_incremental_refresh_reports` method to allow listing Incremental Refresh Reports in a project
+- added function `quick_search_by_id()` in `mstrio.object_management.search_operations`
+  to allow searching for objects by object and project ID
+- added function `send_email()` in `mstrio.distribution_services.email` to allow sending emails
+- added `execute_query()` method to `DatasourceInstance` class to allow executing SQL queries
+- added `status` property to `Subscription` class to allow checking the status of a subscription
+- added support for answering prompts in `to_datasource()` method of `Report` class, along with
+  a `Prompt` class in `mstrio.project_objects.prompts` to support prompts
+- added support for `password_auto_expire` and `password_expiration_frequency` fields to `User` class
+- added support for Page By in `Report` class
+- added support for VLDB properties in `Report` class
+
+### Minor changes
+- added Warning message to `OlapCube` nad `SuperCube` classes that is shown when provided ID belongs to Cube of different type
+- updated `PageSize` Enum values to allow proper Subscription initialization
+- added support for both `name` and `display_name` in VLDB settings provided by `ModelVldbMixin`
+- added `vldb_settings` property in `VldbMixin` class that stores VLDB settings in dict with setting names as keys
 
 ## 11.4.3.101 - 2024/03/22
 
 ### New features
-- added `delete_object_cache()` and `delete_element_cache()` methods to `Project` class to allow deleting 
+- added `delete_object_cache()` and `delete_element_cache()` methods to `Project` class to allow deleting
   object and element cache
-- added new optional argument `show_description` to `ProjectSettings.list_caching_properties()` to show description 
+- added new optional argument `show_description` to `ProjectSettings.list_caching_properties()` to show description
   for each setting
-- added `delete_server_object_cache()` and `delete_server_element_cache()` methods to `Environment` class to allow deleting 
+- added `delete_server_object_cache()` and `delete_server_element_cache()` methods to `Environment` class to allow deleting
   object and element cache from all projects
 - added `MobileSubscription` class in `mstrio.distribution_services.subscription` package to allow
   management of the new subscription type
@@ -42,11 +69,11 @@
 - changed `list_users` to allow filtering on `enabled` field
 - added support for `ldapdn`, `language`,`owner` and `default_timezone` for `Users`
 - added support for `ldapdn` for `UserGroups`
-- added `add_datasource()` and `remove_datasource()` methods to `Project` class to allow 
+- added `add_datasource()` and `remove_datasource()` methods to `Project` class to allow
   adding and removing datasources from the project
-- added `data_language_settings` and `metadata_language_settings` properties to `Project` class 
+- added `data_language_settings` and `metadata_language_settings` properties to `Project` class
   to allow interacting with project internalization:
-  - `add_language()`, `alter_language()`, `remove_language()`, `alter_current_mode()`, 
+  - `add_language()`, `alter_language()`, `remove_language()`, `alter_current_mode()`,
   `alter_default_language()` methods for the `data_language_settings` property
   - `add_language()`, `remove_language()` for the `metadata_language_settings` property
 - added new optional argument `show_description` to `ProjectSettings.list_properties()`,
@@ -188,7 +215,7 @@
 - fixed `list_logical_tables` function to return all tables if called without
   specifying `project_id` or `project_name`, unless limit argument is provided
 - fixed `Attribute`, `Document`, `Fact`, `Filter`, `Metric`, `Transformation`,
-  `IncrementalRefreshReport` classes to be initialized by name with 
+  `IncrementalRefreshReport` classes to be initialized by name with
   `SearchPattern.EXACTLY` instead of `SearchPattern.CONTAINS`
 - fixed `list_objects` function to accept integer as input for `object_type` argument
 - fixed `User.security_filters` property to always return all user's security filters

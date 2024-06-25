@@ -1,3 +1,18 @@
+"""
+Manage subscriptions.
+Create, modify and execute various types of subscriptions such as
+Email Subscription, File Subscription etc.
+
+1. Connect to the environment using data from the workstation
+2. Get 2 schedules based on provided IDs
+3. Create and execute an email subscription for a document
+4. Modify a file subscription for a document with bursting option ON
+5. Create and execute a history list subscription for an OLAP cube
+6. Create and execute a mobile subscription for a document
+7. Get a subscription based on provided id and list its dependent dashboards
+8. Select a dashboard, find all subscriptions using it and print them
+"""
+
 from mstrio.connection import get_connection
 
 from mstrio.distribution_services.subscription.email_subscription import (

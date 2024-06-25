@@ -46,6 +46,7 @@ def list_logical_tables(
     table_type: PhysicalTableType | None = None,
     name: str | None = None,
     folder_id: str | None = None,
+    folder_path: str | None = None,
     folder_name: str | None = None,
     project_id: str | None = None,
     project_name: str | None = None,
@@ -63,6 +64,14 @@ def list_logical_tables(
             None.
         folder_id (Optional[str], optional): ID of a folder in which to look for
             logical tables. Defaults to None.
+        folder_path (str, optional): Path of the folder in which to look for
+            logical tables. Can be provided as an alternative to `folder_id`
+            parameter. If both are provided, `folder_id` is used.
+                    the path has to be provided in the following format:
+                        if it's inside of a project, example:
+                            /MicroStrategy Tutorial/Public Objects/Metrics
+                        if it's a root folder, example:
+                            /CASTOR_SERVER_CONFIGURATION/Users
         folder_name (Optional[str], optional): Name of a folder in which to look
             for logical tables. Defaults to None.
         to_dictionary (bool, optional): If True returns a list of dictionaries.
@@ -81,12 +90,13 @@ def list_logical_tables(
         list["LogicalTable"] | list[dict]: A list of LogicalTable objects
             or dictionaries representing logical tables.
     """
-    if any([name, folder_id, folder_name, project_id, project_name]):
+    if any([name, folder_id, folder_path, folder_name, project_id, project_name]):
         return _full_search_logical_tables(
             connection=connection,
             to_dictionary=to_dictionary,
             name=name,
             folder_id=folder_id,
+            folder_path=folder_path,
             folder_name=folder_name,
             project_id=project_id,
             project_name=project_name,
@@ -137,6 +147,7 @@ def _full_search_logical_tables(
     connection: Connection,
     name: str | None = None,
     folder_id: str | None = None,
+    folder_path: str | None = None,
     folder_name: str | None = None,
     project_id: str | None = None,
     project_name: str | None = None,
@@ -161,6 +172,14 @@ def _full_search_logical_tables(
             None.
         folder_id (Optional[str], optional): ID of a folder in which to look for
             logical tables. Defaults to None.
+        folder_path (str, optional): Path of the folder in which to look for
+            logical tables. Can be provided as an alternative to `folder_id`
+            parameter. If both are provided, `folder_id` is used.
+                    the path has to be provided in the following format:
+                        if it's inside of a project, example:
+                            /MicroStrategy Tutorial/Public Objects/Metrics
+                        if it's a root folder, example:
+                            /CASTOR_SERVER_CONFIGURATION/Users
         folder_name (Optional[str], optional): Name of a folder in which to look
             for logical tables. Defaults to None.
         to_dictionary (bool, optional): If True, the function will return list
@@ -192,7 +211,7 @@ def _full_search_logical_tables(
         with_fallback=not project_name,
     )
 
-    if folder_name and not folder_id:
+    if folder_name and not (folder_id or folder_path):
         folders = full_search(
             connection=connection,
             project=project_id,
@@ -216,6 +235,7 @@ def _full_search_logical_tables(
         project=project_id,
         object_types=ObjectTypes.TABLE,
         root=folder_id,
+        root_path=folder_path,
         limit=limit,
     )
     return (

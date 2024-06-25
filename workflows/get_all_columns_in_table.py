@@ -1,4 +1,16 @@
-"""List all the columns for all available tables"""
+"""List all the columns for all available tables
+
+1. Connect to the environment using data from workstation
+2a. This path is executed when the table is specified in argument of function
+3a. Get whole representation of table based on its id
+4a. Unpack the response and for the given table get all columns in a specified
+    format with  subtype, object id and name
+2b. This path is executed when the table is not specified in argument of function
+3b. Get all tables in the project specified in the connection object
+4b. Get whole representation of each table based on their ids
+5b. Unpack the response and for each table return all columns in a specified
+    format with subtype, object id and name
+"""
 from typing import Optional, Union
 
 from mstrio.api import tables

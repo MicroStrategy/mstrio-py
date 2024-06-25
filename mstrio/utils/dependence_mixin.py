@@ -28,6 +28,7 @@ class DependenceMixin:
         object_types: Optional['TypeOrSubtype'] = None,
         uses_recursive: bool = False,
         root: str | None = None,
+        root_path: str | None = None,
         limit: int | None = None,
         offset: int | None = None,
         results_format: Union['SearchResultsFormat', str] = 'LIST',
@@ -52,6 +53,14 @@ class DependenceMixin:
                 Default value is PROJECT (2).
             root(string, optional): Folder ID of the root folder where the
                 search will be performed.
+            root_path (str, optional): Path of the root folder in which the
+                search will be performed. Can be provided as an alternative to
+                `root` parameter. If both are provided, `root` is used.
+                    the path has to be provided in the following format:
+                        if it's inside of a project, example:
+                            /MicroStrategy Tutorial/Public Objects/Metrics
+                        if it's a root folder, example:
+                            /CASTOR_SERVER_CONFIGURATION/Users
             object_types(enum class object or integer or list of enum class
                 objects or integers): Type(s) of object(s) to be searched,
                 such as Folder, Attribute or User. Possible values available
@@ -98,6 +107,7 @@ class DependenceMixin:
             object_types=object_types,
             uses_recursive=uses_recursive,
             root=root,
+            root_path=root_path,
             limit=limit,
             offset=offset,
             results_format=results_format,
@@ -114,6 +124,7 @@ class DependenceMixin:
         object_types: Optional['TypeOrSubtype'] = None,
         used_by_recursive: bool = False,
         root: str | None = None,
+        root_path: str | None = None,
         limit: int | None = None,
         offset: int | None = None,
         results_format: Union['SearchResultsFormat', str] = 'LIST',
@@ -138,6 +149,14 @@ class DependenceMixin:
                 Default value is PROJECT (2).
             root(string, optional): Folder ID of the root folder where the
                 search will be performed.
+            root_path (str, optional): Path of the root folder in which the
+                search will be performed. Can be provided as an alternative to
+                `root` parameter. If both are provided, `root` is used.
+                    the path has to be provided in the following format:
+                        if it's inside of a project, example:
+                            /MicroStrategy Tutorial/Public Objects/Metrics
+                        if it's a root folder, example:
+                            /CASTOR_SERVER_CONFIGURATION/Users
             object_types(enum class object or integer or list of enum class
                 objects or integers): Type(s) of object(s) to be searched,
                 such as Folder, Attribute or User. Possible values available
@@ -185,6 +204,7 @@ class DependenceMixin:
             name=name,
             object_types=object_types,
             root=root,
+            root_path=root_path,
             limit=limit,
             offset=offset,
             to_dictionary=to_dictionary,
