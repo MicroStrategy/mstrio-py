@@ -9,7 +9,6 @@ if TYPE_CHECKING:
     from mstrio.connection import Connection
     from mstrio.utils.sessions import FuturesSessionWithRenewal
 
-
 @ErrorHandler(err_msg="Error getting available dossiers.")
 def get_dossiers(
     connection: 'Connection',
@@ -299,7 +298,7 @@ def get_documents_async(
 
 
 @ErrorHandler(err_msg="Error getting document {document_id}")
-def get_document_status(connection, document_id, instance_id, error_msg=None):
+def get_document_status(connection, document_id, instance_id, error_msg=None, project_id=None):
     """Get the status of a dashboard, document or dossier instance.
 
     Args:
@@ -307,18 +306,19 @@ def get_document_status(connection, document_id, instance_id, error_msg=None):
         document_id (string): Document ID
         instance_id (string): Document Instance ID
         error_msg (string, optional): Custom Error Message for Error Handling
+        project_id (string, optional): Project ID
 
     Returns:
         Complete HTTP response object.
     """
     return connection.get(
         endpoint=f'api/documents/{document_id}/instances/{instance_id}/status',
-        headers={'X-MSTR-ProjectID': None},
+        headers={'X-MSTR-ProjectID': project_id},
     )
 
 
 @ErrorHandler(err_msg="Error getting prompts for document {document_id}")
-def get_prompts_for_instance(connection, document_id, instance_id, error_msg=None):
+def get_prompts_for_instance(connection, document_id, instance_id, error_msg=None, project_id=None):
     """Get the collection of prompts and their respective definitions from a
     dashboard/document/dossier instance.
 
@@ -327,17 +327,18 @@ def get_prompts_for_instance(connection, document_id, instance_id, error_msg=Non
         document_id (string): Document ID
         instance_id (string): Document Instance ID
         error_msg (string, optional): Custom Error Message for Error Handling
+        project_id (string, optional): Project ID
 
     Returns:
         Complete HTTP response object.
     """
     endpoint = f'/api/documents/{document_id}/instances/{instance_id}/prompts'
-    return connection.get(endpoint=endpoint, headers={'X-MSTR-ProjectID': None})
+    return connection.get(endpoint=endpoint, headers={'X-MSTR-ProjectID': project_id})
 
 
 @ErrorHandler(err_msg="Error getting attribute element for prompt {prompt_identifier}")
 def get_attribute_element_for_prompt(
-    connection, document_id, instance_id, prompt_identifier, error_msg=None
+    connection, document_id, instance_id, prompt_identifier, error_msg=None, project_id=None
 ):
     """Get available attribute element for dashboard/document/dossier's
     attribute element prompt.
@@ -348,6 +349,7 @@ def get_attribute_element_for_prompt(
         instance_id (string): Document Instance ID
         prompt_identifier (string): Prompt key or ID
         error_msg (string, optional): Custom Error Message for Error Handling
+        project_id (string, optional): Project ID
 
     Returns:
         Complete HTTP response object.
@@ -356,12 +358,12 @@ def get_attribute_element_for_prompt(
         f'/api/documents/{document_id}/instances/{instance_id}'
         f'/prompts/{prompt_identifier}/elements'
     )
-    return connection.get(endpoint=endpoint, headers={'X-MSTR-ProjectID': None})
+    return connection.get(endpoint=endpoint, headers={'X-MSTR-ProjectID': project_id})
 
 
 @ErrorHandler(err_msg="Error getting available object for prompt {prompt_identifier}")
 def get_available_object(
-    connection, document_id, instance_id, prompt_identifier, error_msg=None
+    connection, document_id, instance_id, prompt_identifier, error_msg=None, project_id=None
 ):
     """Get available object for answering all kinds of prompts.
 
@@ -371,6 +373,7 @@ def get_available_object(
         instance_id (string): Document Instance ID
         prompt_identifier (string): Prompt key or ID
         error_msg (string, optional): Custom Error Message for Error Handling
+        project_id (string, optional): Project ID
 
     Returns:
         Complete HTTP response object.
@@ -379,14 +382,14 @@ def get_available_object(
         f'api/documents/{document_id}/instances/'
         f'{instance_id}/prompts/{prompt_identifier}/objects'
     )
-    return connection.get(endpoint=endpoint, headers={'X-MSTR-ProjectID': None})
+    return connection.get(endpoint=endpoint, headers={'X-MSTR-ProjectID': project_id})
 
 
 @ErrorHandler(
     err_msg="Error exporting visualization for document {document_id} to PDF file."
 )
 def export_visualization_to_pdf(
-    connection, document_id, instance_id, node_key, body, error_msg=None
+    connection, document_id, instance_id, node_key, body, error_msg=None, project_id=None
 ):
     """Export a single visualization from a specific document instance to a PDF
     file.
@@ -397,6 +400,7 @@ def export_visualization_to_pdf(
         instance_id (string): Document Instance ID
         body: JSON-formatted information used to format the document
         error_msg (string, optional): Custom Error Message for Error Handling
+        project_id (string, optional): Project ID
 
     Returns:
         Complete HTTP response object.
@@ -406,7 +410,7 @@ def export_visualization_to_pdf(
         f'/visualizations/{node_key}/pdf'
     )
     return connection.post(
-        endpoint=endpoint, headers={'X-MSTR-ProjectID': None}, json=body
+        endpoint=endpoint, headers={'X-MSTR-ProjectID': project_id}, json=body
     )
 
 
@@ -414,7 +418,7 @@ def export_visualization_to_pdf(
     err_msg="Error exporting visualization for document {document_id} to CSV file."
 )
 def export_visualization_to_csv(
-    connection, document_id, instance_id, node_key, body, error_msg=None
+    connection, document_id, instance_id, node_key, body, error_msg=None, project_id=None
 ):
     """Export a single visualization from a specific document instance to a CSV
     file.
@@ -426,6 +430,7 @@ def export_visualization_to_csv(
         node_key (string): Visualization node key
         body: JSON-formatted information used to format the document
         error_msg (string, optional): Custom Error Message for Error Handling
+        project_id (string, optional): Project ID
 
     Returns:
         Complete HTTP response object.
@@ -435,7 +440,7 @@ def export_visualization_to_csv(
         f'/visualizations/{node_key}/csv'
     )
     return connection.post(
-        endpoint=endpoint, headers={'X-MSTR-ProjectID': None}, json=body
+        endpoint=endpoint, headers={'X-MSTR-ProjectID': project_id}, json=body
     )
 
 
@@ -527,7 +532,7 @@ def export_document_to_excel(
 
 
 @ErrorHandler(err_msg="Error setting document {document_id} to prompt status.")
-def set_document_to_prompt_status(connection, document_id, instance_id, error_msg=None):
+def set_document_to_prompt_status(connection, document_id, instance_id, error_msg=None, project_id=None):
     """Export a document from a specific document instance to an Excel file.
 
     Args:
@@ -535,12 +540,13 @@ def set_document_to_prompt_status(connection, document_id, instance_id, error_ms
         document_id (string): Document ID
         instance_id (string): Document Instance ID
         error_msg (string, optional): Custom Error Message for Error Handling
+        project_id (string, optional): Project ID
 
     Returns:
         Complete HTTP response object.
     """
     endpoint = f'/api/documents/{document_id}/instances/{instance_id}/rePrompt'
-    return connection.post(endpoint=endpoint, headers={'X-MSTR-ProjectID': None})
+    return connection.post(endpoint=endpoint, headers={'X-MSTR-ProjectID': project_id})
 
 
 @ErrorHandler(err_msg="Error getting cubes used by document {document_id}")
@@ -561,7 +567,7 @@ def get_cubes_used_by_document(connection, document_id, error_msg=None):
 
 
 @ErrorHandler(err_msg="Error overwriting document {document_id}")
-def overwrite_document(connection, document_id, instance_id, error_msg=None):
+def overwrite_document(connection, document_id, instance_id, error_msg=None, project_id=None):
     """Save a document instance by overwriting an existing document.
 
     Args:
@@ -569,16 +575,17 @@ def overwrite_document(connection, document_id, instance_id, error_msg=None):
         document_id (string): Document ID
         instance_id (string): Document Instance ID
         error_msg (string, optional): Custom Error Message for Error Handling
+        project_id (string, optional): Project ID
 
     Returns:
         Complete HTTP response object.
     """
     endpoint = f'/api/documents/{document_id}/instances/{instance_id}/save'
-    return connection.post(endpoint=endpoint, headers={'X-MSTR-ProjectID': None})
+    return connection.post(endpoint=endpoint, headers={'X-MSTR-ProjectID': project_id})
 
 
 @ErrorHandler(err_msg="Error saving document {document_id}")
-def save_document_as(connection, document_id, instance_id, error_msg=None):
+def save_document_as(connection, document_id, instance_id, error_msg=None, project_id=None):
     """Save a document instance by creating a new document.
 
     Args:
@@ -586,12 +593,13 @@ def save_document_as(connection, document_id, instance_id, error_msg=None):
         document_id (string): Document ID
         instance_id (string): Document Instance ID
         error_msg (string, optional): Custom Error Message for Error Handling
+        project_id (string, optional): Project ID
 
     Returns:
         Complete HTTP response object.
     """
     endpoint = f'/api/documents/{document_id}/instances/{instance_id}/saveAs'
-    return connection.post(endpoint=endpoint, headers={'X-MSTR-ProjectID': None})
+    return connection.post(endpoint=endpoint, headers={'X-MSTR-ProjectID': project_id})
 
 
 @ErrorHandler(err_msg="Error creating instance for document {document_id}")
@@ -612,7 +620,7 @@ def create_new_document_instance(connection, document_id, body, error_msg=None):
 
 
 @ErrorHandler(err_msg="Error deleting document instance {instance_id}")
-def delete_document_instance(connection, document_id, instance_id, error_msg=None):
+def delete_document_instance(connection, document_id, instance_id, error_msg=None, project_id=None):
     """Save a document instance by overwriting an existing document.
 
     Args:
@@ -620,16 +628,17 @@ def delete_document_instance(connection, document_id, instance_id, error_msg=Non
         document_id (string): Document ID
         instance_id (string): Document Instance ID
         error_msg (string, optional): Custom Error Message for Error Handling
+        project_id (string, optional): Project ID
 
     Returns:
         Complete HTTP response object.
     """
     endpoint = f'/api/documents/{document_id}/instances/{instance_id}'
-    return connection.delete(endpoint=endpoint, headers={'X-MSTR-ProjectID': None})
+    return connection.delete(endpoint=endpoint, headers={'X-MSTR-ProjectID': project_id})
 
 
 @ErrorHandler(err_msg="Error refreshing document instance {instance_id}")
-def refresh_document_instance(connection, document_id, instance_id, error_msg=None):
+def refresh_document_instance(connection, document_id, instance_id, error_msg=None, project_id=None):
     """Execute a specific document in a specific project and create an instance
     of the document.
 
@@ -638,16 +647,17 @@ def refresh_document_instance(connection, document_id, instance_id, error_msg=No
         document_id (string): Document ID
         instance_id (string): Document Instance ID
         error_msg (string, optional): Custom Error Message for Error Handling
+        project_id (string, optional): Project ID
 
     Returns:
         Complete HTTP response object.
     """
     endpoint = f'/api/documents/{document_id}/instances/{instance_id}/refresh'
-    return connection.put(endpoint=endpoint, headers={'X-MSTR-ProjectID': None})
+    return connection.put(endpoint=endpoint, headers={'X-MSTR-ProjectID': project_id})
 
 
 @ErrorHandler(err_msg="Error getting collection of prompts for document {document_id}")
-def get_prompts(connection, document_id, error_msg=None):
+def get_prompts(connection, document_id, error_msg=None, project_id=None):
     """Get the collection of prompts and their respective definitions from a
     dashboard/document/dossier definition.
 
@@ -655,16 +665,17 @@ def get_prompts(connection, document_id, error_msg=None):
         connection: MicroStrategy REST API connection object
         document_id (string): Document ID
         error_msg (string, optional): Custom Error Message for Error Handling
+        project_id (string, optional): Project ID
 
     Returns:
         Complete HTTP response object.
     """
     endpoint = f'/api/documents/{document_id}/prompts'
-    return connection.get(endpoint=endpoint, headers={'X-MSTR-ProjectID': None})
+    return connection.get(endpoint=endpoint, headers={'X-MSTR-ProjectID': project_id})
 
 
 @ErrorHandler(err_msg="Error answering prompt for instance {instance_id}")
-def answer_prompts(connection, document_id, instance_id, body, error_msg=None):
+def answer_prompts(connection, document_id, instance_id, body, error_msg=None, project_id=None):
     """Answer specified prompts on the dashboard/document/dossier instance,
     prompts can either be answered with default answers(if available),
     the appropriate answers, or if the prompt is not required
@@ -676,13 +687,14 @@ def answer_prompts(connection, document_id, instance_id, body, error_msg=None):
         instance_id (string): Document Instance ID
         body: JSON-formatted information used to format the document
         error_msg (string, optional): Custom Error Message for Error Handling
+        project_id (string, optional): Project ID
 
     Returns:
         Complete HTTP response object.
     """
     endpoint = f'/api/documents/{document_id}/instances/{instance_id}/prompts/answers'
     return connection.put(
-        endpoint=endpoint, headers={'X-MSTR-ProjectID': None}, json=body
+        endpoint=endpoint, headers={'X-MSTR-ProjectID': project_id}, json=body
     )
 
 
@@ -704,7 +716,7 @@ def get_document_shortcut(connection, document_id, instance_id, error_msg=None):
 
 
 @ErrorHandler(err_msg="Error creating instance for dossier {dossier_id}")
-def create_dossier_instance(connection, dossier_id, body, error_msg=None):
+def create_dossier_instance(connection, dossier_id, body, error_msg=None, project_id=None):
     """Execute a specific dossier and create an instance of the dossier.
 
     Args:
@@ -712,18 +724,19 @@ def create_dossier_instance(connection, dossier_id, body, error_msg=None):
         dossier_id (string): Dossier ID
         body: JSON-formatted information used to format the document
         error_msg (string, optional): Custom Error Message for Error Handling
+        project_id (string, optional): Project ID
 
     Returns:
         Complete HTTP response object.
     """
     endpoint = f'/api/dossiers/{dossier_id}/instances'
     return connection.post(
-        endpoint=endpoint, headers={'X-MSTR-ProjectID': None}, json=body
+        endpoint=endpoint, headers={'X-MSTR-ProjectID': project_id}, json=body
     )
 
 
 @ErrorHandler(err_msg="Error creating instance for dashboard {dashboard_id}")
-def create_dashboard_instance(connection, dashboard_id, body, error_msg=None):
+def create_dashboard_instance(connection, dashboard_id, body, error_msg=None, project_id=None):
     """Execute a specific dossier and create an instance of the dossier.
 
     Args:
@@ -731,13 +744,14 @@ def create_dashboard_instance(connection, dashboard_id, body, error_msg=None):
         dashboard_id (string): Dashboard ID
         body: JSON-formatted information used to format the document
         error_msg (string, optional): Custom Error Message for Error Handling
+        project_id (string, optional): Project ID
 
     Returns:
         Complete HTTP response object.
     """
     endpoint = f'/api/dossiers/{dashboard_id}/instances'
     return connection.post(
-        endpoint=endpoint, headers={'X-MSTR-ProjectID': None}, json=body
+        endpoint=endpoint, headers={'X-MSTR-ProjectID': project_id}, json=body
     )
 
 
@@ -772,24 +786,25 @@ def get_dashboard_hierarchy(connection: 'Connection', id: str) -> Response:
 
 
 @ErrorHandler(err_msg="Error getting definition of document {id}")
-def get_document_definition(connection, id, error_msg=None):
+def get_document_definition(connection, id, error_msg=None, project_id=None):
     """Get the hierarchy of a specific dossier in a specific project.
 
     Args:
         connection: MicroStrategy REST API connection object
         id (string): Dossier ID
         error_msg (string, optional): Custom Error Message for Error Handling
+        project_id (string, optional): Project ID
 
     Returns:
         Complete HTTP response object.
     """
     endpoint = f'/api/v2/documents/{id}'
-    return connection.get(endpoint=endpoint, headers={'X-MSTR-ProjectID': None})
+    return connection.get(endpoint=endpoint, headers={'X-MSTR-ProjectID': project_id})
 
 
 @ErrorHandler(err_msg="Error getting dossier hierarchy from instance {instance_id}")
 def get_dossier_hierarchy_from_instance(
-    connection, dossier_id, instance_id, error_msg=None
+    connection, dossier_id, instance_id, error_msg=None, project_id=None
 ):
     """Get the hierarchy of a specific dossier in a specific project from
     instance.
@@ -799,17 +814,18 @@ def get_dossier_hierarchy_from_instance(
         dossier_id (string): Dossier ID
         instance_id (string): Document Instance ID
         error_msg (string, optional): Custom Error Message for Error Handling
+        project_id (string, optional): Project ID
 
     Returns:
         Complete HTTP response object.
     """
     endpoint = f'api/v2/dossiers/{dossier_id}/instances/{instance_id}/definition'
-    return connection.get(endpoint=endpoint, headers={'X-MSTR-ProjectID': None})
+    return connection.get(endpoint=endpoint, headers={'X-MSTR-ProjectID': project_id})
 
 
 @ErrorHandler(err_msg="Error getting dossier hierarchy from instance {instance_id}")
 def get_dashboard_hierarchy_from_instance(
-    connection, dashboard_id, instance_id, error_msg=None
+    connection, dashboard_id, instance_id, error_msg=None, project_id=None
 ):
     """Get the hierarchy of a specific dashboard in a specific project from
     instance.
@@ -819,12 +835,13 @@ def get_dashboard_hierarchy_from_instance(
         dashboard_id (string): Dashboard ID
         instance_id (string): Document Instance ID
         error_msg (string, optional): Custom Error Message for Error Handling
+        project_id (string, optional): Project ID
 
     Returns:
         Complete HTTP response object.
     """
     endpoint = f'api/v2/dossiers/{dashboard_id}/instances/{instance_id}/definition'
-    return connection.get(endpoint=endpoint, headers={'X-MSTR-ProjectID': None})
+    return connection.get(endpoint=endpoint, headers={'X-MSTR-ProjectID': project_id})
 
 
 @ErrorHandler(
@@ -838,6 +855,7 @@ def get_definition_and_results_of_visualization(
     visualization_key,
     dashboard_id=None,
     error_msg=None,
+    project_id=None,
 ):
     """Get the definition and data result of a grid/graph visualization in a
     specific dashboard/dossier in a specific project.
@@ -850,6 +868,7 @@ def get_definition_and_results_of_visualization(
         visualization_key (string): Visualization Key
         dashboard_id (string, optional): Dashboard ID
         error_msg (string, optional): Custom Error Message for Error Handling
+        project_id (string, optional): Project ID
 
     Returns:
         Complete HTTP response object.
@@ -865,4 +884,4 @@ def get_definition_and_results_of_visualization(
         f'/instances/{instance_id}/chapters/{chapter_key}'
         f'/visualizations/{visualization_key}'
     )
-    return connection.get(endpoint=endpoint, headers={'X-MSTR-ProjectID': None})
+    return connection.get(endpoint=endpoint, headers={'X-MSTR-ProjectID': project_id})
