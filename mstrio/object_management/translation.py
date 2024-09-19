@@ -1071,6 +1071,11 @@ class Translation(Dictable):
         """
         from mstrio.server.language import Language
 
+        if not object_list:
+            raise ValueError(
+                'List of objects to export translations for is empty. '
+                'Please make sure to provide at least one object in object_list.'
+            )
         languages_list = []
         languages_list_lcid = []
         dataframes = []
@@ -1206,6 +1211,11 @@ class Translation(Dictable):
         """
         from mstrio.server.language import Language
 
+        if not object_list:
+            raise ValueError(
+                'List of objects to export translations for is empty. '
+                'Please make sure to provide at least one object in object_list.'
+            )
         languages_list = []
         languages_list_lcid = []
         dataframes = []

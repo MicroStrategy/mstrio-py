@@ -218,6 +218,53 @@ def copy_object(
     )
 
 
+@ErrorHandler(err_msg="Error getting property set for object with ID {id}")
+def get_property_set(
+    connection,
+    id: str,
+    obj_type: int,
+    property_set_id: str,
+    error_msg: str | None = None,
+):
+    """Update a property set for an object.
+
+    Args:
+        connection (Connection): MicroStrategy REST API connection object
+        id (string): Project id string
+        obj_type (int): Object type, as in ObjectTypes enum
+        property_set_id (string): ID of a property set
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object.
+    """
+    return connection.get(
+        endpoint=f"/api/objects/{id}/type/{obj_type}"
+        f"/propertySets/{property_set_id}/properties",
+    )
+
+
+@ErrorHandler(err_msg="Error updating property set for object with ID {id}")
+def update_property_set(
+    connection, id: str, obj_type: int, body: dict, error_msg: str | None = None
+):
+    """Update a property set for an object.
+
+    Args:
+        connection (Connection): MicroStrategy REST API connection object
+        id (string): Project id string
+        obj_type (int): Object type, as in ObjectTypes enum
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object.
+    """
+    return connection.put(
+        endpoint=f"/api/objects/{id}/type/{obj_type}/propertySets",
+        json=body,
+    )
+
+
 @ErrorHandler(err_msg="Error getting VLDB settings for object with ID {id}")
 def get_vldb_settings(connection, id, object_type, project_id=None, error_msg=None):
     """Get vldb settings for an object.

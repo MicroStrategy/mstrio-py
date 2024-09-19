@@ -67,8 +67,7 @@ with **VLDB settings** management (see [code_snippets][code_snippet_vldb])
 - **Device** module (see [code_snippets][code_snippet_device])
 - **Transmitter** module (see [code_snippets][code_snippet_transmitter])
 - **Event** module (see [code_snippets][code_snippet_events])
-- **Migration** module (see [code_snippets][code_snippet_migration]) - **NOTE**: available as a Functionality Preview.
-It is subject to change until it is released as Generally Available.
+- **Migration** module (see [code_snippets][code_snippet_migration])
 - **Schema Management** module (see [code_snippets][code_snippet_schema_mgmt])
 - **User Hierarchy** module (see [code_snippets][code_snippet_user_hierarchy])
 - **Attribute** module (see [code_snippets][code_snippet_attribute])
@@ -87,6 +86,9 @@ It is subject to change until it is released as Generally Available.
 - **Translation** module (see [code_snippets][code_snippet_translations])
 - **Report** module (see [code_snippets][code_snippet_report])
 - **Incremental Refresh Report** module (see [code_snippets][code_snippet_irr])
+- **Bots** module (see [code_snippets][code_snippet_bots])
+- **Content Group** module (see [code_snippets][code_snippet_content_groups])
+- **Applications** module (see [code_snippets][code_snippet_applications])
 
 
 <a id="documentation" name="documentation"></a>
@@ -146,7 +148,7 @@ pip install mstrio-py
 <a id="versioning--changelog" name="versioning--changelog"></a>
 # Versioning & Changelog
 
-Current version: **11.4.6.101** (21 June 2024). Check out [**Changelog**][release_notes] to see what's new.
+Current version: **11.4.9.101** (20 September 2024). Check out [**Changelog**][release_notes] to see what's new.
 
 mstrio-py is constantly developed to support newest MicroStrategy REST APIs. Functionalities may be added to mstrio on monthly basis. It is **recommended** to always install the newest version of mstrio-py, as it will be most stable and still maintain backwards compatibility with various MicroStrategy installations, dating back to 11.1.4.
 
@@ -234,3 +236,6 @@ When features (modules, parameters, attributes, methods etc.) are marked for dep
 [code_snippet_irr]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/incremental_refresh_report.py
 [code_snippet_report_cache]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/report_cache.py
 [code_snippet_report]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/reports.py
+[code_snippet_bots]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/bots.py
+[code_snippet_content_groups]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/content_groups.py
+[code_snippet_applications]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/applications.py

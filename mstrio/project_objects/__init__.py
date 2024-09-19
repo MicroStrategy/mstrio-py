@@ -1,5 +1,7 @@
 # flake8: noqa
+from .bots import Bot, list_bots
 from .content_cache import ContentCache
+from .content_group import ContentGroup, list_content_groups
 from .datasets import *
 
 # isort: off

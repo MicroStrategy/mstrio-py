@@ -87,3 +87,11 @@ def get_project_internalization(connection: Connection, id: str):
         )
 
     return response
+
+
+def get_project_lock(connection: Connection, id: str):
+    return {
+        'lock_status': projects_api.get_project_lock(
+            connection=connection, id=id
+        ).json()
+    }

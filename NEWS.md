@@ -1,9 +1,30 @@
-
 # Changelog
+
+## 11.4.9.101 - 2024/09/20
+
+### New features
+
+- added `list_bots` method and `Bot` class in `mstrio.project_objects.bots` subpackage to allow management of Bots
+- added `list_content_groups` method and `ContentGroup` class in `mstrio.project_objects.content_group` subpackage to allow management of Content Groups
+- added `list_applications` method and `Application` class in `mstrio.project_objects.applications` subpackage to allow
+management of Applications
+- added `StorageService` class for Storage Service configuration of an environment
+- added `storage_service` property, `fetch_storage_service` and `update_storage_service` methods to the `Environment` class to manage the environment's Storage Service configuration
+- official release of `Migration` class and its methods (introduces some breaking changes compared to "Preview" state)
+
+### Minor changes
+
+- added `last_update_time` property to `Cube` based classes
+
+### Bug fixes
+
+- fixed `utils.wip` to not configure root logger, added separate logger for the library's root module to not interfere with loggers defined in users' scripts
+- fixed `DatasourceInstance.to_dict` so that incomplete REST response does not invalidate listing Datasource Instances and lookup by name
 
 ## 11.4.6.101 - 2024/06/21
 
 ### New features
+
 - added `refresh()` method to `OlapCube` and `SuperCube` classes to allow cubes republish without interaction, creating a `Job`
 - added support for providing a folder path instead of a folder ID to methods within the `Folder` class,
   and also `quick_search`, `full_search` and all methods inheriting from them that accept a folder ID argument
@@ -24,6 +45,7 @@
 - added support for VLDB properties in `Report` class
 
 ### Minor changes
+
 - added Warning message to `OlapCube` nad `SuperCube` classes that is shown when provided ID belongs to Cube of different type
 - updated `PageSize` Enum values to allow proper Subscription initialization
 - added support for both `name` and `display_name` in VLDB settings provided by `ModelVldbMixin`
@@ -32,6 +54,7 @@
 ## 11.4.3.101 - 2024/03/22
 
 ### New features
+
 - added `delete_object_cache()` and `delete_element_cache()` methods to `Project` class to allow deleting
   object and element cache
 - added new optional argument `show_description` to `ProjectSettings.list_caching_properties()` to show description
@@ -50,15 +73,18 @@
 - added support for Python 3.12
 
 ### Minor changes
+
 - updated script template for datasource scripts
 - `enableHtmlContentInDossier` server setting is now read-only for environments on Update 13 and newer,
   and cannot be changed using mstrio-py since it is being superseded by `allowHtmlContent`
 
 ### Deprecated
+
 - `mstrio.project_objects.dossier` module is superseded by
   `mstrio.project_objects.dashboard` and will be removed in the future, after 1-year deprecation period
 
 ### Removed
+
 - MicroStrategy for Jupyter Extension is no longer developed and supported
   and was removed from the mstrio-py package in March 2024.
   You can still use the mstrio-py library and all its current and upcoming features.
@@ -66,6 +92,7 @@
 ## 11.3.12.101 - 2023/12/15
 
 ### New features
+
 - changed `list_users` to allow filtering on `enabled` field
 - added support for `ldapdn`, `language`,`owner` and `default_timezone` for `Users`
 - added support for `ldapdn` for `UserGroups`
@@ -74,7 +101,7 @@
 - added `data_language_settings` and `metadata_language_settings` properties to `Project` class
   to allow interacting with project internalization:
   - `add_language()`, `alter_language()`, `remove_language()`, `alter_current_mode()`,
-  `alter_default_language()` methods for the `data_language_settings` property
+    `alter_default_language()` methods for the `data_language_settings` property
   - `add_language()`, `remove_language()` for the `metadata_language_settings` property
 - added new optional argument `show_description` to `ProjectSettings.list_properties()`,
   `ProjectSettings.to_csv()`, `ServerSettings.list_properties()`, `ServerSettings.to_csv()`
@@ -83,6 +110,7 @@
   `Enum` values instead of `string`
 
 ### Minor changes
+
 - updated code snippets for datasources to use `Language` class and `list_languages` function from `mstrio.server.language` package
   instead of `Locale` class and `list_locales` function
 - members in user groups and security roles are now instances of `User` or `UserGroup` class instead of dictionaries
@@ -90,12 +118,15 @@
 - added `force_with_dependents` flag in `Schedule.delete()` method that allows to delete `Schedule` with dependent subscriptions without prompt
 
 ### Bug fixes
+
 - changed endpoint of `list_users`, allowing for listing users in environments with large number of users more efficiently
 
 ### Deprecated
+
 - possibility of providing `initials` as a filter in `list_users` is deprecated and will be removed in the future
 
 ### Removed
+
 - removed `Locale` class and `list_locales` function from `mstrio.datasources.datasource_map` module
 - removed `update()` method from `OlapCube` class
 - removed `mstrio.api.exceptions` and `mstrio.helpers.exceptions` modules
@@ -105,6 +136,7 @@
 ## 11.3.11.101 - 2023/09/28
 
 ### New features
+
 - added support for VLDB properties for `Metric` objects by providing
   `list_vldb_settings`, `reset_vldb_settings`, `alter_vldb_settings` methods
   and `vldb_settings` attribute
@@ -121,28 +153,34 @@
   through the objects
 
 ### Minor changes
+
 - moved `Rights`, `AggregatedRights`, `Permissions` enums to `mstrio.helpers` module
 
 ### Bug fixes
+
 - updated default values of `PackageSettings` class to allow safe initialization
 - fixed `Project Not Loaded` error when trying to initialize `Project` object when
   running in a cluster configuration with the project not being loaded on all nodes
 - fixed `full_search`, `get_search_results` to always return correct number of objects
 
 ### Removed
+
 - removed `list_folders`, `create_folder`, `delete_folder` from `mstrio.utils.helper`
   because they have been superseded by `mstrio.object_management.folder` module
 
 ## 11.3.10.103 - 2023/08/04
 
 ### New features
+
 - added `delete()` method to `Project` class to allow deleting projects
 - added parameter `hidden` to `create` methods of `Attribute` and `Metric` classes
 
 ### Minor changes
+
 - rename `ObjectTypes.NONE` to `ObjectTypes.NOT_SUPPORTED` in `mstrio.types` module
 
 ### Bug fixes
+
 - fixed `to_dataframe` method of `OlapCube` class to return dataframe containing
   not only default attribute forms (The following types of Intelligent Cube are not
   supported: MDX, Query Builder, Freefrom SQL, Freeform XQuery, and Data Import.)
@@ -154,22 +192,26 @@
   address customizations
 
 ### Deprecated
+
 - `mstrio.api.exceptions` and `mstrio.utils.exceptions` modules are superseded by
   `mstrio.helpers`, and will be removed in the future
 
 ## 11.3.10.102 - 2023/07/07
 
 ### Major changes
+
 - added `Language` class in `mstrio.server.language` package to allow management
   of Languages
 - added `list_languages` and `list_interface_languages` to allow listing languages
   and interface languages
 
 ### Minor changes
+
 - fixed `Metric` objects always returning `None` for `hidden` field and fixed
   `alter` method to allow updating it
 
 ### Deprecated
+
 - `Locale` class in `mstrio.datasources` is no longer supported and is
   superseded by `Language` class in `mstrio.server.language` package
 - `list_locales` function in `mstrio.datasources` is no longer supported and is
@@ -178,6 +220,7 @@
 ## 11.3.10.101 - 2023/06/02
 
 ### Major changes
+
 - updated `create` method of `OlapCube` class to support new parameters:
   `template`, `filter`, `options`, `advanced_properties`, `time_based_settings`,
   `show_expression_as` and `show_filter_tokens`
@@ -190,6 +233,7 @@
   methods to `OlapCube` class to allow management of VLDB settings
 
 ### Deprecated
+
 - `update` method of `OlapCube` class is no longer supported, is superseded by `alter`
   method, and will be removed in the future
 - `attributes`, `metrics` and `overwrite` parameters in `create` method of `OlapCube` class
@@ -199,6 +243,7 @@
 ## 11.3.9.103 - 2023/05/05
 
 ### Major changes
+
 - added `list_vldb_settings`, `alter_vldb_settings` and `reset_vldb_settings`
   methods to `DatasourceInstance` class and `Project` class to allow management
   of VLDB settings
@@ -209,6 +254,7 @@
   allow gateway management
 
 ### Minor changes
+
 - updated `ipython` dependency version to 8.10.0
 - added a `project_id` property for `Metric` instances
 - fixed `is_logical_size_locked` for `LogicalTable` to be working as boolean
@@ -231,6 +277,7 @@
 ## 11.3.9.101 - 2023/03/03
 
 ### Major changes
+
 - added `HistoryListSubscription`, `FTPSubscription` and `FileSubscription`
   classes in `mstrio.distribution_services.subscription` package to allow
   management of new subscription types
@@ -289,10 +336,10 @@
   `ContentCache` class
 - fixed `list_documents_across_projects` function to work properly when `to_dataframe` or
   `to_dictionary` parameters are set to `True`, also to not return an error when user has no access
-   to one of the projects but to skip that project instead
+  to one of the projects but to skip that project instead
 - fixed `list_dossiers_across_projects` function to work properly when `to_dataframe` or
   `to_dictionary` parameters are set to `True`, also to not return an error when user has no access
-   to one of the projects but to skip that project instead
+  to one of the projects but to skip that project instead
 - added `export_sql_view` method to `SuperCubes` to allow extraction of sql statement
 - increased chunk size for fetching projects
 - fixed importing and exporting project settings from/to CSV file

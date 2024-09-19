@@ -1,5 +1,4 @@
 from enum import Enum
-from itertools import chain
 
 
 class AutoName(Enum):
@@ -52,17 +51,19 @@ def get_enum_val(obj, enum: type[Enum] = Enum) -> str | None:
     return __get_enum_helper(obj, enum, True)
 
 
-def validate_enum_value(obj, enum):
+def validate_enum_value(
+    obj: str | int, enum: type[Enum] | tuple[type[Enum]] | list[type[Enum]]
+) -> None:
     """Validate provided value. If not correct,
     error message with possible options will be displayed.
     """
     from mstrio.utils.helper import exception_handler
 
-    possible_values = (
-        [[e.value for e in item] for item in enum]
-        if isinstance(enum, tuple)
-        else [e.value for e in enum]
-    )
+    possible_values = [
+        e.value
+        for item in enum
+        for e in (item if isinstance(enum, (tuple, list)) else [item])
+    ]
     err_msg = f"Incorrect enum value '{obj}'. Possible values are {possible_values}"
-    if obj not in list(chain(possible_values)):
+    if obj not in possible_values:
         exception_handler(err_msg, exception_type=ValueError)

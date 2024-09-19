@@ -75,6 +75,7 @@ class DBType(AutoName):
     MICROSOFT_DYNAMICS_CRM = auto()
     MICROSOFT_DYNAMICS_ERP = auto()
     MICROSOFT_DYNAMICS_365 = auto()
+    MICROSOFT_FABRIC = auto()
     MONGO_BI = auto()
     MONGO_DB = auto()
     MY_SQL = auto()

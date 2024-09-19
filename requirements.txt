@@ -4,7 +4,7 @@
 #
 #    pip-compile --output-file=requirements.txt pyproject.toml
 #
-certifi==2024.2.2
+certifi==2024.7.4
     # via
     #   mstrio-py (pyproject.toml)
     #   requests
@@ -18,11 +18,11 @@ jinja2==3.1.4
     # via mstrio-py (pyproject.toml)
 markupsafe==2.1.5
     # via jinja2
-numpy==1.26.4
+numpy==2.0.0
     # via
     #   mstrio-py (pyproject.toml)
     #   pandas
-packaging==24.0
+packaging==24.1
     # via mstrio-py (pyproject.toml)
 pandas==2.2.2
     # via mstrio-py (pyproject.toml)
@@ -34,7 +34,7 @@ python-dateutil==2.9.0.post0
     # via pandas
 pytz==2024.1
     # via pandas
-requests==2.32.2
+requests==2.32.3
     # via
     #   mstrio-py (pyproject.toml)
     #   requests-futures
@@ -48,7 +48,7 @@ tqdm==4.66.4
     # via mstrio-py (pyproject.toml)
 tzdata==2024.1
     # via pandas
-urllib3==2.2.1
+urllib3==2.2.2
     # via
     #   mstrio-py (pyproject.toml)
     #   requests

@@ -1,20 +1,17 @@
 import logging
-from enum import auto
-from time import sleep
+from dataclasses import dataclass
+from datetime import datetime
+from enum import auto, Enum
 from typing import Optional
 
-from mstrio import config
-from mstrio.api import migration
 from mstrio.connection import Connection
-from mstrio.types import ObjectTypes
+from mstrio.types import ObjectSubTypes, ObjectTypes
 from mstrio.users_and_groups.user import User
-from mstrio.utils import helper
-from mstrio.utils.entity import DeleteMixin, EntityBase
 from mstrio.utils.enum_helper import AutoName
 from mstrio.utils.helper import Dictable, exception_handler
-from mstrio.utils.wip import WipLevels, module_wip
-
-module_wip(globals(), level=WipLevels.PREVIEW)
+from mstrio.utils.time_helper import DatetimeFormats
+from mstrio.server.project import Project
+from mstrio.server import Environment
 
 logger = logging.getLogger(__name__)
 
@@ -22,11 +19,105 @@ TIMEOUT = 60
 TIMEOUT_INCREMENT = 0.25
 
 
+class RequestStatus(AutoName):
+    """Status of a request such as import or undo.
+    Allowed values are:
+    - unknown
+    - pending
+    - requested
+    - rejected
+    - approved
+    """
+
+    UNKNOWN = auto()
+    PENDING = auto()
+    REQUESTED = auto()
+    REJECTED = auto()
+    APPROVED = auto()
+
+
+class Action(AutoName):
+    """The default action used for objects which don't have actions
+    explicitly, for example the dependents objects.
+    USE_EXISTING: No change is made to the destination object.
+    The source object is not copied.
+    REPLACE: The destination object is replaced with the source object.
+    Note the following:
+        • If the conflict type is Exists identically except for path, or
+        Exists identically except for Distribution Services objects,
+        the  destination object is updated to reflect the path or
+        Distribution Services addresses and contacts of the source object.
+        • Replace moves the object into the same parent folder as source
+        object. If the parent path is the same between source and
+        destination but the grandparent path is different, Replace may
+        appear to do nothing because Replace puts the object into the same
+        parent path.
+        • Non-empty folders in the destination location will never have
+        the same version ID and modification time as the source, because
+        the folder is copied first and the objects are added to it, thus
+        changing version ID and modification times during the copy process.
+    KEEP_BOTH: No change is made to the destination object. The source
+    object is duplicated if destination object doesn't exist. But if the
+    destination object exists with the same id and same version, this source
+    object is ignored.If the destination object exists with the same id
+    and different version, this source object is saved as new object.
+    USE_NEWER: If the source object's modification time is more recent than
+    the destination object's, the Replace action is used.Otherwise, the Use
+    existing action is used.
+    USE_OLDER: If the source object's modification time is more recent than
+    the destination object's, the Use existing action is used. Otherwise,
+    the Replace action is used.
+    FORCE_REPLACE: Replace the object in the destination project with the
+    version of the object in the update package, even if both versions of
+    the object have the same Version ID.
+    DELETE: Delete the object from the destination project. The version
+    of the object in the update package is not imported into the destination
+    project.Warning: If the object in the destination has any used-by
+    dependencies when you import the update package, the import will fail.
+    """
+
+    USE_EXISTING = auto()
+    REPLACE = auto()
+    KEEP_BOTH = auto()
+    USE_NEWER = auto()
+    USE_OLDER = auto()
+    FORCE_REPLACE = auto()
+    DELETE = auto()
+
+
+class TranslationAction(AutoName):
+    """Translation action for Project Merge Package Settings.
+    Allowed values are:
+    - not_merged
+    - use_existing
+    - replace
+    - force_replace
+    """
+
+    NOT_MERGED = auto()
+    USE_EXISTING = auto()
+    REPLACE = auto()
+    FORCE_REPLACE = auto()
+
+
+@dataclass
+class PackageStorage(Dictable):
+    size: int | None = None
+    path: str | None = None
+
+
+@dataclass
+class PackageWarning(Dictable):
+    message: str | None = None
+    iserver_error_code: int | None = None
+    banned_object_count: int | None = None
+
+
 class PackageSettings(Dictable):
     """Object representation of package settings details.
 
     Attributes:
-        default_action(DefaultAction): default action for Package
+        default_action(Action): default action for Package
         update_schema(Optional[UpdateSchema]): update_schema for Package
         acl_on_replacing_objects(Optional[AclOnReplacingObjects]):
             ACL setting on replacing objects
@@ -47,6 +138,7 @@ class PackageSettings(Dictable):
 
         RECAL_TABLE_LOGICAL_SIZE = auto()
         RECAL_TABLE_KEYS_FACT_ENTRY_LEVEL = auto()
+        UPDATE_SCHEMA_LOGICAL_INFO = auto()
 
     class AclOnReplacingObjects(AutoName):
         """If you resolve a conflict with the "Replace" action, and the access
@@ -58,6 +150,7 @@ class PackageSettings(Dictable):
 
         USE_EXISTING = auto()
         REPLACE = auto()
+        KEEP_BOTH = auto()
 
     class AclOnNewObjects(AutoName):
         """If you add a new object to the destination project with the
@@ -70,59 +163,8 @@ class PackageSettings(Dictable):
         KEEP_ACL_AS_SOURCE_OBJECT = auto()
         INHERIT_ACL_AS_DEST_FOLDER = auto()
 
-    class DefaultAction(AutoName):
-        """The default action used for objects which don't have actions
-        explicitly, for example the dependents objects.
-        USE_EXISTING: No change is made to the destination object.
-        The source object is not copied.
-        REPLACE: The destination object is replaced with the source object.
-        Note the following:
-            • If the conflict type is Exists identically except for path, or
-            Exists identically except for Distribution Services objects,
-            the  destination object is updated to reflect the path or
-            Distribution Services addresses and contacts of the source object.
-            • Replace moves the object into the same parent folder as source
-            object. If the parent path is the same between source and
-            destination but the grandparent path is different, Replace may
-            appear to do nothing because Replace puts the object into the same
-            parent path.
-            • Non-empty folders in the destination location will never have
-            the same version ID and modification time as the source, because
-            the folder is copied first and the objects are added to it, thus
-            changing version ID and modification times during the copy process.
-        KEEP_BOTH: No change is made to the destination object. The source
-        object is duplicated if destination object doesn't exist. But if the
-        destination object exists with the same id and same version, this source
-        object is ignored.If the destination object exists with the same id
-        and different version, this source object is saved as new object.
-        USE_NEWER: If the source object's modification time is more recent than
-        the destination object's, the Replace action is used.Otherwise, the Use
-        existing action is used.
-        USE_OLDER: If the source object's modification time is more recent than
-        the destination object's, the Use existing action is used. Otherwise,
-        the Replace action is used.
-        FORCE_REPLACE: Replace the object in the destination project with the
-        version of the object in the update package, even if both versions of
-        the object have the same Version ID.
-        DELETE: Delete the object from the destination project. The version
-        of the object in the update package is not imported into the destination
-        project.Warning: If the object in the destination has any used-by
-        dependencies when you import the update package, the import will fail.
-        FORCE_KEEP_BOTH: No change is made to the destination object. The source
-        object is always saved as a new object.
-        """
-
-        USE_EXISTING = auto()
-        REPLACE = auto()
-        KEEP_BOTH = auto()
-        USE_NEWER = auto()
-        USE_OLDER = auto()
-        FORCE_REPLACE = auto()
-        DELETE = auto()
-        FORCE_KEEP_BOTH = auto()
-
     _FROM_DICT_MAP = {
-        'default_action': DefaultAction,
+        'default_action': Action,
         'update_schema': [UpdateSchema],
         'acl_on_replacing_objects': AclOnReplacingObjects,
         'acl_on_new_objects': [AclOnNewObjects],
@@ -130,7 +172,7 @@ class PackageSettings(Dictable):
 
     def __init__(
         self,
-        default_action: DefaultAction = DefaultAction.USE_EXISTING,
+        default_action: Action = Action.USE_EXISTING,
         update_schema: UpdateSchema | None = None,
         acl_on_replacing_objects: AclOnReplacingObjects = (
             AclOnReplacingObjects.USE_EXISTING
@@ -168,57 +210,6 @@ class PackageContentInfo(Dictable):
         explicit_included(Optional[bool]): whether explicitly included or not
         level(Optional[Level]): level of object
     """
-
-    class Action(AutoName):
-        """The default action used for objects which don't have actions
-        explicitly, for example the dependents objects.
-        USE_EXISTING: No change is made to the destination object.
-        The source object is not copied.
-        REPLACE: The destination object is replaced with the source object.
-        Note the following:
-            • If the conflict type is Exists identically except for path, or
-            Exists identically except for Distribution Services objects,
-            the  destination object is updated to reflect the path or
-            Distribution Services addresses and contacts of the source object.
-            • Replace moves the object into the same parent folder as source
-            object. If the parent path is the same between source and
-            destination but the grandparent path is different, Replace may
-            appear to do nothing because Replace puts the object into the same
-            parent path.
-            • Non-empty folders in the destination location will never have
-            the same version ID and modification time as the source, because
-            the folder is copied first and the objects are added to it, thus
-            changing version ID and modification times during the copy process.
-        KEEP_BOTH: No change is made to the destination object. The source
-        object is duplicated if destination object doesn't exist. But if the
-        destination object exists with the same id and same version, this source
-        object is ignored.If the destination object exists with the same id
-        and different version, this source object is saved as new object.
-        USE_NEWER: If the source object's modification time is more recent than
-        the destination object's, the Replace action is used.Otherwise, the Use
-        existing action is used.
-        USE_OLDER: If the source object's modification time is more recent than
-        the destination object's, the Use existing action is used. Otherwise,
-        the Replace action is used.
-        FORCE_REPLACE: Replace the object in the destination project with the
-        version of the object in the update package, even if both versions of
-        the object have the same Version ID.
-        DELETE: Delete the object from the destination project. The version
-        of the object in the update package is not imported into the destination
-        project.Warning: If the object in the destination has any used-by
-        dependencies when you import the update package, the import will fail.
-        FORCE_KEEP_BOTH: No change is made to the destination object. The source
-        object is always saved as a new object.
-        """
-
-        USE_EXISTING = auto()
-        REPLACE = auto()
-        KEEP_BOTH = auto()
-        USE_NEWER = auto()
-        USE_OLDER = auto()
-        FORCE_REPLACE = auto()
-        DELETE = auto()
-        FORCE_KEEP_BOTH = auto()
 
     class Level(AutoName):
         PROJECT_OBJECT = auto()
@@ -283,291 +274,541 @@ class PackageContentInfo(Dictable):
             self.level = (
                 PackageContentInfo.Level(level) if isinstance(level, str) else level
             )
-            self.action = (
-                PackageContentInfo.Action(action) if isinstance(action, str) else action
-            )
+            self.action = Action(action) if isinstance(action, str) else action
         except ValueError:
             exception_handler(msg="Wrong enum value", exception_type=ValueError)
+
+
+@dataclass
+class ObjectMigrationPackageTocView(Dictable):
+    settings: PackageSettings
+    content: list[PackageContentInfo] | None = None
+
+
+@dataclass
+class PackageObjectAction(Dictable):
+    id: str
+    action: Action
+    object_type: ObjectTypes | None = None
+
+
+@dataclass
+class PackageObjectTypeAction(Dictable):
+    type: ObjectTypes
+    action: Action
+    sub_type: ObjectSubTypes | None = None
+
+
+@dataclass
+class ProjectMergePackageSettings(Dictable):
+    acl_on_replacing_objects: PackageSettings.AclOnReplacingObjects
+    acl_on_new_objects: PackageSettings.AclOnNewObjects
+    default_action: Action
+    validate_dependencies: bool
+    translation_action: TranslationAction
+    folder_actions: dict | None = None
+    object_actions: dict | None = None
+    object_type_actions: dict | None = None
+    update_schema: PackageSettings.UpdateSchema | None = None
+
+
+@dataclass
+class ProjectMergePackageTocView(Dictable):
+    settings: ProjectMergePackageSettings
 
 
 class PackageConfig(Dictable):
     """Package Update Data Transfer Object
 
     Attributes:
-        type(PackageUpdateType): type of package update
         settings(PackageSettings): settings details of package
         content(PackageContentInfo, List[PackageContentInfo]): content details
             of package
     """
 
-    class PackageUpdateType(AutoName):
-        """Package update type:
-        PROJECT: For user’s input, only accept non configuration object. But
-            the actual package contains all kinds of objects, including
-            configuration objects.
-        CONFIGURATION: Only contains configuration objects. 12 types in total,
-            including “Database connection“, “Transmitter“, “Database Instance“,
-            “Database login“, “DBMS“, “Device“, “Event“, ”Language”, “Schedule“,
-            ”Security Role”,”User”, “User group“.
-        PROJECT_SECURITY: Only contains user objects.
-        """
-
-        PROJECT = auto()
-        PROJECT_SECURITY = auto()
-        CONFIGURATION = auto()
-
     _FROM_DICT_MAP = {
-        'type': PackageUpdateType,
         'settings': PackageSettings,
         'content': [PackageContentInfo],
     }
 
     def __init__(
         self,
-        type: PackageUpdateType,
         settings: PackageSettings,
         content: list[PackageContentInfo] | PackageContentInfo,
     ):
-        self.type = type
         self.settings = settings
         self.content = [content] if not isinstance(content, list) else content
 
 
-class Package(EntityBase, DeleteMixin):
-    """Object representation of MicroStrategy Package object.
-
-    Attributes:
-        connection(Connection): a MicroStrategy connection object
-        id(str): package ID
-        status(str): status of a package
-        settings(PackageSettings): settings details of package
-        content(PackageContentInfo): content details of package
+class MigrationPurpose(AutoName):
+    """Migration purpose.
+    Possible values are:
+    - object_migration
+    - project_merge
+    - migration_from_shared_file_store
     """
 
-    _API_GETTERS = {
-        ("id", "status", "settings", "content"): migration.get_package_holder
+    OBJECT_MIGRATION = auto()
+    PROJECT_MERGE = auto()
+    FROM_FILE = 'migration_from_shared_file_store'
+
+
+class PackageType(Enum):
+    """Migration type."""
+
+    OBJECT = 'project'
+    ADMINISTRATION = 'configuration'
+    PROJECT = 'project_security'
+
+
+class ImportStatus(AutoName):
+    """Status of Migration Import.
+    Allowed values are:
+    - pending
+    - importing
+    - imported
+    - import_failed
+    - undoing
+    - undo_success
+    - undo_failed
+    """
+
+    PENDING = auto()
+    IMPORTING = auto()
+    IMPORTED = auto()
+    IMPORT_FAILED = auto()
+    UNDOING = auto()
+    UNDO_SUCCESS = auto()
+    UNDO_FAILED = auto()
+
+
+class PackageStatus(AutoName):
+    """Status of Migration Package.
+    Allowed values are:
+    - locked
+    - created
+    - create_failed
+    - creating
+    - empty
+    - unknown
+    """
+
+    LOCKED = auto()
+    CREATED = auto()
+    CREATE_FAILED = auto()
+    CREATING = auto()
+    EMPTY = auto()
+    UNKNOWN = auto()
+
+
+class MigratedObjectTypes(AutoName):
+    # Per analogous list in Workstation plugin
+    DASHBOARD = auto()
+    DOCUMENT = auto()
+    CARD = auto()
+    REPORT = auto()
+    DATASET = auto()
+    BOT = auto()
+    ATTRIBUTE = auto()
+    BASE_FORMULA = auto()
+    CONSOLIDATION = auto()
+    CUSTOM_GROUP = auto()
+    CONSOLIDATION_ELEMENT = auto()
+    COLUMN = auto()
+    DRILL_MAP = auto()
+    FACT = auto()
+    FILTER = auto()
+    FUNCTION = auto()
+    HIERARCHY = auto()
+    METRIC = auto()
+    PROMPT = auto()
+    SMART_ATTRIBUTE = auto()
+    SUBTOTAL = auto()
+    AUTO_STYLE = auto()
+    EXTERNAL_SHORTCUT = auto()
+    SEARCH = auto()
+    SECURITY_FILTER = auto()
+    SHORTCUT = auto() or 67
+    TABLE = auto()
+    TEMPLATE = auto()
+    TRANSFORMATION = auto()
+    SCRIPT = auto()
+    USER = auto()
+    USER_GROUP = auto()
+    DATA_SOURCE = auto()
+    SECURITY_ROLE = auto()
+    CUSTOM_APPLICATION = auto()
+    PALETTE = auto()
+    TIMEZONE = auto()
+    CALENDAR = auto()
+    CONTENT_BUNDLE = auto()
+    DEVICE = auto()
+    LOCALE = auto()
+    SCHEDULE_EVENT = auto()
+    SCHEDULE_TRIGGER = auto()
+    TRANSMITTER = auto()
+    SCRIPT_RUNTIME_ENV = auto()
+
+
+class PackageCertificationStatus(AutoName):
+    UNCERTIFIED = auto()
+    REQUESTED = auto()
+    CERTIFIED = auto()
+    REJECTED = auto()
+
+
+@dataclass
+class PackageCertificationInfo(Dictable):
+    _FROM_DICT_MAP = {
+        'status': PackageCertificationStatus,
+        'operator': User.from_dict,
+        'last_updated_date': DatetimeFormats.YMDHMS,
     }
-    _API_DELETE = staticmethod(migration.delete_package_holder)
+    status: PackageCertificationStatus
+    operator: User
+    last_updated_date: datetime
+
+
+class ValidationStatus(AutoName):
+    VALIDATING = auto()
+    VALIDATED = auto()
+    VALIDATION_FAILED = auto()
+
+
+@dataclass
+class Validation(Dictable):
+    _FROM_DICT_MAP = {
+        'status': ValidationStatus,
+        'creation_date': DatetimeFormats.YMDHMS,
+        'last_update_date': DatetimeFormats.YMDHMS,
+    }
+    status: ValidationStatus | None = None
+    progress: float | None = None
+    message: str | None = None
+    creation_date: datetime | None = None
+    last_update_date: datetime | None = None
+
+
+@dataclass
+class ImportInfo(Dictable):
+    """Python representation of a ImportInfo Migration field.
+    Attributes:
+        id (str): ID of the import
+        creator (dict, optional): Creator data
+            id
+            name
+            full_name (str, optional)
+        creation_date (str, optional): Date of creation, in the format
+            "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
+        last_updated_date (str, optional): Date of last update, in the format
+            "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
+        environment (dict): Environment data
+            id
+            name
+        status (ImportStatus, optional): Status of the import.
+        import_request_status (RequestStatus, optional): Status of the import
+            request.
+        undo_request_status (RequestStatus, optional): Status of the undo
+            request.
+        progress (float, optional): Progress of the import.
+        message (str, optional): Record information such as the reason of
+            import failure
+        undo_storage (dict, optional): Storage data for the undo package
+            size
+            path
+        project (dict, optional): Project data
+            id
+            name
+        deleted (bool, optional): Whether the import is deleted
+    """
 
     _FROM_DICT_MAP = {
-        'settings': PackageSettings.from_dict,
-        'content': [PackageContentInfo.from_dict],
+        'creator': User.from_dict,
+        'creation_date': DatetimeFormats.YMDHMS,
+        'last_updated_date': DatetimeFormats.YMDHMS,
+        'status': ImportStatus,
+        'import_request_status': RequestStatus,
+        'undo_request_status': RequestStatus,
+        'project': Project.from_dict,
+        'undo_storage': PackageStorage.from_dict,
     }
-
-    def __init__(self, connection: Connection, id: str) -> None:
-        """Initialize PackageImport object.
-
-        Args:
-            connection: MicroStrategy connection object returned by
-                `connection.Connection()`
-            id: ID of package import process
-        """
-        if id is None:
-            exception_handler(
-                "Please provide actual value for id argument, other than None.",
-                exception_type=ValueError,
-            )
-
-        super().__init__(connection, id)
-
-    def _init_variables(self, **kwargs) -> None:
-        self.settings = None
-        self.content = None
-
-        super()._init_variables(**kwargs)
-        self.status = kwargs.get("status")
-        self.project_id = kwargs.get("project_id")
-
-    @classmethod
-    def create(cls, connection: Connection, progress_bar: bool = False):
-        """Create a Package object.
-
-        Args:
-            connection: MicroStrategy connection object returned by
-                `connection.Connection()`
-            progress_bar: boolean value that decides whether a progress bar will
-                be displayed. defaults to False
-
-        Returns:
-            A Package object."""
-        response = migration.create_package_holder(connection).json()
-        if config.verbose and not progress_bar:
-            logger.info(f"Created package with ID: '{response.get('id')}'")
-        return cls.from_dict(source=response, connection=connection)
-
-    def update_config(self, package_config: PackageConfig):
-        """Updates the config for the Package.
-
-        Args:
-            package_config: new configuration to be updated for the Package
-
-        Returns:
-            A boolean value of whether the update was successful."""
-        body = package_config.to_dict()
-        body = helper.delete_none_values(body, recursion=True)
-        body = helper.snake_to_camel(body)
-        migration.update_package_holder(self.connection, body, self.id).json()
-
-        total_time = 0
-        # Wait until update ready
-        while True:
-            response = migration.get_package_holder(
-                self.connection, self.id, show_content=False
-            ).json()
-            if response.get('status') == 'ready':
-                break
-            sleep(TIMEOUT_INCREMENT)
-            total_time += TIMEOUT_INCREMENT
-
-            if total_time > TIMEOUT:
-                logger.warning('Time out on updating package')
-                return False
-
-        self.fetch()
-        return True
-
-    def upload_package_binary(self, package_binary: bytes, progress_bar: bool = False):
-        """Uploads a binary of a package.
-
-        Args:
-            package_binary: binary of the package to be uploaded
-            progress_bar: boolean value that decides whether a progress bar will
-                be displayed. defaults to False"""
-        response = migration.upload_package(
-            self.connection, self.id, package_binary
-        ).json()
-        self.status = response.get('status')
-        if config.verbose and not progress_bar:
-            logger.info(
-                f"Uploaded package binary to package holder with ID: "
-                f"'{response.get('id')}'"
-            )
-
-    def download_package_binary(self, progress_bar: bool = False) -> bytes:
-        """Downloads a binary of a package.
-
-        Args:
-            progress_bar: boolean value that decides whether a progress bar will
-                be displayed. defaults to False
-
-        Returns:
-            Contents of the downloaded binary of the package."""
-        response = migration.download_package(self.connection, self.id)
-        if config.verbose and not progress_bar:
-            logger.info(f"Downloaded binary of a package with ID: '{self.id}'")
-        return response.content
+    id: str
+    environment: Environment | dict
+    creator: User | None = None
+    creation_date: datetime | None = None
+    last_updated_date: datetime | None = None
+    status: ImportStatus | None = None
+    import_request_status: RequestStatus | None = None
+    undo_request_status: RequestStatus | None = None
+    progress: float | None = None
+    message: str | None = None
+    undo_storage: PackageStorage | None = None
+    project: Project | None = None
+    deleted: bool | None = None
 
 
-class PackageImport(EntityBase, DeleteMixin):
-    """Object representation of MicroStrategy PackageImportProcess object.
+@dataclass
+class PackageInfo(Dictable):
+    """Python representation of a PackageInfo Migration field.
 
     Attributes:
-        connection(Connection): A MicroStrategy connection object
-        id(str): PackageImport ID
-        status(str): status of an import
-        undo_package_created(bool): if the undo package have been created
-        progress(int): progress of package import process
+        attribute_id: ID of the mapped attribute
+        attribute_form_id: ID of the mapped attribute's form
     """
 
-    _API_GETTERS = {
-        ("id", "status", "undo_package_created", "progress"): migration.get_import
+    _FROM_DICT_MAP = {
+        'creator': User.from_dict,
+        'creation_date': DatetimeFormats.YMDHMS,
+        'last_updated_date': DatetimeFormats.YMDHMS,
+        'type': PackageType,
+        'storage': PackageStorage,
+        'project': Project.from_dict,
+        'status': PackageStatus,
+        'warnings': PackageWarning.bulk_from_dict,
+        'purpose': MigrationPurpose,
+        'certification': PackageCertificationInfo,
     }
-    _API_DELETE = staticmethod(migration.delete_import)
-    _progress_bar = True
+    name: str
+    creator: User
+    creation_date: datetime
+    last_updated_date: datetime
+    type: PackageType
+    environment: str | None = None
+    id: str | None = None
+    replicated: bool | None = None
+    storage: PackageStorage | None = None
+    project: Project | None = None
+    status: PackageStatus | None = None
+    message: str | None = None
+    warnings: list[PackageWarning] | None = None
+    progress: float | None = None
+    deleted: bool | None = None
+    existing: bool | None = None
+    toc_view: ProjectMergePackageTocView | ObjectMigrationPackageTocView | None = None
+    purpose: MigrationPurpose | None = None
+    tree_view: dict | None = None
+    certification: PackageCertificationInfo | None = None
 
-    def __init__(self, connection: Connection, id: str) -> None:
-        """Initialize PackageImport object.
 
-        Args:
-            connection: MicroStrategy connection object returned by
-                `connection.Connection()`.
-            id: ID of package import process
-        """
-        if id is None:
-            exception_handler(
-                "Please provide actual value for id argument, other than None.",
-                exception_type=ValueError,
-            )
-
-        super().__init__(connection, id)
-
-    def _init_variables(self, **kwargs) -> None:
-        super()._init_variables(**kwargs)
-        self.undo_package_created = kwargs.get("undo_package_created")
-        self.status = kwargs.get("status")
-        self.progress = kwargs.get("progress")
-
-    @classmethod
-    def create(
-        cls,
-        connection: Connection,
-        package_id: str,
-        generate_undo: bool,
-        progress_bar=False,
-    ):
-        """Create a package import process.
-
-        Args:
-            connection: MicroStrategy connection object returned by
-                `connection.Connection()`.
-            package_id: ID of the package that is to be imported
-            generate_undo: boolean value that specifies whether an undo package
-                has to also be created
-            progress_bar: boolean value that decides whether a progress bar will
-                be displayed. defaults to False
-
-        Returns:
-            A PackageImport object."""
-        response = migration.create_import(
-            connection, package_id, generate_undo=generate_undo
-        ).json()
-
-        total_time = 0
-        # Wait until update ready
-        while True:
-            response = migration.get_import(connection, response.get('id')).json()
-            if response.get('status') == 'imported':
-                break
-            sleep(TIMEOUT_INCREMENT)
-            total_time += TIMEOUT_INCREMENT
-
-            if total_time > TIMEOUT:
-                logger.warning('Time out on creating import')
-                return False
-
-        if config.verbose and not progress_bar:
-            logger.info(
-                f"Created package import process with ID: '{response.get('id')}'"
-            )
-        return cls.from_dict(source=response, connection=connection)
-
-    def download_undo_binary(self, progress_bar=False):
-        """Download undo package binary for this import process.
-
-        Args:
-        progress_bar: boolean value that decides whether a progress bar will
-            be displayed. defaults to False
-
-        Returns:
-            Contents of the Response object containing all of the information
-        returned by the server."""
-        total_time = 0
-        # Wait until update ready
-        while True:
-            response = migration.get_import(self.connection, self.id).json()
-            if response.get('undoPackageCreated') is True:
-                break
-            sleep(TIMEOUT_INCREMENT)
-            total_time += TIMEOUT_INCREMENT
-
-            if total_time > TIMEOUT:
-                logger.warning('Time out on downloading undo binary')
-                return False
-
-        response = migration.create_undo(self.connection, self.id)
-        if config.verbose and not progress_bar:
-            logger.info(
-                f"Downloaded undo package binary for import process with ID: "
-                f"'{self.id}'"
-            )
-        return response.content
+OBJECT_MIGRATION_TYPES_MIN_VERSION = {
+    MigratedObjectTypes.BOT: '11.3.0760',
+    MigratedObjectTypes.SMART_ATTRIBUTE: '11.3.0760',
+    MigratedObjectTypes.SCRIPT: '11.3.0760',
+    MigratedObjectTypes.CALENDAR: '11.3.0760',
+    MigratedObjectTypes.CONTENT_BUNDLE: '11.3.0760',
+    MigratedObjectTypes.DEVICE: '11.3.0760',
+    MigratedObjectTypes.LOCALE: '11.3.0760',
+    MigratedObjectTypes.SCHEDULE_EVENT: '11.3.0760',
+    MigratedObjectTypes.SCHEDULE_TRIGGER: '11.3.0760',
+    MigratedObjectTypes.TRANSMITTER: '11.3.0760',
+    MigratedObjectTypes.SCRIPT_RUNTIME_ENV: '11.3.0760',
+}
+CATALOG_ITEMS = {
+    MigratedObjectTypes.DASHBOARD: (ObjectTypes.DOCUMENT_DEFINITION, None),
+    MigratedObjectTypes.DOCUMENT: (ObjectTypes.DOCUMENT_DEFINITION, None),
+    MigratedObjectTypes.CARD: (
+        ObjectTypes.REPORT_DEFINITION,
+        ObjectSubTypes.REPORT_HYPER_CARD,
+    ),  # Card
+    MigratedObjectTypes.REPORT: (
+        ObjectTypes.REPORT_DEFINITION,
+        [
+            ObjectSubTypes.REPORT_GRID,
+            ObjectSubTypes.REPORT_GRAPH,
+            ObjectSubTypes.REPORT_ENGINE,
+            ObjectSubTypes.REPORT_TEXT,
+            ObjectSubTypes.REPORT_BASE,
+            ObjectSubTypes.REPORT_GRID_AND_GRAPH,
+            ObjectSubTypes.REPORT_NON_INTERACTIVE,
+            ObjectSubTypes.INCREMENTAL_REFRESH_REPORT,
+            ObjectSubTypes.REPORT_TRANSACTION,
+            ObjectSubTypes.SUBER_CUBE_IRR,
+            ObjectSubTypes.REPORT_DATAMART,
+        ],
+    ),  # Report
+    MigratedObjectTypes.DATASET: (
+        ObjectTypes.REPORT_DEFINITION,
+        [
+            ObjectSubTypes.OLAP_CUBE,
+            ObjectSubTypes.SUPER_CUBE,
+        ],
+    ),  # Dataset
+    MigratedObjectTypes.BOT: (
+        ObjectTypes.DOCUMENT_DEFINITION,
+        ObjectSubTypes.DOCUMENT_BOT,
+    ),  # Bot
+    MigratedObjectTypes.ATTRIBUTE: (
+        ObjectTypes.ATTRIBUTE,
+        [
+            ObjectSubTypes.ATTRIBUTE,
+            ObjectSubTypes.ATTRIBUTE_ROLE,
+            ObjectSubTypes.ATTRIBUTE_TRANSFORMATION,
+            ObjectSubTypes.ATTRIBUTE_ABSTRACT,
+            ObjectSubTypes.ATTRIBUTE_RECURSIVE,
+            ObjectSubTypes.ATTRIBUTE_DERIVED,
+        ],
+    ),  # Attribute
+    MigratedObjectTypes.BASE_FORMULA: (ObjectTypes.AGG_METRIC, None),  # Base Formula
+    MigratedObjectTypes.CONSOLIDATION: (
+        ObjectTypes.CONSOLIDATION,
+        None,
+    ),  # Consolidation
+    MigratedObjectTypes.CUSTOM_GROUP: (
+        ObjectTypes.FILTER,
+        ObjectSubTypes.CUSTOM_GROUP,
+    ),  # Custom Group
+    MigratedObjectTypes.CONSOLIDATION_ELEMENT: (
+        ObjectTypes.CONSOLIDATION_ELEMENT,
+        None,
+    ),  # Consolidation Element
+    MigratedObjectTypes.COLUMN: (ObjectTypes.COLUMN, None),  # Column
+    MigratedObjectTypes.DRILL_MAP: (ObjectTypes.DRILL_MAP, None),  # Drill Map
+    MigratedObjectTypes.FACT: (ObjectTypes.FACT, None),  # Fact
+    MigratedObjectTypes.FILTER: (ObjectTypes.FILTER, ObjectSubTypes.FILTER),  # Filter
+    MigratedObjectTypes.FUNCTION: (ObjectTypes.FUNCTION, None),  # Function
+    MigratedObjectTypes.HIERARCHY: (
+        ObjectTypes.DIMENSION,
+        [
+            ObjectSubTypes.DIMENSION_USER,
+            ObjectSubTypes.DIMENSION_ORDERED,
+            ObjectSubTypes.DIMENSION_USER_HIERARCHY,
+        ],
+    ),  # Hierarchy
+    MigratedObjectTypes.METRIC: (ObjectTypes.METRIC, ObjectSubTypes.METRIC),  # Metric
+    MigratedObjectTypes.PROMPT: (ObjectTypes.PROMPT, None),  # Prompt
+    MigratedObjectTypes.SMART_ATTRIBUTE: (
+        ObjectTypes.ATTRIBUTE,
+        ObjectSubTypes.ATTRIBUTE_SMART,
+    ),  # Smart Attribute
+    MigratedObjectTypes.SUBTOTAL: (
+        ObjectTypes.METRIC,
+        [
+            ObjectSubTypes.SUBTOTAL_DEFINITION,
+            ObjectSubTypes.SYSTEM_SUBTOTAL,
+        ],
+    ),  # Subtotal
+    MigratedObjectTypes.AUTO_STYLE: (ObjectTypes.GRAPH_STYLE, None),  # Auto Style
+    MigratedObjectTypes.EXTERNAL_SHORTCUT: (
+        ObjectTypes.SHORTCUT,
+        None,
+    ),  # External Shortcut
+    MigratedObjectTypes.SEARCH: (ObjectTypes.SEARCH, None),  # Search
+    MigratedObjectTypes.SECURITY_FILTER: (
+        ObjectTypes.SECURITY_FILTER,
+        None,
+    ),  # Security Filter
+    MigratedObjectTypes.SHORTCUT: (ObjectTypes.SHORTCUT_TYPE, None),  # Shortcut
+    MigratedObjectTypes.TABLE: (ObjectTypes.TABLE, None),  # Table
+    MigratedObjectTypes.TEMPLATE: (ObjectTypes.TEMPLATE, None),  # Template
+    MigratedObjectTypes.TRANSFORMATION: (
+        ObjectTypes.ROLE,
+        ObjectSubTypes.ROLE_TRANSFORMATION,
+    ),  # Transformation
+    MigratedObjectTypes.SCRIPT: (
+        ObjectTypes.SCRIPT,
+        [
+            ObjectSubTypes.SCRIPT,
+            ObjectSubTypes.TRANSACTION_SCRIPT,
+        ],
+    ),  # Script
+    MigratedObjectTypes.USER: (ObjectTypes.USER, [ObjectSubTypes.USER]),  # User
+    MigratedObjectTypes.USER_GROUP: (
+        ObjectTypes.USER,
+        [ObjectSubTypes.USER_GROUP],
+    ),  # User Group
+    MigratedObjectTypes.DATA_SOURCE: (ObjectTypes.DBROLE, None),  # Data Source
+    MigratedObjectTypes.SECURITY_ROLE: (
+        ObjectTypes.SECURITY_ROLE,
+        None,
+    ),  # Security Role
+    MigratedObjectTypes.CUSTOM_APPLICATION: (
+        ObjectTypes.APPLICATION,
+        None,
+    ),  # Custom Application
+    MigratedObjectTypes.PALETTE: (
+        ObjectTypes.PALETTE,
+        ObjectSubTypes.CUSTOM_PALETTE,
+    ),  # Palette
+    MigratedObjectTypes.TIMEZONE: (
+        ObjectTypes.TIMEZONE,
+        [ObjectSubTypes.TIMEZONE_CUSTOM],
+    ),  # Timezone
+    MigratedObjectTypes.CALENDAR: (
+        ObjectTypes.CALENDAR,
+        [ObjectSubTypes.CALENDAR_CUSTOM],
+    ),  # Calendar
+    MigratedObjectTypes.CONTENT_BUNDLE: (
+        ObjectTypes.CONTENT_BUNDLE,
+        None,
+    ),  # Content Bundle
+    MigratedObjectTypes.DEVICE: (
+        ObjectTypes.SUBSCRIPTION_DEVICE,
+        None,
+    ),  # Device
+    MigratedObjectTypes.LOCALE: (ObjectTypes.LOCALE, None),  # Locale
+    MigratedObjectTypes.SCHEDULE_EVENT: (
+        ObjectTypes.SCHEDULE_EVENT,
+        None,
+    ),  # Schedule Event
+    MigratedObjectTypes.SCHEDULE_TRIGGER: (
+        ObjectTypes.SCHEDULE_TRIGGER,
+        None,
+    ),  # Schedule Trigger
+    MigratedObjectTypes.TRANSMITTER: (
+        ObjectTypes.SUBSCRIPTION_TRANSMITTER,
+        None,
+    ),  # Transmitter
+    MigratedObjectTypes.SCRIPT_RUNTIME_ENV: (
+        ObjectTypes.RUNTIME,
+        None,
+    ),  # Script Runtime Environment
+}
+OBJECT_MIGRATION_TYPES_OBJECT = {
+    MigratedObjectTypes.DASHBOARD,
+    MigratedObjectTypes.DOCUMENT,
+    MigratedObjectTypes.CARD,
+    MigratedObjectTypes.REPORT,
+    MigratedObjectTypes.DATASET,
+    MigratedObjectTypes.BOT,
+    MigratedObjectTypes.ATTRIBUTE,
+    MigratedObjectTypes.BASE_FORMULA,
+    MigratedObjectTypes.CONSOLIDATION,
+    MigratedObjectTypes.CUSTOM_GROUP,
+    MigratedObjectTypes.CONSOLIDATION_ELEMENT,
+    MigratedObjectTypes.COLUMN,
+    MigratedObjectTypes.DRILL_MAP,
+    MigratedObjectTypes.FACT,
+    MigratedObjectTypes.FILTER,
+    MigratedObjectTypes.FUNCTION,
+    MigratedObjectTypes.HIERARCHY,
+    MigratedObjectTypes.METRIC,
+    MigratedObjectTypes.PROMPT,
+    MigratedObjectTypes.SMART_ATTRIBUTE,
+    MigratedObjectTypes.SUBTOTAL,
+    MigratedObjectTypes.AUTO_STYLE,
+    MigratedObjectTypes.EXTERNAL_SHORTCUT,
+    MigratedObjectTypes.SEARCH,
+    MigratedObjectTypes.SECURITY_FILTER,
+    MigratedObjectTypes.SHORTCUT,
+    MigratedObjectTypes.TABLE,
+    MigratedObjectTypes.TEMPLATE,
+    MigratedObjectTypes.TRANSFORMATION,
+    MigratedObjectTypes.SCRIPT,
+}
+OBJECT_MIGRATION_TYPES_ADMINISTRATION = {
+    MigratedObjectTypes.USER,
+    MigratedObjectTypes.USER_GROUP,
+    MigratedObjectTypes.DATA_SOURCE,
+    MigratedObjectTypes.SECURITY_ROLE,
+    MigratedObjectTypes.CUSTOM_APPLICATION,
+    MigratedObjectTypes.PALETTE,
+    MigratedObjectTypes.TIMEZONE,
+    MigratedObjectTypes.CALENDAR,
+    MigratedObjectTypes.CONTENT_BUNDLE,
+    MigratedObjectTypes.DEVICE,
+    MigratedObjectTypes.LOCALE,
+    MigratedObjectTypes.SCHEDULE_EVENT,
+    MigratedObjectTypes.SCHEDULE_TRIGGER,
+    MigratedObjectTypes.TRANSMITTER,
+    MigratedObjectTypes.SCRIPT_RUNTIME_ENV,
+}

@@ -225,7 +225,9 @@ class DataLanguageSettings(Dictable):
     _FROM_DICT_MAP = {
         'current_mode': CurrentMode,
         'default_language': lambda source, connection: [
-            DataLocalizationLanguage.from_dict({'id': id, **value}, connection)
+            DataLocalizationLanguage.from_dict(
+                {'id': id, **(value if value else {})}, connection
+            )
             for id, value in source.items()
         ][0],
         'languages': lambda source, connection: [

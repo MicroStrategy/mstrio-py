@@ -274,7 +274,8 @@ def response_handler(response, msg, throw_error=True, verbose=True, whitelist=No
                 f"I-Server is running correctly"
             )
             # raise error if I-Server response cannot be decoded
-            response.raise_for_status()
+            if throw_error:
+                response.raise_for_status()
 
 
 def fallback_on_timeout(min_limit: int = 50):
@@ -1184,6 +1185,9 @@ def verify_project_status(
 
     status = get_status(project=project, node=node)
     iteration = 0
+    correct_statuses = (
+        correct_statuses if isinstance(correct_statuses, list) else [correct_statuses]
+    )
 
     while status not in correct_statuses and iteration < 20:
         time.sleep(1)

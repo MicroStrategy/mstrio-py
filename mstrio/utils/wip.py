@@ -11,9 +11,11 @@ from mstrio import __version__, config
 from mstrio.helpers import NotSupportedError
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(  # NOSONAR
-    level=logging.INFO, format='%(message)s', stream=sys.stderr
-)
+log_handler = logging.StreamHandler(sys.stderr)
+log_handler.setLevel(logging.INFO)
+log_handler.setFormatter(logging.Formatter('%(message)s'))
+logger.addHandler(log_handler)
+
 current_version = Version(__version__)
 
 

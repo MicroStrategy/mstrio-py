@@ -565,3 +565,30 @@ def update_user_settings(connection: 'Connection', id: str, json: dict = None):
         HTTP response object returned by the MicroStrategy REST server.
     """
     return connection.patch(endpoint=f'/api/users/{id}/settings', json=json)
+
+
+@ErrorHandler(err_msg="Error getting last login time for user with ID {id}")
+def get_user_last_login(
+    connection: 'Connection',
+    id: str,
+    whitelist: list | None = None,
+    throw_error: bool = False,
+    verbose: bool = False,
+) -> Response:
+    """Get the last login time for a specific user.
+
+    Args:
+        connection (Connection): MicroStrategy connection object returned by
+            `connection.Connection()`.
+        id (str): User ID.
+        whitelist(list, optional): list of tuples of I-Server Error and HTTP
+            errors codes respectively, which will not be handled
+            i.e. whitelist = [('ERR001', 500),('ERR004', 404)]
+        throw_error (bool, optional): Flag indicates if the error
+            should be thrown
+        verbose (bool, optional): controls if messages/errors will be printed
+
+    Returns:
+        HTTP response object returned by the MicroStrategy REST server.
+    """
+    return connection.get(endpoint=f'/api/telemetry/users/{id}/statistics')

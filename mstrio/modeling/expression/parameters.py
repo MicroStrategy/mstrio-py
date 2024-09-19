@@ -34,6 +34,7 @@ class VariantType(AutoName):
     BOOLEAN = auto()
     STRING = auto()
     DOUBLE = auto()
+    DATE_TIME = auto()
 
 
 @dataclass

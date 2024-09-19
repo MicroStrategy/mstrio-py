@@ -1,8 +1,11 @@
 {
+    "applications.py": "Standard",
     "attributes.py": "Standard",
+    "bots.py": "Standard",
     "connect.py": "Standard",
     "contact_group_mgmt.py": "Standard",
     "contacts.py": "Standard",
+    "content_groups.py": "Standard",
     "create_super_cube.py": "Standard",
     "cube_cache.py": "Standard",
     "cube_report.py": "Standard",

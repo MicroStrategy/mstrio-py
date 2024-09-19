@@ -1,3 +1,4 @@
+from mstrio.connection import Connection
 from mstrio.utils.error_handlers import ErrorHandler
 
 
@@ -753,4 +754,100 @@ def delete_iserver_node_settings(connection, node, error_msg=None):
             'X-MSTR-ProjectID': None,
             'Authorization': connection._get_authorization(),
         },
+    )
+
+
+@ErrorHandler(err_msg="Error getting Library storage configuration.")
+def storage_service_get_configs(
+    connection: Connection,
+    fields: str | None = None,
+    error_msg: str | None = None,
+):
+    """Get the storage type, location, and cloud storage configurations.
+
+    Args:
+        connection (Connection): MicroStrategy REST API connection object
+        fields (str, optional): A comma-separated list of fields to include
+                in the response. By default, all fields are returned.
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object. 200 on success.
+    """
+    return connection.get(
+        endpoint='/api/mstrServices/library/storage', params={'fields': fields}
+    )
+
+
+@ErrorHandler(err_msg="Error validating Library storage configuration.")
+def storage_service_validate_configs(
+    connection: Connection, body: dict, error_msg: str | None = None
+):
+    """Validate the storage type, location, and cloud storage configurations.
+    Following privilege: DssXmlPrivilegesAdministerEnvironment is required to
+    invoke this endpoint.
+
+    Args:
+        connection (Connection): MicroStrategy REST API connection object
+        body (dict): {
+            "sharedFileStore": {
+                "type": str
+                    ("unset", "unknown", "file_system", "S3", "Azure", "GCS"),
+                "alias": str (optional),
+                "location": str (optional),
+                "s3Region": str (optional),
+                "awsAccessId": str (optional),
+                "awsSecretKey": str (optional),
+                "azureStorageAccountName": str (optional),
+                "azureSecretKey": str (optional),
+                "gcsServiceAccountKey": str (optional)
+            }
+        }
+            "sharedFileStore"/"type" supports:
+            "file_system", "S3", "Azure", "GCS"
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object. 204 on success.
+    """
+    return connection.post(
+        endpoint='/api/mstrServices/library/storage/validation',
+        json=body,
+    )
+
+
+@ErrorHandler(err_msg="Error updating Library storage configuration.")
+def storage_service_update_configs(
+    connection: Connection, body: dict, error_msg: str | None = None
+):
+    """Update the storage type, location, and cloud storage configurations.
+    Following privilege: DssXmlPrivilegesAdministerEnvironment is required to
+    invoke this endpoint.
+
+    Args:
+        connection (Connection): MicroStrategy REST API connection object
+        body (dict): {
+            "sharedFileStore": {
+                "type": str
+                    ("unset", "unknown", "file_system", "S3", "Azure", "GCS"),
+                "alias": str (optional),
+                "location": str (optional),
+                "s3Region": str (optional),
+                "awsAccessId": str (optional),
+                "awsSecretKey": str (optional),
+                "azureStorageAccountName": str (optional),
+                "azureSecretKey": str (optional),
+                "gcsServiceAccountKey": str (optional)
+            }
+        }
+            "sharedFileStore"/"type" supports:
+            "file_system", "S3", "Azure", "GCS"
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object. 204 on success.
+    """
+    return connection.patch(
+        endpoint='/api/mstrServices/library/storage',
+        json=body,
     )

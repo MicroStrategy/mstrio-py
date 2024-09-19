@@ -1,6 +1,6 @@
 from dataclasses import asdict, dataclass
 from enum import Enum, auto
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from humps import camelize, decamelize
 from stringcase import capitalcase
@@ -60,7 +60,7 @@ class VersatileDate(Dictable):
 
     @staticmethod
     def dispatch(
-        source, connection: Optional['Connection'] = None
+        source, connection: 'Connection | None' = None
     ) -> type['VersatileDate']:
         """Returns an appropriate VersatileDate type object from the
             provided source
@@ -248,7 +248,7 @@ class DynamicVersatileDate(VersatileDate):
 
     @classmethod
     def from_dict(
-        cls, source: dict, connection: Optional['Connection'] = None, to_snake_case=True
+        cls, source: dict, connection: 'Connection | None' = None, to_snake_case=True
     ) -> 'DynamicVersatileDate':
         try:
             key, value = next(

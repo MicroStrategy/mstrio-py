@@ -1,5 +1,5 @@
 import json
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Union
 
 from mstrio.utils.error_handlers import ErrorHandler
 
@@ -222,9 +222,9 @@ def get_quick_search_result(
     project_id: str | None = None,
     name: str | None = None,
     root: str | None = None,
-    object_types: Optional['TypeOrSubtype'] = None,
+    object_types: 'TypeOrSubtype | None' = None,
     pattern: Union['SearchPattern', int] | None = None,
-    certified_status: Optional['CertifiedStatus'] = None,
+    certified_status: 'CertifiedStatus | None' = None,
     offset: int | None = None,
     limit: int | None = None,
     hidden: bool | None = None,
