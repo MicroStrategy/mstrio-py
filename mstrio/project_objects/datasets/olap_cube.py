@@ -893,7 +893,7 @@ class OlapCube(ModelVldbMixin, _Cube):
         ]
         self._metrics = [] if not metrics else metrics[0]
         self._attr_elements = None
-        self.__filter = None
+        self._filter = None
         self.instance_id = None
 
     def _prepare_instance_body(self) -> dict:

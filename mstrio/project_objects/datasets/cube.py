@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 from enum import Enum
 from operator import itemgetter
 from typing import TYPE_CHECKING
@@ -32,6 +33,7 @@ from mstrio.utils.parser import Parser
 from mstrio.utils.response_processors import cubes as cube_processors
 from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.sessions import FuturesSessionWithRenewal
+from mstrio.utils.time_helper import str_to_datetime
 from mstrio.utils.translation_mixin import TranslationMixin
 
 if TYPE_CHECKING:
@@ -327,7 +329,14 @@ class _Cube(Entity, VldbMixin, DeleteMixin, TranslationMixin):
             'hidden',
             'comments',
         ): objects_processors.get_info,
-        ('server_mode', 'size', 'path', 'status', 'owner_id'): cube_processors.get_info,
+        (
+            'server_mode',
+            'size',
+            'path',
+            'status',
+            'owner_id',
+            'last_update_time',
+        ): cube_processors.get_info,
     }
     _API_PATCH: dict = {
         'comments': (objects_processors.update, 'partial_put'),
@@ -398,6 +407,7 @@ class _Cube(Entity, VldbMixin, DeleteMixin, TranslationMixin):
         self._metrics = []
         self._row_counts = []
         self._table_names = []
+        self._last_update_time = kwargs.get('last_update_time')
         self.__definition_retrieved = False
         # these properties were not fetched from self.__info() and all will be
         # lazily fetched when calling any of properties: `owner_id`, `path`,
@@ -1042,3 +1052,10 @@ class _Cube(Entity, VldbMixin, DeleteMixin, TranslationMixin):
         if not self._caches:
             self.get_caches()
         return self._caches
+
+    @property
+    def last_update_time(self) -> datetime | None:
+        self.fetch('last_update_time')
+        return str_to_datetime(
+            date=self._last_update_time, format_str='%m/%d/%Y %H:%M:%S'
+        )

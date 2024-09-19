@@ -1,4 +1,62 @@
 {
+  "applications.py": {
+    "project_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "limit": {
+      "type": "text",
+      "multiple": false
+    },
+    "name_filter": {
+      "type": "text",
+      "multiple": false
+    },
+    "app_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "app_description": {
+      "type": "text",
+      "multiple": false
+    },
+    "app_home_screen_mode": {
+      "type": "text",
+      "multiple": false
+    },
+    "app_home_document_url": {
+      "type": "text",
+      "multiple": false
+    },
+    "app_home_document_type": {
+      "type": "text",
+      "multiple": false
+    },
+    "app_home_icon": {
+      "type": "text",
+      "multiple": false
+    },
+    "app_home_toolbar_mode": {
+      "type": "text",
+      "multiple": false
+    },
+    "app_home_library_content_bundle_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "app_home_library_sidebar": {
+      "type": "text",
+      "multiple": false
+    },
+    "app_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "app_new_name": {
+      "type": "text",
+      "multiple": false
+    }
+  },
   "attributes.py": {
     "project_name": {
       "type": "text",
@@ -41,6 +99,40 @@
       "multiple": false
     },
     "hidden": {
+      "type": "text",
+      "multiple": false
+    }
+  },
+  "bots.py": {
+    "project_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "bot_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "new_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "new_description": {
+      "type": "text",
+      "multiple": false
+    },
+    "new_abbreviation": {
+      "type": "text",
+      "multiple": false
+    },
+    "new_hidden": {
+      "type": "text",
+      "multiple": false
+    },
+    "new_status": {
+      "type": "text",
+      "multiple": false
+    },
+    "new_comments": {
       "type": "text",
       "multiple": false
     }
@@ -183,6 +275,72 @@
       "multiple": false
     },
     "contact_group_name": {
+      "type": "text",
+      "multiple": false
+    }
+  },
+  "content_groups.py": {
+    "project_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "cg_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "cg_color": {
+      "type": "text",
+      "multiple": false
+    },
+    "cg_opacity": {
+      "type": "text",
+      "multiple": false
+    },
+    "cg_email_enabled": {
+      "type": "text",
+      "multiple": false
+    },
+    "cg_recipient_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "cg_user_recipient_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "cg_user_group_recipient_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "cg_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "dashboard_id_1": {
+      "type": "text",
+      "multiple": false
+    },
+    "dashboard_id_2": {
+      "type": "text",
+      "multiple": false
+    },
+    "cg_name_altered": {
+      "type": "text",
+      "multiple": false
+    },
+    "cg_color_altered": {
+      "type": "text",
+      "multiple": false
+    },
+    "cg_opacity_altered": {
+      "type": "text",
+      "multiple": false
+    },
+    "cg_email_enabled_altered": {
+      "type": "text",
+      "multiple": false
+    },
+    "cg_recipient_id_altered": {
       "type": "text",
       "multiple": false
     }
@@ -848,51 +1006,63 @@
       "type": "text",
       "multiple": false
     },
-    "source_base_url": {
+    "env_url_source": {
       "type": "text",
       "multiple": false
     },
-    "source_username": {
+    "u_name_source": {
       "type": "text",
       "multiple": false
     },
-    "source_password": {
-      "type": "secret",
-      "multiple": false
-    },
-    "target_base_url": {
+    "u_pass_source": {
       "type": "text",
       "multiple": false
     },
-    "target_username": {
+    "env_url_target": {
       "type": "text",
       "multiple": false
     },
-    "target_password": {
-      "type": "secret",
-      "multiple": false
-    },
-    "username": {
+    "u_name_target": {
       "type": "text",
       "multiple": false
     },
-    "dashboard_id": {
+    "u_pass_target": {
       "type": "text",
       "multiple": false
     },
-    "report_id": {
+    "storage_alias": {
       "type": "text",
       "multiple": false
     },
-    "save_path": {
+    "storage_location": {
       "type": "text",
       "multiple": false
     },
-    "custom_package_path": {
+    "migrated_metric_id": {
       "type": "text",
       "multiple": false
     },
-    "undo_package_path": {
+    "target_project_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "reuse_target_project_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "reverse_target_project_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "file_mig_target_project_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "migrated_user_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "merge_target_project_name": {
       "type": "text",
       "multiple": false
     }

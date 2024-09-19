@@ -8,6 +8,7 @@ ease its usage.
 from mstrio.connection import get_connection
 from mstrio.datasources import DatasourceInstance
 from mstrio.server import Environment, Project, compare_project_settings
+from mstrio.server.project import LockType
 from mstrio.server.setting_types import FailedEmailDelivery
 
 # Define a variable which can be later used in a script
@@ -37,6 +38,17 @@ project.resume(on_nodes=NODE_NAME)
 # node(s) should be used)
 project.unload(on_nodes=NODE_NAME)
 project.load(on_nodes=NODE_NAME)
+
+# lock/unlock a project and get information about the lock
+project.lock(lock_type=LockType.TEMPORAL_INDIVIDUAL)
+# fetch lock status of a project
+project.fetch('lock_status')
+# get lock status of a project
+lock_type = project.lock_status.lock_type
+lock_time = project.lock_status.lock_time
+lock_owner = project.lock_status.owner
+
+project.unlock(lock_type=LockType.TEMPORAL_INDIVIDUAL, force=True)
 
 # get settings of a project as a dataframe
 project_settings_df = project.settings.to_dataframe()

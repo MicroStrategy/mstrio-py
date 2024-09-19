@@ -1,453 +1,1123 @@
 import logging
+import os
 from collections.abc import Callable
-from enum import Enum, auto
-from pathlib import Path
+from datetime import datetime
+from hashlib import sha256
 
 from mstrio import config
+from mstrio.api import migration as migration_api
 from mstrio.connection import Connection
-from mstrio.helpers import VersionException
+from mstrio.object_management import Object
 from mstrio.object_management.migration.package import (
-    Package,
+    CATALOG_ITEMS,
+    OBJECT_MIGRATION_TYPES_ADMINISTRATION,
+    OBJECT_MIGRATION_TYPES_MIN_VERSION,
+    OBJECT_MIGRATION_TYPES_OBJECT,
+    Action,
+    ImportInfo,
+    ImportStatus,
+    MigratedObjectTypes,
+    MigrationPurpose,
+    PackageCertificationStatus,
     PackageConfig,
-    PackageImport,
+    PackageContentInfo,
+    PackageInfo,
+    PackageSettings,
+    PackageStatus,
+    PackageType,
+    ProjectMergePackageSettings,
+    ProjectMergePackageTocView,
+    RequestStatus,
+    Validation,
 )
-from mstrio.utils.helper import Dictable, exception_handler
+from mstrio.server import Environment
+from mstrio.server.project import Project
+from mstrio.types import ObjectSubTypes, ObjectTypes
+from mstrio.users_and_groups import User
+from mstrio.utils.entity import DeleteMixin, EntityBase
+from mstrio.utils.enum_helper import get_enum_val
+from mstrio.utils.helper import (
+    camel_to_snake,
+    get_valid_project_id,
+    get_valid_project_name,
+)
 from mstrio.utils.progress_bar_mixin import ProgressBarMixin
-from mstrio.utils.wip import WipLevels, module_wip
-
-module_wip(globals(), level=WipLevels.PREVIEW)
+from mstrio.utils.response_processors import migrations
+from mstrio.utils.time_helper import datetime_to_str
+from mstrio.utils.version_helper import (
+    class_version_handler,
+    is_server_min_version,
+    method_version_handler,
+)
 
 logger = logging.getLogger(__name__)
 
 
-class MigrationStatus(Enum):
-    NOT_STARTED = auto()
-    STARTED = auto()
-    CREATING_PACKAGE = auto()
-    CREATING_PACKAGE_FAILED = auto()
-    CREATING_PACKAGE_COMPLETED = auto()
-    MIGRATION_IN_PROGRESS = auto()
-    MIGRATION_FAILED = auto()
-    MIGRATION_COMPLETED = auto()
-    UNDO_STARTED = auto()
-    UNDO_FAILED = auto()
-    UNDO_COMPLETED = auto()
+def list_migration_possible_content(
+    connection: Connection, package_type: PackageType
+) -> list[ObjectTypes | ObjectSubTypes]:
+    """List possible content for migration process based on the package type and
+    environment version.
+
+    Args:
+        connection (Connection): A MicroStrategy connection object
+        package_type (PackageType): Type of the package
+
+    Returns:
+        Set of MigratedObjectTypes"""
+    if package_type == PackageType.ADMINISTRATION:
+        available_per_package_type = OBJECT_MIGRATION_TYPES_ADMINISTRATION
+    elif package_type == PackageType.OBJECT:
+        available_per_package_type = OBJECT_MIGRATION_TYPES_OBJECT
+    else:
+        available_per_package_type = set(MigratedObjectTypes)
+    unavailable_per_version = {
+        object_type
+        for object_type, version in OBJECT_MIGRATION_TYPES_MIN_VERSION.items()
+        if not is_server_min_version(connection, version)
+    }
+    available_migrated_types = available_per_package_type - unavailable_per_version
+    types_to_search: list[ObjectTypes | ObjectSubTypes] = []
+    for mig_object_type in available_migrated_types:
+        obj_type, obj_subtype = CATALOG_ITEMS[mig_object_type]
+        if isinstance(obj_subtype, list):
+            types_to_search.extend(obj_subtype)
+        elif obj_subtype is not None:
+            types_to_search.append(obj_type)
+
+    return types_to_search
 
 
-class Migration(Dictable, ProgressBarMixin):
+@method_version_handler(version='11.3.10')
+def list_migrations(
+    connection: Connection,
+    name: str | None = None,
+    migration_purpose: MigrationPurpose | str | None = None,
+    package_status: PackageStatus | str | None = None,
+    import_status: ImportStatus | str | None = None,
+    limit: int | None = None,
+    to_dictionary: bool = False,
+) -> list["Migration"] | list[dict]:
+    """Get list of Migration objects.
+    Optionally use `to_dictionary` to choose output format.
+
+    Args:
+        connection (Connection): A MicroStrategy connection object
+        name (str, optional): characters that the Migration name must contain
+        migration_purpose (MigrationPurpose, str, optional): purpose of the
+            migration can be either 'object_migration', 'project_merge' or
+            'migration_from_shared_file_store'. If None returns migration of all
+            purposes
+        package_status (PackageStatus, str, optional): status of the migration
+            package
+        import_status (ImportStatus, str, optional): status of the Migration
+            import process
+        limit (integer, optional): limit the number of elements returned. If
+            None all object are returned
+        to_dictionary (bool, optional): If True returns dict, by default (False)
+            returns Metric objects
+
+    Returns:
+        List of Migration objects or list of dictionaries
+    """
+    if migration_purpose:
+        objects_ = _list_migrations(
+            connection, migration_purpose=migration_purpose, limit=limit
+        )
+    else:
+        all_purposes = ','.join([purpose.value for purpose in MigrationPurpose])
+        objects_ = _list_migrations(
+            connection,
+            migration_purpose=all_purposes,
+            limit=limit,
+        )
+
+    for obj in objects_:
+        obj['name'] = obj['packageInfo']['name']
+
+    if name:
+        objects_ = list(filter(lambda x: name in x['name'], objects_))
+    if package_status:
+        package_status = get_enum_val(package_status, PackageStatus)
+        objects_ = list(
+            filter(lambda x: package_status == x['packageInfo']['status'], objects_)
+        )
+    if import_status:
+        import_status = get_enum_val(import_status, ImportStatus)
+        objects_ = list(
+            filter(lambda x: import_status == x['importInfo']['status'], objects_)
+        )
+    if to_dictionary:
+        return objects_
+    else:
+        return [
+            Migration.from_dict(source=obj, connection=connection) for obj in objects_
+        ]
+
+
+def _list_migrations(
+    connection: Connection,
+    migration_purpose: (
+        MigrationPurpose | list[MigrationPurpose] | str | list[str] | None
+    ) = None,
+    limit: int | None = None,
+) -> list[dict]:
+    max_call_limit = 1000
+    if isinstance(migration_purpose, MigrationPurpose):
+        migration_purpose = migration_purpose.value
+    if limit is not None and limit <= max_call_limit:
+        resp = migration_api.list_migrations(
+            connection, limit=limit, migration_type=migration_purpose
+        )
+        objects_ = resp.json().get('data')
+    else:
+        resp = migration_api.list_migrations(
+            connection, limit=1000, migration_type=migration_purpose
+        )
+        total_objects = resp.json().get('total')
+        if total_objects > max_call_limit:
+            objects_ = resp.json().get('data')
+            while len(objects_) < total_objects:
+                resp = migration_api.list_migrations(
+                    connection,
+                    limit=1000,
+                    offset=len(objects_),
+                    migration_type=migration_purpose,
+                )
+                objects_ += resp.json().get('data')
+        else:
+            objects_ = resp.json().get('data')
+    return objects_
+
+
+@class_version_handler(version='11.3.10')
+class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
     """A class encapsulating migration process from env A to env B.
 
     Raises VersionException if either of environments are running IServer
-    version lower than 11.3.0200
-
-    Raises AttributeError if parent directory of specified `save_path` is
-    non-existent or points to another kind of file.
+    version lower than 11.3.10
 
     Attributes:
-        configuration(PackageConfig): a configuration of the migration
-        save_path(str): a full path used when saving import package to a
-        file. It is also used for saving undo package with the addition of
-        `_undo` suffix. By default, uses ~cwd/migration.mmp and
-        ~cwd/migration_undo.mmp.
-        source_connection(Connection): A MicroStrategy connection object
-          to the source env,
-        target_connection(Connection): A MicroStrategy connection object
-          to the target env,
-        name(str): Name of the migration. Used for identification purposes for
-            the convenience of the user,
-        package(Package): a package that is migrated,
-        package_import(PackageImport): a package import process object,
-        package_binary(Binary): actual data that is migrated
-        status(MigrationStatus): current status of migration,
-        create_undo(bool): should a undo package be made
-        undo_package(Binary): undo package binary for this import process.
-          if `create_undo` is False, it is equal to None.
+        id(str): ID of the migration
+        name(str): Name of the migration
+        type(str): MSTR type of the migration object. Returns either
+            NOT_SUPPORTED or None
+        connection(Connection): A MicroStrategy connection object
+        import_info(ImportInfo): Information about the import process
+        package_info(PackageInfo): Information about the package configuration
+            and status
+        validation(Validation): Information about the validation process
+        version(str): Version of the migration API
+    """
 
-    Additional args:
-        custom_package_path(str): a full path to an already existing .mpp file.
-            This argument overrides `save_path`. Creating a `Migration` object
-            with only `source_connection`, `target_connection` and
-            `custom_package_path` allows for an easier export to the target by
-            running `migrate_package()` on that `Migration` instance (instead of
-            performing full migration with an import from the source first.
-            See demos and examples for details.)."""
+    _API_GETTERS: dict[str | tuple, Callable] = {
+        (
+            'id',
+            'name',
+            'import_info',
+            'package_info',
+            'validation',
+            'version',
+        ): migrations.get,
+    }
+    _API_DELETE = staticmethod(migration_api.delete_migration)
+
+    _FROM_DICT_MAP = {
+        'import_info': ImportInfo.from_dict,
+        'package_info': PackageInfo.from_dict,
+        'validation': Validation.from_dict,
+    }
 
     def __init__(
         self,
-        save_path: str | None = None,
-        source_connection: Connection | None = None,
-        configuration: PackageConfig | None = None,
-        target_connection: Connection | None = None,
-        custom_package_path: str | None = None,
+        connection: 'Connection',
+        id: str | None = None,
         name: str | None = None,
-        create_undo: bool = True,
-    ):
-        save_path = save_path or (Path.cwd() / 'migration.mmp')
-        if not self._validate_envs_version(source_connection, target_connection):
-            exception_handler(
-                msg=(
-                    "Environments must run IServer version 11.3.0200 or newer. "
-                    "Please update your environments to use this feature."
-                ),
-                exception_type=VersionException,
-            )
-        self.name = name
-        self.source_connection = source_connection
-        self.target_connection = target_connection
-        self.configuration = configuration
-        self.create_undo = create_undo
-        self._status = MigrationStatus.NOT_STARTED
+    ) -> None:
+        """Initialize migration object by its identifier.
 
-        self._check_file_path(save_path, "save_path")
-        self.save_path = save_path
-
-        self._package = None
-        self._package_import = None
-        self._undo_binary = None
-
-        if custom_package_path and self._check_file_path(
-            custom_package_path, "custom_package_path"
-        ):
-            self.save_path = custom_package_path
-            filename, file_extension = self._decompose_file_path(custom_package_path)
-            with open(f"{filename}{file_extension}", "rb") as f:
-                self._package_binary = f.read()
-        else:
-            self._package_binary = None
-
-    @staticmethod
-    def _validate_envs_version(
-        source_connection: Connection, target_connection: Connection
-    ) -> bool:
-        return (
-            source_connection is None
-            or source_connection._iserver_version >= '11.3.0200'
-        ) and (
-            target_connection is None
-            or target_connection._iserver_version >= '11.3.0200'
-        )
-
-    @staticmethod
-    def _decompose_file_path(file_path: str) -> tuple:
-        file_path = Path(file_path)
-        filename, file_extension = file_path.parent / file_path.stem, file_path.suffix
-        if file_extension == '':
-            return filename, '.mmp'
-        return filename, file_extension
-
-    @staticmethod
-    def _check_file_path(file_path: str, var_name: str):
-        file_path = Path(file_path)
-
-        if file_path.parent.is_dir() and not file_path.is_dir():
-            return True
-        else:
-            exception_handler(
-                msg=f"Invalid save path. Parent directory specified in `{var_name}` is"
-                f" incorrect.",
-                exception_type=AttributeError,
-            )
-
-    def perform_full_migration(self) -> bool:
-        """Perform 'create_package()' and 'migrate_package()' using
-        configuration provided when creating `Migration` object.
+        Args:
+            connection: MicroStrategy connection object returned
+                by `connection.Connection()`
+            id (str, optional): identifier of a pre-existing migration.
+                Defaults to None.
+            name (str, optional): name of a pre-existing migration.
+                Defaults to None.
         """
-        if (
-            not isinstance(self.source_connection, Connection)
-            or self.source_connection is None
-        ):
-            exception_handler(
-                msg=(
-                    "Migration object missing `source_connection`. "
-                    "`perform_full_migration()` unavailable."
-                ),
-                exception_type=AttributeError,
-            )
-        if (
-            not isinstance(self.target_connection, Connection)
-            or self.target_connection is None
-        ):
-            exception_handler(
-                msg=(
-                    "Migration object missing `target_connection`. "
-                    "`perform_full_migration()` unavailable."
-                ),
-                exception_type=AttributeError,
-            )
+        if id is None:
+            if name is None:
+                raise ValueError(
+                    "Please specify either 'name' or 'id' parameter in the constructor."
+                )
 
-        self._display_progress_bar(
-            desc='Migration status: ',
-            unit='Migration',
-            total=4,
-            bar_format='{desc} |{bar:50}| {percentage:3.0f}%',
-        )
+            migrations = list_migrations(connection=connection, name=name)
+            if migrations:
+                number_of_objects = len(migrations)
+                if number_of_objects > 1:
+                    raise ValueError(
+                        f"There are {number_of_objects} {type(self).__name__}"
+                        " objects with this name. Please initialize with ID."
+                    )
 
-        if not self.create_package():
-            return False
+                id = migrations[0].to_dict()[  # NOSONAR - shadowing `id` in fn scope
+                    'id'
+                ]
+            else:
+                raise ValueError(
+                    f"There is no {type(self).__name__} with the given name: '{name}'"
+                )
+        super().__init__(connection, id)
 
-        if not self.migrate_package():
-            return False
+    def _init_variables(self, **kwargs) -> None:
+        super()._init_variables(**kwargs)
+        self.version = kwargs.get('version')
+        self._import_info = kwargs.get('importInfo')
+        self._package_info = kwargs.get('packageInfo')
+        self._validation = kwargs.get('validation')
 
-        self._close_progress_bar()
-        return True
+    @classmethod
+    def create(
+        cls,
+        connection: 'Connection',
+        body: dict,
+        project_id: str | None = None,
+        project_name: str | None = None,
+    ) -> 'Migration':
+        """Create a totally new migration object.
 
-    def create_package(self) -> bool:
-        """Performs import of the object described in the migration
-        configuration from the source environment and save it in a file
-        at location specified in `save_path` parameter.
+        Args:
+            connection: A MicroStrategy connection object
+            body: a json body with migration details
+            project_id: ID of the project
+            project_name: Name of the project
 
-        Raises AttributeError if `source_connection` is not specified.
-
-        Raises FileExistsError if a package or undo package with the same name
-        already exist at`save_path` location."""
-        if (
-            not isinstance(self.source_connection, Connection)
-            or self.source_connection is None
-        ):
-            exception_handler(
-                msg=(
-                    "Migration object does not have `source_connection`. Import "
-                    "unavailable."
-                ),
-                exception_type=AttributeError,
-            )
-
-        filename, file_extension = self._decompose_file_path(self.save_path)
-        """File existence checked here instead of using "xb" mode in context
-        manager to avoid creation of package if it should not be saved"""
-        if (
-            Path(f"{filename}{file_extension}").exists()
-            or Path(f"{filename}_undo{file_extension}").exists()
-        ):
-            exception_handler(
-                msg=(
-                    "Migration file / undo package with this name already exists."
-                    "Please use other location / filename in `save_path` parameter."
-                ),
-                exception_type=FileExistsError,
-            )
-
-        self.__private_status = MigrationStatus.CREATING_PACKAGE
-        self._create_package_holder(self.source_connection)
-        if not self._update_package_holder():
-            self.__private_status = MigrationStatus.CREATING_PACKAGE_FAILED
-            return False
-
-        self._download_package_binary()
-        self._delete_package_holder()
-        self._save_package_binary_locally(filename, file_extension, self.package_binary)
-
-        self.__private_status = MigrationStatus.CREATING_PACKAGE_COMPLETED
-        return True
-
-    def migrate_package(
-        self, custom_package_path: str | None = None, is_undo=False
-    ) -> bool:
-        """Performs migration of already created package to the target
-        environment. Import package will be loaded from `custom_package_path`.
-        If `custom_package_path` not provided, the object previously acquired
-        with the `create_package()` will be used.
-        If `create_undo` parameter is set to True, package needed for undo
-        process will be downloaded.
-
-        Raises AttributeError if `target_connection` is not specified.
+        Returns:
+            A new Migration object
         """
 
-        if (
-            not isinstance(self.target_connection, Connection)
-            or self.target_connection is None
-        ):
-            exception_handler(
-                msg=(
-                    "Migration object does not have `target_connection`. "
-                    "Export unavailable."
-                ),
-                exception_type=AttributeError,
+        if body['packageInfo']['type'] == PackageType.ADMINISTRATION.value:
+            response = migration_api.create_new_migration(
+                connection=connection,
+                body=body,
+                prefer='respond-async',
             )
-
-        if custom_package_path and self._check_file_path(
-            custom_package_path, "custom_package_path"
-        ):
-            self.save_path = custom_package_path
-            filename, file_extension = self._decompose_file_path(custom_package_path)
-            with open(f"{filename}{file_extension}", "rb") as f:
-                return self._migrate_package(f.read(), is_undo=is_undo)
-        return self._migrate_package(
-            self._package_binary,
-            custom_package_path=custom_package_path,
-            is_undo=is_undo,
+        else:
+            project_id = get_valid_project_id(
+                connection=connection,
+                project_id=project_id,
+                project_name=project_name,
+                with_fallback=not project_name,
+            )
+            response = migration_api.create_new_migration(
+                connection=connection,
+                body=body,
+                prefer='respond-async',
+                project_id=project_id,
+            )
+        response_data = response.json()
+        if config.verbose:
+            logger.info(
+                "Successfully started creation of migration object with ID:"
+                f" '{response_data.get('id')}'"
+            )
+        return cls.from_dict(
+            source=camel_to_snake(response_data), connection=connection
         )
 
-    def _migrate_package(
+    @classmethod
+    def create_object_migration(
+        cls,
+        connection: 'Connection',
+        toc_view: dict | PackageConfig,
+        tree_view: str | None = None,
+        name: str | None = None,
+        project_id: str | None = None,
+        project_name: str | None = None,
+    ) -> 'Migration':
+        """
+        Create a new migration for object migration purpose.
+
+        Args:
+            connection (Connection): A MicroStrategy connection object.
+            toc_view (dict, PackageConfig): A dictionary representing the TOC
+                view or a PackageConfig object.
+            tree_view (str, optional): A string representing the tree view.
+            name (str, optional): Name of the migration. Used for identification
+                purposes for the convenience of the user. If None default name
+                will be generated.
+            project_id (str, optional): ID of the project.
+            project_name (str, optional): Name of the project.
+
+        Returns:
+            A new Migration object.
+        """
+        if isinstance(toc_view, PackageConfig):
+            toc_view = toc_view.to_dict()
+        tree_view = tree_view or {}
+        base_body = Migration._get_body_for_create(
+            connection, toc_view, tree_view, name
+        )
+        base_body['packageInfo']['type'] = PackageType.OBJECT.value
+        return cls.create(connection, base_body, project_id, project_name)
+
+    @classmethod
+    def create_admin_migration(
+        cls,
+        connection: 'Connection',
+        toc_view: dict | PackageConfig,
+        tree_view: str | None = None,
+        name: str | None = None,
+    ) -> 'Migration':
+        """
+        Create a new migration for administration migration purpose.
+
+        Args:
+            connection (Connection): A MicroStrategy connection object.
+            toc_view (dict, PackageConfig): A dictionary representing the TOC
+                view or a PackageConfig object.
+            tree_view (str): A string representing the tree view.
+            name (str, optional): Name of the migration. Used for identification
+                purposes for the convenience of the user. If None default name
+                will be generated.
+
+        Returns:
+            A new Migration object.
+        """
+        if isinstance(toc_view, PackageConfig):
+            toc_view = toc_view.to_dict()
+        tree_view = tree_view or {}
+        base_body = Migration._get_body_for_create(
+            connection, toc_view, tree_view, name
+        )
+        base_body['packageInfo']['type'] = PackageType.ADMINISTRATION.value
+        return cls.create(connection, base_body)
+
+    @classmethod
+    def create_project_merge_migration(
+        cls,
+        connection: 'Connection',
+        toc_view: dict | ProjectMergePackageSettings | ProjectMergePackageTocView,
+        tree_view: str | None = None,
+        name: str | None = None,
+        project_id: str | None = None,
+        project_name: str | None = None,
+    ) -> 'Migration':
+        """
+        Create a new migration for project merge migration purpose.
+
+        Args:
+            connection (Connection): A MicroStrategy connection object.
+            toc_view (dict): A dictionary representing the TOC view or a
+                ProjectMergePackageSettings | ProjectMergePackageTocView object.
+            tree_view (str): A string representing the tree view.
+            name (str, optional): Name of the migration. Used for identification
+                purposes for the convenience of the user. If None default name
+                will be generated.
+            project_id (str, optional): ID of the project.
+            project_name (str, optional): Name of the project.
+
+        Returns:
+            A new Migration object.
+        """
+
+        if isinstance(toc_view, ProjectMergePackageSettings):
+            toc_view = ProjectMergePackageTocView(toc_view).to_dict()
+        if isinstance(toc_view, ProjectMergePackageTocView):
+            toc_view = toc_view.to_dict()
+            toc_view['settings']['aclOnNewObjects'] = [
+                toc_view['settings']['aclOnNewObjects']
+            ]
+        tree_view = tree_view or {}
+        base_body = Migration._get_body_for_create(
+            connection, toc_view, tree_view, name
+        )
+        base_body['packageInfo']['type'] = PackageType.OBJECT.value
+        base_body['packageInfo']['purpose'] = MigrationPurpose.PROJECT_MERGE.value
+        return cls.create(connection, base_body, project_id, project_name)
+
+    def reuse(
         self,
-        binary: bytes,
-        is_undo: bool = False,
-        custom_package_path: str | None = None,
-    ) -> bool:
-        if binary is None:
-            exception_handler(
-                msg=(
-                    "Import package is None. Run `create_package()` first, "
-                    "or specify `custom_package_path`."
-                ),
-                exception_type=AttributeError,
-            )
-
-        self.__private_status = MigrationStatus.MIGRATION_IN_PROGRESS
-        self._create_package_holder(self.target_connection)
-        self._upload_package_binary(binary)
-        if not self._create_import(self.target_connection):
-            self.__private_status = MigrationStatus.MIGRATION_FAILED
-            return False
-
-        if not is_undo and self.create_undo:
-            self._download_undo_binary()
-            file_path = custom_package_path if custom_package_path else self.save_path
-            filename, file_extension = self._decompose_file_path(file_path)
-            self._save_package_binary_locally(
-                filename=f"{filename}_undo",
-                file_extension=file_extension,
-                _bytes=self.undo_binary,
-            )
-
-        self._delete_package_holder()
-        self._delete_import()
-
-        self.__private_status = MigrationStatus.MIGRATION_COMPLETED
-        return True
-
-    def undo_migration(self):
-        """Revert the migration using the package downloaded during
-        `migrate_package()` or `perform_full_migration()`.
-
-        Raises AttributeError if `undo_binary` is None.
+        target_env: Connection | Environment,
+        target_project_id: str | None = None,
+        target_project_name: str | None = None,
+    ) -> 'Migration':
         """
-        self.__private_status = MigrationStatus.UNDO_STARTED
-        if self.undo_binary:
-            self._migrate_package(self._undo_binary, True)
-        else:
-            self.__private_status = MigrationStatus.UNDO_FAILED
-            msg = (
-                '`undo_binary` is None. Perform migration with `create_undo`'
-                ' parameter set to True'
+        Reuse an already migrated package to create a new one with the same
+        properties, and then migrate it to a different environment or
+        the same one.
+
+        Args:
+            target_env (Connection, Environment): Target environment to migrate
+                reused package to.
+            target_project_id (str, optional): ID of the target project. Project
+                information is required in case of object migration.
+            target_project_name (str, optional): Name of the target project.
+                Project information is required in case of object migration.
+
+        Returns:
+            A new Migration object based on the reused package.
+        """
+        target_id = Migration._get_env_id(target_env)
+        body = {"importInfo": {"environment": {'id': target_id, 'name': target_id}}}
+        if self._package_info.type == PackageType.OBJECT:
+            if isinstance(target_env, Environment):
+                target_env = target_env.connection
+            target_project_id = get_valid_project_id(
+                target_env, target_project_id, target_project_name
             )
-            exception_handler(msg, exception_type=AttributeError)
-        self.__private_status = MigrationStatus.UNDO_COMPLETED
+            target_project_name = get_valid_project_name(target_env, target_project_id)
+            body['importInfo']['project'] = {
+                'id': target_project_id,
+                'name': target_project_name,
+            }
+        response_data = migration_api.create_new_migration(
+            connection=self.connection, package_id=self._package_info.id, body=body
+        ).json()
+        mig_dict = migration_api.get_migration(
+            self.connection, response_data['id'], show_content='all'
+        ).json()
+        mig_dict['packageInfo']['replicated'] = True
+        migration_api.start_migration(
+            target_env,
+            prefer='respond-async',
+            migration_id=response_data['id'],
+            body=mig_dict,
+            generate_undo=True,
+            project_id=target_project_id,
+        ).json()
+        if config.verbose:
+            logger.info(
+                "Successfully reused existing migration object and created new "
+                "one with ID:"
+                f" '{response_data.get('id')}'"
+                " that was already migrated."
+            )
+        return Migration(connection=self.connection, id=response_data.get('id'))
 
-    def _create_package_holder(self, conn: Connection):
-        self._package = Package.create(
-            conn, progress_bar=self._progress_bar is not None
-        )
-
-    def _update_package_holder(self):
-        return self._package.update_config(self.configuration)
-
-    def _download_package_binary(self):
-        self._package_binary = self._package.download_package_binary(
-            progress_bar=self._progress_bar is not None
-        )
-
-    def _upload_package_binary(self, binary: bytes):
-        self._package.upload_package_binary(
-            binary, progress_bar=self._progress_bar is not None
-        )
-
-    def _delete_package_holder(self):
-        self._package.delete(force=True)
-        self._package = None
-
-    def _create_import(self, conn: Connection) -> bool:
-        self._package_import = PackageImport.create(
-            conn,
-            self.package.id,
-            self.create_undo,
-            progress_bar=self._progress_bar is not None,
-        )
-        if self._package_import is False:
-            return False
-        return True
-
-    def _delete_import(self):
-        self._package_import.delete(force=True)
-        self._package_import = None
-
-    def _download_undo_binary(self):
-        self._undo_binary = self._package_import.download_undo_binary(
-            progress_bar=self._progress_bar is not None
-        )
-
-    def _save_package_binary_locally(
-        self, filename: str, file_extension: str, _bytes: bytes
+    @classmethod
+    def _upload_binary(
+        cls,
+        connection: Connection,
+        name: str,
+        package_type: PackageType | str,
+        migration_purpose: MigrationPurpose | str,
+        file: bytes,
     ):
-        with open(f"{filename}{file_extension}", "wb") as f:
-            f.write(_bytes)
-        logger.info(
-            f'Package / package undo binary created at:{filename}{file_extension}'
+        """
+        "packageType": str
+            ("project", "project_security", "configuration"),
+        "packagePurpose": str
+            ("object_migration", "project_merge", "migration_group",
+            "migration_group_child", "migration_from_shared_file_store")
+        """
+
+        package_type = get_enum_val(package_type, PackageType)
+        migration_purpose = get_enum_val(migration_purpose, MigrationPurpose)
+
+        conn: Connection = connection
+        body = {
+            "name": name,
+            "extension": "mmp",
+            "type": "migrations.packages",
+            "size": len(file),
+            "sha256": sha256(file).hexdigest(),
+            "environment": {
+                "id": conn.base_url,
+                "name": conn.base_url,
+            },
+            "extraInfo": {
+                "packageType": package_type,
+                "packagePurpose": migration_purpose,
+            },
+        }
+        response = migration_api.storage_service_create_file_metadata(connection, body)
+        if response.ok:
+            cls._file_id = response.json()["id"]
+        return migration_api.storage_service_upload_file_binary(
+            connection, cls._file_id, file
         )
 
-    @property
-    def package(self):
-        return self._package
+    @classmethod
+    def migrate_from_file(
+        cls,
+        connection: 'Connection',
+        file_path: str,
+        package_type: PackageType | str,
+        name: str | None = None,
+        target_project_id: str | None = None,
+        target_project_name: str | None = None,
+    ) -> 'Migration':
+        """
+        Create a new migration object from an existing package file.
+        Project information is required in case of object migration.
 
-    @property
-    def package_binary(self):
-        return self._package_binary
+        Args:
+            connection (Connection): A MicroStrategy connection object.
+            file_path (str): A full path to the package file.
+            package_type (PackageType | str): Type of the package.
+            name (str, optional): Name of the migration. Used for identification
+                purposes for the convenience of the user. Defaults to None.
+            target_project_id (str, optional): ID of the target project. Project
+                information is required in case of object migration.
+            target_project_name (str, optional): Name of the target project.
+                Project information is required in case of object migration.
 
-    @property
-    def package_import(self):
-        return self._package_import
+        Returns:
+            Migration: A new Migration object.
+        """
+        if target_project_id or target_project_name:
+            target_project_id = get_valid_project_id(
+                connection, target_project_id, target_project_name
+            )
+            target_project_name = get_valid_project_name(
+                connection=connection,
+                project_id=target_project_id,
+            )
+        package_type = get_enum_val(package_type, PackageType)
+        with open(file_path, mode='rb') as file:  # b is important -> binary
+            file_content = file.read()
 
-    @property
-    def undo_binary(self):
-        return self._undo_binary
-
-    @property
-    def status(self):
-        return self._status
-
-    @property
-    def __private_status(self):
-        return self._status
-
-    @__private_status.setter
-    def __private_status(self, var: MigrationStatus):
-        self._update_progress_bar_if_needed(
-            new_description=f'[{self.name}] Status: {var.name}'
+        resp = cls._upload_binary(
+            connection=connection,
+            name=name,
+            package_type=package_type,
+            migration_purpose=MigrationPurpose.FROM_FILE,
+            file=file_content,
         )
-        self._status = var
+        file_id = resp.json()["id"]
+        env_id = Migration._check_slash_in_id(connection.base_url)
+        body = {
+            "packageInfo": {
+                "storage": {
+                    "sharedFileStore": {
+                        "files": {
+                            "id": file_id,
+                        }
+                    }
+                },
+                "purpose": MigrationPurpose.FROM_FILE.value,
+            },
+            "importInfo": {
+                "environment": {
+                    "id": env_id,
+                    "name": env_id,
+                }
+            },
+        }
 
+        if target_project_id:
+            body['importInfo']['project'] = {
+                'id': target_project_id,
+                'name': target_project_name,
+            }
+            body['packageInfo']['project'] = {
+                'id': target_project_id,
+                'name': target_project_name,
+            }
 
-def bulk_full_migration(migrations: Migration | list[Migration], verbose: bool = False):
-    """Run `perform_full_migration()` for each of the migrations provided.
-    Args:
-        migrations: migrations to be executed
-        verbose: if True, information about each step will be printed
-    """
-    __run_func_for_all_migrations(Migration.perform_full_migration, migrations, verbose)
+        response_data = migration_api.create_new_migration(
+            connection=connection,
+            body=body,
+            prefer='respond-async',
+            lock_on_start=True,
+            project_id=target_project_id,
+        )
+        mig_id = response_data.json().get('id')
+        logger.info(f"Successfully started migration from file with ID: '{mig_id}'.")
+        return cls.from_dict(
+            source=camel_to_snake(response_data.json()), connection=connection
+        )
 
+    def get_migration_content(self) -> dict:
+        "Get full body of the migration object"
+        mig_content = migration_api.get_migration(
+            connection=self.connection,
+            migration_id=self.id,
+            show_content='all',
+        ).json()
+        return mig_content
 
-def bulk_migrate_package(
-    migrations: Migration | list[Migration], verbose: bool = False
-):
-    """Run `migrate_package()` for each of the migrations provided.
-    Args:
-        migrations: migrations to be executed
-        verbose: if True, information about each step will be printed
-    """
-    __run_func_for_all_migrations(Migration.migrate_package, migrations, verbose)
+    def trigger_validation(
+        self,
+        target_env: Connection | Environment,
+        target_project_id: str | None = None,
+        target_project_name: str | None = None,
+    ) -> None:
+        """Trigger a validate process to migrate the package from the source
+        environment to the destination environment according to the action
+        defined, without committing any changes to the metadata.
+        This API can only be called by administrator when package is created.
 
+        Args:
+            target_env (Connection, Environment): Destination environment
+                to validate the package.
+            target_project_id (str, optional): ID of the target project. Project
+                information is required in case of object migration.
+            target_project_name (str, optional): Name of the target project.
+                Project information is required in case of object migration.
 
-def __run_func_for_all_migrations(
-    func: Callable,
-    migrations: Migration | list[Migration],
-    verbose: bool = False,
-    *args,
-    **kwargs,
-):
-    if type(migrations) is Migration:
-        migrations = [migrations]
-    original_verbose = config.verbose
-    config.verbose = verbose
-    for migration in migrations:
-        func(migration, *args, **kwargs)
-    config.verbose = original_verbose
+        """
+
+        if isinstance(target_env, Environment):
+            target_env = target_env.connection
+        if target_project_id or target_project_name:
+            target_project_id = get_valid_project_id(
+                target_env, target_project_id, target_project_name
+            )
+            target_project_name = get_valid_project_name(
+                connection=target_env,
+                project_id=target_project_id,
+            )
+        target_id = Migration._get_env_id(target_env)
+        body = {
+            'id': self.id,
+            'packageInfo': self._package_info.to_dict(),
+            'importInfo': {
+                'id': self.import_info.id,
+                'environment': {
+                    'id': target_id,
+                    'name': target_id,
+                },
+            },
+        }
+
+        if target_project_id:
+            body['importInfo']['project'] = {
+                'id': target_project_id,
+                'name': target_project_name,
+            }
+
+        migration_api.update_migration(
+            connection=self.connection, migration_id=self.id, body=body
+        )
+        fetched_body = migration_api.get_migration(
+            connection=self.connection, migration_id=self.id, show_content='all'
+        ).json()
+        migration_api.trigger_migration_package_validation(
+            connection=target_env,
+            id=self.id,
+            body=fetched_body,
+            project_id=target_project_id,
+        )
+        status_change = {"validation": {"status": "validating"}}
+        migration_api.update_migration(
+            connection=self.connection, migration_id=self.id, body=status_change
+        )
+
+        if config.verbose:
+            logger.info(
+                f"Successfully triggered validation process for migration "
+                f"with ID: '{self.id}'"
+            )
+
+    def certify(
+        self,
+        status: PackageCertificationStatus | str | None = None,
+        creator: User | None = None,
+        last_updated_date: datetime | None = None,
+        auto_sync: bool | None = None,
+    ) -> None:
+        """Update a migration's package certification status or trigger a
+        process to synchronize the status.
+
+        Notes:
+            If argument 'auto_sync' is True, the migration's package
+            certification status is synchronized with shared environment via
+            storage service.
+            Otherwise, the package certification status is updated with the
+            definition of 'status', 'creator' and 'last_updated_date'.
+
+        Args:
+            status (PackageCertificationStatus, str, optional):
+                Package certification status
+            creator (User, optional): Creator of this file.
+            last_updated_date (datetime, optional): The last updated date of the
+                certification operation
+            auto_sync (bool, optional): If True, the migration's package
+                certification status is synchronized with shared environment
+                via storage service.
+        """
+
+        if all(arg is None for arg in [status, creator, last_updated_date, auto_sync]):
+            raise ValueError(
+                "Please provide required argument: 'auto_sync' or "
+                "arguments: 'status', 'creator' and 'last_updated_date'"
+            )
+
+        body = (
+            {
+                'status': get_enum_val(status, PackageCertificationStatus),
+                'operator': {
+                    'id': creator.id,
+                    'name': creator.name,
+                    'fullName': creator.full_name,
+                },
+                'lastUpdatedDate': datetime_to_str(
+                    last_updated_date, '%Y-%m-%dT%H:%M:%S.%f%z'
+                ),
+            }
+            if not auto_sync
+            else None
+        )
+        migration_api.certify_migration_package(
+            connection=self.connection,
+            id=self.id,
+            body=body,
+            auto_sync=auto_sync,
+        )
+        if config.verbose:
+            logger.info(
+                f"Successfully changed migration status with ID: '{self.id}' "
+                f"to status: '{status}'"
+            )
+
+    def delete(self, force: bool = False) -> bool:
+        """Deletes the Migration.
+
+        Args:
+            force: If True, no additional prompt will be shown before deleting
+                Migration.
+
+        Returns:
+            True for success. False otherwise.
+        """
+        if self._package_info.purpose == MigrationPurpose.FROM_FILE:
+            file_path = self._package_info.storage.path
+            storage_files = migration_api.list_storage_files(
+                self.connection, file_type='migrations.packages'
+            ).json()['data']
+            filtered_files = list(
+                filter(lambda x: x['path'] == file_path, storage_files)
+            )
+            if len(filtered_files) > 0:
+                migration_api.delete_file_binary(
+                    self.connection, filtered_files[0]['id']
+                )
+        self.package_id = self._package_info.id
+        delete_response = super().delete(force=force)
+        if not delete_response:
+            logger.info(f"Migration with ID: '{self.id}' is already deleted.")
+            delete_response = True
+        return delete_response
+
+    def download_package(self, save_path: str | None = None) -> dict:
+        """Download the package binary to the specified location.
+
+        Args:
+            save_path: a full path where the package binary will be saved.
+            if None, the package will be saved in the current working directory.
+
+        Returns:
+            Dictionary with the filepath and file binary.
+        """
+        if not save_path:
+            save_path = os.getcwd()
+        response = migration_api.download_migration_package(
+            connection=self.connection, package_id=self.package_info.id
+        )
+        if response.ok:
+            filename = response.headers['Content-Disposition'].split('filename=')[1]
+            with open(filename, "wb") as f:
+                f.write(response.content)
+            filepath = os.path.join(save_path, filename)
+            logger.info(f"Package binary saved to: {filepath}")
+            return {"filepath": filepath, "file_binary": response.content}
+
+    @classmethod
+    def from_dict(
+        cls,
+        source: dict,
+        connection: 'Connection | None' = None,
+        to_snake_case: bool = True,
+    ):
+        """Initialize Migration object from dictionary."""
+        data = camel_to_snake(source) if to_snake_case else source.copy()
+        return super().from_dict(data, connection, to_snake_case)
+
+    def reverse(
+        self, target_env: Environment | Connection, target_project_id: str | None = None
+    ) -> None:
+        """Reverse the migration process by importing the undo package.
+
+        Args:
+            target_env (Environment, Connection): Destination environment to
+                reverse the migration.
+            target_project_id (str, optional): ID of the target project. Project
+                information is required in case of object migration.
+        """
+        if isinstance(target_env, Environment):
+            target_env = target_env.connection
+
+        migration_api.update_migration(
+            connection=target_env,
+            migration_id=self.id,
+            body={'importInfo': {'undoRequestStatus': 'requested'}},
+            prefer='respond-async',
+            project_id=target_project_id,
+        )
+        migration_api.update_migration(
+            connection=target_env,
+            migration_id=self.id,
+            body={'importInfo': {'undoRequestStatus': 'approved'}},
+            prefer='respond-async',
+            project_id=target_project_id,
+        )
+        if config.verbose:
+            logger.info(f"Successfully reversed migration with ID: '{self.id}'")
+
+    def migrate(
+        self,
+        target_env: Connection | Environment,
+        target_project_id: str | None = None,
+        target_project_name: str | None = None,
+        generate_undo: bool = True,
+    ):
+        """Migrate the package to the target environment.
+        Project information is required in case of object migration.
+
+        Args:
+            target_env (Connection, Environment): Destination environment
+                to migrate the package.
+            target_project_id (str, optional): ID of the target project. Project
+                information is required in case of object migration.
+            target_project_name (str, optional): Name of the target project.
+                Project information is required in case of object migration.
+            generate_undo (bool, optional): Specify weather to generate an undo
+                package or not. True by default.
+        """
+
+        if isinstance(target_env, Environment):
+            target_env = target_env.connection
+
+        if target_project_id or target_project_name:
+            target_project_id = get_valid_project_id(
+                target_env, target_project_id, target_project_name
+            )
+            target_project_name = get_valid_project_name(
+                connection=target_env,
+                project_id=target_project_id,
+            )
+
+        target_id = Migration._get_env_id(target_env)
+        body = {
+            "importInfo": {
+                "environment": {'id': target_id, 'name': target_id},
+                "importRequestStatus": RequestStatus.REQUESTED.value,
+            },
+        }
+        if target_project_id:
+            body['importInfo']['project'] = {
+                'id': target_project_id,
+                'name': target_project_name,
+            }
+
+        migration_api.update_migration(
+            connection=self.connection, migration_id=self.id, body=body
+        )
+        body['importInfo']['importRequestStatus'] = RequestStatus.APPROVED.value
+        migration_api.update_migration(
+            connection=self.connection, migration_id=self.id, body=body
+        )
+        fetched_body = migration_api.get_migration(
+            connection=self.connection, migration_id=self.id, show_content='all'
+        ).json()
+        fetched_body['packageInfo']['replicated'] = True
+        response = migration_api.start_migration(
+            connection=target_env,
+            migration_id=self.id,
+            prefer='respond-async',
+            generate_undo=generate_undo,
+            body=fetched_body,
+            project_id=target_project_id,
+        )
+        if response.ok and config.verbose:
+            logger.info(
+                f"Successfully migrated migration '{self.name}' with ID: '{self.id}'"
+            )
+
+    def alter_migration_info(
+        self,
+        name: str | None = None,
+        target_env: Connection | Environment | str = None,
+        target_project: Project | str = None,
+    ) -> None:
+        """Alter the migration object info.
+
+        Args:
+            name (str, optional): The name of the migration object.
+            target_env (Connection | Environment | str, optional): The target
+                environment for the migration. It can be a Connection object, an
+                Environment object, or a string representing the environment
+                    base url.
+            target_project (Project | str, optional): The target project for the
+                migration. It can be a Project object or a string representing
+                the project ID.
+
+        """
+        request_body = self._build_body_to_alter_migration_info(
+            name=name, target_env=target_env, target_project=target_project
+        )
+        response = migration_api.update_migration(
+            connection=self.connection, migration_id=self.id, body=request_body
+        )
+        if response.ok and config.verbose:
+            logger.info(f"Successfully altered migration object with ID: '{self.id}'")
+
+    @staticmethod
+    def _build_body_to_alter_migration_info(
+        name: str | None = None,
+        target_env: Connection | Environment | str = None,
+        target_project: Project | str = None,
+    ) -> dict:
+        request_body = {}
+        if name:
+            request_body['packageInfo'] = {"name": name}
+        if target_env:
+            target_id = Migration._get_env_id(target_env)
+            request_body['importInfo'] = {
+                "environment": {'id': target_id, 'name': target_id}
+            }
+        if target_project:
+            if isinstance(target_project, Project):
+                target_project_id = target_project.id
+                target_project_name = target_project.name
+                request_body['importInfo'] = {
+                    "project": {
+                        'id': target_project_id,
+                        'name': target_project_name,
+                    }
+                }
+            else:
+                request_body['importInfo'] = {
+                    "project": {
+                        'id': target_project,
+                    }
+                }
+        return request_body
+
+    @staticmethod
+    def _check_slash_in_id(env_id: str) -> str:
+        return env_id if env_id.endswith('/') else f"{env_id}/"
+
+    @staticmethod
+    def _get_env_id(env: Connection | Environment | str) -> str:
+        if isinstance(env, Connection):
+            base_url = env.base_url
+        elif isinstance(env, Environment):
+            base_url = env.connection.base_url
+        else:
+            base_url = env
+
+        return Migration._check_slash_in_id(base_url)
+
+    @staticmethod
+    def _get_body_for_create(
+        connection: 'Connection',
+        toc_view: dict,
+        tree_view: str,
+        name: str | None = None,
+    ) -> dict:
+        if not name:
+            name = Migration._get_new_migration_name()
+        env_id = Migration._check_slash_in_id(connection.base_url)
+        body = {
+            "packageInfo": {
+                "name": name,
+                "environment": {
+                    "id": env_id,
+                    "name": env_id,
+                },
+                "tocView": toc_view,
+                "treeView": tree_view,
+            },
+            "importInfo": {},
+        }
+        return body
+
+    @staticmethod
+    def _get_new_migration_name() -> str:
+        return (
+            f"New Migration Package {datetime.now().strftime('%m-%d-%Y %I:%M:%S %p')}"
+        )
+
+    @staticmethod
+    def build_package_config(
+        connection: Connection,
+        content: list[Object | dict],
+        package_settings: PackageSettings,
+        object_action_map: list[tuple] | None = None,
+        object_dependents_map: list[tuple] | None = None,
+        default_action: Action = Action.USE_EXISTING,
+        default_dependents: bool = False,
+    ) -> PackageConfig:
+        """
+        Build administration or object migration package definition based on the
+            provided content.
+
+        Args:
+            connection (Connection): A MicroStrategy connection object.
+            content (list[Object | dict]): List of objects to migrate.
+            package_settings (PackageSettings): Package settings.
+            object_action_map (list[tuple], optional): List of tuples where the
+                first element is the object type and the second element is the
+                action to perform. If None, default_action will be used.
+            object_dependents_map (list[tuple], optional): List of tuples where
+                the first element is the object type and the second element is
+                the include_dependents flag. If None, default_dependents will be
+                used.
+            default_action (Action, optional): Default action to perform when
+                migrating objects. Defaults to Action.USE_EXISTING.
+            default_dependents (bool, optional): Default value for
+                include_dependents flag. Defaults to False.
+
+        Returns:
+            PackageConfig: A new PackageConfig object.
+        """
+        content_list = []
+        for obj in content:
+            if isinstance(obj, dict):
+                obj = Object.from_dict(source=obj, connection=connection)
+            if object_action_map:
+                action = next(
+                    (
+                        action
+                        for obj_type, action in object_action_map
+                        if obj.type == obj_type
+                    ),
+                    default_action,
+                )
+            else:
+                action = default_action
+            if object_dependents_map:
+                dependents = next(
+                    (
+                        dependents
+                        for obj_type, dependents in object_dependents_map
+                        if obj.type == obj_type
+                    ),
+                    default_dependents,
+                )
+            else:
+                dependents = default_dependents
+            content_list.append(
+                PackageContentInfo(
+                    id=obj.id,
+                    type=obj.type,
+                    action=action,
+                    include_dependents=dependents,
+                )
+            )
+        return PackageConfig(package_settings, content_list)
+
+    @property
+    def package_info(self) -> 'PackageInfo':
+        return self._package_info
+
+    @property
+    def import_info(self) -> 'ImportInfo':
+        return self._import_info
+
+    @property
+    def validation(self) -> 'Validation':
+        self.fetch()
+        return self._validation

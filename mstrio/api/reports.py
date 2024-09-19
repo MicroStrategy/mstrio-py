@@ -88,7 +88,7 @@ def report_instance(
     )
 
 
-@ErrorHandler(err_msg="Error getting cube contents.")
+@ErrorHandler(err_msg="Error getting report contents.")
 def report_instance_id(connection, report_id, instance_id, offset=0, limit=5000):
     """Get the results of a previously created report instance, using the in-
     memory report instance created by a POST /api/reports/{reportId}/instances

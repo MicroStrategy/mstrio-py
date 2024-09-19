@@ -57,7 +57,7 @@ def alter_instance_list_resp(response):
 
 def alter_instance_json(response_json):
     response_json['datasource_connection'] = response_json["database"].get("connection")
-    if response_json["database"].get("connection").get('isEmbedded'):
+    if response_json["database"].get("connection", {}).get('isEmbedded'):
         response_json['datasource_connection'] |= response_json["database"].get(
             "embeddedConnection", {}
         )

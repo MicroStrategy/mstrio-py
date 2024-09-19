@@ -241,7 +241,7 @@ def get_datasource_instances(
             return get_datasource_instances(
                 connection=connection,
                 ids=ids,
-                database_type=database_type,
+                database_types=database_type,
                 error_msg=error_msg,
             )
         if not error_msg:

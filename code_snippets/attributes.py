@@ -56,7 +56,7 @@ table_columns = logical_table.list_columns()
 
 # Define variables which can be later used in a script
 FOLDER_ID = $folder_id  # Insert folder ID here
-HIDDEN = $hidden  # Insert value for hidden attribute here
+HIDDEN = $hidden == 'True' # Insert value for hidden attribute here
 
 # Example attribute data.
 # Parts of this dictionary will be used in the later parts of this demo script

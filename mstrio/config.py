@@ -47,7 +47,10 @@ logger_stream_handler = logging.StreamHandler(stream=sys.stdout)
 # warns issued by the warnings module will be redirected to the logging.warning
 logging.captureWarnings(True)
 
-logger = logging.getLogger()
+# root logger for mstrio, all loggers in submodules will have keys of the form
+# "mstrio.sub1.sub2" and have this one as its ancestor
+logger = logging.getLogger("mstrio")
+logger.propagate = False
 warnings_logger = logging.getLogger("py.warnings")
 
 logger.addHandler(logger_stream_handler)

@@ -394,6 +394,15 @@ class Report(
                 limit=self._initial_limit,
             ).json()
 
+        # Check status. At this point the instance should be ready w/ data.
+        # If there are outstanding prompts, the status will be 2,
+        # i.e. com.microstrategy.webapi.EnumDSSXMLStatus.DssXmlStatusPromptXML
+        # https://www2.microstrategy.com/producthelp/Current/ReferenceFiles/reference/constant-values.html#com.microstrategy.webapi.EnumDSSXMLStatus.DssXmlStatusMsgID
+        if _instance['status'] == 2:
+            raise ValueError(
+                f"No data available for report \"{self.name}\". "
+                "There are unanswered prompts."
+            )
         # Gets the pagination totals from the response object
         paging = _instance['data']['paging']
 

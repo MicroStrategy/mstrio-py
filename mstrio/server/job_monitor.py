@@ -314,6 +314,9 @@ def list_jobs(
             else Project(connection, name=project)
         )
 
+    if isinstance(object_type, str) and object_type.lower() == 'dashboard':
+        object_type = ObjectType.DASHBOARD
+
     # depending on version call either one or the other
     if version.parse(connection.iserver_version) == version.parse(
         ISERVER_VERSION_11_3_2

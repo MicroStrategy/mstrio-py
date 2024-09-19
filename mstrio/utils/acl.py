@@ -1,15 +1,24 @@
 import logging
 from contextlib import suppress
-from typing import TYPE_CHECKING, Any, Optional, TypeVar
+from enum import auto
+from typing import TYPE_CHECKING, Any, TypeVar
 
 import pandas as pd
 
 from mstrio import config
 from mstrio.connection import Connection
-from mstrio.helpers import AggregatedRights, IServerError, Permissions, Rights
+from mstrio.helpers import (
+    AggregatedRights,
+    IServerError,
+    Permissions,
+    Rights,
+    VersionException,
+)
 from mstrio.types import ObjectTypes
+from mstrio.utils.enum_helper import AutoName, get_enum_val
 from mstrio.utils.helper import Dictable, exception_handler, filter_obj_list
 from mstrio.utils.response_processors import objects as objects_processors
+from mstrio.utils.version_helper import is_server_min_version
 
 if TYPE_CHECKING:
     from mstrio.server import Project
@@ -29,6 +38,34 @@ AGGREGATED_RIGHTS_MAP = {
 }
 
 T = TypeVar("T")
+
+
+class PropagationBehavior(AutoName):
+    """Behavior of ACL propagation to children.
+    Allowed values for Folders are:
+    - overwrite_children
+    - overwrite_recursive
+    - append_children
+    - append_recursive
+    - precise_children
+    - precise_recursive
+    Allowed values for Users/User Groups are:
+    - merge_selected
+    - overwrite_selected
+    - overwrite_all
+    """
+
+    # Folder specific
+    OVERWRITE_CHILDREN = auto()
+    OVERWRITE_RECURSIVE = auto()
+    APPEND_CHILDREN = auto()
+    APPEND_RECURSIVE = auto()
+    PRECISE_CHILDREN = auto()
+    PRECISE_RECURSIVE = auto()
+    # User/Group specific
+    MERGE_SELECTED = auto()
+    OVERWRITE_SELECTED = auto()
+    OVERWRITE_ALL = auto()
 
 
 class ACE(Dictable):
@@ -104,17 +141,6 @@ class ACE(Dictable):
         result_dict = super().to_dict(camel_case=camel_case)
         return {translate_names(key): val for key, val in result_dict.items()}
 
-    def _get_request_body(self, op):
-        result_dict = {
-            "op": op,
-            "trustee": self.trustee_id,
-            "rights": self.rights.value,
-            "type": self.entry_type,
-            "denied": self.deny,
-            "inheritable": self.inheritable,
-        }
-        return result_dict
-
 
 class ACLMixin:
     """ACLMixin class adds Access Control List (ACL) management for supporting
@@ -162,6 +188,7 @@ class ACLMixin:
         denied: bool = False,
         inheritable: bool | None = None,
         propagate_to_children: bool | None = None,
+        propagation_behavior: PropagationBehavior | str | None = None,
     ) -> None:
         """Add Access Control Element (ACE) to the object ACL.
 
@@ -186,6 +213,7 @@ class ACLMixin:
             propagate_to_children: used for folder objects only, default value
                 is None, if set to True/False adds `propagateACLToChildren`
                 keyword to the request body and sets its value accordingly
+            propagation_behavior: Behavior of ACL propagation to children.
 
         Examples:
             >>> obj.acl_add(rights=Rights.BROWSE | Rights.EXECUTE,
@@ -198,6 +226,7 @@ class ACLMixin:
             denied=denied,
             inheritable=inheritable,
             propagate_to_children=propagate_to_children,
+            propagation_behavior=propagation_behavior,
         )
 
     def acl_remove(
@@ -207,6 +236,7 @@ class ACLMixin:
         denied: bool = False,
         inheritable: bool | None = None,
         propagate_to_children: bool | None = None,
+        propagation_behavior: PropagationBehavior | str | None = None,
     ) -> None:
         """Remove Access Control Element (ACE) from the object ACL.
 
@@ -231,6 +261,7 @@ class ACLMixin:
             propagate_to_children: used for folder objects only, default value
                 is None, if set to True/False adds `propagateACLToChildren`
                 keyword to the request body and sets its value accordingly
+            propagation_behavior: Behavior of ACL propagation to children.
 
         Examples:
             >>> obj.acl_remove(rights=Rights.BROWSE | Rights.EXECUTE,
@@ -243,6 +274,7 @@ class ACLMixin:
             denied=denied,
             inheritable=inheritable,
             propagate_to_children=propagate_to_children,
+            propagation_behavior=propagation_behavior,
         )
 
     def acl_alter(
@@ -252,6 +284,7 @@ class ACLMixin:
         denied: bool = False,
         inheritable: bool | None = None,
         propagate_to_children: bool | None = None,
+        propagation_behavior: PropagationBehavior | str | None = None,
     ) -> None:
         """Alter an existing Access Control Element (ACE) of the object ACL.
 
@@ -276,6 +309,7 @@ class ACLMixin:
             propagate_to_children: used for folder objects only, default value
                 is None, if set to True/False adds `propagateACLToChildren`
                 keyword to the request body and sets its value accordingly
+            propagation_behavior: Behavior of ACL propagation to children.
 
         Examples:
             >>> obj.acl_alter(rights=Rights.BROWSE | Rights.EXECUTE,
@@ -288,6 +322,7 @@ class ACLMixin:
             denied=denied,
             inheritable=inheritable,
             propagate_to_children=propagate_to_children,
+            propagation_behavior=propagation_behavior,
         )
 
     def _update_acl(
@@ -298,6 +333,7 @@ class ACLMixin:
         denied: bool = False,
         inheritable: bool | None = None,
         propagate_to_children: bool | None = None,
+        propagation_behavior: PropagationBehavior | str | None = None,
     ) -> None:
         """Updates the ACL for this object, performs operation defined by the
         `op` parameter on all objects from `trustees` list.
@@ -317,6 +353,7 @@ class ACLMixin:
             propagate_to_children: used for folder objects only, default value
                 is None, if set to True/False adds `propagateACLToChildren`
                 keyword to the request body and sets its value accordingly
+            propagation_behavior: Behavior of ACL propagation to children.
         """
 
         response = modify_rights(
@@ -329,6 +366,7 @@ class ACLMixin:
             denied=denied,
             inheritable=inheritable,
             propagate_to_children=propagate_to_children,
+            propagation_behavior=propagation_behavior,
         )
 
         self._set_object_attributes(**response)
@@ -344,9 +382,10 @@ class TrusteeACLMixin:
         self,
         permission: Permissions | str,
         to_objects: str | list[str],
-        object_type: "ObjectTypes | int",
-        project: "Optional[Project | str]" = None,
+        object_type: 'ObjectTypes | int',
+        project: 'Project | str | None' = None,
         propagate_to_children: bool | None = None,
+        propagation_behavior: PropagationBehavior | str | None = None,
     ) -> None:
         """Set permission to perform actions on given object(s).
 
@@ -369,6 +408,7 @@ class TrusteeACLMixin:
                 Connection object is used
             propagate_to_children: Flag used in the request to determine if
                 those rights will be propagated to children of the trustee
+            propagation_behavior: Behavior of ACL propagation to children.
         Returns:
             None
         """
@@ -405,6 +445,7 @@ class TrusteeACLMixin:
                     ids=to_objects,
                     denied=is_denied,
                     propagate_to_children=propagate_to_children,
+                    propagation_behavior=propagation_behavior,
                     project=project,
                 )
                 if config.verbose:
@@ -427,6 +468,7 @@ class TrusteeACLMixin:
                     ids=to_objects,
                     denied=denied,
                     propagate_to_children=propagate_to_children,
+                    propagation_behavior=propagation_behavior,
                     project=project,
                 )
                 if config.verbose:
@@ -437,8 +479,8 @@ class TrusteeACLMixin:
     def set_custom_permissions(
         self,
         to_objects: str | list[str],
-        object_type: "ObjectTypes | int",
-        project: "Optional[Project | str]" = None,
+        object_type: 'ObjectTypes | int',
+        project: 'Project | str | None' = None,
         execute: str | None = None,
         use: str | None = None,
         control: str | None = None,
@@ -488,11 +530,11 @@ class TrusteeACLMixin:
             trustee_id: str,
             right: Rights | list[Rights],
             to_objects: list[str],
-            object_type: "ObjectTypes | int",
+            object_type: 'ObjectTypes | int',
             denied: bool,
             default: bool = False,
             propagate_to_children: bool | None = None,
-            project: "Optional[Project | str]" = None,
+            project: 'Project | str | None' = None,
         ) -> None:
             right_value = _get_custom_right_value(right)
             with suppress(IServerError):
@@ -575,26 +617,32 @@ class TrusteeACLMixin:
 
 
 def modify_rights(
-    connection,
-    object_type: "ObjectTypes | int",
+    connection: 'Connection',
+    object_type: 'ObjectTypes | int',
     ids: list[str] | str,
     op: str,
     rights: int,
-    trustees: "list[UserOrGroup] | UserOrGroup",
+    trustees: 'list[UserOrGroup] | UserOrGroup',
     denied: bool = False,
     inheritable: bool | None = None,
     propagate_to_children: bool | None = None,
-    project: "Optional[Project | str]" = None,
+    propagation_behavior: PropagationBehavior | str | None = None,
+    project: 'Project | str | None' = None,
 ) -> None | dict:
     """Updates the ACL for all given objects specified by id from ids list,
     performs operation defined by the `op` parameter on all objects for
     every user or group from `trustees` list.
 
     Note:
-        Argument `inheritable` and `propagate_to_children` are used only
-        for objects with type `ObjectTypes.FOLDER`.
+        Argument `inheritable`, `propagate_to_children`
+        and `propagation_behavior` are used only for objects with types:
+        - `ObjectTypes.Folder`
+        - `ObjectTypes.User`
+        - `ObjectTypes.UserGroup`
 
     Args:
+        connection (Connection): MicroStrategy connection object returned by
+            `connection.Connection()`
         object_type (ObjectTypes, int): Type of every object from ids list.
             One of EnumDSSXMLObjectTypes. Ex. 34 (User or UserGroup),
             44 (Security Role), 32 (Project), 8 (Folder).
@@ -617,6 +665,7 @@ def modify_rights(
         project (Project, str, optional): Project object or project id
             on which objects are stored, if not specified project id from
             connection will be used.
+        propagation_behavior: Behavior of ACL propagation to children.
 
     Returns:
         Dict with updated object properties if there was only one id in ids
@@ -653,23 +702,50 @@ def modify_rights(
                 inheritable = False if not tmp else tmp[0]
 
             body = {
-                "acl": [
-                    ACE(
-                        rights=rights,
-                        trustee_id=trustee,
-                        deny=denied,
-                        inheritable=inheritable,
-                        trustee_name=None,
-                        trustee_type=None,
-                        trustee_subtype=None,
-                        entry_type=1,
-                    )._get_request_body(op=op)
+                'acl': [
+                    {
+                        'op': op,
+                        'trustee': trustee,
+                        'rights': rights,
+                        'type': 1,
+                        'denied': denied,
+                        'inheritable': inheritable,
+                    },
                 ]
             }
 
-            if propagate_to_children and object_type is ObjectTypes.FOLDER:
-                body["propagateACLToChildren"] = propagate_to_children
-                body["propagationBehavior"] = "overwrite_recursive"
+            if propagate_to_children:
+                if propagation_behavior and not is_server_min_version(
+                    connection, '11.4.0900'
+                ):
+                    raise VersionException(
+                        "Propagation behavior requires version 11.4.0900 or higher"
+                    )
+
+                propagation_behavior = get_enum_val(
+                    propagation_behavior, PropagationBehavior
+                )
+
+                if is_server_min_version(connection, '11.4.0900') and object_type in [
+                    ObjectTypes.USER,
+                    ObjectTypes.USERGROUP,
+                    ObjectTypes.FOLDER,
+                ]:
+                    propagation_behavior = propagation_behavior or (
+                        'overwrite_recursive'
+                        if object_type is ObjectTypes.FOLDER
+                        else 'overwrite_all'
+                    )
+                    body['acl'][0]['propagateToChildren'] = propagate_to_children
+                    body['propagateACLToChildren'] = propagate_to_children
+                    body['propagationBehavior'] = propagation_behavior
+                # On version below 11.4.0900, recursive propagation
+                # is only available for ObjectTypes.FOLDER
+                elif object_type is ObjectTypes.FOLDER:
+                    body['propagateACLToChildren'] = propagate_to_children
+                    body['propagationBehavior'] = (
+                        propagation_behavior or 'overwrite_recursive'
+                    )
 
             response = objects_processors.update(
                 connection=connection,

@@ -45,7 +45,7 @@ example_user_id = 'E96A7BE711D4BBCE10004694316DE8A4'
 # Create and execute an Email Subscription for a Document
 email_sub = EmailSubscription.create(
     connection=conn,
-    name='<Name of the subscription>',
+    name='<Name of the email subscription>',
     project_name='MicroStrategy Tutorial',
     contents=Content(
         id='C68851F14333D950BC37EC9D8DF3FDCA',
@@ -73,7 +73,7 @@ example_file_sub.alter(content=file_sub_content)
 # Create and execute a History List subscription for an OLAP Cube
 example_hl_sub = HistoryListSubscription.create(
     connection=conn,
-    name='<Name of the subscription>',
+    name='<Name of the history list subscription>',
     contents=Content(
         id='C68851F14333D950BC37EC9D8DF3FDCA',
         type=Content.Type.CUBE,
@@ -92,7 +92,7 @@ example_hl_sub.execute()
 # Create and execute a Mobile Subscription for a Document
 example_mobile_sub = MobileSubscription.create(
     connection=conn,
-    name='<Name of the subscription>',
+    name='<Name of the mobile subscription>',
     contents=Content(
         id='C68851F14333D950BC37EC9D8DF3FDCA',
         type=Content.Type.DOCUMENT,

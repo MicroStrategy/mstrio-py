@@ -3,13 +3,20 @@ import os
 from base64 import b64encode
 from datetime import datetime
 from getpass import getpass
+from typing import TYPE_CHECKING
 
 import requests
 from packaging import version
 from requests import Session
 from requests.adapters import HTTPAdapter, Retry
 from requests.cookies import RequestsCookieJar
-from requests.packages.urllib3.exceptions import InsecureRequestWarning
+
+if TYPE_CHECKING:
+    from urllib3 import disable_warnings
+    from urllib3.exceptions import InsecureRequestWarning
+else:
+    from requests.packages.urllib3.exceptions import InsecureRequestWarning
+    from requests.packages.urllib3 import disable_warnings
 
 from mstrio import config
 from mstrio.api import authentication, hooks, misc, projects
@@ -54,7 +61,7 @@ def get_connection(
         connection to I-Server or None is case of some error
     """
     if not ssl_verify:
-        requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
+        disable_warnings(category=InsecureRequestWarning)
 
     try:
         logger.info('Creating connection from Workstation Data object...')

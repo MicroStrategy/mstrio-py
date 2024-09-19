@@ -1,14 +1,16 @@
 import logging
 import time
-from enum import Enum, IntEnum
-from typing import TYPE_CHECKING, Optional
+from dataclasses import dataclass
+from datetime import datetime
+from enum import Enum, IntEnum, auto
+from typing import TYPE_CHECKING
 
 from pandas import DataFrame, Series
 from tqdm import tqdm
 
 from mstrio import config
 from mstrio.api import datasources as datasources_api
-from mstrio.api import monitors, projects
+from mstrio.api import monitors, projects, objects
 from mstrio.connection import Connection
 from mstrio.helpers import IServerError
 from mstrio.server.project_languages import (
@@ -17,10 +19,11 @@ from mstrio.server.project_languages import (
 )
 from mstrio.utils import helper
 from mstrio.utils.entity import DeleteMixin, Entity, ObjectTypes
-from mstrio.utils.enum_helper import get_enum_val
+from mstrio.utils.enum_helper import AutoName, get_enum_val
 from mstrio.utils.response_processors import datasources as datasources_processors
 from mstrio.utils.response_processors import projects as projects_processors
 from mstrio.utils.settings.base_settings import BaseSettings
+from mstrio.utils.time_helper import DatetimeFormats
 from mstrio.utils.translation_mixin import TranslationMixin
 from mstrio.utils.version_helper import is_server_min_version, method_version_handler
 from mstrio.utils.vldb_mixin import ModelVldbMixin
@@ -28,8 +31,12 @@ from mstrio.utils.wip import wip
 
 if TYPE_CHECKING:
     from mstrio.datasources import DatasourceInstance
+    from mstrio.users_and_groups import User
 
 logger = logging.getLogger(__name__)
+
+SYSTEM_OBJECTS_VERSION_PROPERTY_SET_ID = "C02146A211D46D60C0001786395B684F"
+AE_VERSION_PROPERTY_INDEX = 8
 
 
 class ProjectStatus(IntEnum):
@@ -71,6 +78,34 @@ class IdleMode(Enum):
     WAREHOUSEEXEC = "wh_exec_idle"
     FULL = "partial_idle"
     PARTIAL = "full_idle"
+
+
+class LockType(AutoName):
+    """Enum representing the type of lock applied to a project.
+
+    `TEMPORAL_INDIVIDUAL`: A temporary lock that restricts all other sessions
+        except the current user's session from editing the project.
+        This lock disappears when the user's session expires.
+    `TEMPORAL_CONSTITUENT`: A temporary lock that restricts all other sessions
+        except the current user's session from editing the project and all
+        objects in the project. This lock disappears when the user's session
+        expires.
+    `PERMANENT_INDIVIDUAL`: A permanent lock that prevents all users from
+        editing the project. This lock does not expire and must be removed
+        before the project can be edited again.
+    `PERMANENT_CONSTITUENT`: A permanent lock that prevents all users from
+        editing the project and all objects in the project. This lock does not
+        expire and must be removed before the project and its objects can be
+        edited again.
+    `NOT_LOCKED`: Represents the state where the project is not locked
+        and can be edited by users.
+    """
+
+    TEMPORAL_INDIVIDUAL = auto()
+    TEMPORAL_CONSTITUENT = auto()
+    PERMANENT_INDIVIDUAL = auto()
+    PERMANENT_CONSTITUENT = auto()
+    NOT_LOCKED = auto()
 
 
 def compare_project_settings(
@@ -138,6 +173,37 @@ class Project(Entity, ModelVldbMixin, DeleteMixin, TranslationMixin):
         metadata_language_settings: Project metadata language settings
     """
 
+    @dataclass
+    class LockStatus(helper.Dictable):
+        """Object representation of Project Lock Status.
+
+        Attributes:
+            lock_type: Lock type
+            lock_time: Lock time
+            comment: Lock comment
+            machine_name: Machine name
+            owner: User object
+        """
+
+        @staticmethod
+        def _parse_owner(source, connection):
+            """Parses owner from the API response."""
+            from mstrio.users_and_groups import User
+
+            return User.from_dict(source, connection)
+
+        _FROM_DICT_MAP = {
+            'lock_type': LockType,
+            'lock_time': DatetimeFormats.FULLDATETIME,
+            'owner': _parse_owner,
+        }
+
+        lock_type: LockType
+        lock_time: datetime | None = None
+        comment: str | None = None
+        machine_name: str | None = None
+        owner: 'User | None' = None
+
     _OBJECT_TYPE = ObjectTypes.PROJECT
     _API_GETTERS = {
         **Entity._API_GETTERS,
@@ -147,6 +213,7 @@ class Project(Entity, ModelVldbMixin, DeleteMixin, TranslationMixin):
             'data_language_settings',
             'metadata_language_settings',
         ): projects_processors.get_project_internalization,
+        'lock_status': projects_processors.get_project_lock,
     }
     _API_DELETE = staticmethod(projects.delete_project)
     _FROM_DICT_MAP = {
@@ -154,6 +221,7 @@ class Project(Entity, ModelVldbMixin, DeleteMixin, TranslationMixin):
         'status': ProjectStatus,
         'data_language_settings': DataLanguageSettings.from_dict,
         'metadata_language_settings': MetadataLanguageSettings.from_dict,
+        'lock_status': LockStatus.from_dict,
     }
     _STATUS_PATH = "/status"
     _MODEL_VLDB_API = {
@@ -221,6 +289,7 @@ class Project(Entity, ModelVldbMixin, DeleteMixin, TranslationMixin):
         self._nodes = kwargs.get("nodes")
         self._data_language_settings = kwargs.get("data_language_settings")
         self._metadata_language_settings = kwargs.get("metadata_language_settings")
+        self._lock_status = kwargs.get("lock_status")
 
     @classmethod
     def _create(
@@ -229,7 +298,7 @@ class Project(Entity, ModelVldbMixin, DeleteMixin, TranslationMixin):
         name: str,
         description: str | None = None,
         force: bool = False,
-    ) -> Optional["Project"]:
+    ) -> 'Project | None':
         user_input = 'N'
         if not force:
             user_input = input(
@@ -641,10 +710,32 @@ class Project(Entity, ModelVldbMixin, DeleteMixin, TranslationMixin):
             'versions'
         ]
 
-    def update_data_engine_version(self, new_version: int) -> None:
+    def get_current_engine_version(self):
+        res = objects.get_property_set(
+            self.connection,
+            id=self.id,
+            obj_type=self._OBJECT_TYPE.value,
+            property_set_id=SYSTEM_OBJECTS_VERSION_PROPERTY_SET_ID,
+        ).json()
+        current_in_list = [
+            prop for prop in res if prop['id'] == AE_VERSION_PROPERTY_INDEX
+        ]
+        current = current_in_list[0]['value'] if current_in_list else None
+
+        return current
+
+    def update_data_engine_version(self, new_version: str) -> None:
         """Update data engine version for project."""
 
-        self.alter_vldb_settings(names_to_values={'AEVersion': new_version})
+        body = [
+            {
+                "properties": [{"value": new_version, "id": AE_VERSION_PROPERTY_INDEX}],
+                "id": SYSTEM_OBJECTS_VERSION_PROPERTY_SET_ID,
+            }
+        ]
+        objects.update_property_set(
+            self.connection, id=self.id, obj_type=self._OBJECT_TYPE.value, body=body
+        )
 
     def _register(self, on_nodes: list) -> None:
         path = f"/projects/{self.id}/nodes"
@@ -756,12 +847,70 @@ class Project(Entity, ModelVldbMixin, DeleteMixin, TranslationMixin):
                 f"Datasources were successfully removed from the project {self.id}."
             )
 
+    @wip('11.4.1200')
+    @method_version_handler('11.3.0600')
+    def lock(self, lock_type: str | LockType, lock_id: str | None = None) -> None:
+        """Lock the project.
+
+        Args:
+            lock_type (str, LockType): Lock type.
+            lock_id (str, optional): Lock ID.
+        """
+        lock_type = get_enum_val(lock_type, LockType)
+
+        projects.update_project_lock(
+            self.connection, self.id, {"lockType": lock_type, "lockId": lock_id}
+        )
+
+        if config.verbose:
+            logger.info(f"Project '{self.id}' locked.")
+
+    @wip('11.4.1200')
+    @method_version_handler('11.3.0600')
+    def unlock(
+        self, lock_type: str | LockType, lock_id: str | None = None, force: bool = False
+    ) -> None:
+        """Unlock the project.
+
+        Args:
+            lock_type (str, LockType): Lock type.
+            lock_id (str, optional): Lock ID.
+            force (bool, optional): Whether to force unlock the project.
+        """
+
+        if not force and not lock_id:
+            msg = (
+                "`lock_id` must be provided to unlock the project "
+                "when `force` is False."
+            )
+            raise ValueError(msg)
+
+        lock_type = get_enum_val(lock_type, LockType)
+
+        projects.delete_project_lock(
+            self.connection,
+            self.id,
+            lock_type=lock_type,
+            lock_id=lock_id,
+            force=force,
+        )
+
+        if config.verbose:
+            logger.info(f"Project '{self.id}' unlocked.")
+
     def list_properties(self, excluded_properties: list[str] | None = None) -> dict:
+        excluded_properties = excluded_properties or []
         if not is_server_min_version(self.connection, '11.3.1200'):
-            excluded_properties = [
-                'data_language_settings',
-                'metadata_language_settings',
-            ] + (excluded_properties or [])
+            excluded_properties.extend(
+                prop
+                for prop in ['data_language_settings', 'metadata_language_settings']
+                if prop not in excluded_properties
+            )
+        if (
+            not is_server_min_version(self.connection, '11.3.0600')
+            and 'lock_status' not in excluded_properties
+        ):
+            excluded_properties.append('lock_status')
 
         return super().list_properties(excluded_properties)
 
@@ -819,6 +968,12 @@ class Project(Entity, ModelVldbMixin, DeleteMixin, TranslationMixin):
         if not hasattr(self._metadata_language_settings, '_project_id'):
             self._metadata_language_settings._project_id = self.id
         return self._metadata_language_settings
+
+    @property
+    @wip('11.4.1200')
+    @method_version_handler('11.3.0600')
+    def lock_status(self) -> LockStatus:
+        return self._lock_status
 
 
 class ProjectSettings(BaseSettings):

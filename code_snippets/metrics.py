@@ -28,7 +28,7 @@ from mstrio.modeling.expression import Expression, Token
 # Define variables which can be later used in a script
 PROJECT_NAME = $project_name  # Insert name of project here
 FOLDER_ID = $folder_id  # Insert folder ID here
-HIDDEN = $hidden  # Insert value for hidden attribute here
+HIDDEN = $hidden == 'True' # Insert value for hidden attribute here
 
 conn = get_connection(workstationData, PROJECT_NAME)
 

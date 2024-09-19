@@ -8,7 +8,7 @@ from mstrio.connection import Connection
 from mstrio.utils import helper
 from mstrio.utils.settings.base_settings import BaseSettings
 from mstrio.utils.settings.setting_types import SettingValue
-from mstrio.utils.version_helper import method_version_handler
+from mstrio.utils.version_helper import is_server_min_version, method_version_handler
 
 logger = logging.getLogger(__name__)
 
@@ -72,6 +72,11 @@ class ServerSettings(BaseSettings):
         """Update the current I-Server settings using this `ServerSettings`
         object."""
         set_dict = self._prepare_settings_push()
+        if (
+            is_server_min_version(self._connection, '11.4.0600')
+            and set_dict.get('hLRepositoryType', {}).get('value') != 3
+        ):
+            set_dict.pop('hLRepositoryType')
         response = administration.update_iserver_settings(self._connection, set_dict)
         if response.status_code in [200, 204] and config.verbose:
             logger.info('I-Server settings updated.')

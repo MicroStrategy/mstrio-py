@@ -1,6 +1,9 @@
+from requests import JSONDecodeError
+
 from mstrio.api import usergroups as usergroups_api
 from mstrio.api import users as users_api
 from mstrio.connection import Connection
+from mstrio.helpers import IServerError
 from mstrio.utils.helper import deprecation_warning, fetch_objects, fetch_objects_async
 from mstrio.utils.version_helper import method_version_handler
 
@@ -257,3 +260,33 @@ def update_user_settings(connection: Connection, id: str, body: str):
         # In order to alter user correctly, we return body to reflect changes
         return body
     return response
+
+
+def get_user_last_login(connection: Connection, id: str):
+    response = users_api.get_user_last_login(
+        connection=connection,
+        id=id,
+        whitelist=[(404, 404)],
+        throw_error=False,
+        verbose=False,
+    )
+    no_login_date_msg = 'No login found for the given user'
+    try:
+        res = response.json()
+    except JSONDecodeError:
+        if no_login_date_msg in response.text:
+            return None
+        raise response.raise_for_status()
+    error = res.get('errors', [None])[0]
+
+    if error and no_login_date_msg not in error.get('message'):
+        server_code = error.get('code')
+        ticket_id = error.get('ticketId')
+        server_msg = error.get('message')
+
+        raise IServerError(
+            message=f"{server_msg}; code: '{server_code}', ticket_id: '{ticket_id}'",
+            http_code=response.status_code,
+        )
+
+    return None if error else res

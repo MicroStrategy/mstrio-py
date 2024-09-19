@@ -4,169 +4,301 @@ migration of objects from one environment to another.
 This script will not work without replacing parameters with real values.
 Its basic goal is to present what can be done with this module and to
 ease its usage.
-
-`mstrio.object_management.migration` module is available as a Functionality Preview.
-It is subject to change until it is released as Generally Available.
 """
 
-from mstrio.access_and_security.privilege import Privilege
+from time import sleep
+
 from mstrio.connection import Connection
 from mstrio.object_management.migration import (
-    bulk_full_migration,
-    bulk_migrate_package,
     Migration,
-    PackageConfig,
+    list_migrations,
+    list_migration_possible_content,
+)
+from mstrio.object_management import full_search
+from mstrio.object_management.migration import (
+    PackageType,
+    MigrationPurpose,
+    PackageSettings,
     PackageContentInfo,
-    PackageSettings
+    PackageConfig,
 )
+from mstrio.server.environment import StorageType
 from mstrio.types import ObjectTypes
-from mstrio.users_and_groups.user import User
+from mstrio.object_management.migration.package import (
+    Action,
+    ImportStatus,
+    ProjectMergePackageTocView,
+    ProjectMergePackageSettings,
+    TranslationAction,
+    PackageCertificationStatus,
+    PackageStatus,
+    ValidationStatus,
+)
+from mstrio.users_and_groups import User
 
-# Define variables which can be later used in a script
+# define connection to source environment
 PROJECT_NAME = $project_name
-SOURCE_BASE_URL = $source_base_url  # usually ends with /MicroStrategyLibrary/api
-SOURCE_USERNAME = $source_username
-SOURCE_PASSWORD = $source_password
-TARGET_BASE_URL = $target_base_url  # usually ends with /MicroStrategyLibrary/api
-TARGET_USERNAME = $target_username
-TARGET_PASSWORD = $target_password
-
-# Create connections to both source and target environments
-source_conn = Connection(
-    SOURCE_BASE_URL, SOURCE_USERNAME, SOURCE_PASSWORD, project_name=PROJECT_NAME, login_mode=1
-)
-target_conn = Connection(
-    TARGET_BASE_URL, TARGET_USERNAME, TARGET_PASSWORD, project_name=PROJECT_NAME, login_mode=1
+ENV_URL_SOURCE = $env_url_source
+U_NAME_SOURCE = $u_name_source
+U_PASS_SOURCE = $u_pass_source
+conn_source = Connection(
+    base_url=ENV_URL_SOURCE,
+    username=U_NAME_SOURCE,
+    password=U_PASS_SOURCE,
+    project_name=PROJECT_NAME,
 )
 
-# Define a variable which can be later used iin a script
-USERNAME = $username  # user that is executing the migration
+# define connection to target environment
+PROJECT_NAME = $project_name
+ENV_URL_TARGET = $env_url_target
+U_NAME_TARGET = $u_name_target
+U_PASS_TARGET = $u_pass_target
+conn_target = Connection(
+    base_url=ENV_URL_TARGET,
+    username=U_NAME_TARGET,
+    password=U_PASS_TARGET,
+    project_name=PROJECT_NAME,
+)
 
-# Make sure the current user have the following privileges:
-#   'Create package', id: 295
-#   'Manage Migration Packages'(IServer >=11.3.7) or 'Apply package' (IServer <11.3.7),  id: 296
-# They can be granted by admin with the following commands:
-user = User(source_conn, username=USERNAME)
-Privilege(source_conn, id=295).add_to_user(user)
-Privilege(source_conn, id=296).add_to_user(user)
+# Configure Storage Service
 
-# Or by name:
-user2 = User(target_conn, username=USERNAME)
-Privilege(target_conn, name='Create package').add_to_user(user2)
-Privilege(target_conn, name='Manage Migration Packages').add_to_user(user2)
+# Configuration for Storage Service is stored in the storage_service attribute
+# of the Environment object.
+# This step should be done for source and target environments
+env = conn_source.environment
+print(env.storage_service)
 
-# Define variables which can be later used in a script
-DASHBOARD_ID = $dashboard_id
-REPORT_ID = $report_id
+# Make changes to the storage service configuration
+env.storage_service.aws_access_id = "new_access_id"
+env.storage_service.aws_secret_key = "new_secret_key"
+env.storage_service.location = "new_s3_location"
+env.storage_service.s3_region = "new_s3_region"
+# Apply changes
+env.update_storage_service()
 
-# Create PackageConfig with information what object should be migrated and how.
+
+# For target environment
+env_target = conn_target.environment
+
+# Make changes to the storage service configuration
+env_target.storage_service.aws_access_id = "new_access_id"
+env_target.storage_service.aws_secret_key = "new_secret_key"
+env_target.storage_service.location = "new_s3_location"
+env_target.storage_service.s3_region = "new_s3_region"
+# Apply changes
+env_target.update_storage_service()
+
+# Alternatively, update the storage service configuration with a single call
+STORAGE_ALIAS = $storage_alias
+STORAGE_LOCATION = $storage_location
+env_target.update_storage_service(
+    storage_type=StorageType.FILE_SYSTEM, location=STORAGE_LOCATION, alias=STORAGE_ALIAS
+)
+
+# list_migrations
+all_migs = list_migrations(conn_source)
+first_5_migs = list_migrations(conn_source, limit=5)
+only_file_migrations = list_migrations(
+    conn_source, migration_purpose=MigrationPurpose.FROM_FILE
+)
+migrations_list_dict = list_migrations(conn_source, to_dictionary=True)
+
+print(all_migs)
+
+# Create an Object migration
+
+# The PackageConfig object stores information on which objects should be
+# migrated and how to resolve conflicts.
 # The options are of type Enum with all possible values listed.
 package_settings = PackageSettings(
-    PackageSettings.DefaultAction.USE_EXISTING,
+    Action.USE_EXISTING,
     PackageSettings.UpdateSchema.RECAL_TABLE_LOGICAL_SIZE,
     PackageSettings.AclOnReplacingObjects.REPLACE,
     PackageSettings.AclOnNewObjects.KEEP_ACL_AS_SOURCE_OBJECT,
 )
-package_content_info = PackageContentInfo(
-    id=REPORT_ID,
-    type=ObjectTypes.REPORT_DEFINITION,
-    action=PackageContentInfo.Action.USE_EXISTING,
-    include_dependents=True,
+
+# Check what object types are allowed to object migration
+migrated_types = list_migration_possible_content(conn_source, PackageType.OBJECT)
+print(migrated_types)
+
+# Now try to list every elements that have word "Day" in name and can be
+# migrated with object migration
+search_results = full_search(
+    conn_source, conn_source.project_id, object_types=migrated_types, name="Day"
 )
-package_content_info2 = PackageContentInfo(
-    id=DASHBOARD_ID,
-    type=ObjectTypes.DOCUMENT_DEFINITION,
-    action=PackageContentInfo.Action.USE_EXISTING,
+print(search_results)
+# We can select from there one element and add to new migration body
+package_content_from_search = PackageContentInfo(
+    id=search_results[0]['id'],
+    type=search_results[0]['type'],
+    action=Action.USE_EXISTING,
+    include_dependents=False,
+)
+
+# Include objects by their ID and type
+MIGRATED_METRIC_ID = $migrated_metric_id
+package_content_from_object = PackageContentInfo(
+    id=MIGRATED_METRIC_ID,
+    type=ObjectTypes.METRIC,
+    action=Action.USE_EXISTING,
     include_dependents=True,
 )
 
 package_config = PackageConfig(
-    PackageConfig.PackageUpdateType.PROJECT, package_settings, package_content_info
-)
-package_config2 = PackageConfig(
-    PackageConfig.PackageUpdateType.PROJECT, package_settings, package_content_info2
+    package_settings, [package_content_from_search, package_content_from_object]
 )
 
-# Define variables which can be later used in a script
-SAVE_PATH = $save_path
-CUSTOM_PACKAGE_PATH = $custom_package_path
+print(package_config.to_dict())
 
-# Create Migrations objects that can use all the functionalities
-mig = Migration(
-    save_path=SAVE_PATH,
-    source_connection=source_conn,
-    target_connection=target_conn,
-    configuration=package_config,
+# Also we can build PackageConfig from search results
+# Specifying object_action_map and object_dependents_map
+object_action_map=[(ObjectTypes.METRIC,Action.USE_OLDER), (ObjectTypes.ATTRIBUTE, Action.USE_NEWER)]
+object_dependents_map=[(ObjectTypes.METRIC, True), (ObjectTypes.ATTRIBUTE, True)]
+package_config_search_results = Migration.build_package_config(
+    conn_source,
+    search_results,
+    package_settings,
+    object_action_map,
+    object_dependents_map)
+print(package_config_search_results.to_dict())
+
+# Create the migration
+my_obj_mig = Migration.create_object_migration(
+    connection=conn_source,
+    toc_view=package_config,
+    name="object_mig",
+    project_id=conn_source.project_id,
 )
 
-# Create Migration object that can only use `create_package()`
-mig2 = Migration(
-    save_path=SAVE_PATH,
-    source_connection=source_conn,
-    configuration=package_config2,
+# Wait for the migration to be created
+while my_obj_mig.package_info.status == PackageStatus.CREATING:
+    sleep(2)
+    my_obj_mig.fetch()
+
+# Check migration status
+print(my_obj_mig.package_info.status)
+
+my_obj_mig.alter_migration_info(name=f"{my_obj_mig.name}_altered")
+
+# Certify the migration
+my_obj_mig.certify(
+    status=PackageCertificationStatus.CERTIFIED,
+    creator=User(conn_source, 'Administrator'),
 )
 
-# Create Migration object that can only be used for `migrate_package()`
-mig3 = Migration(
-    target_connection=target_conn,
-    custom_package_path=CUSTOM_PACKAGE_PATH,
+print(my_obj_mig.package_info.certification)
+
+TARGET_PROJECT_NAME = $target_project_name
+my_obj_mig.trigger_validation(
+    target_env=conn_target, target_project_name=TARGET_PROJECT_NAME
 )
 
-# Short version
-# Create import package and save it to the file
-mig.create_package()
-# or
-mig2.create_package()
+# Wait for the validation to be completed
+while my_obj_mig.validation.status == ValidationStatus.VALIDATING:
+    sleep(2)
+    my_obj_mig.fetch()
 
-# Migrate downloaded package to the target environment.
-# Create undo package and save it to file
-mig.migrate_package()
-# or
-mig3.migrate_package()
+# Check migration validation status
+print(my_obj_mig.validation)
 
-# End to end migration
-mig.perform_full_migration()
+# Migrate to target environemnt
+my_obj_mig.migrate(target_env=conn_target, target_project_name=TARGET_PROJECT_NAME)
 
-# Detailed version
-# Create import package and save it to the file specified with `save_path`
-# argument during creation of migration object
-mig.create_package()
-mig2.create_package()
+REUSE_TARGET_PROJECT_NAME = $reuse_target_project_name
+my_obj_mig.reuse(target_env=conn_target, target_project_name=REUSE_TARGET_PROJECT_NAME)
 
-# Migrate downloaded package to the target environment
-# `migrate_package()` by default uses a package binary saved to a variable
-# during `create_package()`
-mig.migrate_package()
+REVERSE_TARGET_PROJECT_ID = $reverse_target_project_id
+my_obj_mig.reverse(target_env=conn_target, target_project_id=REVERSE_TARGET_PROJECT_ID)
 
-# or a custom package binary specified with `custom_package_path`
-# during Migration object creation, if `create_package()` was not called.
-mig3.migrate_package()
+# Download migration package to local storage
+downloaded = my_obj_mig.download_package(save_path="./")
 
-# It is also possible to respecify `custom_package_path` at this stage
-mig3.migrate_package(custom_package_path=CUSTOM_PACKAGE_PATH)
+# Import a migration package in target environment without use of S3 bucket
+# or other shared folder
+SOURCE_FILE_PATH = downloaded["filepath"]
+FILE_MIG_TARGET_PROJECT_NAME = $file_mig_target_project_name
+from_file_mig = Migration.migrate_from_file(
+    connection=conn_target,
+    file_path=SOURCE_FILE_PATH,
+    package_type=PackageType.OBJECT,
+    name="object_mig_from_local_storage",
+    target_project_name=FILE_MIG_TARGET_PROJECT_NAME,
+)
 
-# Perform end to end migration. `perform_full_migration()` encapsulates
-# `create_package()` and `migrate_package()` from the previous steps
-# In order to be able to use, Migration object needs `source_connection`,
-# `configuration` and `target_connection` parameters filled during creation
-mig.perform_full_migration()
+# Create an Administration migration
 
-# Perform many full migrations at once
-bulk_full_migration([mig])
+# Create PackageConfig with information what object should be migrated and how.
+# The options are of type Enum with all possible values listed.
+package_settings_adm = PackageSettings(
+    default_action=Action.USE_EXISTING,
+    acl_on_replacing_objects=PackageSettings.AclOnReplacingObjects.REPLACE,
+    acl_on_new_objects=PackageSettings.AclOnNewObjects.KEEP_ACL_AS_SOURCE_OBJECT,
+)
+MIGRATED_USER_ID = $migrated_user_id
+package_content_info_adm = PackageContentInfo(
+    id=MIGRATED_USER_ID,
+    type=ObjectTypes.USER,
+    action=Action.USE_EXISTING,
+    include_dependents=True,
+)
 
-# Perform many migrations at once
-bulk_migrate_package([mig, mig3])
+package_config_adm = PackageConfig(package_settings_adm, package_content_info_adm)
 
-# If the migration needs to be reverted use `undo_migration()`
-mig.undo_migration()
+my_adm_mig = Migration.create_admin_migration(
+    connection=conn_source, toc_view=package_config_adm, name="administration_mig"
+)
 
-# Define a variable which can be later used in a script
-UNDO_PACKAGE_PATH = $undo_package_path
+# Wait for the migration to be created
+while my_adm_mig.package_info.status == PackageStatus.CREATING:
+    sleep(2)
+    my_adm_mig.fetch()
 
-# or run `migrate_package()` with path to the custom undo package
-Migration(
-    save_path=SAVE_PATH, target_connection=target_conn, custom_package_path=UNDO_PACKAGE_PATH
-).migrate_package()
+# Check migration status
+print(my_adm_mig.package_info.status)
 
-# Status of the migration can be checked by checking the `status` property
-status = mig.status
+my_adm_mig.trigger_validation(target_env=conn_target)
+
+# Wait for the validation to be completed
+while my_obj_mig.validation.status == ValidationStatus.VALIDATING:
+    sleep(2)
+    my_adm_mig.fetch()
+
+# Check migration validation status
+print(my_adm_mig.validation)
+
+# Create a Project Merge migration
+
+# Define project merge settings
+proj_merge_settings = ProjectMergePackageSettings(
+    translation_action=TranslationAction.NOT_MERGED,
+    acl_on_replacing_objects=PackageSettings.AclOnReplacingObjects.USE_EXISTING,
+    acl_on_new_objects=PackageSettings.AclOnNewObjects.KEEP_ACL_AS_SOURCE_OBJECT,
+    validate_dependencies=False,
+    default_action=Action.USE_EXISTING,
+    object_type_actions=[
+        {"type": 3, "subtype": 776, "action": "replace"},
+        {"type": 3, "subtype": 779, "action": "replace"},
+        {"type": 55, "action": "keep_both"},
+        {"type": 55, "action": "keep_both"},
+    ],
+)
+
+proj_merge_toc_view = ProjectMergePackageTocView(proj_merge_settings)
+
+print(proj_merge_toc_view.to_dict())
+
+MERGE_TARGET_PROJECT_NAME = $merge_target_project_name
+my_new_proj_merge_mig = Migration.create_project_merge_migration(
+    connection=conn_source,
+    toc_view=proj_merge_toc_view,
+    name="merge_mig",
+    project_name=MERGE_TARGET_PROJECT_NAME,
+)
+
+# Delete all migrations on source environemnt
+migs = list_migrations(conn_source)
+for mig in migs:
+    mig.delete(force=True)
+
+all_migs = list_migrations(conn_source)
+print(all_migs)

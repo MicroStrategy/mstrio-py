@@ -54,9 +54,9 @@ classifiers = [
 dependencies = [
     # peer dependency (dep of dep)
     # but we need to force version for SEC
-    "urllib3 >= 2.0.7",
+    "urllib3 >= 2.2.2",
     "Jinja2 >= 3.1.4",  # Optional dep of pandas, required for testing
-    "certifi >= 2024.2.2",  # SEC safe version
+    "certifi >= 2024.07.04",  # SEC safe version
     "idna >= 3.7",  # SEC safe version
 
     # Direct mstrio dependencies
@@ -65,7 +65,7 @@ dependencies = [
     "pandas >= 1.1.5",
     "pyhumps >= 3.8",
     "pypika >= 0.48.9",
-    "requests >= 2.32",
+    "requests >= 2.32.3",
     "requests_futures >= 1.0.0",
     "stringcase >= 1.2",
     "tqdm >= 4.66.4",

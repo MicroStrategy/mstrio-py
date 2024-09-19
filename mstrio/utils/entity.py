@@ -7,7 +7,7 @@ from enum import Enum
 from os.path import join as joinpath
 from pprint import pprint
 from sys import version_info
-from typing import TYPE_CHECKING, Any, Optional, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 
 import humps
 from pandas import DataFrame
@@ -1197,7 +1197,7 @@ class Entity(EntityBase, ACLMixin, DependenceMixin):
 
     @property
     def location(self) -> str:
-        if self.ancestors and not self._location:
+        if self.ancestors:
             self._location = ''
             for anc in self.ancestors:
                 self._location += '/' + anc.get('name')
@@ -1216,7 +1216,7 @@ class CopyMixin:
         self: Entity,
         name: str | None = None,
         folder_id: str | None = None,
-        project: Optional['Project | str'] = None,
+        project: 'Project | str | None' = None,
     ) -> Any:
         """Create a copy of the object on the I-Server.
 

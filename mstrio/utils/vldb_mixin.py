@@ -162,11 +162,11 @@ class VldbSettingsDict(UserDict[str, VldbSetting]):
     It allows to get VldbSetting object by its key or display name."""
 
     def __getitem__(self, key):
-        if key in super().keys():
+        if key in super().keys():  # NOQA SIM118
             val = super().__getitem__(key)
         else:
             dict_names_to_keys = {
-                getattr(setting, 'display_name'): key for key, setting in self.items()
+                setting.display_name: key for key, setting in self.items()
             }
             modified_key = dict_names_to_keys.get(key, key)
             val = super().__getitem__(modified_key)
@@ -442,8 +442,7 @@ class ModelVldbMixin:
 
     def __convert_names_to_keys(self, names: str | list[str]) -> str | list[str]:
         dict_names_to_keys = {
-            getattr(setting, 'display_name'): key
-            for key, setting in self.vldb_settings.items()
+            setting.display_name: key for key, setting in self.vldb_settings.items()
         }
         if isinstance(names, str):
             return dict_names_to_keys.get(names, names)

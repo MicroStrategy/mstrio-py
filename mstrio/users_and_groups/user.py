@@ -180,6 +180,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
         'security_roles': users.get_security_roles,
         'privileges': users.get_privileges,
         ('default_timezone', 'language'): users.get_settings,
+        'last_login': users.get_user_last_login,
     }
     _API_PATCH: dict = {
         (
@@ -247,6 +248,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
         'language': _parse_language,
         'owner': _parse_owner,
         'addresses': _parse_addresses,
+        'last_login': time_helper.DatetimeFormats.FULLDATETIME,
     }
 
     def __init__(
@@ -322,6 +324,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
         self._security_filters = kwargs.get("security_filters")
         self._default_timezone = kwargs.get("default_timezone")
         self._language = kwargs.get("language")
+        self._last_login = kwargs.get("last_login")
 
     @classmethod
     def create(
@@ -1197,3 +1200,39 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
         if not self._security_filters:
             self._security_filters = self.list_security_filters()
         return self._security_filters
+
+    @property
+    @method_version_handler('11.4.0600')
+    def last_login(self) -> datetime | None:
+        """User's last login time.
+
+        Notes:
+            This property is available only on containerized environment
+            with telemetry service enabled.
+        """
+        return self._last_login
+
+    def _is_last_login_available(self) -> bool:
+        if not is_server_min_version(self.connection, '11.4.0600'):
+            return False
+        try:
+            users.get_user_last_login(self.connection, self.id)
+            return True
+        except Exception:
+            return False
+
+    def list_properties(self, excluded_properties: list[str] | None = None) -> dict:
+        excluded_properties = excluded_properties or []
+        if (
+            not self._is_last_login_available()
+            and 'last_login' not in excluded_properties
+        ):
+            excluded_properties.append('last_login')
+        return super().list_properties(excluded_properties)
+
+    def fetch(self, attr: str | None = None) -> None:
+        if not self._is_last_login_available():
+            self._API_GETTERS = {
+                k: v for k, v in self._API_GETTERS.items() if k != 'last_login'
+            }
+        super().fetch(attr)

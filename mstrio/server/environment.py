@@ -1,12 +1,14 @@
 import logging
-from typing import Optional, Union
 
 from pandas import DataFrame
 
 from mstrio import config
-from mstrio.api import monitors
+from mstrio.api import administration as admin_api
+from mstrio.api import monitors as monitors_api
+from mstrio.helpers import IServerError
 from mstrio.server.project import Project, compare_project_settings
 from mstrio.server.server import ServerSettings
+from mstrio.server.storage import StorageService, StorageType
 from mstrio.utils import helper
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
@@ -35,6 +37,7 @@ class Environment:
         """
         self.connection = connection
         self._nodes = None
+        self._storage_service: StorageService | None = None
 
     @property
     def server_settings(self) -> ServerSettings:
@@ -61,9 +64,122 @@ class Environment:
         """Fetch the current server settings from the environment."""
         self.server_settings.fetch()
 
+    @property
+    @method_version_handler('11.3.10')
+    def storage_service(self) -> StorageService:
+        """`StorageService` object with configuration of the Storage Service.
+        object.
+        """
+        if not self._storage_service:
+            response = admin_api.storage_service_get_configs(self.connection).json()
+            self._storage_service = StorageService.from_dict(
+                response['sharedFileStore'], self.connection
+            )
+
+        return self._storage_service
+
+    def update_storage_service(
+        self,
+        storage_type: StorageType | None = None,
+        alias: str | None = None,
+        location: str | None = None,
+        s3_region: str | None = None,
+        aws_access_id: str | None = None,
+        aws_secret_key: str | None = None,
+        azure_storage_account_name: str | None = None,
+        azure_secret_key: str | None = None,
+        gcs_service_account_key: str | None = None,
+        skip_validation: bool = False,
+        validate_only: bool = False,
+    ) -> None:
+        """Update the storage service configuration on the environment.
+        If new values aren't provided for any parameter, the config stored
+        in the object will be used.
+
+        Args:
+            storage_type (StorageType, optional): Type of storage service.
+            alias (str, optional): Alias of the storage configuration,
+            location (str, optional): Storage location, e.g.
+                bucket name for S3, absolute path of folder for File System
+            s3_region (str, optional): S3 bucket region
+            aws_access_id (str, optional): Access ID for AWS S3
+            aws_secret_key (str, optional): Access key for AWS S3
+            azure_storage_account_name (str, optional): Account name for Azure
+            azure_secret_key (str, optional): Access key for Azure
+
+            skip_validation: Whether to skip validation of the storage service
+                configuration prior to updating.
+            validate_only: If True, validate the configuration without updating.
+        """
+        validation_failed_msg = (
+            "The storage service configuration failed validation. "
+            "If this configuration is accepted by the I-Server, "
+            "it will be applied, but the existing packages "
+            "in the previous location will not be available."
+        )
+        if all(
+            arg is None
+            for arg in [
+                storage_type,
+                alias,
+                location,
+                s3_region,
+                aws_access_id,
+                aws_secret_key,
+                azure_storage_account_name,
+                azure_secret_key,
+                gcs_service_account_key,
+            ]
+        ):
+            config_delta = self.storage_service.to_dict()
+        else:
+            config_delta = {
+                'type': storage_type.value if storage_type else None,
+                'alias': alias,
+                'location': location,
+                's3Region': s3_region,
+                'awsAccessId': aws_access_id,
+                'awsSecretKey': aws_secret_key,
+                'azureStorageAccountName': azure_storage_account_name,
+                'azureSecretKey': azure_secret_key,
+                'gcsServiceAccountKey': gcs_service_account_key,
+            }
+            config_delta = {k: v for k, v in config_delta.items() if v is not None}
+
+        same_type = (
+            'type' not in config_delta
+            or config_delta['type'] == self.storage_service.type
+        )
+        old_config_dict = self._storage_service.to_dict() if same_type else {}
+        new_config_dict = old_config_dict | config_delta
+        storage_service_body = {'sharedFileStore': new_config_dict}
+        try:
+            admin_api.storage_service_validate_configs(
+                self.connection, storage_service_body, error_msg=validation_failed_msg
+            )
+        except IServerError as e:
+            self.fetch_storage_service()
+            if e.http_code != 400 or not skip_validation:
+                raise e
+
+        if not validate_only:
+            admin_api.storage_service_update_configs(
+                self.connection, storage_service_body
+            )
+        self.fetch_storage_service()
+
+    def fetch_storage_service(self) -> None:
+        """Fetch the current configuration for Storage Service
+        from the environment.
+        """
+        response = admin_api.storage_service_get_configs(self.connection).json()
+        self._storage_service = StorageService.from_dict(
+            response['sharedFileStore'], self.connection
+        )
+
     def create_project(
         self, name: str, description: str | None = None, force: bool = False
-    ) -> Optional["Project"]:
+    ) -> 'Project | None':
         """Create a new project on the environment.
 
         Args:
@@ -131,7 +247,7 @@ class Environment:
 
     def list_nodes(
         self,
-        project: Union[str, "Project"] | None = None,
+        project: 'Project | str | None' = None,
         node_name: str | None = None,
     ) -> list[dict]:
         """Return a list of I-Server nodes and their properties. Optionally
@@ -142,7 +258,9 @@ class Environment:
             node_name: Name of node
         """
         project_id = project.id if isinstance(project, Project) else project
-        response = monitors.get_node_info(self.connection, project_id, node_name).json()
+        response = monitors_api.get_node_info(
+            self.connection, project_id, node_name
+        ).json()
         return response['nodes']
 
     def is_loaded(
