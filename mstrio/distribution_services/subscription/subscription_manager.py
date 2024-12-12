@@ -1,7 +1,4 @@
 import logging
-from typing import Optional
-
-from packaging import version
 
 from mstrio import config
 from mstrio.api import subscriptions as subscriptions_
@@ -69,11 +66,7 @@ def list_subscriptions(
         project_name=project_name,
         with_fallback=not project_name,
     )
-    chunk_size = (
-        1000
-        if version.parse(connection.iserver_version) >= version.parse('11.3.0300')
-        else 1000000
-    )
+    chunk_size = 1000 if is_server_min_version(connection, '11.3.0300') else 1000000
     if (
         not is_server_min_version(connection, '11.4.0600')
         and last_run
@@ -96,15 +89,14 @@ def list_subscriptions(
 
     if to_dictionary:
         return objects
-    else:
-        return [
-            dispatch_from_dict(
-                source=obj,
-                connection=connection,
-                project_id=project_id,
-            )
-            for obj in objects
-        ]
+    return [
+        dispatch_from_dict(
+            source=obj,
+            connection=connection,
+            project_id=project_id,
+        )
+        for obj in objects
+    ]
 
 
 DeliveryMode = Delivery.DeliveryMode
@@ -199,6 +191,38 @@ class SubscriptionManager:
             **filters,
         )
 
+    def _normalize_subscriptions(self, subscriptions) -> list[Subscription]:
+        if not isinstance(subscriptions, list):
+            subscriptions = [subscriptions]
+        return [
+            (
+                sub
+                if isinstance(sub, Subscription)
+                else Subscription(
+                    connection=self.connection, id=sub, project_id=self.project_id
+                )
+            )
+            for sub in subscriptions
+        ]
+
+    def _delete_subscription(self, subscription) -> bool:
+        response = subscriptions_.remove_subscription(
+            self.connection,
+            subscription.id,
+            self.project_id,
+            error_msg=(
+                f"Subscription '{subscription.name}' with id "
+                f"'{subscription.id}' could not be deleted."
+            ),
+            exception_type=UserWarning,
+        )
+        if response.ok and config.verbose:
+            logger.info(
+                f"Deleted subscription '{subscription.name}' "
+                f"with ID '{subscription.id}'."
+            )
+        return response.ok
+
     def delete(
         self, subscriptions: list[Subscription] | list[str], force=False
     ) -> bool:
@@ -206,59 +230,31 @@ class SubscriptionManager:
         removed all subscriptions.
 
         Args:
-            subscriptions: list of subscriptions to be deleted
+            subscriptions (list[Subscription] | list[str]):
+                list of subscriptions to be deleted
+            force (bool, optional): if True skips the prompt asking for
+                confirmation before deleting subscriptions. False by default.
         """
-        subscriptions = (
-            subscriptions if isinstance(subscriptions, list) else [subscriptions]
-        )
-        if not subscriptions and config.verbose:
-            logger.info('No subscriptions passed.')
-        else:
-            temp_subs = []
-            for subscription in subscriptions:
-                if not isinstance(subscription, Subscription):
-                    subscription = Subscription(
-                        connection=self.connection,
-                        id=subscription,
-                        project_id=self.project_id,
-                    )
-                temp_subs.append(subscription)
-            subscriptions = temp_subs
-            succeeded = 0
-            user_input = 'N'
-            if not force:
-                to_be_deleted = [
-                    f"Subscription '{sub.name}' with ID: '{sub.id}'"
-                    for sub in subscriptions
-                ]
-                print("Found subscriptions:")
-                for sub in to_be_deleted:
-                    print(sub)
-                user_input = input(
-                    "Are you sure you want to delete all of them? [Y/N]: "
-                )
-            if force or user_input == 'Y':
-                succeeded = 0
-                for subscription in subscriptions:
-                    response = subscriptions_.remove_subscription(
-                        self.connection,
-                        subscription.id,
-                        self.project_id,
-                        error_msg=(
-                            f"Subscription '{subscription.name}' with id "
-                            f"'{subscription.id}' could not be deleted."
-                        ),
-                        exception_type=UserWarning,
-                    )
-                    if response.ok:
-                        succeeded += 1
-                        if config.verbose:
-                            logger.info(
-                                f"Deleted subscription '{subscription.name}' "
-                                f"with ID '{subscription.id}'."
-                            )
+        subscriptions = self._normalize_subscriptions(subscriptions)
+        if not subscriptions:
+            if config.verbose:
+                logger.info('No subscriptions passed.')
+            return False
 
-                return succeeded == len(subscriptions)
+        if not force:
+            logger.info("Found subscriptions:")
+            for sub in subscriptions:
+                logger.info(f"Subscription '{sub.name}' with ID: '{sub.id}'")
+            if input("Are you sure you want to delete all of them? [Y/N]: ") != 'Y':
+                return False
+
+        succeeded = sum(
+            1
+            for subscription in subscriptions
+            if self._delete_subscription(subscription)
+        )
+
+        return succeeded == len(subscriptions)
 
     def execute(self, subscriptions: list[Subscription] | list[str]):
         """Executes all passed subscriptions.
@@ -318,7 +314,7 @@ class SubscriptionManager:
         self,
         content_id: str | None = None,
         content_type: str | None = None,
-        content: Optional["Content"] = None,
+        content: 'Content | None' = None,
         delivery_type='EMAIL',
     ) -> list[dict]:
         """List available recipients for a subscription contents.

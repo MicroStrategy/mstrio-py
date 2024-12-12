@@ -6,14 +6,8 @@ Its basic goal is to present what can be done with this module and to
 ease its usage.
 """
 
-from mstrio.server import Cluster, Environment, Project
-
 from mstrio.connection import get_connection
-from mstrio.utils.wip import module_wip, WipLevels
-
-# For some methods to work, a connection to environment
-# using user's credentials is needed.
-module_wip(globals(), level=WipLevels.WARNING)
+from mstrio.server import Cluster, Environment, Project
 
 # Define a variable which can be later used in a script
 PROJECT_NAME = $project_name  # Project to connect to
@@ -35,11 +29,35 @@ services_by_services = clstr.list_services(group_by='services')
 NODE_NAME = $node_name
 NODE_NAME_2 = $node_name_2
 
-# get list of nodes (information about projects within each node is given there)
+# get a list of nodes (information about projects within each node is given there)
+nodes = clstr.list_nodes()
+# get a Node from the list and get its properties
+node = nodes[0]
+
+node.name
+node.address
+node.service_control
+node.port
+node.status
+node.load
+node.projects
+node.default
+
+# get a list of nodes as a dictionary
 nodes = clstr.list_nodes(to_dictionary=True)
 # remove/add a node from/to a cluster (node with the given name should exist)
 clstr.remove_node(node=NODE_NAME)
 clstr.add_node(node=NODE_NAME)
+
+# remove/add a node from/to a cluster and remove/add it to a cluster startup membership
+clstr.remove_node(node=NODE_NAME, add_to_cluster_startup=True)
+clstr.add_node(node=NODE_NAME, remove_from_cluster_startup=True)
+
+# get a list of cluster startup membership
+clstr.list_cluster_startup_membership()
+
+# update a list of cluster startup membership
+clstr.update_cluster_startup_membership(nodes=[NODE_NAME, NODE_NAME_2])
 
 # get name of default (primary) node of the cluster and set new default node
 clstr.default_node
@@ -54,10 +72,20 @@ clstr.reset_node_settings(node=NODE_NAME)
 # Define a variable which can be later used in a script
 SERVICE_NAME = $service_name
 
-# stop/start service on selected nodes (error will be thrown in case of wrong
+# stop/start service on selected nodes without providing login and password,
+# so user will be prompted to provide them (error will be thrown in case of wrong
 # names of service or nodes)
 clstr.stop(service=SERVICE_NAME, nodes=[NODE_NAME, NODE_NAME_2])
 clstr.start(service=SERVICE_NAME, nodes=[NODE_NAME, NODE_NAME_2])
+
+# Alternatively, the user can provide login and password as arguments to the methods
+SSH_LOGIN = $ssh_login
+SSH_PASSWORD = $ssh_password
+
+clstr.stop(service=SERVICE_NAME, nodes=[NODE_NAME, NODE_NAME_2], login=SSH_LOGIN,
+           passwd=SSH_PASSWORD)
+clstr.start(service=SERVICE_NAME, nodes=[NODE_NAME, NODE_NAME_2], login=SSH_LOGIN,
+            passwd=SSH_PASSWORD)
 
 # list all projects available for the given connection (it is possible via
 # class Cluster or Environment)
@@ -70,6 +98,9 @@ projects = clstr.list_projects()
 project = Project(connection=conn, name=PROJECT_NAME)
 project.load()
 project.unload()
+
+# get status of the project on the specified node
+project.get_status_on_node(node=NODE_NAME)
 
 # via Cluster can we also specify on which node(s) project will be loaded
 # or unloaded

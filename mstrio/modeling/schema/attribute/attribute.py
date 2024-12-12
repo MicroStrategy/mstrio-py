@@ -610,16 +610,29 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin, TranslationMixin):  #
             hidden: Specifies whether the attribute is hidden.
             comments: long description of the attribute
         """
-        name = name if name else self.name
         hidden = hidden if self.hidden != hidden else None
-
-        key_form = self.validate_key_form(
-            key_form or self.key_form, forms or self.forms
-        )
-        displays = self.validate_displays(
-            displays or self.displays, forms or self.forms
-        )
-        sorts = self.validate_sorts(sorts or self.sorts, forms or self.forms)
+        if any(
+            [
+                sub_type,
+                name,
+                is_embedded,
+                description,
+                destination_folder_id,
+                forms,
+                attribute_lookup_table,
+                key_form,
+                displays,
+                sorts,
+            ]
+        ):
+            name = name if name else self.name
+            key_form = self.validate_key_form(
+                key_form or self.key_form, forms or self.forms
+            )
+            displays = self.validate_displays(
+                displays or self.displays, forms or self.forms
+            )
+            sorts = self.validate_sorts(sorts or self.sorts, forms or self.forms)
 
         properties = filter_params_for_func(self.alter, locals(), exclude=['self'])
         self._alter_properties(**properties)

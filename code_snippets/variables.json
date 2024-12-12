@@ -701,6 +701,48 @@
       "multiple": false
     }
   },
+  "fences.py": {
+    "project_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "rank": {
+      "type": "text",
+      "multiple": false
+    },
+    "fence_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "node_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "user_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "user_group_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "rank_2": {
+      "type": "text",
+      "multiple": false
+    },
+    "user_id_2": {
+      "type": "text",
+      "multiple": false
+    },
+    "user_group_id_2": {
+      "type": "text",
+      "multiple": false
+    },
+    "project_id_2": {
+      "type": "text",
+      "multiple": false
+    }
+  },
   "filter.py": {
     "project_name": {
       "type": "text",
@@ -1133,6 +1175,16 @@
       "multiple": false
     }
   },
+  "olap_cube_refresh_status.py": {
+    "project_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "selected_cube_id": {
+      "type": "text",
+      "multiple": false
+    }
+  },
   "report_cache.py": {
     "project_name": {
       "type": "text",
@@ -1384,6 +1436,14 @@
     },
     "file_name": {
       "type": "text",
+      "multiple": false
+    },
+    "ssh_login": {
+      "type": "text",
+      "multiple": false
+    },
+    "ssh_password": {
+      "type": "secret",
       "multiple": false
     }
   },

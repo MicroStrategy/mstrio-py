@@ -34,7 +34,7 @@ from mstrio.modeling.expression import (
 from mstrio.modeling.schema.table import list_logical_tables, LogicalTable
 
 # For every object we want to reference using a SchemaObjectReference we need
-# to provide an Object ID for. For the script to work correctly all occurences
+# to provide an Object ID for. For the script to work correctly all occurrences
 # of `'<object_id>'` and others with form `<some_name>` need to be replaced with
 # data specific to the object used.
 
@@ -183,7 +183,7 @@ attr = Attribute(conn, name=ATTRIBUTE_NAME, show_expression_as=ExpressionFormat.
 attr = Attribute(conn, id=ATTRIBUTE_ID, show_expression_as=ExpressionFormat.TOKENS)
 
 # Listing properties
-properies = attr.list_properties()
+properties = attr.list_properties()
 
 # Create attribute and get it with expression represented as tree.
 # Data from constant `ATTRIBUTE_DATA` defined above in the file is used here
@@ -250,16 +250,16 @@ TABLE_NAME = $table_name  # Insert table name here
 
 
 # Select table with given TABLE_NAME from tables
-[choosen_table] = [tab for tab in tables if tab.name == TABLE_NAME]
+[chosen_table] = [tab for tab in tables if tab.name == TABLE_NAME]
 
-# Get candidates from choosen table
-candidate_attrs = candidates[choosen_table.name]
+# Get candidates from chosen table
+candidate_attrs = candidates[chosen_table.name]
 
 # Add child and parent
 relationship_child: SchemaObjectReference = candidate_attrs[0]
 relationship_child_1: SchemaObjectReference = candidate_attrs[1]
 relationship_parent: SchemaObjectReference = candidate_attrs[2]
-relationship_child_table: SchemaObjectReference = choosen_table
+relationship_child_table: SchemaObjectReference = chosen_table
 
 attr_item.add_child(
     relationship_child,
@@ -271,7 +271,7 @@ attr_item.add_child(
     relationship_type=Relationship.RelationshipType.MANY_TO_MANY,
     table=relationship_child_table
 )
-attr_item.add_parent(relationship_parent, table=choosen_table)
+attr_item.add_parent(relationship_parent, table=chosen_table)
 
 # Remove child and parent
 attr_item.remove_child(relationship_child)

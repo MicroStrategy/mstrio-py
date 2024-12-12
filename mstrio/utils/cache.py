@@ -9,8 +9,13 @@ from mstrio import config
 from mstrio.api import monitors
 from mstrio.connection import Connection
 from mstrio.server import Cluster
-from mstrio.utils.enum_helper import AutoName
-from mstrio.utils.helper import Dictable, camel_to_snake, fetch_objects
+from mstrio.utils.enum_helper import AutoName, get_enum_val
+from mstrio.utils.helper import (
+    Dictable,
+    camel_to_snake,
+    validate_param_value,
+)
+from mstrio.utils.response_processors.monitors import get_contents_caches_loop
 
 if TYPE_CHECKING:
     from mstrio.project_objects import ContentCache
@@ -339,7 +344,8 @@ class ContentCacheMixin:
             content_type (string | CacheSource.Type, optional): When provided,
                 only caches of given type will be returned (if any).
             limit (integer, optional): Cut-off value for the number of objects
-                returned. Default value is `1000` which is a maximum value.
+                returned. This is a local limit as we always need to fetch all
+                caches first to allow proper filtering on mstrio-py side.
             db_connection_id (string, optional): When provided, only caches for
                 the database connection with given ID will be returned (if any).
             db_login_id (string, optional): When provided, only caches for
@@ -370,20 +376,22 @@ class ContentCacheMixin:
         if status == 'unloaded':
             unloaded = True
             status = 'ready'
-
-        caches = fetch_objects(
+        if isinstance(content_type, CacheSource.Type):
+            content_type = get_enum_val(content_type, CacheSource.Type)
+        caches = get_contents_caches_loop(
             connection=connection,
-            api=monitors.get_contents_caches,
             project_id=project_id,
             node=nodes,
-            limit=None,
             status=status,
             content_type=content_type,
             size=size,
             owner=owner,
-            filters={},
         )
-        caches = [list(cache.items())[0] for cache in caches['content_caches']]
+
+        caches = [list(cache.items())[0] for cache in caches]
+        validate_param_value('limit', limit, int, min_val=1, special_values=[None])
+        # This is a result limitation because every time we list caches, we need
+        # to fetch them all first to do proper filtering on the mstrio-py side
         if limit:
             caches = caches[:limit]
 

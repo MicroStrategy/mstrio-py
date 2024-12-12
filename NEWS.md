@@ -1,5 +1,30 @@
 # Changelog
 
+## 11.4.12.101 - 2024/12/13
+
+### New features
+
+- added `list_fences` method and `Fence` class in `mstrio.server.fence` subpackage to allow management of Fences
+- added `list_cluster_startup_membership` and `update_cluster_startup_membership` methods to `Cluster` class in `mstrio.server.cluster` to allow management of cluster startup membership
+- added arguments `add_to_cluster_startup` and `remove_from_cluster_startup` to `add_node` and `remove_node` methods in `Cluster` class in `mstrio.server.cluster` to allow adding and removing nodes from cluster startup
+- added `port`, `status`, `load`, `projects` and `default` attributes to `Node` class in `mstrio.server.node` subpackage
+- added `get_status_on_node` method to `Project` in `mstrio.server.project` class to allow checking the status of a project on a specific node
+- added `lock`, `unlock` methods and `lock_status` property to `Project` class in `mstrio.server.project` to allow managing project locks
+
+### Minor changes
+
+- added `include_subfolders` flag to `list_folders` method of `mstrio.object_management.folder` package to allow getting all folders in the specified project or configuration-level folders
+- added `parent_folder` argument to `list_folders` method of `mstrio.object_management.folder` package to allow getting all folders from specified parent folder only
+
+### Bug fixes
+
+- fixed the `settings` property for the `UserGroup` class to allow fetching a list of settings on the environment version 11.4.1200 and above. On the previous environments versions no change in behaviour will happen and the settings for the `jobMemGoverning` will be returned
+- fixed the `create` method for the `ContentGroup` to allow creation without the need to provide `recipients`
+- fixed the `alter` method for the `Application` class, passing the wrong body to the server
+- fixed the `alter` methods for `Event` and `Driver` classes to allow update comments
+- fixed `EmbeddedConnection` so that its objects properly link to their correspondent DSNs
+- fixed `User.last_login` erroneously reporting the user does not exist in some cases
+
 ## 11.4.9.101 - 2024/09/20
 
 ### New features
@@ -227,7 +252,7 @@ management of Applications
 - updated `alter` method of `OlapCube` class to allow altering new parameters:
   `template`, `filter`, `options` and `time_based_settings`
 - added `set_partition_attribute`, `remove_partition_attribute` and `list_attribute_forms`
-  methods to `OlapCube` class to allow managemenet of partition attribute and observing
+  methods to `OlapCube` class to allow management of partition attribute and observing
   attributes forms
 - added `list_vldb_settings`, `alter_vldb_settings` and `reset_vldb_settings`
   methods to `OlapCube` class to allow management of VLDB settings
@@ -478,7 +503,7 @@ management of Applications
 - added `Migration` class in `mstrio.object_management.migration` for migration related
   functionalities. This feature is still work in progress, and it will be completed by 03.2022.
 - added `PackageConfig` class in `mstrio.object_management.migration` with supporting
-  `PackageSettings` and `PackageContentInfo` used for configurating migration
+  `PackageSettings` and `PackageContentInfo` used for configuring migration
 - extended `Event` class in `mstrio.distribution_services.event` with functionalities to
   create, update and delete events.
 
@@ -577,7 +602,7 @@ management of Applications
 - modules having a term 'application' in their name
 - class names having a term 'application' in their definition
   **In all of above-mentioned changes, a new term is 'project'**
-- `mstrio.browsing` is deprecated and is superceded
+- `mstrio.browsing` is deprecated and is superseded
   with `mstrio.object_management.search_operations` subpackage,
 - `SearchType` enum is now `SearchPattern`
 
@@ -623,7 +648,7 @@ management of Applications
 
 ### Deprecated
 
-- `mstrio.admin.schedule` is deprecated and superceded with
+- `mstrio.admin.schedule` is deprecated and superseded with
   `mstrio.distribution_services.schedule` subpackage
 - `schedules` replace argument `schedules_id` in `create` and `alter`, methods
   of `Schedule` class
@@ -692,7 +717,7 @@ management of Applications
 
 - `mstrio.admin` subpackage is deprecated and its modules are moved according to
   new structure
-- `mstrio.cube` and `mstrio.dataset` are deprecated and are superceded by
+- `mstrio.cube` and `mstrio.dataset` are deprecated and are superseded by
   `OlapCube` and `SuperCube` from `application_objects.datasets` subpackage
 - `mstrio.report` and `mstrio.library` modules are deprecated and are moved to
   `application_objects` subpackage

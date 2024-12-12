@@ -729,10 +729,13 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
 
         Args:
             status (PackageCertificationStatus, str, optional):
-                Package certification status
-            creator (User, optional): Creator of this file.
+                Package certification status. Optional only if auto_sync is
+                set to True.
+            creator (User, optional): Creator of this file. Optional only if
+                auto_sync is set to True.
             last_updated_date (datetime, optional): The last updated date of the
-                certification operation
+                certification operation. Optional only if auto_sync is set
+                to True.
             auto_sync (bool, optional): If True, the migration's package
                 certification status is synchronized with shared environment
                 via storage service.
@@ -1047,7 +1050,7 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
         package_settings: PackageSettings,
         object_action_map: list[tuple] | None = None,
         object_dependents_map: list[tuple] | None = None,
-        default_action: Action = Action.USE_EXISTING,
+        default_action: Action | None = None,
         default_dependents: bool = False,
     ) -> PackageConfig:
         """
@@ -1057,7 +1060,7 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
         Args:
             connection (Connection): A MicroStrategy connection object.
             content (list[Object | dict]): List of objects to migrate.
-            package_settings (PackageSettings): Package settings.
+            package_settings (PackageSettings): Package settings information.
             object_action_map (list[tuple], optional): List of tuples where the
                 first element is the object type and the second element is the
                 action to perform. If None, default_action will be used.
@@ -1065,14 +1068,20 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
                 the first element is the object type and the second element is
                 the include_dependents flag. If None, default_dependents will be
                 used.
-            default_action (Action, optional): Default action to perform when
-                migrating objects. Defaults to Action.USE_EXISTING.
+            default_action (Action, optional): Default action to apply to the
+                list of migration objects passed with the `content` field. When
+                an object in the content has the `include_dependents` flag set
+                to True, then it's dependents action will be taken from
+                `package_settings` field.
+                If not provided, the `default_action` from `package_settings`
+                will be used.
             default_dependents (bool, optional): Default value for
                 include_dependents flag. Defaults to False.
 
         Returns:
             PackageConfig: A new PackageConfig object.
         """
+        default_action = default_action or package_settings.default_action
         content_list = []
         for obj in content:
             if isinstance(obj, dict):

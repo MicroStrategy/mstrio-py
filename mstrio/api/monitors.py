@@ -153,6 +153,33 @@ def update_node_properties(
 
 
 @ErrorHandler(
+    err_msg="Error getting status for project: {project_id} on cluster node "
+    "{node_name}."
+)
+def get_project_status_on_node(
+    connection: 'Connection',
+    node_name: str,
+    project_id: str,
+    error_msg: str | None = None,
+) -> 'Response':
+    """Get status of a project on a specific cluster node.
+
+    Args:
+        connection(object): MicroStrategy connection object returned by
+            `connection.Connection()`.
+        node_name (string): Node Name.
+        project_id (string): Project ID.
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        HTTP response object returned by the MicroStrategy REST server.
+    """
+    return connection.get(
+        endpoint=f'/api/monitors/iServer/nodes/{node_name}/projects/{project_id}/status'
+    )
+
+
+@ErrorHandler(
     err_msg='Error adding node {node_name} to connected Intelligence Server cluster.'
 )
 def add_node(

@@ -277,20 +277,21 @@ class Transformation(Entity, MoveMixin, DeleteMixin, TranslationMixin):
             else ExpressionFormat(show_expression_as)
         )
 
-    def list_properties(self):
-        properties = super().list_properties()
-        redundant_keys = [
-            'hidden',
-            'icon_path',
-            'comments',
-            'certified_info',
-            'project_id',
-            'target_info',
-            'view_media',
-            'abbreviation',
-        ]
-        [properties.pop(key, None) for key in redundant_keys]
-        return properties
+    def list_properties(self, excluded_properties: list[str] | None = None) -> dict:
+        excluded_properties = excluded_properties or []
+        excluded_properties.extend(
+            [
+                'hidden',
+                'icon_path',
+                'comments',
+                'certified_info',
+                'project_id',
+                'target_info',
+                'view_media',
+                'abbreviation',
+            ]
+        )
+        return super().list_properties(excluded_properties=excluded_properties)
 
     @classmethod
     @method_version_handler('11.3.0500')

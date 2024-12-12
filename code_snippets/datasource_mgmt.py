@@ -158,14 +158,14 @@ DATASOURCE_CONNECTION_ID_DSN = $datasource_connection_id_dsn
 # Initialize datasource connection object
 ds_conn = DatasourceConnection(conn, id=DATASOURCE_CONNECTION_ID_DSN)
 
-# List datasource connection properites before conversion
+# List datasource connection properties before conversion
 print(ds_conn.list_properties())
 
 # This method is supported from Update 9 server version
 # Convert datasource connection to DSN-less
 ds_conn.convert_to_dsn_less()
 
-# List datasource connection properites after conversion
+# List datasource connection properties after conversion
 print(ds_conn.list_properties())
 
 # Define variables which can be later used in a script

@@ -1,15 +1,18 @@
 import logging
 
-from packaging import version
-
 from mstrio import config
 from mstrio.api import events
 from mstrio.connection import Connection
 from mstrio.utils import helper
 from mstrio.utils.entity import DeleteMixin, Entity, ObjectTypes
+from mstrio.utils.helper import filter_params_for_func
 from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.translation_mixin import TranslationMixin
-from mstrio.utils.version_helper import class_version_handler, method_version_handler
+from mstrio.utils.version_helper import (
+    class_version_handler,
+    is_server_min_version,
+    method_version_handler,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -39,8 +42,7 @@ def list_events(
 
     if to_dictionary:
         return _objects
-    else:
-        return [Event.from_dict(source=obj, connection=connection) for obj in _objects]
+    return [Event.from_dict(source=obj, connection=connection) for obj in _objects]
 
 
 @class_version_handler('11.3.0100')
@@ -54,7 +56,7 @@ class Event(Entity, DeleteMixin, TranslationMixin):
         description: Event descriptions
     """
 
-    _PATCH_PATH_TYPES = {'name': str, 'description': str}
+    _PATCH_PATH_TYPES = {'name': str, 'description': str, 'comments': str}
     _OBJECT_TYPE = ObjectTypes.SCHEDULE_EVENT
     _API_GETTERS = {
         (
@@ -99,7 +101,7 @@ class Event(Entity, DeleteMixin, TranslationMixin):
         """
         self._API_GETTERS[('id', 'name', 'description')] = (
             events.get_event
-            if version.parse(connection.web_version) >= version.parse('11.3.0200')
+            if is_server_min_version(connection, '11.3.0200')
             else objects_processors.get_info
         )
 
@@ -153,21 +155,16 @@ class Event(Entity, DeleteMixin, TranslationMixin):
         name: str | None = None,
         description: str | None = None,
         comments: str | None = None,
-    ):
+    ) -> None:
         """Alter the Event's properties
 
         Args:
-            name: New name for the Event
-            description: New description for the Event
-            comments: long description of the Event
+            name (str, optional): New name for the Event
+            description (str, optional): New description for the Event
+            comments (str, optional): long description of the Event
         """
-        args = helper.delete_none_values(
-            {
-                "name": name,
-                "description": description,
-            },
-            recursion=True,
-        )
-        self._alter_properties(**args)
+        properties = filter_params_for_func(self.alter, locals(), exclude=['self'])
+        self._alter_properties(**properties)
+
         if config.verbose:
-            logger.info(f"Updated subscription '{self.name}' with ID: {self.id}.")
+            logger.info(f"Updated event: '{self.name}' with ID: {self.id}.")

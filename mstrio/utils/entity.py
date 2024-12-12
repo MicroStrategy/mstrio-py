@@ -1,4 +1,3 @@
-import contextlib
 import csv
 import inspect
 import logging
@@ -233,7 +232,15 @@ class EntityBase(helper.Dictable):
         for key, func in functions.items():  # call respective API getters
             param_value_dict = auto_match_args_entity(func, self)
 
-            response = func(**param_value_dict)
+            try:
+                response = func(**param_value_dict)
+            except VersionException:
+                logger.error(
+                    'Cannot fetch attribute "%s" due to minimum required '
+                    'IServer version not being met',
+                    key,
+                )
+                continue
 
             if response:
                 json = (
@@ -451,17 +458,35 @@ class EntityBase(helper.Dictable):
         """
         if hasattr(self, "_API_GETTERS"):  # fetch attributes not loaded on init
             attr = [attr for attr in self._API_GETTERS.keys() if isinstance(attr, str)]
+            for key in self._API_GETTERS.keys():
+                if isinstance(key, tuple):
+                    attr += list(key)
+            attr += [
+                element[0]
+                for element in inspect.getmembers(
+                    self.__class__, lambda x: isinstance(x, property)
+                )
+            ]
+            attr = list(set(attr))
+            excluded_properties = excluded_properties or []
             for a in attr:
-                with contextlib.suppress(VersionException):
+                try:
                     getattr(self, a)
+                except (VersionException, AttributeError, NotSupportedError):
+                    if isinstance(a, list):
+                        excluded_properties += a
+                    else:
+                        excluded_properties.append(a)
         properties = inspect.getmembers(
             self.__class__,
             lambda x: isinstance(x, property)
-            and x.fget.__name__ not in (excluded_properties or []),
+            and x.fget.__name__ not in excluded_properties,
         )
         properties = {elem[0]: elem[1].fget(self) for elem in properties}
         attributes = {
-            key: val for key, val in vars(self).items() if not key.startswith('_')
+            key: val
+            for key, val in vars(self).items()
+            if not key.startswith('_') and key not in excluded_properties
         }
         attributes = {**properties, **attributes}
 

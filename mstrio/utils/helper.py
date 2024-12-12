@@ -7,6 +7,7 @@ import time
 import warnings
 from base64 import b64encode
 from collections.abc import Callable
+from copy import deepcopy
 from datetime import datetime
 from enum import Enum
 from functools import reduce, wraps
@@ -330,7 +331,7 @@ def _prepare_objects(
     filters: dict | None = None,
     dict_unpack_value: str | None = None,
 ):
-    if type(objects) is dict and dict_unpack_value:
+    if isinstance(objects, dict) and dict_unpack_value:
         objects = objects[dict_unpack_value]
     objects = camel_to_snake(objects)
     if filters:
@@ -897,6 +898,28 @@ def get_valid_project_name(connection: "Connection", project_id: str):
     project_name = project_loaded_list[0]['name']
 
     return project_name
+
+
+def get_temp_connection(
+    connection: "Connection",
+    project_id: str | None = None,
+    project_name: str | None = None,
+) -> "Connection":
+    """Return a temporary connection object with a selected project.
+    Args:
+        connection: MicroStrategy connection object
+        project_id: Project ID
+        project_name: Project name
+    """
+    if project_id or project_name:
+        project_id = get_valid_project_id(
+            connection=connection, project_id=project_id, project_name=project_name
+        )
+        temp_conn = deepcopy(connection)
+        temp_conn.select_project(project_id=project_id)
+    else:
+        temp_conn = connection
+    return temp_conn
 
 
 class Dictable:

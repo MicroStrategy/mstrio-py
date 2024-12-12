@@ -1,5 +1,4 @@
 import logging
-from copy import deepcopy
 
 from mstrio import config
 from mstrio.api import content_groups
@@ -9,7 +8,7 @@ from mstrio.server.project import Project
 from mstrio.types import ObjectTypes
 from mstrio.users_and_groups import User, UserGroup, UserOrGroup
 from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity
-from mstrio.utils.helper import find_object_with_name, is_dashboard
+from mstrio.utils.helper import find_object_with_name, is_dashboard, get_temp_connection
 from mstrio.utils.translation_mixin import TranslationMixin
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
@@ -48,11 +47,9 @@ def list_content_groups(
         response = response[:limit]
     if to_dictionary:
         return response
-    else:
-        return [
-            ContentGroup.from_dict(source=obj, connection=connection)
-            for obj in response
-        ]
+    return [
+        ContentGroup.from_dict(source=obj, connection=connection) for obj in response
+    ]
 
 
 @class_version_handler('11.3.1200')
@@ -139,7 +136,7 @@ class ContentGroup(Entity, CopyMixin, DeleteMixin, TranslationMixin):
                 if isinstance(recipient, (User, UserGroup))
                 else {'id': recipient}
             )
-            for recipient in recipients
+            for recipient in (recipients or [])
         ]
         color = FormatProperty.Color(hex_value=color).server_value
         body = {
@@ -236,11 +233,8 @@ class ContentGroup(Entity, CopyMixin, DeleteMixin, TranslationMixin):
         ).json()
         contents = []
         for project in response:
-            if project != self.connection.project_id:
-                temp_conn = deepcopy(self.connection)
-                temp_conn.select_project(project_id=project)
-            else:
-                temp_conn = self.connection
+            project_change = None if project == self.connection.project_id else project
+            temp_conn = get_temp_connection(self.connection, project_change)
             for content in response.get(project):
                 if content.get('type') == 3:
                     contents.append(Report(connection=temp_conn, id=content.get('id')))

@@ -34,7 +34,7 @@ from mstrio.utils.helper import (
     get_valid_project_id,
 )
 from mstrio.utils.response_processors import subscriptions as subscriptions_processors
-from mstrio.utils.version_helper import is_server_min_version, method_version_handler
+from mstrio.utils.version_helper import method_version_handler
 
 logger = logging.getLogger(__name__)
 
@@ -1146,29 +1146,11 @@ class Subscription(EntityBase):
             raise NotSupportedError(msg)
         return self._last_run
 
-    def _get_excluded_properties(
-        self, excluded_properties: list[str] | None = None
-    ) -> list[str]:
-        excluded_properties = excluded_properties or []
-
-        if (
-            not is_server_min_version(self.connection, '11.4.0600')
-            or not self._is_valid_delivery_mode()
-        ):
-            excluded_properties.extend(
-                prop
-                for prop in ['status', 'last_run']
-                if prop not in excluded_properties
-            )
-        return excluded_properties
-
-    def list_properties(self, excluded_properties: list[str] | None = None) -> dict:
-        excluded_properties = self._get_excluded_properties(excluded_properties)
-        return super().list_properties(excluded_properties)
-
     def fetch(self, attr: str | None = None) -> None:
-        excluded_properties = self._get_excluded_properties()
-        self._API_GETTERS = {
-            k: v for k, v in self._API_GETTERS.items() if k not in excluded_properties
-        }
+        if not self._is_valid_delivery_mode():
+            self._API_GETTERS = {
+                k: v
+                for k, v in self._API_GETTERS.items()
+                if k not in ['status', 'last_run']
+            }
         super().fetch(attr)

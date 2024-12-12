@@ -150,7 +150,7 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
         'members': usergroups.get_members,
         'security_roles': usergroups.get_security_roles,
         'privileges': usergroups.get_privileges,
-        'settings': usergroups.get_settings,
+        'settings': usergroups_processors.get_settings,
     }
     _PATCH_PATH_TYPES = {
         "name": str,
@@ -688,9 +688,7 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
 
     def get_settings(self) -> dict:
         """Get the User Group settings from the I-Server."""
-        res = self._API_GETTERS.get('settings')(
-            self.connection, self.id, include_access=True
-        )  # type: ignore
+        res = usergroups.get_settings(self.connection, self.id, include_access=True)
         return res.json()
 
     @property
@@ -711,7 +709,14 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
         return self._privileges
 
     @property
-    def settings(self):
+    def settings(self) -> dict | list[dict]:
+        """Get the User Group settings from the I-Server.
+
+        Returns:
+            List of dictionaries with settings on the server version 11.4.1200
+            and above.
+            Otherwise, returns a dictionary with settings for `jobMemGoverning`.
+        """
         return self._settings
 
     @property

@@ -1,4 +1,5 @@
 import logging
+from collections import deque
 from typing import TYPE_CHECKING
 
 from mstrio import config
@@ -11,6 +12,7 @@ from mstrio.utils.helper import (
     fetch_objects_async,
     get_default_args_from_func,
     get_valid_project_id,
+    get_temp_connection,
 )
 from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.translation_mixin import TranslationMixin
@@ -27,6 +29,8 @@ def list_folders(
     project_name: str | None = None,
     to_dictionary: bool = False,
     limit: int | None = None,
+    include_subfolders: bool = False,
+    parent_folder: "str | Folder | None" = None,
     **filters,
 ) -> list["Folder"] | list[dict]:
     """Get a list of folders - either all folders in a specific project or all
@@ -52,6 +56,21 @@ def list_folders(
             (False) returns objects.
         limit (int): limit the number of elements returned. If `None` (default),
             all objects are returned.
+        include_subfolders (bool): if True, all subfolders are included in the
+            result. Default is False.
+            Note that using this option will result in a large number of
+                objects being fetched, as it will fetch all folders available.
+        parent_folder (string or Folder, optional): Parent folder from which to
+            list folders. Can be provided with three forms of input:
+                - Folder object
+                - Folder ID
+                - Folder path. The path has to be provided in the following
+                    format:
+                        if it's inside of a project, example:
+                            /MicroStrategy Tutorial/Public Objects/Metrics
+                        if it's a root folder, example:
+                            /CASTOR_SERVER_CONFIGURATION/Users
+
         **filters: Available filter parameters: ['name', 'id', 'type',
             'subtype', 'date_created', 'date_modified', 'version', 'acg',
              'owner', 'hidden',
@@ -62,26 +81,53 @@ def list_folders(
     """
     # Project is validated only if project was specified in arguments -
     # otherwise fetch is performed from a non-project area.
-    if project_id or project_name:
-        project_id = get_valid_project_id(
-            connection=connection, project_id=project_id, project_name=project_name
+    temp_conn = get_temp_connection(connection, project_id, project_name)
+    verbose_state = config.verbose
+    if not parent_folder:
+        objects = fetch_objects_async(
+            temp_conn,
+            folders.list_folders,
+            folders.list_folders_async,
+            limit=limit,
+            chunk_size=1000,
+            project_id=project_id,
+            filters=filters,
         )
-    objects = fetch_objects_async(
-        connection,
-        folders.list_folders,
-        folders.list_folders_async,
-        limit=limit,
-        chunk_size=1000,
-        project_id=project_id,
-        filters=filters,
-    )
+    else:
+        parent_folder_id = _get_parent_folder_id(temp_conn, parent_folder)
+        try:
+            config.verbose = False
+            parent_folder = Folder(connection=temp_conn, id=parent_folder_id)
+            objects = parent_folder.get_contents(
+                include_subfolders=include_subfolders,
+                limit=limit,
+                to_dictionary=True,
+                type=8,
+            )
+        finally:
+            config.verbose = verbose_state
+
+    if include_subfolders:
+        recursive_objects = []
+        try:
+            config.verbose = False
+            new_limit = limit - len(objects) if limit else None
+            for obj in objects:
+                folder = Folder(connection=temp_conn, id=obj.get('id'))
+                recursive_objects += folder.get_contents(
+                    to_dictionary=True, include_subfolders=True, limit=new_limit, type=8
+                )
+        finally:
+            config.verbose = verbose_state
+        objects += recursive_objects
+    objects = objects[:limit]
 
     if to_dictionary:
         return objects
     else:
         from mstrio.utils.object_mapping import map_objects_list
 
-        return map_objects_list(connection, objects)
+        return map_objects_list(temp_conn, objects)
 
 
 def get_my_personal_objects_contents(
@@ -258,6 +304,23 @@ def get_folder_id_from_path(connection: "Connection", path: str) -> str:
             )
 
 
+def _get_parent_folder_id(
+    temp_conn: "Connection",
+    parent_folder: "str | Folder | None",
+) -> str:
+    verbose_state = config.verbose
+    if isinstance(parent_folder, str) and '/' in parent_folder:
+        try:
+            config.verbose = False
+            return get_folder_id_from_path(temp_conn, parent_folder)
+        finally:
+            config.verbose = verbose_state
+    elif isinstance(parent_folder, Folder):
+        return parent_folder.id
+    else:
+        return parent_folder
+
+
 class Folder(Entity, CopyMixin, MoveMixin, DeleteMixin, TranslationMixin):
     """Object representation of MicroStrategy Folder object.
 
@@ -412,7 +475,11 @@ class Folder(Entity, CopyMixin, MoveMixin, DeleteMixin, TranslationMixin):
         self._alter_properties(**properties)
 
     def get_contents(
-        self, to_dictionary: bool = False, include_subfolders=False, **filters
+        self,
+        to_dictionary: bool = False,
+        include_subfolders=False,
+        limit: int | None = None,
+        **filters,
     ) -> list:
         """Get contents of a folder. It can contain other folders or different
         kinds of objects.
@@ -424,6 +491,8 @@ class Folder(Entity, CopyMixin, MoveMixin, DeleteMixin, TranslationMixin):
                 subfolders as well. False by default.
                 Note that using this option may result in a large number of
                 objects being fetched, especially if coupled with filters.
+            limit (int, optional): Limit the number of elements returned. If
+                `None` (default), all objects are returned.
             **filters: Available filter parameters: ['name', 'id', 'type',
                 'subtype', 'date_created', 'date_modified', 'version',
                 'acg', 'owner', 'ext_type']
@@ -432,35 +501,38 @@ class Folder(Entity, CopyMixin, MoveMixin, DeleteMixin, TranslationMixin):
             Contents as Python objects (when `to_dictionary` is `False` (default
             value)) or contents as dictionaries otherwise.
         """
-        objects = fetch_objects_async(
-            self.connection,
-            folders.get_folder_contents,
-            folders.get_folder_contents_async,
-            limit=None,
-            chunk_size=1000,
-            id=self.id,
-            filters=filters,
-        )
+        queue = deque([self.id])
+        objects = []
 
-        if include_subfolders:
-            if filters:
-                child_folders = fetch_objects_async(
+        while queue and (limit is None or len(objects) < limit):
+            current_id = queue.popleft()
+            current_objects = fetch_objects_async(
+                self.connection,
+                folders.get_folder_contents,
+                folders.get_folder_contents_async,
+                limit=limit,
+                chunk_size=1000,
+                id=current_id,
+                filters=filters,
+            )
+            objects.extend(current_objects)
+
+            if include_subfolders and (limit is None or len(objects) < limit):
+                current_objects = fetch_objects_async(
                     self.connection,
                     folders.get_folder_contents,
                     folders.get_folder_contents_async,
-                    limit=None,
+                    limit=limit,
                     chunk_size=1000,
-                    id=self.id,
+                    id=current_id,
                     filters={'type': 8},
                 )
-            else:
-                child_folders = [child for child in objects if child.get('type') == 8]
-            for child_folder in child_folders:
-                folder = Folder(connection=self.connection, id=child_folder.get('id'))
-                objects += folder.get_contents(
-                    to_dictionary=True, include_subfolders=True, **filters
-                )
+                child_folders = [
+                    child for child in current_objects if child.get('type') == 8
+                ]
+                queue.extend(child.get('id') for child in child_folders)
 
+        objects = objects[:limit]
         if to_dictionary:
             return objects
         else:

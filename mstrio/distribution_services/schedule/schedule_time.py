@@ -538,7 +538,7 @@ class ScheduleTime(Dictable):
                 recurrence_pattern=recurrence_pattern, execution=execution, daily=daily
             )
         elif recurrence_pattern == ScheduleEnums.RecurrencePattern.WEEKLY:
-            if days_of_week and type(days_of_week) is not list:
+            if days_of_week and not isinstance(days_of_week, list):
                 helper.exception_handler(
                     msg='Error: days_of_week must be provided as a list',
                     exception_type=ValueError,

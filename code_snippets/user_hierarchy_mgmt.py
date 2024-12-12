@@ -1,4 +1,4 @@
-"""This is the demo script to show how to manage user hierachies.
+"""This is the demo script to show how to manage user hierarchies.
 
 This script will not work without replacing parameters with real values.
 Its basic goal is to present what can be done with this module and to
@@ -21,7 +21,7 @@ from mstrio.modeling.schema import (
 from mstrio.connection import get_connection
 
 # For every object we want to reference using a SchemaObjectReference we need
-# to provide an Object ID for. For the script to work correctly all occurences
+# to provide an Object ID for. For the script to work correctly all occurrences
 # of `'<object_id>'` and others with form `<some_name>` need to be replaced with
 # data specific to the object used.
 
@@ -75,7 +75,7 @@ sor2 = SchemaObjectReference(
     # for available options
 )
 
-# create a hierarhcy relationship between two attributes
+# create a hierarchy relationship between two attributes
 relationship = HierarchyRelationship(parent=sor1, child=sor2)
 
 # Define variables which can be later used in a script
@@ -83,7 +83,7 @@ USER_HIERARCHY_NAME = $user_hierarchy_name
 FOLDER_ID = $folder_id
 
 # create a user hierarchy with subtype `DIMENSION_USER_HIERARCHY`
-# and previously created atributes and relationship
+# and previously created attributes and relationship
 new_user_hierarchy = UserHierarchy.create(
     connection=conn,
     name=USER_HIERARCHY_NAME,

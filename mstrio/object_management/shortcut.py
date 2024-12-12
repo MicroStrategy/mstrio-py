@@ -20,6 +20,40 @@ class ShortcutInfoFlags(IntFlag):
 
 
 class Shortcut(Entity, CopyMixin, MoveMixin, TranslationMixin):
+    """Representation of a Shortcut object. It points to another object in
+    the metadata, and for Library objects it stores additional information
+    related to browsing the Library.
+
+    Attributes:
+        connection (Connection): MicroStrategy connection object returned
+            by `connection.Connection()`.
+        id (str): ID of the shortcut object
+        name (str): Name of the shortcut
+        project_id (str): ID of the project that the shortcut is in
+        type (ObjectTypes): object type (SHORTCUT_TYPE)
+        date_created (DateTime): creation time
+        date_modified (DateTime): last modification time
+        version (str): object version ID
+        acg (Rights): access rights
+            (See EnumDSSXMLAccessRightFlags for possible values)
+        acl (list[ACE]): object access control list
+        hidden (bool): Specifies whether the object is hidden
+        owned_by_current_user (bool): whether the current user owns the shortcut
+        target (dict): metadata of the target object related to viewing
+            in Library
+        target_info (dict): general metadata of the target object
+        encode_html_content (bool): Flag indicating whether to encode
+            HTML content
+        current_page_key (str): Current page node key
+        stid (int): Shortcut Sate ID
+        current_bookmark (dict): Name and ID of the current bookmark
+        prompted (bool): Flag indicating whether the target object has prompts
+        datasets_cache_info_hash (str): The hash value for the Dashboard dataset
+            cache info
+        shortcut_info_flag (bool): flag indicating what information about
+            the shortcut should be loaded
+    """
+
     _OBJECT_TYPE = ObjectTypes.SHORTCUT_TYPE
     _API_GETTERS = {
         (
