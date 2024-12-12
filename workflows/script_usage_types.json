@@ -8,6 +8,7 @@
     "delete_inactive_cube_caches.py": "Standard",
     "delete_subscriptions_of_departed_users.py": "Standard",
     "disable_all_active_bots.py": "Standard",
+    "export_selected_information_to_csv.py": "Standard",
     "get_all_columns_in_table.py": "Standard",
     "import_cube_data_into_dataframe.py": "Standard",
     "import_report_data_into_dataframe.py": "Standard",

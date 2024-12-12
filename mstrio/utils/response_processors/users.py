@@ -1,3 +1,4 @@
+from time import sleep, time
 from requests import JSONDecodeError
 
 from mstrio.api import usergroups as usergroups_api
@@ -6,6 +7,9 @@ from mstrio.connection import Connection
 from mstrio.helpers import IServerError
 from mstrio.utils.helper import deprecation_warning, fetch_objects, fetch_objects_async
 from mstrio.utils.version_helper import method_version_handler
+
+TIMEOUT = 60
+TIMEOUT_INCREMENT = 0.25
 
 
 def get(connection: Connection, id: str):
@@ -263,30 +267,57 @@ def update_user_settings(connection: Connection, id: str, body: str):
 
 
 def get_user_last_login(connection: Connection, id: str):
-    response = users_api.get_user_last_login(
-        connection=connection,
-        id=id,
-        whitelist=[(404, 404)],
-        throw_error=False,
-        verbose=False,
-    )
+    # Call the telemetry endpoint. Retry if the user is not found.
+    # This is required because the user appears in the Telemetry Service
+    # with a slight delay after the user is created.
+
+    # The endpoint returns 404 in two cases, differentiated by error message:
+    # if the user does not exist (may be due to a delay) and
+    # if the user exists but does not have any login records.
+
     no_login_date_msg = 'No login found for the given user'
-    try:
-        res = response.json()
-    except JSONDecodeError:
-        if no_login_date_msg in response.text:
-            return None
-        raise response.raise_for_status()
-    error = res.get('errors', [None])[0]
+    no_user_msg = 'User not found'
 
-    if error and no_login_date_msg not in error.get('message'):
-        server_code = error.get('code')
-        ticket_id = error.get('ticketId')
-        server_msg = error.get('message')
+    end_time = time() + TIMEOUT
 
-        raise IServerError(
-            message=f"{server_msg}; code: '{server_code}', ticket_id: '{ticket_id}'",
-            http_code=response.status_code,
+    while time() < end_time:
+        response = users_api.get_user_last_login(
+            connection=connection,
+            id=id,
+            whitelist=[(404, 404)],
+            throw_error=False,
+            verbose=False,
         )
+        try:
+            res = response.json()
+        except JSONDecodeError:
+            if no_user_msg in response.text:
+                sleep(TIMEOUT_INCREMENT)
+                continue
+            elif no_login_date_msg in response.text:
+                return None
+            raise response.raise_for_status()
 
-    return None if error else res
+        error = res.get('errors', [None])[0]
+
+        if error:
+            if no_user_msg in error.get('message'):
+                sleep(TIMEOUT_INCREMENT)
+                continue
+
+            if no_login_date_msg in error.get('message'):
+                return None
+
+            server_code = error.get('code')
+            ticket_id = error.get('ticketId')
+            server_msg = error.get('message')
+
+            raise IServerError(
+                message=f"{server_msg}; code: '{server_code}', "
+                f"ticket_id: '{ticket_id}'",
+                http_code=response.status_code,
+            )
+
+        return res
+
+    raise ValueError(f"There is no user with ID {id}. Timeout exceeded")

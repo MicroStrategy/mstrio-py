@@ -28,6 +28,7 @@ from mstrio.utils.filter import Filter
 from mstrio.utils.helper import (
     exception_handler,
     fallback_on_timeout,
+    find_object_with_name,
     get_parallel_number,
     get_valid_project_id,
     response_handler,
@@ -248,13 +249,20 @@ class Report(
             )
 
         if id is None:
-            result: list[dict] = list_reports(connection, name=name, to_dictionary=True)
-
-            if result:
-                object_data = result[0]
-                self._init_variables(**object_data, connection=connection)
-            else:
-                raise ValueError(f"There is no Report named: '{name}'.")
+            report = find_object_with_name(
+                connection=connection,
+                cls=self.__class__,
+                name=name,
+                listing_function=list_reports,
+                search_pattern=SearchPattern.EXACTLY,
+            )
+            super().__init__(
+                connection,
+                report['id'],
+                instance_id=instance_id,
+                parallel=parallel,
+                progress_bar=progress_bar,
+            )
         elif id == '':
             raise ValueError("Report ID cannot be an empty string.")
         else:

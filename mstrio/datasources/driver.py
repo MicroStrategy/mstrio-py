@@ -1,3 +1,6 @@
+import logging
+
+from mstrio import config
 from mstrio.connection import Connection
 from mstrio.types import ObjectTypes
 from mstrio.utils.entity import Entity
@@ -7,6 +10,8 @@ from mstrio.utils.response_processors import drivers
 from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.translation_mixin import TranslationMixin
 from mstrio.utils.version_helper import class_version_handler
+
+logger = logging.getLogger(__name__)
 
 
 def list_drivers(
@@ -120,16 +125,21 @@ class Driver(Entity, TranslationMixin):
         self.is_enabled = kwargs.get('is_enabled')
         self.is_odbc = kwargs.get('is_odbc')
 
-    def alter(self, is_enabled: bool | None = None, comments: str | None = None):
+    def alter(
+        self, is_enabled: bool | None = None, comments: str | None = None
+    ) -> None:
         """Update properties of a Driver
 
         Args:
            is_enabled (bool, optional): specifies if a Driver is enabled
-           comments: long description of the Driver
+           comments (str, optional): long description of the Driver
         """
-        properties = {'enabled': is_enabled}
+        properties = {'enabled': is_enabled, 'comments': comments}
         not_none_properties = delete_none_values(properties, recursion=False)
         self._alter_properties(**not_none_properties)
+
+        if config.verbose:
+            logger.info(f"Updated driver: '{self.name}' with ID: {self.id}.")
 
     @classmethod
     def list(

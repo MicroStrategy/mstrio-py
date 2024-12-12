@@ -1,4 +1,6 @@
 from mstrio.api import usergroups as usergroups_api
+from mstrio.utils.helper import camel_to_snake
+from mstrio.utils.version_helper import is_server_min_version
 
 
 def update_user_group_info(connection, id, body):
@@ -22,3 +24,24 @@ def update_user_group_info(connection, id, body):
         result.pop('members')
 
     return result
+
+
+def get_settings(
+    connection, id, include_access=False, offset=0, limit=-1, error_msg=None
+):
+    response = usergroups_api.get_settings(
+        connection=connection,
+        id=id,
+        include_access=include_access,
+        offset=offset,
+        limit=limit,
+        error_msg=error_msg,
+    ).json()
+
+    if is_server_min_version(connection, '11.4.1200'):
+        list_of_settings = [
+            {key: value} for key, value in camel_to_snake(response).items()
+        ]
+        response = {'settings': list_of_settings}
+
+    return response

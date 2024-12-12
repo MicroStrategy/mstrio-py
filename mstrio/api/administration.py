@@ -1,3 +1,5 @@
+from requests import Response
+
 from mstrio.connection import Connection
 from mstrio.utils.error_handlers import ErrorHandler
 
@@ -850,4 +852,166 @@ def storage_service_update_configs(
     return connection.patch(
         endpoint='/api/mstrServices/library/storage',
         json=body,
+    )
+
+
+@ErrorHandler(err_msg="Error getting fences list.")
+def list_fences(
+    connection: Connection, fields: str | None = None, error_msg: str | None = None
+) -> Response:
+    """Get the list of fences.
+
+    Args:
+        connection (Connection): MicroStrategy REST API connection object
+        fields (str, optional): A comma-separated list of fields to include
+                in the response. By default, all fields are returned.
+        error_msg (str, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object.
+    """
+    return connection.get(endpoint='/api/v2/iserver/fences', params={'fields': fields})
+
+
+@ErrorHandler(err_msg="Error creating a new fence.")
+def create_fence(
+    connection: Connection,
+    body: dict,
+    fields: str | None = None,
+    error_msg: str | None = None,
+) -> Response:
+    """Create a new fence.
+
+    Args:
+        connection (Connection): MicroStrategy REST API connection object
+        body (dict): Fence creation data
+        fields (str, optional): A comma-separated list of fields to include
+                in the response. By default, all fields are returned.
+        error_msg (str, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object.
+
+    """
+    return connection.post(
+        endpoint='/api/v2/iserver/fences',
+        params={'fields': fields},
+        json=body,
+    )
+
+
+@ErrorHandler(err_msg="Error getting fence with ID: {id}")
+def get_fence(
+    connection: Connection,
+    id: str,
+    fields: str | None = None,
+    error_msg: str | None = None,
+) -> Response:
+    """Get a fence by ID.
+
+    Args:
+        connection (Connection): MicroStrategy REST API connection object
+        id (str): Fence ID
+        fields (str, optional): A comma-separated list of fields to include
+                in the response. By default, all fields are returned.
+        error_msg (str, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object.
+    """
+    return connection.get(
+        endpoint=f'/api/v2/iserver/fences/{id}',
+        params={'fields': fields},
+    )
+
+
+@ErrorHandler(err_msg="Error deleting fence with ID: {id}")
+def delete_fence(
+    connection: Connection, id: str, error_msg: str | None = None
+) -> Response:
+    """Delete a fence by ID.
+
+    Args:
+        connection (Connection): MicroStrategy REST API connection object
+        id (str): Fence ID
+        error_msg (str, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object.
+    """
+    return connection.delete(endpoint=f'/api/v2/iserver/fences/{id}')
+
+
+@ErrorHandler(err_msg="Error updating fence with ID: {id}")
+def update_fence(
+    connection: Connection,
+    id: str,
+    body: dict,
+    fields: str | None = None,
+    error_msg: str | None = None,
+) -> Response:
+    """Update a fence by ID.
+
+    Args:
+        connection (Connection): MicroStrategy REST API connection object
+        id (str): Fence ID
+        body (dict): Fence update data
+        fields (str, optional): A comma-separated list of fields to include
+                in the response. By default, all fields are returned.
+        error_msg (str, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object.
+    """
+    return connection.patch(
+        endpoint=f'/api/v2/iserver/fences/{id}',
+        params={'fields': fields},
+        json=body,
+    )
+
+
+@ErrorHandler(err_msg="Error getting cluster startup membership information.")
+def get_cluster_startup_membership(
+    connection: Connection, fields: str | None = None, error_msg: str | None = None
+) -> Response:
+    """Get the cluster startup membership information.
+
+    Args:
+        connection (Connection): MicroStrategy REST API connection object
+        fields (str, optional): A comma-separated list of fields to include
+                in the response. By default, all fields are returned.
+        error_msg (str, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object.
+    """
+    return connection.get(
+        endpoint='/api/iserver/clusterStartupMembership',
+        params={'fields': fields},
+    )
+
+
+@ErrorHandler(err_msg="Error updating cluster startup membership information.")
+def update_cluster_startup_membership(
+    connection: Connection,
+    body: dict,
+    fields: str | None = None,
+    error_msg: str | None = None,
+) -> Response:
+    """Update the cluster startup membership information.
+
+    Args:
+        connection (Connection): MicroStrategy REST API connection object
+        body (dict): Cluster startup membership update data
+        fields (str, optional): A comma-separated list of fields to include
+                in the response. By default, all fields are returned.
+        error_msg (str, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object.
+    """
+    return connection.put(
+        endpoint='/api/iserver/clusterStartupMembership',
+        json=body,
+        params={'fields': fields},
     )

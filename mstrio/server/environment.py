@@ -6,6 +6,8 @@ from mstrio import config
 from mstrio.api import administration as admin_api
 from mstrio.api import monitors as monitors_api
 from mstrio.helpers import IServerError
+from mstrio.server.fence import Fence
+from mstrio.server.fence import list_fences as _list_fences
 from mstrio.server.project import Project, compare_project_settings
 from mstrio.server.server import ServerSettings
 from mstrio.server.storage import StorageService, StorageType
@@ -262,6 +264,25 @@ class Environment:
             self.connection, project_id, node_name
         ).json()
         return response['nodes']
+
+    def list_fences(
+        self, to_dictionary: bool = False, limit: int | None = None, **filters
+    ) -> list['Fence'] | list[dict]:
+        """Get list of fences.
+
+        Args:
+            to_dictionary (bool, optional): If True returns dicts, by default
+                (False) returns objects.
+            limit (int, optional): limit the number of elements returned.
+                If `None` (default), all objects are returned.
+            **filters: Available filter parameters:
+                ['name', 'id', 'type', 'rank']
+
+        Returns:
+            A list of content group objects or dictionaries representing them.
+        """
+
+        return _list_fences(self.connection, to_dictionary, limit, **filters)
 
     def is_loaded(
         self, project_id: str | None = None, project_name: str | None = None

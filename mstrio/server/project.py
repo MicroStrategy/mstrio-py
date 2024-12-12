@@ -10,7 +10,7 @@ from tqdm import tqdm
 
 from mstrio import config
 from mstrio.api import datasources as datasources_api
-from mstrio.api import monitors, projects, objects
+from mstrio.api import monitors, objects, projects
 from mstrio.connection import Connection
 from mstrio.helpers import IServerError
 from mstrio.server.project_languages import (
@@ -25,12 +25,13 @@ from mstrio.utils.response_processors import projects as projects_processors
 from mstrio.utils.settings.base_settings import BaseSettings
 from mstrio.utils.time_helper import DatetimeFormats
 from mstrio.utils.translation_mixin import TranslationMixin
-from mstrio.utils.version_helper import is_server_min_version, method_version_handler
+from mstrio.utils.version_helper import method_version_handler
 from mstrio.utils.vldb_mixin import ModelVldbMixin
 from mstrio.utils.wip import wip
 
 if TYPE_CHECKING:
     from mstrio.datasources import DatasourceInstance
+    from mstrio.server.node import Node
     from mstrio.users_and_groups import User
 
 logger = logging.getLogger(__name__)
@@ -51,7 +52,7 @@ class ProjectStatus(IntEnum):
     WHEXECIDLE = 4
 
 
-class IdleMode(Enum):
+class IdleMode(AutoName):
     """Used to specify the exact behaviour of `idle` request.
 
     `REQUEST` (Request Idle): all executing and queued jobs finish executing
@@ -78,6 +79,12 @@ class IdleMode(Enum):
     WAREHOUSEEXEC = "wh_exec_idle"
     FULL = "partial_idle"
     PARTIAL = "full_idle"
+    UNLOADED = auto()
+    LOADED = auto()
+    UNLOADED_PENDING = auto()
+    LOADED_PENDING = auto()
+    PENDING = auto()
+    UNKNOWN = auto()
 
 
 class LockType(AutoName):
@@ -426,10 +433,10 @@ class Project(Entity, ModelVldbMixin, DeleteMixin, TranslationMixin):
     def __change_project_state(
         self, func, on_nodes: str | list[str] | None = None, **mode
     ):
-        if type(on_nodes) is list:
+        if isinstance(on_nodes, list):
             for node in on_nodes:
                 func(node, **mode)
-        elif type(on_nodes) is str:
+        elif isinstance(on_nodes, str):
             func(on_nodes, **mode)
         elif on_nodes is None:
             for node in self.nodes:
@@ -522,8 +529,20 @@ class Project(Entity, ModelVldbMixin, DeleteMixin, TranslationMixin):
 
         self.__change_project_state(func=resume_project, on_nodes=on_nodes)
 
+    @staticmethod
+    def _normalize_nodes(
+        on_nodes: 'str | list[str] | Node | list[Node] | None',
+    ) -> str | list[str] | None:
+        from mstrio.server.node import Node
+
+        if isinstance(on_nodes, list):
+            return [node.name if isinstance(node, Node) else node for node in on_nodes]
+        return on_nodes.name if isinstance(on_nodes, Node) else on_nodes
+
     @method_version_handler('11.2.0000')
-    def load(self, on_nodes: str | list[str] | None = None) -> None:
+    def load(
+        self, on_nodes: 'str | list[str] | Node | list[Node] | None' = None
+    ) -> None:
         """Request to load the project onto the chosen cluster nodes. If
         nodes are not specified, the project will be loaded on all nodes.
 
@@ -531,6 +550,7 @@ class Project(Entity, ModelVldbMixin, DeleteMixin, TranslationMixin):
             on_nodes: Name of node, if not passed, project will be loaded
                 on all of the nodes.
         """
+        on_nodes = self._normalize_nodes(on_nodes)
 
         def load_project(node):
             body = {
@@ -553,7 +573,9 @@ class Project(Entity, ModelVldbMixin, DeleteMixin, TranslationMixin):
         self.__change_project_state(func=load_project, on_nodes=on_nodes)
 
     @method_version_handler('11.2.0000')
-    def unload(self, on_nodes: str | list[str] | None = None) -> None:
+    def unload(
+        self, on_nodes: 'str | list[str] | Node | list[Node] | None' = None
+    ) -> None:
         """Request to unload the project from the chosen cluster nodes. If
         nodes are not specified, the project will be unloaded on all nodes.
         The unload action cannot be performed until all jobs and connections
@@ -564,6 +586,7 @@ class Project(Entity, ModelVldbMixin, DeleteMixin, TranslationMixin):
             on_nodes: Name of node, if not passed, project will be unloaded
                 on all of the nodes.
         """
+        on_nodes = self._normalize_nodes(on_nodes)
 
         def unload_project(node):
             body = {
@@ -847,7 +870,6 @@ class Project(Entity, ModelVldbMixin, DeleteMixin, TranslationMixin):
                 f"Datasources were successfully removed from the project {self.id}."
             )
 
-    @wip('11.4.1200')
     @method_version_handler('11.3.0600')
     def lock(self, lock_type: str | LockType, lock_id: str | None = None) -> None:
         """Lock the project.
@@ -856,34 +878,55 @@ class Project(Entity, ModelVldbMixin, DeleteMixin, TranslationMixin):
             lock_type (str, LockType): Lock type.
             lock_id (str, optional): Lock ID.
         """
+        self.fetch('lock_status')
+
+        if self.lock_status.lock_type != LockType.NOT_LOCKED:
+            msg = (
+                f"Project '{self.id}' is already locked with the lock type "
+                f"`{self.lock_status.lock_type}`. "
+                f"Please unlock it before applying a new lock."
+            )
+            raise ValueError(msg)
+
         lock_type = get_enum_val(lock_type, LockType)
 
         projects.update_project_lock(
-            self.connection, self.id, {"lockType": lock_type, "lockId": lock_id}
+            self.connection, self.id, {'lockType': lock_type, 'lockId': lock_id}
         )
 
         if config.verbose:
             logger.info(f"Project '{self.id}' locked.")
 
-    @wip('11.4.1200')
     @method_version_handler('11.3.0600')
     def unlock(
-        self, lock_type: str | LockType, lock_id: str | None = None, force: bool = False
+        self,
+        lock_type: str | LockType | None = None,
+        lock_id: str | None = None,
+        force: bool = False,
     ) -> None:
         """Unlock the project.
 
         Args:
-            lock_type (str, LockType): Lock type.
+            lock_type (str, LockType, optional): Lock type.  Optional only if
+                `force` is set to True.
             lock_id (str, optional): Lock ID.
             force (bool, optional): Whether to force unlock the project.
         """
+        self.fetch('lock_status')
 
-        if not force and not lock_id:
+        if self.lock_status.lock_type == LockType.NOT_LOCKED:
+            msg = f"Project '{self.id}' is not locked."
+            raise ValueError(msg)
+
+        if not force and not (lock_id and lock_type):
             msg = (
-                "`lock_id` must be provided to unlock the project "
+                "`lock_id` and `lock_type` must be provided to unlock the project "
                 "when `force` is False."
             )
             raise ValueError(msg)
+
+        if force and not lock_type:
+            lock_type = self.lock_status.lock_type
 
         lock_type = get_enum_val(lock_type, LockType)
 
@@ -898,21 +941,22 @@ class Project(Entity, ModelVldbMixin, DeleteMixin, TranslationMixin):
         if config.verbose:
             logger.info(f"Project '{self.id}' unlocked.")
 
-    def list_properties(self, excluded_properties: list[str] | None = None) -> dict:
-        excluded_properties = excluded_properties or []
-        if not is_server_min_version(self.connection, '11.3.1200'):
-            excluded_properties.extend(
-                prop
-                for prop in ['data_language_settings', 'metadata_language_settings']
-                if prop not in excluded_properties
-            )
-        if (
-            not is_server_min_version(self.connection, '11.3.0600')
-            and 'lock_status' not in excluded_properties
-        ):
-            excluded_properties.append('lock_status')
+    def get_status_on_node(self, node: 'str | Node') -> IdleMode:
+        """Get status of the project of specific node in the connected
+        Intelligence server cluster.
 
-        return super().list_properties(excluded_properties)
+        Args:
+            node (str, Node): Name of the node or Node object.
+
+        Returns:
+            IdleMode: Status of the project on the node.
+        """
+        node_name = node if isinstance(node, str) else node.name
+        return IdleMode(
+            monitors.get_project_status_on_node(
+                self.connection, node_name, self.id
+            ).json()['status']
+        )
 
     @property
     def load_on_startup(self):
@@ -970,7 +1014,6 @@ class Project(Entity, ModelVldbMixin, DeleteMixin, TranslationMixin):
         return self._metadata_language_settings
 
     @property
-    @wip('11.4.1200')
     @method_version_handler('11.3.0600')
     def lock_status(self) -> LockStatus:
         return self._lock_status

@@ -26,8 +26,8 @@ for p in priv:
 priv[0].list_properties()
 
 # Define variables which can be later used in a script
-SECURITY_ROLE_NAME = $security_role_name  # Insert name of newly created or accesed security role
-SECURITY_ROLE_DESCRIPTION = $security_role_description  # Insert description of newly created or accesed security role
+SECURITY_ROLE_NAME = $security_role_name  # Insert name of newly created or accessed security role
+SECURITY_ROLE_DESCRIPTION = $security_role_description  # Insert description of newly created or accessed security role
 
 # SecurityRoles
 # Create new SecurityRole

@@ -2,7 +2,7 @@ import getpass
 import logging
 from collections.abc import Iterable
 from enum import auto
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
@@ -10,13 +10,15 @@ import pandas as pd
 from mstrio import config
 from mstrio.api import administration, monitors, registrations
 from mstrio.connection import Connection
+from mstrio.helpers import VersionException
 from mstrio.utils.enum_helper import AutoName, AutoUpperName
 from mstrio.utils.helper import (
     exception_handler,
     filter_list_of_dicts,
+    get_valid_project_id,
     validate_param_value,
 )
-from mstrio.utils.version_helper import method_version_handler
+from mstrio.utils.version_helper import is_server_min_version, method_version_handler
 
 from .node import Node, Service, ServiceWithNode
 
@@ -59,35 +61,47 @@ class Cluster:
     @method_version_handler('11.2.0000')
     def list_nodes(
         self,
-        project: "Optional[str | Project]" = None,
+        project: 'str | Project | None' = None,
+        project_name: str | None = None,
         node: str | Node | None = None,
         to_dictionary: bool = False,
     ) -> list[Node | dict]:
         """Return a list of nodes and their properties within the cluster.
 
-        Optionally filter by `project_id` or `node_name`.
-
         Args:
-            project: Project ID or object
-            node: Node name or object
+            project (str, Project, optional): Project ID or object
+            project_name (str, optional): Project name
+            node (str, optional): Node name or object
+            to_dictionary (bool, optional): If True returns dict, by default
+                (False) returns Node objects
+
+        Returns:
+            A list of dictionaries representing nodes or a list of Node Objects.
         """
         from mstrio.server.project import Project
 
         project_id = project.id if isinstance(project, Project) else project
+
+        if not project_id and project_name:
+            project_id = get_valid_project_id(
+                connection=self.connection,
+                project_name=project_name,
+                with_fallback=True,
+            )
+
         node_name = node.name if isinstance(node, Node) else node
         response = monitors.get_node_info(self.connection, project_id, node_name)
         node_dicts = response.json()['nodes']
         if to_dictionary:
             return node_dicts
-        else:
-            return [Node.from_dict(node) for node in node_dicts]
+        return [Node.from_dict(node, self.connection) for node in node_dicts]
 
     def list_services(self, group_by: GroupBy | str = GroupBy.NODES) -> list:
         """List services in the cluster grouped by nodes or services.
 
         When `group_by` is set to `nodes` then in the list for each node there
         is given a list of services which are available within. When `group_by`
-        is set to `services` then in the list for each services there is given a
+        is set to `services` then in the list for each service there is given a
         list of nodes on which current service is available.
 
         Args:
@@ -100,38 +114,34 @@ class Cluster:
             ValueError if `group_by` is neither equal to `nodes` nor `services`.
         """
 
-        if not isinstance(group_by, GroupBy):
-            try:
-                group_by = GroupBy(group_by)
-            except ValueError:
-                raise ValueError(
-                    "When listing services it is possible to group them only by "
-                    "`nodes` or `services`. See the GroupBy enum."
-                )
+        if group_by not in GroupBy.__members__.values():
+            raise ValueError(
+                "When listing services it is possible to group them only by "
+                "`nodes` or `services`. See the GroupBy enum."
+            )
+
         if group_by == GroupBy.NODES:
             nodes = registrations.get_nodes(connection=self.connection).json()
             return [
                 {
-                    'node': Node.from_dict(node['node']),
+                    'node': Node.from_dict(node['node'], self.connection),
                     'services': [
                         Service.from_dict(service) for service in node['services']
                     ],
                 }
                 for node in nodes
             ]
-        else:  # GroupBy.SERVICES
-            services = registrations.get_services(connection=self.connection).json()
-            return [
-                {
-                    'service': service['service'],
-                    'nodes': [
-                        ServiceWithNode.from_dict(node) for node in service['nodes']
-                    ],
-                }
-                for service in services
-            ]
+        # GroupBy.SERVICES
+        services = registrations.get_services(connection=self.connection).json()
+        return [
+            {
+                'service': service['service'],
+                'nodes': [ServiceWithNode.from_dict(node) for node in service['nodes']],
+            }
+            for service in services
+        ]
 
-    def nodes_topology(self, styled=False) -> "pd.DataFrame | Styler":
+    def nodes_topology(self, styled: bool = False) -> "pd.DataFrame | Styler":
         """Return cluster node topology as Pandas DataFrame or Styler object.
 
         DataFrame columns:
@@ -141,7 +151,7 @@ class Cluster:
             - for each node in the cluster there is given a column which name is
                 name of a node and its content is information with the status of
                 the given service in this node. Available values of status are:
-                'Running' (green color), 'Stopped' (red color), 'Not Available
+                'Running' (green color), 'Stopped' (red color), 'Not Available'
                 (service unavailable on the node)
 
         Returns:
@@ -179,10 +189,9 @@ class Cluster:
 
         if styled:
             return service_type.style.applymap(Cluster._show_color)
-        else:
-            return service_type
+        return service_type
 
-    def services_topology(self, styled=False) -> "pd.DataFrame | Styler":
+    def services_topology(self, styled: bool = False) -> "pd.DataFrame | Styler":
         """Return cluster service topology as Pandas DataFrame or Styler object.
 
         DataFrame columns:
@@ -207,11 +216,11 @@ class Cluster:
             for s in services
         ]
 
-        tmp = []
-        for s in services_topology:
-            for n in s['nodes']:
-                n['service'] = s['service']
-                tmp.append(n)
+        tmp = [
+            {**n, 'service': s['service']}
+            for s in services_topology
+            for n in s['nodes']
+        ]
 
         tmp_df = pd.DataFrame(tmp)[['service', 'node', 'status']]
         tmp_df['status'] = tmp_df['status'].map(
@@ -221,47 +230,89 @@ class Cluster:
 
         if styled:
             return tmp_df.style.applymap(Cluster._show_color, subset='status')
-        else:
-            return tmp_df
+        return tmp_df
 
     @method_version_handler('11.2.0000')
-    def add_node(self, node: str | Node) -> None:
+    def add_node(self, node: str | Node, add_to_cluster_startup: bool = False) -> None:
         """Add server (node) to the cluster.
 
         Args:
             node: name or object of node to be added
+            add_to_cluster_startup (bool): if True, the node will be added
+                to the cluster startup membership configuration
         """
         name = node.name if isinstance(node, Node) else node
         monitors.add_node(self.connection, name)
+
         if config.verbose:
-            logger.info(f'{name} added to cluster.')
+            logger.info(f"{name} added to cluster.")
+
+        if add_to_cluster_startup:
+            if not is_server_min_version(self.connection, '11.3.1200'):
+                raise VersionException(
+                    "`add_to_cluster_startup` requires version 11.3.1200 or higher"
+                )
+            nodes = self.list_cluster_startup_membership()
+            if name not in nodes:
+                self.update_cluster_startup_membership(nodes + [name])
+                startup_msg = f"{name} added to cluster startup membership."
+            else:
+                startup_msg = f"{name} already in cluster startup membership."
+            if config.verbose:
+                logger.info(startup_msg)
 
     @method_version_handler('11.2.0000')
-    def remove_node(self, node: str | Node) -> None:
+    def remove_node(
+        self, node: str | Node, remove_from_cluster_startup: bool = False
+    ) -> None:
         """Remove server (node) from the cluster.
 
         Args:
-            node: name or object of node to be removed
+            node (str | Node): name or object of node to be removed
+            remove_from_cluster_startup (bool): if True, the node will be
+                removed from the cluster startup membership configuration
         """
         name = node.name if isinstance(node, Node) else node
+
+        if self.default_node == name:
+            raise ValueError(
+                f"Node: {name} is set as default node. Set another node as default "
+                "before removing this node."
+            )
+
+        if remove_from_cluster_startup:
+            if not is_server_min_version(self.connection, '11.3.1200'):
+                raise VersionException(
+                    "`remove_from_cluster_startup` requires version 11.3.1200 or higher"
+                )
+            nodes = self.list_cluster_startup_membership()
+            if name in nodes:
+                self.update_cluster_startup_membership([n for n in nodes if n != name])
+                startup_msg = f"{name} removed from cluster startup membership."
+            else:
+                startup_msg = f"{name} not in cluster startup membership."
+            if config.verbose:
+                logger.info(startup_msg)
+
         monitors.remove_node(self.connection, name)
+
         if config.verbose:
-            logger.info(f'{name} removed from cluster.')
+            logger.info(f"{name} removed from cluster.")
 
     def set_primary_node(self, node: str | Node) -> None:
         """Set default/primary server (node) for the cluster.
 
         Args:
-            name: name or object of the node which will be set as default
-                for this cluster
+            node (str | Node): name or object of the node which will be set
+                as default for this cluster
         """
         name = node.name if isinstance(node, Node) else node
-        body = {"defaultHostname": name}
-        res = administration.update_iserver_configuration_settings(
+        body = {'defaultHostname': name}
+        administration.update_iserver_configuration_settings(
             connection=self.connection, body=body
         )
-        if res.ok and config.verbose:
-            logger.info(f'Primary node of the cluster was set to {name}.')
+        if config.verbose:
+            logger.info(f"Primary node of the cluster was set to {name}.")
 
     def check_dependency(self, service: str) -> list[str]:
         """Check all dependencies for the given service.
@@ -283,25 +334,26 @@ class Cluster:
             service = filter_list_of_dicts(
                 self._metadata['serviceTypes'], name=service_name
             )
-            if service:
-                service = service[0]
-                dependencies_set = {
-                    name
-                    for id, name in service_id_map.items()
-                    if id in service['dependsOn']
-                }
 
-                if dependencies_set:
-                    for srv in dependencies_set:
-                        dependencies_set.update(get_dependencies_recursively(srv))
-                    return dependencies_set
-                else:
-                    return {}
-            else:
+            if not service:
                 raise ValueError(
                     f"Service {service_name} is incorrect. Please choose one of: "
                     f"{available_services}"
                 )
+
+            service = service[0]
+            dependencies_set = {
+                name
+                for id, name in service_id_map.items()
+                if id in service['dependsOn']
+            }
+
+            if not dependencies_set:
+                return {}
+
+            for srv in dependencies_set.copy():
+                dependencies_set.update(get_dependencies_recursively(srv))
+            return dependencies_set
 
         return list(get_dependencies_recursively(service))
 
@@ -377,17 +429,20 @@ class Cluster:
             logger.info(msg)
             if input("Are you sure you want to proceed? [Y/N]:") == 'N':
                 return
+
         if action == ServiceAction.START:
             self._check_dependencies(service, service_list)
+
         # get credentials for operation on service
         if not login or not passwd:
-            print("Provide credentials for SSH operation.")
+            logger.info("Provide credentials for SSH operation.")
         if not login:
             login = input("username: ")
         if not passwd:
             passwd = getpass.getpass("password: ")
-        wrong = []
-        good = []
+
+        wrong, good = [], []
+
         # try to start each node; in case of error, execution is not terminated
         for node_name in nodes:
             info = Cluster._get_node_info(node_name, service, service_list)
@@ -403,17 +458,15 @@ class Cluster:
                 address=info['address'],
                 action=action.value,
             ).ok
-            if not result:
-                wrong.append(node_name)
-            else:
-                good.append(node_name)
+            (good if result else wrong).append(node_name)
         self._show_start_stop_msg(service, wrong, good, action)
 
     def list_node_settings(self, node: str | Node) -> dict:
         """List server (nodes) settings.
 
         Args:
-            node: name or object of node which settings will be listed
+            node (str | Node): name or object of node which settings will be
+                listed
 
         Returns:
             dictionary with the settings of node returned from I-Server.
@@ -433,15 +486,16 @@ class Cluster:
         within a cluster.
 
         Args:
-            load_balance_factor: This setting becomes relevant in an environment
-                that has a MicroStrategy Intelligence Server cluster. By
-                default, the load balance factor is 1. The value can be
-                increased on more powerful servers in a cluster to provide an
-                appropriate balance. A larger load balance factor means the
-                current server consumes a greater load in the server cluster in
-                which it resides.
-            initial_pool_size: Initial number of connections available.
-            max_pool_size: Maximum number of connections available.
+            node (str | Node): Name or object of the node to update.
+            load_balance_factor (int): This setting becomes relevant in
+                an environment that has a MicroStrategy Intelligence Server
+                cluster. By default, the load balance factor is 1.
+                The value can be increased on more powerful servers in a cluster
+                to provide an appropriate balance. A larger load balance factor
+                means the current server consumes a greater load in the server
+                cluster in which it resides.
+            initial_pool_size (int): Initial number of connections available.
+            max_pool_size (int): Maximum number of connections available.
         """
         validate_param_value("load_balance_factor", load_balance_factor, int, 100, 1)
         validate_param_value("initial_pool_size", initial_pool_size, int, 1024, 1)
@@ -453,10 +507,8 @@ class Cluster:
             "initialPoolSize": initial_pool_size,
             "maxPoolSize": max_pool_size,
         }
-        response = administration.update_iserver_node_settings(
-            self.connection, body, node_name
-        )
-        if config.verbose and response.ok:
+        administration.update_iserver_node_settings(self.connection, body, node_name)
+        if config.verbose:
             logger.info(f'Intelligence Server configuration updated for {node_name}')
 
     def reset_node_settings(self, node: str | Node) -> None:
@@ -526,8 +578,8 @@ class Cluster:
         project = Project._list_projects(self.connection, name=project_name)[0]
         project.unload(on_nodes=on_nodes)
 
+    @staticmethod
     def _show_start_stop_msg(
-        self,
         service_name: str,
         wrong: list[str],
         good: list[str],
@@ -537,13 +589,13 @@ class Cluster:
         service with the information on which node the actions were good (done
         correctly) and on which were wrong (response status was not ok).
         """
-        if len(wrong) > 0:
+        if wrong:
             action_msg = 'started' if action == ServiceAction.START else 'stopped'
             nodes_msg = ', '.join(wrong)
             logger.warning(
                 f'Service {service_name} was not {action_msg} for node(s) {nodes_msg}.'
             )
-        if len(good) > 0:
+        if good:
             action_msg = 'start' if action == ServiceAction.START else 'stop'
             nodes_msg = ','.join(good)
             logger.info(
@@ -551,9 +603,8 @@ class Cluster:
                 f'{nodes_msg}.'
             )
 
-    def _check_service(
-        self, service_name: str, service_list: list[ServiceWithNode]
-    ) -> None:
+    @staticmethod
+    def _check_service(service_name: str, service_list: list[ServiceWithNode]) -> None:
         """Checks if the name of the given service is one of the names of
         existing services.
 
@@ -599,8 +650,7 @@ class Cluster:
         all_nodes = self.list_nodes(to_dictionary=True)
         all_node_names = [node['name'] for node in all_nodes]
         active_nodes = [
-            node['name']
-            for node in filter(lambda node: node['status'] == 'running', all_nodes)
+            node['name'] for node in all_nodes if node['status'] == 'running'
         ]
 
         for node_name in node_names:
@@ -609,12 +659,10 @@ class Cluster:
                     f"Node '{node_name}' is incorrect. Please choose one of: "
                     f"{all_node_names}"
                 )
-            elif node_name not in active_nodes:
+            if node_name not in active_nodes:
                 raise ValueError(
                     f"Node '{node_name}' is stopped. Try starting it first."
                 )
-            else:
-                continue
 
     @staticmethod
     def _check_service_running(
@@ -634,10 +682,9 @@ class Cluster:
         ][0]
 
         if node_name:
-            node = [node for node in nodes if node.node == node_name]
+            node = [node for node in nodes if node.node == node_name][0]
             return node.status == 'PASSING'
-        else:
-            return bool([True for node in nodes if node.status == 'PASSING'])
+        return bool([True for node in nodes if node.status == 'PASSING'])
 
     @staticmethod
     def _get_node_info(
@@ -656,31 +703,48 @@ class Cluster:
                 exception_type=Warning,
             )
             return None
-        else:
-            node = node[0]
 
-        if node.service_control is False:
+        node = node[0]
+
+        if not node.service_control:
             exception_handler(
                 f"Service {service_name} cannot be controlled on {node_name}",
                 exception_type=Warning,
             )
             return None
-        else:
-            return node.to_dict()
+
+        return node.to_dict()
 
     @staticmethod
     def _show_color(val: str) -> str:
         """Prepare color in which values of columns in DataFrames for
         topologies are shown."""
-        match val:
-            case 'Running':
-                color = 'Green'
-            case 'Stopped':
-                color = '#b22222'
-            case _:
-                color = 'Black'
+        colors = {'Running': 'Green', 'Stopped': '#b22222'}
+        return f'color: {colors.get(val, "Black")}'
 
-        return f'color: {color}'
+    @method_version_handler('11.3.1200')
+    def list_cluster_startup_membership(self) -> list[str]:
+        """Get a list of I-Server hostnames which are part of cluster startup
+        membership configuration."""
+
+        return administration.get_cluster_startup_membership(self.connection).json()[
+            'clusterStartupMembership'
+        ]
+
+    @method_version_handler('11.3.1200')
+    def update_cluster_startup_membership(self, nodes: list[str | Node]) -> None:
+        """Update cluster startup membership configuration.
+
+        Args:
+            nodes (list[str | None]): list of node names which will be set
+                as cluster startup membership.
+        """
+
+        nodes = [node.name if isinstance(node, Node) else node for node in nodes]
+
+        administration.update_cluster_startup_membership(
+            self.connection, {'clusterStartupMembership': nodes}
+        )
 
     @property
     def default_node(self) -> str | None:

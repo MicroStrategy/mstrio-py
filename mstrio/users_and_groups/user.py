@@ -1211,28 +1211,3 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
             with telemetry service enabled.
         """
         return self._last_login
-
-    def _is_last_login_available(self) -> bool:
-        if not is_server_min_version(self.connection, '11.4.0600'):
-            return False
-        try:
-            users.get_user_last_login(self.connection, self.id)
-            return True
-        except Exception:
-            return False
-
-    def list_properties(self, excluded_properties: list[str] | None = None) -> dict:
-        excluded_properties = excluded_properties or []
-        if (
-            not self._is_last_login_available()
-            and 'last_login' not in excluded_properties
-        ):
-            excluded_properties.append('last_login')
-        return super().list_properties(excluded_properties)
-
-    def fetch(self, attr: str | None = None) -> None:
-        if not self._is_last_login_available():
-            self._API_GETTERS = {
-                k: v for k, v in self._API_GETTERS.items() if k != 'last_login'
-            }
-        super().fetch(attr)

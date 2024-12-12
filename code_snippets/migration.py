@@ -201,7 +201,7 @@ while my_obj_mig.validation.status == ValidationStatus.VALIDATING:
 # Check migration validation status
 print(my_obj_mig.validation)
 
-# Migrate to target environemnt
+# Migrate to target environment
 my_obj_mig.migrate(target_env=conn_target, target_project_name=TARGET_PROJECT_NAME)
 
 REUSE_TARGET_PROJECT_NAME = $reuse_target_project_name
@@ -295,7 +295,7 @@ my_new_proj_merge_mig = Migration.create_project_merge_migration(
     project_name=MERGE_TARGET_PROJECT_NAME,
 )
 
-# Delete all migrations on source environemnt
+# Delete all migrations on source environment
 migs = list_migrations(conn_source)
 for mig in migs:
     mig.delete(force=True)

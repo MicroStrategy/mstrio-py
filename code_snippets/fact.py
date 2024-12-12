@@ -13,7 +13,7 @@ from mstrio.modeling.schema.helpers import DataType, ObjectSubType
 from mstrio.modeling.schema import SchemaManagement, SchemaObjectReference, SchemaUpdateType
 
 # For every object we want to reference using a SchemaObjectReference we need
-# to provide an Object ID for. For the script to work correctly all occurences
+# to provide an Object ID for. For the script to work correctly all occurrences
 # of `'<object_id>'` and others with form `<some_name>` need to be replaced with
 # data specific to the object used.
 
@@ -98,7 +98,7 @@ fact_by_name = Fact(connection=conn, name=FACT_NAME)
 # list of facts with expressions represented as trees
 list_of_facts_as_trees = list_facts(connection=conn, show_expression_as=ExpressionFormat.TREE)
 
-# list of facts with expressions respresented as tokens
+# list of facts with expressions represented as tokens
 list_of_facts_as_tokens = list_facts(connection=conn, show_expression_as=ExpressionFormat.TOKENS)
 
 # create new fact

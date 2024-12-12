@@ -39,7 +39,7 @@ task = schema_mgmt.reload(
 )
 
 # get list of tasks which are stored within schema management object (tasks
-# are saved when `reload` is performed asyncronously)
+# are saved when `reload` is performed asynchronously)
 tasks = schema_mgmt.tasks
 
 # get all details about the first task which is stored within schema management

@@ -1,22 +1,19 @@
 import logging
 from dataclasses import dataclass
 from datetime import datetime
-from enum import auto, Enum
+from enum import Enum, auto
 from typing import Optional
 
 from mstrio.connection import Connection
+from mstrio.server import Environment
+from mstrio.server.project import Project
 from mstrio.types import ObjectSubTypes, ObjectTypes
 from mstrio.users_and_groups.user import User
 from mstrio.utils.enum_helper import AutoName
 from mstrio.utils.helper import Dictable, exception_handler
 from mstrio.utils.time_helper import DatetimeFormats
-from mstrio.server.project import Project
-from mstrio.server import Environment
 
 logger = logging.getLogger(__name__)
-
-TIMEOUT = 60
-TIMEOUT_INCREMENT = 0.25
 
 
 class RequestStatus(AutoName):

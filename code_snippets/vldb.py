@@ -72,7 +72,7 @@ print(project.vldb_settings[SETTING_NAME1].value)
 print(project.vldb_settings[SETTING_NAME2].value)
 print(project.vldb_settings[SETTING_NAME3].value)
 
-# Reseting VLDB settings with different conditions
+# Resetting VLDB settings with different conditions
 # Set values to default for all settings in set
 project.reset_vldb_settings(set_names=[PROPERTY_SET])
 project_settings_from_set = project.list_vldb_settings(set_names=[PROPERTY_SET])
@@ -119,7 +119,7 @@ datasource.alter_vldb_settings(names_to_values={
 print(datasource.vldb_settings[SETTING_NAME1].value)
 print(datasource.vldb_settings[SETTING_NAME2].value)
 
-# Reseting VLDB settings with different conditions
+# Resetting VLDB settings with different conditions
 # Set values to default for all settings in set
 datasource.reset_vldb_settings(set_names=[PROPERTY_SET])
 # Set values to default for all settings specified by names
@@ -154,7 +154,7 @@ print(olap_cube.vldb_settings[SETTING_NAME3].value)
 olap_cube.alter_vldb_settings(names_to_values={SETTING_NAME3: SETTING_VALUE3})
 print(olap_cube.vldb_settings[SETTING_NAME3].value)
 
-# Reseting VLDB settings
+# Resetting VLDB settings
 # Set values to default for all settings specified by names
 olap_cube.reset_vldb_settings(names=[SETTING_NAME3])
 cube_settings_from_names = olap_cube.list_vldb_settings(names=[SETTING_NAME3])

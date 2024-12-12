@@ -1,19 +1,33 @@
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
+from mstrio.server.project import Project
 from mstrio.utils.helper import Dictable
+
+if TYPE_CHECKING:
+    from mstrio.connection import Connection
 
 
 @dataclass
 class Node(Dictable):
+    _FROM_DICT_MAP = {'projects': [Project.from_dict]}
+
     name: str | None = None
     address: str | None = None
     service_control: bool | None = None
+    port: int | None = None
+    status: str | None = None
+    load: int | None = None
+    projects: list[Project] | None = None
+    default: bool | None = None
 
     @classmethod
-    def from_dict(cls, source: dict):
+    def from_dict(cls, source: dict, connection: 'Connection | None' = None):
         if not source.get('name'):
             source['name'] = source['node']
-        return super().from_dict(source)
+        if source.get('ipAddress'):
+            source['address'] = source['ipAddress']
+        return super().from_dict(source, connection=connection)
 
 
 @dataclass

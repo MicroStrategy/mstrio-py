@@ -12,7 +12,7 @@ from mstrio.modeling.schema.transformation.transformation import (
 )
 
 # For every object we want to reference using a SchemaObjectReference we need
-# to provide an Object ID for. For the script to work correctly all occurences
+# to provide an Object ID for. For the script to work correctly all occurrences
 # of `'<object_id>'` and others with form `<some_name>` need to be replaced with
 # data specific to the object used.
 

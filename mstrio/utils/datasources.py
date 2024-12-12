@@ -61,7 +61,7 @@ def alter_instance_json(response_json):
         response_json['datasource_connection'] |= response_json["database"].get(
             "embeddedConnection", {}
         )
-        response_json['datasource_connection']['ds_id'] = response_json["id"]
+        response_json['datasource_connection']['datasource_id'] = response_json["id"]
     response_json['database_type'] = response_json["database"].get("type")
     response_json['database_version'] = response_json["database"].get("version")
     response_json['primary_datasource'] = response_json["database"].get(

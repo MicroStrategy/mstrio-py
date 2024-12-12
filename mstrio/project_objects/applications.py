@@ -951,7 +951,7 @@ class Application(Entity, CopyMixin, DeleteMixin, TranslationMixin):
             body['homeScreen']['homeLibrary']['customizedItemProperties'] = (
                 home_screen.home_library.customized_item_properties or None
             )
-        if email_settings and email_settings.content:
+        if body.get('emailSettings', {}).get('content'):
             body['emailSettings']['content'] = {
                 'SHARE_DOSSIER': body['emailSettings']['content']['shareDossier'],
                 'SHARE_BOOKMARK': body['emailSettings']['content']['shareBookmark'],
@@ -1003,33 +1003,16 @@ class Application(Entity, CopyMixin, DeleteMixin, TranslationMixin):
             self.fetch('email_settings')
         if self._email_settings:
             temp = Application.EmailSettings.from_dict(source=self._email_settings)
-            if 'content' in self._email_settings:
+            content = self._email_settings.get('content')
+            # Initialize Content class only if content is not empty.
+            # Otherwise, keep it None.
+            if content:
                 temp.content = Application.EmailSettings.Content(
-                    share_dossier=(
-                        self._email_settings.get('content').get('SHARE_DOSSIER')
-                        if 'SHARE_DOSSIER' in self._email_settings.get('content')
-                        else None
-                    ),
-                    share_bookmark=(
-                        self._email_settings.get('content').get('SHARE_BOOKMARK')
-                        if 'SHARE_BOOKMARK' in self._email_settings.get('content')
-                        else None
-                    ),
-                    share_bot=(
-                        self._email_settings.get('content').get('SHARE_BOT')
-                        if 'SHARE_BOT' in self._email_settings.get('content')
-                        else None
-                    ),
-                    member_added=(
-                        self._email_settings.get('content').get('MEMBER_ADDED')
-                        if 'MEMBER_ADDED' in self._email_settings.get('content')
-                        else None
-                    ),
-                    user_mention=(
-                        self._email_settings.get('content').get('USER_MENTION')
-                        if 'USER_MENTION' in self._email_settings.get('content')
-                        else None
-                    ),
+                    share_dossier=content.get('SHARE_DOSSIER'),
+                    share_bookmark=content.get('SHARE_BOOKMARK'),
+                    share_bot=content.get('SHARE_BOT'),
+                    member_added=content.get('MEMBER_ADDED'),
+                    user_mention=content.get('USER_MENTION'),
                 )
             return temp
         return None

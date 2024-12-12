@@ -89,6 +89,7 @@ with **VLDB settings** management (see [code_snippets][code_snippet_vldb])
 - **Bots** module (see [code_snippets][code_snippet_bots])
 - **Content Group** module (see [code_snippets][code_snippet_content_groups])
 - **Applications** module (see [code_snippets][code_snippet_applications])
+- **Fence** module (see [code_snippets][code_snippet_fences])
 
 
 <a id="documentation" name="documentation"></a>
@@ -148,7 +149,7 @@ pip install mstrio-py
 <a id="versioning--changelog" name="versioning--changelog"></a>
 # Versioning & Changelog
 
-Current version: **11.4.9.101** (20 September 2024). Check out [**Changelog**][release_notes] to see what's new.
+Current version: **11.4.12.101** (13 December 2024). Check out [**Changelog**][release_notes] to see what's new.
 
 mstrio-py is constantly developed to support newest MicroStrategy REST APIs. Functionalities may be added to mstrio on monthly basis. It is **recommended** to always install the newest version of mstrio-py, as it will be most stable and still maintain backwards compatibility with various MicroStrategy installations, dating back to 11.1.4.
 
@@ -239,3 +240,4 @@ When features (modules, parameters, attributes, methods etc.) are marked for dep
 [code_snippet_bots]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/bots.py
 [code_snippet_content_groups]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/content_groups.py
 [code_snippet_applications]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/applications.py
+[code_snippet_fences]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/fences.py

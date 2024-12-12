@@ -163,33 +163,33 @@ class UserConnections:
         if connection_ids:
             # disconnect specific user connections without fetching connections
             return self.__disconnect_by_connection_id(connection_ids)
-        else:
-            # get all user connections to filter locally
-            all_connections = self.list_connections(nodes, **filters)
-            if users:  # filter user connections by user objects
-                users = users if isinstance(users, list) else [users]
-                usernames = []
-                for user in users:
-                    if isinstance(user, User):
-                        usernames.append(user.username)
-                    elif isinstance(user, str):
-                        usernames.append(user)
-                    else:
-                        helper.exception_handler(
-                            "'user' param must be a list of User objects or usernames.",
-                            exception_type=TypeError,
-                        )
 
-                all_connections = list(
-                    filter(lambda conn: conn['username'] in usernames, all_connections)
-                )
+        # get all user connections to filter locally
+        all_connections = self.list_connections(nodes, **filters)
+        if users:  # filter user connections by user objects
+            users = users if isinstance(users, list) else [users]
+            usernames = []
+            for user in users:
+                if isinstance(user, User):
+                    usernames.append(user.username)
+                elif isinstance(user, str):
+                    usernames.append(user)
+                else:
+                    helper.exception_handler(
+                        "'user' param must be a list of User objects or usernames.",
+                        exception_type=TypeError,
+                    )
 
-            if all_connections:
-                # extract connection ids and disconnect
-                connection_ids = [conn['id'] for conn in all_connections]
-                return self.__disconnect_by_connection_id(connection_ids)
-            elif config.verbose:
-                logger.info('No active user connections.')
+            all_connections = list(
+                filter(lambda conn: conn['username'] in usernames, all_connections)
+            )
+
+        if all_connections:
+            # extract connection ids and disconnect
+            connection_ids = [conn['id'] for conn in all_connections]
+            return self.__disconnect_by_connection_id(connection_ids)
+        elif config.verbose:
+            logger.info('No active user connections.')
 
     def disconnect_all_users(self, force: bool = False) -> list[dict] | None:
         """Disconnect all user connections.

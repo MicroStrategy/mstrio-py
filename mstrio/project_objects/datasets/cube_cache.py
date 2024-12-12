@@ -36,12 +36,12 @@ def list_cube_caches(
         connection: MicroStrategy connection object returned by
             `connection.Connection()`.
         nodes (list of strings or string, optional): names of nodes on which
-            caches will be searched. By default it equals `None` and in that
+            caches will be searched. By default, it equals `None` and in that
             case all nodes' names are loaded from the cluster.
         cube_id (string, optional): When provided, only caches for the cube with
             given ID will be returned (if any).
         loaded (bool, optional): If True then only loaded caches will be
-            retrieved. Otherwise all cubes will be returned.
+            retrieved. Otherwise, all cubes will be returned.
         db_connection_id (string, optional): When provided, only caches for the
             database connection with given ID will be returned (if any).
         project_ids (list of string, optional): When provided only caches
@@ -93,8 +93,7 @@ def list_cube_caches(
         ]
     if to_dictionary:
         return caches
-    else:
-        return CubeCache.from_dict(connection, caches)
+    return CubeCache.from_dict(connection, caches)
 
 
 def delete_cube_caches(
@@ -158,8 +157,7 @@ def delete_cube_caches(
             else:
                 failed.append(cache.id)
         return {'succeeded': succeeded, 'failed': failed}
-    else:
-        return None
+    return None
 
 
 def delete_cube_cache(connection: "Connection", id: str, force: bool = False):
