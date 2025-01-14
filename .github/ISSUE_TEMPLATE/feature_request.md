@@ -1,19 +1,17 @@
 ---
-name: New Feature Request
-about: Suggest a new functionality or enhancement for mstrio-py
+name: Send to History List
+about: Send Cubes and reports to History List
 title: "[ER]: ___"
-labels: ["enhancement", "new"]
+labels: ["new"]
 
 ---
 
 ## Description
 
-> _A clear and concise description of what the new / enhanced functionality is._
+> New functonality to send Cubes and Reports to History List
 
 ### MicroStrategy Support Case
 
-> _If the enhancement request has been raised via MicroStrategy Support Team already, add the Case Number and/or any additional details here_
-
 ## Additional Context (_optional_)
 
-> _Any other context about the feature, that does not fit into the sections above_
+>I need to refresh cubes by sending them to history
