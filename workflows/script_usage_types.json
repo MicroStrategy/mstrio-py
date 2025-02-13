@@ -31,5 +31,6 @@
     "get_subscriptions_by_emails.py": "Standard",
     "manage_pre_post_execution.py": "Standard",
     "create_mobile_subscription.py": "Standard",
-    "disable_inactive_users.py": "Standard"
+    "disable_inactive_users.py": "Standard",
+    "create_prompted_subscription.py": "Standard"
 }

@@ -8,7 +8,6 @@ from mstrio.utils.helper import _prepare_objects as filter_objects
 from mstrio.utils.helper import delete_none_values
 from mstrio.utils.response_processors import drivers
 from mstrio.utils.response_processors import objects as objects_processors
-from mstrio.utils.translation_mixin import TranslationMixin
 from mstrio.utils.version_helper import class_version_handler
 
 logger = logging.getLogger(__name__)
@@ -32,7 +31,7 @@ def list_drivers(
 
 
 @class_version_handler('11.3.0960')
-class Driver(Entity, TranslationMixin):
+class Driver(Entity):
     """Object representation of Microstrategy Driver
 
     Attributes:

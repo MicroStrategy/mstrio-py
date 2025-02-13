@@ -1,6 +1,8 @@
 from time import sleep, time
+
 from requests import JSONDecodeError
 
+from mstrio.api import devices
 from mstrio.api import usergroups as usergroups_api
 from mstrio.api import users as users_api
 from mstrio.connection import Connection
@@ -321,3 +323,30 @@ def get_user_last_login(connection: Connection, id: str):
         return res
 
     raise ValueError(f"There is no user with ID {id}. Timeout exceeded")
+
+
+def get_default_email_device(connection: Connection, id: str) -> dict | None:
+    """Get default email device for a user.
+
+    Args:
+        connection: MicroStrategy REST API connection object
+        id: ID of the user
+
+    Returns:
+        dict representing default email device
+    """
+
+    addresses = get_addresses(connection=connection, id=id).get('addresses')
+    default_email_device_id = next(
+        (
+            address.get('deviceId')
+            for address in addresses
+            if address.get('isDefault') and address.get('deliveryType') == 'email'
+        ),
+        None,
+    )
+    if default_email_device_id is None:
+        return None
+    device = devices.get_device(connection, id=default_email_device_id).json()
+
+    return {'email_device': device}

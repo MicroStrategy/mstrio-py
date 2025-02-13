@@ -205,10 +205,9 @@ class BaseSettings(metaclass=ABCMeta):
     @property
     def setting_types(self) -> DataFrame:
         df = DataFrame.from_dict(self._CONFIG, orient='index')
-        df.drop(
+        df = df.drop(
             ['name', 'read_only', 'reboot_rule', 'deprecated'],
             axis='columns',
-            inplace=True,
             errors='ignore',
         )
         return df

@@ -65,6 +65,11 @@ my_job = Job(connection=conn, id=JOB_ID)
 
 inform_when_job_done(job=my_job, interval=10)
 
+# Another way to check job status is by calling refresh_status method on the job
+# If the job can not be found on server when refreshing, the status will be
+# updated to JobStatus.COMPLETED
+my_job.refresh_status()
+
 # Now you can check the last update time of the selected OLAP cube to see if
 # the refresh was successful.
 selected_cube.fetch()

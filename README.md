@@ -30,6 +30,7 @@ With mstrio-py for **system administration**, it’s easy to minimize costs by a
 <!--te-->
 
 <a id="main-features" name="main-features"></a>
+
 # Main Features
 
 Main features of **mstrio-py** allows to access MicroStrategy data:
@@ -44,22 +45,22 @@ Main features of **mstrio-py** allows to access MicroStrategy data:
 Since version **11.3.0.1**, **mstrio-py** includes also administration modules:
 
 - **Project** management module (see [code_snippets][code_snippet_project])
-with **VLDB settings** management (see [code_snippets][code_snippet_vldb])
+  with **VLDB settings** management (see [code_snippets][code_snippet_vldb])
 - **Project languages** management module (see [code_snippets][code_snippet_project_languages])
 - **Server** management module (see [code_snippets][code_snippet_server])
 - **User** and **User Group** management modules (see [code_snippets][code_snippet_user])
 - **Schedules** management module (see [code_snippets][code_snippet_schedules])
-- **Subscription** management modules including **Email Subscription**,  **Cache Update Subscription**, **File Subscription**, **FTP Subscription**, **History List Subscription** and **Mobile Subscription** (see [code_snippets][code_snippet_subs])
+- **Subscription** management modules including **Email Subscription**, **Cache Update Subscription**, **File Subscription**, **FTP Subscription**, **History List Subscription** and **Mobile Subscription** (see [code_snippets][code_snippet_subs])
 - **User Library** module (see [code_snippets][code_snippet_library])
 - **User Connections** management module
 - **Privilege** and **Security Role** management modules (see [code_snippets][code_snippet_privilege])
 - **Cube Cache** management module (see [code_snippets][code_snippet_cache])
 - **Report Cache** management module (see [code_snippets][code_snippet_report_cache])
 - **Intelligent Cube** management modules (see [code_snippets][code_snippet_olap])
-with **VLDB settings** management (see [code_snippets][code_snippet_vldb])
+  with **VLDB settings** management (see [code_snippets][code_snippet_vldb])
 - **Security filter** module (see [code_snippets][code_snippet_security_filter])
 - **Datasources and Connection Mapping** subpackage for database management (see [code_snippets][code_snippet_datasource])
-with **VLDB settings** management (see [code_snippets][code_snippet_vldb])
+  with **VLDB settings** management (see [code_snippets][code_snippet_vldb])
 - **Job Monitor** module for job monitoring (see [code_snippets][code_snippet_job_monitor])
 - **Object management** module (see [code_snippets][code_snippet_object_mgmt])
 - **Contact** module (see [code_snippets][code_snippet_contact])
@@ -91,20 +92,21 @@ with **VLDB settings** management (see [code_snippets][code_snippet_vldb])
 - **Applications** module (see [code_snippets][code_snippet_applications])
 - **Fence** module (see [code_snippets][code_snippet_fences])
 
-
 <a id="documentation" name="documentation"></a>
+
 # Documentation
 
 Detailed information about **mstrio-py** package can be found in [**official documentation**][mstrio_py_doc].
 
 <a id="usage-remarks" name="usage-remarks"></a>
+
 # Usage Remarks
 
 - It is recommended NOT to use Anaconda environment. Please see **Installation** section below for details.
 - Currently it is not possible to use `mstrio-py` package to update cubes created via Web. Unfortunately it is not possible to use any REST API endpoint to check whether cube was created
-via Web or via REST API to provide some warning. In case of seeing one of the following error
-messages it is most probable that cube was created via Web and REST API can't handle its update,
-so if you want to update this particular cube you have to use Web.
+  via Web or via REST API to provide some warning. In case of seeing one of the following error
+  messages it is most probable that cube was created via Web and REST API can't handle its update,
+  so if you want to update this particular cube you have to use Web.
 
 ```
 When we tried to map the new dataset, we detected that some columns are missing or the data type changed, etc.
@@ -119,6 +121,7 @@ We could not obtain the data because the DB connection changed and the table doe
 ```
 Cube cannot be found.
 ```
+
 (even if previously it was found without issue)
 
 ```
@@ -126,15 +129,18 @@ Error getting cube metadata information. I-Server Error ERR001, (ServiceManager:
 ```
 
 <a id="installation" name="installation"></a>
+
 # Installation
 
 <a id="prerequisites" name="prerequisites"></a>
+
 ## Prerequisites
 
 - Python 3.10+
 - MicroStrategy 2019 Update 4 (11.1.4)+
 
 <a id="install-the-mstrio-py-package" name="install-the-mstrio-py-package"></a>
+
 ## Install the `mstrio-py` Package
 
 **Note**: it is NOT recommended to install mstrio-py in an Anaconda environment.
@@ -147,9 +153,10 @@ pip install mstrio-py
 ```
 
 <a id="versioning--changelog" name="versioning--changelog"></a>
+
 # Versioning & Changelog
 
-Current version: **11.4.12.101** (13 December 2024). Check out [**Changelog**][release_notes] to see what's new.
+Current version: **11.5.2.101** (14 February 2025). Check out [**Changelog**][release_notes] to see what's new.
 
 mstrio-py is constantly developed to support newest MicroStrategy REST APIs. Functionalities may be added to mstrio on monthly basis. It is **recommended** to always install the newest version of mstrio-py, as it will be most stable and still maintain backwards compatibility with various MicroStrategy installations, dating back to 11.1.4.
 
@@ -173,6 +180,7 @@ pip install mstrio-py==10.11.1
 ```
 
 <a id="deprecating-features" name="deprecating-features"></a>
+
 # Deprecating Features
 
 When features (modules, parameters, attributes, methods etc.) are marked for deprecation but still accessed, the following `DeprecationWarning` will be shown (example below). The functionality will continue to work until the version specified in the warning is released.
@@ -180,6 +188,7 @@ When features (modules, parameters, attributes, methods etc.) are marked for dep
 ![Deprecation warning ][deprecation]
 
 <a id="more-resources" name="more-resources"></a>
+
 # More Resources
 
 - [Tutorials for mstrio][mstr_datasci_comm]

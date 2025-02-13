@@ -3,6 +3,7 @@ from enum import auto
 
 import pandas as pd
 
+from mstrio import config
 from mstrio.api import incremental_refresh_reports as refresh_api
 from mstrio.connection import Connection
 from mstrio.modeling import (
@@ -15,6 +16,7 @@ from mstrio.object_management import Folder, SearchPattern, full_search
 from mstrio.object_management.folder import get_folder_id_from_path
 from mstrio.project_objects import OlapCube
 from mstrio.project_objects.datasets.helpers import AdvancedProperties, Template
+from mstrio.server import Job
 from mstrio.types import ObjectSubTypes, ObjectTypes
 from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, MoveMixin
 from mstrio.utils.enum_helper import AutoName, get_enum_val
@@ -27,7 +29,6 @@ from mstrio.utils.helper import (
 )
 from mstrio.utils.parser import Parser
 from mstrio.utils.response_processors import objects as objects_processors
-from mstrio.utils.translation_mixin import TranslationMixin
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 from mstrio.utils.vldb_mixin import ModelVldbMixin
 
@@ -160,7 +161,7 @@ def list_incremental_refresh_reports(
 
 @class_version_handler('11.3.0600')
 class IncrementalRefreshReport(
-    Entity, CopyMixin, MoveMixin, DeleteMixin, TranslationMixin, ModelVldbMixin
+    Entity, CopyMixin, MoveMixin, DeleteMixin, ModelVldbMixin
 ):
     """Python representation of MicroStrategy Incremental Refresh Report object.
 
@@ -401,7 +402,7 @@ class IncrementalRefreshReport(
         fields: str | None = None,
         project_id: str | None = None,
         project_name: str | None = None,
-    ) -> None:
+    ) -> Job:
         """Execute (run) the report.
 
         Args:
@@ -409,6 +410,9 @@ class IncrementalRefreshReport(
                 in the response. By default, all fields are returned.
             project_id (str, optional): Project ID
             project_name (str, optional): Project name
+
+        Returns:
+            Job instance.
         """
         project_id = get_valid_project_id(
             self.connection, project_id, project_name, with_fallback=True
@@ -421,11 +425,13 @@ class IncrementalRefreshReport(
             fields=fields,
         )
 
-        if response.ok:
+        job_data = response.json()
+        if config.verbose:
             logger.info(
                 f"Execution of Incremental Refresh Report: '{self.name}' has been "
-                f"successfully scheduled under job: {response.json()}."
+                f"successfully scheduled under job: {job_data}."
             )
+        return Job.from_dict(job_data, self.connection)
 
     @classmethod
     def create(

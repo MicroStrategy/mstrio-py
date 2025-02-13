@@ -26,6 +26,8 @@ from mstrio.utils.time_helper import (
     bulk_str_to_datetime,
     map_str_to_datetime,
 )
+from mstrio.utils.translation_mixin import TranslationMixin
+
 
 if TYPE_CHECKING:
     from mstrio.object_management import Folder
@@ -259,7 +261,9 @@ class EntityBase(helper.Dictable):
                         self._add_missing_attributes(key, json)
 
                     self._set_object_attributes(**object_dict)
-                elif isinstance(json, list):
+                elif isinstance(json, list) and json:
+                    # it is possible to have [] for json and fail
+                    # if object does not exist
                     self._set_object_attributes(**{key: json})
 
             # keep track of fetched attributes
@@ -1019,7 +1023,7 @@ class EntityBase(helper.Dictable):
         return self._type
 
 
-class Entity(EntityBase, ACLMixin, DependenceMixin):
+class Entity(EntityBase, ACLMixin, DependenceMixin, TranslationMixin):
     """Base class representation of the MSTR object.
 
     Provides methods to fetch, update, and view the object. To implement

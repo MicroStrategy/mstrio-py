@@ -34,7 +34,6 @@ from mstrio.utils.helper import (
     get_valid_project_id,
 )
 from mstrio.utils.response_processors import objects as objects_processors
-from mstrio.utils.translation_mixin import TranslationMixin
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
 if TYPE_CHECKING:
@@ -149,7 +148,7 @@ def list_attributes(
 
 
 @class_version_handler('11.3.0100')
-class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin, TranslationMixin):  # noqa
+class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
     """Python representation of MicroStrategy Attribute object.
 
     Attributes:

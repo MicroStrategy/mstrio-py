@@ -7,7 +7,13 @@ from packaging import version
 from mstrio import config
 from mstrio.api import monitors
 from mstrio.connection import Connection
-from mstrio.helpers import MstrException, PartialSuccess, Success, VersionException
+from mstrio.helpers import (
+    IServerError,
+    MstrException,
+    PartialSuccess,
+    Success,
+    VersionException,
+)
 from mstrio.server import Node, Project
 from mstrio.utils.entity import Entity, EntityBase
 from mstrio.utils.enum_helper import AutoName
@@ -170,9 +176,9 @@ class SortBy(Enum):
 
 @method_version_handler('11.3.0200')
 def _set_api_wrappers(connection) -> dict:
-    if version.parse(connection.iserver_version) == version.parse(
-        ISERVER_VERSION_11_3_2
-    ):
+    if connection.iserver_version and version.parse(
+        connection.iserver_version
+    ) == version.parse(ISERVER_VERSION_11_3_2):
         return {
             (
                 'id',
@@ -318,9 +324,9 @@ def list_jobs(
         object_type = ObjectType.DASHBOARD
 
     # depending on version call either one or the other
-    if version.parse(connection.iserver_version) == version.parse(
-        ISERVER_VERSION_11_3_2
-    ):
+    if connection.iserver_version and version.parse(
+        connection.iserver_version
+    ) == version.parse(ISERVER_VERSION_11_3_2):
         filters = __prepare_v1_request(
             description,
             object_type,
@@ -796,11 +802,25 @@ class Job(EntityBase):
             logger.info(msg)
         return response.ok
 
-    def list_properties(self) -> dict:
+    def list_properties(self, excluded_properties: list[str] | None = None) -> dict:
         """List Job object properties."""
-        properties = super().list_properties()
+        properties = super().list_properties(excluded_properties)
         properties.pop('connection', None)
         return properties
+
+    def refresh_status(self) -> None:
+        """Refresh the job status."""
+        try:
+            self.fetch()
+        except IServerError as e:
+            if e.http_code == 500 or e.http_code == 404:
+                stable_states = [
+                    JobStatus.COMPLETED,
+                    JobStatus.ERROR,
+                    JobStatus.STOPPED,
+                ]
+                if self._status and self._status not in stable_states:
+                    self._status = JobStatus.COMPLETED
 
     @property
     def status(self):

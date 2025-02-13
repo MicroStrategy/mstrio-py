@@ -6,14 +6,13 @@ from getpass import getpass
 from typing import TYPE_CHECKING
 
 import requests
-from packaging import version
 from requests import Session
 from requests.adapters import HTTPAdapter, Retry
 from requests.cookies import RequestsCookieJar
 
 if TYPE_CHECKING:
-    from urllib3 import disable_warnings
     from urllib3.exceptions import InsecureRequestWarning
+    from urllib3 import disable_warnings
 else:
     from requests.packages.urllib3.exceptions import InsecureRequestWarning
     from requests.packages.urllib3 import disable_warnings
@@ -226,15 +225,13 @@ class Connection:
             self.connect()
 
         if self.__check_version():
-            # save the version of IServer in config file
-            config.iserver_version = self.iserver_version
             self.select_project(project_id, project_name)
         else:
             msg = (
                 f'This version of mstrio is only supported on MicroStrategy 11.1.0400 '
                 f'or higher.\n'
-                f'Current Intelligence Server version: {self.iserver_version}\n'
-                f'Current MicroStrategy Web version: {self.web_version}'
+                f'Current Intelligence Server version: {self._iserver_version}\n'
+                f'Current MicroStrategy Web version: {self._web_version}'
             )
             logger.warning(msg)
             helper.exception_handler(
@@ -358,6 +355,7 @@ class Connection:
         if project_id is None and project_name is None:
             self.project_id = None
             self.project_name = None
+            self._session.headers['X-MSTR-ProjectID'] = None
             if config.verbose:
                 logger.info('No project selected.')
             return None
@@ -497,21 +495,45 @@ class Connection:
         """Checks version of I-Server and MicroStrategy Web and store these
         variables."""
 
-        def get_server_status():
-            json_response = misc.server_status(self).json()
-            try:
-                iserver_version = json_response["iServerVersion"][:9]
-            except KeyError:
-                raise IServerException(
-                    "I-Server is currently unavailable. Please contact your "
-                    "administrator."
-                )
-            web_version = json_response.get("webVersion")
-            web_version = web_version[:9] if web_version else None
-            return iserver_version, web_version
+        resp = misc.server_status(self)
+        if not resp:
+            logger.warning(
+                "Could not read status of I-Server. "
+                "Assuming misconfiguration of Library and "
+                "Server Version of 11.1.0400 or higher. "
+                "Some functionalities may not work properly. "
+                "Please check configuration of Library and I-Server availability."
+            )
+            return True
 
-        self._iserver_version, self._web_version = get_server_status()
-        return version.parse(self.iserver_version) >= version.parse("11.1.0400")
+        err_msg = (
+            "I-Server is currently unavailable or connection creation failed. "
+            "Please verify or contact your administrator."
+        )
+
+        if not resp.ok:
+            raise IServerException(err_msg)
+
+        json_response = resp.json()
+        if (
+            not json_response
+            or "iServerVersion" not in json_response
+            or "webVersion" not in json_response
+        ):
+            raise IServerException(err_msg)
+
+        self._iserver_version = json_response["iServerVersion"][:9]
+        self._web_version = json_response["webVersion"][:9]
+
+        from mstrio.utils.version_helper import meets_minimal_version
+
+        ret = meets_minimal_version(self._iserver_version, "11.1.0400")
+
+        if ret and self._iserver_version:
+            # save the version of IServer in config file
+            config.iserver_version = self._iserver_version
+
+        return ret
 
     def __configure_session(
         self,
@@ -616,11 +638,17 @@ class Connection:
         return self._user_initials
 
     @property
-    def web_version(self) -> str:
+    def web_version(self) -> str | None:
+        if not self._web_version:
+            self.__check_version()
+
         return self._web_version
 
     @property
-    def iserver_version(self) -> str:
+    def iserver_version(self) -> str | None:
+        if not self._iserver_version:
+            self.__check_version()
+
         return self._iserver_version
 
     @property

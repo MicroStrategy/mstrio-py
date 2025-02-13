@@ -592,3 +592,32 @@ def get_user_last_login(
         HTTP response object returned by the MicroStrategy REST server.
     """
     return connection.get(endpoint=f'/api/telemetry/users/{id}/statistics')
+
+
+@ErrorHandler(err_msg="Error deleting user profile for user with ID: {id}")
+def delete_user_profile(
+    connection: 'Connection',
+    id: str,
+    project_id: str | None = None,
+    fields: str | None = None,
+    error_msg: str | None = None,
+) -> Response:
+    """Delete user profile for a specific user.
+
+    Args:
+        connection (object): MicroStrategy connection object returned by
+            `connection.Connection()`.
+        id (str): User ID.
+        project_id (str, optional): Project ID
+        fields (str, optional): Comma separated top-level field whitelist. This
+            allows client to selectively retrieve part of the response
+        error_msg (str, optional): Custom Error Message for Error Handling
+
+    Returns:
+        HTTP response object returned by the MicroStrategy REST server.
+    """
+    return connection.delete(
+        endpoint=f'/api/users/{id}/profile',
+        params={'fields': fields},
+        headers={'X-MSTR-ProjectID': project_id},
+    )

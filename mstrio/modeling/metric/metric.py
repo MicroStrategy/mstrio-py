@@ -26,7 +26,6 @@ from mstrio.utils.helper import (
     get_valid_project_id,
 )
 from mstrio.utils.response_processors import objects as objects_processors
-from mstrio.utils.translation_mixin import TranslationMixin
 from mstrio.utils.version_helper import method_version_handler
 from mstrio.utils.vldb_mixin import ModelVldbMixin
 
@@ -245,9 +244,7 @@ class Threshold(Dictable):
     enable: bool = True
 
 
-class Metric(  # noqa: F811
-    Entity, CopyMixin, MoveMixin, DeleteMixin, ModelVldbMixin, TranslationMixin
-):
+class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin, ModelVldbMixin):  # noqa: F811
     """Python representation of MicroStrategy Metric object.
 
     Attributes:

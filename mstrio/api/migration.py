@@ -22,7 +22,6 @@ def create_package_holder(
         requests.Response: Response object containing all of the information
         returned by the server.
     """
-    project_id = project_id if project_id is not None else connection.project_id
     return connection.post(
         endpoint='/api/packages',
         headers={'X-MSTR-ProjectID': project_id},
@@ -56,7 +55,6 @@ def update_package_holder(
         requests.Response: Response object containing all of the information
         returned by the server.
     """
-    project_id = project_id if project_id is not None else connection.project_id
     return connection.put(
         endpoint=f'/api/packages/{id}',
         headers={'X-MSTR-ProjectID': project_id, 'Prefer': prefer},
@@ -84,7 +82,6 @@ def download_package(
         requests.Response: Response object containing all of the information
         returned by the server.
     """
-    project_id = project_id if project_id is not None else connection.project_id
     return connection.get(
         endpoint=f'/api/packages/{id}/binary',
         headers={'X-MSTR-ProjectID': project_id},
@@ -113,7 +110,6 @@ def upload_package(
         requests.Response: Response object containing all of the information
         returned by the server.
     """
-    project_id = project_id if project_id is not None else connection.project_id
     return connection.put(
         endpoint=f'/api/packages/{id}/binary',
         headers={'X-MSTR-ProjectID': project_id},
@@ -145,8 +141,6 @@ def get_package_holder(
         requests.Response: Response object containing all of the information
         returned by the server.
     """
-    project_id = project_id if project_id is not None else connection.project_id
-
     return connection.get(
         endpoint=f'/api/packages/{id}',
         headers={'X-MSTR-ProjectID': project_id},
@@ -179,8 +173,6 @@ def delete_package_holder(
         requests.Response: Response object containing all of the information
         returned by the server.
     """
-
-    project_id = project_id if project_id is not None else connection.project_id
     return connection.delete(
         endpoint=f'/api/packages/{id}',
         headers={'X-MSTR-ProjectID': project_id, 'Prefer': prefer},
@@ -216,7 +208,6 @@ def create_import(
         requests.Response: Response object containing all of the information
         returned by the server.
     """
-    project_id = project_id if project_id is not None else connection.project_id
     return connection.post(
         endpoint='/api/packages/imports',
         headers={'X-MSTR-ProjectID': project_id, 'Prefer': prefer},
@@ -244,7 +235,6 @@ def get_import(
         requests.Response: Response object containing all of the information
         returned by the server.
     """
-    project_id = project_id if project_id is not None else connection.project_id
     return connection.get(
         endpoint=f'/api/packages/imports/{id}',
         headers={'X-MSTR-ProjectID': project_id},
@@ -274,7 +264,6 @@ def delete_import(
         requests.Response: Response object containing all of the information
         returned by the server.
     """
-    project_id = project_id if project_id is not None else connection.project_id
     return connection.delete(
         endpoint=f'/api/packages/imports/{id}',
         headers={'X-MSTR-ProjectID': project_id, 'Prefer': prefer},
@@ -301,7 +290,6 @@ def create_undo(
         requests.Response: Response object containing all of the information
         returned by the server.
     """
-    project_id = project_id if project_id is not None else connection.project_id
     return connection.get(
         endpoint=f'/api/packages/imports/{id}/undoPackage/binary',
         headers={'X-MSTR-ProjectID': project_id},

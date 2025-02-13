@@ -31,7 +31,6 @@ from mstrio.utils.helper import (
 )
 from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.response_processors import tables
-from mstrio.utils.translation_mixin import TranslationMixin
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
 NO_PROJECT_ERR_MSG = "You must specify or select a project."
@@ -283,7 +282,7 @@ def list_changeset_tables(
 
 
 @class_version_handler('11.3.0100')
-class LogicalTable(Entity, DeleteMixin, MoveMixin, TranslationMixin):
+class LogicalTable(Entity, DeleteMixin, MoveMixin):
     """An object representation of a logical table, referred to as Table in
     Command Manager. A logical table describes the higher-level data model
     objects (facts, attributes, etc.) that the architect wishes to use to model

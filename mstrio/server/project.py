@@ -24,7 +24,6 @@ from mstrio.utils.response_processors import datasources as datasources_processo
 from mstrio.utils.response_processors import projects as projects_processors
 from mstrio.utils.settings.base_settings import BaseSettings
 from mstrio.utils.time_helper import DatetimeFormats
-from mstrio.utils.translation_mixin import TranslationMixin
 from mstrio.utils.version_helper import method_version_handler
 from mstrio.utils.vldb_mixin import ModelVldbMixin
 from mstrio.utils.wip import wip
@@ -154,7 +153,7 @@ def compare_project_settings(
     return df
 
 
-class Project(Entity, ModelVldbMixin, DeleteMixin, TranslationMixin):
+class Project(Entity, ModelVldbMixin, DeleteMixin):
     """Object representation of MicroStrategy Project (Project) object.
 
     Attributes:

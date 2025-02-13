@@ -3,11 +3,10 @@ from typing import Any, TypeVar
 
 from mstrio.api import browsing
 from mstrio.connection import Connection
-from mstrio.utils.entity import CopyMixin, Entity, MoveMixin, ObjectTypes
+from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, MoveMixin, ObjectTypes
 from mstrio.utils.enum_helper import get_enum_val
 from mstrio.utils.helper import deprecation_warning, fetch_objects, get_valid_project_id
 from mstrio.utils.response_processors import objects as objects_processors
-from mstrio.utils.translation_mixin import TranslationMixin
 
 
 class ShortcutInfoFlags(IntFlag):
@@ -19,7 +18,7 @@ class ShortcutInfoFlags(IntFlag):
     DssDashboardShortcutInfoDefault = 0b00
 
 
-class Shortcut(Entity, CopyMixin, MoveMixin, TranslationMixin):
+class Shortcut(Entity, CopyMixin, MoveMixin, DeleteMixin):
     """Representation of a Shortcut object. It points to another object in
     the metadata, and for Library objects it stores additional information
     related to browsing the Library.

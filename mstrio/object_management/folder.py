@@ -15,7 +15,6 @@ from mstrio.utils.helper import (
     get_temp_connection,
 )
 from mstrio.utils.response_processors import objects as objects_processors
-from mstrio.utils.translation_mixin import TranslationMixin
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
@@ -321,7 +320,7 @@ def _get_parent_folder_id(
         return parent_folder
 
 
-class Folder(Entity, CopyMixin, MoveMixin, DeleteMixin, TranslationMixin):
+class Folder(Entity, CopyMixin, MoveMixin, DeleteMixin):
     """Object representation of MicroStrategy Folder object.
 
     Attributes:

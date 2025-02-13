@@ -1,14 +1,12 @@
 import logging
 from typing import TYPE_CHECKING, Any
 
-from packaging import version
-
 from mstrio import config
 from mstrio.api import monitors
 from mstrio.connection import Connection
 from mstrio.server import Cluster
 from mstrio.utils import helper
-from mstrio.utils.version_helper import class_version_handler
+from mstrio.utils.version_helper import class_version_handler, meets_minimal_version
 
 if TYPE_CHECKING:
     from mstrio.users_and_groups.user import User
@@ -226,11 +224,15 @@ class UserConnections:
         connection_ids = (
             connection_ids if isinstance(connection_ids, list) else [connection_ids]
         )
-        server_version = helper.version_cut(self.connection.iserver_version)
+        server_version = (
+            helper.version_cut(self.connection.iserver_version)
+            if self.connection.iserver_version
+            else None
+        )
 
         # use monitors.delete_user_connections
         # or monitors.delete_user_connection depending on the server version
-        if version.parse(server_version) >= version.parse('11.3.1'):
+        if meets_minimal_version(server_version, '11.3.1'):
             res = monitors.delete_user_connections(
                 connection=self.connection, ids=connection_ids
             )

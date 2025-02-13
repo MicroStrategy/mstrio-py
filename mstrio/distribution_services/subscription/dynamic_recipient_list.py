@@ -1,8 +1,6 @@
 import logging
 from dataclasses import dataclass
 
-from packaging import version
-
 from mstrio import config
 from mstrio.api import subscriptions
 from mstrio.connection import Connection
@@ -16,7 +14,7 @@ from mstrio.utils.helper import (
     find_object_with_name,
     get_valid_project_id,
 )
-from mstrio.utils.version_helper import class_version_handler
+from mstrio.utils.version_helper import class_version_handler, meets_minimal_version
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +59,7 @@ def list_dynamic_recipient_lists(
     msg = "Error getting Dynamic Recipient List list."
     chunk_size = (
         1000
-        if version.parse(connection.iserver_version) >= version.parse('11.3.0300')
+        if meets_minimal_version(connection.iserver_version, '11.3.0300')
         else 1000000
     )
 

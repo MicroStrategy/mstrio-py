@@ -1,11 +1,58 @@
+import logging
 import inspect
+
 from functools import wraps
 from inspect import getattr_static, getmembers
-
-from packaging.version import parse as version_parser
+from packaging.version import parse as ver_parser, Version as PackageVersion
 
 from mstrio.connection import Connection
 from mstrio.helpers import VersionException
+
+
+logger = logging.getLogger(__name__)
+
+
+def meets_minimal_version(
+    tested_version: str | PackageVersion | None,
+    minimal_version: str | PackageVersion,
+    throw_error: bool = False,
+) -> bool:
+    """
+    Checks if tested version is greater or equal to minimal version.
+
+    Args:
+        tested_version (str | PackageVersion | None): Tested version.
+        minimal_version (str | PackageVersion): Minimal version.
+        throw_error (bool, optional): If True, will raise VersionException
+            if tested version is None. Defaults to False.
+
+    Returns:
+        bool: True if tested version is greater or equal to minimal version.
+              If tested version is `None`, True is returned as we assume
+              we were not able to gather value to test.
+    """
+    if tested_version is None:
+        if throw_error:
+            raise VersionException("Version to compare not provided.")
+
+        logger.warning(
+            "Version to compare not provided. "
+            f"Assuming minimal version '{minimal_version}' is met."
+        )
+        return True
+
+    to_test = (
+        tested_version
+        if isinstance(tested_version, PackageVersion)
+        else ver_parser(tested_version)
+    )
+    minimal = (
+        minimal_version
+        if isinstance(minimal_version, PackageVersion)
+        else ver_parser(minimal_version)
+    )
+
+    return to_test >= minimal
 
 
 def method_version_handler(version):
@@ -33,7 +80,7 @@ def method_version_handler(version):
                     args[0], '_connection', None
                 )
 
-            if version_parser(connection_obj.iserver_version) < version_parser(version):
+            if not meets_minimal_version(connection_obj.iserver_version, version):
                 raise VersionException(
                     f"Environments must run IServer version {version} or newer. "
                     "Please update your environments to use this feature."
@@ -101,7 +148,8 @@ def is_server_min_version(connection: 'Connection', version_str: str) -> bool:
         version_str (str): String containing iServer version number
 
     Returns:
-        True if iServer version is greater or equal to given version.
+        True if iServer version is greater or equal to given version
+            or if it cannot be checked.
         False if iServer version is lower than given version.
     """
-    return version_parser(connection.iserver_version) >= version_parser(version_str)
+    return meets_minimal_version(connection.iserver_version, version_str)

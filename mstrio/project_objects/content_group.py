@@ -9,7 +9,6 @@ from mstrio.types import ObjectTypes
 from mstrio.users_and_groups import User, UserGroup, UserOrGroup
 from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity
 from mstrio.utils.helper import find_object_with_name, is_dashboard, get_temp_connection
-from mstrio.utils.translation_mixin import TranslationMixin
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
 logger = logging.getLogger(__name__)
@@ -53,7 +52,7 @@ def list_content_groups(
 
 
 @class_version_handler('11.3.1200')
-class ContentGroup(Entity, CopyMixin, DeleteMixin, TranslationMixin):
+class ContentGroup(Entity, CopyMixin, DeleteMixin):
     """Python representation of a MicroStrategy Content Group object"""
 
     _OBJECT_TYPE = ObjectTypes.CONTENT_BUNDLE
@@ -211,6 +210,20 @@ class ContentGroup(Entity, CopyMixin, DeleteMixin, TranslationMixin):
         )
         self.fetch()
 
+    def _process_content(self, connection, content) -> Entity:
+        """Process a single content item and return the corresponding object."""
+        from mstrio.project_objects import Bot, Dashboard, Document, Report
+
+        if content.get('type') == 3:
+            return Report(connection=connection, id=content.get('id'))
+        elif content.get('type') == 55:
+            if content.get('subtype') == 14084:
+                return Bot(connection=connection, id=content.get('id'))
+            elif is_dashboard(content.get('viewMedia')):
+                return Dashboard(connection=connection, id=content.get('id'))
+            else:
+                return Document(connection=connection, id=content.get('id'))
+
     def get_contents(self, project_ids: list[str | Project]) -> list[Entity]:
         """Get contents of the content group.
 
@@ -221,7 +234,6 @@ class ContentGroup(Entity, CopyMixin, DeleteMixin, TranslationMixin):
         Returns:
             A list of content objects.
         """
-        from mstrio.project_objects import Bot, Dashboard, Document, Report
 
         project_ids = [
             proj.id if isinstance(proj, Project) else proj for proj in project_ids
@@ -236,19 +248,7 @@ class ContentGroup(Entity, CopyMixin, DeleteMixin, TranslationMixin):
             project_change = None if project == self.connection.project_id else project
             temp_conn = get_temp_connection(self.connection, project_change)
             for content in response.get(project):
-                if content.get('type') == 3:
-                    contents.append(Report(connection=temp_conn, id=content.get('id')))
-                elif content.get('type') == 55:
-                    if content.get('subtype') == 14084:
-                        contents.append(Bot(connection=temp_conn, id=content.get('id')))
-                    elif is_dashboard(content.get('viewMedia')):
-                        contents.append(
-                            Dashboard(connection=temp_conn, id=content.get('id'))
-                        )
-                    else:
-                        contents.append(
-                            Document(connection=temp_conn, id=content.get('id'))
-                        )
+                contents.append(self._process_content(temp_conn, content))
         return contents
 
     def update_contents(

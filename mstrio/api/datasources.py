@@ -219,7 +219,7 @@ def get_datasource_instances(
     """
     if project:
         endpoint = f'/api/projects/{project}/datasources'
-        response = connection.get(endpoint=endpoint)
+        response = connection.get(endpoint=endpoint, headers={'X-MSTR-ProjectID': None})
     else:
         database_type = ','.join(database_types) if database_types else None
         ids = ','.join(ids) if ids else None

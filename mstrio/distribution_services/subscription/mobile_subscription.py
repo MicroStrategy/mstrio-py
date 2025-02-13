@@ -107,6 +107,22 @@ class MobileSubscription(Subscription):
                 enabled, notification applies to cache
             delivery_personal_notification_address_id (str, optional):
                 notification details
+
+        Notes:
+            To create a subscription with prompts, you need to provide
+            the report instance ID with answered prompts for the content.
+            Example:
+            >>>contents=Content(
+            >>>    id="<report_id>",
+            >>>    type=Content.Type.REPORT,
+            >>>    personalization=Content.Properties(
+            >>>        format_type=Content.Properties.FormatType.PDF,
+            >>>        prompt=Content.Properties.Prompt(
+            >>>            enabled=True,
+            >>>            instance_id="<instance_id>",
+            >>>        ),
+            >>>    ),
+            >>>)
         """
         return super()._Subscription__create(
             connection=connection,

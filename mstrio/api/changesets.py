@@ -14,9 +14,6 @@ def create_changeset(
     error_msg: str = None,
 ):
     """Create a new changeset for modelling manipulations."""
-    if project_id is None:
-        connection._validate_project_selected()
-        project_id = connection.project_id
     return connection.post(
         endpoint='/api/model/changesets',
         headers={'X-MSTR-ProjectID': project_id},

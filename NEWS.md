@@ -1,5 +1,30 @@
 # Changelog
 
+## 11.5.2.101 - 2025/02/14
+
+### New features
+
+- added `list_calendars` method and `Calendar` class in `mstrio.server.calendar` to allow management of Calendar internationalization objects
+- added `list_palettes` method and `Palette` class in `mstrio.project_objects.palettes` to allow management of Color Palette objects
+- added `answer_prompts` method to `Report`, `Document` and `Dashboard` classes to allow answering prompts
+- added `list_related_subscriptions` method to `User`, `Dashboard`, `Report`, `Schedule` and `Event` classes to allow listing related subscriptions
+
+### Minor changes
+
+- added `delete` method to `SearchObject` and `Shortcut` classes
+- added `delete_profile_folder` method to `User` class to allow deleting profile folders
+- added `delete_profile` argument to `delete` method of `User` class to allow deleting user profiles along with the user
+- added `default_email_address` and `email_device` arguments to `create` and `alter` methods of `User` class to allow setting default email address and email device
+- changed output of `execute` method for `IncrementalRefreshReport` from None to `Job` object
+- added `refresh_status` method for `Job` object to update status of already completed job
+- added `list_palettes` method to `Document`
+
+### Bug fixes
+
+- fixed the `create` method for `Schedule` not correctly checking the `schedule_type` argument if it was passed as `str`
+- fixed the issue requiring Architect privilege when fetching data about the cube
+- fixed the `create` method for `EmailSubscription` not allowing the creation of subscriptions with multiple content objects
+
 ## 11.4.12.101 - 2024/12/13
 
 ### New features
@@ -31,8 +56,7 @@
 
 - added `list_bots` method and `Bot` class in `mstrio.project_objects.bots` subpackage to allow management of Bots
 - added `list_content_groups` method and `ContentGroup` class in `mstrio.project_objects.content_group` subpackage to allow management of Content Groups
-- added `list_applications` method and `Application` class in `mstrio.project_objects.applications` subpackage to allow
-management of Applications
+- added `list_applications` method and `Application` class in `mstrio.project_objects.applications` subpackage to allow management of Applications
 - added `StorageService` class for Storage Service configuration of an environment
 - added `storage_service` property, `fetch_storage_service` and `update_storage_service` methods to the `Environment` class to manage the environment's Storage Service configuration
 - official release of `Migration` class and its methods (introduces some breaking changes compared to "Preview" state)

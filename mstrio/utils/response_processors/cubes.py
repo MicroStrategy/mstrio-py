@@ -16,7 +16,7 @@ def create(
     cube_template_id: str | None = None,
     show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
     show_filter_tokens: bool = False,
-    show_advanced_properties: bool = True,
+    show_advanced_properties: bool = False,
 ) -> dict:
     """Create cube from provided body.
 
@@ -42,7 +42,7 @@ def create(
             - If True, all `text`, 'tree' and `tokens` formats are returned.
         show_advanced_properties (bool, optional): Specify whether to retrieve
             the values of the advanced properties. If omitted or false, nothing
-            will be returned for the advanced properties, default True.
+            will be returned for the advanced properties, default False.
 
     Returns:
         Dict representing created cube object.
@@ -71,7 +71,7 @@ def get(
     project_id: str | None = None,
     show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
     show_filter_tokens: bool = False,
-    show_advanced_properties: bool = True,
+    show_advanced_properties: bool = False,
 ) -> dict:
     """Get cube by specific ID.
 
@@ -95,7 +95,7 @@ def get(
             - If True, all `text`, 'tree' and `tokens` formats are returned.
         show_advanced_properties (bool, optional): Specify whether to retrieve
             the values of the advanced properties. If omitted or false, nothing
-            will be returned for the advanced properties, default True.
+            will be returned for the advanced properties, default False.
 
     Returns:
         Dict representing fetched cube object.

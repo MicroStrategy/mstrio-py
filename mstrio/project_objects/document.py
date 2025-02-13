@@ -1,4 +1,6 @@
 import logging
+from functools import partial
+from typing import TYPE_CHECKING
 
 from pandas import DataFrame, concat
 
@@ -10,6 +12,8 @@ from mstrio.distribution_services.schedule import Schedule
 from mstrio.helpers import IServerError
 from mstrio.object_management import Folder, SearchPattern, search_operations
 from mstrio.project_objects import OlapCube, SuperCube
+from mstrio.project_objects.helpers import answer_prompts_helper
+from mstrio.project_objects.palette import Palette
 from mstrio.server.environment import Environment
 from mstrio.types import ObjectSubTypes
 from mstrio.users_and_groups import User, UserGroup, UserOrGroup
@@ -31,8 +35,10 @@ from mstrio.utils.helper import (
     is_document,
 )
 from mstrio.utils.response_processors import objects as objects_processors
-from mstrio.utils.translation_mixin import TranslationMixin
 from mstrio.utils.version_helper import method_version_handler
+
+if TYPE_CHECKING:
+    from mstrio.project_objects.prompt import Prompt
 
 logger = logging.getLogger(__name__)
 
@@ -155,7 +161,6 @@ class Document(
     MoveMixin,
     DeleteMixin,
     ContentCacheMixin,
-    TranslationMixin,
 ):
     """Python representation of MicroStrategy Document object
 
@@ -214,7 +219,7 @@ class Document(
         self._template_info = kwargs.get('templateInfo', default_value)
         self._folder_id = None
 
-    def list_properties(self):
+    def list_properties(self, excluded_properties: list[str] | None = None) -> dict:
         """List properties for the document.
 
         Returns:
@@ -239,6 +244,11 @@ class Document(
             'acg': self.acg,
             'acl': self.acl,
         }
+
+        if excluded_properties:
+            for prop in excluded_properties:
+                properties.pop(prop, None)
+
         return properties
 
     def alter(
@@ -435,14 +445,67 @@ class Document(
         ret_cubes = [helper.choose_cube(self.connection, cube) for cube in cubes]
         return [tmp for tmp in ret_cubes if tmp]  # remove `None` values
 
+    @method_version_handler('11.3.0600')
+    def list_palettes(self, to_dictionary: bool = False) -> list[Palette] | list[dict]:
+        """List all palettes used by this document.
+
+        Returns:
+            A list of color palettes used by the document."""
+        return self.list_dependencies(
+            object_types=ObjectTypes.PALETTE, to_dictionary=to_dictionary
+        )
+
+    def answer_prompts(
+        self, prompt_answers: list['Prompt'], force: bool = False
+    ) -> bool:
+        """Answer prompts of the report.
+
+        Args:
+            prompt_answers (list[Prompt]): List of Prompt class objects
+                answering the prompts of the report.
+            force (bool): If True, then the document's existing prompt will be
+                overwritten by ones from the prompt_answers list, and additional
+                input from the user won't be asked. Otherwise, the user will be
+                asked for input if the prompt is not answered, or if prompt was
+                already answered.
+
+        Returns:
+            bool: True if prompts were answered successfully, False otherwise.
+        """
+        common_args = {
+            'connection': self.connection,
+            'document_id': self.id,
+            'instance_id': self.instance_id,
+            'project_id': self.project_id,
+        }
+
+        return answer_prompts_helper(
+            instance_id=self.instance_id,
+            prompt_answers=prompt_answers,
+            get_status_func=partial(
+                documents.get_document_status,
+                **common_args,
+            ),
+            get_prompts_func=partial(
+                documents.get_prompts_for_instance,
+                **common_args,
+                closed=False,
+            ),
+            answer_prompts_func=partial(
+                documents.answer_prompts,
+                **common_args,
+            ),
+            force=force,
+        )
+
     @property
-    def instance_id(self):
+    def instance_id(self) -> str:
         if self._instance_id == '':
             body = {"resolveOnly": True, "persistViewState": True}
             response = documents.create_new_document_instance(
                 connection=self.connection, document_id=self.id, body=body
-            )
-            self._instance_id = response.json()['mid']
+            ).json()
+            self._instance_id = response.get('mid')
         return self._instance_id
 
     @property

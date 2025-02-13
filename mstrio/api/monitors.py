@@ -979,9 +979,9 @@ def cancel_job(
     Returns:
         HTTP response object returned by the MicroStrategy REST server
     """
-    if version.parse(connection.iserver_version) == version.parse(
-        ISERVER_VERSION_11_3_2
-    ):
+    if connection.iserver_version and version.parse(
+        connection.iserver_version
+    ) == version.parse(ISERVER_VERSION_11_3_2):
         return cancel_job_v1(connection, id, fields, error_msg)
     else:
         return cancel_job_v2(connection, id, fields, error_msg)
@@ -1052,9 +1052,9 @@ def cancel_jobs(
         PartialSuccess: if not all jobs were killed
         MstrException: otherwise
     """
-    if version.parse(connection.iserver_version) == version.parse(
-        ISERVER_VERSION_11_3_2
-    ):
+    if connection.iserver_version and version.parse(
+        connection.iserver_version
+    ) == version.parse(ISERVER_VERSION_11_3_2):
         response = cancel_jobs_v1(connection, ids, fields)
     else:
         response = cancel_jobs_v2(connection, ids, fields)

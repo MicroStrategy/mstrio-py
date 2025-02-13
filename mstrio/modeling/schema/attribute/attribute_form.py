@@ -17,13 +17,12 @@ from mstrio.utils.helper import (
     filter_params_for_func,
 )
 from mstrio.utils.response_processors import objects as objects_processors
-from mstrio.utils.translation_mixin import TranslationMixin
 
 if TYPE_CHECKING:
     from mstrio.modeling.schema.attribute.attribute_form import AttributeForm
 
 
-class AttributeForm(Entity, TranslationMixin):  # noqa
+class AttributeForm(Entity):  # noqa
     """The Attribute Form Object
 
     Args:

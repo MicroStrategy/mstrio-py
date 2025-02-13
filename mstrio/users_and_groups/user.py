@@ -11,22 +11,30 @@ from requests.exceptions import HTTPError
 from mstrio import config
 from mstrio.access_and_security.privilege_mode import PrivilegeMode
 from mstrio.access_and_security.security_role import SecurityRole
+from mstrio.api import users as users_api
 from mstrio.connection import Connection
 from mstrio.server.language import Language
+from mstrio.server.project import Project
 from mstrio.users_and_groups.user_connections import UserConnections
 from mstrio.utils import helper, time_helper
 from mstrio.utils.acl import TrusteeACLMixin
-from mstrio.utils.entity import DeleteMixin, Entity, ObjectTypes
-from mstrio.utils.helper import Dictable, VersionException, filter_params_for_func
+from mstrio.utils.entity import Entity, ObjectTypes
+from mstrio.utils.enum_helper import get_enum
+from mstrio.utils.helper import (
+    Dictable,
+    VersionException,
+    filter_params_for_func,
+    get_valid_project_id,
+)
+from mstrio.utils.related_subscription_mixin import RelatedSubscriptionMixin
 from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.response_processors import users
-from mstrio.utils.translation_mixin import TranslationMixin
 from mstrio.utils.version_helper import is_server_min_version, method_version_handler
 
 if TYPE_CHECKING:
     from mstrio.access_and_security.privilege import Privilege
+    from mstrio.distribution_services import Device
     from mstrio.modeling.security_filter import SecurityFilter
-    from mstrio.server.project import Project
     from mstrio.users_and_groups.user_group import UserGroup
 
 logger = logging.getLogger(__name__)
@@ -87,7 +95,7 @@ def list_users(
     )
 
 
-class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
+class User(Entity, TrusteeACLMixin, RelatedSubscriptionMixin):
     """Object representation of MicroStrategy User object.
 
     Attributes:
@@ -124,6 +132,9 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
         acl: Object access control list
         default_timezone:  Information about user default timezone
         language: Information about user language
+        default_email_address: Default email address of the user
+        email_device: Information about the email device to which the default
+            email address is assigned
     """
 
     _PATCH_PATH_TYPES = {
@@ -174,6 +185,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
             'initials',
             'default_timezone',
             'ldapdn',
+            'default_email_address',
         ): users.get,
         'comments': objects_processors.get_info,
         'addresses': users.get_addresses,
@@ -181,6 +193,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
         'privileges': users.get_privileges,
         ('default_timezone', 'language'): users.get_settings,
         'last_login': users.get_user_last_login,
+        'email_device': users.get_default_email_device,
     }
     _API_PATCH: dict = {
         (
@@ -224,7 +237,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
         source: dict, connection: 'Connection', to_snake_case: bool = True
     ):
         """Parses language from the API response."""
-        if not source['value']:
+        if not source.get('value'):
             return None
         source['id'] = source.pop('value')
 
@@ -242,6 +255,15 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
             for contact in source
         ]
 
+    @staticmethod
+    def _parse_device(
+        source: dict, connection: 'Connection', to_snake_case: bool = True
+    ):
+        """Parse Device from the API response."""
+        from mstrio.distribution_services import Device
+
+        return Device.from_dict(source, connection, to_snake_case)
+
     _FROM_DICT_MAP = {
         **Entity._FROM_DICT_MAP,
         'password_expiration_date': time_helper.DatetimeFormats.FULLDATETIME,
@@ -249,6 +271,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
         'owner': _parse_owner,
         'addresses': _parse_addresses,
         'last_login': time_helper.DatetimeFormats.FULLDATETIME,
+        'email_device': _parse_device,
     }
 
     def __init__(
@@ -316,6 +339,8 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
         self.require_new_password = kwargs.get("require_new_password")
         self.ldapdn = kwargs.get("ldapdn")
         self.trust_id = kwargs.get("trust_id")
+        self.default_email_address: str | None = kwargs.get("default_email_address")
+        self.email_device: 'Device | None' = kwargs.get("email_device")
         self._initials = kwargs.get("initials")
         self._addresses = kwargs.get("addresses")
         self._memberships = kwargs.get("memberships")
@@ -346,8 +371,10 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
         database_auth_login: str | None = None,
         memberships: list | None = None,
         language: 'str | Language | None' = None,
-        default_timezone: 'str| dict | None' = None,
+        default_timezone: str | dict | None = None,
         owner: 'User | str | None' = None,
+        default_email_address: str | None = None,
+        email_device: 'str | Device | None' = None,
     ) -> "User":
         """Create a new user on the I-Server. Returns User object.
 
@@ -377,6 +404,10 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
             owner: owner of user
             default_timezone: default timezone for user
             language: language for user
+            default_email_address: default email address for user
+            email_device: ID or Device object of the email device to which the
+                default email address will be assigned. If not provided, the
+                `Generic Email` will be used
         """
         password_expiration_date = time_helper.map_datetime_to_str(
             name='password_expiration_date',
@@ -421,7 +452,58 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
         user_created.alter(
             language=language, default_timezone=default_timezone, owner=owner
         )
+        if default_email_address:
+            from mstrio.distribution_services import Device
+
+            email_device_id = (
+                email_device.id if isinstance(email_device, Device) else email_device
+            )
+            cls._add_default_email_to_new_user(
+                connection, user_created, default_email_address, email_device_id
+            )
         return user_created
+
+    @staticmethod
+    def _add_default_email_to_new_user(
+        connection: 'Connection',
+        user_created: 'User',
+        default_email_address: str,
+        email_device_id: str | None = None,
+    ) -> None:
+        if not email_device_id:
+            if config.verbose:
+                msg = (
+                    "No `email_device` parameter specified. "
+                    "Searching for 'Generic Email' device."
+                )
+                logger.info(msg)
+
+            from mstrio.distribution_services import list_devices
+
+            email_device_id = next(
+                (
+                    device.id
+                    for device in list_devices(
+                        connection, device_type='email', name='Generic email'
+                    )
+                ),
+                None,
+            )
+
+            if not email_device_id:
+                msg = (
+                    "No 'Generic email' device found. "
+                    "Please specify `email_device` parameter."
+                )
+                raise ValueError(msg)
+
+        user_created.add_address(
+            name='Default Email',
+            address=default_email_address,
+            default=True,
+            delivery_type='email',
+            device_id=email_device_id,
+        )
 
     @classmethod
     def _create_users_from_csv(
@@ -465,8 +547,7 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
         )
         if to_dictionary:
             return objects
-        else:
-            return [cls.from_dict(source=obj, connection=connection) for obj in objects]
+        return [cls.from_dict(source=obj, connection=connection) for obj in objects]
 
     @classmethod
     def _get_user_ids(
@@ -486,6 +567,33 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
             **dict(filters),
         )
         return [user['id'] for user in user_dicts]
+
+    def _alter_default_email_address(
+        self, default_email_address: str, email_device_id: str | None = None
+    ) -> None:
+        default_address = next(
+            (
+                address
+                for address in self.addresses
+                if address.is_default and address.delivery_type.value == 'email'
+            ),
+            None,
+        )
+
+        if not default_address:
+            raise ValueError(
+                f"No default email address was set for the user with ID: {self.id}."
+            )
+
+        email_device_id = email_device_id or default_address.device.id
+        self.update_address(
+            id=default_address.id,
+            name=default_address.name,
+            address=default_email_address,
+            default=True,
+            device_id=email_device_id,
+            delivery_type='email',
+        )
 
     def alter(
         self,
@@ -507,6 +615,8 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
         default_timezone: 'str| dict | None' = None,
         language: 'str | Language | None' = None,
         comments: str | None = None,
+        default_email_address: str | None = None,
+        email_device: 'str | Device | None' = None,
     ) -> None:
         """Alter user properties.
 
@@ -534,6 +644,9 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
             default_timezone: default timezone for user
             language: language for user
             comments: long description of the object
+            default_email_address: default email address for user
+            email_device: ID or Device object of the email device to which the
+                default email address will be assigned
         """
         if (
             password_auto_expire or password_expiration_frequency
@@ -556,6 +669,14 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
                     else default_timezone
                 )
             }
+        if default_email_address:
+            from mstrio.distribution_services import Device
+
+            email_device_id = (
+                email_device.id if isinstance(email_device, Device) else email_device
+            )
+            self._alter_default_email_address(default_email_address, email_device_id)
+
         properties = filter_params_for_func(self.alter, locals(), exclude=['self'])
         self._alter_properties(**properties)
 
@@ -972,23 +1093,23 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
             force: If True, no additional prompt will be shown before revoking
                 all privileges from User.
         """
-        user_input = 'N'
-        if not force:
-            user_input = input(
-                f"Are you sure you want to revoke all privileges from user "
-                f"'{self.name}'? [Y/N]: "
+        message = (
+            f"Are you sure you want to revoke all privileges "
+            f"from user '{self.name}'? [Y/N]: "
+        )
+        if not force and input(message) != 'Y':
+            return
+
+        to_revoke = [
+            privilege['privilege']['id']
+            for privilege in self.list_privileges(mode='GRANTED')
+        ]
+        if to_revoke:
+            self.revoke_privilege(privilege=to_revoke)
+        elif config.verbose:
+            logger.info(
+                f"User '{self.name}' does not have any directly granted privileges"
             )
-        if force or user_input == 'Y':
-            to_revoke = [
-                privilege['privilege']['id']
-                for privilege in self.list_privileges(mode='GRANTED')
-            ]
-            if to_revoke:
-                self.revoke_privilege(privilege=to_revoke)
-            else:
-                logger.info(
-                    f"User '{self.name}' does not have any directly granted privileges"
-                )
 
     def list_privileges(
         self, mode: PrivilegeMode | str = PrivilegeMode.ALL, to_dataframe: bool = False
@@ -1004,22 +1125,14 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
         self.fetch('privileges')
 
         def to_df(priv_list):
-            priv_dict = {}
-            for priv in priv_list:
-                priv_dict[priv['privilege']['id']] = priv['privilege']['name']
+            priv_dict = {
+                priv['privilege']['id']: priv['privilege']['name'] for priv in priv_list
+            }
             df = DataFrame.from_dict(priv_dict, orient='index', columns=['Name'])
             df.index.name = 'ID'
             return df
 
-        if not isinstance(mode, PrivilegeMode):
-            try:
-                mode = PrivilegeMode(mode)
-            except ValueError:
-                msg = (
-                    "Wrong privilege mode has been passed, allowed modes are ['ALL'/"
-                    "'INHERITED'/'GRANTED']. See: `privilege.PrivilegeMode` enum."
-                )
-                helper.exception_handler(msg, ValueError)
+        mode = get_enum(mode, PrivilegeMode)
 
         privileges = []
         if mode == PrivilegeMode.ALL:
@@ -1051,17 +1164,34 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
         temp_connections = UserConnections(self.connection)
         temp_connections.disconnect_users(users=self, nodes=nodes)
 
-    def delete(self, force: bool = False) -> bool:
+    def delete(self, force: bool = False, delete_profile: bool = False) -> bool:
         """Deletes the user.
-        Deleting the user will not remove the user's shared files.
 
-                Args:
-            force: If True, no additional prompt will be shown before deleting
-                User.
+        Args:
+            force (bool, optional): If True, no additional prompt will be shown
+                before deleting User.
+            delete_profile (bool, optional): If True, User's profile folder
+                will be deleted as well.
+
         Returns:
             True for success. False otherwise.
         """
-        return super().delete(force=force)
+        message = (
+            f"Are you sure you want to delete User: "
+            f"'{self.name}' with ID: {self.id}? [Y/N]: "
+        )
+        if not force and input(message) != 'Y':
+            return False
+
+        if delete_profile:
+            self.delete_profile_folder(force=True)
+
+        response = users_api.delete_user(self.connection, self.id)
+
+        if config.verbose:
+            logger.info(f"Successfully deleted User with ID: '{self.id}'.")
+
+        return response.ok
 
     def _to_dataframe_as_columns(
         self, properties: list[str] | None = None
@@ -1163,6 +1293,49 @@ class User(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
         """
         dataframe = cls.to_datafame_from_list(objects, properties)
         return dataframe.to_csv(index=False, path_or_buf=path)
+
+    @method_version_handler('11.4.0600')
+    def delete_profile_folder(
+        self,
+        project_id: 'str | Project | None' = None,
+        project_name: str | None = None,
+        force: bool = False,
+    ) -> bool:
+        """Deletes the user's profile folder.
+
+        Args:
+            project_id (str, Project, optional) : ID of the project from which
+                the profile folder will be deleted. If None, the profile folder
+                will be deleted from all loaded projects.
+            project_name (str, optional): Name of the project from which the
+                profile folder will be deleted. If None, the profile folder will
+                be deleted from all loaded projects.
+            force (bool, optional): If True, no additional prompt will be shown
+                before deleting User's profile folder
+
+        Returns:
+            True for success. False otherwise.
+        """
+        message = (
+            f"Are you sure you want to delete folder for user profile: {self.name} "
+            f"with ID: {self.id}'? [Y/N]: "
+        )
+        if not force and input(message) != 'Y':
+            return False
+
+        project_id = project_id.id if isinstance(project_id, Project) else project_id
+
+        if not project_id and project_name:
+            project_id = get_valid_project_id(self.connection, project_name)
+
+        res = users_api.delete_user_profile(self.connection, self.id, project_id)
+
+        if config.verbose:
+            logger.info(
+                f"Successfully deleted profile folder for user with ID: '{self.id}'"
+            )
+
+        return res.ok
 
     @property
     def memberships(self):

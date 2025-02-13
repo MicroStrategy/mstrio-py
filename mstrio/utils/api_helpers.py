@@ -52,8 +52,9 @@ def unpack_information(func):
         if response_json.get('information'):
             response_json.update(response_json.pop('information'))
             response_json['id'] = response_json.pop('objectId', None)
-        if response_json.get('tables'):
-            response_json = unpack_tables(response_json)
+        for root_key in ['tables', 'calendars', 'timezones']:
+            if response_json.get(root_key):
+                response_json[root_key] = unpack_records(response_json, root_key)
         if (
             isinstance(response_json, dict)
             and response_json.get('subType') == 'logical_table'
@@ -84,8 +85,8 @@ def unpack_table(response_json):
     return copy
 
 
-def unpack_tables(response_json):
-    copy = response_json.get('tables').copy()
+def unpack_records(response_json, field):
+    copy = response_json.get(field).copy()
     for table in copy:
         PHYSICAL_TABLE_FIELD_SET = (
             table.get('physicalTable') and len(table.keys()) == 1
@@ -99,8 +100,13 @@ def unpack_tables(response_json):
 
 
 @contextmanager
-def changeset_manager(connection):
-    response = create_changeset(connection, schema_edit=True)
+def changeset_manager(connection: 'Connection', project_id=None, schema_edit=True):
+    if project_id is None:
+        connection._validate_project_selected()
+        project_id = connection.project_id
+    response = create_changeset(
+        connection, schema_edit=schema_edit, project_id=project_id
+    )
     changeset_id = response.json()['id']
     try:
         yield changeset_id

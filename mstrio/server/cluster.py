@@ -1,11 +1,10 @@
 import getpass
 import logging
+import pandas as pd
+
 from collections.abc import Iterable
 from enum import auto
 from typing import TYPE_CHECKING
-
-import numpy as np
-import pandas as pd
 
 from mstrio import config
 from mstrio.api import administration, monitors, registrations
@@ -23,9 +22,12 @@ from mstrio.utils.version_helper import is_server_min_version, method_version_ha
 from .node import Node, Service, ServiceWithNode
 
 if TYPE_CHECKING:
+    import numpy as np
     from pandas.io.formats.style import Styler
-
     from mstrio.server.project import Project
+else:
+    np = pd.core.common.np
+
 
 logger = logging.getLogger(__name__)
 

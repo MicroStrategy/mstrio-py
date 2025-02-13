@@ -8,7 +8,6 @@ from mstrio.utils import helper
 from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, ObjectTypes
 from mstrio.utils.helper import get_args_from_func, get_default_args_from_func
 from mstrio.utils.response_processors import objects as objects_processors
-from mstrio.utils.translation_mixin import TranslationMixin
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
 if TYPE_CHECKING:
@@ -46,7 +45,7 @@ def list_datasource_logins(
 
 
 @class_version_handler('11.2.0500')
-class DatasourceLogin(Entity, CopyMixin, DeleteMixin, TranslationMixin):
+class DatasourceLogin(Entity, CopyMixin, DeleteMixin):
     """A user login configuration object to access a particular datasource. Also
     formerly known as database login.
 
