@@ -1,7 +1,8 @@
 from enum import auto
 
 from mstrio.utils import helper
-from mstrio.utils.enum_helper import AutoName
+from mstrio.utils.enum_helper import AutoName, get_enum_val
+from mstrio.utils.enums import DaysOfWeek as _DaysOfWeek
 from mstrio.utils.helper import Dictable
 
 
@@ -10,15 +11,7 @@ class ScheduleEnums:
     Object representations of recurrence information of a time-based schedule
     """
 
-    class DaysOfWeek(AutoName):
-        MONDAY = auto()
-        TUESDAY = auto()
-        WEDNESDAY = auto()
-        THURSDAY = auto()
-        FRIDAY = auto()
-        SATURDAY = auto()
-        SUNDAY = auto()
-        NONE = None
+    DaysOfWeek = _DaysOfWeek
 
     class WeekOffset(AutoName):
         FIRST = auto()
@@ -106,24 +99,23 @@ class ScheduleTime(Dictable):
                 ValueError: when execution_repeat_interval = None if
                 execution_pattern == REPEAT
             """
-            if (
-                execution_pattern == ScheduleEnums.ExecutionPattern.REPEAT
-                and repeat_interval is None
-            ):
-                helper.exception_handler(
-                    msg=(
-                        'Value error: execution_repeat_interval '
-                        'cannot be None, '
-                        'for execution_pattern == ExecutionPattern.Repeat'
-                    ),
-                    exception_type=ValueError,
-                )
+
             if execution_pattern == ScheduleEnums.ExecutionPattern.REPEAT:
+                if repeat_interval is None:
+                    msg = (
+                        'Value error: `execution_repeat_interval` cannot be `None`, '
+                        'for `execution_pattern == ExecutionPattern.REPEAT`'
+                    )
+                    helper.exception_handler(
+                        msg=msg,
+                        exception_type=ValueError,
+                    )
                 self.start_time = start_time
                 self.stop_time = stop_time
                 self.repeat_interval = repeat_interval
             else:
                 self.execution_time = execution_time
+
             self.execution_pattern = (
                 execution_pattern
                 if isinstance(execution_pattern, ScheduleEnums.ExecutionPattern)
@@ -186,18 +178,14 @@ class ScheduleTime(Dictable):
                     The repeat interval of weeks of weekly schedule.
                     Defaults to 1.
             """
-            if days_of_week is None:
-                self.days_of_week = []
-            else:
-                days_of_week = [
-                    (
-                        ScheduleEnums.DaysOfWeek(item)
-                        if not isinstance(item, ScheduleEnums.DaysOfWeek)
-                        else item
-                    )
-                    for item in days_of_week
-                ]
-                self.days_of_week = days_of_week
+            self.days_of_week = [
+                (
+                    ScheduleEnums.DaysOfWeek(item)
+                    if not isinstance(item, ScheduleEnums.DaysOfWeek)
+                    else item
+                )
+                for item in (days_of_week or [])
+            ]
 
             self.repeat_interval = repeat_interval
 
@@ -509,14 +497,18 @@ class ScheduleTime(Dictable):
             schedule.
         """
 
-        if execution_pattern == ScheduleEnums.ExecutionPattern.ONCE:
+        execution_pattern = get_enum_val(
+            execution_pattern, ScheduleEnums.ExecutionPattern
+        )
+
+        if execution_pattern == ScheduleEnums.ExecutionPattern.ONCE.value:
             execution = cls.Execution.from_dict(
                 {
                     'execution_pattern': execution_pattern,
                     'execution_time': execution_time,
                 }
             )
-        elif execution_pattern == ScheduleEnums.ExecutionPattern.REPEAT:
+        elif execution_pattern == ScheduleEnums.ExecutionPattern.REPEAT.value:
             execution = cls.Execution.from_dict(
                 {
                     'execution_pattern': execution_pattern,
@@ -525,19 +517,20 @@ class ScheduleTime(Dictable):
                     'repeat_interval': execution_repeat_interval,
                 }
             )
-        else:
-            helper.exception_handler(
-                msg='Error: Wrong value of execution_pattern', exception_type=ValueError
-            )
 
-        if recurrence_pattern == ScheduleEnums.RecurrencePattern.DAILY:
+        recurrence_pattern = get_enum_val(
+            recurrence_pattern, ScheduleEnums.RecurrencePattern
+        )
+
+        if recurrence_pattern == ScheduleEnums.RecurrencePattern.DAILY.value:
             daily = cls.Daily.from_dict(
                 {'daily_pattern': daily_pattern, 'repeat_interval': repeat_interval}
             )
             return cls(
                 recurrence_pattern=recurrence_pattern, execution=execution, daily=daily
             )
-        elif recurrence_pattern == ScheduleEnums.RecurrencePattern.WEEKLY:
+
+        if recurrence_pattern == ScheduleEnums.RecurrencePattern.WEEKLY.value:
             if days_of_week and not isinstance(days_of_week, list):
                 helper.exception_handler(
                     msg='Error: days_of_week must be provided as a list',
@@ -551,7 +544,8 @@ class ScheduleTime(Dictable):
                 execution=execution,
                 weekly=weekly,
             )
-        elif recurrence_pattern == ScheduleEnums.RecurrencePattern.MONTHLY:
+
+        if recurrence_pattern == ScheduleEnums.RecurrencePattern.MONTHLY.value:
             monthly = cls.Monthly.from_dict(
                 {
                     "monthly_pattern": monthly_pattern,
@@ -568,7 +562,8 @@ class ScheduleTime(Dictable):
                 execution=execution,
                 monthly=monthly,
             )
-        elif recurrence_pattern == ScheduleEnums.RecurrencePattern.YEARLY:
+
+        if recurrence_pattern == ScheduleEnums.RecurrencePattern.YEARLY.value:
             yearly = cls.Yearly.from_dict(
                 {
                     'yearly_pattern': yearly_pattern,
@@ -582,11 +577,6 @@ class ScheduleTime(Dictable):
                 recurrence_pattern=recurrence_pattern,
                 execution=execution,
                 yearly=yearly,
-            )
-        else:
-            helper.exception_handler(
-                msg='Error: Wrong value of recurrence_pattern',
-                exception_type=ValueError,
             )
 
     def update_properties(

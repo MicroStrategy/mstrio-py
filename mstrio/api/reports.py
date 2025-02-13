@@ -1,5 +1,7 @@
 from typing import TYPE_CHECKING
 
+from requests import Response
+
 from mstrio.connection import Connection
 from mstrio.utils.error_handlers import ErrorHandler
 from mstrio.utils.version_helper import is_server_min_version
@@ -11,7 +13,9 @@ CUBE_FIELDS = '-data.metricValues.extras,-data.metricValues.formatted'
 
 
 @ErrorHandler(err_msg="Error getting SQL for report {report_id}.")
-def report_sql(connection, report_id, instance_id):
+def report_sql(
+    connection: 'Connection', report_id: str, instance_id: str
+) -> 'Response':
     """Get the SQL code for a specific report. This is the SQL that is sent to
     the data warehouse to retrieve the data for the report.
 
@@ -31,7 +35,7 @@ def report_sql(connection, report_id, instance_id):
 
 
 @ErrorHandler(err_msg="Error getting report {report_id} definition. Check report ID.")
-def report_definition(connection, report_id):
+def report_definition(connection: 'Connection', report_id: str) -> 'Response':
     """Get the definition of a specific report, including attributes and
     metrics. This in-memory report definition provides information about all
     available objects without actually running any data query/report. The
@@ -51,8 +55,13 @@ def report_definition(connection, report_id):
 
 @ErrorHandler(err_msg="Error getting report {report_id} contents.")
 def report_instance(
-    connection, report_id, body=None, offset=0, limit=5000, execution_stage=None
-):
+    connection: 'Connection',
+    report_id: str,
+    body: dict | None = None,
+    offset: int = 0,
+    limit: int = 5000,
+    execution_stage: str | None = None,
+) -> 'Response':
     """Get the results of a newly created report instance. This in-memory
     report instance can be used by other requests.
 
@@ -89,7 +98,13 @@ def report_instance(
 
 
 @ErrorHandler(err_msg="Error getting report contents.")
-def report_instance_id(connection, report_id, instance_id, offset=0, limit=5000):
+def report_instance_id(
+    connection: 'Connection',
+    report_id: str,
+    instance_id: str,
+    offset: int = 0,
+    limit: int = 5000,
+) -> 'Response':
     """Get the results of a previously created report instance, using the in-
     memory report instance created by a POST /api/reports/{reportId}/instances
     request.
@@ -124,10 +139,10 @@ def report_instance_id(connection, report_id, instance_id, offset=0, limit=5000)
 
 def report_instance_id_coroutine(
     future_session: "FuturesSessionWithRenewal",
-    report_id,
-    instance_id,
-    offset=0,
-    limit=5000,
+    report_id: str,
+    instance_id: str,
+    offset: int = 0,
+    limit: int = 5000,
 ):
     """Get the future of a previously created instance for a specific report
     asynchronously, using the in-memory instance created by report_instance().
@@ -146,8 +161,12 @@ def report_instance_id_coroutine(
 
 @ErrorHandler(err_msg="Error retrieving attribute {attribute_id} elements.")
 def report_single_attribute_elements(
-    connection, report_id, attribute_id, offset=0, limit=200000
-):
+    connection: 'Connection',
+    report_id: str,
+    attribute_id: str,
+    offset: int = 0,
+    limit: int = 200000,
+) -> 'Response':
     """Get elements of a specific attribute of a specific report.
 
     Args:
@@ -172,10 +191,10 @@ def report_single_attribute_elements(
 
 def report_single_attribute_elements_coroutine(
     future_session: "FuturesSessionWithRenewal",
-    report_id,
-    attribute_id,
-    offset=0,
-    limit=200000,
+    report_id: str,
+    attribute_id: str,
+    offset: int = 0,
+    limit: int = 200000,
 ):
     """Get elements of a specific attribute of a specific report.
 
@@ -204,7 +223,12 @@ def report_single_attribute_elements_coroutine(
 
 
 @ErrorHandler(err_msg="Error getting collection of prompts for report {report_id}")
-def get_report_prompts(connection, report_id, closed=None, fields=None):
+def get_report_prompts(
+    connection: 'Connection',
+    report_id: str,
+    closed: bool | None = None,
+    fields: str | None = None,
+) -> 'Response':
     """Get the collection of prompts and their respective definitions from a
     report.
 
@@ -228,7 +252,7 @@ def get_report_prompts(connection, report_id, closed=None, fields=None):
 @ErrorHandler(err_msg="Error providing prompt answers for report {report_id}.")
 def answer_report_prompts(
     connection: 'Connection', report_id: str, instance_id: str, body: dict
-):
+) -> 'Response':
     """Provide answers to the prompts in a report instance.
 
     Args:
@@ -263,7 +287,13 @@ def answer_report_prompts(
 
 
 @ErrorHandler(err_msg="Error getting prompted report {report_id} instance.")
-def get_prompted_instance(connection, report_id, instance_id, closed=None, fields=None):
+def get_prompted_instance(
+    connection: 'Connection',
+    report_id: str,
+    instance_id: str,
+    closed: bool | None = None,
+    fields: str | None = None,
+) -> 'Response':
     """Get the collection of prompts and their respective definitions from a
     report instance. This endpoint will return data only when the report
     instance has prompt which need to be answered.
@@ -274,9 +304,9 @@ def get_prompted_instance(connection, report_id, instance_id, closed=None, field
             to extract information from.
         instance_id (str): Unique ID of the in-memory instance of a published
             report.
-        closed(bool): Prompt status, true means get closed prompt,
+        closed(bool, optional): Prompt status, true means get closed prompt,
             false means get open prompt
-        fields: Comma-separated, top-level field whitelist
+        fields (str, optional): Comma-separated, top-level field whitelist
             that allows the client to selectively retrieve
             part of the response model.
 
@@ -299,7 +329,7 @@ def get_report_attribute_element_prompt(
     limit: int = 100,
     search_pattern: str | None = None,
     fields: str | None = None,
-):
+) -> 'Response':
     """Get available attribute element for attribute element prompt"""
     endpoint = (
         f'/api/reports/{report_id}/instances/{instance_id}/prompts/{prompt_id}/elements'
@@ -312,4 +342,38 @@ def get_report_attribute_element_prompt(
             'searchPattern': search_pattern,
             'fields': fields,
         },
+    )
+
+
+@ErrorHandler(err_msg="Error getting status of report instance {instance_id}")
+def get_report_status(
+    connection: 'Connection',
+    report_id: str,
+    instance_id: str,
+    project_id: str | None = None,
+    fields: str | None = None,
+    error_msg: str | None = None,
+) -> 'Response':
+    """Get the status of a report instance.
+
+    Args:
+        connection (Connection): MicroStrategy REST API connection object.
+        report_id (str): Report ID
+        instance_id (str): Report Instance ID
+        project_id (str, optional): Project ID
+        fields (str, optional): A whitelist of top-level fields separated by
+            commas. Allow the client to selectively retrieve fields in the
+            response.
+        error_msg (str, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object.
+    """
+    endpoint = f'/api/reports/{report_id}/instances/{instance_id}/status'
+    headers = {'X-MSTR-ProjectID': project_id} if project_id else {}
+
+    return connection.get(
+        endpoint=endpoint,
+        headers=headers,
+        params={'fields': fields},
     )

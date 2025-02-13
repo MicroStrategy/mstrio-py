@@ -11,13 +11,13 @@ from mstrio.users_and_groups.user import User
 from mstrio.utils import helper
 from mstrio.utils.entity import DeleteMixin, Entity, ObjectTypes
 from mstrio.utils.enum_helper import AutoName, get_enum_val
+from mstrio.utils.related_subscription_mixin import RelatedSubscriptionMixin
 from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.time_helper import (
     DatetimeFormats,
     map_datetime_to_str,
     map_str_to_datetime,
 )
-from mstrio.utils.translation_mixin import TranslationMixin
 from mstrio.utils.version_helper import method_version_handler
 
 logger = logging.getLogger(__name__)
@@ -52,13 +52,10 @@ def list_schedules(
 
     if to_dictionary:
         return objects
-    else:
-        return [
-            Schedule.from_dict(source=obj, connection=connection) for obj in objects
-        ]
+    return [Schedule.from_dict(source=obj, connection=connection) for obj in objects]
 
 
-class Schedule(Entity, DeleteMixin, TranslationMixin):
+class Schedule(Entity, DeleteMixin, RelatedSubscriptionMixin):
     """Class representation of MicroStrategy Schedule object.
 
     Attributes:
@@ -430,10 +427,12 @@ class Schedule(Entity, DeleteMixin, TranslationMixin):
                 'cls',
             ]
         }
+
+        schedule_type = get_enum_val(schedule_type, cls.ScheduleType)
         # Event based or Time based logic
-        if schedule_type == cls.ScheduleType.EVENT_BASED:
+        if schedule_type == cls.ScheduleType.EVENT_BASED.value:
             execution_details = {'type': 'event', 'content': {'id': event_id}}
-        elif schedule_type == cls.ScheduleType.TIME_BASED:
+        elif schedule_type == cls.ScheduleType.TIME_BASED.value:
             if time is None:
                 time = ScheduleTime.from_details(**time_kwargs)
             execution_details = {'type': 'time', 'content': time.to_dict()}
@@ -450,7 +449,7 @@ class Schedule(Entity, DeleteMixin, TranslationMixin):
         body = {
             'name': name,
             'description': description,
-            'schedule_type': get_enum_val(schedule_type, cls.ScheduleType),
+            'schedule_type': schedule_type,
             'start_date': start_date,
             'stop_date': stop_date,
             execution_details['type']: execution_details['content'],
@@ -458,8 +457,7 @@ class Schedule(Entity, DeleteMixin, TranslationMixin):
         body = helper.delete_none_values(body, recursion=True)
         body = helper.snake_to_camel(body)
         # Response is already unpacked in wrapper
-        response = schedules.create_schedule(connection, body)
-        response = response.json()
+        response = schedules.create_schedule(connection, body).json()
         if config.verbose:
             logger.info(f"Created schedule '{name}' with ID: {response['id']}")
         return Schedule.from_dict(source=response, connection=connection)
@@ -607,14 +605,12 @@ class Schedule(Entity, DeleteMixin, TranslationMixin):
 
         self._alter_properties(**properties)
 
-        if (
-            self.schedule_type == self.ScheduleType.EVENT_BASED
-            and 'time' in self.__dir__()
+        if self.schedule_type == self.ScheduleType.EVENT_BASED and hasattr(
+            self, 'time'
         ):
             delattr(self, 'time')
-        elif (
-            self.schedule_type == self.ScheduleType.TIME_BASED
-            and 'event' in self.__dir__()
+        elif self.schedule_type == self.ScheduleType.TIME_BASED and hasattr(
+            self, 'event'
         ):
             delattr(self, 'event')
 

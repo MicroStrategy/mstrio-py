@@ -1,6 +1,8 @@
+import logging
 import pandas as pd
 import requests
-from packaging import version
+
+from functools import partial
 from tqdm.auto import tqdm
 
 from mstrio import config
@@ -10,6 +12,7 @@ from mstrio.api.schedules import get_contents_schedule
 from mstrio.connection import Connection
 from mstrio.distribution_services.schedule import Schedule
 from mstrio.object_management.search_operations import SearchPattern, full_search
+from mstrio.project_objects.helpers import answer_prompts_helper
 from mstrio.project_objects.prompt import Prompt
 from mstrio.users_and_groups.user import User
 from mstrio.utils.cache import CacheSource, ContentCacheMixin
@@ -35,9 +38,12 @@ from mstrio.utils.helper import (
     sort_object_properties,
 )
 from mstrio.utils.parser import Parser
+from mstrio.utils.related_subscription_mixin import RelatedSubscriptionMixin
 from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.sessions import FuturesSessionWithRenewal
-from mstrio.utils.translation_mixin import TranslationMixin
+from mstrio.utils.version_helper import meets_minimal_version
+
+logger = logging.getLogger(__name__)
 
 
 def list_reports(
@@ -139,8 +145,8 @@ class Report(
     MoveMixin,
     DeleteMixin,
     ContentCacheMixin,
-    TranslationMixin,
     VldbMixin,
+    RelatedSubscriptionMixin,
 ):
     """Access, filter, publish, and extract data from in-memory reports.
 
@@ -570,9 +576,7 @@ class Report(
 
         # Switch off subtotals if I-Server version is higher than 11.2.1
         body = self._filter._request_body()
-        if version.parse(self._connection.iserver_version) >= version.parse(
-            "11.2.0100"
-        ):
+        if meets_minimal_version(self._connection.iserver_version, "11.2.0100"):
             self._subtotals["visible"] = False
             body["subtotals"] = {"visible": self._subtotals["visible"]}
 
@@ -684,9 +688,7 @@ class Report(
         grid = response["definition"]["grid"]
         available_objects = response['definition']['availableObjects']
 
-        if version.parse(self._connection.iserver_version) >= version.parse(
-            "11.2.0100"
-        ):
+        if meets_minimal_version(self._connection.iserver_version, "11.2.0100"):
             self._subtotals = grid["subtotals"]
         self.name = response["name"]
         self._cross_tab = grid["crossTab"]
@@ -921,6 +923,57 @@ class Report(
             Schedule.from_dict(connection=self.connection, source=schedule_id)
             for schedule_id in schedules_list_response
         ]
+
+    def answer_prompts(self, prompt_answers: list[Prompt], force: bool = False) -> bool:
+        """Answer prompts of the report.
+
+        Args:
+            prompt_answers (list[Prompt]): List of Prompt class objects
+                answering the prompts of the report.
+            force (bool): If True, then the report's existing prompt will be
+                overwritten by ones from the prompt_answers list, and additional
+                input from the user won't be asked. Otherwise, the user will be
+                asked for input if the prompt is not answered, or if prompt was
+                already answered.
+
+        Returns:
+            bool: True if prompts were answered successfully, False otherwise.
+        """
+        instance_id = self.instance_id or reports_api.report_instance(
+            connection=self.connection,
+            report_id=self.id,
+        ).json().get('instanceId')
+
+        common_args = {
+            'connection': self.connection,
+            'report_id': self.id,
+            'instance_id': instance_id,
+        }
+
+        if not answer_prompts_helper(
+            instance_id=instance_id,
+            prompt_answers=prompt_answers,
+            get_status_func=partial(
+                reports_api.get_report_status,
+                **common_args,
+                project_id=self.project_id,
+            ),
+            get_prompts_func=partial(
+                reports_api.get_prompted_instance,
+                **common_args,
+                closed=False,
+            ),
+            answer_prompts_func=partial(
+                reports_api.answer_report_prompts, **common_args
+            ),
+            force=force,
+        ):
+            return False
+
+        # If prompts were answered successfully, update the instance_id
+        self.instance_id = instance_id
+
+        return True
 
     @property
     def attributes(self):

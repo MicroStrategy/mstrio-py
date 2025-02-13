@@ -1,9 +1,14 @@
-from itertools import chain
-
-import numpy as np
 import pandas as pd
 
+from itertools import chain
+from typing import TYPE_CHECKING
+
 from mstrio.utils.helper import exception_handler
+
+if TYPE_CHECKING:
+    import numpy as np
+else:
+    np = pd.core.common.np
 
 
 class Parser:

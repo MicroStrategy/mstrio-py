@@ -6,8 +6,8 @@ from mstrio.connection import Connection
 from mstrio.utils import helper
 from mstrio.utils.entity import DeleteMixin, Entity, ObjectTypes
 from mstrio.utils.helper import filter_params_for_func
+from mstrio.utils.related_subscription_mixin import RelatedSubscriptionMixin
 from mstrio.utils.response_processors import objects as objects_processors
-from mstrio.utils.translation_mixin import TranslationMixin
 from mstrio.utils.version_helper import (
     class_version_handler,
     is_server_min_version,
@@ -46,7 +46,7 @@ def list_events(
 
 
 @class_version_handler('11.3.0100')
-class Event(Entity, DeleteMixin, TranslationMixin):
+class Event(Entity, DeleteMixin, RelatedSubscriptionMixin):
     """Class representation of MicroStrategy Event object.
 
     Attributes:

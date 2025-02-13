@@ -354,7 +354,7 @@ class Content(Dictable):
     def __init__(
         self,
         id: str,
-        type: Type,
+        type: Type | None = None,
         name: str | None = None,
         personalization: Properties | None = None,
         refresh_condition: RefreshCondition | None = None,

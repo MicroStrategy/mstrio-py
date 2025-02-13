@@ -47,7 +47,7 @@ class EmailSubscription(Subscription):
         send_now: bool | None = None,
         owner_id: str | None = None,
         schedules: str | list[str] | Schedule | list[Schedule] | None = None,
-        contents: Content | None = None,
+        contents: Content | list[Content] | None = None,
         recipients: list[str] | list[dict] = None,
         delivery_expiration_date: str | None = None,
         delivery_expiration_timezone: str | None = None,
@@ -82,7 +82,7 @@ class EmailSubscription(Subscription):
                 logged in user ID,
             schedules (str | list[str] | Schedule | list[Schedule], optional):
                 Schedules IDs or Schedule objects,
-            contents (Content, optional): The content settings.
+            contents (Content | list[Content], optional): The content settings.
             recipients (list[str] | list[dict], optional): list of recipients
                 IDs or dicts,
             delivery_expiration_date (str, optional): expiration date of the
@@ -108,6 +108,24 @@ class EmailSubscription(Subscription):
                 zip file,
             zip_password (str, optional): optional password for the compressed
                 file
+
+        Notes:
+            To create a subscription with prompts, you need to provide
+            the report instance ID with answered prompts for each content.
+            Example:
+            >>>contents=[
+            >>>    Content(
+            >>>        id="<report_id>",
+            >>>        type=Content.Type.REPORT,
+            >>>        personalization=Content.Properties(
+            >>>            format_type=Content.Properties.FormatType.PDF,
+            >>>            prompt=Content.Properties.Prompt(
+            >>>                enabled=True,
+            >>>                instance_id="<instance_id>",
+            >>>            ),
+            >>>            ),
+            >>>    ),
+            >>>]
         """
         return super()._Subscription__create(
             connection=connection,

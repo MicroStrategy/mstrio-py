@@ -27,7 +27,6 @@ from mstrio.utils.helper import (
     get_valid_project_name,
 )
 from mstrio.utils.response_processors import objects as objects_processors
-from mstrio.utils.translation_mixin import TranslationMixin
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
 from mstrio.modeling.expression import Expression  # isort:skip
@@ -174,7 +173,7 @@ class UpdateOperator(Enum):
 
 
 @class_version_handler('11.3.0100')
-class SecurityFilter(Entity, CopyMixin, DeleteMixin, MoveMixin, TranslationMixin):
+class SecurityFilter(Entity, CopyMixin, DeleteMixin, MoveMixin):
     """Python representation of MicroStrategy Security Filter object.
 
     Attributes:

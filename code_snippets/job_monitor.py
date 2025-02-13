@@ -90,7 +90,7 @@ KILL_JOBS_FILTER_TIME = $kill_jobs_filter_time  # should be converted to seconds
 
 # kill jobs running over a certain time
 elapsed_t = KILL_JOBS_FILTER_TIME  # time in seconds (for 11.3.2 I-Server version)
-if conn.iserver_version >= '11.3.0300':
+if not conn.iserver_version or conn.iserver_version >= '11.3.0300':
     elapsed_t = 1000 * elapsed_t  # convert to milliseconds (for 11.3.3+ I-Server versions)
 elapsed_t = f'gt:{elapsed_t}'  # correct form filter (valid operators: 'gt:' and 'lt:')
 kill_all_jobs(conn, elapsed_time=elapsed_t, force=True)

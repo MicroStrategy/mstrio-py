@@ -27,7 +27,6 @@ from mstrio.utils.helper import (
     get_objects_id,
 )
 from mstrio.utils.response_processors import objects as objects_processors
-from mstrio.utils.translation_mixin import TranslationMixin
 from mstrio.utils.version_helper import class_version_handler
 
 if TYPE_CHECKING:
@@ -74,7 +73,7 @@ def list_devices(
 
 
 @class_version_handler('11.3.0100')
-class Device(Entity, DeleteMixin, TranslationMixin):
+class Device(Entity, DeleteMixin):
     """Devices are Distribution Services components that specify the format
      and transmission process of subscribed reports and documents.
      They are instances of transmitters that contain specific settings

@@ -11,7 +11,6 @@ from mstrio.utils.helper import (
     get_valid_project_id,
 )
 from mstrio.utils.response_processors import objects as objects_processors
-from mstrio.utils.translation_mixin import TranslationMixin
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
 
@@ -68,7 +67,7 @@ def list_bots(
 
 
 @class_version_handler('11.4.0300')
-class Bot(Entity, CertifyMixin, CopyMixin, DeleteMixin, MoveMixin, TranslationMixin):
+class Bot(Entity, CertifyMixin, CopyMixin, DeleteMixin, MoveMixin):
     """Python representation of a MicroStrategy Bot object"""
 
     _OBJECT_TYPE = ObjectTypes.DOCUMENT_DEFINITION

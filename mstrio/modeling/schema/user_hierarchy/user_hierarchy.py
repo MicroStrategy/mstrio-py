@@ -19,7 +19,6 @@ from mstrio.utils.helper import (
     get_enum_val,
 )
 from mstrio.utils.response_processors import objects as objects_processors
-from mstrio.utils.translation_mixin import TranslationMixin
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
 if TYPE_CHECKING:
@@ -167,7 +166,7 @@ class HierarchyRelationship(Dictable):
 
 
 @class_version_handler('11.3.0200')
-class UserHierarchy(Entity, CopyMixin, MoveMixin, DeleteMixin, TranslationMixin):
+class UserHierarchy(Entity, CopyMixin, MoveMixin, DeleteMixin):
     """A unique abstraction of hierarchies above the System Hierarchy,
     which can contain an arbitrary number of attributes and paths between
     them. These User Hierarchies allow users to browse through the data

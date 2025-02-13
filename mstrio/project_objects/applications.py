@@ -4,10 +4,10 @@ from dataclasses import dataclass
 from mstrio import config
 from mstrio.api import applications
 from mstrio.connection import Connection
+from mstrio.project_objects.palette import Palette
 from mstrio.types import ObjectTypes
 from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity
 from mstrio.utils.helper import Dictable, delete_none_values, find_object_with_name
-from mstrio.utils.translation_mixin import TranslationMixin
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
 logger = logging.getLogger(__name__)
@@ -51,7 +51,7 @@ def list_applications(
 
 
 @class_version_handler('11.3.1200')
-class Application(Entity, CopyMixin, DeleteMixin, TranslationMixin):
+class Application(Entity, CopyMixin, DeleteMixin):
     """Python representation of a MicroStrategy Application object"""
 
     @dataclass
@@ -736,8 +736,8 @@ class Application(Entity, CopyMixin, DeleteMixin, TranslationMixin):
         managed: bool | None = None,
         general: 'Application.GeneralSettings | None' = None,
         platforms: list[str] | None = None,
-        application_palettes: list[str] | None = None,
-        application_default_palette: str | None = None,
+        application_palettes: list[str] | list[Palette] | None = None,
+        application_default_palette: str | Palette | None = None,
         show_builtin_palettes: bool | None = None,
         is_default: bool | None = None,
         use_config_palettes: bool | None = None,
@@ -765,10 +765,10 @@ class Application(Entity, CopyMixin, DeleteMixin, TranslationMixin):
                     -web
                     -mobile
                     -desktop
-            application_palettes (list[str], optional): list of customized
-                application palettes
-            application_default_palette (str, optional): default application
-                palette
+            application_palettes (list[str] or list[Palette], optional): list
+                of customized application palettes
+            application_default_palette (str or Palette, optional): default
+                application palette
             show_builtin_palettes (bool, optional): whether to show built-in
                 palettes
             is_default (bool, optional): whether the application configuration
@@ -789,6 +789,13 @@ class Application(Entity, CopyMixin, DeleteMixin, TranslationMixin):
         Returns:
             The created Application object.
         """
+        if isinstance(application_default_palette, Palette):
+            application_default_palette = application_default_palette.id
+        if application_palettes:
+            application_palettes = [
+                palette.id if isinstance(palette, Palette) else palette
+                for palette in application_palettes
+            ]
         body = {
             'name': name,
             'description': description,
@@ -846,8 +853,8 @@ class Application(Entity, CopyMixin, DeleteMixin, TranslationMixin):
         managed: bool | None = None,
         general: 'Application.GeneralSettings | None' = None,
         platforms: list[str] | None = None,
-        application_palettes: list[str] | None = None,
-        application_default_palette: str | None = None,
+        application_palettes: list[str] | list[Palette] | None = None,
+        application_default_palette: str | Palette | None = None,
         show_builtin_palettes: bool | None = None,
         is_default: bool | None = None,
         use_config_palettes: bool | None = None,
@@ -873,10 +880,10 @@ class Application(Entity, CopyMixin, DeleteMixin, TranslationMixin):
                     -web
                     -mobile
                     -desktop
-            application_palettes (list[str], optional): list of customized
-                application palettes
-            application_default_palette (str, optional): default application
-                palette
+            application_palettes (list[str] or list[Palette], optional): list
+                of customized application palettes
+            application_default_palette (str or Palette, optional): default
+                application palette
             show_builtin_palettes (bool, optional): whether to show built-in
                 palettes
             is_default (bool, optional): whether the application configuration
@@ -896,6 +903,13 @@ class Application(Entity, CopyMixin, DeleteMixin, TranslationMixin):
         """
         if not home_screen:
             home_screen = self.home_screen
+        if isinstance(application_default_palette, Palette):
+            application_default_palette = application_default_palette.id
+        if application_palettes:
+            application_palettes = [
+                palette.id if isinstance(palette, Palette) else palette
+                for palette in application_palettes
+            ]
         body = {
             'objectVersion': self.version,
             'name': name or self.name,

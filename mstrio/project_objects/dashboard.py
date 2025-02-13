@@ -14,6 +14,7 @@ from mstrio.users_and_groups import UserOrGroup
 from mstrio.utils import helper
 from mstrio.utils.cache import CacheSource
 from mstrio.utils.helper import Dictable, get_valid_project_id, is_dashboard
+from mstrio.utils.related_subscription_mixin import RelatedSubscriptionMixin
 
 logger = logging.getLogger(__name__)
 
@@ -128,7 +129,7 @@ def list_dashboards_across_projects(
     return output[:limit]
 
 
-class Dashboard(Document):
+class Dashboard(Document, RelatedSubscriptionMixin):
     _CACHE_TYPE = CacheSource.Type.DASHBOARD
 
     _API_GETTERS = {

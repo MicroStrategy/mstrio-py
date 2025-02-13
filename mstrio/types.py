@@ -14,6 +14,7 @@ class ObjectTypes(Enum):
     TEMPLATE = 2
     REPORT_DEFINITION = 3
     METRIC = 4
+    AUTO_STYLE = 6
     AGG_METRIC = 7
     FOLDER = 8
     SUBSCRIPTION_DEVICE = 9

@@ -1,14 +1,16 @@
 import logging
 
-from packaging import version
-
 from mstrio import config
 from mstrio.api import administration
 from mstrio.connection import Connection
 from mstrio.utils import helper
 from mstrio.utils.settings.base_settings import BaseSettings
 from mstrio.utils.settings.setting_types import SettingValue
-from mstrio.utils.version_helper import is_server_min_version, method_version_handler
+from mstrio.utils.version_helper import (
+    is_server_min_version,
+    meets_minimal_version,
+    method_version_handler,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -48,14 +50,14 @@ class ServerSettings(BaseSettings):
                 `connection.Connection()`
         """
         # fix conversion map due to changes in REST Layer
-        if version.parse(connection.iserver_version) >= version.parse("11.3.0000"):
+        if meets_minimal_version(connection.iserver_version, "11.3.0000"):
             self._CONVERSION_MAP.update(
                 {
                     'workSetMaxMemoryConsumption': 'B',
                     'catalogMaxMemoryConsumption': 'B',
                 }
             )
-        if version.parse(connection.iserver_version) >= version.parse("11.4.0300"):
+        if meets_minimal_version(connection.iserver_version, "11.4.0300"):
             self._READ_ONLY.append('enableHtmlContentInDossier')
         super(BaseSettings, self).__setattr__('_connection', connection)
         self._configure_settings()
@@ -96,7 +98,7 @@ class ServerSettings(BaseSettings):
 
     def __override_settings_config(self, value: SettingValue) -> None:  # NOSONAR
         # config not accurate, needs override DE179361
-        if version.parse(self._connection.iserver_version) < version.parse("11.3.0"):
+        if not meets_minimal_version(self._connection.iserver_version, "11.3.0000"):
             if value.name in ['maxJobsPerServer', 'maxInteractiveJobsPerServer']:
                 value.max_value = 100000
             elif value.name == 'maxUserConnectionPerServer':

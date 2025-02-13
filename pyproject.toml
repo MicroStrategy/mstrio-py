@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling >= 1.14.0"]
+requires = ["hatchling >= 1.14.0", "hatch-requirements-txt"]
 build-backend = "hatchling.build"
 
 [tool.hatch.version]
@@ -14,7 +14,6 @@ include = [
     "/NEWS.md",
     "/README.md",
     "/USAGE.md",
-    "/requirements.txt",
     "/setup.cfg",
 ]
 
@@ -24,11 +23,9 @@ packages = ["mstrio"]
 [project]
 name = "mstrio-py"
 description = "Python interface for the MicroStrategy REST API"
-authors = [
-    { name = "MicroStrategy", email = "bkaczynski@microstrategy.com" }
-]
-requires-python = ">=3.10,<3.13"
-license = {text = "Apache License 2.0"}
+authors = [{ name = "MicroStrategy", email = "bkaczynski@microstrategy.com" }]
+requires-python = ">=3.10,<3.14"
+license = { text = "Apache License 2.0" }
 readme = "README.md"
 dynamic = ["version"]
 
@@ -41,6 +38,7 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3 :: Only",
     "Intended Audience :: Developers",
     "Intended Audience :: System Administrators",
@@ -51,27 +49,39 @@ classifiers = [
     "Topic :: Software Development",
 ]
 
+# when changing this section, make sure to update `[strict]` deps below
 dependencies = [
-    # peer dependency (dep of dep)
-    # but we need to force version for SEC
-    "urllib3 >= 2.2.2",
-    "Jinja2 >= 3.1.4",  # Optional dep of pandas, required for testing
-    "certifi >= 2024.07.04",  # SEC safe version
-    "idna >= 3.7",  # SEC safe version
-
-    # Direct mstrio dependencies
-    "numpy >= 1.24.3",
     "packaging >= 23",
-    "pandas >= 1.1.5",
+    # FYI: <https://github.com/pandas-dev/pandas/blob/fa5c2550e81c3e745eb7948b56adac45454853d5/pyproject.toml#L60>
+    "pandas[output-formatting,pyarrow] >= 1.1.5",
     "pyhumps >= 3.8",
     "pypika >= 0.48.9",
     "requests >= 2.32.3",
-    "requests_futures >= 1.0.0",
+    "requests-futures >= 1.0.0",
     "stringcase >= 1.2",
     "tqdm >= 4.66.4",
 ]
 
 [project.optional-dependencies]
+# if there's setup issues, install mstrio-py with `pip install mstrio-py[strict]`
+# and check if the issues are gone.
+# essentially this installs all the deps and peer deps
+# without "dependencies optimizations"
+strict = [
+    "jinja2 >= 3.1.5",
+    "numpy >= 2",
+    "packaging >= 24",
+    "pandas[output-formatting,pyarrow] >= 2",
+    "pyarrow >= 19",
+    "pyhumps >= 3.8",
+    "pypika >= 0.48.9",
+    "requests >= 2.32.3",
+    "requests-futures >= 1",
+    "stringcase >= 1.2",
+    "tox >= 4.23.2",
+    "tqdm >= 4.66.4",
+    "urllib3 >= 2",
+]
 dev = [
     "flake8 == 7.0.0",
     "mypy == 1.10.0",
@@ -86,7 +96,7 @@ dev = [
     "python-decouple == 3.8",
     "black == 24.4.2",
     "flake8-black == 0.3.6",
-    "pyarrow == 16.0.0",  # required for testing, future required pandas' dependency
+    "tox == 4.23.2",          # if you change this version, update Dockerfile as well
 ]
 
 [project.urls]
@@ -96,7 +106,7 @@ dev = [
 "Quick Manual" = "https://www2.microstrategy.com/producthelp/current/FederatedAnalytics/en-us/Content/mstr_for_jupyter.htm"
 
 [tool.mypy]
-python_version = 3.10
+python_version = "3.10"
 warn_unused_configs = true
 strict_optional = false
 show_error_codes = true
@@ -106,9 +116,7 @@ color_output = true
 profile = "black"
 
 [tool.coverage.run]
-omit = [
-    "mstrio/api/*"
-]
+omit = ["mstrio/api/*"]
 relative_files = true
 
 [tool.coverage.report]
@@ -116,18 +124,15 @@ exclude_lines = [
     "pragma: no cover",
     "def _",
     "if TYPE_CHECKING:",
-    "raise NotImplementedError"
+    "raise NotImplementedError",
 ]
-omit = [
-    "mstrio/api/*",
-    "mstrio/utils/datasources.py"
-]
+omit = ["mstrio/api/*", "mstrio/utils/datasources.py"]
 show_missing = true
 
 
 [tool.black]
-target_version = ["py310"]
-skip_string_normalization = 1
+target-version = ["py310"]
+skip-string-normalization = true
 extend-exclude = '''
 /(
     | __pycache__

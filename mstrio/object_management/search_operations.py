@@ -17,7 +17,7 @@ from mstrio.server import Environment
 from mstrio.server.project import Project
 from mstrio.types import ObjectSubTypes, ObjectTypes
 from mstrio.users_and_groups import User
-from mstrio.utils.entity import CopyMixin, Entity, EntityBase, MoveMixin
+from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, EntityBase, MoveMixin
 from mstrio.utils.helper import (
     Dictable,
     _prepare_objects,
@@ -30,7 +30,6 @@ from mstrio.utils.helper import (
 from mstrio.utils.response_processors import browsing as browsing_processors
 from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.sessions import FuturesSessionWithRenewal
-from mstrio.utils.translation_mixin import TranslationMixin
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
 if TYPE_CHECKING:
@@ -40,7 +39,7 @@ logger = logging.getLogger(__name__)
 
 
 @class_version_handler('11.3.0100')
-class SearchObject(Entity, CopyMixin, MoveMixin, TranslationMixin):
+class SearchObject(Entity, CopyMixin, MoveMixin, DeleteMixin):
     """Search object describing criteria that specify a search for objects.
 
     Attributes:

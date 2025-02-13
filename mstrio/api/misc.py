@@ -1,9 +1,10 @@
+from requests import Response
 from requests.exceptions import SSLError
 
 from mstrio.utils.helper import response_handler
 
 
-def server_status(connection):
+def server_status(connection) -> 'Response | None':
     """
      Args:
         connection: MicroStrategy REST API connection object
@@ -21,6 +22,8 @@ def server_status(connection):
             "'Connection' class.\n\nCheck readme for more details."
         ) from exc
 
-    if not response.ok:
+    if not response.ok and response.status_code != 401:
         response_handler(response, "Failed to check server status")
+    elif response.status_code == 401:
+        return None
     return response

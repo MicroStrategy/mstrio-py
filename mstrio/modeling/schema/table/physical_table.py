@@ -11,7 +11,6 @@ from mstrio.types import ObjectTypes
 from mstrio.users_and_groups import User
 from mstrio.utils.entity import Entity
 from mstrio.utils.helper import fetch_objects, get_valid_project_id
-from mstrio.utils.translation_mixin import TranslationMixin
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
 if TYPE_CHECKING:
@@ -160,7 +159,7 @@ def list_namespaces(
 
 
 @class_version_handler('11.3.0100')
-class PhysicalTable(Entity, TranslationMixin):
+class PhysicalTable(Entity):
     """An object representation of a metadata of physical table. A physical
         table describes the metadata of a warehouse table. It contains a set of
         columns with a schema definition. Currently, two types of physical

@@ -30,15 +30,14 @@ def __get_enum_helper(
     if obj is None:
         return obj
 
-    if isinstance(obj, Enum) and isinstance(obj, enum):
-        obj = obj.value if get_value else obj
-    elif isinstance(obj, (str, int)):
-        validate_enum_value(obj, enum)
-        obj = obj if get_value else enum(obj)
-    else:
-        raise TypeError(f"Incorrect type. Value should be of type: {enum}.")
+    if isinstance(obj, enum):
+        return obj.value if get_value else obj
 
-    return obj
+    if isinstance(obj, (str, int)):
+        validate_enum_value(obj, enum)
+        return obj if get_value else enum(obj)
+
+    raise TypeError(f"Incorrect type. Value should be of type: {enum}.")
 
 
 def get_enum(obj, enum: type[Enum] = Enum) -> type[Enum] | None:

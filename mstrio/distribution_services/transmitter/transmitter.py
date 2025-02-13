@@ -16,7 +16,6 @@ from mstrio.utils.helper import (
     get_default_args_from_func,
 )
 from mstrio.utils.response_processors import objects as objects_processors
-from mstrio.utils.translation_mixin import TranslationMixin
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
 if TYPE_CHECKING:
@@ -130,7 +129,7 @@ def list_transmitters(
 
 
 @class_version_handler('11.3.0100')
-class Transmitter(Entity, DeleteMixin, TranslationMixin):
+class Transmitter(Entity, DeleteMixin):
     """Object representation of MicroStrategy Transmitter object
 
     Attributes:

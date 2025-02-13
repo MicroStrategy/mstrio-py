@@ -1,11 +1,12 @@
 import logging
 from datetime import datetime
 from enum import auto
+from functools import partial
 from pprint import pformat
 from typing import Any
 
 from mstrio import config
-from mstrio.api import subscriptions
+from mstrio.api import documents, reports, subscriptions
 from mstrio.connection import Connection
 from mstrio.distribution_services.schedule import Schedule
 from mstrio.distribution_services.subscription.content import Content
@@ -34,7 +35,7 @@ from mstrio.utils.helper import (
     get_valid_project_id,
 )
 from mstrio.utils.response_processors import subscriptions as subscriptions_processors
-from mstrio.utils.version_helper import method_version_handler
+from mstrio.utils.version_helper import is_server_min_version, method_version_handler
 
 logger = logging.getLogger(__name__)
 
@@ -132,9 +133,9 @@ class Subscription(EntityBase):
             project_name=project_name,
             with_fallback=not project_name,
         )
-        if id or subscription_id:
-            subscription_id = id if id else subscription_id
-        else:
+
+        subscription_id = id or subscription_id
+        if not subscription_id:
             helper.exception_handler(
                 msg='Must specify valid id or subscription_id',
                 exception_type=ValueError,
@@ -200,7 +201,7 @@ class Subscription(EntityBase):
         send_now: bool = False,
         owner_id: str | None = None,
         schedules: str | list[str] | Schedule | list[Schedule] | None = None,
-        contents: Content | None = None,
+        contents: Content | list[Content] | None = None,
         recipients: list[str] | list[dict] | None = None,
         delivery: Delivery | dict | None = None,
         delivery_mode: str | None = None,
@@ -256,7 +257,7 @@ class Subscription(EntityBase):
                 user ID,
             schedules (str | list[str] | Schedule | list[Schedule]):
                 Schedules IDs or Schedule objects,
-            contents (Content): The content of the subscription.
+            contents (Content | list[Content]): The content of the subscription.
             recipients (list[str] | list[dict]): list of recipients IDs
                 or dicts,
             delivery (Delivery, dict, optional): delivery settings
@@ -433,35 +434,28 @@ class Subscription(EntityBase):
             self._set_object_attributes(**response)
             if config.verbose:
                 msg = f"Updated subscription '{self.name}' with ID: {self.id}."
-                msg = custom_msg if custom_msg else msg
+                msg = custom_msg or msg
                 logger.info(msg)
 
     def __is_val_changed(self, nested=None, **kwargs):
         for key, value in kwargs.items():
             if nested:
                 return value if value != nested and value is not None else nested
-            else:
-                current_val = self.__dict__.get(key)
-                # if not current_val: we need to get
-                return (
-                    value if value != current_val and value is not None else current_val
-                )
+            current_val = self.__dict__.get(key)
+            # if not current_val: we need to get
+            return value if value != current_val and value is not None else current_val
 
     @staticmethod
     def __validate_schedules(
         schedules: str | list[str] | Schedule | list[Schedule] = None,
     ):
-        tmp_schedules = []
         schedules = schedules if isinstance(schedules, list) else [schedules]
-        schedules = [s for s in schedules if s is not None]
-        for schedule in schedules:
-            if isinstance(schedule, Schedule):
-                sch_id = schedule.id
-            elif isinstance(schedule, str):
-                sch_id = schedule
-            tmp_schedules.append({'id': sch_id})
-
-        return tmp_schedules
+        schedules = [
+            {'id': schedule.id if isinstance(schedule, Schedule) else schedule}
+            for schedule in schedules
+            if schedule is not None
+        ]
+        return schedules
 
     @staticmethod
     def __validate_contents(
@@ -482,7 +476,7 @@ class Subscription(EntityBase):
             for content in contents
         ]
 
-    def execute(self):
+    def execute(self) -> None:
         """Executes a subscription with given name or GUID for given project."""
         subscriptions.send_subscription(self.connection, self.id, self.project_id)
         if config.verbose:
@@ -493,23 +487,22 @@ class Subscription(EntityBase):
         """Delete a subscription. Returns True if deletion was successful.
 
         Args:
-            force: If True, no additional prompt will be shown before deleting
+            force (bool, optional): If True, no additional prompt will be shown
+                before deleting the subscription. Defaults to False.
         """
-        user_input = 'N'
-        if not force:
-            user_input = input(
-                f"Are you sure you want to delete subscription '{self.name}' with ID: "
-                f"{self.id}? [Y/N]: "
-            )
-        if force or user_input == 'Y':
-            response = subscriptions.remove_subscription(
-                self.connection, self.id, self.project_id
-            )
-            if response.ok and config.verbose:
-                logger.info(f"Deleted subscription '{self.name}' with ID: {self.id}.")
-            return response.ok
-        else:
+        message = (
+            f"Are you sure you want to delete subscription "
+            f"'{self.name}' with ID: {self.id}? [Y/N]: "
+        )
+        if not force and input(message) != 'Y':
             return False
+
+        response = subscriptions.remove_subscription(
+            self.connection, self.id, self.project_id
+        )
+        if config.verbose:
+            logger.info(f"Deleted subscription '{self.name}' with ID: {self.id}.")
+        return response.ok
 
     @method_version_handler('11.3.0000')
     def available_bursting_attributes(self) -> dict:
@@ -789,6 +782,95 @@ class Subscription(EntityBase):
 
         return obj
 
+    @staticmethod
+    def _check_is_content_prompted(
+        connection: 'Connection', content: dict, project_id: str | None = None
+    ) -> bool:
+        def check_prompts(
+            inst_id: str,
+            get_prompts_func: callable,
+            get_status_func: callable,
+            c_id: str,
+            c_type: str,
+        ) -> bool:
+            prompts = get_prompts_func().json()
+            if any(prompt.get('required') for prompt in prompts):
+                if not inst_id:
+                    err_msg = (
+                        f"The content of type '{c_type.capitalize()}' with ID '{c_id}' "
+                        f"has unanswered prompts. "
+                        f"Please use the `{c_type.capitalize()}.answer_prompts()` "
+                        f"method to answer them. "
+                        f"After that, pass the `{c_type.capitalize()}.instance_id` "
+                        f"to the subscription content."
+                    )
+                    raise ValueError(err_msg)
+
+                status = get_status_func().json().get('status')
+                if status == 2:
+                    err_msg = (
+                        f"{c_type.capitalize()}.instance_id: {inst_id} "
+                        f"has unanswered prompts. "
+                        f"You can use the `{c_type.capitalize()}.answer_prompts()`"
+                        f" method to answer them."
+                    )
+                    raise ValueError(err_msg)
+
+                return True
+            return False
+
+        content_type = content.get('type')
+        content_id = content.get('id')
+        instance_id = (
+            content.get('personalization', {}).get('prompt', {}).get('instanceId')
+        )
+
+        common_args = {
+            'connection': connection,
+        }
+
+        if content_type == 'report':
+            common_args.update({'report_id': content_id})
+            return check_prompts(
+                inst_id=instance_id,
+                get_prompts_func=partial(
+                    reports.get_report_prompts,
+                    **common_args,
+                    closed=False,
+                ),
+                get_status_func=partial(
+                    reports.get_report_status,
+                    **common_args,
+                    project_id=project_id,
+                    instance_id=instance_id,
+                ),
+                c_id=content_id,
+                c_type=content_type,
+            )
+        elif content_type in ['document', 'dossier']:
+            common_args.update(
+                {
+                    'document_id': content_id,
+                    'project_id': project_id,
+                }
+            )
+            return check_prompts(
+                inst_id=instance_id,
+                get_prompts_func=partial(
+                    documents.get_prompts,
+                    **common_args,
+                    closed=False,
+                ),
+                get_status_func=partial(
+                    documents.get_document_status,
+                    **common_args,
+                    instance_id=instance_id,
+                ),
+                c_id=content_id,
+                c_type=content_type,
+            )
+        return False
+
     @classmethod
     @method_version_handler('11.3.0000')
     def __create(  # NOSONAR
@@ -919,10 +1001,13 @@ class Subscription(EntityBase):
                 Notification details
         """
         cache_library_cache_types = cache_library_cache_types or [LibraryCacheTypes.WEB]
-        if connection._iserver_version <= '11.3.0100':
-            cache_cache_type = LegacyCacheType[cache_cache_type.name]
-        else:
-            cache_cache_type = CacheType[cache_cache_type.name]
+
+        cache_cache_type = (
+            LegacyCacheType[cache_cache_type.name]
+            if not is_server_min_version(connection, '11.3.0100')
+            else CacheType[cache_cache_type.name]
+        )
+
         name = (
             name
             if len(name) <= 255
@@ -944,20 +1029,10 @@ class Subscription(EntityBase):
         schedules = cls.__validate_schedules(schedules=schedules)
 
         # Content logic
-        contents = contents if isinstance(contents, list) else [contents]
-        content_type_msg = "Contents must be dictionaries or Content objects."
-        contents = [
-            (
-                content.to_dict(camel_case=True)
-                if isinstance(content, Content)
-                else (
-                    content
-                    if isinstance(content, dict)
-                    else helper.exception_handler(content_type_msg, TypeError)
-                )
-            )
-            for content in contents
-        ]
+        contents = cls.__validate_contents(contents)
+
+        for content in contents:
+            cls._check_is_content_prompted(connection, content, project_id)
 
         # Delivery logic
         delivery_expiration_timezone = cls.__validate_expiration_time_zone(
@@ -1014,6 +1089,7 @@ class Subscription(EntityBase):
 
         # Create body
         body = {
+            "multipleContents": len(contents) > 1,
             "name": name,
             "allowDeliveryChanges": allow_delivery_changes,
             "allowPersonalizationChanges": allow_personalization_changes,
@@ -1045,16 +1121,16 @@ class Subscription(EntityBase):
         current_recipients: list[dict] | None = None,
     ):
         def __not_available(recipient):
-            if recipient in available_recipients_ids:
-                rec = helper.filter_list_of_dicts(available_recipients, id=recipient)
-                formatted_recipients.append(rec[0])
-            else:
+            if recipient not in available_recipients_ids:
                 msg = (
                     f"'{recipient}' is not a valid recipient ID for selected content "
                     "and delivery mode. Available recipients: \n"
                     f"{pformat(available_recipients, indent=2)}"
                 )
                 helper.exception_handler(msg, ValueError)
+
+            rec = helper.filter_list_of_dicts(available_recipients, id=recipient)
+            formatted_recipients.append(rec[0])
 
         recipients = recipients if isinstance(recipients, list) else [recipients]
         body = {
@@ -1065,12 +1141,7 @@ class Subscription(EntityBase):
         }
         available_recipients = subscriptions.available_recipients(
             connection, project_id, body, delivery_mode
-        )
-        if not current_recipients:
-            current_recipients = []
-        available_recipients = (
-            available_recipients.json()['recipients'] + current_recipients
-        )
+        ).json()['recipients'] + (current_recipients or [])
         available_recipients_ids = [rec['id'] for rec in available_recipients]
         # Format recipients list if needed
         formatted_recipients = []

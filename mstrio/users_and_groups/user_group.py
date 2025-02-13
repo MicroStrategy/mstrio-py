@@ -19,7 +19,6 @@ from mstrio.utils.helper import (
 )
 from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.response_processors import usergroups as usergroups_processors
-from mstrio.utils.translation_mixin import TranslationMixin
 from mstrio.utils.version_helper import method_version_handler
 
 if TYPE_CHECKING:
@@ -75,7 +74,7 @@ def list_user_groups(
     )
 
 
-class UserGroup(Entity, DeleteMixin, TrusteeACLMixin, TranslationMixin):
+class UserGroup(Entity, DeleteMixin, TrusteeACLMixin):
     """Object representation of MicroStrategy User Group object.
 
     Attributes:

@@ -23,7 +23,6 @@ from mstrio.utils.helper import (
     get_valid_project_id,
 )
 from mstrio.utils.response_processors import objects as objects_processors
-from mstrio.utils.translation_mixin import TranslationMixin
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
 logger = logging.getLogger(__name__)
@@ -112,7 +111,7 @@ def list_facts(
 
 
 @class_version_handler('11.3.0100')
-class Fact(Entity, CopyMixin, DeleteMixin, MoveMixin, TranslationMixin):
+class Fact(Entity, CopyMixin, DeleteMixin, MoveMixin):
     """Python representation for Microstrategy `Fact` object.
 
     Attributes:

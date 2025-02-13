@@ -22,7 +22,6 @@ from mstrio.utils.helper import (
     get_valid_project_id,
 )
 from mstrio.utils.response_processors import objects as objects_processors
-from mstrio.utils.translation_mixin import TranslationMixin
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
 logger = logging.getLogger(__name__)
@@ -135,7 +134,7 @@ class MappingType(AutoName):
 
 
 @class_version_handler('11.3.0500')
-class Transformation(Entity, MoveMixin, DeleteMixin, TranslationMixin):
+class Transformation(Entity, MoveMixin, DeleteMixin):
     """Python representation of MicroStrategy Transformation object.
 
     Attributes:

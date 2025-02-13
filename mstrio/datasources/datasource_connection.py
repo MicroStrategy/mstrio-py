@@ -16,7 +16,6 @@ from mstrio.utils.helper import (
     get_objects_id,
 )
 from mstrio.utils.response_processors import objects as objects_processors
-from mstrio.utils.translation_mixin import TranslationMixin
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
 if TYPE_CHECKING:
@@ -64,7 +63,7 @@ def list_datasource_connections(
 
 
 @class_version_handler('11.3.0000')
-class DatasourceConnection(Entity, CopyMixin, DeleteMixin, TranslationMixin):
+class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
     """Datasource connection configuration object that represents a connection
     to the datasource.
 

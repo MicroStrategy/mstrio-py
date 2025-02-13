@@ -285,7 +285,7 @@ def remove_subscription(
         HTTP response object returned by the MicroStrategy REST server.
     """
     response = connection.delete(
-        endpoint='/api/subscriptions/' + subscription_id,
+        endpoint=f'/api/subscriptions/{subscription_id}',
         headers={'X-MSTR-ProjectID': project_id},
     )
     if not response.ok:
@@ -508,3 +508,34 @@ def get_subscription_status(
         HTTP response object returned by the MicroStrategy REST server
     """
     return connection.get(endpoint=f'/api/subscriptions/{id}/status')
+
+
+@ErrorHandler(err_msg="Error getting dependent subscriptions for object {object_id}.")
+def get_dependent_subscriptions(
+    connection: 'Connection',
+    object_id: str,
+    object_type: str,
+    project_id: str | None = None,
+    fields: str | None = None,
+    error_msg: str | None = None,
+) -> 'Response':
+    """List dependent subscriptions of an object.
+
+    Args:
+        connection (object): MicroStrategy connection object returned by
+            `connection.Connection()`.
+        object_id (str): ID of the object.
+        object_type (str): Type of the object.
+        project_id (str, optional): ID of the project.
+        fields (str, optional): Comma separated top-level field whitelist. This
+            allows client to selectively retrieve part of the response model.
+        error_msg (str, optional): Customized error message.
+
+    Returns:
+        HTTP response object returned by the MicroStrategy REST server.
+    """
+    return connection.get(
+        endpoint='/api/dependentSubscriptions',
+        params={'objectId': object_id, 'type': object_type, 'fields': fields},
+        headers={'X-MSTR-ProjectID': project_id},
+    )

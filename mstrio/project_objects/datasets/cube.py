@@ -34,7 +34,6 @@ from mstrio.utils.response_processors import cubes as cube_processors
 from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.sessions import FuturesSessionWithRenewal
 from mstrio.utils.time_helper import str_to_datetime
-from mstrio.utils.translation_mixin import TranslationMixin
 
 if TYPE_CHECKING:
     from .cube_cache import CubeCache
@@ -284,7 +283,7 @@ def load_cube(
         return ret_cubes
 
 
-class _Cube(Entity, VldbMixin, DeleteMixin, TranslationMixin):
+class _Cube(Entity, VldbMixin, DeleteMixin):
     """Access, filter, publish, and extract data from MicroStrategy in-memory
     cubes.
 

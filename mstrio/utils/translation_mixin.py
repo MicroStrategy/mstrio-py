@@ -1,9 +1,9 @@
 from typing import TYPE_CHECKING
 
-from mstrio.utils.entity import Entity
 
 if TYPE_CHECKING:
     from mstrio.object_management.translation import Translation
+    from mstrio.utils.entity import Entity
 
 
 class TranslationMixin:
@@ -11,7 +11,7 @@ class TranslationMixin:
     for supported objects."""
 
     def add_translation(
-        self: Entity,
+        self: 'Entity',
         translations: list['Translation.OperationData'],
     ) -> list['Translation']:
         """Adds translations to the Object.
@@ -34,7 +34,7 @@ class TranslationMixin:
         )
 
     def alter_translation(
-        self: Entity,
+        self: 'Entity',
         translations: list['Translation.OperationData'],
     ) -> None:
         """Alters translations of the Object.
@@ -54,7 +54,7 @@ class TranslationMixin:
         )
 
     def remove_translation(
-        self: Entity,
+        self: 'Entity',
         translations: list['Translation.OperationData'],
     ) -> None:
         """Removes translations from the Object.
@@ -74,7 +74,7 @@ class TranslationMixin:
         )
 
     def list_translations(
-        self: Entity, languages: list | None = None, to_dictionary: bool = False
+        self: 'Entity', languages: list | None = None, to_dictionary: bool = False
     ) -> list['Translation'] | list[dict]:
         """Lists translations for the Object.
 
