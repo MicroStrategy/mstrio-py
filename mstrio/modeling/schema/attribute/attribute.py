@@ -12,6 +12,7 @@ from mstrio.modeling.schema.attribute import (
     Relationship,
     RelationshipType,
 )
+from mstrio.modeling.schema.attribute.attribute_data import AttributeData
 from mstrio.modeling.schema.helpers import (
     AttributeDisplays,
     AttributeSorts,
@@ -24,6 +25,7 @@ from mstrio.object_management import search_operations
 from mstrio.object_management.folder import Folder
 from mstrio.object_management.search_enums import SearchPattern
 from mstrio.types import ObjectSubTypes, ObjectTypes
+from mstrio.utils.dtos.create_attribute_dto import CreateAttributeDto
 from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, MoveMixin
 from mstrio.utils.enum_helper import get_enum_val
 from mstrio.utils.helper import (
@@ -420,6 +422,100 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
         Returns:
             Attribute class object.
         """
+        body = cls._get_create_body(name, sub_type, destination_folder, forms,
+                                    key_form, displays, description, is_embedded, attribute_lookup_table, sorts)
+        response = attributes.create_attribute(
+            connection,
+            body=body,
+            show_expression_as=get_enum_val(show_expression_as, ExpressionFormat),
+        ).json()
+
+        if config.verbose:
+            logger.info(
+                f"Successfully created attribute named: '{name}' with ID: '"
+                f"{response['id']}'"
+            )
+
+        attribute = cls.from_dict(
+            source={**response, 'show_expression_as': show_expression_as},
+            connection=connection,
+        )
+
+        # Default value of 'hidden' attribute on IServer is False.
+        # Because of that there is no reason to modify its value
+        # after creation if 'hidden' parameter was provided as False.
+        if hidden:
+            attribute.alter(hidden=hidden)
+
+        return attribute
+    
+    @classmethod
+    def create_many(
+        cls,
+        connection: 'Connection',
+        attributes_data: list[AttributeData],
+    ) -> list['Attribute']:
+        create_attribute_dtos = [
+            cls._attribute_data_to_create_attribute_dto(attribute_data)
+            for attribute_data in attributes_data
+        ]
+        
+        responses = attributes.create_attributes(
+            connection=connection, create_attribute_dtos=create_attribute_dtos
+        )
+
+        created_attributes = [
+            cls.from_dict(source={**response.json(), 'show_expression_as': attributes_data[i].show_expression_as}, connection=connection)
+            for i, response in enumerate(responses)
+        ]
+        
+        attributes_data_dict = {attribute_data.name: attribute_data for attribute_data in attributes_data}
+        for attribute in created_attributes:
+            if config.verbose:
+                logger.info(
+                    f"Successfully created attribute named: '{attribute.name}' with ID: '{attribute.id}'"
+                )
+            attribute_data = attributes_data_dict[attribute.name]
+            if attribute_data.hidden:
+                attribute.alter(hidden=attribute_data.hidden)
+                
+        return created_attributes
+
+    @classmethod
+    def _attribute_data_to_create_attribute_dto(cls, attribute_data: AttributeData) -> CreateAttributeDto:
+        body = cls._get_create_body(
+            name=attribute_data.name,
+            sub_type=attribute_data.sub_type,
+            destination_folder=attribute_data.destination_folder,
+            forms=attribute_data.forms,
+            key_form=attribute_data.key_form,
+            displays=attribute_data.displays,
+            description=attribute_data.description,
+            is_embedded=attribute_data.is_embedded,
+            attribute_lookup_table=attribute_data.attribute_lookup_table,
+            sorts=attribute_data.sorts,
+        )
+        
+        create_attribute_dto = CreateAttributeDto(
+            body=body, show_expression_as=attribute_data.show_expression_as)
+        
+        return create_attribute_dto
+    
+    
+    @classmethod
+    def _get_create_body(
+        cls,
+        name: str,
+        sub_type: ObjectSubType | str,
+        destination_folder: Folder | str,
+        forms: list[AttributeForm],
+        key_form: FormReference,
+        displays: AttributeDisplays,
+        description: str | None = None,
+        is_embedded: bool = False,
+        attribute_lookup_table: SchemaObjectReference | None = None,
+        sorts: AttributeSorts | None = None,
+    ) -> dict:
         # Validate dependencies on forms
         key_form = cls.validate_key_form(key_form=key_form, forms=forms)
         displays = cls.validate_displays(displays=displays, forms=forms)
@@ -446,30 +542,9 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
             'sorts': sorts.to_dict() if sorts else None,
         }
         body = delete_none_values(body, recursion=True)
-        response = attributes.create_attribute(
-            connection,
-            body=body,
-            show_expression_as=get_enum_val(show_expression_as, ExpressionFormat),
-        ).json()
+        
+        return body
 
-        if config.verbose:
-            logger.info(
-                f"Successfully created attribute named: '{name}' with ID: '"
-                f"{response['id']}'"
-            )
-
-        attribute = cls.from_dict(
-            source={**response, 'show_expression_as': show_expression_as},
-            connection=connection,
-        )
-
-        # Default value of 'hidden' attribute on IServer is False.
-        # Because of that there is no reason to modify its value
-        # after creation if 'hidden' parameter was provided as False.
-        if hidden:
-            attribute.alter(hidden=hidden)
-
-        return attribute
 
     def __init__(
         self,

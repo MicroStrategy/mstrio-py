@@ -1,5 +1,6 @@
 from mstrio.connection import Connection
 from mstrio.utils.api_helpers import changeset_manager, unpack_information
+from mstrio.utils.dtos.create_attribute_dto import CreateAttributeDto
 from mstrio.utils.error_handlers import ErrorHandler
 
 
@@ -12,6 +13,7 @@ def create_attribute(
     show_potential_tables: str | None = None,
     show_fields: str | None = None,
     fields: str | None = None,
+    changeset_id: str | None = None
 ):
     """Create a new attribute in the changeset,
     based on the definition provided in request body.
@@ -36,22 +38,89 @@ def create_attribute(
             Only 'acl' is supported.
         fields: A whitelist of top-level fields separated by commas.
             Allow the client to selectively retrieve fields in the response.
+        changeset_id: 
 
     Return:
         HTTP response object. Expected status: 201
     """
-    with changeset_manager(connection) as changeset_id:
-        return connection.post(
-            endpoint='/api/model/attributes',
-            headers={'X-MSTR-MS-Changeset': changeset_id},
-            params={
-                'showExpressionAs': show_expression_as,
-                'showPotentialTables': show_potential_tables,
-                'showFields': show_fields,
-                'fields': fields,
-            },
-            json=body,
-        )
+    if not changeset_id:
+        with changeset_manager(connection) as changeset_id:
+            return _create_attribute(connection, body, changeset_id, show_expression_as, show_potential_tables, show_fields, fields)
+
+    return _create_attribute(connection, body, changeset_id, show_expression_as, show_potential_tables, show_fields, fields)
+
+   
+@unpack_information
+# @ErrorHandler(err_msg="Error creating an attribute")
+def create_attributes(
+    connection: Connection,
+    create_attribute_dtos: list[CreateAttributeDto],
+    changeset_id: str | None = None
+):
+    """Create multiple attributes in the changeset,
+    based on the definitions provided in request bodies.
+
+    Args:
+        connection: MicroStrategy REST API connection object
+        bodies: List of attribute creation data
+        show_expression_as: Specifies the format in which the expressions are
+           returned in response
+           Available values: 'tokens', 'tree'
+           If omitted, the expression is returned in 'text' format
+           If 'tree', the expression is returned in 'text' and 'tree' formats.
+           If 'tokens', the expression is returned in 'text' and 'tokens'
+           formats.
+        show_potential_tables: Specifies whether to return the potential tables
+            that the expressions can be applied to.
+            Available values: 'true', 'false'
+            If 'true', the 'potentialTables' field returns for each attribute
+                expression, in the form of a list of tables.
+            If 'false' or omitted, the 'potentialTables' field is omitted.
+        show_fields: Specifies what additional information to return.
+            Only 'acl' is supported.
+        fields: A whitelist of top-level fields separated by commas.
+            Allow the client to selectively retrieve fields in the response.
+        changeset_id: 
+
+    Return:
+        HTTP response object. Expected status: 201
+    """
+    if not changeset_id:
+        with changeset_manager(connection) as changeset_id:
+            responses = [_create_attribute(connection, create_attribute_dto.body, changeset_id,
+                                           create_attribute_dto.show_expression_as, create_attribute_dto.show_potential_tables,
+                                           create_attribute_dto.show_fields, create_attribute_dto.fields)
+                         for create_attribute_dto in create_attribute_dtos]
+            return responses
+        
+    responses = [_create_attribute(connection, create_attribute_dto.body, changeset_id,
+                                   create_attribute_dto.show_expression_as, create_attribute_dto.show_potential_tables,
+                                   create_attribute_dto.show_fields, create_attribute_dto.fields)
+                 for create_attribute_dto in create_attribute_dtos]
+    return responses
+
+
+def _create_attribute(
+    connection: Connection,
+    body: dict,
+    changeset_id: str,
+    show_expression_as: list[str] | None = None,
+    show_potential_tables: str | None = None,
+    show_fields: str | None = None,
+    fields: str | None = None,
+):
+    """Helper function to create a single attribute."""
+    return connection.post(
+        endpoint='/api/model/attributes',
+        headers={'X-MSTR-MS-Changeset': changeset_id},
+        params={
+            'showExpressionAs': show_expression_as,
+            'showPotentialTables': show_potential_tables,
+            'showFields': show_fields,
+            'fields': fields,
+        },
+        json=body,
+    )
 
 
 @unpack_information

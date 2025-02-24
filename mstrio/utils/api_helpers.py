@@ -24,6 +24,20 @@ if TYPE_CHECKING:
 def unpack_information(func):
     @wraps(func)
     def unpack_information_inner(*args, **kwargs):
+        def process_response(response_json):
+            if response_json.get('information'):
+                response_json.update(response_json.pop('information'))
+                response_json['id'] = response_json.pop('objectId', None)
+            for root_key in ['tables', 'calendars', 'timezones']:
+                if response_json.get(root_key):
+                    response_json[root_key] = unpack_records(response_json, root_key)
+            if (
+                isinstance(response_json, dict)
+                and response_json.get('subType') == 'logical_table'
+            ):
+                response_json = unpack_table(response_json)
+            return response_json
+
         if kwargs.get('body'):
             info = {
                 "information": {
@@ -47,20 +61,15 @@ def unpack_information(func):
                 kwargs['body'].update(info)
 
         resp = func(*args, **kwargs)
-        response_json = resp.json()
 
-        if response_json.get('information'):
-            response_json.update(response_json.pop('information'))
-            response_json['id'] = response_json.pop('objectId', None)
-        for root_key in ['tables', 'calendars', 'timezones']:
-            if response_json.get(root_key):
-                response_json[root_key] = unpack_records(response_json, root_key)
-        if (
-            isinstance(response_json, dict)
-            and response_json.get('subType') == 'logical_table'
-        ):
-            response_json = unpack_table(response_json)
-        resp.encoding, resp._content = 'utf-8', dumps(response_json).encode('utf-8')
+        if isinstance(resp, list):
+            response_json = [process_response(item.json()) for item in resp]
+            resp = [item for item in resp]
+            for i, item in enumerate(resp):
+                item.encoding, item._content = 'utf-8', dumps(response_json[i]).encode('utf-8')
+        else:
+            response_json = process_response(resp.json())
+            resp.encoding, resp._content = 'utf-8', dumps(response_json).encode('utf-8')
         return resp
 
     return unpack_information_inner
