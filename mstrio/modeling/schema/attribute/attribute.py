@@ -455,6 +455,15 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
         connection: 'Connection',
         attributes_data: list[AttributeData],
     ) -> list['Attribute']:
+        """ Create multiple attributes at once.
+
+        Args:
+            connection: MicroStrategy connection object returned
+                by `connection.Connection()`
+            attributes_data: list of AttributeData objects
+        Returns:
+            Attribute class object.
+        """
         create_attribute_dtos = [
             cls._attribute_data_to_create_attribute_dto(attribute_data)
             for attribute_data in attributes_data

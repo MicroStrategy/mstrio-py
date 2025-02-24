@@ -22,9 +22,9 @@ administrators to leverage the power of Python to address complex
 administrative workflows for maintaining a MicroStrategy environment.
 """
 
-__title__ = "mstrio-py"
-__version__ = "11.5.2.101"  # NOSONAR
+__title__ = "ni-mstrio-py"
+__version__ = "2025.0.0"  # NOSONAR
 __license__ = "Apache License 2.0"
-__description__ = "Python interface for the MicroStrategy REST API"
-__author__ = "MicroStrategy"
-__author_email__ = "bkaczynski@microstrategy.com"
+__description__ = "NI-customized Python interface for the MicroStrategy REST API"
+__author__ = "NI"
+__author_email__ = "robert.szarvas@emerson.com"
