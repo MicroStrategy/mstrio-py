@@ -1,0 +1,14 @@
+on: [push, pull_request, workflow_dispatch]
+name: build
+jobs:
+  build_test_publish:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    steps:
+
+    - uses: Azure/pipelines@v1
+      with:
+        azure-devops-project-url: 'https://dev.azure.com/ni/DevCentral'
+        azure-pipeline-name: 'Skyline-Ozone-NI-Mstrio-Py-pipeline'
+        azure-devops-token: '${{ secrets.AZDO_TOKEN }}'
+        azure-pipeline-variable:  '{"branch": "${{ github.ref }}"}'
