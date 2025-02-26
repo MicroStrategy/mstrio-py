@@ -1,0 +1,34 @@
+on: [push, pull_request, workflow_dispatch]
+name: build
+jobs:
+  build_and_test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10"]
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Build
+      run: |
+        pip install --upgrade pip
+        pip install build
+        pip install .
+        python -m build
+
+  publish:
+    name: Publish
+    needs: [build_and_test]
+    runs-on: ubuntu-latest
+    if: ${{ github.ref == 'refs/heads/master' }}
+    steps:
+
+    - uses: Azure/pipelines@v1
+      with:
+        azure-devops-project-url: 'https://dev.azure.com/ni/DevCentral'
+        azure-pipeline-name: 'Skyline-Ozone-NI-Mstrio-Py-pipeline'
+        azure-devops-token: '${{ secrets.AZDO_TOKEN }}'
