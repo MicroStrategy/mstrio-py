@@ -8,7 +8,7 @@ from requests.adapters import Response
 
 from mstrio import config
 from mstrio.helpers import MstrException, PartialSuccess, Success
-from mstrio.utils.helper import get_default_args_from_func, response_handler
+from mstrio.utils.helper import get_default_args_from_func, response_handler, response_list_handler
 
 
 def get_args_and_bind_values(func: Callable[[Any], Any], *args, **kwargs):
@@ -55,7 +55,11 @@ class ErrorHandler:
             error_msg = (
                 kwargs.get("error_msg") if kwargs.get("error_msg") else self._err_msg
             )
-            if not response.ok:
+            if isinstance(response, list):
+                handler_kwargs = self._get_resp_handler_kwargs(kwargs)
+                error_msg = self._replace_with_values(error_msg, func, *args, **kwargs)
+                response_list_handler(response, error_msg, **handler_kwargs)
+            elif not response.ok:
                 handler_kwargs = self._get_resp_handler_kwargs(kwargs)
                 error_msg = self._replace_with_values(error_msg, func, *args, **kwargs)
                 response_handler(response, error_msg, **handler_kwargs)

@@ -198,6 +198,32 @@ def exception_handler(msg, exception_type=Exception, stack_lvl=2):
         warnings.warn(msg, exception_type, stacklevel=stack_lvl)
 
 
+def response_list_handler(responses, msg, throw_error=True, verbose=True, whitelist=None):
+    """Generic error message handler for transactions against I-Server.
+
+    Args:
+        responses: List of Response
+        msg (str): Message to print in addition to any server-generated error
+            message(s)
+        throw_error (bool): Flag indicates if the error should be thrown
+        verbose (bool, optional): controls if messages/errors will be printed
+        whitelist(list): list of tuples of I-Server Error and HTTP errors codes
+            respectively, which will not be handled
+            i.e. whitelist = [('ERR001', 500),('ERR004', 404)]
+    """
+    error_list = []
+    for response in responses:
+        if response.ok:
+            continue
+        try:
+            response_handler(response, msg, throw_error, verbose, whitelist)
+        except IServerError as e:
+            error_list.append(str(e))
+    
+    if len(error_list) > 0 and throw_error:
+        raise IServerError("\n".join(error_list), 400)
+
+
 def response_handler(response, msg, throw_error=True, verbose=True, whitelist=None):
     """Generic error message handler for transactions against I-Server.
 

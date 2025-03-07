@@ -52,7 +52,7 @@ def create_attribute(
 
    
 @unpack_information
-# @ErrorHandler(err_msg="Error creating an attribute")
+@ErrorHandler(err_msg="Error creating attributes")
 def create_attributes(
     connection: Connection,
     create_attribute_dtos: list[CreateAttributeDto],
