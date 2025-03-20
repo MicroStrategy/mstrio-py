@@ -9,22 +9,23 @@ def get_subscription_status(connection: Connection, id: str):
         connection=connection, id=id, whitelist=[('ERR002', 500)]
     )
     res = response.json()
+    server_msg = res.get('message')
 
-    if server_msg := res.get('message'):
-        if 'No status for the subscription' in server_msg:
-            res = None
-        else:
-            server_code = res.get('code')
-            ticket_id = res.get('ticketId')
+    if not server_msg:
+        return {'status': res}
 
-            raise IServerError(
-                message=(
-                    f"{server_msg}; code: '{server_code}', ticket_id: '{ticket_id}'"
-                ),
-                http_code=response.status_code,
-            )
+    if (
+        'No status for the subscription' in server_msg
+        or 'This endpoint is disabled' in server_msg
+    ):
+        return {'status': None}
 
-    return {'status': res}
+    server_code = res.get('code')
+    ticket_id = res.get('ticketId')
+    raise IServerError(
+        message=f"{server_msg}; code: '{server_code}', ticket_id: '{ticket_id}'",
+        http_code=response.status_code,
+    )
 
 
 def get_subscription_last_run(connection: Connection, id: str, project_id: str):

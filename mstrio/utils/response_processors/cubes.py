@@ -21,7 +21,7 @@ def create(
     """Create cube from provided body.
 
     Args:
-        connection (Connection): MicroStrategy REST API connection object.
+        connection (Connection): Strategy One REST API connection object.
         body (dict): JSON-formatted data used to create cube.
         project_id (str, optional): Project ID.
         cube_template_id (str, optional): If specified, new created cube will
@@ -76,7 +76,7 @@ def get(
     """Get cube by specific ID.
 
     Args:
-        connection (Connection): MicroStrategy REST API connection object.
+        connection (Connection): Strategy One REST API connection object.
         id (str): Cube ID.
         project_id (str, optional): Project ID.
         show_expression_as (ExpressionFormat, str, optional): Specify how
@@ -128,7 +128,7 @@ def update(
     """Update cube specified by ID and with provided body.
 
     Args:
-        connection (Connection): MicroStrategy REST API connection object.
+        connection (Connection): Strategy One REST API connection object.
         id (str): Cube ID.
         body (dict): JSON-formatted data used to update cube.
         project_id (str, optional): Project ID.
@@ -178,7 +178,7 @@ def get_info(connection: Connection, id: str) -> dict:
     size, status, path, owner ID and server mode of the cube.
 
     Args:
-        connection: MicroStrategy REST API connection object.
+        connection: Strategy One REST API connection object.
         id (str): ID of the cube.
 
     Returns:

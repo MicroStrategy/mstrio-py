@@ -44,7 +44,7 @@ def list_objects(
     When `project_id` is provided (not `None`), `project_name` is omitted.
 
     Args:
-        connection: MicroStrategy connection object returned by
+        connection: Strategy One connection object returned by
             `connection.Connection()`
         object_type: Object type. Possible values can
             be found in EnumDSSXMLObjectTypes
@@ -98,7 +98,7 @@ def list_objects(
 
 class Object(Entity, ACLMixin, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin):
     """Class representing a general type object using attributes common for
-     all available objects.
+     all available metadata objects.
 
     Attributes:
         name: name of the object
@@ -172,7 +172,7 @@ class Object(Entity, ACLMixin, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin):
         """Initialize object by ID.
 
         Args:
-            connection: MicroStrategy connection object returned by
+            connection: Strategy One connection object returned by
                 `connection.Connection()`.
             id (str): Identifier of an existing object.
             type (ObjectTypes): object type

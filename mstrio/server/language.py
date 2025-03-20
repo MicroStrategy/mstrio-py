@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from mstrio import config
 from mstrio.connection import Connection
@@ -10,6 +11,9 @@ from mstrio.utils.entity import DeleteMixin, Entity
 from mstrio.utils.helper import Dictable, delete_none_values
 from mstrio.utils.response_processors import languages, objects
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
+
+if TYPE_CHECKING:
+    from mstrio.users_and_groups.user import User
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +29,7 @@ def list_languages(
     Optionally filter the languages by specifying filters.
 
     Args:
-        connection: MicroStrategy connection object
+        connection: Strategy One connection object
         to_dictionary: if True returns a list of Language dicts,
             otherwise returns a list of Language objects
         limit: limit the number of elements returned. If `None` (default), all
@@ -46,7 +50,7 @@ def list_interface_languages(
     """List all available interface languages.
 
     Args:
-        connection (Connection): MicroStrategy connection object returned
+        connection (Connection): Strategy One connection object returned
             by `connection.Connection()`
         to_dictionary: if True returns a list of InterfaceLanguage dicts,
             otherwise returns a list of InterfaceLanguage objects
@@ -65,7 +69,7 @@ def list_interface_languages(
 
 @class_version_handler(version='11.3.1060')
 class Language(Entity, DeleteMixin):
-    """Python representation of a Microstrategy Language object.
+    """Python representation of a Strategy One Language object.
 
     Attributes:
         id (str): language's ID
@@ -173,6 +177,9 @@ class Language(Entity, DeleteMixin):
             'target_info',
         ): objects.get_info,
     }
+    _API_PATCH = {
+        ('name', 'comments', 'owner'): (objects.update, 'partial_put'),
+    }
 
     @staticmethod
     def _parse_owner(source, connection, to_snake_case: bool = True):
@@ -197,7 +204,7 @@ class Language(Entity, DeleteMixin):
         """Initializes a new instance of a Language class
 
         Args:
-            connection (Connection): MicroStrategy connection object returned
+            connection (Connection): Strategy One connection object returned
                 by `connection.Connection()`
             id (str, Optional): Language's ID, defaults to None
             name (str, Optional): Language's name, defaults to None
@@ -247,7 +254,7 @@ class Language(Entity, DeleteMixin):
         """Create a new language with specified properties.
 
         Args:
-            connection (Connection): MicroStrategy connection object returned
+            connection (Connection): Strategy One connection object returned
                 by `connection.Connection()`
             name (str): the name for the new Language
             base_language (Language | str | int): one of the following:
@@ -303,18 +310,33 @@ class Language(Entity, DeleteMixin):
     def alter(
         self,
         name: str | None = None,
+        comments: str | None = None,
+        owner: 'str | User | None' = None,
         formatting_settings: TimeInterval | None = None,
     ) -> None:
         """Alter the language's specified properties.
 
         Args:
-            connection (Connection): MicroStrategy connection object returned
+            connection (Connection): Strategy One connection object returned
                 by `connection.Connection()`
             name (str, Optional): new name for the Language
+            comments (str, optional): long description of the Language
+            owner: (str, User, optional): owner of the Language object
             formatting_settings (TimeInverval, Optional): new formatting
                 settings for the Language"""
-        if name:
-            self._alter_properties(name=name)
+
+        from mstrio.users_and_groups.user import User
+
+        if isinstance(owner, User):
+            owner = owner.id
+
+        properties = {
+            'name': name,
+            'comments': comments,
+            'owner': owner,
+        }
+        properties = delete_none_values(properties, recursion=False)
+        self._alter_properties(**properties)
         if formatting_settings:
             self._formatting_settings = self._update_formatting_settings(
                 formatting_settings=formatting_settings

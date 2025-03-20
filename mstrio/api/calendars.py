@@ -21,7 +21,7 @@ def list_calendars(
     """Get a list of calendars.
 
     Args:
-        connection (Connection): MicroStrategy connection object returned by
+        connection (Connection): Strategy One connection object returned by
             `connection.Connection()`
         subtype (str, optional): Subtype of the calendar to get. If skipped,
             all calendars are returned.
@@ -59,13 +59,13 @@ def create_calendar(
     """Create a new calendar.
 
     Args:
-        connection (Connection): MicroStrategy connection object returned by
+        connection (Connection): Strategy One connection object returned by
             `connection.Connection()`
         body (dict): JSON-formatted body of the new calendar
         error_msg (str, optional): Custom error message for error handling
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server.
+        HTTP response object returned by the Strategy One REST server.
     """
     with changeset_manager(
         connection, project_id='', schema_edit=False
@@ -88,7 +88,7 @@ def get_calendar(
     """Get a calendar by its identifier.
 
     Args:
-        connection (Connection): MicroStrategy connection object returned by
+        connection (Connection): Strategy One connection object returned by
             `connection.Connection()`
         id (str): Identifier of the calendar to get
         changeset_id (str, optional): Identifier of the changeset to get the
@@ -96,7 +96,7 @@ def get_calendar(
         error_msg (str, optional): Custom error message for error handling
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server.
+        HTTP response object returned by the Strategy One REST server.
     """
     return connection.get(
         endpoint=f'/api/model/calendars/{id}',
@@ -115,14 +115,14 @@ def update_calendar(
     """Update an existing calendar.
 
     Args:
-        connection (Connection): MicroStrategy connection object returned by
+        connection (Connection): Strategy One connection object returned by
             `connection.Connection()`
         id (str): Identifier of the calendar to update
         body (dict): JSON-formatted body of the updated calendar
         error_msg (str, optional): Custom error message for error handling
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server.
+        HTTP response object returned by the Strategy One REST server.
     """
     with changeset_manager(
         connection, project_id='', schema_edit=False

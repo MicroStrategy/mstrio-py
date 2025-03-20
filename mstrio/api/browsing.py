@@ -33,7 +33,7 @@ def store_search_instance(
     Search the metadata and store an instance of search results.
 
     Args:
-        connection(object): MicroStrategy connection object returned by
+        connection(object): Strategy One connection object returned by
             `connection.Connection()`.
         project_id(string, optional): Project ID
         name(string, optional): Value the search pattern is set to, which will
@@ -86,7 +86,7 @@ def store_search_instance(
         error_msg(string, optional): Custom Error Message for Error Handling
 
     Returns:
-        HTTP response returned by the MicroStrategy REST server.
+        HTTP response returned by the Strategy One REST server.
     """
     return connection.post(
         endpoint='/api/metadataSearches/results',
@@ -122,7 +122,7 @@ def get_search_results(
     Get search results in a list format.
 
     Args:
-        connection(object): MicroStrategy connection object returned by
+        connection(object): Strategy One connection object returned by
             `connection.Connection()`.
         search_id(string): Search ID (identifies the results for a previous
             search stored in I-Server memory)
@@ -136,7 +136,7 @@ def get_search_results(
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
-        HTTP response returned by the MicroStrategy REST server.
+        HTTP response returned by the Strategy One REST server.
     """
     return connection.get(
         endpoint='/api/metadataSearches/results',
@@ -155,7 +155,7 @@ def get_search_results_async(
     """Get search results in a list format asynchronously.
 
     Args:
-        future_session(object): Future Session object to call MicroStrategy REST
+        future_session(object): Future Session object to call Strategy One REST
             Server asynchronously
         search_id(string): Search ID (identifies the results for a previous
             search stored in I-Server memory)
@@ -168,7 +168,7 @@ def get_search_results_async(
             Default value is -1.
 
     Returns:
-        Future with HTTP response returned by the MicroStrategy REST server as
+        Future with HTTP response returned by the Strategy One REST server as
         a result.
     """
     endpoint = '/api/objects'
@@ -193,7 +193,7 @@ def get_search_results_tree_format(
     Get search results in a tree format.
 
     Args:
-        connection(object): MicroStrategy connection object returned by
+        connection(object): Strategy One connection object returned by
             `connection.Connection()`.
         search_id(string): Search ID (identifies the results for a previous
             search stored in I-Server memory)
@@ -207,7 +207,7 @@ def get_search_results_tree_format(
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
-        HTTP response returned by the MicroStrategy REST server.
+        HTTP response returned by the Strategy One REST server.
     """
     return connection.get(
         endpoint='/api/metadataSearches/results/tree',
@@ -291,7 +291,7 @@ def get_shortcuts(
     in specific projects.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         body: A dictionary specifying the projects and shortcuts in the form of
             {[
                 {
@@ -329,7 +329,7 @@ def get_shortcut(
     """Get information about specific published shortcut in specific project.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id: id of target shortcut
         project_id: id of project that the shortcut is in
         shortcut_info_flag: flag indicating what information about shortcut
@@ -372,7 +372,7 @@ def get_search_suggestions(
     """Store results of the Search engine to return search suggestions.
 
     Args:
-        connection (object): MicroStrategy REST API connection object
+        connection (object): Strategy One REST API connection object
         project_id (string, optional): project ID
         key (string, optional): value the search pattern is set to, which will
             be applied to the names of suggestions being searched
@@ -405,7 +405,7 @@ def get_search_objects(
     """Search for objects in the metadata.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         body: A dictionary specifying the search criteria
         include_ancestors: Include ancestors in the search results
         show_navigation_path: Show navigation path in the search results

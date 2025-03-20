@@ -3,8 +3,9 @@ import logging
 from mstrio import config
 from mstrio.api import events
 from mstrio.connection import Connection
+from mstrio.users_and_groups.user import User
 from mstrio.utils import helper
-from mstrio.utils.entity import DeleteMixin, Entity, ObjectTypes
+from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, ObjectTypes
 from mstrio.utils.helper import filter_params_for_func
 from mstrio.utils.related_subscription_mixin import RelatedSubscriptionMixin
 from mstrio.utils.response_processors import objects as objects_processors
@@ -24,7 +25,7 @@ def list_events(
     """List event objects or event dictionaries. Optionally filter list.
 
     Args:
-        connection(object): MicroStrategy connection object returned
+        connection(object): Strategy One connection object returned
             by 'connection.Connection()'
         to_dictionary(bool, optional): if True, return event as
             list of dicts
@@ -46,17 +47,16 @@ def list_events(
 
 
 @class_version_handler('11.3.0100')
-class Event(Entity, DeleteMixin, RelatedSubscriptionMixin):
-    """Class representation of MicroStrategy Event object.
+class Event(Entity, CopyMixin, DeleteMixin, RelatedSubscriptionMixin):
+    """Class representation of Strategy One Event object.
 
     Attributes:
-        connection: A MicroStrategy connection object
+        connection: A Strategy One connection object
         name: Event name
         id: Event ID
         description: Event descriptions
     """
 
-    _PATCH_PATH_TYPES = {'name': str, 'description': str, 'comments': str}
     _OBJECT_TYPE = ObjectTypes.SCHEDULE_EVENT
     _API_GETTERS = {
         (
@@ -75,12 +75,13 @@ class Event(Entity, DeleteMixin, RelatedSubscriptionMixin):
             'acg',
             'acl',
             'comments',
+            'owner',
         ): objects_processors.get_info,
     }
     _API_DELETE = staticmethod(events.delete_event)
     _API_PATCH = {
         ('name', 'description'): (events.update_event, 'put'),
-        'comments': (objects_processors.update, 'partial_put'),
+        ('comments', 'owner'): (objects_processors.update, 'partial_put'),
     }
 
     def __init__(
@@ -94,7 +95,7 @@ class Event(Entity, DeleteMixin, RelatedSubscriptionMixin):
         `name` is omitted.
 
         Args:
-            connection: MicroStrategy connection object returned
+            connection: Strategy One connection object returned
                 by `connection.Connection()`.
             id: Event ID
             name: Event name
@@ -135,7 +136,7 @@ class Event(Entity, DeleteMixin, RelatedSubscriptionMixin):
         """Create an Event
 
         Args:
-            connection: MicroStrategy connection object returned
+            connection: Strategy One connection object returned
                 by `connection.Connection()`.
             name: Name of the new Event
             description: Description of the new Event
@@ -155,6 +156,7 @@ class Event(Entity, DeleteMixin, RelatedSubscriptionMixin):
         name: str | None = None,
         description: str | None = None,
         comments: str | None = None,
+        owner: str | User | None = None,
     ) -> None:
         """Alter the Event's properties
 
@@ -162,7 +164,10 @@ class Event(Entity, DeleteMixin, RelatedSubscriptionMixin):
             name (str, optional): New name for the Event
             description (str, optional): New description for the Event
             comments (str, optional): long description of the Event
+            owner: (str, User, optional): owner of the Event object
         """
+        if isinstance(owner, User):
+            owner = owner.id
         properties = filter_params_for_func(self.alter, locals(), exclude=['self'])
         self._alter_properties(**properties)
 

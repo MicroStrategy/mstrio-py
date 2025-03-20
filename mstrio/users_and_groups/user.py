@@ -24,6 +24,7 @@ from mstrio.utils.helper import (
     Dictable,
     VersionException,
     filter_params_for_func,
+    get_project_id_or_none,
     get_valid_project_id,
 )
 from mstrio.utils.related_subscription_mixin import RelatedSubscriptionMixin
@@ -35,6 +36,7 @@ if TYPE_CHECKING:
     from mstrio.access_and_security.privilege import Privilege
     from mstrio.distribution_services import Device
     from mstrio.modeling.security_filter import SecurityFilter
+    from mstrio.object_management.folder import Folder
     from mstrio.users_and_groups.user_group import UserGroup
 
 logger = logging.getLogger(__name__)
@@ -45,7 +47,7 @@ def create_users_from_csv(connection: Connection, csv_file: str) -> list["User"]
     users are the same as in the `User.create()` method.
 
     Args:
-        connection: MicroStrategy connection object returned by
+        connection: Strategy One connection object returned by
             `connection.Connection()`
         csv_file: path to file containing at minimum 'username' and 'full_name'
             headers'.
@@ -70,7 +72,7 @@ def list_users(
         e.g. name_begins = ?onny will return Sonny and Tonny
 
     Args:
-        connection: MicroStrategy connection object returned by
+        connection: Strategy One connection object returned by
             `connection.Connection()`
         name_begins: characters that the user name must begin with.
         abbreviation_begins: characters that the abbreviation must begin with.
@@ -96,10 +98,10 @@ def list_users(
 
 
 class User(Entity, TrusteeACLMixin, RelatedSubscriptionMixin):
-    """Object representation of MicroStrategy User object.
+    """Object representation of Strategy One User object.
 
     Attributes:
-        connection: A MicroStrategy connection object
+        connection: A Strategy One connection object
         id: User ID
         name: User name
         username: User username
@@ -138,10 +140,9 @@ class User(Entity, TrusteeACLMixin, RelatedSubscriptionMixin):
     """
 
     _PATCH_PATH_TYPES = {
-        "name": str,
+        **Entity._PATCH_PATH_TYPES,
         "username": str,
         "full_name": str,
-        "description": str,
         "password": str,
         "enabled": bool,
         "password_modifiable": bool,
@@ -152,8 +153,6 @@ class User(Entity, TrusteeACLMixin, RelatedSubscriptionMixin):
         "require_new_password": bool,
         "ldapdn": str,
         "trust_id": str,
-        "abbreviation": str,
-        "owner": str,
     }
     _OBJECT_TYPE = ObjectTypes.USER
     _API_GETTERS = {
@@ -287,7 +286,7 @@ class User(Entity, TrusteeACLMixin, RelatedSubscriptionMixin):
         `None`), `name` is omitted.
 
         Args:
-            connection: MicroStrategy connection object returned by
+            connection: Strategy One connection object returned by
                 `connection.Connection()`
             id: ID of User
             username: username of User
@@ -379,7 +378,7 @@ class User(Entity, TrusteeACLMixin, RelatedSubscriptionMixin):
         """Create a new user on the I-Server. Returns User object.
 
         Args:
-            connection: MicroStrategy connection object returned by
+            connection: Strategy One connection object returned by
                 `connection.Connection()`
             username: username of user
             full_name: user full name
@@ -720,8 +719,8 @@ class User(Entity, TrusteeACLMixin, RelatedSubscriptionMixin):
 
     def add_address(
         self,
-        name: str | None = None,
-        address: str | None = None,
+        name: str,
+        address: str,
         default: bool = True,
         delivery_type: str | None = None,
         device_id: str | None = None,
@@ -730,8 +729,8 @@ class User(Entity, TrusteeACLMixin, RelatedSubscriptionMixin):
 
         Args:
             name (str): User-specified name for the address
-            address (str): The actual value of the address i.e. email address
-                associated with this address name/id
+            address (str): The actual value of the physical address, e.g. email
+                address or file path associated with this address name/id
             default (bool, optional): Specifies whether this address is the
                 default address (change isDefault parameter). Default value is
                 set to True.
@@ -1188,10 +1187,11 @@ class User(Entity, TrusteeACLMixin, RelatedSubscriptionMixin):
 
         response = users_api.delete_user(self.connection, self.id)
 
+        if not response.ok:
+            return False
         if config.verbose:
             logger.info(f"Successfully deleted User with ID: '{self.id}'.")
-
-        return response.ok
+        return True
 
     def _to_dataframe_as_columns(
         self, properties: list[str] | None = None
@@ -1294,22 +1294,88 @@ class User(Entity, TrusteeACLMixin, RelatedSubscriptionMixin):
         dataframe = cls.to_datafame_from_list(objects, properties)
         return dataframe.to_csv(index=False, path_or_buf=path)
 
-    @method_version_handler('11.4.0600')
+    @method_version_handler('11.5.0300')
+    def create_profile_folder(
+        self,
+        destination_folder: 'Folder | str | None' = None,
+        project_id: str | None = None,
+        project_name: str | None = None,
+        project: 'Project | None' = None,
+    ) -> 'Folder':
+        """Creates a profile folder for the user.
+
+        Args:
+            destination_folder (Folder or str, optional): Destination folder
+                where the profile folder will be created.
+            project_id (str, optional) : ID of the project for which
+                the profile folder will be created. If the project is not
+                specified, the profile folder will be created in the project
+                corresponding to the connection used to retrieve the user.
+                May be substituted with `project_name` or `project` parameter.
+            project_name (str, optional): Name the project for which the
+                profile folder will be created. May be used instead of
+                `project_id`.
+            project (Project, optional): Object for the project for which the
+                profile folder will be created. May be used instead of
+                `project_id`.
+        """
+
+        from mstrio.object_management.folder import Folder
+
+        destination_folder_id = (
+            destination_folder.id
+            if isinstance(destination_folder, Folder)
+            else destination_folder
+        )
+
+        if project and not project_id:
+            project_id = project.id
+        if not project_id and project_name:
+            project_id = get_valid_project_id(
+                self.connection, project_name, with_fallback=True
+            )
+
+        body = {
+            'locationId': destination_folder_id,
+        }
+
+        res = users_api.create_user_profile(
+            self.connection,
+            self.id,
+            body,
+            project_id,
+        ).json()
+
+        if config.verbose:
+            logger.info(
+                f"Successfully created profile folder for user '{self.username}' "
+                f"for project id '{project_id}'"
+            )
+
+        return Folder.from_dict(res, self.connection)
+
+    @method_version_handler('11.5.0300')
     def delete_profile_folder(
         self,
-        project_id: 'str | Project | None' = None,
+        project_id: str | None = None,
         project_name: str | None = None,
+        project: 'Project | None' = None,
         force: bool = False,
     ) -> bool:
         """Deletes the user's profile folder.
 
         Args:
             project_id (str, Project, optional) : ID of the project from which
-                the profile folder will be deleted. If None, the profile folder
-                will be deleted from all loaded projects.
-            project_name (str, optional): Name of the project from which the
-                profile folder will be deleted. If None, the profile folder will
-                be deleted from all loaded projects.
+                the profile folder will be deleted. May be substituted with
+                `project_name` or `project` parameter. If the project is not
+                specified, the profile folder will be deleted from all
+                loaded projects.
+            project_name (str, optional): Name the project for which the
+                profile folder will be deleted. May be used instead of
+                `project_id`.
+            project (Project, optional): Object for the project for which the
+                profile folder will be deleted. May be used instead of
+                `project_id`.
             force (bool, optional): If True, no additional prompt will be shown
                 before deleting User's profile folder
 
@@ -1323,19 +1389,18 @@ class User(Entity, TrusteeACLMixin, RelatedSubscriptionMixin):
         if not force and input(message) != 'Y':
             return False
 
-        project_id = project_id.id if isinstance(project_id, Project) else project_id
-
-        if not project_id and project_name:
-            project_id = get_valid_project_id(self.connection, project_name)
+        project_id = get_project_id_or_none(
+            self.connection, project_id, project_name, project
+        )
 
         res = users_api.delete_user_profile(self.connection, self.id, project_id)
-
+        if not res.ok:
+            return False
         if config.verbose:
             logger.info(
                 f"Successfully deleted profile folder for user with ID: '{self.id}'"
             )
-
-        return res.ok
+        return True
 
     @property
     def memberships(self):

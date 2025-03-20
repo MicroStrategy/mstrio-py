@@ -12,14 +12,14 @@ conn = get_connection(workstationData, 'MicroStrategy Tutorial')
 # Note: No Applications exist in a default environment
 list_of_all_apps = list_applications(connection=conn)
 list_of_several_apps = list_applications(connection=conn, limit=5)
-list_of_apps_name_filtered = list_applications(connection=conn, name='MicroStrategy')
+list_of_apps_name_filtered = list_applications(connection=conn, name='Strategy')
 list_of_all_apps_as_dicts = list_applications(connection=conn, to_dictionary=True)
 print(list_of_all_apps)
 
 # Create an Application with customized settings for:
 # General Settings, Email Settings, AI Settings, and Auth Modes
 # For Home Screen both Library and Document settings are customized
-# and a custom Theme settings are set
+# and the custom Theme settings are set
 app = Application.create(
     connection=conn,
     name='Application Validation Scripts',
@@ -216,12 +216,12 @@ app = Application.create(
         show_button_description=True,
         show_reminder=True,
         show_sent_by=True,
-        sent_by_text='MicroStrategy Inc.',
+        sent_by_text='Strategy One.',
         show_social_media=True,
         content=None,
         sender=Application.EmailSettings.Sender(
-            address='library@microstrategy.com',
-            display_name='MicroStrategy Library',
+            address='library@strategy.com',
+            display_name='Strategy One Library',
         ),
         branding_image={
             'url': (
@@ -277,7 +277,7 @@ app = Application.create(
     ),
 )
 
-# Get an Application by it's id or name
+# Get an Application by its id or name
 app = Application(connection=conn, id=app.id)
 app = Application(connection=conn, name=app.name)
 
@@ -291,5 +291,5 @@ app.alter(
     auth_modes=app.auth_modes,
 )
 
-# Delete an Application without prompt
+# Delete an Application without a prompt
 app.delete(force=True)

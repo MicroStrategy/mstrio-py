@@ -50,7 +50,7 @@ def list_facts(
         then its value is overwritten by `project_id` from `connection` object.
 
     Args:
-        connection (object): MicroStrategy connection object returned by
+        connection (object): Strategy One connection object returned by
             `connection.Connection()`
         name (optional, str): value the search pattern is set to, which
             will be applied to the names of facts being searched
@@ -112,7 +112,7 @@ def list_facts(
 
 @class_version_handler('11.3.0100')
 class Fact(Entity, CopyMixin, DeleteMixin, MoveMixin):
-    """Python representation for Microstrategy `Fact` object.
+    """Python representation for Strategy One `Fact` object.
 
     Attributes:
         id: fact's ID
@@ -189,7 +189,7 @@ class Fact(Entity, CopyMixin, DeleteMixin, MoveMixin):
     }
     _API_PATCH = {
         ('data_type', 'expressions'): (facts.update_fact, 'partial_put'),
-        ('name', 'description', 'folder_id', 'hidden', 'comments'): (
+        ('name', 'description', 'folder_id', 'hidden', 'comments', 'owner'): (
             objects_processors.update,
             'partial_put',
         ),
@@ -226,7 +226,7 @@ class Fact(Entity, CopyMixin, DeleteMixin, MoveMixin):
             is provided, `id` will be found automatically if such object exists.
 
         Args:
-             connection (object): MicroStrategy connection object returned by
+             connection (object): Strategy One connection object returned by
                 `connection.Connection()`.
             id (optional, str): Identifier of a pre-existing fact containing the
                 required data.
@@ -312,7 +312,7 @@ class Fact(Entity, CopyMixin, DeleteMixin, MoveMixin):
         """Create new fact object.
 
         Args:
-            connection (object): MicroStrategy connection object returned
+            connection (object): Strategy One connection object returned
                 by `connection.Connection()`
             name (str): new fact's name
             sub_type (str, enum): new fact's sub_type
@@ -385,6 +385,7 @@ class Fact(Entity, CopyMixin, DeleteMixin, MoveMixin):
         data_type: DataType | dict | None = None,
         hidden: bool | None = None,
         comments: str | None = None,
+        owner: str | User | None = None,
     ):
         """Alter fact properties.
 
@@ -395,7 +396,10 @@ class Fact(Entity, CopyMixin, DeleteMixin, MoveMixin):
             hidden (bool, optional): Specifies whether the object is hidden.
                 Default value: False.
             comments (optional, str): fact's long description
+            owner (optional, str or User): owner of the fact object
         """
+        if isinstance(owner, User):
+            owner = owner.id
         properties = filter_params_for_func(self.alter, locals(), exclude=['self'])
         if data_type:
             properties['expressions'] = self.expressions

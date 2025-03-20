@@ -17,7 +17,7 @@ def create_attribute(
     based on the definition provided in request body.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         body: Attribute creation data
         show_expession_as: Specifies the format in which the expressions are
            returned in response
@@ -68,7 +68,7 @@ def get_attribute(
     """Get definition of a single attribute by id
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id: ID of an attribute
         changeset_id: ID of a changeset
         show_expession_as: Specifies the format in which the expressions
@@ -122,7 +122,7 @@ def update_attribute(
     with the new definition provided in the request body.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id: ID of an attribute
         body: Attribute update data
         show_expression_as: Specifies the format in which the expressions
@@ -172,7 +172,7 @@ def get_attribute_elements(
     """Get definition of a single attribute by ID.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id: ID of an attribute
         fields: A whitelist of top-level fields separated by commas.
             Allow the client to selectively retrieve fields in the response.

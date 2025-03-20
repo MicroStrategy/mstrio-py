@@ -6,7 +6,7 @@ from mstrio.utils.error_handlers import ErrorHandler
 )
 def login(connection):
     """Authenticate a user and create an HTTP session on the web server where
-    the user's MicroStrategy sessions are stored.
+    the user's Strategy One sessions are stored.
 
     This request returns an authorization token (X-MSTR-AuthToken) which will be
     submitted with subsequent requests. The body of the request contains
@@ -17,7 +17,7 @@ def login(connection):
     Administration REST APIs, if they are supported by the deployment.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
 
     Returns:
         Complete HTTP response object.
@@ -40,7 +40,7 @@ def logout(connection, error_msg=None, whitelist=None):
     """Close all existing sessions for the authenticated user.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
 
     Returns:
         Complete HTTP response object.
@@ -57,7 +57,7 @@ def session_renew(connection):
     timeouts.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
 
     Returns:
         Complete HTTP response object.
@@ -74,7 +74,7 @@ def session_status(connection):
     """Checks Intelligence Server session status.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
 
     Returns:
         Complete HTTP response object.
@@ -95,7 +95,7 @@ def identity_token(connection):
     session.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
 
     Returns:
         Complete HTTP response object.
@@ -109,7 +109,7 @@ def validate_identity_token(connection, identity_token):
     """Validate an identity token.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         identity_token: Identity token
 
     Returns:
@@ -130,7 +130,7 @@ def delegate(connection, identity_token, whitelist=None):
     IdentityToken.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         identity_token: Identity token
         whitelist: list of errors for which we skip printing error messages
 
@@ -152,7 +152,7 @@ def user_privileges(connection):
     privilege and specifies which projects the privileges are valid for.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
 
     Returns:
         Complete HTTP response object.
@@ -165,7 +165,7 @@ def get_info_for_authenticated_user(connection, error_msg=None):
     """Get information for the authenticated user.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:

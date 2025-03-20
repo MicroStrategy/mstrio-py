@@ -24,7 +24,7 @@ class Environment:
     environment. Browse and modify I-Server settings.
 
     Attributes:
-        connection: A MicroStrategy connection object.
+        connection: A Strategy One connection object.
         server_settings: Intelligence Server settings object.
         nodes: List of I-Server nodes and their properties.
         node_names: List of I-Server node names.
@@ -34,7 +34,7 @@ class Environment:
         """Initialize Environment object.
 
         Args:
-            connection: MicroStrategy connection object returned
+            connection: Strategy One connection object returned
                 by `connection.Connection()`.
         """
         self.connection = connection

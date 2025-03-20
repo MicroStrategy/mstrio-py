@@ -235,7 +235,7 @@ def list_functions(
         then its value is overwritten by `project_id` from `connection` object.
 
     Args:
-        connection: MicroStrategy connection object returned by
+        connection: Strategy One connection object returned by
             `connection.Connection()`
         name (string, optional): value the search pattern is set to, which
             will be applied to the names of functions being searched

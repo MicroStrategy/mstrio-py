@@ -56,7 +56,7 @@ def create_security_filter(
     based on the definition provided in request body.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         body (dict): Security Filter creation body
         error_msg (str, optional): Custom Error Message for Error Handling
         show_expression_as (str, optional): specify how expressions should be
@@ -103,7 +103,7 @@ def get_security_filter(
     If both are provided, only the changeset ID is used.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id (str): Security Filter ID. The ID can be:
             - the object ID used in the metadata.
             - the object ID used in the changeset, but not yet committed
@@ -156,7 +156,7 @@ def update_security_filter(
     based on the definition provided in the request body.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id (str): Security Filter ID. The ID can be:
             - the object ID used in the metadata.
             - the object ID used in the changeset, but not yet committed
@@ -204,7 +204,7 @@ def get_security_filters(
     You can set the offset and limit for pagination function.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         project_id (string, optional): id of project
         name_contains (string, optional): text that security filter's name
             must contain

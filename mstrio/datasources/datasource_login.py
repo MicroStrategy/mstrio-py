@@ -24,7 +24,7 @@ def list_datasource_logins(
     logins by specifying filters.
 
     Args:
-        connection: MicroStrategy connection object returned by
+        connection: Strategy One connection object returned by
             `connection.Connection()`
         to_dictionary: If True returns dict, by default (False) returns
             User objects.
@@ -94,7 +94,7 @@ class DatasourceLogin(Entity, CopyMixin, DeleteMixin):
         ): datasources.get_datasource_login,
     }
     _API_PATCH: dict = {
-        ('abbreviation', 'comments'): (
+        ('abbreviation', 'comments', 'owner'): (
             objects_processors.update,
             'partial_put',
         ),
@@ -104,9 +104,8 @@ class DatasourceLogin(Entity, CopyMixin, DeleteMixin):
         ),
     }
     _PATCH_PATH_TYPES = {
-        "name": str,
+        **Entity._PATCH_PATH_TYPES,
         "username": str,
-        "description": str,
         "password": str,
     }
 
@@ -141,6 +140,7 @@ class DatasourceLogin(Entity, CopyMixin, DeleteMixin):
         description: str = None,
         password: str = None,
         comments: str | None = None,
+        owner: str | User | None = None,
     ) -> None:
         """Alter the datasource login properties.
 
@@ -150,7 +150,10 @@ class DatasourceLogin(Entity, CopyMixin, DeleteMixin):
             description: login object description
             password: database password to be used by the database login
             comments: long description of the login object
+            owner: owner of the login object; Can be either ID or User object
         """
+        if isinstance(owner, User):
+            owner = owner.id
         func = self.alter
         args = get_args_from_func(func)
         defaults = get_default_args_from_func(func)
@@ -174,7 +177,7 @@ class DatasourceLogin(Entity, CopyMixin, DeleteMixin):
         """Create a new datasource login.
 
         Args:
-            connection: MicroStrategy connection object returned by
+            connection: Strategy One connection object returned by
                 `connection.Connection()`
             name: login object name
             username: username

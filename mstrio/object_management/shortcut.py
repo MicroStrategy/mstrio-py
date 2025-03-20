@@ -5,14 +5,11 @@ from mstrio.api import browsing
 from mstrio.connection import Connection
 from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, MoveMixin, ObjectTypes
 from mstrio.utils.enum_helper import get_enum_val
-from mstrio.utils.helper import deprecation_warning, fetch_objects, get_valid_project_id
+from mstrio.utils.helper import fetch_objects, get_valid_project_id
 from mstrio.utils.response_processors import objects as objects_processors
 
 
 class ShortcutInfoFlags(IntFlag):
-    DssDossierShortcutInfoBookmark = 0b10
-    DssDossierShortcutInfoTOC = 0b01
-    DssDossierShortcutInfoDefault = 0b00
     DssDashboardShortcutInfoBookmark = 0b10
     DssDashboardShortcutInfoTOC = 0b01
     DssDashboardShortcutInfoDefault = 0b00
@@ -24,7 +21,7 @@ class Shortcut(Entity, CopyMixin, MoveMixin, DeleteMixin):
     related to browsing the Library.
 
     Attributes:
-        connection (Connection): MicroStrategy connection object returned
+        connection (Connection): Strategy One connection object returned
             by `connection.Connection()`.
         id (str): ID of the shortcut object
         name (str): Name of the shortcut
@@ -108,7 +105,7 @@ class Shortcut(Entity, CopyMixin, MoveMixin, DeleteMixin):
         project_name: str = None,
         shortcut_info_flag: (
             ShortcutInfoFlags | int
-        ) = ShortcutInfoFlags.DssDossierShortcutInfoTOC,
+        ) = ShortcutInfoFlags.DssDashboardShortcutInfoTOC,
     ):
         """Initialize the Shortcut object and populate it with I-Server data.
 
@@ -120,7 +117,7 @@ class Shortcut(Entity, CopyMixin, MoveMixin, DeleteMixin):
             its value is overwritten by `project_id` from `connection` object.
 
         Args:
-            connection: MicroStrategy connection object returned
+            connection: Strategy One connection object returned
                 by `connection.Connection()`.
             id: Shortcut ID
             project_id: ID of the project that the shortcut is in
@@ -162,7 +159,6 @@ class Shortcut(Entity, CopyMixin, MoveMixin, DeleteMixin):
         self._current_bookmark = kwargs.get('current_bookmark')
         self._prompted = kwargs.get('prompted')
         self._datasets_cache_info_hash = kwargs.get('datasets_cache_info_hash')
-        self._dossier_version_hash = kwargs.get('dossier_version_hash')
         self._dashboard_version_hash = kwargs.get('dossier_version_hash')
 
     T = TypeVar('T')
@@ -221,16 +217,6 @@ class Shortcut(Entity, CopyMixin, MoveMixin, DeleteMixin):
         return self._datasets_cache_info_hash
 
     @property
-    def dossier_version_hash(self):
-        deprecation_warning(
-            'property `dossier_version_hash`',
-            'property `dashboard_version_hash`',
-            '11.5.03',
-            False,
-        )
-        return self._dossier_version_hash
-
-    @property
     def dashboard_version_hash(self):
         return self._dashboard_version_hash
 
@@ -242,7 +228,7 @@ def get_shortcuts(
     project_name: str = None,
     shortcut_info_flag: (
         ShortcutInfoFlags | int
-    ) = ShortcutInfoFlags.DssDossierShortcutInfoDefault,
+    ) = ShortcutInfoFlags.DssDashboardShortcutInfoDefault,
     to_dictionary: bool = False,
     limit: int | None = None,
     **filters,

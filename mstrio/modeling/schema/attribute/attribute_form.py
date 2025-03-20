@@ -9,6 +9,7 @@ from mstrio.modeling.schema.helpers import (
     SchemaObjectReference,
 )
 from mstrio.types import ObjectTypes
+from mstrio.users_and_groups.user import User
 from mstrio.utils.entity import Entity
 from mstrio.utils.enum_helper import AutoName
 from mstrio.utils.helper import (
@@ -164,7 +165,7 @@ class AttributeForm(Entity):  # noqa
         ): objects_processors.get_info
     }
     _API_PATCH: dict = {
-        'comments': (objects_processors.update, 'partial_put'),
+        ('comments', 'owner'): (objects_processors.update, 'partial_put'),
     }
 
     def __init__(self, connection: Connection, id: str) -> None:
@@ -440,11 +441,15 @@ class AttributeForm(Entity):  # noqa
     def alter(
         self,
         comments: str | None = None,
+        owner: str | User | None = None,
     ):
         """Alter attribute properties.
 
         Args:
-            comments: long description of the attribute
+            comments: long description of the attribute form
+            owner: (str, User, optional): owner of the attribute form
         """
+        if isinstance(owner, User):
+            owner = owner.id
         properties = filter_params_for_func(self.alter, locals(), exclude=['self'])
         self._alter_properties(**properties)

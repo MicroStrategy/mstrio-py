@@ -33,7 +33,7 @@ def list_cube_caches(
     `None` then all nodes are retrieved from the cluster.
 
     Args:
-        connection: MicroStrategy connection object returned by
+        connection: Strategy One connection object returned by
             `connection.Connection()`.
         nodes (list of strings or string, optional): names of nodes on which
             caches will be searched. By default, it equals `None` and in that
@@ -114,7 +114,7 @@ def delete_cube_caches(
     `None` then all nodes are retrieved from cluster.
 
     Args:
-        connection: MicroStrategy connection object returned by
+        connection: Strategy One connection object returned by
             `connection.Connection()`.
         nodes (list of strings or string, optional): names of nodes from which
             caches will be deleted. By default it equals `None` and in that
@@ -164,7 +164,7 @@ def delete_cube_cache(connection: "Connection", id: str, force: bool = False):
     """Delete single cube cache.
 
     Args:
-        connection: MicroStrategy connection object returned by
+        connection: Strategy One connection object returned by
             `connection.Connection()`.
         id (string): cube cache ID
         force (bool, optional): If True, then no additional prompt will be shown
@@ -192,7 +192,7 @@ class CubeCache(Cache):
         no I-Server request will be sent.
 
         Args:
-            connection: MicroStrategy connection object returned by
+            connection: Strategy One connection object returned by
                 `connection.Connection()`.
             cache_id (string): cube cache id
             cube_cache_dict (dict, optional): dictionary with properties of cube

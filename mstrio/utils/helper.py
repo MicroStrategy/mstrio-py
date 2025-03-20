@@ -35,11 +35,14 @@ from mstrio.utils.time_helper import (
 )
 
 if TYPE_CHECKING:
+    from requests import Response
+
     from mstrio.connection import Connection
-    from mstrio.object_management import SearchPattern
+    from mstrio.modeling.expression import Expression
+    from mstrio.object_management import SearchPattern  # noqa: F401
     from mstrio.project_objects.datasets import OlapCube, SuperCube
     from mstrio.server import Project
-    from mstrio.types import ObjectTypes
+    from mstrio.types import ObjectTypes  # noqa: F401
 
 logger = logging.getLogger(__name__)
 
@@ -178,7 +181,9 @@ def check_duplicated_column_names(data_frame):
     return len(list_of_columns) == len(set(list_of_columns))
 
 
-def exception_handler(msg, exception_type=Exception, stack_lvl=2):
+def exception_handler(
+    msg: str, exception_type: type[Exception] = Exception, stack_lvl: int = 2
+):
     """Generic error message handler.
 
     Args:
@@ -198,7 +203,13 @@ def exception_handler(msg, exception_type=Exception, stack_lvl=2):
         warnings.warn(msg, exception_type, stacklevel=stack_lvl)
 
 
-def response_handler(response, msg, throw_error=True, verbose=True, whitelist=None):
+def response_handler(
+    response: 'Response',
+    msg: str,
+    throw_error: bool = True,
+    verbose: bool = True,
+    whitelist: list | None = None,
+):
     """Generic error message handler for transactions against I-Server.
 
     Args:
@@ -211,8 +222,7 @@ def response_handler(response, msg, throw_error=True, verbose=True, whitelist=No
             respectively, which will not be handled
             i.e. whitelist = [('ERR001', 500),('ERR004', 404)]
     """
-    if whitelist is None:
-        whitelist = []
+    whitelist = whitelist or []
 
     try:
         logger.debug(f"{response} url = '{response.url}'")
@@ -330,12 +340,16 @@ def _prepare_objects(
     objects: dict | list[dict],
     filters: dict | None = None,
     dict_unpack_value: str | None = None,
+    project_id: str | None = None,
 ):
     if isinstance(objects, dict) and dict_unpack_value:
         objects = objects[dict_unpack_value]
     objects = camel_to_snake(objects)
     if filters:
         objects = filter_list_of_dicts(objects, **filters)  # type: ignore
+    if project_id:
+        for obj in objects:
+            obj.setdefault('project_id', project_id)
     return objects
 
 
@@ -355,7 +369,7 @@ def fetch_objects_async(
     query parameter (pagination).
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         api: GET API wrapper function that will return list of objects in bulk
         async_api: asynchronous wrapper of the `api` function
         dict_unpack_value: if the response needs to be unpacked to get into
@@ -387,7 +401,8 @@ def fetch_objects_async(
         error_msg=error_msg,
         **param_value_dict,
     )
-    objects = _prepare_objects(response.json(), filters, dict_unpack_value)
+    project_id = kwargs.get('project_id') or kwargs.get('project')
+    objects = _prepare_objects(response.json(), filters, dict_unpack_value, project_id)
     all_objects.extend(objects)
     current_count = offset + chunk_size
     # TODO Total count of subscriptions is not always true (see. US523782)
@@ -427,7 +442,9 @@ def fetch_objects_async(
             if not response.ok:
                 response_handler(response, error_msg, throw_error=False)
                 continue
-            objects = _prepare_objects(response.json(), filters, dict_unpack_value)
+            objects = _prepare_objects(
+                response.json(), filters, dict_unpack_value, project_id
+            )
             all_objects.extend(objects)
     return all_objects
 
@@ -445,7 +462,7 @@ def fetch_objects(
     filters parameter. This function only supports endpoints without pagination.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         api: GET API wrapper function that will return list of objects in bulk
         dict_unpack_value: if the response needs to be unpacked to get into
             the values specify the keyword
@@ -461,8 +478,11 @@ def fetch_objects(
     # Extract parameters of the api wrapper and set them using kwargs
     param_value_dict = auto_match_args(api, kwargs, exclude=['connection', 'error_msg'])
     response = api(connection=connection, error_msg=error_msg, **param_value_dict)
+    project_id = kwargs.get('project_id') or kwargs.get('project')
     if response.ok:
-        objects = _prepare_objects(response.json(), filters, dict_unpack_value)
+        objects = _prepare_objects(
+            response.json(), filters, dict_unpack_value, project_id
+        )
         if limit:
             objects = objects[:limit]
         return objects
@@ -501,7 +521,7 @@ def auto_match_args(
         back to default currently doesn't work (Rework line 413?)
 
     Args:
-        function: function for which args will be matched
+        func: function for which args will be matched
         param_dict: dict to use for matching the function args
         exclude: set `exclude` parameter to exclude specific param-value pairs
         include_defaults: if `False` then values which have the same value as
@@ -518,21 +538,16 @@ def auto_match_args(
     for arg in args:
         if arg in exclude:
             continue
-        else:
-            val = (
-                param_dict.get(arg)
-                if param_dict.get(arg) is not None
-                else default_dict.get(arg)
-            )
-            if (
-                not include_defaults
-                and arg in default_dict
-                and val == default_dict[arg]
-            ):
-                continue
 
-            if isinstance(val, Enum):
-                val = val.value
+        val = (
+            param_dict.get(arg)
+            if param_dict.get(arg) is not None
+            else default_dict.get(arg)
+        )
+        if not include_defaults and arg in default_dict and val == default_dict[arg]:
+            continue
+
+        val = val.value if isinstance(val, Enum) else val
         param_value_dict.update({arg: val})
 
     return param_value_dict
@@ -833,7 +848,7 @@ def get_valid_project_id(
     """Check if the project name exists and return the project ID.
 
     Args:
-        connection(object): MicroStrategy connection object
+        connection(object): Strategy One connection object
         project_id: Project ID
         project_name: Project name
         with_fallback: Specify if the project should be taken from `connection`
@@ -873,6 +888,29 @@ def get_valid_project_id(
     return project_id
 
 
+def get_project_id_or_none(
+    connection: "Connection",
+    project_id: str | None = None,
+    project_name: str | None = None,
+    project: "Project| None" = None,
+) -> str | None:
+    """Get project ID or None if project is not specified. This is used
+    for operations where we want to allow specifying a project either
+    by id, obj or name, but the project is optional.
+    """
+    if project and not project_id:
+        return project.id
+    try:
+        return get_valid_project_id(
+            connection=connection,
+            project_id=project_id,
+            project_name=project_name,
+            with_fallback=False,
+        )
+    except ValueError:
+        return None
+
+
 def fallback_to_conn_project_id(connection: "Connection") -> str | None:
     try:
         connection._validate_project_selected()
@@ -887,7 +925,7 @@ def get_valid_project_name(connection: "Connection", project_id: str):
     """Returns project name of given project based on its ID.
 
     Args:
-        connection(object): MicroStrategy connection object
+        connection(object): Strategy One connection object
         project_id: Project ID
     """
     from mstrio.server import Project
@@ -907,7 +945,7 @@ def get_temp_connection(
 ) -> "Connection":
     """Return a temporary connection object with a selected project.
     Args:
-        connection: MicroStrategy connection object
+        connection: Strategy One connection object
         project_id: Project ID
         project_name: Project name
     """
@@ -1125,19 +1163,7 @@ class Dictable:
         return f'{self.__class__.__name__}({formatted_params})'
 
 
-def is_dossier(view_media: int):
-    """Documents and dossiers have the same type and subtype when returned
-    from search api. They can be distinguished only by view_media value.
-    """
-    deprecation_warning(
-        "function `is_dossier`", "function `is_dashboard`", "11.5.03", False
-    )
-    return (
-        view_media & 4160749568 == 1879048192 or view_media & 4160749568 == 1610612736
-    )
-
-
-def is_dashboard(view_media: int):
+def is_dashboard(view_media: int) -> bool:
     """Documents and dashboards have the same type and subtype when returned
     from search api. They can be distinguished only by view_media value.
     """
@@ -1146,7 +1172,7 @@ def is_dashboard(view_media: int):
     )
 
 
-def is_document(view_media: int):
+def is_document(view_media: int) -> bool:
     """Documents and dashboards have the same type and subtype when returned
     from search api. They can be distinguished only by view_media value.
     """
@@ -1231,7 +1257,7 @@ def find_object_with_name(
     """Find objects with given name if no id is given.
 
     Args:
-        connection: A MicroStrategy connection object
+        connection: A Strategy One connection object
         name: name of the object. Defaults to None.
         listing_function: function called to list all the objects
             with given name
@@ -1279,9 +1305,7 @@ def find_object_with_name(
         raise ValueError(f"There is no {cls.__name__} with the given name: '{name}'")
 
 
-def get_object_properties(
-    obj: object,
-) -> set[str]:
+def get_object_properties(obj: object) -> set[str]:
     """Extract private object properties.
 
     Args:
@@ -1306,3 +1330,52 @@ def encode_as_b64(query: str | Query) -> str:
     Returns:
         Base64 format encoded query."""
     return b64encode(str(query).encode('utf-8')).decode('utf-8')
+
+
+def get_string_exp_body(expression: str) -> dict:
+    return {
+        "tokens": [
+            {"value": "%", "type": "character"},
+            {"value": expression},
+        ]
+    }
+
+
+def construct_expression_body(expression: 'str | Expression | dict') -> dict:
+    from mstrio.modeling.expression import Expression
+
+    if isinstance(expression, Expression):
+        return expression.to_dict()
+    if isinstance(expression, str):
+        return get_string_exp_body(expression)
+    return expression
+
+
+def deduplicated_name(name: str, existing_names: list[str]) -> str:
+    """
+    Deduplicate a name by adding a number in parentheses if it already exists.
+
+    Args:
+        name: The user-provided name to deduplicate.
+        existing_names: A list of existing names to check against.
+
+    Returns:
+        The deduplicated name, e.g. 'Schedule (1)'.
+    """
+    if name not in existing_names:
+        return name
+
+    # found duplicate, candidate would be '{name} (1)'
+    # find more names that would conflict with the new name
+
+    # trim potential conflicts, e.g. 'Schedule (1)' -> '1'
+    trim_index = len(name) + 2
+    conflict_strs = [n[trim_index:-1] for n in existing_names if n.startswith(name)]
+    conflict_inds: list[int] = [int(n) for n in conflict_strs if n.isnumeric()]
+
+    # find lowest positive integer not in found indices
+    i = 1
+    while i in conflict_inds:
+        i += 1
+
+    return f"{name} ({i})"

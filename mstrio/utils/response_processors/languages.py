@@ -7,7 +7,7 @@ def get(connection: Connection, id: str) -> dict:
     """Get language by a specified ID.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id: ID of the language
 
     Returns:
@@ -20,7 +20,7 @@ def get_all(connection: Connection, limit: int, filters) -> list[dict]:
     """Get list of languages.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         limit: limit of languages to list
         filters: filters
 
@@ -39,7 +39,7 @@ def get_interface_languages(connection: Connection) -> list[dict]:
     """Get list of interface languages.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
 
     Returns:
         list of dicts representing interface languages"""
@@ -54,7 +54,7 @@ def get_formatting_settings(connection: Connection, id: str) -> dict:
     """Get formatting settings for a language with specified ID.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id: ID of the language
 
     Returns:
@@ -72,7 +72,7 @@ def update_formatting_settings(connection: Connection, id: str, body: dict) -> d
     """Update formatting settings for a language with specified ID.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id: ID of the language
         body: json body for the request
 
@@ -93,7 +93,7 @@ def create(connection: Connection, body: dict) -> dict:
     """Create a language based on provided body.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         body: dictionary with language details
 
     Returns:
@@ -105,7 +105,7 @@ def update(connection: Connection, id: str, body: dict) -> dict:
     """Update a language with specified ID.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id: ID of the language
         body: json body for the request
 

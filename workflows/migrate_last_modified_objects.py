@@ -1,5 +1,5 @@
 # Create an object package using results of search for last modified objects
-# Add dataset components for Dossier object
+# Add dataset components for Dashboard object
 # Set up action "Replace" to all of the objects
 
 from datetime import UTC, datetime, timedelta

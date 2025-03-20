@@ -22,7 +22,7 @@ def cube_definition(connection: 'Connection', id: str):
     retrieve values dynamically, helping with performance and scalability.
 
     Args:
-        connection: MicroStrategy REST API connection object.
+        connection: Strategy One REST API connection object.
         id (str): Unique ID of the cube you wish to extract information
             from.
 
@@ -41,7 +41,7 @@ def cube_info(connection: 'Connection', id: str):
     date, and owner name and ID.
 
     Args:
-        connection: MicroStrategy REST API connection object.
+        connection: Strategy One REST API connection object.
         id (str): Unique ID of the cube you wish to extract information
             from.
 
@@ -56,7 +56,7 @@ def get_cube_status(connection: 'Connection', id: str):
     """Get the status of a specific cube in a specific project.
 
     Args:
-        connection: MicroStrategy REST API connection object.
+        connection: Strategy One REST API connection object.
         id (str): Unique ID of the cube you wish to extract information
             from.
 
@@ -78,7 +78,7 @@ def cube_instance(
     used by other requests.
 
     Args:
-        connection: MicroStrategy REST API connection object.
+        connection: Strategy One REST API connection object.
         cube_id (str): Unique ID of the cube you wish to extract information
             from.
         offset (int, optional): Starting point within the collection of returned
@@ -115,7 +115,7 @@ def cube_instance_id(
     using the in-memory instance created by cube_instance().
 
     Args:
-        connection: MicroStrategy REST API connection object.
+        connection: Strategy One REST API connection object.
         cube_id (str): Unique ID of the cube you wish to extract information
             from.
         instance_id (str): Unique ID of the in-memory instance of a published
@@ -175,7 +175,7 @@ def cube_single_attribute_elements(
     """Get elements of a specific attribute of a specific cube.
 
     Args:
-        connection: MicroStrategy REST API connection object.
+        connection: Strategy One REST API connection object.
         cube_id (str): Unique ID of the cube you wish to extract information
             from.
         attribute_id (str): Unique ID of the attribute in the cube.
@@ -213,7 +213,7 @@ def publish(connection: 'Connection', cube_id: str):
     """Publish a specific cube in a specific project.
 
     Args:
-        connection: MicroStrategy REST API connection object.
+        connection: Strategy One REST API connection object.
         cube_id (str): Unique ID of the cube you wish to publish.
 
     Returns:
@@ -230,7 +230,7 @@ def status(connection: 'Connection', cube_id: str, throw_error: bool = True):
     which is a bit vector.
 
     Args:
-        connection: MicroStrategy REST API connection object.
+        connection: Strategy One REST API connection object.
         cube_id (str): Unique ID of the cube you wish to extract information
             from.
         throw_error (bool, optional): Flag indicates if the error should be
@@ -313,7 +313,7 @@ def create_cube(
     """Create a new cube.
 
     Args:
-        connection (Connection): MicroStrategy REST API connection object.
+        connection (Connection): Strategy One REST API connection object.
         body (dict): JSON-formatted data used to create cube.
         project_id (str, optional): Project ID.
         cube_template_id (str, optional): If specified, new created cube will
@@ -375,7 +375,7 @@ def get_cube(
     """Get cube by specific ID.
 
     Args:
-        connection (Connection): MicroStrategy REST API connection object.
+        connection (Connection): Strategy One REST API connection object.
         id (str): Cube ID.
         project_id (str, optional): Project ID.
         show_expression_as (ExpressionFormat, str, optional): Specify how
@@ -434,7 +434,7 @@ def update_cube(
     """Update cube specified by ID.
 
     Args:
-        connection (Connection): MicroStrategy REST API connection object.
+        connection (Connection): Strategy One REST API connection object.
         id (str): Cube ID.
         body (dict): JSON-formatted data used to update cube.
         project_id (str, optional): Project ID.
@@ -489,7 +489,7 @@ def get_applicable_vldb_settings(
     """Get metadata of advanced VLDB settings for cube.
 
     Args:
-        connection (Connection): MicroStrategy REST API connection object.
+        connection (Connection): Strategy One REST API connection object.
         id (str): Cube ID.
         project_id (str, optional): Project ID.
 

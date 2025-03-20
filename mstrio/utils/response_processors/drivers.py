@@ -9,7 +9,7 @@ def get_all(connection: Connection) -> list[dict]:
     """Get information for all drivers.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
 
     Returns:
         list of dict representing driver objects
@@ -22,7 +22,7 @@ def get(connection: Connection, id: str) -> dict:
     """Get driver by a specific ID.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id: ID of the driver
 
     Returns:
@@ -40,7 +40,7 @@ def update(
     """Update a driver.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id: ID of the driver
         body: Driver update info.
 

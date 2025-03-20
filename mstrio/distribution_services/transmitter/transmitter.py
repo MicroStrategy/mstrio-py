@@ -38,6 +38,8 @@ class TransmitterDeliveryType(AutoName):
     IPHONE = auto()
     IPAD = auto()
     ANDROID = auto()
+    ONEDRIVE = auto()
+    SHAREPOINT = auto()
     UNSUPPORTED = auto()
 
 
@@ -114,7 +116,7 @@ def list_transmitters(
     Optionally filter the transmitters by specifying filters.
 
     Args:
-        connection(object): MicroStrategy connection object
+        connection(object): Strategy One connection object
         to_dictionary: If True returns a list of transmitter dicts,
             otherwise returns a list of transmitter objects
         limit: limit the number of elements returned. If `None` (default), all
@@ -130,7 +132,7 @@ def list_transmitters(
 
 @class_version_handler('11.3.0100')
 class Transmitter(Entity, DeleteMixin):
-    """Object representation of MicroStrategy Transmitter object
+    """Object representation of Strategy One Transmitter object
 
     Attributes:
         name: transmitter's name
@@ -180,11 +182,10 @@ class Transmitter(Entity, DeleteMixin):
             transmitters.update_transmitter,
             "put",
         ),
-        'comments': (objects_processors.update, 'partial_put'),
+        ('comments', 'owner'): (objects_processors.update, 'partial_put'),
     }
     _PATCH_PATH_TYPES = {
-        "name": str,
-        "description": str,
+        **Entity._PATCH_PATH_TYPES,
         "email_transmitter_properties": dict,
     }
 
@@ -201,7 +202,7 @@ class Transmitter(Entity, DeleteMixin):
             fetching.
 
         Args:
-            connection: MicroStrategy connection object returned by
+            connection: Strategy One connection object returned by
                 `connection.Connection()`.
             id (str, optional): Identifier of a pre-existing transmitter
             name (str, optional): Name of the pre-existing transmitter
@@ -254,7 +255,7 @@ class Transmitter(Entity, DeleteMixin):
         """Create transmitter.
 
         Args:
-            connection: MicroStrategy connection object returned by
+            connection: Strategy One connection object returned by
                 `connection.Connection()`.
             delivery_type: type of the transmitter
             name (str): transmitter's name
@@ -293,6 +294,7 @@ class Transmitter(Entity, DeleteMixin):
         description: str | None = None,
         email_transmitter_properties: dict | EmailTransmitterProperties | None = None,
         comments: str | None = None,
+        owner: str | User | None = None,
     ):
         """Alter transmitter properties.
 
@@ -303,12 +305,15 @@ class Transmitter(Entity, DeleteMixin):
                 to email transmitter. Only in transmitter with type `email`
                 altering those properties is possible
             comments: long description of the transmitter
+            owner: (str, User, optional): owner of the transmitter object
         """
         email_transmitter_properties = (
             email_transmitter_properties.to_dict()
             if isinstance(email_transmitter_properties, EmailTransmitterProperties)
             else email_transmitter_properties
         )
+        if isinstance(owner, User):
+            owner = owner.id
         func = self.alter
         args = get_args_from_func(func)
         defaults = get_default_args_from_func(func)

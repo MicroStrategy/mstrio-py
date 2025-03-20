@@ -20,7 +20,7 @@ def create_filter(
     based on the definition provided in request body.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         body (dict): Filter creation body
         error_msg (str, optional): Custom Error Message for Error Handling
         show_expression_as (str, optional): specify how expressions should be
@@ -66,7 +66,7 @@ def get_filter(
     If both are provided, only the changeset ID is used.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id (str): Filter ID. The ID can be:
             - the object ID used in the metadata.
             - the object ID used in the changeset, but not yet committed
@@ -114,7 +114,7 @@ def update_filter(
     based on the definition provided in the request body.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id (str): Filter ID. The ID can be:
             - the object ID used in the metadata.
             - the object ID used in the changeset, but not yet committed

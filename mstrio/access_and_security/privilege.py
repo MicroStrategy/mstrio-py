@@ -15,10 +15,10 @@ if TYPE_CHECKING:
 
 @class_version_handler('11.2.0100')
 class Privilege(EntityBase):
-    """Object representation of MicroStrategy Privilege object.
+    """Object representation of Strategy One object.
 
     Attributes:
-        connection: A MicroStrategy connection object
+        connection: A Strategy One connection object
         id: privilege ID
         name: privilege name
         description: privilege description
@@ -35,7 +35,7 @@ class Privilege(EntityBase):
         privileges use the `list_privileges()` method.
 
         Args:
-            connection: MicroStrategy connection object returned by
+            connection: Strategy One connection object returned by
                 `connection.Connection()`.
             name: exact name of privilege
             id: ID of privilege
@@ -92,7 +92,7 @@ class Privilege(EntityBase):
         format.
 
         Args:
-            connection: MicroStrategy connection object returned by
+            connection: Strategy One connection object returned by
                 `connection.Connection()`.
             to_dictionary: If `True` returns dict, by default (False) returns
                 User objects.
@@ -259,14 +259,14 @@ class PrivilegeList:
     """Class for browsing MSTR privileges.
 
     Attributes:
-        connection: A MicroStrategy connection object
+        connection: A Strategy One connection object
     """
 
     def __init__(self, connection: Connection):
         """Initialize PrivilegeList object.
 
         Args:
-            connection: MicroStrategy connection object returned by
+            connection: Strategy One connection object returned by
                 `connection.Connection()`.
         """
         self.connection = connection

@@ -3,15 +3,15 @@ from base64 import b64encode
 
 
 class Encoder:
-    """Internal method for converting a Pandas DataFrame to MicroStrategy
+    """Internal method for converting a Pandas DataFrame to Strategy One
     compliant base64 encoded JSON.
 
-    When creating a data set, MicroStrategy APIs require the tabular data to
+    When creating a data set, Strategy One APIs require the tabular data to
     have been transformed first into JSON and then into a base 64 encoded string
     before it is transmitted to the Intelligence Server via the REST API to
     create the data set. This class uses Pandas to handle transforming
     the DataFrame into a JSON representation of the data. For single-table data
-    sets, MicroStrategy APIs require the JSON data to be formatted using
+    sets, Strategy One APIs require the JSON data to be formatted using
     the 'records' orientation from Pandas. Conversely, multi-table data sets
     require the JSON data to have a 'values' orientation. Based on the data set
     type, the correct encoding strategy is applied and the data is then encoded.

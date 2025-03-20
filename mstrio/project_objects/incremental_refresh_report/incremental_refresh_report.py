@@ -18,6 +18,7 @@ from mstrio.project_objects import OlapCube
 from mstrio.project_objects.datasets.helpers import AdvancedProperties, Template
 from mstrio.server import Job
 from mstrio.types import ObjectSubTypes, ObjectTypes
+from mstrio.users_and_groups.user import User
 from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, MoveMixin
 from mstrio.utils.enum_helper import AutoName, get_enum_val
 from mstrio.utils.helper import (
@@ -69,7 +70,7 @@ def list_incremental_refresh_reports(
         then its value is overwritten by `project_id` from `connection` object.
 
     Args:
-        connection: MicroStrategy connection object returned by
+        connection: Strategy One connection object returned by
             `connection.Connection()`
         name (string, optional): value the search pattern is set to, which
             will be applied to the names of reports being searched
@@ -163,7 +164,7 @@ def list_incremental_refresh_reports(
 class IncrementalRefreshReport(
     Entity, CopyMixin, MoveMixin, DeleteMixin, ModelVldbMixin
 ):
-    """Python representation of MicroStrategy Incremental Refresh Report object.
+    """Python representation of Strategy One Incremental Refresh Report object.
 
     Attributes:
         name: (str) Name of the Incremental Refresh Report
@@ -198,6 +199,7 @@ class IncrementalRefreshReport(
         'template': Template.from_dict,
         'filter': Expression.from_dict,
         'advanced_properties': AdvancedProperties.from_dict,
+        'owner': User.from_dict,
     }
 
     _API_GETTERS = {
@@ -250,11 +252,11 @@ class IncrementalRefreshReport(
             'is_embedded',
             'folder_id',
             'hidden',
+            'owner',
         ): (objects_processors.update, 'partial_put'),
     }
     _PATCH_PATH_TYPES = {
-        'name': str,
-        'description': str,
+        **Entity._PATCH_PATH_TYPES,
         'destination_folder_id': str,
         'is_embedded': bool,
         'target_cube': dict,
@@ -262,7 +264,6 @@ class IncrementalRefreshReport(
         'increment_type': str,
         'filter': dict,
         'advanced_properties': dict,
-        'hidden': bool,
     }
     _MODEL_VLDB_API = {
         'GET_ADVANCED': refresh_api.get_incremental_refresh_report,
@@ -285,7 +286,7 @@ class IncrementalRefreshReport(
         """Initialize an Incremental Refresh Report object.
 
         Args:
-            connection: MicroStrategy connection object returned by
+            connection: Strategy One connection object returned by
                 `connection.Connection()`
             id (str, optional): ID of the Incremental Refresh Report
             name (str, optional): Name of the Incremental Refresh Report
@@ -455,7 +456,7 @@ class IncrementalRefreshReport(
         """Create a new Incremental Refresh Report.
 
         Args:
-            connection: MicroStrategy connection object returned by
+            connection: Strategy One connection object returned by
                 `connection.Connection()`
             name (str, optional): Name of the Incremental Refresh Report
             destination_folder (Folder, str): Folder object or folder ID where
@@ -579,7 +580,7 @@ class IncrementalRefreshReport(
         from an existing Intelligent Cube.
 
         Args:
-            connection: MicroStrategy connection object returned by
+            connection: Strategy One connection object returned by
                 `connection.Connection()`
             name (str, optional): Name of the Incremental Refresh Report
             destination_folder (Folder, str): Folder object or folder ID where
@@ -627,6 +628,8 @@ class IncrementalRefreshReport(
     def alter(
         self,
         name: str | None = None,
+        comments: str | None = None,
+        owner: str | User | None = None,
         target_cube: OlapCube | SchemaObjectReference | dict | None = None,
         increment_type: IncrementType | str | None = None,
         refresh_type: RefreshType | str | None = None,
@@ -640,6 +643,8 @@ class IncrementalRefreshReport(
 
         Args:
             name (str, optional): Name of the Incremental Refresh Report.
+            comments (str, optional): Long description of the report
+            owner: (str, User, optional): owner of the report
             target_cube (OlapCube, SchemaObjectReference, dict, optional):
                 Reference to an Intelligent Cube
             increment_type (IncrementType, str, optional): Mode the report will
@@ -657,6 +662,8 @@ class IncrementalRefreshReport(
             primary_locale (str, optional): The primary locale of the object,
                 in the IETF BCP 47 language tag format, such as "en-US"
         """
+        if isinstance(owner, User):
+            owner = owner.id
         if isinstance(target_cube, OlapCube):
             target_cube = SchemaObjectReference(
                 object_id=target_cube.id,

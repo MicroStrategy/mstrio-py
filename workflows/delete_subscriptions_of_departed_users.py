@@ -19,7 +19,7 @@ def delete_subscriptions_of_departed_users(connection: "Connection") -> None:
 
     Args:
         Args:
-        connection: MicroStrategy connection object returned by
+        connection: Strategy One connection object returned by
             `connection.Connection()`
     """
 

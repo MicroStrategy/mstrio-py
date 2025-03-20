@@ -6,7 +6,7 @@ from mstrio.utils.version_helper import class_version_handler
 
 @class_version_handler('11.3.0600')
 class FTPSubscription(Subscription):
-    """Class representation of MicroStrategy FTP Subscription object."""
+    """Class representation of Strategy One FTP Subscription object."""
 
     def __init__(
         self,
@@ -21,7 +21,7 @@ class FTPSubscription(Subscription):
         Specify either `project_id` or `project_name`.
         When `project_id` is provided (not `None`), `project_name` is omitted.
         Args:
-            connection (Connection): MicroStrategy connection object returned
+            connection (Connection): Strategy One connection object returned
                 by `connection.Connection()`
             id (str, optional): ID of the subscription to be initialized, only
                 id or subscription_id have to be provided at once, if both are
@@ -63,7 +63,7 @@ class FTPSubscription(Subscription):
     ) -> "FTPSubscription":
         """Creates a new FTP subscription.
         Args:
-            connection (Connection): a MicroStrategy connection object
+            connection (Connection): a Strategy One connection object
             name (str): name of the subscription
             space_delimiter(str): space delimiter,
             filename (str): the filename that will be delivered when

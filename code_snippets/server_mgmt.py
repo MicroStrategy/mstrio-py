@@ -121,4 +121,5 @@ env.server_settings.import_from(file=FILE_NAME)
 # update some settings of a server
 env.server_settings.allowUserLoginWithFullName = True
 env.server_settings.minCharsPasswordChanges = 1
+env.server_settings.enableUserManagementWithoutEmail = True
 env.server_settings.update()

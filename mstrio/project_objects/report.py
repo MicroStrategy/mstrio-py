@@ -1,8 +1,8 @@
 import logging
+from functools import partial
+
 import pandas as pd
 import requests
-
-from functools import partial
 from tqdm.auto import tqdm
 
 from mstrio import config
@@ -76,7 +76,7 @@ def list_reports(
         then its value is overwritten by `project_id` from `connection` object.
 
     Args:
-        connection: MicroStrategy connection object returned by
+        connection: Strategy One connection object returned by
             `connection.Connection()`
         name (string, optional): value the search pattern is set to, which
             will be applied to the names of reports being searched
@@ -159,7 +159,7 @@ class Report(
     purposes.
 
     Attributes:
-        connection: MicroStrategy connection object returned by
+        connection: Strategy One connection object returned by
             `connection.Connection()`.
         id: Identifier of a pre-existing report containing the required
             data.
@@ -215,7 +215,14 @@ class Report(
     _SIZE_LIMIT = 10000000  # this sets desired chunk size in bytes
 
     _API_PATCH: dict = {
-        ('name', 'description', 'abbreviation', 'hidden', 'folder_id'): (
+        (
+            'name',
+            'description',
+            'abbreviation',
+            'hidden',
+            'folder_id',
+            'owner',
+        ): (
             objects_processors.update,
             'partial_put',
         )
@@ -233,7 +240,7 @@ class Report(
         """Initialize an instance of a report.
 
         Args:
-            connection: MicroStrategy connection object returned by
+            connection: Strategy One connection object returned by
                 `connection.Connection()`.
             id (str): Identifier of a pre-existing report containing
                 the required data.
@@ -308,6 +315,8 @@ class Report(
         description: str | None = None,
         abbreviation: str | None = None,
         hidden: bool | None = None,
+        comments: str | None = None,
+        owner: str | User | None = None,
     ):
         """Alter Report properties.
 
@@ -315,8 +324,12 @@ class Report(
             name: new name of the Report
             description: new description of the Report
             abbreviation: new abbreviation of the Report
-            hidden: Specifies whether the metric is hidden
+            hidden: Specifies whether the Report is hidden
+            comments (str, optional): long description of the Report
+            owner: (str, User, optional): owner of the Report
         """
+        if isinstance(owner, User):
+            owner = owner.id
         func = self.alter
         args = func.__code__.co_varnames[: func.__code__.co_argcount]
         defaults = func.__defaults__  # type: ignore

@@ -1,5 +1,29 @@
 # Changelog
 
+## 11.5.3.101 - 2025/03/21
+
+### New features
+
+- added `list_timezones` method and `TimeZone` class in `mstrio.server.timezone` to allow management of Time Zone internationalization objects
+
+### Minor changes
+
+- allowed to provide a string as a qualification when using the `create` and `alter` methods of the `Filter` and `SecurityFilter` classes
+- added `alias` argument to `alter` method to `Project` class to allow setting project alias
+- added `create_profile_folder` method to `User` class to allow creating profile folders
+- added `username`, `user_id` and `object_name` properties to `Job` class
+- added `create_copy` methods to `Subscription`, `Schedule`, `Transformation` `Event`
+- updated `alter` method in a number of classes to allow changing ownership of their corresponding objects
+
+### Bug fixes
+
+- fixed an error with fetching all `Attribute` object properties listed in a project other than the one selected in the `Connection` object
+- fixed `User.add_address()` erroneously allowing to not pass `name` or `address` arguments
+
+### Removed
+
+- removed the `Dossier` class as it is deprecated. From now on, please use only the `Dashboard` class instead
+
 ## 11.5.2.101 - 2025/02/14
 
 ### New features

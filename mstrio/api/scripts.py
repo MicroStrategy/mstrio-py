@@ -8,10 +8,10 @@ from mstrio.utils.error_handlers import ErrorHandler
 def list_scripts(
     connection: Connection, project_id: str, to_dictionary=True
 ) -> list[dict] | list[Object]:
-    """Get list of scripts.
+    """Get a list of scripts.
 
     Args:
-        connection (Connection): MicroStrategy connection object returned by
+        connection (Connection): Strategy One connection object returned by
             `connection.Connection()`
         project_id (str): ID of the project
         to_dictionary (bool, optional): If True returns dict (default),
@@ -32,14 +32,14 @@ def create_script(
     """Create a script.
 
     Args:
-        connection (Connection): MicroStrategy connection object returned by
+        connection (Connection): Strategy One connection object returned by
             `connection.Connection()`
         body (dict): JSON-formatted body of the new script
         project_id (str): ID of the project
         error_msg (str, optional): Custom Error Message for Error Handling
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server.
+        HTTP response object returned by the Strategy One REST server.
     """
     return connection.post(
         endpoint='/api/scripts',
@@ -55,14 +55,14 @@ def delete_script(
     """Delete a script.
 
     Args:
-        connection (Connection): MicroStrategy connection object returned by
+        connection (Connection): Strategy One connection object returned by
             `connection.Connection()`
         id (str): ID of the script to be deleted
         project_id (str): ID of the project
         error_msg (str, optional): Custom Error Message for Error Handling
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server.
+        HTTP response object returned by the Strategy One REST server.
     """
     return connection.delete(
         endpoint=f'/api/scripts/{id}', headers={'X-MSTR-ProjectID': project_id}

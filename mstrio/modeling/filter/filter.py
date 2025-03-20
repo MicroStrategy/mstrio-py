@@ -11,9 +11,11 @@ from mstrio.users_and_groups import User
 from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, MoveMixin
 from mstrio.utils.enum_helper import get_enum_val
 from mstrio.utils.helper import (
+    construct_expression_body,
     delete_none_values,
     filter_params_for_func,
     find_object_with_name,
+    get_string_exp_body,
     get_valid_project_id,
 )
 from mstrio.utils.response_processors import objects as objects_processors
@@ -51,7 +53,7 @@ def list_filters(
         then its value is overwritten by `project_id` from `connection` object.
 
     Args:
-        connection (object): MicroStrategy connection object returned by
+        connection (object): Strategy One connection object returned by
             `connection.Connection()`
         name (str, optional): value the search pattern is set to, which
             will be applied to the names of filters being searched
@@ -123,7 +125,7 @@ def list_filters(
 
 @class_version_handler('11.3.0000')
 class Filter(Entity, CopyMixin, DeleteMixin, MoveMixin):
-    """Python representation of MicroStrategy Filter object.
+    """Python representation of Strategy One Filter object.
 
     Attributes:
         name: name of the filter
@@ -203,11 +205,11 @@ class Filter(Entity, CopyMixin, DeleteMixin, MoveMixin):
             'folder_id',
             'hidden',
             'comments',
+            'owner',
         ): (objects_processors.update, 'partial_put'),
     }
     _PATCH_PATH_TYPES = {
-        'name': str,
-        'description': str,
+        **Entity._PATCH_PATH_TYPES,
         'destination_folder_id': str,
         'qualification': dict,
         'is_embedded': bool,
@@ -226,7 +228,7 @@ class Filter(Entity, CopyMixin, DeleteMixin, MoveMixin):
         """Initialize filter object by its identifier.
 
         Args:
-            connection: MicroStrategy connection object returned
+            connection: Strategy One connection object returned
                 by `connection.Connection()`
             id (str, optional): identifier of a pre-existing filter containing
                 the required data. Defaults to None.
@@ -292,7 +294,7 @@ class Filter(Entity, CopyMixin, DeleteMixin, MoveMixin):
         connection: "Connection",
         name: str,
         destination_folder: Folder | str,
-        qualification: Expression | dict | None = None,
+        qualification: Expression | dict | str | None = None,
         description: str | None = None,
         is_embedded: bool | None = False,
         primary_locale: str | None = None,
@@ -302,15 +304,15 @@ class Filter(Entity, CopyMixin, DeleteMixin, MoveMixin):
         """Create a new filter in a specific project.
 
         Args:
-            connection: MicroStrategy connection object returned by
+            connection: Strategy One connection object returned by
                 `connection.Connection()`
             name (str): name of a new filter
             destination_folder (str or object): a globally unique identifier or
                 unique folder name used to distinguish between metadata objects
                 within the same project
-            qualification (Expression or dict, optional): new filter definition
-                written as an expression tree over predicate nodes. It can be
-                provided as `Qualification` object or dictionary.
+            qualification (Expression, dict or str, optional): new filter
+                qualification definition. It can be provided as `Expression`
+                object, dictionary or string representing filter expression.
             description (str, optional): optional description of a new
                 filter
             is_embedded (bool, optional): if true indicates that the target
@@ -353,11 +355,8 @@ class Filter(Entity, CopyMixin, DeleteMixin, MoveMixin):
             }
         }
         body = delete_none_values(body, recursion=True)
-        body["qualification"] = (
-            qualification.to_dict()
-            if isinstance(qualification, Expression)
-            else qualification
-        )
+        body['qualification'] = construct_expression_body(qualification)
+
         response = filters.create_filter(
             connection=connection,
             body=body,
@@ -383,10 +382,11 @@ class Filter(Entity, CopyMixin, DeleteMixin, MoveMixin):
         name: str | None = None,
         description: str | None = None,
         destination_folder_id: str | None = None,
-        qualification: Expression | dict | None = None,
+        qualification: Expression | dict | str | None = None,
         is_embedded: bool | None = None,
         hidden: bool | None = None,
         comments: str | None = None,
+        owner: str | User | None = None,
     ):
         """Alter the filter properties.
 
@@ -395,19 +395,25 @@ class Filter(Entity, CopyMixin, DeleteMixin, MoveMixin):
             description(str, optional): description of a filter
             destination_folder_id (str, optional): a globally unique identifier
                 used to distinguish between objects within the same project
-            qualification (Expression, dict, optional): the filter definition
-                written as an expression tree over predicate nodes
+            qualification (Expression, dict or str, optional): new filter
+                qualification definition. It can be provided as `Expression`
+                object, dictionary or string representing filter expression.
             is_embedded (bool, optional): if true indicates that the target
                 object of this reference is embedded within this object
             hidden (bool, optional): Specifies whether the object is hidden.
                 Default value: False.
             comments (str, optional): long description of the filter
+            owner: (str, User, optional): owner of the filter
         """
         qualification = (
             {}
             if self.qualification is None and qualification is None
             else qualification
         )
+        if isinstance(qualification, str):
+            qualification = get_string_exp_body(qualification)
+        if isinstance(owner, User):
+            owner = owner.id
         properties = filter_params_for_func(self.alter, locals(), exclude=['self'])
         self._alter_properties(**properties)
 

@@ -60,7 +60,7 @@ def list_documents(
     If `to_dictionary` is True, `to_dataframe` is omitted.
 
     Args:
-        connection (Connection): MicroStrategy connection object returned
+        connection (Connection): Strategy One connection object returned
             by 'connection.Connection()'
         to_dictionary (bool, optional): if True, return Documents as
             list of dicts
@@ -105,7 +105,7 @@ def list_documents_across_projects(
     If `to_dictionary` is True, `to_dataframe` is omitted.
 
     Args:
-        connection (Connection): MicroStrategy connection object returned
+        connection (Connection): Strategy One connection object returned
             by 'connection.Connection()'
         name (string, optional): characters that the document name must contain
         to_dictionary (bool, optional): if True, return Documents as
@@ -162,7 +162,7 @@ class Document(
     DeleteMixin,
     ContentCacheMixin,
 ):
-    """Python representation of MicroStrategy Document object
+    """Python representation of Strategy One Document object
 
     _CACHE_TYPE is a variable used by ContentCache class for cache filtering
     purposes.
@@ -172,7 +172,7 @@ class Document(
     _CACHE_TYPE = CacheSource.Type.DOCUMENT
     _API_GETTERS = {**Entity._API_GETTERS, 'recipients': library.get_document}
     _API_PATCH = {
-        ('name', 'description', 'folder_id', 'hidden'): (
+        ('name', 'description', 'folder_id', 'hidden', 'owner'): (
             objects_processors.update,
             'partial_put',
         )
@@ -190,7 +190,7 @@ class Document(
         """Initialize Document object by passing name or id.
 
         Args:
-            connection (object): MicroStrategy connection object returned
+            connection (object): Strategy One connection object returned
                 by `connection.Connection()`
             name (string, optional): name of Document
             id (string, optional): ID of Document
@@ -257,8 +257,10 @@ class Document(
         description: str | None = None,
         folder_id: Folder | str | None = None,
         hidden: bool | None = None,
+        comments: str | None = None,
+        owner: str | User | None = None,
     ):
-        """Alter Document name, description and/or folder id.
+        """Alter Document's basic properties.
 
         Args:
             name (string, optional): new name of the Document
@@ -268,7 +270,11 @@ class Document(
                 project. It is possible for two metadata objects in different
                 projects to have the same Object ID.
             hidden: Specifies whether the document is hidden
+            comments (str, optional): long description of the Document
+            owner: (str | User, optional): owner of the Document
         """
+        if isinstance(owner, User):
+            owner = owner.id
         description = description or self.description
         properties = filter_params_for_func(self.alter, locals(), exclude=['self'])
         self._alter_properties(**properties)

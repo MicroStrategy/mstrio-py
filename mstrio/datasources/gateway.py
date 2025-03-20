@@ -15,7 +15,7 @@ def list_gateways(
     Optionally filter the gateways by specifying filters.
 
     Args:
-        connection (Connection): MicroStrategy connection object
+        connection (Connection): Strategy One connection object
         to_dictionary (bool): If True returns a list of Gateway dicts,
            otherwise returns a list of Gateway objects
        **filters: Available filter parameters:
@@ -26,7 +26,7 @@ def list_gateways(
 
 @class_version_handler('11.3.0960')
 class Gateway(EntityBase):
-    """Object representation of Microstrategy Gateway
+    """Object representation of Strategy One Gateway
 
     Attributes:
         id: Gateway's ID
@@ -61,7 +61,7 @@ class Gateway(EntityBase):
         When `id` is provided, `name` is omitted.
 
         Args:
-            connection (Connection): MicroStrategy connection object
+            connection (Connection): Strategy One connection object
             id (str): ID of Driver
             name (str): name of Driver
         """
@@ -104,7 +104,7 @@ class Gateway(EntityBase):
         Optionally filter the gateways by specifying filters.
 
         Args:
-            connection (Connection): MicroStrategy connection object
+            connection (Connection): Strategy One connection object
             to_dictionary (bool): If True returns a list of Gateway dicts,
                otherwise returns a list of Gateway objects
            **filters: Available filter parameters:

@@ -14,7 +14,7 @@ def get_transformation(
     """Get definition of a single transformation by id
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id: ID of an transformation
         changeset_id: ID of a changeset
         show_expression_as: Specifies the format in which the expressions
@@ -44,7 +44,7 @@ def create_transformation(
     based on the definition provided in request body.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         body: Transformation creation data
         show_expression_as: Specifies the format in which the expressions are
            returned in response
@@ -79,7 +79,7 @@ def update_transformation(
     It returns the transformation's updated definition in the changeset.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id: ID of a Transformation
         body: Transformation update data
         show_expression_as: Specifies the format in which the expressions

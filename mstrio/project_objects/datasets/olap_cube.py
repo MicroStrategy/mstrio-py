@@ -15,6 +15,7 @@ from mstrio.modeling import (
 from mstrio.object_management import SearchPattern, full_search
 from mstrio.server import Job
 from mstrio.types import ExtendedType, ObjectSubTypes, ObjectTypes
+from mstrio.users_and_groups.user import User
 from mstrio.utils.enum_helper import get_enum_val
 from mstrio.utils.helper import (
     exception_handler,
@@ -65,7 +66,7 @@ def list_olap_cubes(
         When `project_id` is `None` and `project_name` is `None`,
         then its value is overwritten by `project_id` from `connection` object.
     Args:
-        connection: MicroStrategy connection object returned by
+        connection: Strategy One connection object returned by
             `connection.Connection()`
         name (string, optional): value the search pattern is set to, which
             will be applied to the names of olap cubes being searched
@@ -116,7 +117,7 @@ class OlapCube(ModelVldbMixin, _Cube):
     Cube.
 
     Attributes:
-        connection: MicroStrategy connection object returned by
+        connection: Strategy One connection object returned by
             `connection.Connection()`.
         id (str): Identifier of a pre-existing cube.
         instance_id (str): Identifier of a cube instance if already initialized,
@@ -183,7 +184,7 @@ class OlapCube(ModelVldbMixin, _Cube):
         ): (cube_processors.update, 'partial_put'),
     }
     _PATCH_PATH_TYPES = {
-        **_Cube._API_PATCH,
+        **_Cube._PATCH_PATH_TYPES,
         'template': dict,
         'filter': dict,
         'options': dict,
@@ -221,7 +222,7 @@ class OlapCube(ModelVldbMixin, _Cube):
             uniquely identify cube.
 
         Args:
-            connection: MicroStrategy connection object returned by
+            connection: Strategy One connection object returned by
                 `connection.Connection()`.
             id (str): Identifier of a pre-existing cube.
             name (str): Name of a cube.
@@ -333,7 +334,7 @@ class OlapCube(ModelVldbMixin, _Cube):
     ) -> list[dict] | list[pd.DataFrame]:
         """Get all metrics available on I-Server.
         Args:
-            connection: MicroStrategy connection object returned by
+            connection: Strategy One connection object returned by
                 `connection.Connection()`
             basic_info_only(boolean, optional): When True (default value) only
                 values of `id`, `name` and `type` will be returned for each
@@ -358,7 +359,7 @@ class OlapCube(ModelVldbMixin, _Cube):
     ) -> list[dict] | list[pd.DataFrame]:
         """Get all attributes available on I-Server.
         Args:
-            connection: MicroStrategy connection object returned by
+            connection: Strategy One connection object returned by
                 `connection.Connection()`
             basic_info_only(boolean, optional): When True (default value) only
                 values of `id`, `name` and `type` will be returned for each
@@ -383,7 +384,7 @@ class OlapCube(ModelVldbMixin, _Cube):
     ) -> list[dict] | list[pd.DataFrame]:
         """Get all attribute forms available on I-Server.
         Args:
-            connection: MicroStrategy connection object returned by
+            connection: Strategy One connection object returned by
                 `connection.Connection()`
             basic_info_only(boolean, optional): When True (default value) only
                 values of `id`, `name` and `type` will be returned for each
@@ -468,7 +469,7 @@ class OlapCube(ModelVldbMixin, _Cube):
             cases.
 
         Args:
-            connection: MicroStrategy connection object returned by
+            connection: Strategy One connection object returned by
                 `connection.Connection()`.
             name (str): OLAP Cube name.
             folder_id (str): ID of the folder where OLAP Cube should be saved.
@@ -720,6 +721,9 @@ class OlapCube(ModelVldbMixin, _Cube):
         name: str | None = None,
         description: str | None = None,
         abbreviation: str | None = None,
+        hidden: bool | None = None,
+        comments: str | None = None,
+        owner: str | User | None = None,
         template: Template | dict | None = None,
         filter: Expression | dict | None = None,
         options: CubeOptions | dict | None = None,
@@ -742,6 +746,9 @@ class OlapCube(ModelVldbMixin, _Cube):
             name (str, optional): New name for the OLAP Cube.
             description (str, optional): New description for the OLAP Cube.
             abbreviation (str, optional): New abbreviation for the OLAP Cube.
+            hidden: Specifies whether the OLAP Cube is hidden
+            comments: New long description of the OLAP Cube
+            owner: (str, User, optional): Owner of the OLAP Cube
             template (Template, dict, str, optional): Template defining
                 OLAP Cube structure with references to attributes in
                 rows and to metrics in columns.
@@ -764,6 +771,8 @@ class OlapCube(ModelVldbMixin, _Cube):
             None
         """
 
+        if isinstance(owner, User):
+            owner = owner.id
         if template:
             template = self.__convert_template_to_dict(template)
 
@@ -772,8 +781,8 @@ class OlapCube(ModelVldbMixin, _Cube):
         if not arguments:
             msg = (
                 "Please provide at least one of the following parameters to alter: "
-                "name, description, abbreviation, template, filter, options or "
-                "time_based_settings."
+                "name, description, abbreviation, hidden, comments, owner, template, "
+                "filter, options or time_based_settings."
             )
             raise ValueError(msg)
 

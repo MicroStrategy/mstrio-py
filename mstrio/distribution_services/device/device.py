@@ -12,6 +12,7 @@ from mstrio.distribution_services.device.device_properties import (
     FtpDeviceProperties,
     IOSDeviceProperties,
     PrinterDeviceProperties,
+    SharePointDeviceProperties,
 )
 from mstrio.distribution_services.transmitter import Transmitter
 from mstrio.types import ObjectTypes
@@ -43,6 +44,8 @@ class DeviceType(AutoName):
     IPHONE = auto()
     IPAD = auto()
     ANDROID = auto()
+    ONEDRIVE = auto()
+    SHAREPOINT = auto()
     ALL = auto()
     UNSUPPORTED = auto()
 
@@ -54,7 +57,7 @@ def list_devices(
     devices by specifying filters.
 
     Args:
-        connection: MicroStrategy connection object returned by
+        connection: Strategy One connection object returned by
             `connection.Connection()`
         to_dictionary: If True returns dict, by default (False) returns
             Device objects.
@@ -108,6 +111,8 @@ class Device(Entity, DeleteMixin):
         'ipad': IOSDeviceProperties,
         'iphone': IOSDeviceProperties,
         'printer': PrinterDeviceProperties,
+        'onedrive': SharePointDeviceProperties,
+        'sharepoint': SharePointDeviceProperties,
     }
 
     @staticmethod
@@ -159,8 +164,7 @@ class Device(Entity, DeleteMixin):
         'comments': (objects_processors.update, 'partial_put'),
     }
     _PATCH_PATH_TYPES = {
-        'name': str,
-        'description': str,
+        **Entity._PATCH_PATH_TYPES,
         'device_properties': dict,
     }
 
@@ -215,7 +219,7 @@ class Device(Entity, DeleteMixin):
         """Create a new device.
 
         Args:
-            connection: MicroStrategy connection object returned by
+            connection: Strategy One connection object returned by
                 `connection.Connection()`
             name: device object name
             device_type: type of the device

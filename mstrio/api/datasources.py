@@ -24,7 +24,7 @@ def get_available_dbms(connection, error_msg=None):
     """Get information for all available database management systems (DBMSs).
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
@@ -39,7 +39,7 @@ def get_available_db_drivers(connection, error_msg=None):
     """Get information for all available database drivers.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
@@ -53,7 +53,7 @@ def get_datasource_instance(connection, id, error_msg=None):
     """Get information for a specific database source.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id (string): ID
         error_msg (string, optional): Custom Error Message for Error Handling
 
@@ -75,7 +75,7 @@ def delete_datasource_instance(connection, id, error_msg=None):
     """Delete a specific database source based on id.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id (string): ID
         error_msg (string, optional): Custom Error Message for Error Handling
 
@@ -90,7 +90,7 @@ def update_datasource_instance(connection, id, body, error_msg=None):
     """Update a specific database source based on id.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id (string): ID
         body: update operation info
         error_msg (string, optional): Custom Error Message for Error Handling
@@ -122,7 +122,7 @@ def create_datasource_instance(connection, body, error_msg=None):
     """Create a specific database source.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id (string): ID
         body: Datasource info
         error_msg (string, optional): Custom Error Message for Error Handling
@@ -153,7 +153,7 @@ def get_datasource_namespaces(
     """Get namespaces for a specific datasource.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id (str): Database ID
         project_id (str, optional): Project ID
         refresh (bool, optional): Force refresh
@@ -206,7 +206,7 @@ def get_datasource_instances(
     """Get information for all database sources.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         ids: list of datasources ids
         database_type: list of types (names) of databases
         project: id (str) of a project or instance of an Project class
@@ -264,7 +264,7 @@ def get_datasource_connections(connection, error_msg=None):
     """Get information for all datasource connections.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
@@ -285,7 +285,7 @@ def get_datasource_connection(connection, id, error_msg=None):
     """Get a datasource connection for given id.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id (string): ID
         error_msg (string, optional): Custom Error Message for Error Handling
 
@@ -309,7 +309,7 @@ def update_datasource_connection(connection, id, body, error_msg=None):
     """Update a datasource connection based on id.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id (string): ID
         body: update operation info
         error_msg (string, optional): Custom Error Message for Error Handling
@@ -333,7 +333,7 @@ def delete_datasource_connection(connection, id):
     """Delete a datasource connection based on id.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id (string): ID
         error_msg (string, optional): Custom Error Message for Error Handling
 
@@ -348,7 +348,7 @@ def create_datasource_connection(connection, body, error_msg=None):
     """Create a specific database connection.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         body: Datasource Connection info
         error_msg (string, optional): Custom Error Message for Error Handling
 
@@ -372,7 +372,7 @@ def test_datasource_connection(connection, body, error_msg=None):
     connection parameters within connection object.
 
     Args:
-        connection: MicroStrategy REST API connection object.
+        connection: Strategy One REST API connection object.
         body: Datasource Connection info.
         error_msg (string, optional): Custom Error Message for Error Handling
 
@@ -390,7 +390,7 @@ def get_embedded_connection(connection, datasource_id, error_msg=None):
     """Get embedded connection for a specific datasource.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         datasource_id (string): Datasource ID
         error_msg (string, optional): Custom Error Message for Error Handling
 
@@ -410,7 +410,7 @@ def update_embedded_connection(connection, datasource_id, body, error_msg=None):
     """Update embedded connection based on datasource ID.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         datasource_id (string): Datasource ID
         body: update operation info
         error_msg (string, optional): Custom Error Message for Error Handling
@@ -435,7 +435,7 @@ def get_datasource_mappings(
     """Get information for all connection mappings.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         default_connection_map (bool, optional): If True will get the default
             connection mappings for a project. Requires `project_id`
             parameter. Default False.
@@ -472,7 +472,7 @@ def get_datasource_mapping(
     """Get information about specific connection mapping.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id: ID of the mapping
         default_connection_map (bool, optional): If True will get the default
             connection mappings for a project. Requires `project_id`
@@ -519,7 +519,7 @@ def create_datasource_mapping(
     """Create a new connection mapping.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         body: Datasource Connection Map creation info.
         error_msg (string, optional): Custom Error Message for Error Handling
 
@@ -537,7 +537,7 @@ def delete_datasource_mapping(
     """Delete a connection mapping based on id.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id (string): ID of the mapping meant to be deleted.
         error_msg (string, optional): Custom Error Message for Error Handling
 
@@ -553,7 +553,7 @@ def get_datasource_logins(connection: Connection, error_msg: str | None = None):
     """Get information for all datasource logins.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
@@ -568,7 +568,7 @@ def create_datasource_login(connection: Connection, body, error_msg: str | None 
     """Create a new datasource login.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         body: Datasource login creation info.
         error_msg (string, optional): Custom Error Message for Error Handling
 
@@ -584,7 +584,7 @@ def get_datasource_login(connection: Connection, id: str, error_msg: str | None 
     """Get datasource login for a specific id.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id: ID of the login
         error_msg (string, optional): Custom Error Message for Error Handling
 
@@ -602,7 +602,7 @@ def delete_datasource_login(
     """Delete a datasource login.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id: ID of the login
         error_msg (string, optional): Custom Error Message for Error Handling
 
@@ -620,7 +620,7 @@ def update_datasource_login(
     """Update a datasource login.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id: ID of the login
         body: Datasource Connection Map creation info.
         error_msg (string, optional): Custom Error Message for Error Handling
@@ -660,7 +660,7 @@ def convert_ds_dsn(
     connection string and update the object to metadata.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         datasource_id (string) : Datasource id
         error_msg (string, optional): Custom Error Message for Error Handling
 
@@ -683,7 +683,7 @@ def convert_connection_dsn(
     string and update the object to metadata.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         ds_connection_id (string) : Datasource connection object id
         error_msg (string, optional): Custom Error Message for Error Handling
 
@@ -699,7 +699,7 @@ def get_vldb_settings(connection: 'Connection', id: str, error_msg: str = None):
     """Get advanced VLDB settings for a datasource.
 
     Args:
-        connection (Connection): MicroStrategy REST API connection object
+        connection (Connection): Strategy One REST API connection object
         id (string): Datasource ID
         error_msg (string, optional): Custom Error Message for Error Handling
 
@@ -719,7 +719,7 @@ def update_vldb_settings(
     """Update metadata of advanced VLDB settings for a datasource.
 
     Args:
-        connection (Connection): MicroStrategy REST API connection object
+        connection (Connection): Strategy One REST API connection object
         id (string): Datasource ID
         body (dict): JSON-formatted data used to update VLDB settings
         error_msg (string, optional): Custom Error Message for Error Handling
@@ -745,7 +745,7 @@ def get_applicable_vldb_settings(
     """Get metadata of advanced VLDB settings for a datasource.
 
     Args:
-        connection (Connection): MicroStrategy REST API connection object
+        connection (Connection): Strategy One REST API connection object
         id (string): Datasource ID
         error_msg (string, optional): Custom Error Message for Error Handling
 
@@ -768,7 +768,7 @@ def update_project_datasources(
     """Update project datasources.
 
     Args:
-        connection (Connection): MicroStrategy REST API connection object
+        connection (Connection): Strategy One REST API connection object
         id (string): Project ID
         body (dict): JSON-formatted data used to update project datasources
         error_msg (string, optional): Custom Error Message for Error Handling
@@ -784,7 +784,7 @@ def update_project_datasources(
 def execute_query(connection, project_id, id, body, fields=None, row_limit=-1):
     """Execute an SQL query for the given datasource ID.
     Args:
-        connection (Connection): MicroStrategy connection object returned by
+        connection (Connection): Strategy One connection object returned by
             `connection.Connection()`
         project_id (str): ID of the project
         id (str): ID of the datasource
@@ -794,7 +794,7 @@ def execute_query(connection, project_id, id, body, fields=None, row_limit=-1):
             allows client to selectively retrieve part of the response model
         row_limit (int, optional): maximum number of rows to retrieve
     Returns:
-        HTTP response object returned by the Microstrategy REST server."""
+        HTTP response object returned by the Strategy One REST server."""
 
     return connection.post(
         endpoint=f'/api/datasources/{id}/sqlexecution',
@@ -808,13 +808,13 @@ def execute_query(connection, project_id, id, body, fields=None, row_limit=-1):
 def get_query_results(connection, id, fields=None):
     """Get the result for a specific query.
     Args:
-        connection (Connection): MicroStrategy connection object returned by
+        connection (Connection): Strategy One connection object returned by
             `connection.Connection()`
         id (str): ID of the query
         fields(list, optional): Comma separated top-level field whitelist. This
             allows client to selectively retrieve part of the response model
     Returns:
-        HTTP response object returned by the Microstrategy REST server."""
+        HTTP response object returned by the Strategy One REST server."""
 
     return connection.get(
         endpoint=f'/api/datasources/sqlexecution/{id}', params={'fields': fields}

@@ -6,6 +6,7 @@ from mstrio.api import applications
 from mstrio.connection import Connection
 from mstrio.project_objects.palette import Palette
 from mstrio.types import ObjectTypes
+from mstrio.users_and_groups.user import User
 from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity
 from mstrio.utils.helper import Dictable, delete_none_values, find_object_with_name
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
@@ -16,14 +17,14 @@ logger = logging.getLogger(__name__)
 @method_version_handler('11.3.1200')
 def list_applications(
     connection: Connection,
-    to_dictionary: dict = False,
+    to_dictionary: bool = False,
     limit: int | None = None,
     name: str | None = None,
 ) -> list['Application'] | list[dict]:
     """Get list of available Applications.
 
     Args:
-        connection (Connection): MicroStrategy connection object returned by
+        connection (Connection): Strategy One connection object returned by
             `connection.Connection()`
         to_dictionary (bool, optional): if True, return Applications as a
             list of dicts
@@ -52,7 +53,7 @@ def list_applications(
 
 @class_version_handler('11.3.1200')
 class Application(Entity, CopyMixin, DeleteMixin):
-    """Python representation of a MicroStrategy Application object"""
+    """Python representation of a Strategy One Application object"""
 
     @dataclass
     class GeneralSettings(Dictable):
@@ -96,7 +97,7 @@ class Application(Entity, CopyMixin, DeleteMixin):
             mode (str): home screen mode
                 Possible values:
                     -0: use Library (default)
-                    -1: use Dossier/Document
+                    -1: use Dashboard/Document
                     -2: use Bot
             home_document (HomeDocument): home document settings
             home_library (HomeLibrary): home library settings
@@ -111,7 +112,7 @@ class Application(Entity, CopyMixin, DeleteMixin):
                 url (str): URL of the document
                 home_document_type (str): home document type
                     Possible values:
-                        -dossier
+                        -dashboard
                         -document
                 icons (list[str]): list of icons to be shown on the home screen
                     toolbar
@@ -188,92 +189,264 @@ class Application(Entity, CopyMixin, DeleteMixin):
             class CustomizedItems(Dictable):
                 """Customized items settings of the application."""
 
-                my_content: bool | None = None
-                subscriptions: bool | None = None
-                new_dossier: bool | None = None
-                edit_dossier: bool | None = None
-                add_library_server: bool | None = None
-                data_search: bool | None = None
-                hyper_intelligence: bool | None = None
-                font_size: bool | None = None
-                undo_and_redo: bool | None = None
-                insights: bool | None = None
-                content_discovery: bool | None = None
-                mobile_account_panel_user_name: bool | None = None
-                mobile_account_panel_preferences_my_language: bool | None = None
-                mobile_account_panel_preferences_my_time_zone: bool | None = None
-                mobile_account_panel_preferences_face_id_login: bool | None = None
-                mobile_account_panel_preferences_take_a_tour: bool | None = None
-                mobile_account_panel_preferences_refresh_view_automatically: (
-                    bool | None
-                ) = None
-                mobile_account_panel_preferences_smart_download: bool | None = None
-                mobile_account_panel_preferences_automatically_add_to_library: (
-                    bool | None
-                ) = None
-                mobile_account_panel_advanced_settings_app_settings: bool | None = None
-                mobile_account_panel_advanced_settings_security_settings: (
-                    bool | None
-                ) = None
-                mobile_account_panel_advanced_settings_logging: bool | None = None
-                mobile_account_panel_help_and_legal: bool | None = None
-                mobile_account_panel_help_and_legal_help: bool | None = None
-                mobile_account_panel_help_and_legal_legal: bool | None = None
-                mobile_account_panel_help_and_legal_report_a_problem: bool | None = None
-                mobile_account_panel_log_out: bool | None = None
-                filter_summary: bool | None = None
-                share_panel_share: bool | None = None
-                share_panel_export_to_excel: bool | None = None
-                share_panel_export_to_pdf: bool | None = None
-                share_panel_download: bool | None = None
-                share_panel_subscribe: bool | None = None
-                share_panel_annotate_and_share: bool | None = None
-                web_account_panel_user_name: bool | None = None
-                web_account_panel_my_library: bool | None = None
-                web_account_panel_manage_library: bool | None = None
-                web_account_panel_preference: bool | None = None
-                web_account_panel_preference_my_language: bool | None = None
-                web_account_panel_preference_my_time_zone: bool | None = None
-                web_account_panel_switch_workspace: bool | None = None
-                web_account_panel_take_a_tour: bool | None = None
-                web_account_panel_help: bool | None = None
-                web_account_panel_log_out: bool | None = None
-                mobile_downloads: bool | None = None
-                table_of_contents_header: bool | None = None
-                table_of_contents_content_info: bool | None = None
-                table_of_contents_chapter_and_page: bool | None = None
-                switch_library_server: bool | None = None
-                create_new_content_dossier: bool | None = None
-                create_new_content_report: bool | None = None
-                layout_tile_view: bool | None = None
-                layout_list_view: bool | None = None
-                ai_assistant: bool | None = None
-                share_panel_manage_access: bool | None = None
-                bot_window_share_panel: bool | None = None
-                bot_window_share_panel_share_bot: bool | None = None
-                bot_window_share_panel_embed_bot: bool | None = None
-                bot_window_share_panel_manage_access: bool | None = None
-                bot_window_edit_bot: bool | None = None
-                create_new_content_bot: bool | None = None
-                dashboard_view_mode: bool | None = None
-                content_info_content_creator: bool | None = None
-                content_info_timestamp: bool | None = None
-                content_info_description: bool | None = None
-                content_info_project: bool | None = None
-                content_info_path: bool | None = None
-                content_info_object_id: bool | None = None
-                content_info_info_window: bool | None = None
-                control_filter_summary: bool | None = None
-                hide_filter_summary: bool | None = None
-                sidebars_unpin: bool | None = None
-                table_of_contents_unpin: bool | None = None
-                filter_panel_unpin: bool | None = None
-                comments_panel_unpin: bool | None = None
-                ai_assistant_unpin: bool | None = None
-                table_of_contents_allow_close: bool | None = None
-                filter_panel_allow_close: bool | None = None
-                comments_panel_allow_close: bool | None = None
-                ai_assistant_allow_close: bool | None = None
+                def __init__(
+                    self,
+                    my_content: bool | None = None,
+                    subscriptions: bool | None = None,
+                    new_dashboard: bool | None = None,
+                    edit_dashboard: bool | None = None,
+                    add_library_server: bool | None = None,
+                    data_search: bool | None = None,
+                    hyper_intelligence: bool | None = None,
+                    font_size: bool | None = None,
+                    undo_and_redo: bool | None = None,
+                    insights: bool | None = None,
+                    content_discovery: bool | None = None,
+                    mobile_account_panel_user_name: bool | None = None,
+                    mobile_account_panel_preferences_my_language: bool | None = None,
+                    mobile_account_panel_preferences_my_time_zone: bool | None = None,
+                    mobile_account_panel_preferences_face_id_login: bool | None = None,
+                    mobile_account_panel_preferences_take_a_tour: bool | None = None,
+                    mobile_account_panel_preferences_refresh_view_automatically: (
+                        bool | None
+                    ) = None,
+                    mobile_account_panel_preferences_smart_download: bool | None = None,
+                    mobile_account_panel_preferences_automatically_add_to_library: (
+                        bool | None
+                    ) = None,
+                    mobile_account_panel_advanced_settings_app_settings: (
+                        bool | None
+                    ) = None,
+                    mobile_account_panel_advanced_settings_security_settings: (
+                        bool | None
+                    ) = None,
+                    mobile_account_panel_advanced_settings_logging: bool | None = None,
+                    mobile_account_panel_help_and_legal: bool | None = None,
+                    mobile_account_panel_help_and_legal_help: bool | None = None,
+                    mobile_account_panel_help_and_legal_legal: bool | None = None,
+                    mobile_account_panel_help_and_legal_report_a_problem: (
+                        bool | None
+                    ) = None,
+                    mobile_account_panel_log_out: bool | None = None,
+                    filter_summary: bool | None = None,
+                    share_panel_share: bool | None = None,
+                    share_panel_export_to_excel: bool | None = None,
+                    share_panel_export_to_pdf: bool | None = None,
+                    share_panel_download: bool | None = None,
+                    share_panel_subscribe: bool | None = None,
+                    share_panel_annotate_and_share: bool | None = None,
+                    web_account_panel_user_name: bool | None = None,
+                    web_account_panel_my_library: bool | None = None,
+                    web_account_panel_manage_library: bool | None = None,
+                    web_account_panel_preference: bool | None = None,
+                    web_account_panel_preference_my_language: bool | None = None,
+                    web_account_panel_preference_my_time_zone: bool | None = None,
+                    web_account_panel_switch_workspace: bool | None = None,
+                    web_account_panel_take_a_tour: bool | None = None,
+                    web_account_panel_help: bool | None = None,
+                    web_account_panel_log_out: bool | None = None,
+                    mobile_downloads: bool | None = None,
+                    table_of_contents_header: bool | None = None,
+                    table_of_contents_content_info: bool | None = None,
+                    table_of_contents_chapter_and_page: bool | None = None,
+                    switch_library_server: bool | None = None,
+                    create_new_content_dashboard: bool | None = None,
+                    create_new_content_report: bool | None = None,
+                    layout_tile_view: bool | None = None,
+                    layout_list_view: bool | None = None,
+                    ai_assistant: bool | None = None,
+                    share_panel_manage_access: bool | None = None,
+                    bot_window_share_panel: bool | None = None,
+                    bot_window_share_panel_share_bot: bool | None = None,
+                    bot_window_share_panel_embed_bot: bool | None = None,
+                    bot_window_share_panel_manage_access: bool | None = None,
+                    bot_window_edit_bot: bool | None = None,
+                    create_new_content_bot: bool | None = None,
+                    dashboard_view_mode: bool | None = None,
+                    content_info_content_creator: bool | None = None,
+                    content_info_timestamp: bool | None = None,
+                    content_info_description: bool | None = None,
+                    content_info_project: bool | None = None,
+                    content_info_path: bool | None = None,
+                    content_info_object_id: bool | None = None,
+                    content_info_info_window: bool | None = None,
+                    control_filter_summary: bool | None = None,
+                    hide_filter_summary: bool | None = None,
+                    sidebars_unpin: bool | None = None,
+                    table_of_contents_unpin: bool | None = None,
+                    filter_panel_unpin: bool | None = None,
+                    comments_panel_unpin: bool | None = None,
+                    ai_assistant_unpin: bool | None = None,
+                    table_of_contents_allow_close: bool | None = None,
+                    filter_panel_allow_close: bool | None = None,
+                    comments_panel_allow_close: bool | None = None,
+                    ai_assistant_allow_close: bool | None = None,
+                    **kwargs,
+                ):
+                    self.my_content = my_content
+                    self.subscriptions = subscriptions
+                    self.new_dossier = new_dashboard
+                    self.edit_dossier = edit_dashboard
+                    self.add_library_server = add_library_server
+                    self.data_search = data_search
+                    self.hyper_intelligence = hyper_intelligence
+                    self.font_size = font_size
+                    self.undo_and_redo = undo_and_redo
+                    self.insights = insights
+                    self.content_discovery = content_discovery
+                    self.mobile_account_panel_user_name = mobile_account_panel_user_name
+                    self.mobile_account_panel_preferences_my_language = (
+                        mobile_account_panel_preferences_my_language
+                    )
+                    self.mobile_account_panel_preferences_my_time_zone = (
+                        mobile_account_panel_preferences_my_time_zone
+                    )
+                    self.mobile_account_panel_preferences_face_id_login = (
+                        mobile_account_panel_preferences_face_id_login
+                    )
+                    self.mobile_account_panel_preferences_take_a_tour = (
+                        mobile_account_panel_preferences_take_a_tour
+                    )
+                    self.mobile_account_panel_preferences_refresh_view_automatically = (
+                        mobile_account_panel_preferences_refresh_view_automatically
+                    )
+                    self.mobile_account_panel_preferences_smart_download = (
+                        mobile_account_panel_preferences_smart_download
+                    )
+                    self.mobile_account_panel_preferences_automatically_add_to_library = (  # noqa: E501
+                        mobile_account_panel_preferences_automatically_add_to_library
+                    )
+                    self.mobile_account_panel_advanced_settings_app_settings = (
+                        mobile_account_panel_advanced_settings_app_settings
+                    )
+                    self.mobile_account_panel_advanced_settings_security_settings = (
+                        mobile_account_panel_advanced_settings_security_settings
+                    )
+                    self.mobile_account_panel_advanced_settings_logging = (
+                        mobile_account_panel_advanced_settings_logging
+                    )
+                    self.mobile_account_panel_help_and_legal = (
+                        mobile_account_panel_help_and_legal
+                    )
+                    self.mobile_account_panel_help_and_legal_help = (
+                        mobile_account_panel_help_and_legal_help
+                    )
+                    self.mobile_account_panel_help_and_legal_legal = (
+                        mobile_account_panel_help_and_legal_legal
+                    )
+                    self.mobile_account_panel_help_and_legal_report_a_problem = (
+                        mobile_account_panel_help_and_legal_report_a_problem
+                    )
+                    self.mobile_account_panel_log_out = mobile_account_panel_log_out
+                    self.filter_summary = filter_summary
+                    self.share_panel_share = share_panel_share
+                    self.share_panel_export_to_excel = share_panel_export_to_excel
+                    self.share_panel_export_to_pdf = share_panel_export_to_pdf
+                    self.share_panel_download = share_panel_download
+                    self.share_panel_subscribe = share_panel_subscribe
+                    self.share_panel_annotate_and_share = share_panel_annotate_and_share
+                    self.web_account_panel_user_name = web_account_panel_user_name
+                    self.web_account_panel_my_library = web_account_panel_my_library
+                    self.web_account_panel_manage_library = (
+                        web_account_panel_manage_library
+                    )
+                    self.web_account_panel_preference = web_account_panel_preference
+                    self.web_account_panel_preference_my_language = (
+                        web_account_panel_preference_my_language
+                    )
+                    self.web_account_panel_preference_my_time_zone = (
+                        web_account_panel_preference_my_time_zone
+                    )
+                    self.web_account_panel_switch_workspace = (
+                        web_account_panel_switch_workspace
+                    )
+                    self.web_account_panel_take_a_tour = web_account_panel_take_a_tour
+                    self.web_account_panel_help = web_account_panel_help
+                    self.web_account_panel_log_out = web_account_panel_log_out
+                    self.mobile_downloads = mobile_downloads
+                    self.table_of_contents_header = table_of_contents_header
+                    self.table_of_contents_content_info = table_of_contents_content_info
+                    self.table_of_contents_chapter_and_page = (
+                        table_of_contents_chapter_and_page
+                    )
+                    self.switch_library_server = switch_library_server
+                    self.create_new_content_dossier = create_new_content_dashboard
+                    self.create_new_content_report = create_new_content_report
+                    self.layout_tile_view = layout_tile_view
+                    self.layout_list_view = layout_list_view
+                    self.ai_assistant = ai_assistant
+                    self.share_panel_manage_access = share_panel_manage_access
+                    self.bot_window_share_panel = bot_window_share_panel
+                    self.bot_window_share_panel_share_bot = (
+                        bot_window_share_panel_share_bot
+                    )
+                    self.bot_window_share_panel_embed_bot = (
+                        bot_window_share_panel_embed_bot
+                    )
+                    self.bot_window_share_panel_manage_access = (
+                        bot_window_share_panel_manage_access
+                    )
+                    self.bot_window_edit_bot = bot_window_edit_bot
+                    self.create_new_content_bot = create_new_content_bot
+                    self.dashboard_view_mode = dashboard_view_mode
+                    self.content_info_content_creator = content_info_content_creator
+                    self.content_info_timestamp = content_info_timestamp
+                    self.content_info_description = content_info_description
+                    self.content_info_project = content_info_project
+                    self.content_info_path = content_info_path
+                    self.content_info_object_id = content_info_object_id
+                    self.content_info_info_window = content_info_info_window
+                    self.control_filter_summary = control_filter_summary
+                    self.hide_filter_summary = hide_filter_summary
+                    self.sidebars_unpin = sidebars_unpin
+                    self.table_of_contents_unpin = table_of_contents_unpin
+                    self.filter_panel_unpin = filter_panel_unpin
+                    self.comments_panel_unpin = comments_panel_unpin
+                    self.ai_assistant_unpin = ai_assistant_unpin
+                    self.table_of_contents_allow_close = table_of_contents_allow_close
+                    self.filter_panel_allow_close = filter_panel_allow_close
+                    self.comments_panel_allow_close = comments_panel_allow_close
+                    self.ai_assistant_allow_close = ai_assistant_allow_close
+
+                    possible_new_args = [
+                        'new_dossier',
+                        'edit_dossier',
+                        'create_new_content_dossier',
+                    ]
+                    if kwargs and not all(
+                        key in possible_new_args for key in kwargs.keys()
+                    ):
+                        raise KeyError(
+                            f"Invalid kwargs keys: {list(kwargs.keys())} "
+                            f"provided to '{self.__class__.__name__}' class. "
+                            f"Possible kwargs keys: {possible_new_args}"
+                        )
+
+                    if new_dossier := kwargs.get('new_dossier'):
+                        Application._check_replaced_properties(
+                            new_dashboard, new_dossier, 'new_dashboard', 'new_dossier'
+                        )
+                        self.new_dossier = new_dossier
+
+                    if edit_dossier := kwargs.get('edit_dossier'):
+                        Application._check_replaced_properties(
+                            edit_dashboard,
+                            edit_dossier,
+                            'edit_dashboard',
+                            'edit_dossier',
+                        )
+                        self.edit_dossier = edit_dossier
+
+                    if create_new_content_dossier := kwargs.get(
+                        'create_new_content_dossier'
+                    ):
+                        Application._check_replaced_properties(
+                            create_new_content_dashboard,
+                            create_new_content_dossier,
+                            'create_new_content_dashboard',
+                            'create_new_content_dossier',
+                        )
+                        self.create_new_content_dossier = create_new_content_dossier
 
             _FROM_DICT_MAP = {
                 'customized_items': CustomizedItems.from_dict,
@@ -436,12 +609,11 @@ class Application(Entity, CopyMixin, DeleteMixin):
             social_media (SocialMedia): social media settings
         """
 
-        @dataclass
         class Content(Dictable):
             """Content settings of the application.
 
             Attributes:
-                share_dossier (EmailDetails): settings for sharing a dossier
+                share_dashboard (EmailDetails): settings for sharing a dashboard
                 share_bookmark (EmailDetails): settings for sharing a dossier
                     with bookmark
                 share_bot (EmailDetails): settings for sharing a bot
@@ -471,11 +643,37 @@ class Application(Entity, CopyMixin, DeleteMixin):
                 'user_mention': EmailDetails.from_dict,
             }
 
-            share_dossier: EmailDetails | None = None
-            share_bookmark: EmailDetails | None = None
-            share_bot: EmailDetails | None = None
-            member_added: EmailDetails | None = None
-            user_mention: EmailDetails | None = None
+            def __init__(
+                self,
+                share_dashboard: EmailDetails | None = None,
+                share_bookmark: EmailDetails | None = None,
+                share_bot: EmailDetails | None = None,
+                member_added: EmailDetails | None = None,
+                user_mention: EmailDetails | None = None,
+                **kwargs,
+            ):
+                self.share_dossier = share_dashboard
+                self.share_bookmark = share_bookmark
+                self.share_bot = share_bot
+                self.member_added = member_added
+                self.user_mention = user_mention
+
+                if kwargs and not all(
+                    key in ['share_dossier'] for key in kwargs.keys()
+                ):
+                    raise KeyError(
+                        f"Invalid kwargs keys: {list(kwargs.keys())} provided "
+                        f"to '{self.__class__.__name__}' class. Possible "
+                        f"kwargs keys: ['share_dossier']"
+                    )
+                if share_dossier := kwargs.get('share_dossier'):
+                    Application._check_replaced_properties(
+                        share_dashboard,
+                        share_dossier,
+                        'share_dashboard',
+                        'share_dossier',
+                    )
+                    self.share_dossier = share_dossier
 
         @dataclass
         class Sender(Dictable):
@@ -586,7 +784,7 @@ class Application(Entity, CopyMixin, DeleteMixin):
         show_social_media: bool | None = None
         content: Content | None = None
         sender: Sender | None = None
-        branding_image: str | None = None
+        branding_image: dict[str, str] | None = None
         button: Button | None = None
         reminder: Reminder | None = None
         social_media: SocialMedia | None = None
@@ -683,7 +881,7 @@ class Application(Entity, CopyMixin, DeleteMixin):
         """Initialize Application object by passing name or id.
 
         Args:
-            connection (object): MicroStrategy connection object returned
+            connection (object): Strategy One connection object returned
                 by `connection.Connection()`
             name (string, optional): name of Application
             id (string, optional): ID of Application
@@ -750,7 +948,7 @@ class Application(Entity, CopyMixin, DeleteMixin):
         """Create a new application.
 
         Args:
-            connection (Connection): MicroStrategy connection object returned by
+            connection (Connection): Strategy One connection object returned by
                 `connection.Connection()`
             name (str): name of the application
             home_screen (Application.HomeSettings): home screen settings of the
@@ -826,6 +1024,8 @@ class Application(Entity, CopyMixin, DeleteMixin):
             if home_screen.home_library.customized_item_properties
             else None
         )
+        if home_screen.home_document.home_document_type == 'dashboard':
+            body['homeScreen']['homeDocument']['homeDocumentType'] = 'dossier'
         if email_settings and email_settings.content:
             body['emailSettings']['content'] = {
                 'SHARE_DOSSIER': body['emailSettings']['content']['shareDossier'],
@@ -850,6 +1050,8 @@ class Application(Entity, CopyMixin, DeleteMixin):
         home_screen: 'Application.HomeSettings | None' = None,
         name: str | None = None,
         description: str | None = None,
+        comments: str | None = None,
+        owner: str | User | None = None,
         managed: bool | None = None,
         general: 'Application.GeneralSettings | None' = None,
         platforms: list[str] | None = None,
@@ -871,6 +1073,8 @@ class Application(Entity, CopyMixin, DeleteMixin):
                 settings of the application
             name (str, optional): name of the application
             description (str, optional): description of the application
+            comments (str, optional): long description of the application
+            owner: (str, User, optional): owner of the application object
             managed (bool, optional): whether the application is managed
             general (Application.GeneralSettings, optional): general settings
                 of the application
@@ -910,10 +1114,14 @@ class Application(Entity, CopyMixin, DeleteMixin):
                 palette.id if isinstance(palette, Palette) else palette
                 for palette in application_palettes
             ]
+        if isinstance(owner, User):
+            owner = owner.id
         body = {
             'objectVersion': self.version,
             'name': name or self.name,
             'description': description or self.description,
+            'comments': comments or self.comments,
+            'ownerId': owner or self.owner['id'],
             'managed': managed or self.managed,
             'general': (
                 (general or self.general).to_dict()
@@ -965,7 +1173,9 @@ class Application(Entity, CopyMixin, DeleteMixin):
             body['homeScreen']['homeLibrary']['customizedItemProperties'] = (
                 home_screen.home_library.customized_item_properties or None
             )
-        if body.get('emailSettings', {}).get('content'):
+            if home_screen.home_document.home_document_type == 'dashboard':
+                body['homeScreen']['homeDocument']['homeDocumentType'] = 'dossier'
+        if body['emailSettings'] is not None and body['emailSettings'].get('content'):
             body['emailSettings']['content'] = {
                 'SHARE_DOSSIER': body['emailSettings']['content']['shareDossier'],
                 'SHARE_BOOKMARK': body['emailSettings']['content']['shareBookmark'],
@@ -990,6 +1200,16 @@ class Application(Entity, CopyMixin, DeleteMixin):
             logger.info(
                 'Application has been altered successfully. Your changes are not '
                 'saved locally. Refresh the object to see the changes.'
+            )
+
+    @staticmethod
+    def _check_replaced_properties(
+        dashboard_property, dossier_property, dashboard_name, dossier_name
+    ):
+        if dashboard_property is not None and dashboard_property != dossier_property:
+            raise KeyError(
+                f"You provided both '{dashboard_name}' and '{dossier_name}' "
+                f"with different values. Please use only {dashboard_name}."
             )
 
     @property
@@ -1022,7 +1242,7 @@ class Application(Entity, CopyMixin, DeleteMixin):
             # Otherwise, keep it None.
             if content:
                 temp.content = Application.EmailSettings.Content(
-                    share_dossier=content.get('SHARE_DOSSIER'),
+                    share_dashboard=content.get('SHARE_DOSSIER'),
                     share_bookmark=content.get('SHARE_BOOKMARK'),
                     share_bot=content.get('SHARE_BOT'),
                     member_added=content.get('MEMBER_ADDED'),
