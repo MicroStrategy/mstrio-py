@@ -68,7 +68,7 @@ class VersatileDate(Dictable):
         Args:
             source: object that specifies the VersatileDate object that
                 will be returned
-            connection (optional): MicroStrategy connection object returned
+            connection (optional): Strategy One connection object returned
             by `connection.Connection()`"""
         mode = DateMode(source.get('mode'))
         if mode == DateMode.DYNAMIC:

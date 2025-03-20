@@ -18,7 +18,7 @@ def get_contact_groups(
         to.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         offset (int, optional): Starting point within the collection of returned
             results. Used to control paging behavior. Default is 0.
         limit (int, optional): Maximum number of items returned for a single
@@ -43,7 +43,7 @@ def get_contact_groups_async(
         to.
 
     Args:
-        future_session(object): Future Session object to call MicroStrategy REST
+        future_session(object): Future Session object to call Strategy One REST
             Server asynchronously
         offset (int, optional): Starting point within the collection of returned
             results. Used to control paging behavior. Default is 0.
@@ -67,7 +67,7 @@ def create_contact_group(
     """Create a new contact group.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         body: Contact group creation body
         error_msg (string, optional): Custom Error Message for Error Handling
 
@@ -83,7 +83,7 @@ def get_contact_group(connection: 'Connection', id: str, error_msg: str | None =
     """Get contact group by a specific id.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id: ID of the contact group
         error_msg (string, optional): Custom Error Message for Error Handling
 
@@ -101,7 +101,7 @@ def update_contact_group(
     """Update a contact group.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id: ID of the contact group
         body: Contact group update info.
         error_msg (string, optional): Custom Error Message for Error Handling
@@ -120,7 +120,7 @@ def delete_contact_group(
     """Delete a contact group.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id: ID of the contact group
         error_msg (string, optional): Custom Error Message for Error Handling
 

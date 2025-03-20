@@ -11,8 +11,8 @@ from requests.adapters import HTTPAdapter, Retry
 from requests.cookies import RequestsCookieJar
 
 if TYPE_CHECKING:
-    from urllib3.exceptions import InsecureRequestWarning
     from urllib3 import disable_warnings
+    from urllib3.exceptions import InsecureRequestWarning
 else:
     from requests.packages.urllib3.exceptions import InsecureRequestWarning
     from requests.packages.urllib3 import disable_warnings
@@ -111,10 +111,10 @@ def get_connection(
 
 
 class Connection:
-    """Connect to and interact with the MicroStrategy environment.
+    """Connect to and interact with the Strategy One environment.
 
     Creates a connection object which is used in subsequent requests and
-    manages the user's connection with the MicroStrategy REST and Intelligence
+    manages the user's connection with the Strategy One REST and Intelligence
     Servers.
     The connection is automatically renewed, or reconnected if server's session
     associated with the connection expires due to inactivity.
@@ -133,10 +133,10 @@ class Connection:
         >>> conn.close()
 
     Attributes:
-        base_url: URL of the MicroStrategy REST API server.
+        base_url: URL of the Strategy One REST API server.
         username: Username.
-        project_name: Name of the connected MicroStrategy Project.
-        project_id: Id of the connected MicroStrategy Project.
+        project_name: Name of the connected Strategy One Project.
+        project_id: Id of the connected Strategy One Project.
         login_mode: Authentication mode. Standard = 1 (default) or LDAP = 16.
         ssl_verify: If True (default), verifies the server's SSL certificates
             with each request.
@@ -163,7 +163,7 @@ class Connection:
         identity_token: str | None = None,
         verbose: bool = True,
     ):
-        """Establish a connection with MicroStrategy REST API.
+        """Establish a connection with Strategy One REST API.
 
         You can establish connection by either providing set of values
         (`username`, `password`, `login_mode`) or just `identity_token`.
@@ -173,7 +173,7 @@ class Connection:
         and `project_name` are provided, `project_name` is ignored.
 
         Args:
-            base_url (str): URL of the MicroStrategy REST API server.
+            base_url (str): URL of the Strategy One REST API server.
                 Typically of the form:
                 "https://<mstr_env>.com/MicroStrategyLibrary/api"
             username (str, optional): Username
@@ -257,7 +257,7 @@ class Connection:
             self._reset_timeout()
             if config.verbose:
                 logger.info(
-                    'Connection to MicroStrategy Intelligence Server was renewed.'
+                    'Connection to Strategy One Intelligence Server was renewed.'
                 )
         else:
             response = self._login()
@@ -267,7 +267,7 @@ class Connection:
 
             if config.verbose:
                 logger.info(
-                    'Connection to MicroStrategy Intelligence Server has been '
+                    'Connection to Strategy One Intelligence Server has been '
                     'established.'
                 )
 
@@ -275,7 +275,7 @@ class Connection:
 
     def delegate(self):
         """Delegates identity token to get authentication token and connect to
-        MicroStrategy Intelligence Server."""
+        Strategy One Intelligence Server."""
         response = authentication.delegate(
             self, self.identity_token, whitelist=[('ERR003', 401)]
         )
@@ -285,11 +285,11 @@ class Connection:
             self.timeout = self._get_session_timeout()
             if config.verbose:
                 logger.info(
-                    'Connection with MicroStrategy Intelligence Server has been '
+                    'Connection with Strategy One Intelligence Server has been '
                     'delegated.'
                 )
         else:
-            print(
+            logger.warning(
                 "Could not share existing connection session, please input credentials:"
             )
             self.__prompt_credentials()
@@ -306,7 +306,7 @@ class Connection:
         return validate.ok
 
     def close(self):
-        """Closes a connection with MicroStrategy REST API."""
+        """Closes a connection with Strategy One REST API."""
         authentication.logout(connection=self, whitelist=[('ERR009', 401)])
 
         self._session.close()
@@ -315,7 +315,7 @@ class Connection:
 
         if config.verbose:
             logger.info(
-                'Connection to MicroStrategy Intelligence Server has been closed.'
+                'Connection to Strategy One Intelligence Server has been closed.'
             )
 
     def status(self) -> bool:
@@ -327,12 +327,10 @@ class Connection:
         status = self._status()
 
         if status.status_code == 200:
-            logger.info('Connection to MicroStrategy Intelligence Server is active.')
+            logger.info('Connection to Strategy One Intelligence Server is active.')
             return True
         else:
-            logger.info(
-                'Connection to MicroStrategy Intelligence Server is not active.'
-            )
+            logger.info('Connection to Strategy One Intelligence Server is not active.')
             return False
 
     def select_project(
@@ -492,7 +490,7 @@ class Connection:
         )
 
     def __check_version(self) -> bool:
-        """Checks version of I-Server and MicroStrategy Web and store these
+        """Checks version of I-Server and Strategy One Web and store these
         variables."""
 
         resp = misc.server_status(self)

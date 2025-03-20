@@ -22,8 +22,8 @@ packages = ["mstrio"]
 
 [project]
 name = "mstrio-py"
-description = "Python interface for the MicroStrategy REST API"
-authors = [{ name = "MicroStrategy", email = "bkaczynski@microstrategy.com" }]
+description = "Python interface for the Strategy One REST API"
+authors = [{ name = "Strategy One", email = "bkaczynski@strategy.com" }]
 requires-python = ">=3.10,<3.14"
 license = { text = "Apache License 2.0" }
 readme = "README.md"

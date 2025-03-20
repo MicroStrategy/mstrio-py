@@ -11,7 +11,7 @@ def create_content_group(
     """Create a new content group.
 
     Args:
-        connection (Connection): MicroStrategy connection object returned by
+        connection (Connection): Strategy One connection object returned by
             `connection.Connection()`
         body (dict): JSON-formatted body of the new content group
         fields (str, optional): Comma separated top-level field whitelist. This
@@ -19,7 +19,7 @@ def create_content_group(
             defaults to None
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server.
+        HTTP response object returned by the Strategy One REST server.
     """
     return connection.post(
         endpoint='/api/contentGroups', json=body, params={'fields': fields}
@@ -33,7 +33,7 @@ def get_content_group(
     """Get a content group by its ID.
 
     Args:
-        connection (Connection): MicroStrategy connection object returned by
+        connection (Connection): Strategy One connection object returned by
             `connection.Connection()`
         id (str): ID of the content group to get
         fields (str, optional): Comma separated top-level field whitelist. This
@@ -41,7 +41,7 @@ def get_content_group(
             defaults to None
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server.
+        HTTP response object returned by the Strategy One REST server.
     """
     return connection.get(
         endpoint=f'/api/contentGroups/{id}', params={'fields': fields}
@@ -55,7 +55,7 @@ def update_content_group(
     """Update a content group.
 
     Args:
-        connection (Connection): MicroStrategy connection object returned by
+        connection (Connection): Strategy One connection object returned by
             `connection.Connection()`
         id (str): ID of the content group to update
         body (dict): JSON-formatted body of the updated content group
@@ -64,7 +64,7 @@ def update_content_group(
             defaults to None
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server.
+        HTTP response object returned by the Strategy One REST server.
     """
     return connection.patch(
         endpoint=f'/api/contentGroups/{id}', json=body, params={'fields': fields}
@@ -76,14 +76,14 @@ def list_content_groups(connection: Connection, fields: str | None = None) -> Re
     """Get a list of content groups.
 
     Args:
-        connection (Connection): MicroStrategy connection object returned by
+        connection (Connection): Strategy One connection object returned by
             `connection.Connection()`
         fields (str, optional): Comma separated top-level field whitelist. This
             allows client to selectively retrieve part of the response model,
             defaults to None
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server.
+        HTTP response object returned by the Strategy One REST server.
     """
     return connection.get(endpoint='/api/contentGroups', params={'fields': fields})
 
@@ -95,7 +95,7 @@ def get_content_group_contents(
     """Get the content of a content group.
 
     Args:
-        connection (Connection): MicroStrategy connection object returned by
+        connection (Connection): Strategy One connection object returned by
             `connection.Connection()`
         id (str): ID of the content group to get the content of
         project_id (list[str]): ID of the project the content group belongs to
@@ -104,7 +104,7 @@ def get_content_group_contents(
             defaults to None
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server.
+        HTTP response object returned by the Strategy One REST server.
     """
     return connection.get(
         endpoint=f'/api/contentGroups/{id}/contents',
@@ -119,7 +119,7 @@ def update_content_group_contents(
     """Update the content of a content group.
 
     Args:
-        connection (Connection): MicroStrategy connection object returned by
+        connection (Connection): Strategy One connection object returned by
             `connection.Connection()`
         id (str): ID of the content group to update the content of
         body (dict): JSON-formatted body of the updated content group
@@ -128,7 +128,7 @@ def update_content_group_contents(
             defaults to None
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server.
+        HTTP response object returned by the Strategy One REST server.
     """
     return connection.patch(
         endpoint=f'/api/contentGroups/{id}/contents',

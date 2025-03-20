@@ -690,7 +690,7 @@ class Operator(ExpressionNode):
             performing the PUT/POST/PATCH.
 
             If you don't put it back in the request, there can be some behavior
-            difference in Filter Expression Editors of other MicroStrategy
+            difference in Filter Expression Editors of other Strategy One
             apps.
     """
 

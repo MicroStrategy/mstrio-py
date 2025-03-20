@@ -1,6 +1,8 @@
 from enum import auto
 
+from mstrio.distribution_services import Device
 from mstrio.distribution_services.subscription.common import RefreshPolicy
+from mstrio.modeling import Attribute, AttributeForm
 from mstrio.utils.enum_helper import AutoName, AutoUpperName
 from mstrio.utils.helper import Dictable
 
@@ -22,7 +24,6 @@ class Content(Dictable):
         REPORT = auto()
         DOCUMENT = auto()
         CUBE = auto()
-        DOSSIER = auto()
         UNSUPPORTED = auto()
         DASHBOARD = 'dossier'
 
@@ -190,19 +191,110 @@ class Content(Dictable):
                 form_id: Form ID in the email burst feature
             """
 
+            @staticmethod
+            def _create_and_validate_slicing_attr(
+                slicing_attributes: (
+                    str | Attribute | list[str] | list[Attribute] | None
+                ) = None,
+                address_attribute_id: str | None = None,
+                address_attribute_name: str | None = None,
+                address_attribute: Attribute | None = None,
+            ) -> list[str]:
+                slicing_attributes = [
+                    f'{sa.id}~{sa.name}' if isinstance(sa, Attribute) else sa
+                    for sa in (
+                        slicing_attributes
+                        if isinstance(slicing_attributes, list)
+                        else [slicing_attributes] if slicing_attributes else []
+                    )
+                ]
+
+                if not slicing_attributes:
+                    if address_attribute:
+                        slicing_attributes = [
+                            f'{address_attribute.id}~{address_attribute.name}'
+                        ]
+                    elif address_attribute_id and address_attribute_name:
+                        slicing_attributes = [
+                            f'{address_attribute_id}~{address_attribute_name}'
+                        ]
+                    else:
+                        msg = (
+                            "Slicing attributes must be provided as an `Attribute` "
+                            "object or as the `address_attribute_id` and "
+                            "`address_attribute_name` arguments."
+                        )
+                        raise ValueError(msg)
+
+                return slicing_attributes
+
             def __init__(
                 self,
-                slicing_attributes: list[str] | None = None,
+                slicing_attributes: (
+                    str | Attribute | list[str] | list[Attribute] | None
+                ) = None,
                 address_attribute_id: str | None = None,
+                address_attribute_name: str | None = None,
+                address_attribute: Attribute | None = None,
                 device_id: str | None = None,
+                device: Device | None = None,
                 form_id: str | None = None,
+                form: AttributeForm | None = None,
             ):
-                self.slicing_attributes = (
-                    slicing_attributes if isinstance(slicing_attributes, list) else []
+                """Initialize the `Bursting` object.
+
+                Args:
+                    slicing_attributes (str | Attribute | list[str] |
+                        list[Attribute], optional): The list of attributes to
+                        slice on. Optional if `address_attribute` or
+                        `address_attribute_id` and `address_attribute_name` are
+                        provided and if it will be the only slicing attribute.
+                    address_attribute_id (str, optional): Attribute ID in the
+                        email burst feature. Optional if `address_attribute`
+                        is provided.
+                    address_attribute_name (str, optional): Attribute Name in
+                        the email burst feature. Optional if `address_attribute`
+                        is provided.
+                    address_attribute (Attribute, optional): Attribute object in
+                        the email burst feature. If provided, the
+                        `address_attribute_id` and `address_attribute_name`
+                        arguments will be ignored. Optional if
+                        `address_attribute_id` and `address_attribute_name` are
+                        provided.
+                    device_id (str, optional): Device ID in the email burst
+                        feature. Optional if `device` is provided.
+                    device (Device, optional): Device object in the email burst
+                        feature. If provided, the `device_id` argument will be
+                        ignored. Optional if `device_id` is provided.
+                    form_id (str, optional): AttributeForm ID in the email burst
+                        feature. It has to be the form from the
+                        `address_attribute` argument. Optional if `form` is
+                        provided.
+                    form (AttributeForm, optional): AttributeForm object in the
+                        email burst feature. It has to be the form from the
+                        `address_attribute` argument. If provided, the `form_id`
+                        argument will be ignored. Optional if `form_id` is
+                        provided.
+
+                Notes:
+                    If `slicing_attributes` argument is not provided, the
+                    `address_attribute` object or the `address_attribute_id`
+                    and `address_attribute_name` arguments will be used to
+                    create it.
+                """
+                self.slicing_attributes = self._create_and_validate_slicing_attr(
+                    slicing_attributes,
+                    address_attribute_id,
+                    address_attribute_name,
+                    address_attribute,
                 )
-                self.address_attribute_id = address_attribute_id
-                self.device_id = device_id
-                self.form_id = form_id
+                self.address_attribute_id = (
+                    address_attribute.id
+                    if isinstance(address_attribute, Attribute)
+                    else address_attribute_id
+                )
+                self.device_id = device.id if isinstance(device, Device) else device_id
+                self.form_id = form.id if isinstance(form, AttributeForm) else form_id
 
         class Prompt(Dictable):
             def __init__(self, enabled: bool, instance_id: str = None):

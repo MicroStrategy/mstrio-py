@@ -11,7 +11,7 @@ def list_runtimes(
     """Get list of runtimes.
 
     Args:
-        connection (Connection): MicroStrategy connection object returned by
+        connection (Connection): Strategy One connection object returned by
             `connection.Connection()`
         fields (str, optional): Comma separated top-level field whitelist. This
             allows client to selectively retrieve part of the response model,
@@ -19,7 +19,7 @@ def list_runtimes(
         error_msg (str, optional): Custom Error Message for Error Handling
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server.
+        HTTP response object returned by the Strategy One REST server.
     """
 
     return connection.get(endpoint='/api/runtimes', params={'fields': fields})
@@ -35,7 +35,7 @@ def create_runtime(
     """Create a runtime.
 
     Args:
-        connection (Connection): MicroStrategy connection object returned by
+        connection (Connection): Strategy One connection object returned by
             `connection.Connection()`
         body (dict): JSON-formatted body of the new runtime
         fields (str, optional): Comma separated top-level field whitelist. This
@@ -44,7 +44,7 @@ def create_runtime(
         error_msg (str, optional): Custom Error Message for Error Handling
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server.
+        HTTP response object returned by the Strategy One REST server.
     """
 
     return connection.post(
@@ -59,13 +59,13 @@ def delete_runtime(
     """Delete a runtime.
 
     Args:
-        connection (Connection): MicroStrategy connection object returned by
+        connection (Connection): Strategy One connection object returned by
             `connection.Connection()`
         id (str): ID of the runtime to be deleted
         error_msg (str, optional): Custom Error Message for Error Handling
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server.
+        HTTP response object returned by the Strategy One REST server.
     """
 
     return connection.delete(endpoint=f'/api/runtimes/{id}')

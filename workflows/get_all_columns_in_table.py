@@ -29,7 +29,7 @@ def list_table_columns(
     list all the columns for all available tables.
 
     Args:
-        connection: MicroStrategy connection object returned
+        connection: Strategy One connection object returned
             by `connection.Connection()`
         table: SchemaObjectReference of a table or table id
 

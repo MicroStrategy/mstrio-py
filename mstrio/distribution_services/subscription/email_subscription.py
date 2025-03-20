@@ -6,7 +6,7 @@ from .content import Content
 
 
 class EmailSubscription(Subscription):
-    """Class representation of MicroStrategy Email Subscription object."""
+    """Class representation of Strategy One Email Subscription object."""
 
     def __init__(
         self,
@@ -22,7 +22,7 @@ class EmailSubscription(Subscription):
         When `project_id` is provided (not `None`), `project_name` is omitted.
 
         Args:
-            connection (Connection): MicroStrategy connection object returned
+            connection (Connection): Strategy One connection object returned
                 by `connection.Connection()`
             id (str, optional): ID of the subscription to be initialized, only
                 id or subscription_id have to be provided at once, if both are
@@ -66,7 +66,7 @@ class EmailSubscription(Subscription):
         """Creates a new email subscription.
 
         Args:
-            connection (Connection): a MicroStrategy connection object
+            connection (Connection): a Strategy One connection object
             name (str): name of the subscription,
             project_id (str, optional): project ID,
             project_name (str, optional): project name,

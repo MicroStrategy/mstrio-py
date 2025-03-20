@@ -122,7 +122,7 @@ def list_all_cubes(
         then its value is overwritten by `project_id` from `connection` object.
 
     Args:
-        connection: MicroStrategy connection object returned by
+        connection: Strategy One connection object returned by
             `connection.Connection()`
         name (string, optional): value the search pattern is set to, which
             will be applied to the names of cubes being searched
@@ -202,7 +202,7 @@ def load_cube(
     `instance_id` is used only when a single cube is retrieved.
 
     Args:
-        connection: MicroStrategy connection object returned by
+        connection: Strategy One connection object returned by
             `connection.Connection()`
         cube_id(string, optional): ID of cube
         cube_name(string, optional): name of cube
@@ -284,7 +284,7 @@ def load_cube(
 
 
 class _Cube(Entity, VldbMixin, DeleteMixin):
-    """Access, filter, publish, and extract data from MicroStrategy in-memory
+    """Access, filter, publish, and extract data from Strategy One in-memory
     cubes.
 
     Create a Cube object to load basic information on a cube dataset. Specify
@@ -292,7 +292,7 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
     `Cube.clear_filters()`. Fetch dataset through `Cube.to_dataframe()` method.
 
     Attributes:
-        connection: MicroStrategy connection object returned by
+        connection: Strategy One connection object returned by
             `connection.Connection()`.
         id: Identifier of a pre-existing cube containing the required data.
         instance_id (str): Identifier of an instance if cube instance has been
@@ -338,11 +338,10 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
         ): cube_processors.get_info,
     }
     _API_PATCH: dict = {
-        'comments': (objects_processors.update, 'partial_put'),
+        ('comments', 'owner'): (objects_processors.update, 'partial_put'),
     }
     _FROM_DICT_MAP = {
         **Entity._FROM_DICT_MAP,
-        'owner': User.from_dict,
         'certified_info': CertifiedInfo.from_dict,
     }
     _SIZE_LIMIT = 10000000  # this sets desired chunk size in bytes
@@ -363,7 +362,7 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
             uniquely identify cube.
 
         Args:
-            connection: MicroStrategy connection object returned by
+            connection: Strategy One connection object returned by
                 `connection.Connection()`.
             id (str): Identifier of a pre-existing cube containing
                 the required data.
@@ -429,6 +428,7 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
         abbreviation: str | None = None,
         hidden: bool | None = None,
         comments: str | None = None,
+        owner: str | User | None = None,
     ):
         """Alter Cube properties.
 
@@ -436,9 +436,12 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
             name: new name of the Dataset
             description: new description of the Dataset
             abbreviation: new abbreviation of the Dataset
-            hidden: Specifies whether the metric is hidden
+            hidden: Specifies whether the Dataset is hidden
             comments: new long description of the Dataset
+            owner: (str, User, optional): owner of the Dataset
         """
+        if isinstance(owner, User):
+            owner = owner.id
         func = self.alter
         args = func.__code__.co_varnames[: func.__code__.co_argcount]
         defaults = func.__defaults__  # type: ignore

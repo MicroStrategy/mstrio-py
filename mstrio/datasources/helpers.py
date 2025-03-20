@@ -22,6 +22,7 @@ class DBType(AutoName):
     CIRRO = auto()
     CLOUD_ELEMENT = auto()
     CLOUD_GATEWAY = auto()
+    CLOUD_GATEWAY_ADOBE_ANALYTICS = auto()
     CLOUD_GATEWAY_AWS_S3 = auto()
     CLOUD_GATEWAY_AZURE_ADLS_2 = auto()
     CLOUD_GATEWAY_GOOGLE_CLOUD_STORAGE = auto()
@@ -162,3 +163,8 @@ class ExecutionMode(AutoName):
     ASYNC_CONNECTION = auto()
     ASYNC_STATEMENT = auto()
     SYNCHRONOUS = auto()
+
+
+class OAuthGrantType(AutoName):
+    AUTHORIZATION_CODE = auto()
+    CLIENT_CREDENTIALS = auto()

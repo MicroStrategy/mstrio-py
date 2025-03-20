@@ -1,4 +1,4 @@
-"""This is the demo script to show how to export data from MicroStrategy with
+"""This is the demo script to show how to export data from Strategy One with
 SuperCube. It is possible to create and publish single or multi-table SuperCube.
 
 You can update super cube with different policies when adding table:
@@ -98,7 +98,7 @@ attribute_form_mapping = SuperCubeAttribute(
 ds.create(attribute_forms=[attribute_form_mapping])
 
 # When using `SuperCube.add_table()`, Pandas data types are mapped to
-# MicroStrategy data types. By default, numeric data is modeled as MSTR metrics
+# Strategy One data types. By default, numeric data is modeled as MSTR metrics
 # and non-numeric as attributes. You can set manually which columns treat as
 # attributes and which as metrics.
 ds.add_table(name="Stores", data_frame=stores_df, update_policy="add", to_attribute=["store_id"])
@@ -129,6 +129,6 @@ ds.update()
 ds.certify()
 
 # Limitations
-# Updating SuperCubes that were not created using the MicroStrategy REST API is
-# not possible. This applies for example to Cubes created via MicroStrategy Web
+# Updating SuperCubes that were not created using the Strategy One REST API is
+# not possible. This applies for example to Cubes created via Strategy One Web
 # client.

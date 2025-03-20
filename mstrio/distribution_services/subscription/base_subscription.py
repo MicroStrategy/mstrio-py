@@ -1,4 +1,5 @@
 import logging
+from collections.abc import Callable
 from datetime import datetime
 from enum import auto
 from functools import partial
@@ -50,11 +51,11 @@ class RecipientsTypes(AutoUpperName):
 
 
 class Subscription(EntityBase):
-    """Class representation of MicroStrategy Subscription object.
+    """Class representation of Strategy One Subscription object.
 
     Attributes:
         subscription_id: The ID of the Subscription
-        connection: The MicroStrategy connection object
+        connection: The Strategy One connection object
         project_id: The ID of the project the Subscription belongs to
     """
 
@@ -117,7 +118,7 @@ class Subscription(EntityBase):
         When `project_id` is provided (not `None`), `project_name` is omitted.
 
         Args:
-            connection (Connection): MicroStrategy connection object returned
+            connection (Connection): Strategy One connection object returned
                 by `connection.Connection()`
             id (str, optional): ID of the subscription to be initialized, only
                 id or subscription_id have to be provided at once, if both
@@ -788,8 +789,8 @@ class Subscription(EntityBase):
     ) -> bool:
         def check_prompts(
             inst_id: str,
-            get_prompts_func: callable,
-            get_status_func: callable,
+            get_prompts_func: Callable,
+            get_status_func: Callable,
             c_id: str,
             c_type: str,
         ) -> bool:
@@ -927,7 +928,7 @@ class Subscription(EntityBase):
         """Creates a subscription Create_Subscription_Outline.
 
         Args:
-            connection (Connection): a MicroStrategy connection object
+            connection (Connection): a Strategy One connection object
             name (str): name of the subscription,
             contents (Content): The content settings.
             project_id (str): project ID,
@@ -1132,6 +1133,7 @@ class Subscription(EntityBase):
             rec = helper.filter_list_of_dicts(available_recipients, id=recipient)
             formatted_recipients.append(rec[0])
 
+        recipients = recipients or []
         recipients = recipients if isinstance(recipients, list) else [recipients]
         body = {
             "contents": [

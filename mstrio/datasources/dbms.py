@@ -17,7 +17,7 @@ def list_available_dbms(
     Optionally filter the DBMS by specifying filters.
 
     Args:
-        connection: MicroStrategy connection object returned by
+        connection: Strategy One connection object returned by
             `connection.Connection()`
         to_dictionary: If True returns dict, by default (False) returns
             User objects.
@@ -39,7 +39,7 @@ def list_available_dbms(
 
 @class_version_handler('11.3.0000')
 class Dbms(EntityBase):
-    """Object representation of MicroStrategy Database management system (DBMS)
+    """Object representation of Strategy One Database management system (DBMS)
 
     Attributes:
         name: Database management system (DBMS) name.

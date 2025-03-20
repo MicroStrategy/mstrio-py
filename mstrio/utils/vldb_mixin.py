@@ -56,7 +56,7 @@ class ResolvedLocation(AutoName):
 
 @dataclass
 class VldbSetting(Dictable):
-    """Class representation of single MicroStrategy VLDB setting.
+    """Class representation of single Strategy One VLDB setting.
 
     Attributes:
         type (VldbPropertyType): Type of VLDB setting value.

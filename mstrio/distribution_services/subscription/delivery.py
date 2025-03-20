@@ -463,10 +463,8 @@ class Delivery(DeliveryDictable):
         self.contact_security = contact_security
         self.expiration_time_zone = expiration_time_zone
 
-        if zip is None and compress:
-            temp_zip = ZipSettings(filename, password, password_protect)
-        elif zip is not None and compress:
-            temp_zip = zip
+        if compress:
+            temp_zip = zip or ZipSettings(filename, password, password_protect)
         else:
             temp_zip = None
 

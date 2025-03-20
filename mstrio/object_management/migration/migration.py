@@ -60,7 +60,7 @@ def list_migration_possible_content(
     environment version.
 
     Args:
-        connection (Connection): A MicroStrategy connection object
+        connection (Connection): A Strategy One connection object
         package_type (PackageType): Type of the package
 
     Returns:
@@ -102,7 +102,7 @@ def list_migrations(
     Optionally use `to_dictionary` to choose output format.
 
     Args:
-        connection (Connection): A MicroStrategy connection object
+        connection (Connection): A Strategy One connection object
         name (str, optional): characters that the Migration name must contain
         migration_purpose (MigrationPurpose, str, optional): purpose of the
             migration can be either 'object_migration', 'project_merge' or
@@ -202,7 +202,7 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
         name(str): Name of the migration
         type(str): MSTR type of the migration object. Returns either
             NOT_SUPPORTED or None
-        connection(Connection): A MicroStrategy connection object
+        connection(Connection): A Strategy One connection object
         import_info(ImportInfo): Information about the import process
         package_info(PackageInfo): Information about the package configuration
             and status
@@ -237,7 +237,7 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
         """Initialize migration object by its identifier.
 
         Args:
-            connection: MicroStrategy connection object returned
+            connection: Strategy One connection object returned
                 by `connection.Connection()`
             id (str, optional): identifier of a pre-existing migration.
                 Defaults to None.
@@ -286,7 +286,7 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
         """Create a totally new migration object.
 
         Args:
-            connection: A MicroStrategy connection object
+            connection: A Strategy One connection object
             body: a json body with migration details
             project_id: ID of the project
             project_name: Name of the project
@@ -338,7 +338,7 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
         Create a new migration for object migration purpose.
 
         Args:
-            connection (Connection): A MicroStrategy connection object.
+            connection (Connection): A Strategy One connection object.
             toc_view (dict, PackageConfig): A dictionary representing the TOC
                 view or a PackageConfig object.
             tree_view (str, optional): A string representing the tree view.
@@ -372,7 +372,7 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
         Create a new migration for administration migration purpose.
 
         Args:
-            connection (Connection): A MicroStrategy connection object.
+            connection (Connection): A Strategy One connection object.
             toc_view (dict, PackageConfig): A dictionary representing the TOC
                 view or a PackageConfig object.
             tree_view (str): A string representing the tree view.
@@ -406,7 +406,7 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
         Create a new migration for project merge migration purpose.
 
         Args:
-            connection (Connection): A MicroStrategy connection object.
+            connection (Connection): A Strategy One connection object.
             toc_view (dict): A dictionary representing the TOC view or a
                 ProjectMergePackageSettings | ProjectMergePackageTocView object.
             tree_view (str): A string representing the tree view.
@@ -552,7 +552,7 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
         Project information is required in case of object migration.
 
         Args:
-            connection (Connection): A MicroStrategy connection object.
+            connection (Connection): A Strategy One connection object.
             file_path (str): A full path to the package file.
             package_type (PackageType | str): Type of the package.
             name (str, optional): Name of the migration. Used for identification
@@ -619,7 +619,6 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
             connection=connection,
             body=body,
             prefer='respond-async',
-            lock_on_start=True,
             project_id=target_project_id,
         )
         mig_id = response_data.json().get('id')
@@ -1058,7 +1057,7 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
             provided content.
 
         Args:
-            connection (Connection): A MicroStrategy connection object.
+            connection (Connection): A Strategy One connection object.
             content (list[Object | dict]): List of objects to migrate.
             package_settings (PackageSettings): Package settings information.
             object_action_map (list[tuple], optional): List of tuples where the

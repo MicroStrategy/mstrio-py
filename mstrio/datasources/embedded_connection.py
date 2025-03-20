@@ -17,7 +17,7 @@ class EmbeddedConnection(EntityBase):
     connection template for the datasource.
 
     Attributes:
-        connection: A MicroStrategy connection object.
+        connection: A Strategy One connection object.
         id: Unique datasource connection ID.
         name: Unique datasource connection name.
         datasource_id: ID of the corresponding datasource instance.
@@ -157,7 +157,7 @@ class EmbeddedConnection(EntityBase):
         """Initialize EmbeddedConnection object and synchronize with server.
 
         Args:
-            connection: MicroStrategy connection object returned by
+            connection: Strategy One connection object returned by
                 `connection.Connection()`.
             datasource_id: ID of the corresponding Datasource Connection.
                 The embedded connection object has an ID, but it cannot be used

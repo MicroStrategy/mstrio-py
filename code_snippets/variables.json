@@ -764,6 +764,10 @@
       "type": "text",
       "multiple": false
     },
+    "new_filter_name_string": {
+      "type": "text",
+      "multiple": false
+    },
     "filter_new_desc": {
       "type": "text",
       "multiple": false
@@ -1311,6 +1315,10 @@
       "multiple": false
     },
     "new_security_filter_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "new_security_filter_name_string": {
       "type": "text",
       "multiple": false
     },
@@ -2039,56 +2047,6 @@
       "multiple": false
     },
     "cache_status": {
-      "type": "text",
-      "multiple": false
-    }
-  },
-  "dossier.py": {
-    "project_id": {
-      "type": "text",
-      "multiple": false
-    },
-    "project_name": {
-      "type": "text",
-      "multiple": false
-    },
-    "dossier_name": {
-      "type": "text",
-      "multiple": false
-    },
-    "dossier_id": {
-      "type": "text",
-      "multiple": false
-    },
-    "new_dossier_name": {
-      "type": "text",
-      "multiple": false
-    },
-    "new_dossier_description": {
-      "type": "text",
-      "multiple": false
-    },
-    "folder_id": {
-      "type": "text",
-      "multiple": false
-    },
-    "user_id": {
-      "type": "text",
-      "multiple": false
-    },
-    "cache_id": {
-      "type": "text",
-      "multiple": false
-    },
-    "other_cache_id": {
-      "type": "text",
-      "multiple": false
-    },
-    "cache_status": {
-      "type": "text",
-      "multiple": false
-    },
-    "user_name": {
       "type": "text",
       "multiple": false
     }

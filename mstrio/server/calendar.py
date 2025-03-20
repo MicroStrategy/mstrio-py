@@ -1,16 +1,14 @@
 from logging import getLogger
+
 from mstrio import config
-import mstrio.api.calendars as calendars_api
 from mstrio.connection import Connection
 from mstrio.types import ObjectSubTypes, ObjectTypes
 from mstrio.users_and_groups.user import User
 from mstrio.utils import helper
 from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity
 from mstrio.utils.enums import DaysOfWeek
-from mstrio.utils.response_processors import (
-    objects as objects_processors,
-    calendars as calendars_processors,
-)
+from mstrio.utils.response_processors import calendars as calendars_processors
+from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
 logger = getLogger(__name__)
@@ -28,7 +26,7 @@ def list_calendars(
     """List all available calendar objects.
 
     Args:
-        connection (Connection): MicroStrategy connection object returned
+        connection (Connection): Strategy One connection object returned
             by `connection.Connection()`
         to_dictionary: If True, returns a list of dicts,
             otherwise returns a list of Calendar objects
@@ -85,13 +83,25 @@ class Calendar(Entity, CopyMixin, DeleteMixin):
             'week_start_day',
         ): calendars_processors.get_calendar,
     }
-
-    @staticmethod
-    def _parse_owner(source, connection, to_snake_case: bool = True):
-        """Parses owner from the API response."""
-        from mstrio.users_and_groups import User
-
-        return User.from_dict(source, connection, to_snake_case)
+    _API_PATCH = {
+        (
+            'name',
+            'description',
+            'table_prefix',
+            'base_calendar',
+            'calendar_begin',
+            'calendar_end',
+            'week_start_day',
+        ): (calendars_processors.update_calendar, 'partial_put'),
+        (
+            'comments',
+            'owner',
+        ): (objects_processors.update, 'partial_put'),
+    }
+    _PATCH_PATH_TYPES = {
+        **Entity._PATCH_PATH_TYPES,
+        'base_calendar': dict,
+    }
 
     @staticmethod
     def _parse_base_calendar(
@@ -214,7 +224,7 @@ class Calendar(Entity, CopyMixin, DeleteMixin):
         """Create a new calendar with the specified properties.
 
         Args:
-            connection (Connection): MicroStrategy connection object returned by
+            connection (Connection): Strategy One connection object returned by
                 `connection.Connection()`
             name (str): Name of the calendar object
             base_calendar (str or Calendar, optional): Reference (ID or Calendar
@@ -282,6 +292,8 @@ class Calendar(Entity, CopyMixin, DeleteMixin):
         name: str | None = None,
         week_start_day: DaysOfWeek | None = None,
         description: str | None = None,
+        comments: str | None = None,
+        owner: str | User | None = None,
         base_calendar: 'str | Calendar | None' = None,
         table_prefix: str | None = None,
         calendar_begin_static: int | None = None,
@@ -289,6 +301,31 @@ class Calendar(Entity, CopyMixin, DeleteMixin):
         calendar_end_static: int | None = None,
         calendar_end_offset: int | None = None,
     ) -> None:
+        """Alter the calendar's properties.
+        Args:
+            name (str, optional): Name of the calendar object
+            week_start_day (DaysOfWeek, optional): First day of the week
+            description (str, optional): Description of the calendar object
+            comments (str, optional): long description of the calendar object
+            owner: (str or User, optional): owner of the calendar object
+            base_calendar (str or Calendar, optional): Reference (ID or Calendar
+                object) to the base calendar
+            table_prefix (str, optional): Prefix used to create tables
+                in the warehouse
+            calendar_begin_static (int, optional): Beginning year for the
+                calendar. Must be provided if and only if
+                `calendar_begin_offset` is not
+            calendar_begin_offset (int, optional): Beginning year for the
+                calendar as an offset from the current year. Must be provided
+                if and only if `calendar_begin_static` is not
+            calendar_end_static (int, optional): Ending year for the calendar.
+                Must be provided if and only if `calendar_end_offset` is not
+            calendar_end_offset (int, optional): Ending year for the calendar
+                as an offset from the current year. Must be provided if and
+                only if `calendar_end_static` is not
+        """
+        if isinstance(owner, User):
+            owner = owner.id
         self._validate_year_definition_deltas(
             calendar_begin_static=calendar_begin_static,
             calendar_begin_offset=calendar_begin_offset,
@@ -306,31 +343,33 @@ class Calendar(Entity, CopyMixin, DeleteMixin):
         name = name or self.name
         table_prefix = table_prefix or self.table_prefix
         if calendar_begin_static is None and calendar_begin_offset is None:
-            calendar_begin_static = self.calendar_begin_static
-            calendar_begin_offset = self.calendar_begin_offset
+            calendar_begin_static = getattr(self, 'calendar_begin_static', None)
+            calendar_begin_offset = getattr(self, 'calendar_begin_offset', None)
         if calendar_end_static is None and calendar_end_offset is None:
-            calendar_end_static = self.calendar_end_static
-            calendar_end_offset = self.calendar_end_offset
+            calendar_end_static = getattr(self, 'calendar_end_static', None)
+            calendar_end_offset = getattr(self, 'calendar_end_offset', None)
         week_start_day = week_start_day or self.week_start_day
 
-        body = {
-            "information": {"name": name, "description": description},
-            "tablePrefix": table_prefix,
-            "baseCalendar": {"objectId": base_calendar_id},
-            "calendarBegin": {
-                "staticYear": calendar_begin_static,
-                "dynamicYearOffset": calendar_begin_offset,
+        properties = {
+            "name": name,
+            "description": description,
+            "comments": comments,
+            "owner": owner,
+            "table_prefix": table_prefix,
+            "base_calendar": {"object_id": base_calendar_id},
+            "calendar_begin": {
+                "static_year": calendar_begin_static,
+                "dynamic_year_offset": calendar_begin_offset,
             },
-            "calendarEnd": {
-                "staticYear": calendar_end_static,
-                "dynamicYearOffset": calendar_end_offset,
+            "calendar_end": {
+                "static_year": calendar_end_static,
+                "dynamic_year_offset": calendar_end_offset,
             },
-            "weekStartDay": week_start_day.value,
+            "week_start_day": week_start_day.value,
         }
 
-        body = helper.delete_none_values(source=body, recursion=True)
-        calendars_api.update_calendar(connection=self.connection, id=self.id, body=body)
-        self.fetch()
+        properties = helper.delete_none_values(properties, recursion=True)
+        self._alter_properties(**properties)
 
     def get_calendar_begin(self, base_year: int | None) -> int:
         if self.calendar_begin_offset is None:

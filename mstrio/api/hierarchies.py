@@ -8,9 +8,9 @@ def get_attribute_relationships(connection: Connection, id: str, project_id: str
     """Get relationship(s) of an attribute
 
     Args:
-        connection: MicroStrategy REST API connection object
-        id: ID of a attribute
-        project_id: Id of a project
+        connection: Strategy One REST API connection object
+        id: ID of an attribute
+        project_id: ID of a project
 
     Return:
         HTTP response object. Expected status: 200
@@ -34,8 +34,8 @@ def update_attribute_relationships(
     """Update relationship(s) of an attribute
 
     Args:
-        connection: MicroStrategy REST API connection object
-        id: ID of a attribute
+        connection: Strategy One REST API connection object
+        id: ID of an attribute
         body: JSON-formatted definition of the attribute relationships
 
     Return:

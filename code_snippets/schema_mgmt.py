@@ -5,6 +5,7 @@ Its basic goal is to present what can be done with this module and to
 ease its usage.
 """
 
+from mstrio.helpers import IServerError
 from mstrio.modeling.schema import SchemaManagement, SchemaLockType, SchemaUpdateType
 
 from mstrio.connection import get_connection
@@ -49,6 +50,15 @@ task = schema_mgmt.get_task(task_index=0)
 # get all details about the last task which is stored within schema management
 # object
 task_st = schema_mgmt.get_task(task_index=-1)
+
+# Reload schema without asynchronous response. This will guarantee that the
+# schema reload task is completed before the next operation is performed.
+# If the task fails, an exception will be raised. This does not return any
+# intermediate task details.
+try:
+    schema_mgmt.reload(respond_async=False)
+except IServerError as e:
+    print(f"Error occurred: {e}")
 
 # unlock schema and get its status
 schema_mgmt.unlock()

@@ -41,7 +41,6 @@
     "user_mgmt.py": "Standard",
     "content_cache.py": "Standard",
     "document.py": "Standard",
-    "dossier.py": "Standard",
     "dashboard.py": "Standard",
     "reports.py": "Standard",
     "vldb.py": "Standard",

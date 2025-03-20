@@ -64,7 +64,13 @@ class BaseSettings(metaclass=ABCMeta):
     def update(self) -> None:
         """Update the current settings on I-Server using this Settings
         object."""
-        pass
+        for key, setting in self.__dict__.items():
+            if (
+                not key.startswith('_')
+                and isinstance(setting, SettingValue)
+                and setting._modified
+            ):
+                setting._modified = False
 
     def _get_config(self):
         """Fetch the settings config to be used in this Settings class."""
@@ -254,6 +260,9 @@ class BaseSettings(metaclass=ABCMeta):
             }
 
         settings = self.list_properties(show_names=False)
+        settings = {
+            k: v for k, v in settings.items() if k in set(self._get_modified_settings())
+        }
         settings = convert_settings_to_byte(settings, self._CONVERSION_MAP)
         settings = to_rest_format(settings)
         return settings
@@ -299,13 +308,24 @@ class BaseSettings(metaclass=ABCMeta):
         return json.dumps((self.list_properties()), indent=4)
 
     def __setattr__(self, name, value):
-        name = super().__getattribute__(name)
-        if isinstance(name, (SettingValue, DeprecatedSetting)):
-            if name.value != value or not isinstance(name.value, type(value)):
-                name._validate_value(value)
-                if getattr(name, 'reboot_rule', None) is not None:
-                    msg = f"{name.name}: {name.reboot_rule.get('description')}"
+        setting = self.__getattribute__(name)
+        if isinstance(setting, (SettingValue, DeprecatedSetting)):
+            if setting.value != value or not isinstance(setting.value, type(value)):
+                setting._validate_value(value)
+                if getattr(setting, 'reboot_rule', None) is not None:
+                    msg = f"{setting.name}: {setting.reboot_rule.get('description')}"
                     helper.exception_handler(msg=msg, exception_type=Warning)
-                name.value = value
+                setting.value = value
+                if not isinstance(setting, DeprecatedSetting):
+                    setting._modified = True
         else:
-            super().__setattr__(name, value)
+            super().__setattr__(setting, value)
+
+    def _get_modified_settings(self):
+        return [
+            key
+            for key, setting in self.__dict__.items()
+            if not key.startswith('_')
+            and isinstance(setting, SettingValue)
+            and setting._modified
+        ]

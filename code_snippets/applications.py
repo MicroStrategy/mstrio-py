@@ -1,4 +1,4 @@
-"""This is the demo script to show how to manage applications. 
+"""This is the demo script to show how to manage applications.
 Its basic goal is to present what can be done with this module and to ease
 its usage.
 """
@@ -13,7 +13,7 @@ conn = get_connection(workstationData, project_id=PROJECT_ID)
 
 
 # Define variables which can be later used in a script
-LIMIT = $limit 
+LIMIT = $limit
 NAME_FILTER = $name_filter
 
 # list applications with different conditions

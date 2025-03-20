@@ -6,7 +6,7 @@ from mstrio.utils.helper import Dictable
 
 @dataclass
 class Prompt(Dictable):
-    """A MicroStrategy class representing a prompt.
+    """A Strategy One class representing a prompt.
 
     Attributes:
         type (str): Type of the prompt

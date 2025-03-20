@@ -27,7 +27,7 @@ def list_bots(
     """Get a list of bots.
 
     Args:
-        connection (Connection): MicroStrategy connection object returned
+        connection (Connection): Strategy One connection object returned
             by 'connection.Connection()'
         name (str, optional): characters that the dashboard name must contain
         to_dictionary (bool, optional): if True, return Bots as a
@@ -68,18 +68,17 @@ def list_bots(
 
 @class_version_handler('11.4.0300')
 class Bot(Entity, CertifyMixin, CopyMixin, DeleteMixin, MoveMixin):
-    """Python representation of a MicroStrategy Bot object"""
+    """Python representation of a Strategy One Bot object"""
 
     _OBJECT_TYPE = ObjectTypes.DOCUMENT_DEFINITION
     _OBJECT_SUBTYPE = ObjectSubTypes.DOCUMENT_BOT
     _API_GETTERS = {**Entity._API_GETTERS, ('status',): objects_processors.get_info}
     _API_PATCH: dict = {
         **Entity._API_PATCH,
-        ('status', 'folder_id'): (objects_processors.update, 'partial_put'),
+        ('status', 'folder_id', 'owner'): (objects_processors.update, 'partial_put'),
     }
     _FROM_DICT_MAP = {
         **Entity._FROM_DICT_MAP,
-        'owner': User.from_dict,
         'certified_info': CertifiedInfo.from_dict,
     }
 
@@ -89,7 +88,7 @@ class Bot(Entity, CertifyMixin, CopyMixin, DeleteMixin, MoveMixin):
         """Initialize Bot object by passing name or id.
 
         Args:
-            connection (object): MicroStrategy connection object returned
+            connection (object): Strategy One connection object returned
                 by `connection.Connection()`
             name (string, optional): name of Bot
             id (string, optional): ID of Bot
@@ -124,6 +123,7 @@ class Bot(Entity, CertifyMixin, CopyMixin, DeleteMixin, MoveMixin):
         hidden: bool | None = None,
         status: str | None = None,
         comments: str | None = None,
+        owner: str | User | None = None,
     ) -> None:
         """Alter the Bot.
 
@@ -139,7 +139,10 @@ class Bot(Entity, CertifyMixin, CopyMixin, DeleteMixin, MoveMixin):
             status (str, optional): Status of the bot
                 Can be either enabled or disabled
             comments (str, optional): New long description for the bot
+            owner: (str, User, optional): owner of the Driver
         """
+        if isinstance(owner, User):
+            owner = owner.id
         description = description or self.description
         if folder_path and not folder_id:
             folder_id = get_folder_id_from_path(

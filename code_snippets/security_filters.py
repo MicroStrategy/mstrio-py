@@ -97,6 +97,19 @@ new_security_filter = SecurityFilter.create(
 )
 print(new_security_filter)
 
+
+# Create new security filter providing string as qualification expression.
+NEW_SECURITY_FILTER_NAME_STRING = $new_security_filter_name_string
+QUALIFICATION_STRING = '(Year(CurrentDate()) - 5)< Year@ID'
+
+new_security_filter_string = SecurityFilter.create(
+    connection=conn,
+    qualification=QUALIFICATION_STRING,
+    name=NEW_SECURITY_FILTER_NAME_STRING,
+    destination_folder=FOLDER_ID
+)
+print(new_security_filter_string)
+
 # Create new security filter with more than one attribute form.
 
 # 1. List attributes to get attribute IDs

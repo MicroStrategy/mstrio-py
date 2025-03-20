@@ -15,7 +15,7 @@ from mstrio.helpers import (
     VersionException,
 )
 from mstrio.types import ObjectTypes
-from mstrio.utils.enum_helper import AutoName, get_enum_val
+from mstrio.utils.enum_helper import AutoName, get_enum, get_enum_val
 from mstrio.utils.helper import Dictable, exception_handler, filter_obj_list
 from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.version_helper import is_server_min_version
@@ -379,7 +379,7 @@ class TrusteeACLMixin:
     """
 
     def set_permission(
-        self,
+        self: 'UserOrGroup',
         permission: Permissions | str,
         to_objects: str | list[str],
         object_type: 'ObjectTypes | int',
@@ -413,16 +413,7 @@ class TrusteeACLMixin:
             None
         """
 
-        if not isinstance(permission, Permissions):
-            try:
-                permission = Permissions(permission)
-            except ValueError:
-                msg = (
-                    "Invalid `permission` value. Available values are: 'View', "
-                    "'Modify', 'Full Control', 'Denied All', 'Default All'. "
-                    "See: Permissions enum."
-                )
-                exception_handler(msg)
+        permission = get_enum(permission, Permissions)
         right_value = AGGREGATED_RIGHTS_MAP[permission].value
         denied = permission is Permissions.DENIED_ALL
 
@@ -477,7 +468,7 @@ class TrusteeACLMixin:
                 pass
 
     def set_custom_permissions(
-        self,
+        self: 'UserOrGroup',
         to_objects: str | list[str],
         object_type: 'ObjectTypes | int',
         project: 'Project | str | None' = None,
@@ -641,7 +632,7 @@ def modify_rights(
         - `ObjectTypes.UserGroup`
 
     Args:
-        connection (Connection): MicroStrategy connection object returned by
+        connection (Connection): Strategy One connection object returned by
             `connection.Connection()`
         object_type (ObjectTypes, int): Type of every object from ids list.
             One of EnumDSSXMLObjectTypes. Ex. 34 (User or UserGroup),

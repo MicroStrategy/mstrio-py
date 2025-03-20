@@ -23,7 +23,7 @@ def create_folder(
         `connection` object.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         name (string): name of folder to create
         parent_id (string): id of folder in which new folder will be created
         description (string, optional): description of folder to create
@@ -44,7 +44,7 @@ def delete_folder(connection: Connection, id: str, project_id: str | None = None
     """Delete complete folder.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id (string): ID of folder
         project_id (string, optional): id of project
 
@@ -68,7 +68,7 @@ def list_folders(
     """Get a list of folders.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         project_id (string, optional): id of project
         offset (int, optional): Starting point within the collection of returned
             results. Used to control paging behavior. Default is 0.
@@ -96,7 +96,7 @@ def list_folders_async(
 
     Args:
         future_session(object): `FuturesSessionWithRenewal` object to call
-            MicroStrategy REST Server asynchronously
+            Strategy One REST Server asynchronously
         project_id (string, optional): id of project
         offset (int, optional): Starting point within the collection of returned
             results. Used to control paging behavior. Default is 0.
@@ -125,7 +125,7 @@ def get_folder_contents(
     """Get contents of a folder.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id (string): ID of folder
         project_id (string, optional): id of project
         offset (int, optional): Starting point within the collection of returned
@@ -156,7 +156,7 @@ def get_folder_contents_async(
 
     Args:
         future_session(object): `FuturesSessionWithRenewal` object to call
-            MicroStrategy REST Server asynchronously
+            Strategy One REST Server asynchronously
         id (string): ID of folder
         project_id (string, optional): id of project
         offset (int, optional): Starting point within the collection of returned
@@ -186,7 +186,7 @@ def get_predefined_folder_id(
     """Get ID of a pre-defined folder.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         folder_type (int): predefined folder type, from `EnumDSSXMLFolderNames`
         project_id (string, optional): id of project
 
@@ -212,7 +212,7 @@ def get_predefined_folder_contents(
     """Get contents of a pre-defined folder.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         folder_type (int): predefined folder type, from `EnumDSSXMLFolderNames`
         project_id (string, optional): id of project
         offset (int, optional): Starting point within the collection of returned
@@ -242,7 +242,7 @@ def get_predefined_folder_contents_async(
 
     Args:
         future_session(object): `FuturesSessionWithRenewal` object to call
-            MicroStrategy REST Server asynchronously
+            Strategy One REST Server asynchronously
         folder_type (int): predefined folder type, from `EnumDSSXMLFolderNames`
         project_id (string, optional): id of project
         offset (int, optional): Starting point within the collection of returned
@@ -267,7 +267,7 @@ def get_my_personal_objects_contents(
     """Get contents of My Personal Objects folder.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         project_id (string, optional): id of project
 
     Returns:

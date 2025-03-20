@@ -21,7 +21,7 @@ class UserConnections:
     `user_connections` by using `filter_connections()` method.
 
     Attributes:
-        connection: A MicroStrategy connection object
+        connection: A Strategy One connection object
         user_connections: All active user connections on the environment
     """
 
@@ -29,7 +29,7 @@ class UserConnections:
         """Initialize the `UserConnections` object.
 
         Args:
-            connection: MicroStrategy connection object returned
+            connection: Strategy One connection object returned
                 by `connection.Connection()`
         """
         self.connection = connection

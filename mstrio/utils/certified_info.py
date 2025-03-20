@@ -9,7 +9,7 @@ class CertifiedInfo(Dictable):
     about the certifier (currently only for document and report).
 
     Attributes:
-        connection: MicroStrategy connection object returned by
+        connection: Strategy One connection object returned by
             `connection.Connection()`.
         certified: Specifies whether the object is trusted,
             as determined by the standards set by the certifier

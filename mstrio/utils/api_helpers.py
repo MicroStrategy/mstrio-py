@@ -22,6 +22,12 @@ if TYPE_CHECKING:
 
 
 def unpack_information(func):
+    """
+    Decorator for unpacking information from the response JSON. It is used for
+    endpoints that store type-agnostic information in the 'information' key.
+    Note: The request body should be passed as a keyword argument 'body'.
+    """
+
     @wraps(func)
     def unpack_information_inner(*args, **kwargs):
         if kwargs.get('body'):

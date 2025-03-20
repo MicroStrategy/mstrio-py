@@ -18,7 +18,7 @@ def list_all_tzs(
     """Get a list of timezones.
 
     Args:
-        connection (Connection): MicroStrategy connection object returned by
+        connection (Connection): Strategy One connection object returned by
             `connection.Connection()`
         subtype (str, optional): Subtype of the timezone to get. If skipped,
             all timezones are returned.
@@ -45,13 +45,13 @@ def create_tz(
     """Create a new timezone.
 
     Args:
-        connection (Connection): MicroStrategy connection object returned by
+        connection (Connection): Strategy One connection object returned by
             `connection.Connection()`
         body (dict): JSON-formatted body of the new timezone
         error_msg (str, optional): Custom error message for error handling
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server.
+        HTTP response object returned by the Strategy One REST server.
     """
     with changeset_manager(
         connection, project_id='', schema_edit=False
@@ -74,7 +74,7 @@ def get_tz(
     """Get a timezone by its identifier.
 
     Args:
-        connection (Connection): MicroStrategy connection object returned by
+        connection (Connection): Strategy One connection object returned by
             `connection.Connection()`
         id (str): Identifier of the timezone to get
         changeset_id (str, optional): Identifier of the changeset to get the
@@ -82,7 +82,7 @@ def get_tz(
         error_msg (str, optional): Custom error message for error handling
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server.
+        HTTP response object returned by the Strategy One REST server.
     """
     return connection.get(
         endpoint=f'/api/model/timezones/{id}',
@@ -101,14 +101,14 @@ def update_tz(
     """Update an existing timezone.
 
     Args:
-        connection (Connection): MicroStrategy connection object returned by
+        connection (Connection): Strategy One connection object returned by
             `connection.Connection()`
         id (str): Identifier of the timezone to update
         body (dict): JSON-formatted body of the updated timezone
         error_msg (str, optional): Custom error message for error handling
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server.
+        HTTP response object returned by the Strategy One REST server.
     """
     with changeset_manager(
         connection, project_id='', schema_edit=False

@@ -46,7 +46,7 @@ def list_user_hierarchies(
     user hierarchies by specifying filters.
 
     Args:
-        connection: MicroStrategy connection object returned by
+        connection: Strategy One connection object returned by
             `connection.Connection()`
         to_dictionary: If True returns dict, by default (False) returns
             User Hierarchy objects.
@@ -260,19 +260,18 @@ class UserHierarchy(Entity, CopyMixin, MoveMixin, DeleteMixin):
             'folder_id',
             'hidden',
             'comments',
+            'owner',
         ): (objects_processors.update, 'partial_put'),
     }
     _API_DELETE = staticmethod(user_hierarchies.delete_user_hierarchy)
     _PATCH_PATH_TYPES = {
-        'name': str,
-        'description': str,
+        **Entity._PATCH_PATH_TYPES,
         'sub_type': str,
         'use_as_drill_hierarchy': bool,
         'destination_folder_id': str,
         'is_embedded': bool,
         'attributes': list,
         'relationships': list,
-        'hidden': bool,
     }
     _REST_ATTR_MAP = {
         "object_id": "id",
@@ -360,7 +359,7 @@ class UserHierarchy(Entity, CopyMixin, MoveMixin, DeleteMixin):
         """Create a new user hierarchy in a specific project.
 
         Args:
-            connection: MicroStrategy connection object returned by
+            connection: Strategy One connection object returned by
                 `connection.Connection()`.
             name (str): name of a new user hierarchy.
             sub_type (str, enum): string literal used to identify the type of
@@ -430,6 +429,7 @@ class UserHierarchy(Entity, CopyMixin, MoveMixin, DeleteMixin):
         relationships: list[HierarchyRelationship] | list[dict] | None = None,
         hidden: bool | None = None,
         comments: str | None = None,
+        owner: str | User | None = None,
     ):
         """Alter the user hierarchies properties.
 
@@ -451,7 +451,10 @@ class UserHierarchy(Entity, CopyMixin, MoveMixin, DeleteMixin):
             hidden (bool, optional): Specifies whether the object is hidden.
                 Default value: False.
             comments (str, optional): long description of the user hierarchy
+            owner: (str, User, optional): owner of the user hierarchy
         """
+        if isinstance(owner, User):
+            owner = owner.id
         func = self.alter
         args = get_args_from_func(func)
         defaults = get_default_args_from_func(func)

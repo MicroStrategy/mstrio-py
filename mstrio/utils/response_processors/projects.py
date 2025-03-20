@@ -14,7 +14,7 @@ def get_project_languages(connection: Connection, id: str, path: str):
     """Get languages of the project.
 
     Args:
-        connection (Connection): MicroStrategy REST API connection object
+        connection (Connection): Strategy One REST API connection object
         id (string): Project ID
         path (string): Path to the languages.
             Available values:
@@ -36,7 +36,7 @@ def get_default_language(connection: Connection, id: str, path: str):
     """Get default language of the project.
 
     Args:
-        connection (Connection): MicroStrategy REST API connection object
+        connection (Connection): Strategy One REST API connection object
         id (string): Project ID
         path (string): Path to the languages.
             Available values:

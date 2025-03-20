@@ -18,7 +18,7 @@ def get_info(
     provided in EnumDSSXMLObjectTypes.
 
     Args:
-        connection (Connection): MicroStrategy connection object returned by
+        connection (Connection): Strategy One connection object returned by
             `connection.Connection()`.
         id (str): Object ID
         object_type (int): One of EnumDSSXMLObjectTypes.
@@ -45,7 +45,7 @@ def update(connection, id: str, body: dict, object_type: int, project_id: str = 
     provided in EnumDSSXMLObjectTypes.
 
     Args:
-        connection (Connection): MicroStrategy connection object returned by
+        connection (Connection): Strategy One connection object returned by
             `connection.Connection()`.
         id (str): Object ID
         body: (dict): body of the response
@@ -53,7 +53,7 @@ def update(connection, id: str, body: dict, object_type: int, project_id: str = 
         project_id (str): ID of a project in which the object is located.
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server.
+        HTTP response object returned by the Strategy One REST server.
     """
     if owner := body.pop('owner', None):
         body['ownerId'] = owner
@@ -87,7 +87,7 @@ def update_translations(
     """Create a translation based on provided body.
 
     Args:
-        connection(Connection): MicroStrategy connection object returned by
+        connection(Connection): Strategy One connection object returned by
             `connection.Connection()`
         target_id (str): ID of the Object the translation will be added for
         project_id (str): ID of the Project the Object is located in
@@ -120,7 +120,7 @@ def get_translations(
     """List translations of the Object.
 
     Args:
-        connection(Connection): MicroStrategy connection object returned by
+        connection(Connection): Strategy One connection object returned by
             `connection.Connection()`
         target_id (str): ID of the Object the translation will be listed for
         project_id (str): ID of the Project the Object is located in

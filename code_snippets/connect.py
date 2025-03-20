@@ -1,5 +1,5 @@
 """
-This demo script shows how to connect to MicroStrategy Environment. This script
+This demo script shows how to connect to Strategy One Environment. This script
 will not work without replacing parameters with real values. Its basic goal is
 to present what can be done with this module and to ease its usage.
 """
@@ -9,8 +9,8 @@ from mstrio.connection import get_connection, Connection
 # Define a variable which can be later used in a script
 PROJECT_NAME = $project_name  # Insert project name here
 
-# The Connection object manages your connection to MicroStrategy. Connect to
-# your MicroStrategy environment by providing the URL to the MicroStrategy REST
+# The Connection object manages your connection to Strategy One. Connect to
+# your Strategy One environment by providing the URL to the Strategy One REST
 # API server, your username, password and the ID of the Project to connect to.
 # When a Connection object is created the user will be automatically logged-in.
 # Connection object automatically renews the connection or reconnects,
@@ -45,7 +45,7 @@ IDENTITY_TOKEN = $identity_token  # Insert your identity token here
 
 # Optionally, the Connection object can be created by passing the IDENTITY_TOKEN
 # parameter, which will create a delegated session. The identity token can be
-# obtained by sending a request to MicroStrategy REST API /auth/identityToken
+# obtained by sending a request to Strategy One REST API /auth/identityToken
 # endpoint.
 conn = Connection(BASE_URL, identity_token=IDENTITY_TOKEN, project_id=PROJECT_ID)
 
@@ -85,7 +85,7 @@ PROXIES = {'http': PROXIES_HTTP_VALUE, PROXIES_HTTPS_KEY: PROXIES_HTTPS_VALUE }
 PROXIES_HTTP_VALUE_USERNAME_AND_PASSWORD = $proxies_http_value_username_and_password
 
 # Proxy
-# Optionally, proxy settings can be set for the MicroStrategy Connection object.
+# Optionally, proxy settings can be set for the Strategy One Connection object.
 conn = Connection(BASE_URL, MSTR_USERNAME, MSTR_PASSWORD, project_id=PROJECT_ID, proxies=PROXIES)
 
 # User can also specify username and password in proxies parameter to use HTTP

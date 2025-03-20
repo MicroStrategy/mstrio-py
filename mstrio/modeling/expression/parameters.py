@@ -59,7 +59,7 @@ class PredicateParameter(Dictable):
         Args:
             source: object that specifies PredicateParameter that will be
                 returned
-            connection (optional): MicroStrategy connection object returned
+            connection (optional): Strategy One connection object returned
             by `connection.Connection()`"""
         data = camel_to_snake(source)
         parameter_type = ParameterType(data.pop('parameter_type'))
@@ -75,7 +75,7 @@ class AttributeElement(Dictable):
     that exists in some data source.
 
     Since an external data source can be modified without using
-    the MicroStrategy Platform, the existence of a concrete element in
+    the Strategy One Platform, the existence of a concrete element in
     the metadata does not mean that the element described currently exists.
     It means that it existed at some point.
 

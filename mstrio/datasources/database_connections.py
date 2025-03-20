@@ -17,14 +17,14 @@ class DatabaseConnections:
     """Browse and manage database connections on the environment.
 
     Attributes:
-        connection: A MicroStrategy connection object
+        connection: A Strategy One connection object
     """
 
     def __init__(self, connection: Connection):
         """Initialize the `DatabaseConnections` object.
 
         Args:
-            connection: MicroStrategy connection object returned
+            connection: Strategy One connection object returned
                 by `connection.Connection()`
         """
         self.connection = connection
