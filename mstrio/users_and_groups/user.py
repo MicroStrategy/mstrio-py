@@ -37,6 +37,7 @@ if TYPE_CHECKING:
     from mstrio.distribution_services import Device
     from mstrio.modeling.security_filter import SecurityFilter
     from mstrio.object_management.folder import Folder
+    from mstrio.users_and_groups.contact import ContactAddress
     from mstrio.users_and_groups.user_group import UserGroup
 
 logger = logging.getLogger(__name__)
@@ -95,6 +96,9 @@ def list_users(
         limit=limit,
         **filters,
     )
+
+
+_DEL_PROF_MIN_VER = '11.5.0300'
 
 
 class User(Entity, TrusteeACLMixin, RelatedSubscriptionMixin):
@@ -719,24 +723,40 @@ class User(Entity, TrusteeACLMixin, RelatedSubscriptionMixin):
 
     def add_address(
         self,
-        name: str,
-        address: str,
+        name: str | None = None,
+        address: str | None = None,
         default: bool = True,
         delivery_type: str | None = None,
         device_id: str | None = None,
+        contact_address: 'ContactAddress | None' = None,
     ) -> None:
         """Add new address to the user object.
 
         Args:
-            name (str): User-specified name for the address
-            address (str): The actual value of the physical address, e.g. email
-                address or file path associated with this address name/id
+            name (str, optional): User-specified name for the address
+            address (str, optional): The actual value of the physical address,
+                e.g. email  address or file path associated with this address
+                name/id
             default (bool, optional): Specifies whether this address is the
                 default address (change isDefault parameter). Default value is
                 set to True.
             delivery_type (str, optional): Delivery type
             device_id (str, optional): Device ID
+            contact_address (ContactAddress, optional): ContactAddress object.
+                If provided, the initial values for the address will be taken
+                from this object. If both contact_address and other parameters
+                are provided, the other parameters will take precedence.
         """
+
+        if contact_address:
+            name = contact_address.name if name is None else name
+            address = contact_address.physical_address if address is None else address
+            delivery_type = (
+                contact_address.delivery_type.value
+                if delivery_type is None
+                else delivery_type
+            )
+            device_id = contact_address.device.id if device_id is None else device_id
         if delivery_type or device_id:
             response = self._create_address_v2(
                 name=name,
@@ -1175,15 +1195,23 @@ class User(Entity, TrusteeACLMixin, RelatedSubscriptionMixin):
         Returns:
             True for success. False otherwise.
         """
+        add_msg = ' including their profile folder' if delete_profile else ''
         message = (
             f"Are you sure you want to delete User: "
-            f"'{self.name}' with ID: {self.id}? [Y/N]: "
+            f"'{self.name}' with ID: {self.id}{add_msg}? [Y/N]: "
         )
         if not force and input(message) != 'Y':
             return False
 
         if delete_profile:
-            self.delete_profile_folder(force=True)
+            if not is_server_min_version(self.connection, _DEL_PROF_MIN_VER):
+                logger.warning(
+                    'Profile folder deletion requires '
+                    f'I-Server version {_DEL_PROF_MIN_VER} or higher. '
+                    'Ignoring profile folder deletion during User deletion.'
+                )
+            else:
+                self.delete_profile_folder(force=True)
 
         response = users_api.delete_user(self.connection, self.id)
 
@@ -1354,7 +1382,7 @@ class User(Entity, TrusteeACLMixin, RelatedSubscriptionMixin):
 
         return Folder.from_dict(res, self.connection)
 
-    @method_version_handler('11.5.0300')
+    @method_version_handler(_DEL_PROF_MIN_VER)
     def delete_profile_folder(
         self,
         project_id: str | None = None,

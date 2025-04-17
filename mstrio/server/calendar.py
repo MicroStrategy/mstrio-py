@@ -17,7 +17,7 @@ logger = getLogger(__name__)
 @method_version_handler(version='11.3.0700')
 def list_calendars(
     connection: Connection,
-    to_dictionary=False,
+    to_dictionary: bool = False,
     limit: int | None = None,
     offset: int | None = None,
     only_system_calendars: bool | None = None,

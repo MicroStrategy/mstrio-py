@@ -6,13 +6,11 @@
 
 # mstrio: Simple and Secure Access to Strategy One Data <!-- omit in toc -->
 
-**MicroStrategy for Jupyter Extension is no longer developed and supported and was removed from the mstrio-py package in March 2024. You can still use the mstrio-py library and all its current and upcoming features.**
-
-**mstrio** provides a high-level interface for [Python][py_github] and is designed to give **data scientists**, **developers**, and **administrators** simple and secure access to their Strategy One environment. It wraps [Strategy One REST APIs][mstr_rest_docs] into simple workflows, allowing users to fetch data from cubes and reports, create new datasets, add new data to existing datasets, and manage Users/User Groups, Servers, Projects, and more. Since it enforces Strategy One’s user and object security model, you don’t need to worry about setting up separate security rules.
-
-With mstrio-py for **data science**, it’s easy to integrate cross-departmental, trustworthy business data in machine learning workflows and enable decision-makers to take action on predictive insights in Strategy One Reports, Dashboards, HyperIntelligence Cards, and customized, embedded analytical applications.
+**mstrio** provides a high-level interface for [Python][py_github] and is designed to give **administrators**, **developers**, and **data scientists** simple and secure access to their Strategy One environment. It wraps [Strategy One REST APIs][mstr_rest_docs] into simple workflows, allowing users to fetch data from cubes and reports, create new datasets, add new data to existing datasets, and manage Users/User Groups, Servers, Projects, and more. Since it enforces Strategy One’s user and object security model, you don’t need to worry about setting up separate security rules.
 
 With mstrio-py for **system administration**, it’s easy to minimize costs by automating critical, time-consuming administrative tasks, even enabling administrators to leverage the power of Python to address complex administrative workflows for maintaining a Strategy One environment.
+
+With mstrio-py for **data science**, it’s easy to integrate cross-departmental, trustworthy business data in machine learning workflows and enable decision-makers to take action on predictive insights in Strategy One Reports, Dashboards, HyperIntelligence Cards, and customized, embedded analytical applications.
 
 # Table of Contents <!-- omit in toc -->
 
@@ -156,7 +154,7 @@ pip install mstrio-py
 
 # Versioning & Changelog
 
-Current version: **11.5.3.101** (21 March 2025). Check out [**Changelog**][release_notes] to see what's new.
+Current version: **11.5.4.101** (18 April 2025). Check out [**Changelog**][release_notes] to see what's new.
 
 mstrio-py is constantly developed to support newest Strategy One REST APIs. Functionalities may be added to mstrio on monthly basis. It is **recommended** to always install the newest version of mstrio-py, as it will be most stable and still maintain backwards compatibility with various Strategy One installations, dating back to 11.1.4.
 

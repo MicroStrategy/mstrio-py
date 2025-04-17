@@ -158,6 +158,10 @@
       "type": "text",
       "multiple": false
     },
+    "api_token": {
+      "type": "text",
+      "multiple": false
+    },
     "identity_token": {
       "type": "text",
       "multiple": false
@@ -1017,6 +1021,72 @@
       "multiple": false
     }
   },
+  "license_mgmt.py": {
+    "new_license_key": {
+      "type": "secret",
+      "multiple": false
+    },
+    "department": {
+      "type": "text",
+      "multiple": false
+    },
+    "first_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "last_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "address": {
+      "type": "text",
+      "multiple": false
+    },
+    "postal": {
+      "type": "text",
+      "multiple": false
+    },
+    "country": {
+      "type": "text",
+      "multiple": false
+    },
+    "job_title": {
+      "type": "text",
+      "multiple": false
+    },
+    "city": {
+      "type": "text",
+      "multiple": false
+    },
+    "phone": {
+      "type": "text",
+      "multiple": false
+    },
+    "email": {
+      "type": "text",
+      "multiple": false
+    },
+    "confirm_email": {
+      "type": "text",
+      "multiple": false
+    },
+    "company": {
+      "type": "text",
+      "multiple": false
+    },
+    "location": {
+      "type": "text",
+      "multiple": false
+    },
+    "activation_xml_file": {
+      "type": "text",
+      "multiple": false
+    },
+    "activation_code": {
+      "type": "secret",
+      "multiple": false
+    }
+  },
   "metrics.py": {
     "project_name": {
       "type": "text",
@@ -1421,6 +1491,24 @@
       "multiple": false
     },
     "user_group_name": {
+      "type": "text",
+      "multiple": false
+    }
+  },
+  "shortcuts.py": {
+    "project_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "metric_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "target_folder_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "shortcut_new_name": {
       "type": "text",
       "multiple": false
     }
@@ -1915,6 +2003,10 @@
       "multiple": false
     },
     "password_7": {
+      "type": "text",
+      "multiple": false
+    },
+    "full_name_8": {
       "type": "text",
       "multiple": false
     },

@@ -1,5 +1,30 @@
 # Changelog
 
+## 11.5.4.101 - 2025/04/18
+
+### New features
+
+### Minor changes
+
+- added support for logging in with API Token to `Connection` class
+- added `application_id` argument to `Connection` class to allow logging in using custom application
+- added `contact_address` argument to `User.add_address` method to allow passing `ContactAddress` object
+- added `create_shortcut` method to all objects inheriting from `Entity`
+- added `list_shortcuts` function in `mstrio.object_management.shortcut`
+- added `alter` method to the `Shortcut` class
+- added `what_can_i_do_with` helper method to `mstrio` root folder for helping with scripts creation
+- added `License` class in `mstrio.server.license` subpackage to allow management of License
+
+### Bug fixes
+
+- fixed the `update()` method for `SuperCube` class, to correctly encode `Dataframe` chunks, when chunk size is smaller than the `Dataframe`
+- fixed the `alter()` method for `SuperCube` and `OlapCube` classes not altering the `description` attribute
+- added missing `list_projects` method inside `project.py` module, which was available only via `Environment.list_projects()` class method call
+
+### Removed
+
+- removed the obsolete `CONFIGURATION_AND_ALL_PROJECTS` value from `SearchDomain` enum
+
 ## 11.5.3.101 - 2025/03/21
 
 ### New features

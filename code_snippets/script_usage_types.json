@@ -31,6 +31,7 @@
     "security_filters.py": "Standard",
     "security_roles_and_privileges.py": "Standard",
     "server_mgmt.py": "Standard",
+    "shortcuts.py": "Standard",
     "subscription_mgmt.py": "Standard",
     "table_mgmt.py": "Standard",
     "transformation.py": "Standard",
@@ -44,5 +45,6 @@
     "dashboard.py": "Standard",
     "reports.py": "Standard",
     "vldb.py": "Standard",
-    "project_languages_mgmt.py": "Standard"
+    "project_languages_mgmt.py": "Standard",
+    "license_mgmt.py": "Standard"
   }
