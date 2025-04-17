@@ -24,7 +24,7 @@ user_1 = User(conn, name='User Korean')
 user_2 = User(conn, name='Tilda Austin')
 for address in user_1.addresses:
     print(address)
-    user_2.add_address(address=address['id'])
+    user_2.add_address(contact_address=address)
     user_1.remove_address(id=address['id'])
 
 # migrate User contacts to another User

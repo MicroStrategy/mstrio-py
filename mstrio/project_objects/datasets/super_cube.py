@@ -522,7 +522,7 @@ class SuperCube(_Cube, CertifyMixin):
                 if not chunk.empty:
                     # base64 encode the data
                     encoder = Encoder(data_frame=chunk, dataset_type='multi')
-                    b64_enc = encoder.encode
+                    b64_enc = encoder.b64_data
 
                     # form body of the request
                     body = {

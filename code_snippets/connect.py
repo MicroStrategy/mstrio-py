@@ -25,7 +25,8 @@ conn = get_connection(workstationData, project_name=PROJECT_NAME)
 # web browser.
 
 # To manage the connection the following methods are made available:
-conn.connect()
+conn.connect()  # triggered by default during Connection class initialization
+conn.renew()  # alias for `connect`
 conn.close()
 conn.status()
 
@@ -36,9 +37,19 @@ MSTR_PASSWORD = $mstr_password  # insert your mstr password here
 PROJECT_ID = $project_id  # Insert you project ID here
 
 # Authentication Methods
-# Currently, supported authentication modes are Standard (the default) and LDAP.
+# Currently, supported authentication modes are Standard (the default), LDAP and API Token.
+
 # To use LDAP, add login_mode=16 when creating your Connection object:
 conn = Connection(BASE_URL, MSTR_USERNAME, MSTR_PASSWORD, project_id=PROJECT_ID, login_mode=16)
+
+# Define a variable which can be later used in a script
+API_TOKEN = $api_token  # insert your api token here
+
+# To use API Token, just provide it to your Connection object via `api_token=` parameter:
+# If API Token is provided, login mode will automatically be set to 4096.
+# The identity token can be obtained by sending a request to
+# Strategy One REST API /auth/apiTokens endpoint.
+conn = Connection(BASE_URL, api_token=API_TOKEN, project_id=PROJECT_ID)
 
 # Define a variable which can be later used in a script
 IDENTITY_TOKEN = $identity_token  # Insert your identity token here

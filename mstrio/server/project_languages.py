@@ -192,7 +192,11 @@ def _remove_language(
             raise ValueError(f"Cannot remove default language: {language.id}.")
 
         operation_list.append(
-            {'op': 'remove', 'path': f'/{path}/languages/{language.id}'}
+            {
+                'op': 'remove',
+                'path': f'/{path}/languages/{language.id}',
+                'value': language.id,
+            }
         )
 
     response = update_project_languages(

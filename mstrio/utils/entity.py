@@ -19,7 +19,7 @@ from mstrio.types import MISSING, ExtendedType, ObjectSubTypes, ObjectTypes
 from mstrio.utils import helper
 from mstrio.utils.acl import ACE, ACLMixin
 from mstrio.utils.dependence_mixin import DependenceMixin
-from mstrio.utils.helper import rename_dict_keys
+from mstrio.utils.helper import get_valid_project_id, rename_dict_keys
 from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.time_helper import (
     DatetimeFormats,
@@ -27,9 +27,10 @@ from mstrio.utils.time_helper import (
     map_str_to_datetime,
 )
 from mstrio.utils.translation_mixin import TranslationMixin
+from mstrio.utils.version_helper import method_version_handler
 
 if TYPE_CHECKING:
-    from mstrio.object_management import Folder
+    from mstrio.object_management import Folder, Shortcut
     from mstrio.server import Project
 
 logger = logging.getLogger(__name__)
@@ -1156,6 +1157,84 @@ class Entity(EntityBase, ACLMixin, DependenceMixin, TranslationMixin):
             if kwargs.get("acl")
             else default_value
         )
+
+    @method_version_handler(version="11.3.0200")
+    def create_shortcut(
+        self,
+        target_folder_id: str | None = None,
+        target_folder_path: str | None = None,
+        target_folder: 'Folder | None' = None,
+        project_id: str | None = None,
+        project_name: str | None = None,
+        project: 'Project | None' = None,
+        to_dictionary: bool = False,
+    ) -> 'Shortcut':
+        """Create a shortcut to the object.
+
+        Args:
+            target_folder_id (str, optional): ID of the target folder. Target
+                folder must be specified, but `target_folder_id` may be
+                substituted with `target_folder_path` or `target_folder`.
+            target_folder_path (str, optional): Path to the target folder, e.g.
+                '/MicroStrategy Tutorial/Public Objects'.
+                May be used instead of `target_folder_id`.
+            target_folder (Folder, optional): Target folder object.
+                May be used instead of `target_folder_id`.
+            project_id (str, optional): ID of the target project of the new
+                shortcut. The project may be specified by either `project_id`,
+                `project_name` or `project`. If the project is not specified in
+                either way, the project from the `connection` object is used.
+            project_name (str, optional): Name of the target project.
+                May be used instead of `project_id`.
+            project (Project, optional): Project object specifying the target
+                project. May be used instead of `project_id`.
+            to_dictionary (bool, optional): If True, the method will return
+                a dictionary with the shortcut's properties instead of a
+                Shortcut object. Defaults to False.
+
+        """
+        from mstrio.object_management.folder import get_folder_id_from_path
+        from mstrio.object_management.shortcut import Shortcut
+
+        if target_folder:
+            target_folder_id = target_folder.id
+        elif target_folder_path:
+            target_folder_id = get_folder_id_from_path(
+                self.connection, target_folder_path
+            )
+        if not target_folder_id:
+            raise ValueError("Target folder not specified.")
+
+        if project_id is None and project is not None:
+            project_id = project.id
+        project_id = get_valid_project_id(
+            connection=self.connection,
+            project_id=project_id,
+            project_name=project_name,
+            with_fallback=True,
+        )
+
+        body = {
+            'folderId': target_folder_id,
+        }
+
+        res = objects.create_shortcut(
+            connection=self.connection,
+            id=self.id,
+            object_type=self._OBJECT_TYPE.value,
+            body=body,
+            project_id=project_id,
+        )
+        body = res.json()
+        shortcut_id = body.get('id')
+        if config.verbose:
+            logger.info(
+                f"Successfully created Shortcut for object named '{self.name}' "
+                f"with ID: '{self.id}'. Shortcut ID: '{shortcut_id}'."
+            )
+        if to_dictionary:
+            return body
+        return Shortcut.from_dict(source=body, connection=self.connection)
 
     def get(self, name):
         """Get object's attribute by its name."""

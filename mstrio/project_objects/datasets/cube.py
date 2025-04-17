@@ -338,6 +338,7 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
         ): cube_processors.get_info,
     }
     _API_PATCH: dict = {
+        **Entity._API_PATCH,
         ('comments', 'owner'): (objects_processors.update, 'partial_put'),
     }
     _FROM_DICT_MAP = {

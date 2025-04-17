@@ -31,6 +31,7 @@ from mstrio.utils.wip import wip
 
 if TYPE_CHECKING:
     from mstrio.datasources import DatasourceInstance
+    from mstrio.server.environment import Environment
     from mstrio.server.node import Node
     from mstrio.users_and_groups import User
 
@@ -152,6 +153,41 @@ def compare_project_settings(
             )
             logger.info(msg)
     return df
+
+
+def list_projects(
+    # allows for `conn` to be Env to support `list_projects(env)` syntax
+    conn: "Connection | Environment | None" = None,
+    env: "Environment | None" = None,
+    *args,
+    **kwargs,
+):
+    """Return list of project objects or project dicts if `to_dictionary=True`.
+    Optionally filter the Projects by specifying the filters keyword arguments.
+
+    This is a helper method using `Environment.list_projects()` under the hood.
+    See `Environment.list_projects()` documentation for more details.
+
+    Either `conn` or `env` must be provided.
+
+    Attributes:
+        conn (Connection, optional): A Strategy One connection object.
+        env (Environment, optional): Environment object instance.
+        ... (optional): Additional parameters to pass to
+            `Environment.list_projects()`.
+    """
+    if conn is None and env is None:
+        raise ValueError("Either connection or environment must be provided.")
+
+    from mstrio.server.environment import Environment
+
+    if not env and isinstance(conn, Environment):
+        env = conn
+
+    if env:
+        return env.list_projects(*args, **kwargs)
+
+    return Project._list_projects(conn, *args, **kwargs)
 
 
 class Project(Entity, ModelVldbMixin, DeleteMixin):

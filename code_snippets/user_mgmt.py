@@ -184,3 +184,7 @@ user_john.update_address(
     device_id=NEW_DEVICE_ID,
     delivery_type=NEW_DELIVERY_TYPE
 )
+# It is possible to copy address from another user
+FULLNAME_8 = $full_name_8
+user_with_address = User(connection=conn, name=FULLNAME_8)
+user_john.add_address(contact_address=user_with_address.addresses[0])

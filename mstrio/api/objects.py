@@ -1,6 +1,7 @@
 import logging
 from typing import TYPE_CHECKING
 
+from mstrio.connection import Connection
 from mstrio.types import ObjectTypes
 from mstrio.utils.error_handlers import ErrorHandler
 
@@ -555,4 +556,30 @@ def get_translations(connection, project_id: str, id: str, object_type: int, fie
         endpoint=f'/api/objects/{object_type}/{id}/translations',
         headers={'X-MSTR-ProjectID': project_id},
         params={'fields': fields},
+    )
+
+
+@ErrorHandler(err_msg='Error creating shortcut for object with ID {id}')
+def create_shortcut(
+    connection: Connection,
+    project_id: str,
+    id: str,
+    object_type: int,
+    body: dict,
+):
+    """Create a shortcut to an object.
+
+    Args:
+        connection: Strategy One REST API connection object
+        id: ID of the object to create a shortcut to
+        object_type: Type of the object to create a shortcut to
+        body: A dictionary specifying the request body
+
+    Returns:
+        Complete HTTP response object.
+    """
+    return connection.post(
+        endpoint=f'/api/objects/{id}/type/{object_type}/shortcuts',
+        headers={'X-MSTR-ProjectID': project_id},
+        json=body,
     )

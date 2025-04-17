@@ -463,7 +463,7 @@ class Folder(Entity, CopyMixin, MoveMixin, DeleteMixin):
         Args:
             name: folder name
             description: folder description
-            hidden: Specifies whether the metric is hidden
+            hidden: Specifies whether the folder is hidden
             comments: long description of the folder
             owner: (str, User, optional): owner of the folder
         """

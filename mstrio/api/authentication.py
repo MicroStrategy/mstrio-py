@@ -1,10 +1,17 @@
+from typing import TYPE_CHECKING
+
 from mstrio.utils.error_handlers import ErrorHandler
+
+if TYPE_CHECKING:
+    from requests import Response
+
+    from mstrio.connection import Connection
 
 
 @ErrorHandler(
     err_msg="Authentication error. Check user credentials or REST API URL and try again"
 )
-def login(connection):
+def login(connection: 'Connection') -> 'Response':
     """Authenticate a user and create an HTTP session on the web server where
     the user's Strategy One sessions are stored.
 
@@ -13,25 +20,42 @@ def login(connection):
     the information needed to create the session. The loginMode parameter in
     the body specifies the authentication mode to use. You can authenticate with
     one of the following authentication modes: Standard (1), Anonymous (8),
-    or LDAP (16). Authentication modes can be enabled through the System
-    Administration REST APIs, if they are supported by the deployment.
+    LDAP (16) or API Token (4096). Authentication modes can be enabled through
+    System Administration REST APIs, if they are supported by the deployment.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection (Connection): Strategy One REST API connection object
 
     Returns:
         Complete HTTP response object.
     """
 
-    return connection.post(
-        skip_expiration_check=True,
-        endpoint='/api/auth/login',
-        data={
+    ENDPOINT = '/api/auth/login'
+    APPLICATION_TYPE = 35
+
+    auth_data = {
+        'loginMode': connection.login_mode,
+        'applicationType': APPLICATION_TYPE,
+    }
+
+    if app_id := connection.application_id:
+        auth_data['applicationId'] = app_id
+
+    if connection.login_mode == 4096:
+        auth_data['username'] = connection.api_token
+        return connection.post(
+            skip_expiration_check=True, endpoint=ENDPOINT, json=auth_data
+        )
+
+    auth_data.update(
+        {
             'username': connection.username,
             'password': connection._Connection__password,
-            'loginMode': connection.login_mode,
-            'applicationType': 35,
-        },
+        }
+    )
+
+    return connection.post(
+        skip_expiration_check=True, endpoint=ENDPOINT, data=auth_data
     )
 
 
@@ -102,6 +126,23 @@ def identity_token(connection):
     """
     return connection.post(
         endpoint='/api/auth/identityToken',
+    )
+
+
+@ErrorHandler(err_msg="Could not get API token.")
+def api_token(connection):
+    """Create a new API token.
+
+    An API token is used to authenticate a user via login mode 4096.
+
+    Args:
+        connection: Strategy One REST API connection object
+
+    Returns:
+        Complete HTTP response object.
+    """
+    return connection.post(
+        endpoint='/api/auth/apiTokens',
     )
 
 
