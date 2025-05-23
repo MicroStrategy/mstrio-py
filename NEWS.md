@@ -1,8 +1,25 @@
 # Changelog
 
+## 11.5.5.101 - 2025/05/23
+
+### New features
+
+- `License` class refined with methods to support `compliance_check` and `audit`
+- added `UserLicense` and `PrivilegeInfo` data classes in the license module
+
+### Minor changes
+
+- added methods `is_html_js_execution_enabled` and `set_html_js_execution_enabled` to Documents and Dashboards
+
+### Bug fixes
+
+- fixed the `alter()` method for Subscription classes failing with prompted content
+
 ## 11.5.4.101 - 2025/04/18
 
 ### New features
+
+- added `License` class in `mstrio.server.license` subpackage to allow management of License
 
 ### Minor changes
 
@@ -13,7 +30,6 @@
 - added `list_shortcuts` function in `mstrio.object_management.shortcut`
 - added `alter` method to the `Shortcut` class
 - added `what_can_i_do_with` helper method to `mstrio` root folder for helping with scripts creation
-- added `License` class in `mstrio.server.license` subpackage to allow management of License
 
 ### Bug fixes
 

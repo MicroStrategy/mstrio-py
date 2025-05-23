@@ -1167,9 +1167,8 @@ def is_dashboard(view_media: int) -> bool:
     """Documents and dashboards have the same type and subtype when returned
     from search api. They can be distinguished only by view_media value.
     """
-    return (
-        view_media & 4160749568 == 1879048192 or view_media & 4160749568 == 1610612736
-    )
+    # bits 30-29 are 1, bits 31 and 27 are 0 (011x 0xxx, then 3 bytes)
+    return view_media & 0xE800_0000 == 0x6000_0000
 
 
 def is_document(view_media: int) -> bool:
