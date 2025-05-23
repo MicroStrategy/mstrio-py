@@ -316,6 +316,7 @@ class Subscription(EntityBase):
             delivery_personal_notification_address_id (str, optional):
                 Notification details
         """
+
         # TODO Potentially remove if new subscription types are supported
         cache_library_cache_types = cache_library_cache_types or [LibraryCacheTypes.WEB]
         if self.delivery.mode in [
@@ -337,7 +338,9 @@ class Subscription(EntityBase):
         if contents:
             contents = self.__validate_contents(contents)
         else:
-            contents = [cont.to_dict() for cont in self.contents]
+            # Even if contents are not changed, they must be executed with
+            # any stored prompt answers
+            contents = self.__get_reprompted_contents()
 
         # Delivery logic
         delivery_expiration_timezone = self.__validate_expiration_time_zone(
@@ -1195,6 +1198,40 @@ class Subscription(EntityBase):
             .get('mode')
         )
         return sub_mode in valid_modes
+
+    def __get_reprompted_contents(self) -> list[dict]:
+        """Re-prompt contents to obtain their representation for alter().
+        Returns:
+            list[dict]: list of content dicts to be included in REST payload
+        """
+
+        from mstrio.project_objects.document import Document
+        from mstrio.project_objects.prompt import Prompt
+        from mstrio.project_objects.report import Report
+
+        contents: list[dict] = [cont.to_dict() for cont in self.contents]
+        if not any(ct.personalization.prompt for ct in self.contents):
+            return contents
+        prompts_data = subscriptions.get_subscription_prompts(
+            self.connection,
+            self.id,
+            self.project_id,
+        ).json()['prompts']
+        for content in contents:
+            content_type = content.get('type')
+            dict_update = {
+                'enabled': True,
+            }
+            if content_type == 'report':
+                rep = Report(self.connection, content['id'])
+                rep.answer_prompts(Prompt.bulk_from_dict(prompts_data))
+                dict_update['instanceId'] = rep.instance_id
+            elif content_type in ['document', 'dossier']:
+                doc = Document(self.connection, content['id'])
+                doc.answer_prompts(prompts_data)
+                dict_update['instanceId'] = doc.instance_id
+            content['personalization'].update({'prompt': dict_update})
+        return contents
 
     @property
     @method_version_handler(version='11.4.0600')

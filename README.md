@@ -154,7 +154,7 @@ pip install mstrio-py
 
 # Versioning & Changelog
 
-Current version: **11.5.4.101** (18 April 2025). Check out [**Changelog**][release_notes] to see what's new.
+Current version: **11.5.5.101** (23 May 2025). Check out [**Changelog**][release_notes] to see what's new.
 
 mstrio-py is constantly developed to support newest Strategy One REST APIs. Functionalities may be added to mstrio on monthly basis. It is **recommended** to always install the newest version of mstrio-py, as it will be most stable and still maintain backwards compatibility with various Strategy One installations, dating back to 11.1.4.
 

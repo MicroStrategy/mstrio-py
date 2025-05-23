@@ -8,7 +8,10 @@ from .license import (
     InstallationUse,
     License,
     MachineInfo,
+    PrivilegeInfo,
     Product,
+    Record,
+    UserLicense,
 )
 from .node import Node
 from .project import (

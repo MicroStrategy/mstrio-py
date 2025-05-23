@@ -567,3 +567,29 @@ def get_dependent_subscriptions(
         params={'objectId': object_id, 'type': object_type, 'fields': fields},
         headers={'X-MSTR-ProjectID': project_id},
     )
+
+
+@ErrorHandler(err_msg="Error getting subscription prompts.")
+def get_subscription_prompts(
+    connection: 'Connection',
+    subscription_id: str,
+    project_id: str,
+    error_msg: str | None = None,
+) -> 'Response':
+    """List prompt definitions and answers customized for the given subscription
+    or the child subscription identifier.
+
+    Args:
+        connection (object): Strategy One connection object returned by
+            `connection.Connection()`.
+        subscription_id (str): ID of the subscription.
+        project_id (str): ID of the project.
+        error_msg (str, optional): Customized error message.
+
+    Returns:
+        HTTP response object returned by the Strategy One REST server.
+    """
+    return connection.get(
+        endpoint=f'/api/subscriptions/{subscription_id}/prompts',
+        headers={'X-MSTR-ProjectID': project_id},
+    )

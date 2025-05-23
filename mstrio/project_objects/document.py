@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from pandas import DataFrame, concat
 
 from mstrio import config
-from mstrio.api import documents, library
+from mstrio.api import documents, library, objects
 from mstrio.api.schedules import get_contents_schedule
 from mstrio.connection import Connection
 from mstrio.distribution_services.schedule import Schedule
@@ -41,6 +41,9 @@ if TYPE_CHECKING:
     from mstrio.project_objects.prompt import Prompt
 
 logger = logging.getLogger(__name__)
+
+REPORT_PROPERTIES_PROPERTY_SET_ID = "70A27C6E239911D5BF2200B0D02A21E0"
+ALLOW_HTML_EXECUTION_PROPERTY_INDEX = 12
 
 
 def list_documents(
@@ -391,6 +394,45 @@ class Document(
                 list of User and UserGroup elements).
         """
         self.publish(users)
+
+    def is_html_js_execution_enabled(self) -> bool | None:
+        """Check whether HTML and JavaScript execution is enabled
+        for the document.
+        Returns:
+            bool: True if HTML and JavaScript execution is enabled,
+                False otherwise.
+        """
+        res = objects.get_property_set(
+            self.connection,
+            id=self.id,
+            obj_type=self._OBJECT_TYPE.value,
+            property_set_id=REPORT_PROPERTIES_PROPERTY_SET_ID,
+        ).json()
+        prop_in_list = [
+            prop for prop in res if prop['id'] == ALLOW_HTML_EXECUTION_PROPERTY_INDEX
+        ]
+        prop = bool(prop_in_list[0]['value']) if prop_in_list else None
+
+        return prop
+
+    def set_html_js_execution_enabled(self, enabled: bool) -> None:
+        """Enable or disable HTML and JavaScript execution for the document.
+
+        Args:
+            enabled (bool): True to enable HTML and JavaScript execution,
+                False to disable."""
+
+        body = [
+            {
+                "properties": [
+                    {"value": int(enabled), "id": ALLOW_HTML_EXECUTION_PROPERTY_INDEX}
+                ],
+                "id": REPORT_PROPERTIES_PROPERTY_SET_ID,
+            }
+        ]
+        objects.update_property_set(
+            self.connection, id=self.id, obj_type=self._OBJECT_TYPE.value, body=body
+        )
 
     @classmethod
     def _list_all(

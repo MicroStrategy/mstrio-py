@@ -322,6 +322,9 @@ class ExtendedType(Enum):
     _ = 341
     DATA_IMPORT_CUSTOM_SQL_WIZARD = 352
     DATA_IMPORT_SPARK = 416
+    DATA_IMPORT_DATASET = 448
+    DATA_IMPORT_OLAP_CUBE = 4096
+    DATA_IMPORT_LIVE_CUBE = 4097
 
     def __new__(cls, value):
         member = object.__new__(cls)

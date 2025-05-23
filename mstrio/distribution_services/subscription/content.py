@@ -39,7 +39,7 @@ class Content(Dictable):
                 pdf settings if format_type is set to PDF
             delimiter: Format delimiter
             bursting: Bursting settings object
-            prompt: Promp settings object
+            prompt: Prompt settings object
             file_name: file name of content
         """
 
