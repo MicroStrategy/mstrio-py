@@ -21,7 +21,7 @@ def get_mappings(
         for mapping in response['mappings']:
             if 'locale' not in mapping:
                 mapping['locale'] = {'name': '', 'id': ''}
-        mappings = helper._prepare_objects(response, filters, 'mappings')
+        mappings = helper._prepare_objects(response, filters, 'mappings', project_id)
         if limit:
             mappings = mappings[:limit]
         return mappings

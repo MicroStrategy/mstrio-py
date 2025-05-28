@@ -1,60 +1,63 @@
 import datetime as dt
 from base64 import b64encode
 
+from pandas import DataFrame
+
 
 class Encoder:
-    """Internal method for converting a Pandas DataFrame to MicroStrategy
+    """Internal method for converting a Pandas DataFrame to Strategy One
     compliant base64 encoded JSON.
 
-    When creating a data set, MicroStrategy APIs require the tabular data to
+    When creating a data set, Strategy One APIs require the tabular data to
     have been transformed first into JSON and then into a base 64 encoded string
     before it is transmitted to the Intelligence Server via the REST API to
     create the data set. This class uses Pandas to handle transforming
     the DataFrame into a JSON representation of the data. For single-table data
-    sets, MicroStrategy APIs require the JSON data to be formatted using
+    sets, Strategy One APIs require the JSON data to be formatted using
     the 'records' orientation from Pandas. Conversely, multi-table data sets
     require the JSON data to have a 'values' orientation. Based on the data set
     type, the correct encoding strategy is applied and the data is then encoded.
 
     Attributes:
-        __b64_data: DataFrame converted into a Base-64 encoded JSON string.
-        __orientation: For single-table data sets, "single"; for multi-table
-        data sets, "multi".
-        __table_type_orient_map: Mapping used when converting DataFrame rows
-            into proper JSON orientation needed for data uploads.
+        data_frame: Pandas DataFrame to be encoded.
+        b64_data: DataFrame converted into a Base-64 encoded JSON string.
+        orientation: For single-table data sets, "single"; for multi-table
+            data sets, "multi".
     """
 
-    __b64_data = None
-    __orientation = None
-    __table_type_orient_map = {"single": "records", "multi": "values"}
-
-    def __init__(self, data_frame, dataset_type):
+    def __init__(self, data_frame: DataFrame, dataset_type: str):
         """Inits Encoder with given data_frame and type.
 
         Args:
-            data_frame: Pandas DataFrame to be converted.
+            data_frame (DataFrame): Pandas DataFrame to be converted.
             dataset_type (str): Dataset type. One of `single` or `multi` to
                 correspond with single-table or multi-table sources.
         """
-        self.__data_frame = data_frame
+        self.data_frame: DataFrame = data_frame
+        self._b64_data: str | None = None
+        self.orientation: str | None = None
+        # Mapping used when converting DataFrame rows
+        # into proper JSON orientation needed for data uploads.
+        _table_type_orient_map: dict = {'single': 'records', 'multi': 'values'}
 
         # Sets the proper orientation
-        if dataset_type not in self.__table_type_orient_map:
-            allowed_types = ', '.join(self.__table_type_orient_map)
+        if dataset_type not in _table_type_orient_map:
+            allowed_types = ', '.join(_table_type_orient_map)
             raise ValueError(f"Table type should be one of {allowed_types}")
-        else:
-            self.__orientation = self.__table_type_orient_map[dataset_type]
+
+        self.orientation = _table_type_orient_map[dataset_type]
+
+    def encode(self) -> None:
+        """Encode data in base 64."""
+        self.data_frame = self.data_frame.apply(
+            lambda x: x.astype('str') if isinstance(x.iloc[0], dt.date) else x
+        )
+
+        json_data = self.data_frame.to_json(orient=self.orientation, date_format='iso')
+        self._b64_data = b64encode(json_data.encode('utf-8')).decode('utf-8')
 
     @property
-    def encode(self):
-        """Encode data in base 64."""
-        for col in self.__data_frame:
-            if isinstance(self.__data_frame[col][0], dt.date):
-                self.__data_frame[col] = self.__data_frame[col].astype('str')
-        self.__b64_data = b64encode(
-            self.__data_frame.to_json(
-                orient=self.__orientation, date_format='iso'
-            ).encode('utf-8')
-        ).decode('utf-8')
-        # return base 64 encoded data to calling environment
-        return self.__b64_data
+    def b64_data(self) -> str:
+        if not self._b64_data:
+            self.encode()
+        return self._b64_data

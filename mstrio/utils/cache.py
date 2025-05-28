@@ -10,11 +10,7 @@ from mstrio.api import monitors
 from mstrio.connection import Connection
 from mstrio.server import Cluster
 from mstrio.utils.enum_helper import AutoName, get_enum_val
-from mstrio.utils.helper import (
-    Dictable,
-    camel_to_snake,
-    validate_param_value,
-)
+from mstrio.utils.helper import Dictable, camel_to_snake, validate_param_value
 from mstrio.utils.response_processors.monitors import get_contents_caches_loop
 
 if TYPE_CHECKING:
@@ -36,7 +32,7 @@ class Cache:
         """Initialize the Cache object.
 
         Args:
-            connection (Connection): MicroStrategy connection object returned by
+            connection (Connection): Strategy One connection object returned by
                 `connection.Connection()`.
             cache_id (string): cache id
             cache_dict (dict, optional): dictionary with properties of cache
@@ -119,9 +115,7 @@ class CacheSource(Dictable):
     class Type(AutoName):
         REPORT = auto()
         DOCUMENT = auto()
-        DOSSIER = auto()
         DASHBOARD = 'dossier'
-        DOCDOSSIER = auto()
         DOCDASHBOARD = 'docdossier'
         CUBE = auto()
 
@@ -142,8 +136,8 @@ class CacheSource(Dictable):
 class ContentCacheMixin:
     """ContentCacheMixin class adds ContentCache management for supporting cache
 
-    Objects currently supported are ContentCache for dashboard, documents,
-    dossiers and reports.
+    Objects currently supported are ContentCache for dashboards, documents
+    and reports.
     """
 
     @staticmethod
@@ -151,7 +145,7 @@ class ContentCacheMixin:
         """Fetches the nodes for the specified connection and project.
 
         Args:
-            connection (Connection): MicroStrategy connection object returned
+            connection (Connection): Strategy One connection object returned
                 by 'connection.Connection()'
             project_id (string): id of the project to fetch the nodes from
 
@@ -174,7 +168,7 @@ class ContentCacheMixin:
         """Engine for altering ContentCache status
 
         Args:
-            connection (object): MicroStrategy connection object returned
+            connection (object): Strategy One connection object returned
                 by `connection.Connection()`
             op (str): Replace or Remove operation to be performed
             cache_ids (list): list of cache ids on which the operation should be
@@ -232,7 +226,7 @@ class ContentCacheMixin:
         """Bulk load caches.
 
         Args:
-            connection (Connection): MicroStrategy connection object returned
+            connection (Connection): Strategy One connection object returned
             by 'connection.Connection()'
             cache_ids (list[str]): list of cache ids to be loaded
 
@@ -256,7 +250,7 @@ class ContentCacheMixin:
         """Bulk unload caches.
 
         Args:
-            connection (Connection): MicroStrategy connection object returned
+            connection (Connection): Strategy One connection object returned
             by 'connection.Connection()'
             cache_ids (list[str]): list of cache ids to be unloaded
 
@@ -280,7 +274,7 @@ class ContentCacheMixin:
         """Bulk delete caches.
 
         Args:
-            connection (Connection): MicroStrategy connection object returned
+            connection (Connection): Strategy One connection object returned
             by 'connection.Connection()'
             cache_ids (list[str]): list of cache ids to be deleted
             force (bool, optional): If True, then no additional prompt will be
@@ -330,7 +324,7 @@ class ContentCacheMixin:
         are `None` then all nodes are retrieved from the cluster.
 
         Args:
-            connection (Connection): MicroStrategy connection object returned by
+            connection (Connection): Strategy One connection object returned by
                 `connection.Connection()`.
             to_dictionary (bool, optional): If True returns dict, by default
                 (False) returns ContentCache objects
@@ -435,7 +429,7 @@ class ContentCacheMixin:
 
         Args:
             cls (object): Class type for objects to be filtered by
-            connection (Connection): MicroStrategy connection object returned by
+            connection (Connection): Strategy One connection object returned by
                 `connection.Connection()`
             **filters: Available filter parameters: ['db_connection_id',
                 'db_login_id', 'owner', 'status', 'size', 'wh_tables',
@@ -462,7 +456,7 @@ class ContentCacheMixin:
 
         Args:
             cls (object): Class type for objects to be filtered by
-            connection (Connection): MicroStrategy connection object returned by
+            connection (Connection): Strategy One connection object returned by
                 `connection.Connection()`
             **filters: Available filter parameters: ['db_connection_id',
                 'db_login_id', 'owner', 'status', 'size', 'wh_tables',
@@ -490,7 +484,7 @@ class ContentCacheMixin:
 
         Args:
             cls (object): Class type for objects to be filtered by
-            connection (Connection): MicroStrategy connection object returned by
+            connection (Connection): Strategy One connection object returned by
                 `connection.Connection()`
             force (bool, optional): If True, then no additional prompt will be
                 shown before deleting objects.

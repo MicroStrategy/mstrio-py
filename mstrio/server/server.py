@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 class ServerSettings(BaseSettings):
-    """Object representation of MicroStrategy I-Server Settings.
+    """Object representation of Strategy One I-Server Settings.
 
     Used to fetch, view, modify, update, export to file, import from file and
     validate Server settings.
@@ -46,7 +46,7 @@ class ServerSettings(BaseSettings):
         """Initialize `ServerSettings` object.
 
         Args:
-            connection: MicroStrategy connection object returned by
+            connection: Strategy One connection object returned by
                 `connection.Connection()`
         """
         # fix conversion map due to changes in REST Layer
@@ -74,16 +74,22 @@ class ServerSettings(BaseSettings):
         """Update the current I-Server settings using this `ServerSettings`
         object."""
         set_dict = self._prepare_settings_push()
-        if (
-            is_server_min_version(self._connection, '11.4.0600')
-            and set_dict.get('hLRepositoryType', {}).get('value') != 3
-        ):
-            set_dict.pop('hLRepositoryType')
+        if hl_property := set_dict.get('hLRepositoryType', {}):
+            if (
+                is_server_min_version(self._connection, '11.4.0600')
+                and hl_property.get('value') != 3
+            ):
+                set_dict.pop('hLRepositoryType')
+        if not set_dict and config.verbose:
+            logger.info('No settings to update.')
+            return
+
         response = administration.update_iserver_settings(self._connection, set_dict)
         if response.status_code in [200, 204] and config.verbose:
             logger.info('I-Server settings updated.')
         if response.status_code == 207:
             helper.exception_handler("Some settings could not be updated.", Warning)
+        super().update()
 
     def _fetch(self) -> dict:
         settings = administration.get_iserver_settings(self._connection).json()

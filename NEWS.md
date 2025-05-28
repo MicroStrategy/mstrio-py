@@ -1,5 +1,70 @@
 # Changelog
 
+## 11.5.5.101 - 2025/05/23
+
+### New features
+
+- `License` class refined with methods to support `compliance_check` and `audit`
+- added `UserLicense` and `PrivilegeInfo` data classes in the license module
+
+### Minor changes
+
+- added methods `is_html_js_execution_enabled` and `set_html_js_execution_enabled` to Documents and Dashboards
+
+### Bug fixes
+
+- fixed the `alter()` method for Subscription classes failing with prompted content
+
+## 11.5.4.101 - 2025/04/18
+
+### New features
+
+- added `License` class in `mstrio.server.license` subpackage to allow management of License
+
+### Minor changes
+
+- added support for logging in with API Token to `Connection` class
+- added `application_id` argument to `Connection` class to allow logging in using custom application
+- added `contact_address` argument to `User.add_address` method to allow passing `ContactAddress` object
+- added `create_shortcut` method to all objects inheriting from `Entity`
+- added `list_shortcuts` function in `mstrio.object_management.shortcut`
+- added `alter` method to the `Shortcut` class
+- added `what_can_i_do_with` helper method to `mstrio` root folder for helping with scripts creation
+
+### Bug fixes
+
+- fixed the `update()` method for `SuperCube` class, to correctly encode `Dataframe` chunks, when chunk size is smaller than the `Dataframe`
+- fixed the `alter()` method for `SuperCube` and `OlapCube` classes not altering the `description` attribute
+- added missing `list_projects` method inside `project.py` module, which was available only via `Environment.list_projects()` class method call
+
+### Removed
+
+- removed the obsolete `CONFIGURATION_AND_ALL_PROJECTS` value from `SearchDomain` enum
+
+## 11.5.3.101 - 2025/03/21
+
+### New features
+
+- added `list_timezones` method and `TimeZone` class in `mstrio.server.timezone` to allow management of Time Zone internationalization objects
+
+### Minor changes
+
+- allowed to provide a string as a qualification when using the `create` and `alter` methods of the `Filter` and `SecurityFilter` classes
+- added `alias` argument to `alter` method to `Project` class to allow setting project alias
+- added `create_profile_folder` method to `User` class to allow creating profile folders
+- added `username`, `user_id` and `object_name` properties to `Job` class
+- added `create_copy` methods to `Subscription`, `Schedule`, `Transformation` `Event`
+- updated `alter` method in a number of classes to allow changing ownership of their corresponding objects
+
+### Bug fixes
+
+- fixed an error with fetching all `Attribute` object properties listed in a project other than the one selected in the `Connection` object
+- fixed `User.add_address()` erroneously allowing to not pass `name` or `address` arguments
+
+### Removed
+
+- removed the `Dossier` class as it is deprecated. From now on, please use only the `Dashboard` class instead
+
 ## 11.5.2.101 - 2025/02/14
 
 ### New features

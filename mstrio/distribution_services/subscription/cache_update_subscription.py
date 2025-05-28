@@ -7,7 +7,7 @@ from .delivery import CacheType, Delivery, LibraryCacheTypes, ShortcutCacheForma
 
 
 class CacheUpdateSubscription(Subscription):
-    """Class representation of MicroStrategy Cache Update Subscription
+    """Class representation of Strategy One Cache Update Subscription
     object."""
 
     def __init__(
@@ -24,7 +24,7 @@ class CacheUpdateSubscription(Subscription):
         When `project_id` is provided (not `None`), `project_name` is omitted.
 
         Args:
-            connection (Connection): MicroStrategy connection object returned
+            connection (Connection): Strategy One connection object returned
                 by `connection.Connection()`
             id (str, optional): ID of the subscription to be initialized, only
                 id or subscription_id have to be provided at once, if both are
@@ -66,7 +66,7 @@ class CacheUpdateSubscription(Subscription):
         """Creates a new cache update subscription.
 
         Args:
-            connection (Connection): a MicroStrategy connection object
+            connection (Connection): a Strategy One connection object
             name (str): name of the subscription,
             project_id (str, optional): project ID,
             project_name (str, optional): project name,

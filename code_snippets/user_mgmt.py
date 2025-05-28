@@ -139,7 +139,7 @@ ADDRESS = $address
 user_john = User(connection=conn, name=FULLNAME_6)
 # The user's addresses list is lazily loaded upon first accessing the property
 johns_addresses = user_john.addresses
-# MicroStrategy allows having multiple addresses marked as default
+# Strategy One allows having multiple addresses marked as default
 # as long as they are assigned to different device.
 # The 'default' argument is automatically set to True.
 # Let's add new default address to John.
@@ -184,3 +184,7 @@ user_john.update_address(
     device_id=NEW_DEVICE_ID,
     delivery_type=NEW_DELIVERY_TYPE
 )
+# It is possible to copy address from another user
+FULLNAME_8 = $full_name_8
+user_with_address = User(connection=conn, name=FULLNAME_8)
+user_john.add_address(contact_address=user_with_address.addresses[0])

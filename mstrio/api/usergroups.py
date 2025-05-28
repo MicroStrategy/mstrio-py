@@ -15,7 +15,7 @@ def get_privileges(
     privileges.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id (string): ID of user group containing your required privileges
         privilege_level (string, optional) [server, project]: String
             representing level of privileges required
@@ -39,7 +39,7 @@ def get_memberships(connection, id, error_msg=None):
     specific user group.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id (string): ID of user group containing your required memberships
         error_msg (string, optional): Custom Error Message for Error Handling
 
@@ -60,7 +60,7 @@ def get_members(
     """Get member information for a specific user group.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id (string): ID of user group containing your required privileges
         include_access (bool, optional): Specifies whether to return access for
             members
@@ -89,7 +89,7 @@ def get_settings(
     """Update the governing setting of the user group id.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id (string): ID of user group containing your required privileges
         include_access (bool, optional): Specifies whether to return access for
             members
@@ -112,10 +112,10 @@ def get_settings(
 @ErrorHandler(err_msg="Error getting user groups top level.")
 def get_top_level(connection, error_msg=None):
     """Get information for all of the user groups that exist at the level of
-    the MicroStrategy Everyone user group.
+    the Strategy One Everyone user group.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
@@ -133,7 +133,7 @@ def update_user_group_info(connection, id, body, error_msg=None):
     """Update specific information for a specific user group.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id (string): ID of user group containing your required privileges
         body (JSON): Body.
         error_msg (string, optional): Custom Error Message for Error Handling
@@ -154,7 +154,7 @@ def delete_user_group(connection, id, error_msg=None):
     """Delete user group for specific user group id.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id (string): ID of user group containing your required privileges
         error_msg (string, optional): Custom Error Message for Error Handling
 
@@ -173,7 +173,7 @@ def replace_user_group_info(connection, id, error_msg=None):
     """Update all of the information for a specific user group.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id (string): ID of user group containing your required privileges
         error_msg (string, optional): Custom Error Message for Error Handling
 
@@ -206,7 +206,7 @@ def get_info_all_user_groups(
     token in the request header.
 
     Args:
-        connection (object): MicroStrategy connection object returned by
+        connection (object): Strategy One connection object returned by
             `connection.Connection()`.
         name_begins (string): only user groups with given beginning of name will
             be retrieved
@@ -220,7 +220,7 @@ def get_info_all_user_groups(
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server
+        HTTP response object returned by the Strategy One REST server
     """
 
     return connection.get(
@@ -246,7 +246,7 @@ def get_info_all_user_groups_async(
 
     Args:
         future_session (FuturesSessionWithRenewal): Future Session object
-            to call MicroStrategy REST Server asynchronously
+            to call Strategy One REST Server asynchronously
         name_begins(string): Characters that the user name must begin with.
         offset(int): Starting point within the collection of returned search
             results. Used to control paging behavior.
@@ -257,7 +257,7 @@ def get_info_all_user_groups_async(
             allows client to selectively retrieve part of the response model.
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server.
+        HTTP response object returned by the Strategy One REST server.
     """
 
     params = {
@@ -285,7 +285,7 @@ def create_user_group(connection, body):
     of child users or user groups.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         body(JSON):{"name": "string",
                     "description": "string",
                     "memberships": ["string"],
@@ -301,7 +301,7 @@ def get_user_group_info(connection, id, error_msg=None):
     """Get information for a specific user group.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id (string): ID of user group containing your required privileges
         error_msg (string, optional): Custom Error Message for Error Handling
 
@@ -331,7 +331,7 @@ def get_security_roles(connection, id, project_id=None, error_msg=None):
     """Get security roles for a specific user group in a specific project.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id (string): ID of user group containing your required privileges
         project_id (string, optional): Project id string
         error_msg (string, optional): Custom Error Message for Error Handling
@@ -360,7 +360,7 @@ def get_security_filters(
     security filters for the user group with given ID.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id (string): User group ID
         projects (str or list of str, optional): collection of projects' ids
             which is used for filtering data

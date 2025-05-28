@@ -21,7 +21,7 @@ def duplicate_user_subscriptions(connection: Connection, owner: str | User) -> N
     """Duplicate user subscriptions across all projects.
 
     Args:
-        connection (Connection): MicroStrategy connection object returned by
+        connection (Connection): Strategy One connection object returned by
             `connection.Connection()`
         owner (str, User): The owner of the subscriptions to duplicate.
     """

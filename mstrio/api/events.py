@@ -6,13 +6,13 @@ def trigger_event(connection, id, fields=None, error_msg=None):
     """Trigger an event.
 
     Args:
-        connection(object): MicroStrategy connection object returned by
+        connection(object): Strategy One connection object returned by
             `connection.Connection()`.
         id(str): ID of the event
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server.
+        HTTP response object returned by the Strategy One REST server.
     """
     endpoint = f'/api/events/{id}/trigger'
     return connection.post(endpoint=endpoint, params={'fields': fields})
@@ -20,15 +20,15 @@ def trigger_event(connection, id, fields=None, error_msg=None):
 
 @ErrorHandler(err_msg="Error getting events list.")
 def list_events(connection, fields=None, error_msg=None):
-    """Get list of a events.
+    """Get list of events.
 
     Args:
-        connection(object): MicroStrategy connection object returned by
+        connection(object): Strategy One connection object returned by
                 `connection.Connection()`.
         error_msg(str, optional): Customized error message.
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server.
+        HTTP response object returned by the Strategy One REST server.
     """
     return connection.get(endpoint='/api/events', params={'fields': fields})
 
@@ -38,7 +38,7 @@ def get_event(connection, id, fields=None, error_msg=None):
     """Get information of a specific event
 
     Args:
-        connection(object): MicroStrategy connection object returned by
+        connection(object): Strategy One connection object returned by
             `connection.Connection()`.
         id(str): ID of the event
         fields(list, optional): Comma separated top-level field whitelist. This
@@ -46,7 +46,7 @@ def get_event(connection, id, fields=None, error_msg=None):
         error_msg(str, optional): Customized error message.
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server
+        HTTP response object returned by the Strategy One REST server
     """
     return connection.get(
         endpoint=f'/api/events/{id}',
@@ -59,7 +59,7 @@ def create_event(connection, body, fields=None, error_msg=None):
     """Create an event.
 
     Args:
-        connection(object): MicroStrategy connection object returned by
+        connection(object): Strategy One connection object returned by
             `connection.Connection()`.
         body: JSON-formatted body of the new event
         fields:  Comma separated top-level field whitelist. This
@@ -67,7 +67,7 @@ def create_event(connection, body, fields=None, error_msg=None):
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server.
+        HTTP response object returned by the Strategy One REST server.
     """
     endpoint = '/api/events'
     return connection.post(endpoint=endpoint, params={'fields': fields}, json=body)
@@ -78,7 +78,7 @@ def update_event(connection, id, body, fields=None, error_msg=None):
     """Update an event.
 
     Args:
-        connection(object): MicroStrategy connection object returned by
+        connection(object): Strategy One connection object returned by
             `connection.Connection()`.
         body: JSON-formatted body of the updated event
         fields:  Comma separated top-level field whitelist. This
@@ -86,7 +86,7 @@ def update_event(connection, id, body, fields=None, error_msg=None):
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server.
+        HTTP response object returned by the Strategy One REST server.
     """
     endpoint = f'/api/events/{id}'
     return connection.put(endpoint=endpoint, params={'fields': fields}, json=body)
@@ -97,13 +97,13 @@ def delete_event(connection, id, error_msg=None):
     """Delete an event.
 
     Args:
-        connection(object): MicroStrategy connection object returned by
+        connection(object): Strategy One connection object returned by
             `connection.Connection()`.
         id: ID of the event to be deleted
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server.
+        HTTP response object returned by the Strategy One REST server.
     """
     endpoint = f'/api/events/{id}'
     return connection.delete(endpoint=endpoint)

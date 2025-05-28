@@ -154,7 +154,7 @@ def list_contacts(
     Optionally filter the contacts by specifying filters.
 
     Args:
-        connection: MicroStrategy connection object
+        connection: Strategy One connection object
         to_dictionary: If True returns a list of contact dicts,
             otherwise returns a list of contact objects
         limit: limit the number of elements returned. If `None` (default), all
@@ -170,7 +170,7 @@ def list_contacts(
 
 @class_version_handler('11.3.0100')
 class Contact(EntityBase, DeleteMixin):
-    """Object representation of Microstrategy Contact object
+    """Object representation of Strategy One Contact object
 
     Attributes:
         name: contact's name
@@ -182,7 +182,7 @@ class Contact(EntityBase, DeleteMixin):
             instances of ContactAddress
         memberships: list of Contact Groups that the contact belongs to
         connection: instance of Connection class, represents connection
-                    to MicroStrategy Intelligence Server
+                    to Strategy One Intelligence Server
     """
 
     _FROM_DICT_MAP = {
@@ -232,7 +232,7 @@ class Contact(EntityBase, DeleteMixin):
         When `id` is provided, name is omitted.
 
         Args:
-            connection: MicroStrategy connection object
+            connection: Strategy One connection object
             id: ID of Contact
             name: name of Contact
         """
@@ -298,7 +298,7 @@ class Contact(EntityBase, DeleteMixin):
         """Create a new contact.
 
         Args:
-            connection: MicroStrategy connection object
+            connection: Strategy One connection object
                 returned by `connection.Connection()`
             name: contact name
             linked_user: user linked to contact
@@ -374,7 +374,7 @@ class Contact(EntityBase, DeleteMixin):
         Optionally filter the contacts by specifying filters.
 
         Args:
-            connection: MicroStrategy connection object
+            connection: Strategy One connection object
             to_dictionary: If True returns a list of contact dicts,
                otherwise returns a list of contact objects
            limit: limit the number of elements returned. If `None` (default),

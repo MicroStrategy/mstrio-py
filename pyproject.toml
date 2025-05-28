@@ -22,8 +22,8 @@ packages = ["mstrio"]
 
 [project]
 name = "ni-mstrio-py"
-description = "Python interface for the MicroStrategy REST API"
-authors = [{ name = "MicroStrategy", email = "bkaczynski@microstrategy.com" }]
+description = "NI-customized Python interface for the MicroStrategy REST API"
+authors = [{ name = "NI", email = "robert.szarvas@emerson.com" }]
 requires-python = ">=3.10,<3.14"
 license = { text = "Apache License 2.0" }
 readme = "README.md"
@@ -32,7 +32,6 @@ dynamic = ["version"]
 classifiers = [
     "Natural Language :: English",
     "Operating System :: OS Independent",
-    "Programming Language :: JavaScript",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
@@ -40,7 +39,6 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3 :: Only",
-    "Intended Audience :: Developers",
     "Intended Audience :: System Administrators",
     "Intended Audience :: End Users/Desktop",
     "Intended Audience :: Science/Research",
@@ -90,20 +88,22 @@ dev = [
     "coverage == 7.3.4",
     "pytest == 8.2.0",
     "pytest-cov == 4.1.0",
+    "python-dotenv[cli] == 1.0.1",
     "isort == 5.13.2",
     "pre-commit == 3.7.1",
     "flaky == 3.8.1",
     "python-decouple == 3.8",
+    "notebook == 6.5.7",
     "black == 24.4.2",
     "flake8-black == 0.3.6",
-    "tox == 4.23.2",          # if you change this version, update Dockerfile as well
+    "tox == 4.23.2",               # if you change this version, update Dockerfile as well
 ]
 
 [project.urls]
 "Bug Tracker" = "https://github.com/MicroStrategy/mstrio-py/issues"
 "Documentation" = "https://www2.microstrategy.com/producthelp/Current/mstrio-py/"
 "Source Code" = "https://github.com/MicroStrategy/mstrio-py"
-"Quick Manual" = "https://www2.microstrategy.com/producthelp/current/FederatedAnalytics/en-us/Content/mstr_for_jupyter.htm"
+"Quick Manual" = "https://www2.microstrategy.com/producthelp/Current/Workstation/en-us/Content/intro_scripts.htm"
 
 [tool.mypy]
 python_version = "3.10"

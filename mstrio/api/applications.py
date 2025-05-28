@@ -13,7 +13,7 @@ def get_applications(
     """Get list of available Applications.
 
     Args:
-        connection (Connection): MicroStrategy connection object returned by
+        connection (Connection): Strategy One connection object returned by
             `connection.Connection()`
         output_flag (list, optional): Flag that specifies what should be
             included or filtered out of the application output
@@ -25,7 +25,7 @@ def get_applications(
             defaults to None
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server."""
+        HTTP response object returned by the Strategy One REST server."""
     if output_flag is None:
         output_flag = ['DEFAULT']
     return connection.get(
@@ -44,7 +44,7 @@ def get_application(
     """Get an Application by its ID.
 
     Args:
-        connection (Connection): MicroStrategy connection object returned by
+        connection (Connection): Strategy One connection object returned by
             `connection.Connection()`
         id (str): ID of the application to get
         output_flag (list, optional): Flag that specifies what should be
@@ -58,7 +58,7 @@ def get_application(
             defaults to None
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server."""
+        HTTP response object returned by the Strategy One REST server."""
     if output_flag is None:
         output_flag = ['INCLUDE_LOCALE', 'INCLUDE_ACL']
     return connection.get(
@@ -75,12 +75,12 @@ def create_application(
     """Create a new Application.
 
     Args:
-        connection (Connection): MicroStrategy connection object returned by
+        connection (Connection): Strategy One connection object returned by
             `connection.Connection()`
         body (dict): JSON-formatted body of the new application
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server."""
+        HTTP response object returned by the Strategy One REST server."""
     return connection.post(
         endpoint='/api/v2/applications',
         json=body,
@@ -96,13 +96,13 @@ def update_application(
     """Update an Application.
 
     Args:
-        connection (Connection): MicroStrategy connection object returned by
+        connection (Connection): Strategy One connection object returned by
             `connection.Connection()`
         id (str): ID of the application to update
         body (dict): JSON-formatted body of the updated application
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server."""
+        HTTP response object returned by the Strategy One REST server."""
     return connection.put(
         endpoint=f'/api/v2/applications/{id}',
         json=body,
@@ -117,12 +117,12 @@ def delete_application(
     """Delete an Application.
 
     Args:
-        connection (Connection): MicroStrategy connection object returned by
+        connection (Connection): Strategy One connection object returned by
             `connection.Connection()`
         id (str): ID of the application to delete
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server."""
+        HTTP response object returned by the Strategy One REST server."""
     return connection.delete(
         endpoint=f'/api/v2/applications/{id}',
     )

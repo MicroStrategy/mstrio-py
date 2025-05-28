@@ -2,6 +2,7 @@ import logging
 import os
 from base64 import b64encode
 from datetime import datetime
+from enum import IntEnum
 from getpass import getpass
 from typing import TYPE_CHECKING
 
@@ -10,9 +11,13 @@ from requests import Session
 from requests.adapters import HTTPAdapter, Retry
 from requests.cookies import RequestsCookieJar
 
+from mstrio.utils.enum_helper import get_enum_val
+
 if TYPE_CHECKING:
-    from urllib3.exceptions import InsecureRequestWarning
     from urllib3 import disable_warnings
+    from urllib3.exceptions import InsecureRequestWarning
+
+    from mstrio.project_objects.applications import Application
 else:
     from requests.packages.urllib3.exceptions import InsecureRequestWarning
     from requests.packages.urllib3 import disable_warnings
@@ -23,6 +28,12 @@ from mstrio.helpers import IServerException, VersionException
 from mstrio.utils import helper, sessions
 
 logger = logging.getLogger(__name__)
+
+
+class LoginMode(IntEnum):
+    STANDARD = 1
+    LDAP = 16
+    API_TOKEN = 4096
 
 
 def get_connection(
@@ -109,12 +120,14 @@ def get_connection(
         f'HTTP {response.status_code} - {response.reason}, Message {response.text}'
     )
 
+    return None
+
 
 class Connection:
-    """Connect to and interact with the MicroStrategy environment.
+    """Connect to and interact with the Strategy One environment.
 
     Creates a connection object which is used in subsequent requests and
-    manages the user's connection with the MicroStrategy REST and Intelligence
+    manages the user's connection with the Strategy One REST and Intelligence
     Servers.
     The connection is automatically renewed, or reconnected if server's session
     associated with the connection expires due to inactivity.
@@ -133,11 +146,12 @@ class Connection:
         >>> conn.close()
 
     Attributes:
-        base_url: URL of the MicroStrategy REST API server.
+        base_url: URL of the Strategy One REST API server.
         username: Username.
-        project_name: Name of the connected MicroStrategy Project.
-        project_id: Id of the connected MicroStrategy Project.
-        login_mode: Authentication mode. Standard = 1 (default) or LDAP = 16.
+        project_name: Name of the connected Strategy One Project.
+        project_id: Id of the connected Strategy One Project.
+        login_mode: Authentication mode. Standard = 1 (default), LDAP = 16
+            or API Token = 4096.
         ssl_verify: If True (default), verifies the server's SSL certificates
             with each request.
         user_id: Id of the authenticated user
@@ -156,24 +170,31 @@ class Connection:
         password: str | None = None,
         project_name: str | None = None,
         project_id: str | None = None,
-        login_mode: int = 1,
+        login_mode: int | LoginMode | None = None,
         ssl_verify: bool = True,
         certificate_path: str | None = None,
         proxies: dict | None = None,
         identity_token: str | None = None,
+        api_token: str | None = None,
+        application_id: 'str | Application | None' = None,
         verbose: bool = True,
     ):
-        """Establish a connection with MicroStrategy REST API.
+        """Establish a connection with Strategy One REST API.
 
         You can establish connection by either providing set of values
-        (`username`, `password`, `login_mode`) or just `identity_token`.
+        (`username`, `password`, `login_mode`), just `identity_token`
+        or just `api_token`.
+
+        When `api_token` is provided and `login_mode` is set to 4096
+        or omitted, the connection is established using API Token and
+        all other authentication parameters are ignored.
 
         When both `project_id` and `project_name` are `None`,
         project selection is cleared. When both `project_id`
         and `project_name` are provided, `project_name` is ignored.
 
         Args:
-            base_url (str): URL of the MicroStrategy REST API server.
+            base_url (str): URL of the Strategy One REST API server.
                 Typically of the form:
                 "https://<mstr_env>.com/MicroStrategyLibrary/api"
             username (str, optional): Username
@@ -184,9 +205,11 @@ class Connection:
             project_id (str, optional): Id of the project you intend to
                 connect to (case-sensitive). Provide either Project ID
                 or Project Name.
-            login_mode (int, optional): Specifies the authentication mode to
-                use. Supported authentication modes are: Standard (1)
-                (default) or LDAP (16)
+            login_mode (int | LoginMode, optional): Specifies the
+                authentication mode to use. Supported authentication
+                modes are: Standard (1) (default), LDAP (16), or
+                API Token (4096). Defaults to 1 unless `api_token` is
+                provided, then 4096.
             ssl_verify (bool, optional): If True (default), verifies the
                 server's SSL certificates with each request
             certificate_path (str, optional): Path to SSL certificate file, if
@@ -197,17 +220,28 @@ class Connection:
                 'http://host.name': 'foo.bar:4012'})
             identity_token (str, optional): Identity token for delegated
                 session. Used for connection initialized by GUI.
+            api_token (str, optional): API token for authenticating using
+                `login_mode` 4096. For other login modes it is ignored.
+            application_id (str, Application, optional): Login using the
+                login mode configured in a custom application. If it's
+                not provided, the server login modes are used.
             verbose (bool, optional): True by default. Controls the amount of
                 feedback from the I-Server.
         """
+        if login_mode is None:
+            login_mode = 4096 if api_token else 1
+
+        login_mode = get_enum_val(login_mode, LoginMode)
 
         # set the verbosity globally
         config.verbose = bool(verbose and config.verbose)
+
         self.base_url = helper.url_check(base_url)
         self.username = username
         self.login_mode = login_mode
         self.certificate_path = certificate_path
         self.identity_token = identity_token
+        self.api_token = api_token
         self._session = self.__configure_session(ssl_verify, certificate_path, proxies)
         self._web_version = None
         self._iserver_version = None
@@ -218,6 +252,14 @@ class Connection:
         self.last_active = None
         self.timeout = None
 
+        from mstrio.project_objects.applications import Application
+
+        self.application_id = (
+            application_id.id
+            if isinstance(application_id, Application)
+            else application_id
+        )
+
         # delegate identity token or connect and create new session
         if self.identity_token:
             self.delegate()
@@ -225,6 +267,15 @@ class Connection:
             self.connect()
 
         if self.__check_version():
+            from mstrio.utils.version_helper import is_server_min_version
+
+            if application_id and not is_server_min_version(self, '11.3.1200'):
+                logger.warning(
+                    "The `application_id` argument requires iServer version 11.3.1200 "
+                    f"or later. Since your server version: {self._iserver_version} "
+                    "is not compatible, this parameter will be omitted."
+                )
+                self.application_id = None
             self.select_project(project_id, project_name)
         else:
             msg = (
@@ -257,7 +308,7 @@ class Connection:
             self._reset_timeout()
             if config.verbose:
                 logger.info(
-                    'Connection to MicroStrategy Intelligence Server was renewed.'
+                    'Connection to Strategy One Intelligence Server was renewed.'
                 )
         else:
             response = self._login()
@@ -267,7 +318,7 @@ class Connection:
 
             if config.verbose:
                 logger.info(
-                    'Connection to MicroStrategy Intelligence Server has been '
+                    'Connection to Strategy One Intelligence Server has been '
                     'established.'
                 )
 
@@ -275,7 +326,7 @@ class Connection:
 
     def delegate(self):
         """Delegates identity token to get authentication token and connect to
-        MicroStrategy Intelligence Server."""
+        Strategy One Intelligence Server."""
         response = authentication.delegate(
             self, self.identity_token, whitelist=[('ERR003', 401)]
         )
@@ -285,11 +336,11 @@ class Connection:
             self.timeout = self._get_session_timeout()
             if config.verbose:
                 logger.info(
-                    'Connection with MicroStrategy Intelligence Server has been '
+                    'Connection with Strategy One Intelligence Server has been '
                     'delegated.'
                 )
         else:
-            print(
+            logger.warning(
                 "Could not share existing connection session, please input credentials:"
             )
             self.__prompt_credentials()
@@ -300,13 +351,18 @@ class Connection:
         response = authentication.identity_token(self)
         return response.headers['X-MSTR-IdentityToken']
 
+    def get_api_token(self) -> str:
+        """Create new API token using existing authentication token."""
+        response = authentication.api_token(self)
+        return response.json()['apiToken']
+
     def validate_identity_token(self) -> bool:
         """Validate the identity token."""
         validate = authentication.validate_identity_token(self, self.identity_token)
         return validate.ok
 
     def close(self):
-        """Closes a connection with MicroStrategy REST API."""
+        """Closes a connection with Strategy One REST API."""
         authentication.logout(connection=self, whitelist=[('ERR009', 401)])
 
         self._session.close()
@@ -315,7 +371,7 @@ class Connection:
 
         if config.verbose:
             logger.info(
-                'Connection to MicroStrategy Intelligence Server has been closed.'
+                'Connection to Strategy One Intelligence Server has been closed.'
             )
 
     def status(self) -> bool:
@@ -327,12 +383,10 @@ class Connection:
         status = self._status()
 
         if status.status_code == 200:
-            logger.info('Connection to MicroStrategy Intelligence Server is active.')
+            logger.info('Connection to Strategy One Intelligence Server is active.')
             return True
         else:
-            logger.info(
-                'Connection to MicroStrategy Intelligence Server is not active.'
-            )
+            logger.info('Connection to Strategy One Intelligence Server is not active.')
             return False
 
     def select_project(
@@ -487,12 +541,12 @@ class Connection:
     def __prompt_credentials(self) -> None:
         self.username = self.username or input("Username: ")
         self.__password = self.__password or getpass("Password: ")
-        self.login_mode = self.login_mode or input(
-            "Login mode (1 - Standard, 16 - LDAP): "
+        self.login_mode = self.login_mode or int(
+            input("Login mode (1 - Standard, 16 - LDAP): ")
         )
 
     def __check_version(self) -> bool:
-        """Checks version of I-Server and MicroStrategy Web and store these
+        """Checks version of I-Server and Strategy One Web and store these
         variables."""
 
         resp = misc.server_status(self)

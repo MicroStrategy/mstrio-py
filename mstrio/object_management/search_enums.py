@@ -31,7 +31,6 @@ class SearchDomain(IntEnum):
     PROJECT = 2
     REPOSITORY = 3
     CONFIGURATION = 4
-    CONFIGURATION_AND_ALL_PROJECTS = 5
 
 
 class SearchResultsFormat(Enum):

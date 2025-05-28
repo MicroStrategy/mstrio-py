@@ -5,7 +5,12 @@ from mstrio import config
 from mstrio.api import datasources
 from mstrio.datasources.datasource_login import DatasourceLogin
 from mstrio.datasources.embedded_connection import EmbeddedConnection
-from mstrio.datasources.helpers import CharEncoding, DriverType, ExecutionMode
+from mstrio.datasources.helpers import (
+    CharEncoding,
+    DriverType,
+    ExecutionMode,
+    OAuthGrantType,
+)
 from mstrio.users_and_groups.user import User
 from mstrio.utils import helper
 from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, ObjectTypes
@@ -35,7 +40,7 @@ def list_datasource_connections(
     connections by specifying filters.
 
     Args:
-        connection: MicroStrategy connection object returned by
+        connection: Strategy One connection object returned by
             `connection.Connection()`
         to_dictionary: If True returns dict, by default (False) returns
             User objects.
@@ -68,7 +73,7 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
     to the datasource.
 
     Attributes:
-        connection: A MicroStrategy connection object.
+        connection: A Strategy One connection object.
         id: Unique datasource connection ID.
         name: Unique datasource connection name.
         description: Datasource connection description.
@@ -100,7 +105,8 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
         database_version: Database version
         driver_type: DriverType Enum specifying Driver used for database
             connection.
-        oauth_parameter: Used for authentication with oAuth.
+        oauth_parameter: Used for authentication with OAuth.
+        oauth_grant_type: Specifies the grant type for OAuth.
         type: Object type
         subtype: Object subtype
         date_created: Creation time, DateTime object
@@ -124,6 +130,7 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
         'driver_type': DriverType,
         'char_encoding_unix': CharEncoding,
         'char_encoding_windows': CharEncoding,
+        'oauth_grant_type': OAuthGrantType,
     }
     _API_GETTERS = {
         (
@@ -163,6 +170,7 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
             'database_type',
             'database_version',
             'oauth_parameter',
+            'oauth_grant_type',
             'acg',
             'iam',
             'resource',
@@ -174,6 +182,7 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
         (
             'abbreviation',
             'comments',
+            'owner',
         ): (objects_processors.update, 'partial_put'),
         (
             "name",
@@ -204,8 +213,7 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
         ),
     }
     _PATCH_PATH_TYPES = {
-        "name": str,
-        "description": str,
+        **Entity._PATCH_PATH_TYPES,
         "execution_mode": str,
         "max_cancel_attempt_time": int,
         "max_query_exe_time": int,
@@ -237,7 +245,7 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
         """Initialize DatasourceConnection object and synchronize with server.
 
         Args:
-            connection: MicroStrategy connection object returned by
+            connection: Strategy One connection object returned by
                 `connection.Connection()`.
             name: exact name of Datasource Connection
             id: ID of Datasource Connection
@@ -297,6 +305,11 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
         self.database_type = kwargs.get("database_type")
         self.database_version = kwargs.get("database_version")
         self._oauth_parameter = kwargs.get("oauth_parameter")
+        self._oauth_grant_type = (
+            OAuthGrantType(kwargs["_oauth_grant_type"])
+            if kwargs.get("_oauth_grant_type")
+            else None
+        )
         self.iam = kwargs.get("iam")
         self.resource = kwargs.get("resource")
         self.scope = kwargs.get("scope")
@@ -327,6 +340,7 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
         scope: str | None = None,
         enable_sso: bool | None = None,
         comments: str | None = None,
+        owner: str | User | None = None,
     ) -> None:
         """Alter the datasource connection properties.
 
@@ -367,13 +381,16 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
                 usage.
             scope: List of delegated permissions that the app is requesting.
             enable_sso: Specifies whether to use Single Sign-On.
-            comments: long description of the object
+            comments: Long description of the object
+            owner: New owner of the object
         """
         datasource_login = (
             {'id': get_objects_id(datasource_login, DatasourceLogin)}
             if datasource_login
             else None
         )
+        if isinstance(owner, User):
+            owner = owner.id
         func = self.alter
         args = get_args_from_func(func)
         defaults = get_default_args_from_func(func)
@@ -417,7 +434,7 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
         """Create a new datasource connection on the I-Server.
 
         Args:
-            connection: MicroStrategy connection object returned by
+            connection: Strategy One connection object returned by
                 `connection.Connection()`.
             name: Unique datasource connection name.
             description: Datasource connection description.
@@ -512,7 +529,7 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
 
         Args:
             source: Dictionary with DatasourceConnection properties
-            connection: MicroStrategy connection object returned by
+            connection: Strategy One connection object returned by
                 `connection.Connection()`.
             to_snake_case: If True, keys in the source dictionary are converted
                 to snake_case.
@@ -569,3 +586,7 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
     @property
     def oauth_parameter(self):
         return self._oauth_parameter
+
+    @property
+    def oauth_grant_type(self):
+        return self._oauth_grant_type

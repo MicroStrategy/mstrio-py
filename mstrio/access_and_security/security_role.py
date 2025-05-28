@@ -7,6 +7,7 @@ from mstrio import config
 from mstrio.api import security
 from mstrio.connection import Connection
 from mstrio.utils import helper
+from mstrio.utils.collections import remove_duplicate_objects
 from mstrio.utils.entity import DeleteMixin, Entity, ObjectTypes
 from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
@@ -14,7 +15,7 @@ from mstrio.utils.version_helper import class_version_handler, method_version_ha
 if TYPE_CHECKING:
     from mstrio.access_and_security.privilege import Privilege
     from mstrio.server.project import Project
-    from mstrio.users_and_groups import UserOrGroup
+    from mstrio.users_and_groups import User, UserOrGroup
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +33,7 @@ def list_security_roles(
     Optionally use `to_dictionary` or `to_dataframe` to choose output format.
 
     Args:
-        connection(object): MicroStrategy connection object returned
+        connection(object): Strategy One connection object returned
             by 'connection.Connection()'
         to_dictionary(bool, optional): if True, return Security Roles as
             list of dicts
@@ -64,7 +65,7 @@ class SecurityRole(Entity, DeleteMixin):
     project level.
 
     Attributes:
-        connection: A MicroStrategy connection object
+        connection: A Strategy One connection object
         id: Security Role ID
         name: Security Role name
         description: Security Role description
@@ -81,7 +82,6 @@ class SecurityRole(Entity, DeleteMixin):
     """
 
     _OBJECT_TYPE = ObjectTypes.SECURITY_ROLE
-    _PATCH_PATH_TYPES = {"name": str, "description": str}
     _API_GETTERS = {
         **Entity._API_GETTERS,
         (
@@ -104,6 +104,7 @@ class SecurityRole(Entity, DeleteMixin):
         (
             'abbreviation',
             'comments',
+            'owner',
         ): (objects_processors.update, 'partial_put'),
         ('name', 'description'): (security.update_security_role, 'patch'),
     }
@@ -117,7 +118,7 @@ class SecurityRole(Entity, DeleteMixin):
         """Initialize Security Role object by passing name or id.
 
         Args:
-            connection: MicroStrategy connection object returned
+            connection: Strategy One connection object returned
                 by `connection.Connection()`.
             name: name of Security Role
             id: ID of Security Role
@@ -159,7 +160,7 @@ class SecurityRole(Entity, DeleteMixin):
         """Create a new Security Role.
 
         Args:
-            connection(object): MicroStrategy connection object returned
+            connection(object): Strategy One connection object returned
                 by 'connection.Connection()'.
             name(string): Name of the Security Role
             privileges: List of privileges which will be assigned to this
@@ -239,6 +240,7 @@ class SecurityRole(Entity, DeleteMixin):
         name: str | None = None,
         description: str | None = None,
         comments: str | None = None,
+        owner: 'str | User | None' = None,
     ):
         """Alter Security Role name or/and description.
 
@@ -246,7 +248,12 @@ class SecurityRole(Entity, DeleteMixin):
             name: new name of the Security Role
             description: new description of the Security Role
             comments: long description of the Security Role
+            owner: new owner of the Security Role
         """
+        from mstrio.users_and_groups.user import User
+
+        if isinstance(owner, User):
+            owner = owner.id
         func = self.alter
         args = helper.get_args_from_func(func)
         defaults = helper.get_default_args_from_func(func)
@@ -276,10 +283,14 @@ class SecurityRole(Entity, DeleteMixin):
             )
             members = filtered_project['members']
         else:
-            members = []
+            members: list[dict] = []
             for project in self.projects:
                 for member in project['members']:
                     members.append(member)
+
+        # remove duplicates (by id but if does not exist, by its memory address)
+        members = remove_duplicate_objects(members, lambda x: x.get('id', str(id(x))))
+
         for m in members:
             m['subtype'] = m['subType']
         return UserGroup._parse_members(members, self.connection)

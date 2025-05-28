@@ -44,7 +44,7 @@ def list_datasource_instances(
     datasource instances by specifying filters.
 
     Args:
-        connection: MicroStrategy connection object returned by
+        connection: Strategy One connection object returned by
             `connection.Connection()`
         to_dictionary: If True returns dict, by default (False) returns
             User objects.
@@ -104,7 +104,7 @@ def list_connected_datasource_instances(
     Database Login and are connected to a project mapped to a Connection object.
 
     Args:
-        connection (Connection): MicroStrategy connection object returned by
+        connection (Connection): Strategy One connection object returned by
             `connection.Connection()`
         to_dictionary (bool, optional): If True returns a list of dictionaries
             representing datasource instances
@@ -146,10 +146,10 @@ class DatasourceType(AutoName):
 
 @class_version_handler('11.3.0000')
 class DatasourceInstance(Entity, CopyMixin, DeleteMixin, ModelVldbMixin):
-    """Object representation of MicroStrategy DataSource Instance object.
+    """Object representation of Strategy One DataSource Instance object.
 
     Attributes:
-        connection: A MicroStrategy connection object
+        connection: A Strategy One connection object
         id: Datasource Instance ID
         name: Datasource Instance name
         description: Datasource Instance description
@@ -214,7 +214,10 @@ class DatasourceInstance(Entity, CopyMixin, DeleteMixin, ModelVldbMixin):
         ): datasources.get_datasource_instance,
     }
     _API_PATCH: dict = {
-        'abbreviation': (objects_processors.update, 'partial_put'),
+        (
+            'abbreviation',
+            'owner',
+        ): (objects_processors.update, 'partial_put'),
         (
             "name",
             "description",
@@ -233,8 +236,7 @@ class DatasourceInstance(Entity, CopyMixin, DeleteMixin, ModelVldbMixin):
         ),
     }
     _PATCH_PATH_TYPES = {
-        "name": str,
-        "description": str,
+        **Entity._PATCH_PATH_TYPES,
         "datasource_type": str,
         "table_prefix": str,
         "intermediate_store_db_name": str,
@@ -263,7 +265,7 @@ class DatasourceInstance(Entity, CopyMixin, DeleteMixin, ModelVldbMixin):
         `list_datasource_instance()` method.
 
         Args:
-            connection: MicroStrategy connection object returned by
+            connection: Strategy One connection object returned by
                 `connection.Connection()`.
             name: exact name of Datasource Instance
             id: ID of Datasource Instance
@@ -351,7 +353,7 @@ class DatasourceInstance(Entity, CopyMixin, DeleteMixin, ModelVldbMixin):
         """Create a new DatasourceInstance object on I-Server.
 
         Args:
-            connection: MicroStrategy connection object returned by
+            connection: Strategy One connection object returned by
                 `connection.Connection()`.
             name: Datasource name
             dbms: The database management system (DBMS) object or id
@@ -419,6 +421,7 @@ class DatasourceInstance(Entity, CopyMixin, DeleteMixin, ModelVldbMixin):
         datasource_connection: str | DatasourceConnection | None = None,
         primary_datasource: Optional["str | DatasourceInstance"] = None,
         data_mart_datasource: Optional["str | DatasourceInstance"] = None,
+        owner: str | User | None = None,
     ) -> None:
         """Alter DatasourceInstance properties.
 
@@ -436,6 +439,7 @@ class DatasourceInstance(Entity, CopyMixin, DeleteMixin, ModelVldbMixin):
             datasource_connection: `DatasourceConnection` object or ID
             primary_datasource: `DatasourceInstance` object or ID
             data_mart_datasource: `DatasourceInstance` object or ID
+            owner: `User` object or ID
 
         """
         dbms = {'id': get_objects_id(dbms, Dbms)} if dbms else None
@@ -454,6 +458,8 @@ class DatasourceInstance(Entity, CopyMixin, DeleteMixin, ModelVldbMixin):
             if data_mart_datasource
             else None
         )
+        if isinstance(owner, User):
+            owner = owner.id
         func = self.alter
         args = get_args_from_func(func)
         defaults = get_default_args_from_func(func)
@@ -487,9 +493,6 @@ class DatasourceInstance(Entity, CopyMixin, DeleteMixin, ModelVldbMixin):
             database_types=database_types,
             project=project_id,
         )
-        if project_id:
-            for obj in objects:
-                obj['project_id'] = project_id
 
         if to_dictionary:
             return objects
@@ -565,7 +568,7 @@ class DatasourceInstance(Entity, CopyMixin, DeleteMixin, ModelVldbMixin):
         """Execute an SQL query on the given datasource.
 
         Args:
-            connection (Connection): MicroStrategy connection object returned by
+            connection (Connection): Strategy One connection object returned by
                 `connection.Connection()`
             query (str): query to be executed
             datasource_id (str): ID of the DatasourceInstance to execute the

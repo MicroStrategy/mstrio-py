@@ -24,7 +24,7 @@ def get_user_hierarchies(
     If you provide both, only the changeset ID is used.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         project_id (str, optional): Project ID
         changeset_id (str, optional): Changeset ID
         limit (int, optional): Maximum number of items returned for a single
@@ -63,7 +63,7 @@ def create_user_hierarchy(
     based on the definition provided in request body.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         body: User hierarchy creation body
         error_msg (str, optional): Custom Error Message for Error Handling
 
@@ -95,7 +95,7 @@ def get_user_hierarchy(
     If both are provided, only the changeset ID is used.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id (str): Hierarchy ID. The ID can be:
             - the object ID used in the metadata.
             - the object ID used in the changeset, but not yet committed
@@ -126,7 +126,7 @@ def update_user_hierarchy(
     based on the definition provided in the request body.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id (str): Hierarchy ID. The ID can be:
             - the object ID used in the metadata.
             - the object ID used in the changeset, but not yet committed
@@ -152,7 +152,7 @@ def delete_user_hierarchy(
     """Delete a specific user hierarchy
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id (str): Hierarchy ID. The ID can be:
             - the object ID used in the metadata.
             - the object ID used in the changeset, but not yet committed

@@ -7,7 +7,7 @@ def update_user_group_info(connection, id, body):
     """Update user group by a specified ID.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id: ID of the user group
         body: dict with changes to be made
 

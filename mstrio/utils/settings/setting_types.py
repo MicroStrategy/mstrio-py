@@ -12,6 +12,7 @@ class SettingValueFactory:
             'email': EmailSetting,
             'object': ObjectSetting,
             'mstr_object': MstrObjectSetting,
+            '_modified': bool,
             None: DeprecatedSetting,
         }
         setting_type = config.get('type')
@@ -32,6 +33,7 @@ class SettingValue:
         self.multi_select = config.get('multi_select')
         self.options = config.get('options', [])
         self.relationship = config.get('relationship')
+        self._modified = False
 
     def __repr__(self):
         return str(self._get_value())
@@ -46,6 +48,14 @@ class SettingValue:
             option_found = helper.filter_list_of_dicts(self.options, name=value)
             if option_found:
                 value = option_found[0]['value']
+        if name == 'value':
+            old_value = getattr(self, 'value', None)
+            if old_value is not None:
+                if old_value != value:
+                    self._modified = True
+                else:
+                    self._modified = False
+
         super().__setattr__(name, value)
 
     def _validate_value(self, value, exception=True):

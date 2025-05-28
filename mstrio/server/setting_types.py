@@ -76,7 +76,7 @@ class CacheEncryptionLevel(Enum):
 
 
 class ShowBaseViewInLibrary(Enum):
-    """Always open dashboards/dossiers/documents with the last saved view
+    """Always open dashboards/documents with the last saved view
     in Library"""
 
     DEFAULT = 'use_inherited_value'

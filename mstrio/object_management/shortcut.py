@@ -3,19 +3,74 @@ from typing import Any, TypeVar
 
 from mstrio.api import browsing
 from mstrio.connection import Connection
+from mstrio.object_management.search_enums import SearchDomain
+from mstrio.object_management.search_operations import full_search
+from mstrio.server.project import Project
+from mstrio.users_and_groups.user import User
 from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, MoveMixin, ObjectTypes
 from mstrio.utils.enum_helper import get_enum_val
-from mstrio.utils.helper import deprecation_warning, fetch_objects, get_valid_project_id
+from mstrio.utils.helper import (
+    fetch_objects,
+    get_default_args_from_func,
+    get_valid_project_id,
+)
 from mstrio.utils.response_processors import objects as objects_processors
 
 
 class ShortcutInfoFlags(IntFlag):
-    DssDossierShortcutInfoBookmark = 0b10
-    DssDossierShortcutInfoTOC = 0b01
-    DssDossierShortcutInfoDefault = 0b00
     DssDashboardShortcutInfoBookmark = 0b10
     DssDashboardShortcutInfoTOC = 0b01
     DssDashboardShortcutInfoDefault = 0b00
+
+
+def list_shortcuts(
+    connection: Connection,
+    project_id: str | None = None,
+    project_name: str | None = None,
+    project: Project | None = None,
+    to_dictionary: bool = False,
+):
+    """List all shortcuts in a project.
+
+    The project may be specified by either `project_id`, `project_name` or
+        `project`. If the project is not specified in either way, the project
+        from the `connection` object is used.
+
+    Args:
+        connection (Connection): Strategy One connection object returned
+            by `connection.Connection()`.
+        project_id (str, optional): ID of the project to search in.
+        project_name (str, optional): Name of the project to search in.
+            May be used instead of `project_id`.
+        project (Project, optional): Project object specifying the project to
+            search in. May be used instead of `project_id`.
+        to_dictionary (bool, optional): If True, the method will return
+            dictionaries with the shortcuts' properties instead of Shortcut
+            objects. Defaults to False.
+
+    """
+
+    if project_id is None and project is not None:
+        project_id = project.id
+    project_id = get_valid_project_id(
+        connection=connection,
+        project_id=project_id,
+        project_name=project_name,
+        with_fallback=True,
+    )
+
+    # No endpoint for listing shortcuts. Using full_search instead.
+    objects = full_search(
+        connection,
+        object_types=[ObjectTypes.SHORTCUT_TYPE],
+        domain=SearchDomain.PROJECT,
+        project=project_id,
+    )
+
+    if to_dictionary:
+        return objects
+
+    return Shortcut.bulk_from_dict(source_list=objects, connection=connection)
 
 
 class Shortcut(Entity, CopyMixin, MoveMixin, DeleteMixin):
@@ -24,7 +79,7 @@ class Shortcut(Entity, CopyMixin, MoveMixin, DeleteMixin):
     related to browsing the Library.
 
     Attributes:
-        connection (Connection): MicroStrategy connection object returned
+        connection (Connection): Strategy One connection object returned
             by `connection.Connection()`.
         id (str): ID of the shortcut object
         name (str): Name of the shortcut
@@ -94,7 +149,15 @@ class Shortcut(Entity, CopyMixin, MoveMixin, DeleteMixin):
     }
     _FROM_DICT_MAP = {**Entity._FROM_DICT_MAP, 'shortcut_info_flag': ShortcutInfoFlags}
     _API_PATCH: dict = {
-        ('name', 'description', 'abbreviation', 'hidden', 'folder_id'): (
+        (
+            'name',
+            'description',
+            'abbreviation',
+            'hidden',
+            'folder_id',
+            'comments',
+            'owner',
+        ): (
             objects_processors.update,
             'partial_put',
         )
@@ -108,7 +171,7 @@ class Shortcut(Entity, CopyMixin, MoveMixin, DeleteMixin):
         project_name: str = None,
         shortcut_info_flag: (
             ShortcutInfoFlags | int
-        ) = ShortcutInfoFlags.DssDossierShortcutInfoTOC,
+        ) = ShortcutInfoFlags.DssDashboardShortcutInfoTOC,
     ):
         """Initialize the Shortcut object and populate it with I-Server data.
 
@@ -120,7 +183,7 @@ class Shortcut(Entity, CopyMixin, MoveMixin, DeleteMixin):
             its value is overwritten by `project_id` from `connection` object.
 
         Args:
-            connection: MicroStrategy connection object returned
+            connection: Strategy One connection object returned
                 by `connection.Connection()`.
             id: Shortcut ID
             project_id: ID of the project that the shortcut is in
@@ -162,15 +225,67 @@ class Shortcut(Entity, CopyMixin, MoveMixin, DeleteMixin):
         self._current_bookmark = kwargs.get('current_bookmark')
         self._prompted = kwargs.get('prompted')
         self._datasets_cache_info_hash = kwargs.get('datasets_cache_info_hash')
-        self._dossier_version_hash = kwargs.get('dossier_version_hash')
         self._dashboard_version_hash = kwargs.get('dossier_version_hash')
 
     T = TypeVar('T')
 
     @classmethod
-    def from_dict(cls: T, source: dict[str, Any], connection: Connection) -> T:
+    def from_dict(
+        cls: T,
+        source: dict[str, Any],
+        connection: Connection,
+        to_snake_case: bool = True,
+        with_missing_value: bool = False,
+    ) -> T:
         """Instantiate a Shortcut from a dict source."""
-        return super(Entity, cls).from_dict(source=source, connection=connection)
+        return super(Entity, cls).from_dict(
+            source=source,
+            connection=connection,
+            to_snake_case=to_snake_case,
+            with_missing_value=with_missing_value,
+        )
+
+    def alter(
+        self,
+        name: str | None = None,
+        description: str | None = None,
+        abbreviation: str | None = None,
+        hidden: bool | None = None,
+        comments: str | None = None,
+        owner: str | User | None = None,
+    ):
+        """Alter the shortcut's properties.
+
+        Args:
+            name (str, optional): name of the shortcut object
+            description (str, optional): description of the shortcut object
+            abbreviation (str, optional): abbreviation of the shortcut object
+            hidden (bool, optional): specifies whether the shortcut is hidden
+            comments (str, optional): long description of the shortcut
+            owner: (str, User, optional): owner of the shortcut object
+        """
+        if isinstance(owner, User):
+            owner = owner.id
+        func = self.alter
+        default_dict = get_default_args_from_func(func)
+        local = locals()
+        properties = {}
+        for property_key in default_dict.keys():
+            if local[property_key] is not None:
+                properties[property_key] = local[property_key]
+        self._alter_properties(**properties)
+
+    def create_shortcut(
+        self,
+        target_folder_id=None,
+        target_folder_path=None,
+        target_folder=None,
+        project_id=None,
+        project_name=None,
+        project=None,
+        to_dictionary=False,
+    ):
+        raise ValueError("Shortcut cannot refer to another shortcut.")
 
     @property
     def owned_by_current_user(self):
@@ -221,16 +336,6 @@ class Shortcut(Entity, CopyMixin, MoveMixin, DeleteMixin):
         return self._datasets_cache_info_hash
 
     @property
-    def dossier_version_hash(self):
-        deprecation_warning(
-            'property `dossier_version_hash`',
-            'property `dashboard_version_hash`',
-            '11.5.03',
-            False,
-        )
-        return self._dossier_version_hash
-
-    @property
     def dashboard_version_hash(self):
         return self._dashboard_version_hash
 
@@ -242,7 +347,7 @@ def get_shortcuts(
     project_name: str = None,
     shortcut_info_flag: (
         ShortcutInfoFlags | int
-    ) = ShortcutInfoFlags.DssDossierShortcutInfoDefault,
+    ) = ShortcutInfoFlags.DssDashboardShortcutInfoDefault,
     to_dictionary: bool = False,
     limit: int | None = None,
     **filters,

@@ -17,7 +17,7 @@ from mstrio.helpers import (
 from mstrio.server import Node, Project
 from mstrio.utils.entity import Entity, EntityBase
 from mstrio.utils.enum_helper import AutoName
-from mstrio.utils.helper import validate_param_value
+from mstrio.utils.helper import validate_param_value, exception_handler
 from mstrio.utils.monitors import all_nodes_async
 from mstrio.utils.time_helper import DatetimeFormats, map_str_to_datetime
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
@@ -102,7 +102,6 @@ class ObjectType(AutoName):
     REPORT = auto()
     CUBE = auto()
     DOCUMENT = auto()
-    DOSSIER = auto()
     DASHBOARD = 'dossier'
 
 
@@ -260,7 +259,7 @@ def list_jobs(
 ) -> list["Job"] | list[dict]:
     """List jobs objects or job dictionaires.
     Args:
-        connection(object): MicroStrategy connection object returned by
+        connection(object): Strategy One connection object returned by
             `connection.Connection()`
         node(Node, str, optional): Node object or name, if not passed list jobs
             on all nodes
@@ -400,7 +399,7 @@ def list_jobs_v1(
     NOTE: list_jobs can return up to 1024 jobs per request.
 
     Args:
-        connection(object): MicroStrategy connection object returned by
+        connection(object): Strategy One connection object returned by
             'connection.Connection()'
         node(Node, str, optional): Node object or name, if not passed list jobs
             on all nodes
@@ -464,7 +463,7 @@ def kill_jobs(
     """Kill existing jobs by Job objects or job ids.
 
     Args:
-        connection(object): MicroStrategy connection object returned by
+        connection(object): Strategy One connection object returned by
             'connection.Connection()'
         jobs: List of Job objects or job ids to kill
 
@@ -499,7 +498,7 @@ def kill_all_jobs(
     """Kill jobs filtered by passed fields
 
     Args:
-        connection(object): MicroStrategy connection object returned by
+        connection(object): Strategy One connection object returned by
             `connection.Connection()`
          node(Node, str, optional): Node object or name, if not passed kill jobs
             on all nodes
@@ -626,12 +625,13 @@ class Job(EntityBase):
         attributes values.
 
     Attributes:
-        connection: A MicroStrategy connection object
+        connection: A Strategy One connection object
         id: Job information id
         description: Description of the job
         status: Status of the job
         type: Type of the job
         object_id: Id of object
+        object_name: Name of object
         object_type: Type of object
         parent_id: Parent ID
         childs_ids: Array of children IDs
@@ -640,6 +640,8 @@ class Job(EntityBase):
         processing_unit_priority: Job Processing Unit Priority
         step_id: Step ID of the job
         user: Full name of the job initiator
+        user_id: ID of the job initiator
+        username: Username of the job initiator
         project_name: Name of the project in which the job is active
         project_id: Id of the project in which the job is active
         pu_name: Processing Unit name
@@ -679,6 +681,7 @@ class Job(EntityBase):
             'description',
             'object_type',
             'object_id',
+            'object_name',
             'parent_id',
             'child_ids',
             'subscription_type',
@@ -724,7 +727,7 @@ class Job(EntityBase):
         """Initialize the Job object, populates it with I-Server data.
 
         Args:
-            connection: MicroStrategy connection object returned
+            connection: Strategy One connection object returned
                 by `connection.Connection()`
             id: Job information id
         """
@@ -757,6 +760,7 @@ class Job(EntityBase):
         self._object_type = (
             ObjectType(kwargs.get('object_type')) if kwargs.get('object_type') else None
         )
+        self._object_name = kwargs.get('object_name', None)
         self._sql = kwargs.get('sql')
         self._subscription_owner = kwargs.get('subscription_owner')
         self._subscription_recipient = kwargs.get('subscription_recipient')
@@ -787,6 +791,8 @@ class Job(EntityBase):
         )
         self._error_message = kwargs.get('error_message')
         self._step_statistics = kwargs.get('step_statistics')
+        self._user_id = None
+        self._username = None
 
     def kill(self) -> bool:
         """Kill the job.
@@ -929,3 +935,44 @@ class Job(EntityBase):
     @property
     def step_statistics(self):
         return self._step_statistics
+
+    @property
+    def object_name(self):
+        return self._object_name
+
+    @property
+    def user_id(self):
+        from mstrio.users_and_groups import User
+
+        if self._user:
+            if not self._user_id:
+                users = User._get_user_ids(
+                    connection=self._connection,
+                    name_begins=self._user,
+                    name=self._user,
+                )
+                if users:
+                    [self._user_id] = users
+                else:
+                    exception_handler(
+                        f"There is no user: '{self._user}'", exception_type=ValueError
+                    )
+            return self._user_id
+        else:
+            return None
+
+    @property
+    def username(self):
+        from mstrio.users_and_groups import User
+
+        if self._user:
+            if not self._username:
+                if self._user_id:
+                    self._username = User(self._connection, id=self._user_id).username
+                else:
+                    user = User(self._connection, name=self._user)
+                    self._username = user.username
+                    self._user_id = user.id
+            return self._username
+        else:
+            return None

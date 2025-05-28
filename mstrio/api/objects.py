@@ -1,6 +1,7 @@
 import logging
 from typing import TYPE_CHECKING
 
+from mstrio.connection import Connection
 from mstrio.types import ObjectTypes
 from mstrio.utils.error_handlers import ErrorHandler
 
@@ -28,7 +29,7 @@ def get_object_info(
     provided in EnumDSSXMLObjectTypes.
 
     Args:
-        connection(object): MicroStrategy connection object returned by
+        connection(object): Strategy One connection object returned by
             `connection.Connection()`.
         id (str): Object ID
         object_type (int): One of EnumDSSXMLObjectTypes. Ex. 34 (User or
@@ -38,7 +39,7 @@ def get_object_info(
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server.
+        HTTP response object returned by the Strategy One REST server.
     """
     if object_type == ObjectTypes.PROJECT.value:
         project_id = str(id)
@@ -70,7 +71,7 @@ def get_object_info_async(
 
     Args:
         future_session (FuturesSessionWithRenewal): Future Session object
-            to call MicroStrategy REST Server asynchronously
+            to call Strategy One REST Server asynchronously
         id (str): Object ID
         object_type (int): One of EnumDSSXMLObjectTypes. Ex. 34 (User or
         UserGroup), 44 (Security Role), 32 (Project), 8 (Folder), 36 (type of
@@ -78,7 +79,7 @@ def get_object_info_async(
         project_id(str): ID of a project in which the object is located.
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server.
+        HTTP response object returned by the Strategy One REST server.
     """
     if object_type == ObjectTypes.PROJECT.value:
         project_id = str(id)
@@ -108,7 +109,7 @@ def delete_object(connection, id, object_type, project_id=None, error_msg=None):
     provided in EnumDSSXMLObjectTypes.
 
     Args:
-        connection(object): MicroStrategy connection object returned by
+        connection(object): Strategy One connection object returned by
             `connection.Connection()`.
         id (str): Object ID
         object_type (int): One of EnumDSSXMLObjectTypes. Ex. 34 (User or
@@ -118,7 +119,7 @@ def delete_object(connection, id, object_type, project_id=None, error_msg=None):
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server.
+        HTTP response object returned by the Strategy One REST server.
     """
     if object_type == ObjectTypes.PROJECT.value:
         project_id = str(id)
@@ -145,7 +146,7 @@ def update_object(
     provided in EnumDSSXMLObjectTypes.
 
     Args:
-        connection(object): MicroStrategy connection object returned by
+        connection(object): Strategy One connection object returned by
             `connection.Connection()`.
         id (str): Object ID
         body: (object): body of the response
@@ -156,7 +157,7 @@ def update_object(
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server.
+        HTTP response object returned by the Strategy One REST server.
     """
     if object_type == ObjectTypes.PROJECT.value:
         project_id = str(id)
@@ -189,7 +190,7 @@ def copy_object(
     the same folder as the source object.
 
     Args:
-        connection(object): MicroStrategy connection object returned by
+        connection(object): Strategy One connection object returned by
             `connection.Connection()`.
         id (str): Object ID
         object_type (int): One of EnumDSSXMLObjectTypes. Ex. 34 (User or
@@ -199,7 +200,7 @@ def copy_object(
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server.
+        HTTP response object returned by the Strategy One REST server.
     """
     if object_type == ObjectTypes.PROJECT.value:
         project_id = str(id)
@@ -229,7 +230,7 @@ def get_property_set(
     """Update a property set for an object.
 
     Args:
-        connection (Connection): MicroStrategy REST API connection object
+        connection (Connection): Strategy One REST API connection object
         id (string): Project id string
         obj_type (int): Object type, as in ObjectTypes enum
         property_set_id (string): ID of a property set
@@ -251,7 +252,7 @@ def update_property_set(
     """Update a property set for an object.
 
     Args:
-        connection (Connection): MicroStrategy REST API connection object
+        connection (Connection): Strategy One REST API connection object
         id (string): Project id string
         obj_type (int): Object type, as in ObjectTypes enum
         error_msg (string, optional): Custom Error Message for Error Handling
@@ -270,16 +271,16 @@ def get_vldb_settings(connection, id, object_type, project_id=None, error_msg=No
     """Get vldb settings for an object.
 
     Args:
-        connection(object): MicroStrategy connection object returned by
+        connection(object): Strategy One connection object returned by
             `connection.Connection()`.
         id (str): Object ID
         object_type (int): DssXmlTypeReportDefinition(3) for Dataset and
-            DssXmlTypeDocumentDefinition(55) for dashboard/document/dossier
+            DssXmlTypeDocumentDefinition(55) for dashboard/document
         project_id(str): ID of a project in which the object is located.
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server
+        HTTP response object returned by the Strategy One REST server
     """
     headers = {}
     if project_id:
@@ -303,16 +304,16 @@ def delete_vldb_settings(connection, id, object_type, project_id=None, error_msg
     reset all vldb settings to default.
 
     Args:
-        connection(object): MicroStrategy connection object returned by
+        connection(object): Strategy One connection object returned by
             `connection.Connection()`.
         id (str): Object ID
         object_type (int): DssXmlTypeReportDefinition(3) for Dataset and
-            DssXmlTypeDocumentDefinition(55) for dashboard/document/dossier
+            DssXmlTypeDocumentDefinition(55) for dashboard/document
         project_id(str): ID of a project in which the object is located.
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server
+        HTTP response object returned by the Strategy One REST server
     """
     headers = {}
     if project_id:
@@ -337,11 +338,11 @@ def set_vldb_settings(
     """Set vldb settings for one property set in one object.
 
     Args:
-        connection(object): MicroStrategy connection object returned by
+        connection(object): Strategy One connection object returned by
             `connection.Connection()`.
         id (str): Object ID
         object_type (int): DssXmlTypeReportDefinition(3) for Dataset and
-            DssXmlTypeDocumentDefinition(55) for dashboard/document/dossier
+            DssXmlTypeDocumentDefinition(55) for dashboard/document
         name: property set name
         body: [{"name": "string",
                 "value": {}}]
@@ -349,7 +350,7 @@ def set_vldb_settings(
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server
+        HTTP response object returned by the Strategy One REST server
     """
     headers = {}
     if project_id:
@@ -379,7 +380,7 @@ def create_search_objects_instance(
     """Create a search instance.
 
     Args:
-        connection(object): MicroStrategy connection object returned by
+        connection(object): Strategy One connection object returned by
             `connection.Connection()`.
         name: expression used with the pattern to do the search
         pattern: specifies the nature of the search. Possible values are defined
@@ -392,7 +393,7 @@ def create_search_objects_instance(
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
-        HTTP response returned by the MicroStrategy REST server
+        HTTP response returned by the Strategy One REST server
     """
     connection._validate_project_selected()
     return connection.post(
@@ -415,7 +416,7 @@ def get_objects(
     """Get list of objects from metadata.
 
     Args:
-        connection(object): MicroStrategy connection object returned by
+        connection(object): Strategy One connection object returned by
             `connection.Connection()`.
         search_id: ID for the results of a previous search stored in I-Server
             memory
@@ -430,7 +431,7 @@ def get_objects(
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
-        HTTP response returned by the MicroStrategy REST server
+        HTTP response returned by the Strategy One REST server
     """
     connection._validate_project_selected
     return connection.get(
@@ -455,7 +456,7 @@ def get_objects_async(
     """Get list of objects from metadata asynchronously.
 
     Args:
-        future_session(object): Future Session object to call MicroStrategy REST
+        future_session(object): Future Session object to call Strategy One REST
             Server asynchronously
         search_id: ID for the results of a previous search stored in I-Server
             memory
@@ -469,7 +470,7 @@ def get_objects_async(
             the tree.
 
     Returns:
-        HTTP response returned by the MicroStrategy REST server
+        HTTP response returned by the Strategy One REST server
     """
     future_session.connection._validate_project_selected()
     endpoint = '/api/objects'
@@ -489,7 +490,7 @@ def toggle_certification(connection, id, object_type=3, certify=True):
     """Certify/Uncertify a multi-table dataset.
 
     Args:
-        connection (object): MicroStrategy connection object returned by
+        connection (object): Strategy One connection object returned by
             `connection.Connection()`.
         id (str): Identifier of a pre-existing dataset. Used when
             certifying a pre-existing dataset.
@@ -499,7 +500,7 @@ def toggle_certification(connection, id, object_type=3, certify=True):
             certify (True) or decertify (False); defaults to True.
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server.
+        HTTP response object returned by the Strategy One REST server.
     """
     endpoint = (
         f'/api/objects/{id}/certify/?type={str(object_type)}&certify={str(certify)}'
@@ -516,7 +517,7 @@ def update_translations(
 ):
     """Update translations for a specific object.
     Args:
-        connection (Connection): MicroStrategy connection object returned by
+        connection (Connection): Strategy One connection object returned by
             `connection.Connection()`
         project_id (str): ID of the project in which the object is located
         id (str): ID of the object
@@ -525,7 +526,7 @@ def update_translations(
         fields(list, optional): Comma separated top-level field whitelist. This
             allows client to selectively retrieve part of the response model
     Returns:
-        HTTP response object returned by the Microstrategy REST server."""
+        HTTP response object returned by the Strategy One REST server."""
 
     object_type = ObjectTypes(object_type).name
     return connection.patch(
@@ -540,7 +541,7 @@ def update_translations(
 def get_translations(connection, project_id: str, id: str, object_type: int, fields):
     """Get translations for a specific object.
     Args:
-        connection (Connection): MicroStrategy connection object returned by
+        connection (Connection): Strategy One connection object returned by
             `connection.Connection()`
         project_id (str): ID of the project in which the object is located
         id (str): ID of the object
@@ -548,11 +549,37 @@ def get_translations(connection, project_id: str, id: str, object_type: int, fie
         fields(list, optional): Comma separated top-level field whitelist. This
             allows client to selectively retrieve part of the response model
     Returns:
-        HTTP response object returned by the Microstrategy REST server."""
+        HTTP response object returned by the Strategy One REST server."""
 
     object_type = ObjectTypes(object_type).name
     return connection.get(
         endpoint=f'/api/objects/{object_type}/{id}/translations',
         headers={'X-MSTR-ProjectID': project_id},
         params={'fields': fields},
+    )
+
+
+@ErrorHandler(err_msg='Error creating shortcut for object with ID {id}')
+def create_shortcut(
+    connection: Connection,
+    project_id: str,
+    id: str,
+    object_type: int,
+    body: dict,
+):
+    """Create a shortcut to an object.
+
+    Args:
+        connection: Strategy One REST API connection object
+        id: ID of the object to create a shortcut to
+        object_type: Type of the object to create a shortcut to
+        body: A dictionary specifying the request body
+
+    Returns:
+        Complete HTTP response object.
+    """
+    return connection.post(
+        endpoint=f'/api/objects/{id}/type/{object_type}/shortcuts',
+        headers={'X-MSTR-ProjectID': project_id},
+        json=body,
     )

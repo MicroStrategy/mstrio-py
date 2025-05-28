@@ -733,3 +733,33 @@ class PrinterDeviceProperties(Dictable):
             else backup_printer_properties
         )
         self.temp_file_location = temp_file_location
+
+
+class SharePointDeviceProperties(Dictable):
+    """Device properties for SharePoint device type.
+
+    Attributes:
+        file_location: File Location Setting, FileLocation class
+        file_system: File System Options, FileSystem class
+    """
+
+    _FROM_DICT_MAP = {
+        "file_location": FileLocation.from_dict,
+        "file_system": FileSystem.from_dict,
+    }
+
+    def __init__(
+        self,
+        file_location: FileLocation | dict,
+        file_system: FileSystem | dict,
+    ):
+        self.file_location = (
+            FileLocation.from_dict(file_location)
+            if isinstance(file_location, dict)
+            else file_location
+        )
+        self.file_system = (
+            FileSystem.from_dict(file_system)
+            if isinstance(file_system, dict)
+            else file_system
+        )

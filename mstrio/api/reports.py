@@ -20,7 +20,7 @@ def report_sql(
     the data warehouse to retrieve the data for the report.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         report_id (str): Unique ID of the report
         instance_id (str): Unique ID of the in-memory instance of a published
             report.
@@ -43,7 +43,7 @@ def report_definition(connection: 'Connection', report_id: str) -> 'Response':
     retrieve values dynamically, helping with performance and scalability.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         report_id (str): Unique ID of the report
 
     Returns:
@@ -66,7 +66,7 @@ def report_instance(
     report instance can be used by other requests.
 
     Args:
-        connection: MicroStrategy REST API connection object.
+        connection: Strategy One REST API connection object.
         report_id (str): Unique ID of the report you wish to extract information
             from.
         offset (int, optional): Starting point within the collection of returned
@@ -110,7 +110,7 @@ def report_instance_id(
     request.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         report_id (str): Unique ID of the report you wish to extract information
             from.
         instance_id (str): Unique ID of the in-memory instance of a published
@@ -170,7 +170,7 @@ def report_single_attribute_elements(
     """Get elements of a specific attribute of a specific report.
 
     Args:
-        connection: MicroStrategy REST API connection object.
+        connection: Strategy One REST API connection object.
         report_id (str): Unique ID of the report you wish to extract information
             from.
         attribute_id (str): Unique ID of the attribute in the report.
@@ -199,7 +199,7 @@ def report_single_attribute_elements_coroutine(
     """Get elements of a specific attribute of a specific report.
 
     Args:
-        future_session(object): Future Session object to call MicroStrategy REST
+        future_session(object): Future Session object to call Strategy One REST
             Server asynchronously
         report_id (str): Unique ID of the report you wish to extract information
             from.
@@ -233,7 +233,7 @@ def get_report_prompts(
     report.
 
     Args:
-        connection: MicroStrategy REST API connection object.
+        connection: Strategy One REST API connection object.
         report_id (str): Unique ID of the report you wish
             to extract information from.
         closed: Prompt status, true means get closed prompt,
@@ -256,7 +256,7 @@ def answer_report_prompts(
     """Provide answers to the prompts in a report instance.
 
     Args:
-        connection (Connection): MicroStrategy REST API connection object.
+        connection (Connection): Strategy One REST API connection object.
         report_id (str): Unique ID of the report
         instance_id (str): Unique ID of the in-memory instance of a published
             report
@@ -280,7 +280,7 @@ def answer_report_prompts(
                     UNSUPPORTED, VALUE, ELEMENTS, EXPRESSION, OBJECTS, LEVEL
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server.
+        HTTP response object returned by the Strategy One REST server.
     """
     endpoint = f'/api/reports/{report_id}/instances/{instance_id}/prompts/answers'
     return connection.put(endpoint=endpoint, json=body)
@@ -299,7 +299,7 @@ def get_prompted_instance(
     instance has prompt which need to be answered.
 
     Args:
-        connection: MicroStrategy REST API connection object.
+        connection: Strategy One REST API connection object.
         report_id (str): Unique ID of the report you wish
             to extract information from.
         instance_id (str): Unique ID of the in-memory instance of a published
@@ -357,7 +357,7 @@ def get_report_status(
     """Get the status of a report instance.
 
     Args:
-        connection (Connection): MicroStrategy REST API connection object.
+        connection (Connection): Strategy One REST API connection object.
         report_id (str): Report ID
         instance_id (str): Report Instance ID
         project_id (str, optional): Project ID

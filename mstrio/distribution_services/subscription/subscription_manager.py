@@ -4,6 +4,7 @@ from mstrio import config
 from mstrio.api import subscriptions as subscriptions_
 from mstrio.connection import Connection
 from mstrio.utils import helper
+from mstrio.utils.enum_helper import get_enum_val
 from mstrio.utils.version_helper import (
     class_version_handler,
     is_server_min_version,
@@ -47,7 +48,7 @@ def list_subscriptions(
     then its value is overwritten by `project_id` from `connection` object.
 
     Args:
-        connection(object): MicroStrategy connection object
+        connection(object): Strategy One connection object
         project_id: Project ID
         project_name: Project name
         to_dictionary: If True returns a list of subscription dicts,
@@ -124,7 +125,7 @@ def dispatch_from_dict(source: dict, connection: Connection, project_id: str):
     Args:
         source: dictionary of an object to return from the specified
             subscription
-        connection: MicroStrategy connection object returned
+        connection: Strategy One connection object returned
             by `connection.Connection()`
         project_id: Project ID"""
     delivery_mode = DeliveryMode(source["delivery"]["mode"])
@@ -147,7 +148,7 @@ class SubscriptionManager:
         When `project_id` is provided (not `None`), `project_name` is omitted.
 
         Args:
-            connection: MicroStrategy connection object returned
+            connection: Strategy One connection object returned
                 by `connection.Connection()`
             project_id: Project ID
             project_name: Project name
@@ -223,6 +224,70 @@ class SubscriptionManager:
             )
         return response.ok
 
+    def create_copy(
+        self,
+        subscription: Subscription | str,
+        name: str | None = None,
+        project_id: str | None = None,
+        project_name: str | None = None,
+        send_now: bool = False,
+    ):
+        """Create a copy of the subscription on the I-Server.
+
+        Args:
+            subscription: Subscription object or ID of the subscription to be
+                copied
+            name: New name of the object. If None, a default name is generated,
+                such as 'Old Name (1)'
+            project_id: Project ID
+            project_name: Project name. If neither `project_id` nor
+                `project_name` is provided, the project ID from the source
+                subscription is used.
+            send_now (bool): indicates whether to execute the subscription
+                immediately,
+
+        Returns:
+            New object, the copied subscription. The subscription's name might
+            be changed to avoid conflicts with existing objects.
+        """
+        # Subscription is not a Metadata object and as such cannot be copied
+        # with the objects' copy endpoint.
+        # For the same reason, duplicate name has to be determined client-side
+        if not isinstance(subscription, Subscription):
+            subscription = Subscription(
+                connection=self.connection, id=subscription, project_id=self.project_id
+            )
+        name = name or subscription.name
+        existing_names: list[str] = [
+            s['name']
+            for s in list_subscriptions(
+                subscription.connection,
+                to_dictionary=True,
+                project_id=project_id,
+                project_name=project_name,
+            )
+        ]
+        new_name = helper.deduplicated_name(name, existing_names)
+
+        if not project_id and not project_name:
+            project_id = subscription.project_id
+        return Subscription._Subscription__create(
+            connection=subscription.connection,
+            name=new_name,
+            contents=subscription.contents,
+            project_id=project_id,
+            project_name=project_name,
+            multiple_contents=subscription.multiple_contents,
+            allow_delivery_changes=subscription.allow_delivery_changes,
+            allow_personalization_changes=subscription.allow_personalization_changes,
+            allow_unsubscribe=subscription.allow_unsubscribe,
+            send_now=send_now,
+            owner_id=subscription.owner.id,
+            schedules=subscription.schedules,
+            recipients=subscription.recipients,
+            delivery=subscription.delivery,
+        )
+
     def delete(
         self, subscriptions: list[Subscription] | list[str], force=False
     ) -> bool:
@@ -256,95 +321,104 @@ class SubscriptionManager:
 
         return succeeded == len(subscriptions)
 
-    def execute(self, subscriptions: list[Subscription] | list[str]):
+    def execute(self, subscriptions: list[Subscription] | list[str]) -> None:
         """Executes all passed subscriptions.
 
         Args:
-            subscriptions: list of subscriptions to be executed
+            subscriptions (list[Subscription] | list[str]):
+                list of subscription objects or subscription ids to be executed
         """
-        if not subscriptions and config.verbose:
-            logger.info('No subscriptions passed.')
-        else:
-            subscriptions = (
-                subscriptions if isinstance(subscriptions, list) else [subscriptions]
-            )
-            for subscription in subscriptions:
-                if not isinstance(subscription, Subscription):
-                    subscription = Subscription(
-                        connection=self.connection,
-                        id=subscription,
-                        project_id=self.project_id,
-                    )
-                if subscription.delivery.mode in (
-                    'EMAIL',
-                    'FILE',
-                    'HISTORY_LIST',
-                    'FTP',
-                ):
-                    subscription.execute()
-                else:
-                    msg = (
-                        f"Subscription '{subscription.name}' with ID "
-                        f"'{subscription.id}' could not be executed. Delivery mode "
-                        f"'{subscription.delivery.mode}' is not supported."
-                    )
-                    helper.exception_handler(msg, UserWarning)
+        if not subscriptions:
+            if config.verbose:
+                logger.info('No subscriptions passed.')
+            return
+
+        subscriptions = (
+            subscriptions if isinstance(subscriptions, list) else [subscriptions]
+        )
+        for subscription in subscriptions:
+            if not isinstance(subscription, Subscription):
+                subscription = Subscription(
+                    connection=self.connection,
+                    id=subscription,
+                    project_id=self.project_id,
+                )
+
+            if subscription.delivery.mode in (
+                'EMAIL',
+                'FILE',
+                'HISTORY_LIST',
+                'FTP',
+            ):
+                subscription.execute()
+            else:
+                msg = (
+                    f"Subscription '{subscription.name}' with ID "
+                    f"'{subscription.id}' could not be executed. Delivery mode "
+                    f"'{subscription.delivery.mode}' is not supported."
+                )
+                helper.exception_handler(msg, UserWarning)
 
     @method_version_handler('11.3.0000')
-    def available_bursting_attributes(self, content: dict | Content):
+    def available_bursting_attributes(self, content: dict | Content) -> list[dict]:
         """Get a list of available attributes for bursting feature, for a given
         content.
 
         Args:
-            content: content dictionary or Content object
+            content (dict | Content): content dictionary or Content object
                 (from subscription.content)
         """
-        c_id = content['id'] if isinstance(content, dict) else content.id
-        c_type = content['type'] if isinstance(content, dict) else content.type
+        c_id = content.id if isinstance(content, Content) else content.get('id')
+        c_type = (
+            get_enum_val(content.type, Content.Type)
+            if isinstance(content, Content)
+            else content.get('type')
+        )
 
         response = subscriptions_.bursting_attributes(
             self.connection, self.project_id, c_id, c_type.upper()
         )
 
-        if response.ok:
-            return response.json()['burstingAttributes']
+        return response.json()['burstingAttributes']
 
     @method_version_handler('11.3.0000')
     def available_recipients(
         self,
         content_id: str | None = None,
-        content_type: str | None = None,
+        content_type: str | Content.Type | None = None,
         content: 'Content | None' = None,
-        delivery_type='EMAIL',
+        delivery_type: str | DeliveryMode = 'EMAIL',
     ) -> list[dict]:
         """List available recipients for a subscription contents.
         Specify either both `content_id` and `content_type` or just `content`
         object.
 
         Args:
-            content_id: ID of the content
-            content_type: type of the content
-            content: Content object
-            delivery_type: The delivery of the subscription, available values
-                are: [EMAIL, FILE, PRINTER, HISTORY_LIST, CACHE, MOBILE, FTP].
+            content_id (str): ID of the content.
+            content_type (str | Content.Type): type of the content.
+            content (Content): Content object.
+            delivery_type (str | DeliveryMode): The delivery type
+                of the subscription.
         """
-        if content_id and content_type:
-            pass
-        elif isinstance(content, Content):
+        if isinstance(content, Content):
             content_id = content.id
             content_type = content.type
-        else:
+        elif not (content_id and content_type):
             helper.exception_handler(
                 'Specify either a content ID and type or content object.', ValueError
             )
 
         body = {
-            "contents": [{"id": content_id, "type": content_type}],
+            "contents": [
+                {"id": content_id, "type": get_enum_val(content_type, Content.Type)}
+            ],
         }
 
         response = subscriptions_.available_recipients(
-            self.connection, self.project_id, body, delivery_type
+            connection=self.connection,
+            project_id=self.project_id,
+            body=body,
+            delivery_type=get_enum_val(delivery_type, DeliveryMode),
         )
 
-        if response.ok and config.verbose:
-            return response.json()['recipients']
+        return response.json()['recipients']

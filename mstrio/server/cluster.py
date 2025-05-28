@@ -1,10 +1,10 @@
 import getpass
 import logging
-import pandas as pd
-
 from collections.abc import Iterable
 from enum import auto
 from typing import TYPE_CHECKING
+
+import pandas as pd
 
 from mstrio import config
 from mstrio.api import administration, monitors, registrations
@@ -24,6 +24,7 @@ from .node import Node, Service, ServiceWithNode
 if TYPE_CHECKING:
     import numpy as np
     from pandas.io.formats.style import Styler
+
     from mstrio.server.project import Project
 else:
     np = pd.core.common.np
@@ -46,16 +47,16 @@ class Cluster:
     """Manage, list nodes (servers) on a cluster.
 
     Manage Services on nodes. Manage node settings. Load and Unload
-    projects. A "service" is a product developed by MicroStrategy or
-    a third-party product distributed by MicroStrategy i.e.
-    "MicroStrategy Intelligence Server" or "Apache ZooKeeper".
+    projects. A "service" is a product developed by Strategy One or
+    a third-party product distributed by Strategy One i.e.
+    "Strategy One Intelligence Server" or "Apache ZooKeeper".
     """
 
     def __init__(self, connection: Connection):
         """Initialize Cluster object.
 
         Args:
-            connection: MicroStrategy connection object returned by
+            connection: Strategy One connection object returned by
                 `connection.Connection()`.
         """
         self.connection = connection
@@ -490,7 +491,7 @@ class Cluster:
         Args:
             node (str | Node): Name or object of the node to update.
             load_balance_factor (int): This setting becomes relevant in
-                an environment that has a MicroStrategy Intelligence Server
+                an environment that has a Strategy One Intelligence Server
                 cluster. By default, the load balance factor is 1.
                 The value can be increased on more powerful servers in a cluster
                 to provide an appropriate balance. A larger load balance factor

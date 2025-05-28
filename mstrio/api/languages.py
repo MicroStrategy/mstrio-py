@@ -7,7 +7,7 @@ def create_language(connection: Connection, body: dict, fields: str | None = Non
     """Create a new language.
 
     Args:
-        connection (Connection): MicroStrategy connection object returned by
+        connection (Connection): Strategy One connection object returned by
             `connection.Connection()`
         body (dict): JSON-formatted body of the new language
         fields(str, optional): Comma separated top-level field whitelist. This
@@ -15,7 +15,7 @@ def create_language(connection: Connection, body: dict, fields: str | None = Non
             defaults to None
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server."""
+        HTTP response object returned by the Strategy One REST server."""
     return connection.post(
         endpoint='/api/languages',
         params={'fields': fields},
@@ -35,7 +35,7 @@ def list_languages(
     """Get a list of languages.
 
     Args:
-        connection (Connection): MicroStrategy connection object returned by
+        connection (Connection): Strategy One connection object returned by
             `connection.Connection()`
         acl (list[str]): Access control list filter, defaults to None
         hidden (bool): Whether to include hidden objects, defaults to False
@@ -47,7 +47,7 @@ def list_languages(
             defaults to None
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server."""
+        HTTP response object returned by the Strategy One REST server."""
     return connection.get(
         endpoint='/api/languages',
         params={
@@ -68,13 +68,13 @@ def list_interface_languages(connection: Connection, fields: str | None = None):
     """Get a list of interface languages.
 
     Args:
-        connection (Connection): MicroStrategy connection object returned by
+        connection (Connection): Strategy One connection object returned by
             `connection.Connection()`
         fields(str, optional): Comma separated top-level field whitelist. This
             allows client to selectively retrieve part of the response model
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server."""
+        HTTP response object returned by the Strategy One REST server."""
     return connection.get(endpoint='/api/interfaceLanguages', params={'fields': fields})
 
 
@@ -83,7 +83,7 @@ def get_language(connection: Connection, id: str, fields: str | None = None):
     """Get a language by id.
 
     Args:
-        connection (Connection): MicroStrategy connection object returned by
+        connection (Connection): Strategy One connection object returned by
             `connection.Connection()`
         id (str): ID of the language to be retrieved from the server
         fields(str, optional): Comma separated top-level field whitelist. This
@@ -91,7 +91,7 @@ def get_language(connection: Connection, id: str, fields: str | None = None):
             defaults to None
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server."""
+        HTTP response object returned by the Strategy One REST server."""
     return connection.get(endpoint=f'/api/languages/{id}', params={'fields': fields})
 
 
@@ -102,7 +102,7 @@ def get_language_formatting_settings(
     """Get formatting settings for a language by id.
 
     Args:
-        connection (Connection): MicroStrategy connection object returned by
+        connection (Connection): Strategy One connection object returned by
             `connection.Connection()`
         id (str): ID of the language of the settings to be retrieved from the
             server
@@ -111,7 +111,7 @@ def get_language_formatting_settings(
             defaults to None
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server."""
+        HTTP response object returned by the Strategy One REST server."""
     return connection.get(
         endpoint=f'/api/languages/{id}/formattingSettings',
         params={'fields': fields},
@@ -125,7 +125,7 @@ def update_language_formatting_settings(
     """Update formatting settings for a language by id.
 
     Args:
-        connection (Connection): MicroStrategy connection object returned by
+        connection (Connection): Strategy One connection object returned by
             `connection.Connection()`
         id (str): ID of the language of the settings to be updated
         body (dict): JSON-formatted body of the settings update
@@ -134,7 +134,7 @@ def update_language_formatting_settings(
             defaults to None
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server."""
+        HTTP response object returned by the Strategy One REST server."""
     return connection.patch(
         endpoint=f'/api/languages/{id}/formattingSettings',
         params={'fields': fields},
@@ -149,7 +149,7 @@ def update_language(
     """Update a language by id.
 
     Args:
-        connection (Connection): MicroStrategy connection object returned by
+        connection (Connection): Strategy One connection object returned by
             `connection.Connection()`
         id (str): ID of the language to be updated
         body (dict): JSON-formatted body of the language update
@@ -158,7 +158,7 @@ def update_language(
             defaults to None
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server."""
+        HTTP response object returned by the Strategy One REST server."""
     return connection.patch(
         endpoint=f'/api/languages/{id}',
         params={'fields': fields},

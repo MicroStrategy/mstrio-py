@@ -54,7 +54,7 @@ def list_super_cubes(
         then its value is overwritten by `project_id` from `connection` object.
 
     Args:
-        connection: MicroStrategy connection object returned by
+        connection: Strategy One connection object returned by
             `connection.Connection()`
         name (string, optional): value the search pattern is set to, which
             will be applied to the names of super cubes being searched
@@ -162,7 +162,7 @@ class SuperCube(_Cube, CertifyMixin):
     It inherits all properties from Cube.
 
     Attributes:
-        connection: MicroStrategy connection object returned by
+        connection: Strategy One connection object returned by
             `connection.Connection()`.
         id: Identifier of a pre-existing cube.
         instance_id (str): Identifier of a cube instance if already initialized,
@@ -212,7 +212,7 @@ class SuperCube(_Cube, CertifyMixin):
         identifier will be then used to initialize super cube.
 
         Args:
-            connection: MicroStrategy connection object returned by
+            connection: Strategy One connection object returned by
                 `connection.Connection()`.
             id (str, optional): Identifier of a pre-existing super cube.
                 Used when updating a pre-existing super cube.
@@ -288,11 +288,11 @@ class SuperCube(_Cube, CertifyMixin):
         self, name, data_frame, update_policy, to_metric=None, to_attribute=None
     ):
         """Add a `Pandas.DataFrame` to a collection of tables which are later
-        used to populate the MicroStrategy super cube with data.
+        used to populate the Strategy One super cube with data.
 
         Args:
             name (str): Logical name of the table that is visible to users of
-                the super cube in MicroStrategy.
+                the super cube in Strategy One.
             data_frame (:obj:`pandas.DataFrame`): Pandas DataFrame to add or
                 update.
             update_policy (str): Update operation to perform. One of 'add'
@@ -362,7 +362,7 @@ class SuperCube(_Cube, CertifyMixin):
 
     def remove_table(self, name):
         """Removes a table from a collection of tables which are
-        later used to populate the MicroStrategy super cube with data.
+        later used to populate the Strategy One super cube with data.
 
         Note: this operation is executed locally and is used only to prepare
             data before sending it to server. You can check current state of
@@ -370,7 +370,7 @@ class SuperCube(_Cube, CertifyMixin):
 
         Args:
             name (str): Logical name of the table that is visible to users of
-                the super cube in MicroStrategy.
+                the super cube in Strategy One.
         """
         self._tables = [t for t in self._tables if t.get('table_name') != name]
 
@@ -522,7 +522,7 @@ class SuperCube(_Cube, CertifyMixin):
                 if not chunk.empty:
                     # base64 encode the data
                     encoder = Encoder(data_frame=chunk, dataset_type='multi')
-                    b64_enc = encoder.encode
+                    b64_enc = encoder.b64_data
 
                     # form body of the request
                     body = {
@@ -704,7 +704,7 @@ class SuperCube(_Cube, CertifyMixin):
         """Check the status of data that was uploaded to a super cube.
 
         Args:
-            connection (Optional[Connection]): MicroStrategy connection object
+            connection (Optional[Connection]): Strategy One connection object
                 returned by `connection.Connection()`.
             id (Optional[str]): Identifier of a pre-existing super cube.
             session_id (Optional[str]): Identifier of the server session used

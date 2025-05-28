@@ -10,7 +10,7 @@ def get_drivers(
     """Get information for all drivers.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
@@ -27,7 +27,7 @@ def get_driver(connection: Connection, id: str, error_msg: str | None = None):
     """Get driver by a specific ID.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id: ID of the driver
         error_msg (string, optional): Custom Error Message for Error Handling
 
@@ -49,7 +49,7 @@ def update_driver(
     """Update a driver.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id: ID of the driver
         body: Driver update info.
         error_msg (string, optional): Custom Error Message for Error Handling

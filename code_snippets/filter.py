@@ -146,6 +146,18 @@ test_filter_tokens = Filter.create(
     qualification=FILTER_QUALIFICATION_AS_TOKENS,
 )
 
+# create new filter using qualification as string expression
+NEW_FILTER_NAME_STRING = $new_filter_name_string
+NEW_FILTER_STRING_QUALIFICATION = "Item Count>1"
+
+new_filter_string = Filter.create(
+    connection=conn,
+    name=NEW_FILTER_NAME_STRING,
+    destination_folder=FOLDER_ID,
+    qualification=NEW_FILTER_STRING_QUALIFICATION,
+)
+print(new_filter_string)
+
 # Any changes to schema object must be followed by schema_reload
 # in order to use them in reports, dashboards and so on
 schema_manager = SchemaManagement(connection=conn, project_id=conn.project_id)

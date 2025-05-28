@@ -18,7 +18,7 @@ def send_email(
     """Send an email to specified recipients.
 
     Args:
-        connection (Connection): MicroStrategy connection object returned by
+        connection (Connection): Strategy One connection object returned by
             `connection.Connection()`
         users(list[str | User]): List of user IDs or User objects to send
             the email to

@@ -21,7 +21,7 @@ def get_recipients(
     """Get information for a set of recipients.
 
     Args:
-        connection (object): MicroStrategy connection object returned by
+        connection (object): Strategy One connection object returned by
             `connection.Connection()`.
         search_term (string): The value that the search_pattern parameter is set
             to. For example, if the search search_pattern is “Begins with”,
@@ -40,7 +40,7 @@ def get_recipients(
             Available values : ALL, ENABLED_ONLY. Default value : ALL.
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server.
+        HTTP response object returned by the Strategy One REST server.
     """
     return connection.get(
         endpoint='/api/collaboration/recipients',
@@ -67,7 +67,7 @@ def get_users_info(
     """Get information for a set of users.
 
     Args:
-        connection (object): MicroStrategy connection object returned by
+        connection (object): Strategy One connection object returned by
             `connection.Connection()`.
         name_begins (string): Characters that the user name must begin with.
         abbreviation_begins (string): Characters that the user abbreviation must
@@ -82,7 +82,7 @@ def get_users_info(
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server.
+        HTTP response object returned by the Strategy One REST server.
     """
     return connection.get(
         endpoint='/api/users/',
@@ -108,7 +108,7 @@ def get_users_info_async(
     """Get information for a set of users asynchronously.
 
     Args:
-        future_session: Future Session object to call MicroStrategy REST
+        future_session: Future Session object to call Strategy One REST
             Server asynchronously
         name_begins (string): Characters that the user name must begin with.
         abbreviation_begins (string): Characters that the user abbreviation must
@@ -144,7 +144,7 @@ def create_user(connection, body, username, fields=None):
     action on.
 
     Args:
-        connection (object): MicroStrategy connection object returned by
+        connection (object): Strategy One connection object returned by
             `connection.Connection()`.
         body: JSON formatted user data;
                 {
@@ -168,7 +168,7 @@ def create_user(connection, body, username, fields=None):
             allows client to selectively retrieve part of the response model.
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server.
+        HTTP response object returned by the Strategy One REST server.
     """
 
     return connection.post(endpoint='/api/users', params={'fields': fields}, json=body)
@@ -179,14 +179,14 @@ def get_addresses(connection, id, fields=None):
     """Get all of the addresses for a specific user.
 
     Args:
-        connection (object): MicroStrategy connection object returned by
+        connection (object): Strategy One connection object returned by
             `connection.Connection()`.
         id (string): User ID.
         fields (list, optional): Comma separated top-level field whitelist. This
             allows client to selectively retrieve part of the response model.
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server.
+        HTTP response object returned by the Strategy One REST server.
     """
 
     return connection.get(
@@ -199,14 +199,14 @@ def get_addresses_v2(connection, id, fields=None):
     """Get all of the addresses for a specific user.
 
     Args:
-        connection (object): MicroStrategy connection object returned by
+        connection (object): Strategy One connection object returned by
             `connection.Connection()`.
         id (str): User ID.
         fields (list, optional): Comma separated top-level field whitelist. This
             allows client to selectively retrieve part of the response model.
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server.
+        HTTP response object returned by the Strategy One REST server.
     """
 
     return connection.get(
@@ -219,7 +219,7 @@ def create_address(connection, id, body, fields=None):
     """Create a new address for a specific user.
 
     Args:
-        connection (object): MicroStrategy connection object returned by
+        connection (object): Strategy One connection object returned by
             `connection.Connection()`.
         id (string): User ID.
         fields (list, optional): Comma separated top-level field whitelist. This
@@ -235,7 +235,7 @@ def create_address(connection, id, body, fields=None):
                 }
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server.
+        HTTP response object returned by the Strategy One REST server.
     """
 
     return connection.post(
@@ -250,7 +250,7 @@ def create_address_v2(
     """Create a new address for a specific user.
 
     Args:
-        connection (object): MicroStrategy connection object returned by
+        connection (object): Strategy One connection object returned by
             `connection.Connection()`.
         id (str): User ID.
         body (JSON): JSON-formatted address:
@@ -266,7 +266,7 @@ def create_address_v2(
             allows client to selectively retrieve part of the response model.
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server.
+        HTTP response object returned by the Strategy One REST server.
     """
     return connection.post(
         endpoint=f'/api/v2/users/{id}/addresses', params={'fields': fields}, json=body
@@ -280,7 +280,7 @@ def update_address(connection, id, address_id, body, fields=None):
     """Update a specific address for a specific user.
 
     Args:
-        connection (object): MicroStrategy connection object returned by
+        connection (object): Strategy One connection object returned by
             `connection.Connection()`.
         id (str): User ID.
         address_id (str): Address ID.
@@ -288,7 +288,7 @@ def update_address(connection, id, address_id, body, fields=None):
             allows client to selectively retrieve part of the response model.
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server.
+        HTTP response object returned by the Strategy One REST server.
     """
 
     return connection.put(
@@ -305,7 +305,7 @@ def update_address_v2(connection, id, address_id, body, fields=None):
     """Update a specific address for a specific user.
 
     Args:
-        connection (object): MicroStrategy connection object returned by
+        connection (object): Strategy One connection object returned by
             `connection.Connection()`.
         id (string): User ID.
         address_id (string): Address ID.
@@ -313,7 +313,7 @@ def update_address_v2(connection, id, address_id, body, fields=None):
             allows client to selectively retrieve part of the response model.
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server.
+        HTTP response object returned by the Strategy One REST server.
     """
 
     return connection.put(
@@ -330,7 +330,7 @@ def delete_address(connection, id, address_id, fields=None):
     """Delete a specific address for a specific user.
 
     Args:
-        connection (object): MicroStrategy connection object returned by
+        connection (object): Strategy One connection object returned by
             `connection.Connection()`.
         id (string): User ID.
         address_id (string): Address ID.
@@ -338,7 +338,7 @@ def delete_address(connection, id, address_id, fields=None):
             allows client to selectively retrieve part of the response model.
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server.
+        HTTP response object returned by the Strategy One REST server.
     """
 
     return connection.delete(
@@ -353,12 +353,12 @@ def get_user_security_roles(connection, id, project_id=None):
     """Get all of the security roles for a specific user in a specific project.
 
     Args:
-        connection (object): MicroStrategy connection object returned by
+        connection (object): Strategy One connection object returned by
             `connection.Connection()`.
         id (str): User ID
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server.
+        HTTP response object returned by the Strategy One REST server.
     """
     return connection.get(
         endpoint=f'/api/users/{id}/securityRoles', params={'projectId': project_id}
@@ -371,14 +371,14 @@ def get_user_privileges(connection, id, project_id=None, privilege_level=None):
     privileges.
 
     Args:
-        connection (object): MicroStrategy connection object returned by
+        connection (object): Strategy One connection object returned by
             `connection.Connection()`.
         id (str): User ID
         project_id (string, optional): Project ID
         privilege_level (string, optional): Project Level Privilege
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server.
+        HTTP response object returned by the Strategy One REST server.
     """
     return connection.get(
         endpoint=f'/api/users/{id}/privileges/',
@@ -395,13 +395,13 @@ def get_user_data_usage_limit(connection, id, project_id):
     for example to 5GB.
 
     Args:
-        connection (object): MicroStrategy connection object returned by
+        connection (object): Strategy One connection object returned by
             `connection.Connection()`.
         id (str): User ID
         project_id (str): Project ID
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server.
+        HTTP response object returned by the Strategy One REST server.
     """
     return connection.get(endpoint=f'/api/users/{id}/projects/{project_id}/quotas')
 
@@ -411,14 +411,14 @@ def get_user_info(connection, id, fields=None):
     """Get information for a specific user.
 
     Args:
-        connection (object): MicroStrategy connection object returned by
+        connection (object): Strategy One connection object returned by
             `connection.Connection()`.
         id (string): User ID.
         fields (list, optional): Comma separated top-level field whitelist. This
             allows client to selectively retrieve part of the response model.
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server.
+        HTTP response object returned by the Strategy One REST server.
     """
 
     return connection.get(endpoint=f'/api/users/{id}', params={'fields': fields})
@@ -429,12 +429,12 @@ def delete_user(connection, id):
     """Delete user for specific user id.
 
     Args:
-        connection (object): MicroStrategy connection object returned by
+        connection (object): Strategy One connection object returned by
             `connection.Connection()`.
         id (string): User ID.
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server.
+        HTTP response object returned by the Strategy One REST server.
     """
 
     return connection.delete(endpoint=f'/api/users/{id}')
@@ -445,7 +445,7 @@ def update_user_info(connection, id, body, fields=None):
     """Update specific information for a specific user.
 
     Args:
-        connection (object): MicroStrategy connection object returned by
+        connection (object): Strategy One connection object returned by
             `connection.Connection()`.
         id (string): User ID.
         body (JSON):
@@ -462,7 +462,7 @@ def update_user_info(connection, id, body, fields=None):
             allows client to selectively retrieve part of the response model.
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server.
+        HTTP response object returned by the Strategy One REST server.
     """
 
     return connection.patch(
@@ -479,14 +479,14 @@ def get_memberships(connection, id, fields=None):
     to.
 
     Args:
-        connection (object): MicroStrategy connection object returned by
+        connection (object): Strategy One connection object returned by
             `connection.Connection()`.
         id (string): User ID.
         fields (list, optional): Comma separated top-level field whitelist. This
             allows client to selectively retrieve part of the response model.
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server
+        HTTP response object returned by the Strategy One REST server
     """
 
     return connection.get(
@@ -507,7 +507,7 @@ def get_security_filters(
     security filters for the user with given ID.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id (string): User ID
         projects (str or list of str, optional): collection of projects' ids
             which is used for filtering data
@@ -535,14 +535,14 @@ def get_settings(connection: 'Connection', id: str, fields=None):
     """Get all of the additional settings for a specific user.
 
     Args:
-        connection (object): MicroStrategy connection object returned by
+        connection (object): Strategy One connection object returned by
             `connection.Connection()`.
         id (str): User ID.
         fields (list, optional): Comma separated top-level field whitelist. This
             allows client to selectively retrieve part of the response model.
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server.
+        HTTP response object returned by the Strategy One REST server.
     """
 
     return connection.get(
@@ -555,14 +555,14 @@ def update_user_settings(connection: 'Connection', id: str, json: dict = None):
     """Update additional settings for a specific user.
 
     Args:
-        connection (object): MicroStrategy connection object returned by
+        connection (object): Strategy One connection object returned by
             `connection.Connection()`.
         id (str): User ID.
         fields (list, optional): Comma separated top-level field whitelist. This
             allows client to selectively retrieve part of the response model.
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server.
+        HTTP response object returned by the Strategy One REST server.
     """
     return connection.patch(endpoint=f'/api/users/{id}/settings', json=json)
 
@@ -578,7 +578,7 @@ def get_user_last_login(
     """Get the last login time for a specific user.
 
     Args:
-        connection (Connection): MicroStrategy connection object returned by
+        connection (Connection): Strategy One connection object returned by
             `connection.Connection()`.
         id (str): User ID.
         whitelist(list, optional): list of tuples of I-Server Error and HTTP
@@ -589,9 +589,40 @@ def get_user_last_login(
         verbose (bool, optional): controls if messages/errors will be printed
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server.
+        HTTP response object returned by the Strategy One REST server.
     """
     return connection.get(endpoint=f'/api/telemetry/users/{id}/statistics')
+
+
+@ErrorHandler(err_msg="Error creating user profile for user with ID: {id}")
+def create_user_profile(
+    connection: 'Connection',
+    id: str,
+    body: dict,
+    project_id: str | None = None,
+    fields: str | None = None,
+    error_msg: str | None = None,
+) -> Response:
+    """Create user profile for a specific user.
+
+    Args:
+        connection (object): Strategy One connection object returned by
+            `connection.Connection()`.
+        id (str): User ID.
+        project_id (str, optional): Project ID
+        fields (str, optional): Comma separated top-level field whitelist. This
+            allows client to selectively retrieve part of the response
+        error_msg (str, optional): Custom Error Message for Error Handling
+
+    Returns:
+        HTTP response object returned by the Strategy One REST server.
+    """
+    return connection.post(
+        endpoint=f'/api/users/{id}/profile',
+        params={'fields': fields},
+        headers={'X-MSTR-ProjectID': project_id},
+        json=body,
+    )
 
 
 @ErrorHandler(err_msg="Error deleting user profile for user with ID: {id}")
@@ -605,7 +636,7 @@ def delete_user_profile(
     """Delete user profile for a specific user.
 
     Args:
-        connection (object): MicroStrategy connection object returned by
+        connection (object): Strategy One connection object returned by
             `connection.Connection()`.
         id (str): User ID.
         project_id (str, optional): Project ID
@@ -614,7 +645,7 @@ def delete_user_profile(
         error_msg (str, optional): Custom Error Message for Error Handling
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server.
+        HTTP response object returned by the Strategy One REST server.
     """
     return connection.delete(
         endpoint=f'/api/users/{id}/profile',

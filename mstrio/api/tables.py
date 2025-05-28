@@ -21,7 +21,7 @@ def get_table(
     """Get a detailed definition for a specified table.
 
     Args:
-        connection (object): MicroStrategy REST API connection object
+        connection (object): Strategy One REST API connection object
         id (str): Table ID
         project_id (str, optional): Project ID
         changeset_id (str, optional): Changeset ID
@@ -57,7 +57,7 @@ def get_tables(
     """Get a list of all tables.
 
     Args:
-        connection (object): MicroStrategy REST API connection object
+        connection (object): Strategy One REST API connection object
         project_id (str, optional): Project ID
         changeset_id (str, optional): Changeset ID
         limit (int, optional): Maximum number of items returned for a single
@@ -96,7 +96,7 @@ def patch_table(
     """Update a detailed definition for a specified table in the changeset
 
     Args:
-        connection (object): MicroStrategy REST API connection object
+        connection (object): Strategy One REST API connection object
         id (str): Table ID
         body (dict): Table update body
         column_merge_option (str, optional): Defines a column merge option
@@ -138,7 +138,7 @@ def post_table(
     """Update a detailed definition for a specified table in the changeset
 
     Args:
-        connection (object): MicroStrategy REST API connection object
+        connection (object): Strategy One REST API connection object
         data (dict): Table creation data
         check_secondary_data_source_table (bool, optional):
             Available values: 'true', 'false'
@@ -218,7 +218,7 @@ def get_table_async(
 
     Args:
         future_session(object): `FuturesSessionWithRenewal` object to call
-            MicroStrategy REST Server asynchronously
+            Strategy One REST Server asynchronously
         id: ID of a table
         changeset_id: ID of a changeset
         project_id: Id of a project
@@ -261,7 +261,7 @@ def update_structure(
     (column missing, data type incompatible).
 
     Args:
-        connection (object): MicroStrategy REST API connection object
+        connection (object): Strategy One REST API connection object
         id (str): Logical table's ID. An identifier for the logical table
             object that the client wishes to invoke. The model service does
             not distinguish between logical and physical tables. A physical
