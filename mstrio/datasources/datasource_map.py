@@ -37,7 +37,7 @@ def list_datasource_mappings(
         will have 'locale' property with empty name and id.
 
     Args:
-        connection: MicroStrategy connection object returned by
+        connection: Strategy One connection object returned by
             `connection.Connection()`
         default_connection_map: True if requesting default connection mappings.
             Default False
@@ -83,13 +83,13 @@ def list_datasource_mappings(
 
 
 class DatasourceMap(EntityBase, DeleteMixin):
-    """Object representation of MicroStrategy Connection Mapping
+    """Object representation of Strategy One Connection Mapping
 
     The connection mapping provides mapping between a user or a user group
     and a datasource login for the given datasource and datasource connection.
 
     Attributes:
-        connection: A MicroStrategy connection object
+        connection: A Strategy One connection object
         id: ID of connection mapping.
         project: The project the mapping is assigned to.
         default_connection_map: Whether the mapping is the default
@@ -155,7 +155,7 @@ class DatasourceMap(EntityBase, DeleteMixin):
         `list_datasource_mappings()` method.
 
         Args:
-            connection: MicroStrategy connection object returned by
+            connection: Strategy One connection object returned by
                 `connection.Connection()`.
             id: ID of connection mapping
             project: Project object or ID for restricting the search to
@@ -312,7 +312,7 @@ class DatasourceMap(EntityBase, DeleteMixin):
         `locale` has priority, then `locale_id`.
 
         Args:
-            connection: A MicroStrategy connection object
+            connection: A Strategy One connection object
             project: The project the mapping is to be assigned to
             user: The User or UserGroup to be mapped
             ds_connection: The Datasource Connection to be mapped
@@ -391,7 +391,7 @@ class DatasourceMap(EntityBase, DeleteMixin):
         with field values copied unless new ones are specified.
 
         Args:
-            connection: A MicroStrategy connection object
+            connection: A Strategy One connection object
             user: The User or UserGroup to be mapped
             ds_connection: The Datasource Connection to be mapped
             datasource: The Datasource Instance to be mapped

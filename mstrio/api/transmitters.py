@@ -12,7 +12,7 @@ def get_transmitters(connection: 'Connection', error_msg: str | None = None):
     to.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
@@ -26,7 +26,7 @@ def create_transmitter(connection: 'Connection', body, error_msg: str | None = N
     """Create a new transmitter.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         body: Transmitter creation body
         error_msg (string, optional): Custom Error Message for Error Handling
 
@@ -41,7 +41,7 @@ def get_transmitter(connection: 'Connection', id: str, error_msg: str | None = N
     """Get transmitter by a specific id.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id: ID of the transmitter
         error_msg (string, optional): Custom Error Message for Error Handling
 
@@ -58,7 +58,7 @@ def update_transmitter(
     """Update a transmitter.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id: ID of the transmitter
         body: Transmitter update info.
         error_msg (string, optional): Custom Error Message for Error Handling
@@ -74,7 +74,7 @@ def delete_transmitter(connection: 'Connection', id: str, error_msg: str | None 
     """Delete a transmitter.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id: ID of the transmitter
         error_msg (string, optional): Custom Error Message for Error Handling
 

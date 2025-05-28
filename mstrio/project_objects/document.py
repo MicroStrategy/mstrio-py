@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from pandas import DataFrame, concat
 
 from mstrio import config
-from mstrio.api import documents, library
+from mstrio.api import documents, library, objects
 from mstrio.api.schedules import get_contents_schedule
 from mstrio.connection import Connection
 from mstrio.distribution_services.schedule import Schedule
@@ -42,6 +42,9 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+REPORT_PROPERTIES_PROPERTY_SET_ID = "70A27C6E239911D5BF2200B0D02A21E0"
+ALLOW_HTML_EXECUTION_PROPERTY_INDEX = 12
+
 
 def list_documents(
     connection: Connection,
@@ -60,7 +63,7 @@ def list_documents(
     If `to_dictionary` is True, `to_dataframe` is omitted.
 
     Args:
-        connection (Connection): MicroStrategy connection object returned
+        connection (Connection): Strategy One connection object returned
             by 'connection.Connection()'
         to_dictionary (bool, optional): if True, return Documents as
             list of dicts
@@ -105,7 +108,7 @@ def list_documents_across_projects(
     If `to_dictionary` is True, `to_dataframe` is omitted.
 
     Args:
-        connection (Connection): MicroStrategy connection object returned
+        connection (Connection): Strategy One connection object returned
             by 'connection.Connection()'
         name (string, optional): characters that the document name must contain
         to_dictionary (bool, optional): if True, return Documents as
@@ -162,7 +165,7 @@ class Document(
     DeleteMixin,
     ContentCacheMixin,
 ):
-    """Python representation of MicroStrategy Document object
+    """Python representation of Strategy One Document object
 
     _CACHE_TYPE is a variable used by ContentCache class for cache filtering
     purposes.
@@ -172,7 +175,7 @@ class Document(
     _CACHE_TYPE = CacheSource.Type.DOCUMENT
     _API_GETTERS = {**Entity._API_GETTERS, 'recipients': library.get_document}
     _API_PATCH = {
-        ('name', 'description', 'folder_id', 'hidden'): (
+        ('name', 'description', 'folder_id', 'hidden', 'owner'): (
             objects_processors.update,
             'partial_put',
         )
@@ -190,7 +193,7 @@ class Document(
         """Initialize Document object by passing name or id.
 
         Args:
-            connection (object): MicroStrategy connection object returned
+            connection (object): Strategy One connection object returned
                 by `connection.Connection()`
             name (string, optional): name of Document
             id (string, optional): ID of Document
@@ -257,8 +260,10 @@ class Document(
         description: str | None = None,
         folder_id: Folder | str | None = None,
         hidden: bool | None = None,
+        comments: str | None = None,
+        owner: str | User | None = None,
     ):
-        """Alter Document name, description and/or folder id.
+        """Alter Document's basic properties.
 
         Args:
             name (string, optional): new name of the Document
@@ -268,7 +273,11 @@ class Document(
                 project. It is possible for two metadata objects in different
                 projects to have the same Object ID.
             hidden: Specifies whether the document is hidden
+            comments (str, optional): long description of the Document
+            owner: (str | User, optional): owner of the Document
         """
+        if isinstance(owner, User):
+            owner = owner.id
         description = description or self.description
         properties = filter_params_for_func(self.alter, locals(), exclude=['self'])
         self._alter_properties(**properties)
@@ -385,6 +394,45 @@ class Document(
                 list of User and UserGroup elements).
         """
         self.publish(users)
+
+    def is_html_js_execution_enabled(self) -> bool | None:
+        """Check whether HTML and JavaScript execution is enabled
+        for the document.
+        Returns:
+            bool: True if HTML and JavaScript execution is enabled,
+                False otherwise.
+        """
+        res = objects.get_property_set(
+            self.connection,
+            id=self.id,
+            obj_type=self._OBJECT_TYPE.value,
+            property_set_id=REPORT_PROPERTIES_PROPERTY_SET_ID,
+        ).json()
+        prop_in_list = [
+            prop for prop in res if prop['id'] == ALLOW_HTML_EXECUTION_PROPERTY_INDEX
+        ]
+        prop = bool(prop_in_list[0]['value']) if prop_in_list else None
+
+        return prop
+
+    def set_html_js_execution_enabled(self, enabled: bool) -> None:
+        """Enable or disable HTML and JavaScript execution for the document.
+
+        Args:
+            enabled (bool): True to enable HTML and JavaScript execution,
+                False to disable."""
+
+        body = [
+            {
+                "properties": [
+                    {"value": int(enabled), "id": ALLOW_HTML_EXECUTION_PROPERTY_INDEX}
+                ],
+                "id": REPORT_PROPERTIES_PROPERTY_SET_ID,
+            }
+        ]
+        objects.update_property_set(
+            self.connection, id=self.id, obj_type=self._OBJECT_TYPE.value, body=body
+        )
 
     @classmethod
     def _list_all(

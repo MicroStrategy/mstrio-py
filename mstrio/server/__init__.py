@@ -2,6 +2,17 @@
 from .cluster import Cluster, GroupBy, ServiceAction
 from .environment import Environment
 from .language import Language, list_interface_languages, list_languages
+from .license import (
+    ActivationInfo,
+    ContactInformation,
+    InstallationUse,
+    License,
+    MachineInfo,
+    PrivilegeInfo,
+    Product,
+    Record,
+    UserLicense,
+)
 from .node import Node
 from .project import (
     IdleMode,
@@ -9,6 +20,7 @@ from .project import (
     ProjectSettings,
     ProjectStatus,
     compare_project_settings,
+    list_projects,
 )
 from .server import ServerSettings
 

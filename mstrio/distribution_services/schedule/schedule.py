@@ -30,7 +30,7 @@ def list_schedules(
     """List schedule objects or schedule dictionaries. Optionally filter list.
 
     Args:
-        connection(object): MicroStrategy connection object returned by
+        connection(object): Strategy One connection object returned by
             'connection.Connection()'
         to_dictionary(bool, optional): if True, return Schedules as
             list of dicts
@@ -56,10 +56,10 @@ def list_schedules(
 
 
 class Schedule(Entity, DeleteMixin, RelatedSubscriptionMixin):
-    """Class representation of MicroStrategy Schedule object.
+    """Class representation of Strategy One Schedule object.
 
     Attributes:
-        connection: A MicroStrategy connection object
+        connection: A Strategy One connection object
         name: Schedule name
         id: Schedule ID
         description: Schedule description
@@ -70,7 +70,7 @@ class Schedule(Entity, DeleteMixin, RelatedSubscriptionMixin):
     """
 
     class ScheduleType(AutoName):
-        """Class representation of a type of a Microstrategy Schedule."""
+        """Class representation of a type of a Strategy One Schedule."""
 
         EVENT_BASED = auto()
         TIME_BASED = auto()
@@ -124,6 +124,7 @@ class Schedule(Entity, DeleteMixin, RelatedSubscriptionMixin):
         (
             'abbreviation',
             'comments',
+            'owner',
         ): (objects_processors.update, 'partial_put'),
         (
             'name',
@@ -137,9 +138,7 @@ class Schedule(Entity, DeleteMixin, RelatedSubscriptionMixin):
     }
 
     _PATCH_PATH_TYPES = {
-        'name': str,
-        'description': str,
-        'abbreviation': str,
+        **Entity._PATCH_PATH_TYPES,
         'schedule_type': str,
         'start_date': str,
         'stop_date': str,
@@ -156,7 +155,7 @@ class Schedule(Entity, DeleteMixin, RelatedSubscriptionMixin):
         `name` is omitted.
 
         Args:
-            connection: MicroStrategy connection object returned
+            connection: Strategy One connection object returned
                 by `connection.Connection()`.
             id: Schedule ID
             name: Schedule name
@@ -347,7 +346,7 @@ class Schedule(Entity, DeleteMixin, RelatedSubscriptionMixin):
         days_of_month: list[str] | None = None,
         monthly_pattern: ScheduleEnums.MonthlyPattern | str | None = None,
         yearly_pattern: ScheduleEnums.YearlyPattern | str | None = None,
-    ):
+    ) -> 'Schedule':
         """Create a Schedule using provided parameters as data.
 
         Args:
@@ -490,6 +489,7 @@ class Schedule(Entity, DeleteMixin, RelatedSubscriptionMixin):
         monthly_pattern: ScheduleEnums.MonthlyPattern | None = None,
         yearly_pattern: ScheduleEnums.YearlyPattern | None = None,
         comments: str | None = None,
+        owner: str | User | None = None,
     ) -> None:
         """Alter Schedule properties.
 
@@ -551,6 +551,8 @@ class Schedule(Entity, DeleteMixin, RelatedSubscriptionMixin):
                 The yearly recurrence pattern of the schedule. Possible values
                 are DAY, DAY_OF_WEEK. Defaults to None.
             comments: long description of the schedule. Defaults to None.
+            owner: (str, User, optional): Owner of the schedule. Defaults
+                to None.
         Returns:
             None
         """
@@ -594,6 +596,10 @@ class Schedule(Entity, DeleteMixin, RelatedSubscriptionMixin):
             properties['name'] = name
         if description:
             properties['description'] = description
+        if isinstance(owner, User):
+            owner = owner.id
+        if owner:
+            properties['owner'] = owner
         if start_date:
             properties['start_date'] = map_str_to_datetime(
                 'start_date', start_date, self._FROM_DICT_MAP
@@ -613,6 +619,41 @@ class Schedule(Entity, DeleteMixin, RelatedSubscriptionMixin):
             self, 'event'
         ):
             delattr(self, 'event')
+
+    def create_copy(
+        self,
+        name: str | None = None,
+    ):
+        """Create a copy of the schedule on the I-Server.
+
+        Args:
+            name (str, optional): New name of the schedule.
+
+        Returns:
+            New object, the copied schedule. The schedule's name might be
+            changed to avoid conflicts with existing objects.
+        """
+        # Recreate the Schedule object from scratch. The copy endpoint responds
+        # with IServerError "Either the object passed does not exist in metadata
+        # or it has been modified since being loaded from metadata. Such objects
+        # cannot be moved."
+        # For the same reason, duplicate name has to be determined client-side
+
+        name = name or self.name
+        existing_names: list[str] = [
+            s['name'] for s in list_schedules(self.connection, to_dictionary=True)
+        ]
+        new_name = helper.deduplicated_name(name, existing_names)
+
+        return Schedule.create(
+            connection=self.connection,
+            name=new_name,
+            description=self.description,
+            schedule_type=self.schedule_type,
+            start_date=self.start_date,
+            event_id=self.event.id if self.event else None,
+            time=self.time if self.time else None,
+        )
 
     @method_version_handler('11.3.0000')
     def delete(self, force_with_dependents: bool = False) -> bool:

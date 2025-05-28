@@ -19,7 +19,7 @@ from mstrio.types import MISSING, ExtendedType, ObjectSubTypes, ObjectTypes
 from mstrio.utils import helper
 from mstrio.utils.acl import ACE, ACLMixin
 from mstrio.utils.dependence_mixin import DependenceMixin
-from mstrio.utils.helper import rename_dict_keys
+from mstrio.utils.helper import get_valid_project_id, rename_dict_keys
 from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.time_helper import (
     DatetimeFormats,
@@ -27,10 +27,10 @@ from mstrio.utils.time_helper import (
     map_str_to_datetime,
 )
 from mstrio.utils.translation_mixin import TranslationMixin
-
+from mstrio.utils.version_helper import method_version_handler
 
 if TYPE_CHECKING:
-    from mstrio.object_management import Folder
+    from mstrio.object_management import Folder, Shortcut
     from mstrio.server import Project
 
 logger = logging.getLogger(__name__)
@@ -39,13 +39,13 @@ T = TypeVar("T")
 
 
 class EntityBase(helper.Dictable):
-    """This class is for objects that do not have a specified MSTR type.
+    """This class is for objects that do not have a specified Strategy One type.
 
     Class attributes:
-    _OBJECT_TYPE (ObjectTypes): MSTR Object type defined in ObjectTypes
-    _OBJECT_SUBTYPES (list[ObjectSubTypes] | None): MSTR Object subtype defined
-        in ObjectSubTypes. It contains a list of subtypes, which the class
-        supports. Used in fetch(), to verify whether the retrieved object
+    _OBJECT_TYPE (ObjectTypes): Strategy One Object type defined in ObjectTypes
+    _OBJECT_SUBTYPES (list[ObjectSubTypes] | None): Strategy One Object subtype
+        defined in ObjectSubTypes. It contains a list of subtypes, which the
+        class supports. Used in fetch(), to verify whether the retrieved object
         is supported. None means that subtype won't be verified.
     _REST_ATTR_MAP (Dict[str, str]): A dictionary whose keys are names of
         fields of an HTTP response from the server, and values are their
@@ -94,9 +94,9 @@ class EntityBase(helper.Dictable):
 
 
     Instance attributes:
-        connection (Connection): A MicroStrategy connection object
+        connection (Connection): A Strategy One connection object
         id (str): Object's ID
-        type (ObjectTypes): MicroStrategy Object Type
+        type (ObjectTypes): Strategy One Object Type
         name (str): Object's name
         _altered_properties (dict): This is a private attribute which is used to
             track and validate local changes to the object. It is used whenever
@@ -118,17 +118,17 @@ class EntityBase(helper.Dictable):
             a server in the object's properties set.
         date_created (DatetimeFormats): The object's creation time.
         date_modified (DatetimeFormats): The object's last modification time.
-        version (str): The object's version ID. Used to compare if two MSTR
-            objects are identical. If both objects IDs and objects version IDs
-            are the same, MSTR Object Manager determines that objects as
-            'Exists Indentically'. Otherwise, if their IDs match but their
-            version IDs mismatch, MSTR Object Manager determines that objects
-            'Exists Differently'.
+        version (str): The object's version ID. Used to compare if two Strategy
+            One objects are identical. If both objects IDs and objects version
+            IDs are the same, Strategy One Object Manager determines that
+            objects as 'Exists Indentically'. Otherwise, if their IDs match
+            but their version IDs mismatch, Strategy One Object Manager
+            determines that objects 'Exists Differently'.
         owner (User): The object's owner information.
         icon_path (str): A path to a location where the object's icon is stored.
         view_media (int): The enumeration constant used to represent the default
-            mode of a RSD or a dashboard/dossier, and available modes
-            of a RSD or a dashboard/dossier.
+            mode of a RSD or a dashboard, and available modes of a RSD or a
+            dashboard.
         ancestors (list[dict]): A list of the object's ancestor folders.
         certified_info (CertifiedInfo): The object's certification status,
             time of certification, and information about the certifier
@@ -149,7 +149,7 @@ class EntityBase(helper.Dictable):
 
     _OBJECT_TYPE: ObjectTypes = (
         ObjectTypes.NOT_SUPPORTED
-    )  # MSTR object type defined in ObjectTypes
+    )  # Strategy One object type defined in ObjectTypes
     _OBJECT_SUBTYPES: list[ObjectSubTypes] | None = (
         None  # None means subtype won't be verified.
     )
@@ -531,7 +531,7 @@ class EntityBase(helper.Dictable):
             cls (T): Class (type) of an object that should be created.
             source (dict[str, Any]): a dictionary from which an object will be
                 constructed.
-            connection (Connection): A MicroStrategy Connection object.
+            connection (Connection): A Strategy One Connection object.
             to_snake_case (bool, optional): Set to True if attribute names
                 should be converted from camel case to snake case, default True.
             with_missing_value: (bool, optional): If True, class attributes
@@ -751,7 +751,8 @@ class EntityBase(helper.Dictable):
                         "value": self._validate_type(snake_case_name, value),
                     }
                 )
-        return body
+        # Prevent sending body with no operations
+        return body if body['operationList'] else {}
 
     def _send_proper_patch_request(
         self, properties: dict, op: str = 'replace'
@@ -1008,7 +1009,7 @@ class EntityBase(helper.Dictable):
 
     @property
     def connection(self) -> Connection:
-        """An object representation of MicroStrategy connection specific to the
+        """An object representation of Strategy One connection specific to the
         object."""
         return self._connection
 
@@ -1024,13 +1025,13 @@ class EntityBase(helper.Dictable):
 
 
 class Entity(EntityBase, ACLMixin, DependenceMixin, TranslationMixin):
-    """Base class representation of the MSTR object.
+    """Base class representation of the Strategy One object.
 
     Provides methods to fetch, update, and view the object. To implement
     this base class all class attributes have to be provided.
 
     Attributes:
-        connection: A MicroStrategy connection object
+        connection: A Strategy One connection object
         id: Object ID
         name: Object name
         description: Object description
@@ -1089,8 +1090,9 @@ class Entity(EntityBase, ACLMixin, DependenceMixin, TranslationMixin):
         "name": str,
         "description": str,
         "abbreviation": str,
-        'hidden': bool,
+        "hidden": bool,
         "comments": str,
+        "owner": str,
     }
     _FROM_DICT_MAP = {
         **EntityBase._FROM_DICT_MAP,
@@ -1155,6 +1157,84 @@ class Entity(EntityBase, ACLMixin, DependenceMixin, TranslationMixin):
             if kwargs.get("acl")
             else default_value
         )
+
+    @method_version_handler(version="11.3.0200")
+    def create_shortcut(
+        self,
+        target_folder_id: str | None = None,
+        target_folder_path: str | None = None,
+        target_folder: 'Folder | None' = None,
+        project_id: str | None = None,
+        project_name: str | None = None,
+        project: 'Project | None' = None,
+        to_dictionary: bool = False,
+    ) -> 'Shortcut':
+        """Create a shortcut to the object.
+
+        Args:
+            target_folder_id (str, optional): ID of the target folder. Target
+                folder must be specified, but `target_folder_id` may be
+                substituted with `target_folder_path` or `target_folder`.
+            target_folder_path (str, optional): Path to the target folder, e.g.
+                '/MicroStrategy Tutorial/Public Objects'.
+                May be used instead of `target_folder_id`.
+            target_folder (Folder, optional): Target folder object.
+                May be used instead of `target_folder_id`.
+            project_id (str, optional): ID of the target project of the new
+                shortcut. The project may be specified by either `project_id`,
+                `project_name` or `project`. If the project is not specified in
+                either way, the project from the `connection` object is used.
+            project_name (str, optional): Name of the target project.
+                May be used instead of `project_id`.
+            project (Project, optional): Project object specifying the target
+                project. May be used instead of `project_id`.
+            to_dictionary (bool, optional): If True, the method will return
+                a dictionary with the shortcut's properties instead of a
+                Shortcut object. Defaults to False.
+
+        """
+        from mstrio.object_management.folder import get_folder_id_from_path
+        from mstrio.object_management.shortcut import Shortcut
+
+        if target_folder:
+            target_folder_id = target_folder.id
+        elif target_folder_path:
+            target_folder_id = get_folder_id_from_path(
+                self.connection, target_folder_path
+            )
+        if not target_folder_id:
+            raise ValueError("Target folder not specified.")
+
+        if project_id is None and project is not None:
+            project_id = project.id
+        project_id = get_valid_project_id(
+            connection=self.connection,
+            project_id=project_id,
+            project_name=project_name,
+            with_fallback=True,
+        )
+
+        body = {
+            'folderId': target_folder_id,
+        }
+
+        res = objects.create_shortcut(
+            connection=self.connection,
+            id=self.id,
+            object_type=self._OBJECT_TYPE.value,
+            body=body,
+            project_id=project_id,
+        )
+        body = res.json()
+        shortcut_id = body.get('id')
+        if config.verbose:
+            logger.info(
+                f"Successfully created Shortcut for object named '{self.name}' "
+                f"with ID: '{self.id}'. Shortcut ID: '{shortcut_id}'."
+            )
+        if to_dictionary:
+            return body
+        return Shortcut.from_dict(source=body, connection=self.connection)
 
     def get(self, name):
         """Get object's attribute by its name."""
@@ -1395,8 +1475,7 @@ class CertifyMixin:
 class VldbMixin:
     """VLDBMixin class adds vldb management for supporting objects.
 
-    Objects currently supporting VLDB settings are dataset, dashboard, document,
-    dossier.
+    Objects currently supporting VLDB settings are dataset, dashboard, document.
     Must be mixedin with Entity or its subclasses.
     """
 
@@ -1481,7 +1560,10 @@ class VldbMixin:
 
 
 def auto_match_args_entity(
-    func: Callable, obj: EntityBase, exclude: list = None, include_defaults: bool = True
+    func: Callable,
+    obj: EntityBase,
+    exclude: list | None = None,
+    include_defaults: bool = True,
 ) -> dict:
     """Automatically match `obj` object data to function arguments.
 
@@ -1489,7 +1571,7 @@ def auto_match_args_entity(
     arguments as dict.
 
     Args:
-        function: function for which args will be matched
+        func: function for which args will be matched
         obj: object to use for matching the function args
         exclude: set `exclude` parameter to exclude specific param-value pairs
         include_defaults: if `False` then values which have the same value as

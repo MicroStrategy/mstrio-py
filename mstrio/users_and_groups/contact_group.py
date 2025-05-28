@@ -109,7 +109,7 @@ def list_contact_groups(
     Optionally filter the contact groups by specifying filters.
 
     Args:
-        connection(object): MicroStrategy connection object
+        connection(object): Strategy One connection object
         to_dictionary: If True returns a list of contact group dicts,
             otherwise returns a list of contact group objects
         limit: limit the number of elements returned. If `None` (default), all
@@ -124,7 +124,7 @@ def list_contact_groups(
 
 @class_version_handler('11.3.0200')
 class ContactGroup(EntityBase, DeleteMixin):
-    """Object representation of Microstrategy Contact Group object
+    """Object representation of Strategy One Contact Group object
 
     Attributes:
         name: contact group's name
@@ -136,7 +136,7 @@ class ContactGroup(EntityBase, DeleteMixin):
             ContactGroupMember
         memberships: list of Contact Groups that the Contact Group belongs to
         connection: instance of Connection class, represents connection
-                    to MicroStrategy Intelligence Server
+                    to Strategy One Intelligence Server
     """
 
     _FROM_DICT_MAP = {
@@ -181,7 +181,7 @@ class ContactGroup(EntityBase, DeleteMixin):
         When `id` is provided, name is omitted.
 
         Args:
-            connection: MicroStrategy connection object
+            connection: Strategy One connection object
             id: ID of Contact
             name: name of Contact Group
         """
@@ -243,7 +243,7 @@ class ContactGroup(EntityBase, DeleteMixin):
         """Create a new contact group.
 
         Args:
-            connection: MicroStrategy connection object
+            connection: Strategy One connection object
                 returned by `connection.Connection()`
             name: contact group name
             linked_user: user linked to contact

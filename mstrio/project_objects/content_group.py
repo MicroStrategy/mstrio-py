@@ -8,7 +8,13 @@ from mstrio.server.project import Project
 from mstrio.types import ObjectTypes
 from mstrio.users_and_groups import User, UserGroup, UserOrGroup
 from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity
-from mstrio.utils.helper import find_object_with_name, is_dashboard, get_temp_connection
+from mstrio.utils.helper import (
+    delete_none_values,
+    find_object_with_name,
+    get_temp_connection,
+    is_dashboard,
+)
+from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
 logger = logging.getLogger(__name__)
@@ -24,7 +30,7 @@ def list_content_groups(
     """Get a list of content groups.
 
     Args:
-        connection (Connection): MicroStrategy connection object returned
+        connection (Connection): Strategy One connection object returned
             by 'connection.Connection()'
         to_dictionary (bool, optional): if True, return Content Groups as a
             list of dicts
@@ -53,7 +59,7 @@ def list_content_groups(
 
 @class_version_handler('11.3.1200')
 class ContentGroup(Entity, CopyMixin, DeleteMixin):
-    """Python representation of a MicroStrategy Content Group object"""
+    """Python representation of a Strategy One Content Group object"""
 
     _OBJECT_TYPE = ObjectTypes.CONTENT_BUNDLE
     _API_GETTERS = {
@@ -65,6 +71,12 @@ class ContentGroup(Entity, CopyMixin, DeleteMixin):
             'recipients',
         ): content_groups.get_content_group,
     }
+    _API_PATCH: dict = {
+        (
+            'comments',
+            'owner',
+        ): (objects_processors.update, 'partial_put'),
+    }
 
     def __init__(
         self, connection: Connection, name: str | None = None, id: str | None = None
@@ -72,7 +84,7 @@ class ContentGroup(Entity, CopyMixin, DeleteMixin):
         """Initialize Content Group object by passing name or id.
 
         Args:
-            connection (Connection): MicroStrategy connection object returned
+            connection (Connection): Strategy One connection object returned
                 by `connection.Connection()`
             name (string, optional): name of Content Group
             id (string, optional): ID of Content Group
@@ -113,7 +125,7 @@ class ContentGroup(Entity, CopyMixin, DeleteMixin):
         """Create a new content group.
 
         Args:
-            connection (Connection): MicroStrategy connection object returned by
+            connection (Connection): Strategy One connection object returned by
                 `connection.Connection()`
             name (str): name of the content group
             color (str, optional): color of the content group, in hex format
@@ -159,6 +171,8 @@ class ContentGroup(Entity, CopyMixin, DeleteMixin):
     def alter(
         self,
         name: str | None = None,
+        comments: str | None = None,
+        owner: str | User | None = None,
         color: str | None = None,
         opacity: int | None = None,
         email_enabled: bool | None = None,
@@ -177,7 +191,17 @@ class ContentGroup(Entity, CopyMixin, DeleteMixin):
             recipients (list, optional): list of recipients of the content group
                 represented as str containing ID or the User and UserGroup class
                 objects
+            comments (str, optional): long description of the content group
+            owner: (str, User, optional): owner of the content group
         """
+        if isinstance(owner, User):
+            owner = owner.id
+        properties = {
+            'comments': comments,
+            'owner': owner,
+        }
+        properties = delete_none_values(properties, recursion=False)
+        self._alter_properties(**properties)
         operations = [
             ('/name', name),
             (

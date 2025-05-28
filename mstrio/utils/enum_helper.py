@@ -25,7 +25,7 @@ class AutoCapitalizedName(Enum):
 
 def __get_enum_helper(
     obj, enum: type[Enum] = Enum, get_value: bool = False
-) -> str | type[Enum] | None:
+) -> str | int | type[Enum] | None:
     """Helper function for `get_enum` and `get_enum_val`."""
     if obj is None:
         return obj
@@ -45,7 +45,7 @@ def get_enum(obj, enum: type[Enum] = Enum) -> type[Enum] | None:
     return __get_enum_helper(obj, enum)
 
 
-def get_enum_val(obj, enum: type[Enum] = Enum) -> str | None:
+def get_enum_val(obj, enum: type[Enum] = Enum) -> str | int | None:
     """Safely extract value from enum or str."""
     return __get_enum_helper(obj, enum, True)
 

@@ -82,7 +82,7 @@ def _get_valid_language_ids(
     """Gets valid language IDs for the Project.
 
     Args:
-        connection (Connection): MicroStrategy connection object returned by
+        connection (Connection): Strategy One connection object returned by
             `connection.Connection()`
         project_id (str): ID of the project
         operation (str): operation to be performed
@@ -114,7 +114,7 @@ def _add_language(
     """Adds languages to the Project.
 
     Args:
-        connection (Connection): MicroStrategy connection object returned by
+        connection (Connection): Strategy One connection object returned by
             `connection.Connection()`
         project_id (str): ID of the project
         languages (list[DataLocalizationLanguage | SimpleLanguage]):
@@ -168,7 +168,7 @@ def _remove_language(
     """Removes languages from the Project.
 
     Args:
-        connection (Connection): MicroStrategy connection object returned by
+        connection (Connection): Strategy One connection object returned by
             `connection.Connection()`
         project_id (str): ID of the project
         languages (list[DataLocalizationLanguage | SimpleLanguage]):
@@ -192,7 +192,11 @@ def _remove_language(
             raise ValueError(f"Cannot remove default language: {language.id}.")
 
         operation_list.append(
-            {'op': 'remove', 'path': f'/{path}/languages/{language.id}'}
+            {
+                'op': 'remove',
+                'path': f'/{path}/languages/{language.id}',
+                'value': language.id,
+            }
         )
 
     response = update_project_languages(

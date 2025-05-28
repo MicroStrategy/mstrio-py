@@ -10,7 +10,7 @@ def get_gateways(
     """Get information for all gateways.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
@@ -27,7 +27,7 @@ def get_gateway(connection: Connection, id: str, error_msg: str | None = None):
     """Get gateway by a specific ID.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id: ID of the gateway
         error_msg (string, optional): Custom Error Message for Error Handling
 

@@ -18,7 +18,7 @@ def get(connection: Connection, id: str):
     """Get user by a specified ID.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id: ID of the user
 
     Returns:
@@ -31,7 +31,7 @@ def get_addresses(connection: Connection, id: str):
     """Get addresses for a specified user.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id: ID of the user
 
     Returns:
@@ -44,7 +44,7 @@ def get_security_roles(connection: Connection, id: str):
     """Get security roles for a specified user.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id: ID of the user
 
     Returns:
@@ -57,7 +57,7 @@ def get_settings(connection: Connection, id: str):
     """Get settings for a specified user.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id: ID of the user
 
     Returns:
@@ -70,7 +70,7 @@ def get_privileges(connection: Connection, id: str):
     """Get privileges for a specified user.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id: ID of the user
 
     Returns:
@@ -83,7 +83,7 @@ def update(connection: Connection, id: str, body: dict):
     """Update info for a specified user.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id: ID of the user
         body: body of the request
 
@@ -97,7 +97,7 @@ def create(connection: Connection, body: dict, username: str):
     """Create a user.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         body: body of the request
         username: name of the user, for error purposes only
 
@@ -120,7 +120,7 @@ def get_all(
     """Get list of users.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         limit: limit of users to list
         msg: optional error message,
         name_begins: optional filter for name beginning with
@@ -175,7 +175,7 @@ def create_address(connection: Connection, id: str, body: dict):
     """Create an email user address.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id: ID of the user
         body: body of the request
 
@@ -189,7 +189,7 @@ def create_address_v2(connection: Connection, id: str, body: dict):
     """Create a non-email user address.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id: ID of the user
         body: body of the request
 
@@ -203,7 +203,7 @@ def update_address(connection: Connection, id: str, address_id: str, body: dict)
     """Update a user address.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id: ID of the user
         address_id: ID of the address
         body: body of the request
@@ -220,7 +220,7 @@ def delete_address(connection: Connection, id: str, address_id: str):
     """Delete a user address.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id: ID of the user
         address_id: ID of the address
 
@@ -236,7 +236,7 @@ def get_security_filters(connection: Connection, id: str, projects: str | list[s
     """Get security filters for a user.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id: ID of the user
         projects: IDs of the projects
 
@@ -253,7 +253,7 @@ def update_user_settings(connection: Connection, id: str, body: str):
     """Update user settings.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id: ID of the user
 
     Returns:
@@ -329,7 +329,7 @@ def get_default_email_device(connection: Connection, id: str) -> dict | None:
     """Get default email device for a user.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id: ID of the user
 
     Returns:

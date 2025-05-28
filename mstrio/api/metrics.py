@@ -15,7 +15,7 @@ def create_metric(
     based on the definition provided in request body.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         body: Metric creation data
         show_expression_as: Specifies the format in which the expressions are
            returned in response
@@ -55,7 +55,7 @@ def get_metric(
     """Get definition of a single metric by id
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id: ID of a metric
         changeset_id: ID of a changeset
         show_expression_as: Specifies the format in which the expressions
@@ -96,7 +96,7 @@ def update_metric(
     based on the definition provided in request body.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id: ID of a metric
         body: Metric update data
         show_expression_as: Specifies the format in which the expressions are
@@ -131,7 +131,7 @@ def get_vldb_settings(connection: Connection, id: str):
     """Get definition of VLDB settings for a metric with id
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id: ID of a metric
 
     Return:
@@ -149,7 +149,7 @@ def get_applicable_vldb_settings(
     """Get metadata of advanced VLDB settings for a metric.
 
     Args:
-        connection (Connection): MicroStrategy REST API connection object
+        connection (Connection): Strategy One REST API connection object
         id (string): Metric ID
         error_msg (string, optional): Custom Error Message for Error Handling
 

@@ -134,7 +134,7 @@ def list_namespaces(
     """Get list of namespaces. Optionally filter them by specifying filters.
 
     Args:
-        connection: MicroStrategy connection object returned by
+        connection: Strategy One connection object returned by
             `connection.Connection()`
         id (str): Datasource ID
         refresh (bool, optional): Force refresh

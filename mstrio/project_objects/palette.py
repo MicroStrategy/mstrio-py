@@ -1,12 +1,15 @@
 from logging import getLogger
+
 from requests import Response
+
 from mstrio import config
 from mstrio.api import palettes as palettes_api
 from mstrio.connection import Connection
 from mstrio.types import ObjectSubTypes, ObjectTypes
+from mstrio.users_and_groups.user import User
 from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity
 from mstrio.utils.format import Color
-from mstrio.utils.helper import delete_none_values, get_valid_project_id
+from mstrio.utils.helper import delete_none_values, get_project_id_or_none
 from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
@@ -23,7 +26,7 @@ def list_palettes(
     """List all palettes in the environment.
 
     Args:
-        connection (Connection): MicroStrategy connection object returned
+        connection (Connection): Strategy One connection object returned
             by `connection.Connection()`
         to_dictionary: If True, returns a list of dictionaries, otherwise
             returns a list of Palette objects.
@@ -71,33 +74,27 @@ class Palette(Entity, CopyMixin, DeleteMixin):
     }
 
     @staticmethod
-    def _get_project_id_or_none(
-        connection: Connection,
-        project_id: str | None = None,
-        project_name: str | None = None,
-    ) -> str | None:
-        """Get project ID or None if project is not specified. This is used
-        for operations on palettes, which can be project-specific or
-        config-level. In the latter case, project_id can and should be None.
-        """
-        try:
-            project_id = get_valid_project_id(
-                connection=connection,
-                project_id=project_id,
-                project_name=project_name,
-                with_fallback=False,
-            )
-        except ValueError:
-            return None
-        return project_id
-
-    @staticmethod
     def _parse_colors(source: list[str], *args, **kwargs) -> list[Color]:
         return [Color(server_value=color) for color in source]
 
     _FROM_DICT_MAP = {
         **Entity._FROM_DICT_MAP,
         'colors': _parse_colors,
+    }
+    _API_PATCH: dict = {
+        (
+            # the endpoint must take name, while not changing it
+            # hence 'name' in both entries
+            'name',
+            'colors',
+        ): (palettes_api.update_palette, 'put'),
+        (
+            'name',
+            'description',
+            'abbreviation',
+            'comments',
+            'owner',
+        ): (objects_processors.update, 'partial_put'),
     }
 
     def __init__(
@@ -164,7 +161,7 @@ class Palette(Entity, CopyMixin, DeleteMixin):
         """Create a new color palette.
 
         Args:
-            connection (Connection): MicroStrategy connection object returned by
+            connection (Connection): Strategy One connection object returned by
                 `connection.Connection()`
             name (str): Name of the new palette.
             colors (list[Color] | list[str]): List of colors in the palette.
@@ -185,7 +182,7 @@ class Palette(Entity, CopyMixin, DeleteMixin):
             color.server_value if isinstance(color, Color) else color
             for color in colors
         ]
-        project_id = Palette._get_project_id_or_none(
+        project_id = get_project_id_or_none(
             connection=connection,
             project_id=project_id,
             project_name=project_name,
@@ -222,6 +219,8 @@ class Palette(Entity, CopyMixin, DeleteMixin):
         colors: list[Color] | list[str] | None = None,
         abbreviation: str | None = None,
         description: str | None = None,
+        comments: str | None = None,
+        owner: str | User | None = None,
     ) -> None:
         """Alter the color palette's properties.
         Args:
@@ -231,39 +230,28 @@ class Palette(Entity, CopyMixin, DeleteMixin):
                 i.e. a single integer, e.g. "16737843" (16,737,843 = 0xff6633)
             abbreviation (str, optional): Abbreviation of the object name.
             description (str, optional): Description of the palette object.
+            comments (str, optional): Long description of the palette.
+            owner: (str | User, optional): Owner of the palette.
         """
+        if isinstance(owner, User):
+            owner = owner.id
         if name is None:
             name = self.name
-
         if colors:
             colors = [Palette._color_to_server_value(color) for color in colors]
-        body = {
+
+        properties = {
             'name': name,
             'colors': colors,
-        }
-        obj_body = {
-            'name': name,
             'abbreviation': abbreviation,
             'description': description,
+            'comments': comments,
+            'owner': owner,
         }
-        body = delete_none_values(source=body, recursion=True)
-        obj_body = delete_none_values(source=obj_body, recursion=True)
-
-        palettes_api.update_palette(
-            connection=self.connection,
-            id=self.id,
-            body=body,
-            project_id=self.project_id,
-        )
-        # palette PUT endpoint does not work with name
-        objects_processors.update(
-            connection=self.connection,
-            id=self.id,
-            body=obj_body,
-            object_type=self._OBJECT_TYPE.value,
-            project_id=self.project_id,
-        )
-
+        properties = delete_none_values(properties, recursion=False)
+        self._alter_properties(**properties)
+        # update api does not return updated object data, only id;
+        # need to fetch the object explicitly
         self.fetch()
 
     @classmethod
@@ -274,7 +262,7 @@ class Palette(Entity, CopyMixin, DeleteMixin):
         project_id: str | None = None,
         project_name: str | None = None,
     ) -> list['Palette'] | list[dict]:
-        project_id = Palette._get_project_id_or_none(
+        project_id = get_project_id_or_none(
             connection=connection,
             project_id=project_id,
             project_name=project_name,

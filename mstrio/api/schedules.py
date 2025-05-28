@@ -11,13 +11,13 @@ def list_schedules(connection, fields=None, error_msg=None):
     """Get list of a schedules.
 
     Args:
-        connection(object): MicroStrategy connection object returned by
+        connection(object): Strategy One connection object returned by
             `connection.Connection()`.
         fields(list, optional): Comma separated top-level field whitelist. This
             allows client to selectively retrieve part of the response model.
         error_msg(str, optional): Customized error message.
     Returns:
-        HTTP response object returned by the MicroStrategy REST server
+        HTTP response object returned by the Strategy One REST server
     """
 
     response = connection.get(endpoint='/api/schedules', params={'fields': fields})
@@ -42,14 +42,14 @@ def get_schedule(connection, id, fields=None, error_msg=None):
     """Get information of a specific schedule by `schedule_id`.
 
     Args:
-        connection(object): MicroStrategy connection object returned by
+        connection(object): Strategy One connection object returned by
             `connection.Connection()`.
         schedule_id(str): ID of the schedule
         fields(list, optional): Comma separated top-level field whitelist. This
             allows client to selectively retrieve part of the response model.
         error_msg(str, optional): Customized error message.
     Returns:
-        HTTP response object returned by the MicroStrategy REST server
+        HTTP response object returned by the Strategy One REST server
     """
 
     response = connection.get(
@@ -72,14 +72,14 @@ def create_schedule(connection, body, fields=None, error_msg=None):
     """Create a new schedule using data from `body`.
 
     Args:
-        connection(object): MicroStrategy connection object returned by
+        connection(object): Strategy One connection object returned by
             `connection.Connection()`.
         body(dict): Dictionary containing data used for creating schedule.
         fields(list, optional): Comma separated top-level field whitelist. This
             allows client to selectively retrieve part of the response model.
         error_msg(str, optional): Customized error message.
     Returns:
-        HTTP response object returned by the MicroStrategy REST server
+        HTTP response object returned by the Strategy One REST server
     """
 
     # id to eventId conversion - API Problem
@@ -106,7 +106,7 @@ def update_schedule(connection, id, body, fields=None, error_msg=None):
     """Alter a schedule specified by `schedule_id`, using data from `body`.
 
     Args:
-        connection(object): MicroStrategy connection object returned by
+        connection(object): Strategy One connection object returned by
             `connection.Connection()`.
         schedule_id(str): ID of the schedule
         body(dict): Dictionary containing data used for replacing schedule.
@@ -114,7 +114,7 @@ def update_schedule(connection, id, body, fields=None, error_msg=None):
             allows client to selectively retrieve part of the response model.
         error_msg(str, optional): Customized error message.
     Returns:
-        HTTP response object returned by the MicroStrategy REST server
+        HTTP response object returned by the Strategy One REST server
     """
 
     # id to eventId conversion - API Problem
@@ -143,14 +143,14 @@ def delete_schedule(connection, id, fields=None, error_msg=None):
     """Delete a schedule specified by `schedule_id`.
 
     Args:
-        connection(object): MicroStrategy connection object returned by
+        connection(object): Strategy One connection object returned by
             `connection.Connection()`.
         id(str): ID of the schedule
         fields(list, optional): Comma separated top-level field whitelist. This
             allows client to selectively retrieve part of the response model.
         error_msg(str, optional): Customized error message.
     Returns:
-        HTTP response object returned by the MicroStrategy REST server
+        HTTP response object returned by the Strategy One REST server
     """
     return connection.delete(endpoint=f'/api/schedules/{id}', params={'fields': fields})
 
@@ -163,7 +163,7 @@ def get_contents_schedule(
         project.
 
     Args:
-        connection(object): MicroStrategy connection object returned by
+        connection(object): Strategy One connection object returned by
             `connection.Connection()`.
         project_id(str): Field to filter on project id (exact match),
         body: List of contents

@@ -18,7 +18,7 @@ def list_active_user_privileges(connection: "Connection") -> List[dict]:
     """List user privileges for all active users.
 
     Args:
-        connection: MicroStrategy connection object returned by
+        connection: Strategy One connection object returned by
             `connection.Connection()`
 
     Returns:

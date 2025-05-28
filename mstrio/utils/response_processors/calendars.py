@@ -56,5 +56,14 @@ def create_calendar(
     connection: Connection,
     body: dict,
 ):
-    data = calendars_api.create_calendar(connection, body).json()
+    data = calendars_api.create_calendar(connection, body=body).json()
+    return _wrangle_entry(data)
+
+
+def update_calendar(
+    connection: Connection,
+    id: str,
+    body: dict,
+):
+    data = calendars_api.update_calendar(connection, id, body=body).json()
     return _wrangle_entry(data)

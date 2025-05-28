@@ -4,19 +4,21 @@ from .content_cache import ContentCache
 from .content_group import ContentGroup, list_content_groups
 from .datasets import *
 
-# isort: off
-from .dashboard import Dashboard, list_dashboards, list_dashboards_across_projects
 
-# isort: on
 from .document import Document, list_documents, list_documents_across_projects
-from .dossier import (
+from .dashboard import (
     ChapterPage,
-    Dossier,
+    Dashboard,
+    DashboardChapter,
     PageSelector,
     PageVisualization,
     VisualizationSelector,
-    list_dossiers,
-    list_dossiers_across_projects,
+    list_dashboards,
+    list_dashboards_across_projects,
+)
+from .incremental_refresh_report import (
+    IncrementalRefreshReport,
+    list_incremental_refresh_reports,
 )
 from .library import Library
 from .prompt import Prompt

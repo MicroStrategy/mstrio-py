@@ -217,7 +217,7 @@ class SchemaManagement:
             its value is overwritten by `project_id` from `connection` object.
 
         Args:
-            connection: MicroStrategy connection object returned by
+            connection: Strategy One connection object returned by
                 `connection.Connection()`.
             project_id (optional, str): ID of project on which schema will be
                 managed.

@@ -20,7 +20,7 @@ def get_subscriptions_by_emails(connection: 'Connection', emails: list[str]) -> 
     """Get subscriptions by user emails.
 
     Args:
-        connection (Connection): MicroStrategy connection object returned by
+        connection (Connection): Strategy One connection object returned by
             `connection.Connection()`
         emails (list[str]): List of emails to search for in subscriptions.
     """

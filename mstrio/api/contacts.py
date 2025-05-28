@@ -7,7 +7,7 @@ def create_contact(connection: Connection, body: dict, error_msg: str | None = N
     """Create a new contact.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         body: Contact creation info.
         error_msg (string, optional): Custom Error Message for Error Handling
 
@@ -23,7 +23,7 @@ def get_contact(connection: Connection, id: str, error_msg: str | None = None):
     """Get contact by a specific id.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id: ID of the contact
         error_msg (string, optional): Custom Error Message for Error Handling
 
@@ -39,7 +39,7 @@ def delete_contact(connection: Connection, id: str, error_msg: str | None = None
     """Delete a contact.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id: ID of the contact
         error_msg (string, optional): Custom Error Message for Error Handling
 
@@ -57,7 +57,7 @@ def update_contact(
     """Update a contact.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id: ID of the contact
         body: Contact update info.
         error_msg (string, optional): Custom Error Message for Error Handling
@@ -80,7 +80,7 @@ def get_contacts(
     """Get information for all contacts.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         fields(list, optional): Comma separated top-level field whitelist. This
             allows client to selectively retrieve part of the response model.
         offset (integer, optional): Starting point within the collection of

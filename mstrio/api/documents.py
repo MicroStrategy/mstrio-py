@@ -3,61 +3,11 @@ from typing import TYPE_CHECKING
 from requests import Response
 
 from mstrio.utils.error_handlers import ErrorHandler
-from mstrio.utils.helper import deprecation_warning, get_valid_project_id
+from mstrio.utils.helper import get_valid_project_id
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
     from mstrio.utils.sessions import FuturesSessionWithRenewal
-
-
-@ErrorHandler(err_msg="Error getting available dossiers.")
-def get_dossiers(
-    connection: 'Connection',
-    offset: int = 0,
-    limit: int = -1,
-    search_term: str | None = None,
-    certified_status: str | None = None,
-    search_pattern: str | None = None,
-    fields: str | None = None,
-    project_id: str | None = None,
-    error_msg: str | None = None,
-) -> Response:
-    """Get the list of available dossiers.
-
-    Args:
-        connection(object): MicroStrategy REST API connection object
-        offset(int): Starting point within the collection of returned search
-            results. Used to control paging behavior.
-        limit(int): Maximum number of items returned for a single request.
-            Used to control paging behavior.
-        search_term(str, optional): The value that the search searchPattern is
-            set to.
-        certified_status(str, optional): Define a search criteria of the
-            certified status of the object
-        search_pattern(str, optional): The kind of search pattern that will be
-            applied to the search,
-        fields(str, optional): A whitelist of top-level fields separated by
-            commas. Allow the client to selectively retrieve fields in the
-            response.
-        project_id (string, optional): Project ID
-        error_msg (string, optional): Custom Error Message for Error Handling
-
-    Returns:
-        Complete HTTP response object.
-    """
-    endpoint = '/api/dossiers'
-    return connection.get(
-        endpoint=endpoint,
-        headers={'X-MSTR-ProjectID': project_id},
-        params={
-            'searchTerm': search_term,
-            'searchPattern': search_pattern,
-            'offset': offset,
-            'limit': limit,
-            'certifiedStatus': certified_status,
-            'fields': fields,
-        },
-    )
 
 
 @ErrorHandler(err_msg="Error getting available dashboards.")
@@ -75,7 +25,7 @@ def get_dashboards(
     """Get the list of available dashboards.
 
     Args:
-        connection(object): MicroStrategy REST API connection object
+        connection(object): Strategy One REST API connection object
         offset(int): Starting point within the collection of returned search
             results. Used to control paging behavior.
         limit(int): Maximum number of items returned for a single request.
@@ -108,53 +58,6 @@ def get_dashboards(
             'fields': fields,
         },
     )
-
-
-def get_dossiers_async(
-    future_session: 'FuturesSessionWithRenewal',
-    offset: int = 0,
-    limit: int = -1,
-    search_term: str | None = None,
-    certified_status: str | None = None,
-    search_pattern: str | None = None,
-    fields: str | None = None,
-    project_id: str | None = None,
-):
-    """Get the list of available dossiers asynchronously.
-
-    Args:
-        future_session: FuturesSessionWithRenewal object
-        offset(int): Starting point within the collection of returned search
-            results. Used to control paging behavior.
-        limit(int): Maximum number of items returned for a single request.
-            Used to control paging behavior.
-        search_term(str, optional): The value that the search searchPattern is
-            set to.
-        certified_status(str, optional): Define a search criteria of the
-            certified status of the object
-        search_pattern(str, optional): The kind of search pattern that will be
-            applied to the search,
-        fields(str, optional): A whitelist of top-level fields separated by
-            commas. Allow the client to selectively retrieve fields in the
-            response.
-        project_id(str, optional): Project ID of the project to use. If not
-            set then the project selected in `connection` will be used.
-
-    Returns:
-        Complete HTTP response object.
-    """
-    future_session.connection._validate_project_selected()
-    endpoint = '/api/dossiers'
-    headers = ({'X-MSTR-ProjectID': project_id},)
-    params = {
-        'searchTerm': search_term,
-        'searchPattern': search_pattern,
-        'offset': offset,
-        'limit': limit,
-        'certifiedStatus': certified_status,
-        'fields': fields,
-    }
-    return future_session.get(endpoint=endpoint, params=params, headers=headers)
 
 
 def get_dashboards_async(
@@ -219,7 +122,7 @@ def get_documents(
     """Get the list of available documents.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         offset(int): Starting point within the collection of returned search
             results. Used to control paging behavior.
         limit(int): Maximum number of items returned for a single request.
@@ -308,10 +211,10 @@ def get_document_status(
     project_id: str | None = None,
     error_msg: str | None = None,
 ) -> Response:
-    """Get the status of a dashboard, document or dossier instance.
+    """Get the status of a dashboard or document instance.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         document_id (string): Document ID
         instance_id (string): Document Instance ID
         project_id (string, optional): Project ID
@@ -336,10 +239,10 @@ def get_prompts_for_instance(
     error_msg: str | None = None,
 ) -> Response:
     """Get the collection of prompts and their respective definitions from a
-    dashboard/document/dossier instance.
+    dashboard/document instance.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         document_id (string): Document ID
         instance_id (string): Document Instance ID
         closed(bool, optional): Prompt status, true means get closed prompt,
@@ -366,11 +269,11 @@ def get_attribute_element_for_prompt(
     prompt_identifier: str,
     error_msg: str | None = None,
 ) -> 'Response':
-    """Get available attribute element for dashboard/document/dossier's
+    """Get available attribute element for dashboard/document's
     attribute element prompt.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         document_id (string): Document ID
         instance_id (string): Document Instance ID
         prompt_identifier (string): Prompt key or ID
@@ -397,7 +300,7 @@ def get_available_object(
     """Get available object for answering all kinds of prompts.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         document_id (string): Document ID
         instance_id (string): Document Instance ID
         prompt_identifier (string): Prompt key or ID
@@ -428,7 +331,7 @@ def export_visualization_to_pdf(
     file.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         document_id (string): Document ID
         instance_id (string): Document Instance ID
         node_key (string): Visualization node key
@@ -462,7 +365,7 @@ def export_visualization_to_csv(
     file.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         document_id (string): Document ID
         instance_id (string): Document Instance ID
         node_key (string): Visualization node key
@@ -492,7 +395,7 @@ def export_document_to_pdf(
     """Export a specific document instance to a PDF file.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         document_id (string): Document ID
         instance_id (string): Document Instance ID
         body: JSON-formatted information used to format the document
@@ -521,7 +424,7 @@ def export_document_to_mstr(
     """Export a specific document in a specific project to an .mstr file.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         document_id (string): Document ID
         instance_id (string): Document Instance ID
         body: JSON-formatted information used to format the document
@@ -550,7 +453,7 @@ def export_document_to_excel(
     """Export a document from a specific document instance to an Excel file.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         document_id (string): Document ID
         instance_id (string): Document Instance ID
         body: JSON-formatted information used to format the document
@@ -578,7 +481,7 @@ def set_document_to_prompt_status(
     """Export a document from a specific document instance to an Excel file.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         document_id (string): Document ID
         instance_id (string): Document Instance ID
         error_msg (string, optional): Custom Error Message for Error Handling
@@ -598,7 +501,7 @@ def get_cubes_used_by_document(
     or indirectly.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         document_id (string): Document ID
         error_msg (string, optional): Custom Error Message for Error Handling
 
@@ -619,7 +522,7 @@ def overwrite_document(
     """Save a document instance by overwriting an existing document.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         document_id (string): Document ID
         instance_id (string): Document Instance ID
         error_msg (string, optional): Custom Error Message for Error Handling
@@ -641,7 +544,7 @@ def save_document_as(
     """Save a document instance by creating a new document.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         document_id (string): Document ID
         instance_id (string): Document Instance ID
         error_msg (string, optional): Custom Error Message for Error Handling
@@ -661,7 +564,7 @@ def create_new_document_instance(
     of the document.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         document_id (string): Document ID
         body: JSON-formatted information used to format the document
         error_msg (string, optional): Custom Error Message for Error Handling
@@ -683,7 +586,7 @@ def delete_document_instance(
     """Save a document instance by overwriting an existing document.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         document_id (string): Document ID
         instance_id (string): Document Instance ID
         error_msg (string, optional): Custom Error Message for Error Handling
@@ -706,7 +609,7 @@ def refresh_document_instance(
     of the document.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         document_id (string): Document ID
         instance_id (string): Document Instance ID
         error_msg (string, optional): Custom Error Message for Error Handling
@@ -727,10 +630,10 @@ def get_prompts(
     error_msg=None,
 ) -> 'Response':
     """Get the collection of prompts and their respective definitions from a
-    dashboard/document/dossier definition.
+    dashboard/document definition.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         document_id (string): Document ID
         project_id (string, optional): Project ID
         closed (bool, optional): Prompt status, true means get closed prompt,
@@ -757,13 +660,12 @@ def answer_prompts(
     project_id: str | None = None,
     error_msg: str | None = None,
 ) -> Response:
-    """Answer specified prompts on the dashboard/document/dossier instance,
-    prompts can either be answered with default answers(if available),
-    the appropriate answers, or if the prompt is not required
-    the prompt can simply be closed.
+    """Answer specified prompts on the dashboard/document instance, prompts can
+    either be answered with default answers(if available), the appropriate
+    answers, or if the prompt is not required the prompt can simply be closed.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         document_id (string): Document ID
         instance_id (string): Document Instance ID
         body: JSON-formatted information used to format the document
@@ -789,7 +691,7 @@ def get_document_shortcut(
     """Retrieve a published shortcut from a specific document instance.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         document_id (string): Document ID
         instance_id (string): Document Instance ID
         error_msg (string, optional): Custom Error Message for Error Handling
@@ -801,27 +703,6 @@ def get_document_shortcut(
     return connection.get(endpoint=endpoint)
 
 
-@ErrorHandler(err_msg="Error creating instance for dossier {dossier_id}")
-def create_dossier_instance(
-    connection: 'Connection', dossier_id: str, body: dict, error_msg: str | None = None
-) -> 'Response':
-    """Execute a specific dossier and create an instance of the dossier.
-
-    Args:
-        connection: MicroStrategy REST API connection object
-        dossier_id (string): Dossier ID
-        body: JSON-formatted information used to format the document
-        error_msg (string, optional): Custom Error Message for Error Handling
-
-    Returns:
-        Complete HTTP response object.
-    """
-    endpoint = f'/api/dossiers/{dossier_id}/instances'
-    return connection.post(
-        endpoint=endpoint, headers={'X-MSTR-ProjectID': None}, json=body
-    )
-
-
 @ErrorHandler(err_msg="Error creating instance for dashboard {dashboard_id}")
 def create_dashboard_instance(
     connection: 'Connection',
@@ -829,10 +710,10 @@ def create_dashboard_instance(
     body: dict,
     error_msg: str | None = None,
 ) -> 'Response':
-    """Execute a specific dossier and create an instance of the dossier.
+    """Execute a specific dashboard and create an instance of the dashboard.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         dashboard_id (string): Dashboard ID
         body: JSON-formatted information used to format the document
         error_msg (string, optional): Custom Error Message for Error Handling
@@ -846,28 +727,13 @@ def create_dashboard_instance(
     )
 
 
-@ErrorHandler(err_msg="Error getting hierarchy for dossier {id}")
-def get_dossier_hierarchy(connection: 'Connection', id: str) -> Response:
-    """Get the hierarchy of a specific dossier in a specific project.
-
-    Args:
-        connection: MicroStrategy REST API connection object
-        id (string): Dossier ID
-
-    Returns:
-        Complete HTTP response object.
-    """
-    endpoint = f'/api/v2/dossiers/{id}/definition/'
-    return connection.get(endpoint=endpoint)
-
-
 @ErrorHandler(err_msg="Error getting hierarchy for dashboard {id}")
 def get_dashboard_hierarchy(connection: 'Connection', id: str) -> Response:
-    """Get the hierarchy of a specific dossier in a specific project.
+    """Get the hierarchy of a specific dashboard in a specific project.
 
     Args:
-        connection: MicroStrategy REST API connection object
-        id (string): Dossier ID
+        connection: Strategy One REST API connection object
+        id (string): Dashboard ID
 
     Returns:
         Complete HTTP response object.
@@ -880,11 +746,11 @@ def get_dashboard_hierarchy(connection: 'Connection', id: str) -> Response:
 def get_document_definition(
     connection: 'Connection', id: str, error_msg: str | None = None
 ) -> 'Response':
-    """Get the hierarchy of a specific dossier in a specific project.
+    """Get details about a specific document.
 
     Args:
-        connection: MicroStrategy REST API connection object
-        id (string): Dossier ID
+        connection: Strategy One REST API connection object
+        id (string): Document ID
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
@@ -894,30 +760,7 @@ def get_document_definition(
     return connection.get(endpoint=endpoint, headers={'X-MSTR-ProjectID': None})
 
 
-@ErrorHandler(err_msg="Error getting dossier hierarchy from instance {instance_id}")
-def get_dossier_hierarchy_from_instance(
-    connection: 'Connection',
-    dossier_id: str,
-    instance_id: str,
-    error_msg: str | None = None,
-) -> 'Response':
-    """Get the hierarchy of a specific dossier in a specific project from
-    instance.
-
-    Args:
-        connection: MicroStrategy REST API connection object
-        dossier_id (string): Dossier ID
-        instance_id (string): Document Instance ID
-        error_msg (string, optional): Custom Error Message for Error Handling
-
-    Returns:
-        Complete HTTP response object.
-    """
-    endpoint = f'api/v2/dossiers/{dossier_id}/instances/{instance_id}/definition'
-    return connection.get(endpoint=endpoint, headers={'X-MSTR-ProjectID': None})
-
-
-@ErrorHandler(err_msg="Error getting dossier hierarchy from instance {instance_id}")
+@ErrorHandler(err_msg="Error getting dashboard hierarchy from instance {instance_id}")
 def get_dashboard_hierarchy_from_instance(
     connection: 'Connection',
     dashboard_id: str,
@@ -928,7 +771,7 @@ def get_dashboard_hierarchy_from_instance(
     instance.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         dashboard_id (string): Dashboard ID
         instance_id (string): Document Instance ID
         error_msg (string, optional): Custom Error Message for Error Handling
@@ -941,11 +784,10 @@ def get_dashboard_hierarchy_from_instance(
 
 
 @ErrorHandler(
-    err_msg="Error getting definition and results for dashboard/dossier {dossier_id}"
+    err_msg="Error getting definition and results for dashboard {dashboard_id}"
 )
 def get_definition_and_results_of_visualization(
     connection: 'Connection',
-    dossier_id: str,
     instance_id: str,
     chapter_key: str,
     visualization_key: str,
@@ -953,11 +795,10 @@ def get_definition_and_results_of_visualization(
     error_msg: str | None = None,
 ) -> 'Response':
     """Get the definition and data result of a grid/graph visualization in a
-    specific dashboard/dossier in a specific project.
+    specific dashboard in a specific project.
 
     Args:
-        connection: MicroStrategy REST API connection object
-        dossier_id (string): Dossier ID
+        connection: Strategy One REST API connection object
         instance_id (string): Document Instance ID
         chapter_key (string): Chapter Key
         visualization_key (string): Visualization Key
@@ -967,11 +808,6 @@ def get_definition_and_results_of_visualization(
     Returns:
         Complete HTTP response object.
     """
-    if dossier_id:
-        dashboard_id = dossier_id
-        deprecation_warning(
-            "argument `dossier_id`", "argument `dashboard_id`", "11.5.03", False
-        )
 
     endpoint = (
         f'/api/v2/dossiers/{dashboard_id}'

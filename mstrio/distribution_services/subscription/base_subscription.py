@@ -1,4 +1,5 @@
 import logging
+from collections.abc import Callable
 from datetime import datetime
 from enum import auto
 from functools import partial
@@ -50,11 +51,11 @@ class RecipientsTypes(AutoUpperName):
 
 
 class Subscription(EntityBase):
-    """Class representation of MicroStrategy Subscription object.
+    """Class representation of Strategy One Subscription object.
 
     Attributes:
         subscription_id: The ID of the Subscription
-        connection: The MicroStrategy connection object
+        connection: The Strategy One connection object
         project_id: The ID of the project the Subscription belongs to
     """
 
@@ -117,7 +118,7 @@ class Subscription(EntityBase):
         When `project_id` is provided (not `None`), `project_name` is omitted.
 
         Args:
-            connection (Connection): MicroStrategy connection object returned
+            connection (Connection): Strategy One connection object returned
                 by `connection.Connection()`
             id (str, optional): ID of the subscription to be initialized, only
                 id or subscription_id have to be provided at once, if both
@@ -315,6 +316,7 @@ class Subscription(EntityBase):
             delivery_personal_notification_address_id (str, optional):
                 Notification details
         """
+
         # TODO Potentially remove if new subscription types are supported
         cache_library_cache_types = cache_library_cache_types or [LibraryCacheTypes.WEB]
         if self.delivery.mode in [
@@ -336,7 +338,9 @@ class Subscription(EntityBase):
         if contents:
             contents = self.__validate_contents(contents)
         else:
-            contents = [cont.to_dict() for cont in self.contents]
+            # Even if contents are not changed, they must be executed with
+            # any stored prompt answers
+            contents = self.__get_reprompted_contents()
 
         # Delivery logic
         delivery_expiration_timezone = self.__validate_expiration_time_zone(
@@ -788,8 +792,8 @@ class Subscription(EntityBase):
     ) -> bool:
         def check_prompts(
             inst_id: str,
-            get_prompts_func: callable,
-            get_status_func: callable,
+            get_prompts_func: Callable,
+            get_status_func: Callable,
             c_id: str,
             c_type: str,
         ) -> bool:
@@ -927,7 +931,7 @@ class Subscription(EntityBase):
         """Creates a subscription Create_Subscription_Outline.
 
         Args:
-            connection (Connection): a MicroStrategy connection object
+            connection (Connection): a Strategy One connection object
             name (str): name of the subscription,
             contents (Content): The content settings.
             project_id (str): project ID,
@@ -1132,6 +1136,7 @@ class Subscription(EntityBase):
             rec = helper.filter_list_of_dicts(available_recipients, id=recipient)
             formatted_recipients.append(rec[0])
 
+        recipients = recipients or []
         recipients = recipients if isinstance(recipients, list) else [recipients]
         body = {
             "contents": [
@@ -1193,6 +1198,40 @@ class Subscription(EntityBase):
             .get('mode')
         )
         return sub_mode in valid_modes
+
+    def __get_reprompted_contents(self) -> list[dict]:
+        """Re-prompt contents to obtain their representation for alter().
+        Returns:
+            list[dict]: list of content dicts to be included in REST payload
+        """
+
+        from mstrio.project_objects.document import Document
+        from mstrio.project_objects.prompt import Prompt
+        from mstrio.project_objects.report import Report
+
+        contents: list[dict] = [cont.to_dict() for cont in self.contents]
+        if not any(ct.personalization.prompt for ct in self.contents):
+            return contents
+        prompts_data = subscriptions.get_subscription_prompts(
+            self.connection,
+            self.id,
+            self.project_id,
+        ).json()['prompts']
+        for content in contents:
+            content_type = content.get('type')
+            dict_update = {
+                'enabled': True,
+            }
+            if content_type == 'report':
+                rep = Report(self.connection, content['id'])
+                rep.answer_prompts(Prompt.bulk_from_dict(prompts_data))
+                dict_update['instanceId'] = rep.instance_id
+            elif content_type in ['document', 'dossier']:
+                doc = Document(self.connection, content['id'])
+                doc.answer_prompts(prompts_data)
+                dict_update['instanceId'] = doc.instance_id
+            content['personalization'].update({'prompt': dict_update})
+        return contents
 
     @property
     @method_version_handler(version='11.4.0600')

@@ -14,7 +14,7 @@ class RelationshipType(AutoName):
 
 
 class Relationship(Dictable):
-    """Python representation of MicroStrategy Attributes Relationship object.
+    """Python representation of Strategy One Attributes Relationship object.
 
     Attributes:
         parent: parent in a relationship

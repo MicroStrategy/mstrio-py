@@ -35,7 +35,7 @@ def list_dynamic_recipient_lists(
         is taken.
 
     Args:
-        connection: MicroStrategy connection object returned by
+        connection: Strategy One connection object returned by
             `connection.Connection()`
         project_id (str, optional): ID of the project to list the metrics from
         project_name (str, optional): name of the project
@@ -86,7 +86,7 @@ def list_dynamic_recipient_lists(
 
 @class_version_handler('11.3.0600')
 class DynamicRecipientList(EntityBase, DeleteMixin):
-    """Python representation of MicroStrategy DynamicRecipientList object.
+    """Python representation of Strategy One DynamicRecipientList object.
 
     Attributes:
         id: DynamicRecipientList's ID
@@ -168,7 +168,7 @@ class DynamicRecipientList(EntityBase, DeleteMixin):
         """Initializes a new instance of a DynamicRecipientList class
 
         Args:
-            connection (Connection): MicroStrategy connection object returned
+            connection (Connection): Strategy One connection object returned
                 by `connection.Connection()`
             id (str, optional): DynamicRecipientList's ID. Defaults to None
             name (str, optional): DynamicRecipientList's name. Defaults to None

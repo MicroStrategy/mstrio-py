@@ -14,7 +14,7 @@ def list_palettes(
     """Get a list of color palettes.
 
     Args:
-        connection (Connection): MicroStrategy connection object returned by
+        connection (Connection): Strategy One connection object returned by
             `connection.Connection()`
         project_id (str, optional): Project ID.
         fields (str, optional): Comma separated top-level field whitelist. This
@@ -43,14 +43,14 @@ def create_palette(
     """Create a new color palette.
 
     Args:
-        connection (Connection): MicroStrategy connection object returned by
+        connection (Connection): Strategy One connection object returned by
             `connection.Connection()`
         project_id (str, optional): Project ID.
         body (dict): JSON-formatted body describing the new palette
         error_msg (str, optional): Custom error message for error handling
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server.
+        HTTP response object returned by the Strategy One REST server.
     """
     return connection.post(
         endpoint='/api/palettes',
@@ -69,14 +69,14 @@ def get_palette(
     """Get a color palette by ID.
 
     Args:
-        connection (Connection): MicroStrategy connection object returned by
+        connection (Connection): Strategy One connection object returned by
             `connection.Connection()`
         project_id (str, optional): Project ID.
         id (str): ID of the palette to get
         error_msg (str, optional): Custom error message for error handling
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server.
+        HTTP response object returned by the Strategy One REST server.
     """
     return connection.get(
         endpoint=f'/api/palettes/{id}',
@@ -95,7 +95,7 @@ def update_palette(
     """Update an existing color palette.
 
     Args:
-        connection (Connection): MicroStrategy connection object returned by
+        connection (Connection): Strategy One connection object returned by
             `connection.Connection()`
         project_id (str, optional): Project ID.
         id (str): ID of the palette to update
@@ -103,7 +103,7 @@ def update_palette(
         error_msg (str, optional): Custom error message for error handling
 
     Returns:
-        HTTP response object returned by the MicroStrategy REST server.
+        HTTP response object returned by the Strategy One REST server.
     """
     return connection.put(
         endpoint=f'/api/palettes/{id}',

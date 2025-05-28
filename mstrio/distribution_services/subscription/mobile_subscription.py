@@ -8,7 +8,7 @@ from mstrio.utils.version_helper import class_version_handler
 
 @class_version_handler('11.3.0960')
 class MobileSubscription(Subscription):
-    """Class representation of MicroStrategy Mobile Subscription
+    """Class representation of Strategy One Mobile Subscription
     object."""
 
     def __init__(
@@ -24,7 +24,7 @@ class MobileSubscription(Subscription):
         Specify either `project_id` or `project_name`.
         When `project_id` is provided (not `None`), `project_name` is omitted.
         Args:
-            connection (Connection): MicroStrategy connection object returned
+            connection (Connection): Strategy One connection object returned
                 by `connection.Connection()`
             id (str, optional): ID of the subscription to be initialized, only
                 id or subscription_id have to be provided at once, if both are
@@ -66,7 +66,7 @@ class MobileSubscription(Subscription):
     ) -> "MobileSubscription":
         """Creates a new mobile subscription.
         Args:
-            connection (Connection): a MicroStrategy connection object
+            connection (Connection): a Strategy One connection object
             name (str): name of the subscription
             project_id (str, optional): project ID
             project_name (str, optional): project name

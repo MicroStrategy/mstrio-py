@@ -12,7 +12,8 @@ from mstrio.object_management import search_operations
 from mstrio.object_management.folder import Folder
 from mstrio.object_management.search_enums import SearchPattern
 from mstrio.types import ObjectTypes
-from mstrio.utils.entity import DeleteMixin, Entity, MoveMixin
+from mstrio.users_and_groups.user import User
+from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, MoveMixin
 from mstrio.utils.enum_helper import AutoName, get_enum_val
 from mstrio.utils.helper import (
     Dictable,
@@ -57,7 +58,7 @@ def list_transformations(
         then its value is overwritten by `project_id` from `connection` object.
 
     Args:
-        connection: MicroStrategy connection object returned by
+        connection: Strategy One connection object returned by
             `connection.Connection()`
         name (string, optional): characters that the transformation name must
             begin with
@@ -134,8 +135,8 @@ class MappingType(AutoName):
 
 
 @class_version_handler('11.3.0500')
-class Transformation(Entity, MoveMixin, DeleteMixin):
-    """Python representation of MicroStrategy Transformation object.
+class Transformation(Entity, CopyMixin, MoveMixin, DeleteMixin):
+    """Python representation of Strategy One Transformation object.
 
     Attributes:
         id: transformation's ID
@@ -194,7 +195,11 @@ class Transformation(Entity, MoveMixin, DeleteMixin):
             'attributes',
             'destination_folder_id',
         ): (transformations.update_transformation, 'partial_put'),
-        ('hidden', 'comments'): (objects_processors.update, "partial_put"),
+        (
+            'hidden',
+            'comments',
+            'owner',
+        ): (objects_processors.update, "partial_put"),
     }
     _FROM_DICT_MAP = {
         **Entity._FROM_DICT_MAP,
@@ -217,7 +222,7 @@ class Transformation(Entity, MoveMixin, DeleteMixin):
         """Initializes a new instance of Transformation class
 
         Args:
-            connection (Connection): MicroStrategy connection object returned
+            connection (Connection): Strategy One connection object returned
                 by `connection.Connection()`
             id (str, optional): Transformation's ID. Defaults to None.
             name (str, optional): Transformation's name. Defaults to None.
@@ -309,7 +314,7 @@ class Transformation(Entity, MoveMixin, DeleteMixin):
         """Create Transformation object.
 
         Args:
-            connection: MicroStrategy connection object returned
+            connection: Strategy One connection object returned
                 by `connection.Connection()`
             sub_type: transformation's sub_type
             name: transformation's name
@@ -371,6 +376,7 @@ class Transformation(Entity, MoveMixin, DeleteMixin):
         description: str | None = None,
         hidden: bool | None = None,
         comments: str | None = None,
+        owner: str | User | None = None,
     ):
         """Alter transformation properties.
 
@@ -386,9 +392,12 @@ class Transformation(Entity, MoveMixin, DeleteMixin):
             hidden (bool, optional): Specifies whether the object is hidden.
                 Default value: False.
             comments: long description of the transformation
+           owner: (str, User, optional): owner of the transformation
         """
 
         name = name or self.name
+        if isinstance(owner, User):
+            owner = owner.id
         properties = filter_params_for_func(self.alter, locals(), exclude=['self'])
         self._alter_properties(**properties)
 

@@ -25,7 +25,7 @@ def get_inactive_users_from_database(
     """Get users who have been inactive for a certain period of time.
 
     Args:
-        connection (Connection): MicroStrategy connection object.
+        connection (Connection): Strategy One connection object.
         days_inactive (int): Number of days to consider a user inactive.
     """
 
@@ -62,7 +62,7 @@ def get_inactive_users(connection: Connection, days_inactive: int) -> list[User]
     """Get users who have been inactive for a certain period of time.
 
     Args:
-        connection (Connection): MicroStrategy connection object.
+        connection (Connection): Strategy One connection object.
         days_inactive (int): Number of days to consider a user inactive.
     """
     users = list_users(connection)
@@ -93,7 +93,7 @@ def send_notification_to_inactive_users(
     period of time.
 
     Args:
-        connection (Connection): MicroStrategy connection object.
+        connection (Connection): Strategy One connection object.
         users (list[User]): List of users to send notifications to.
     """
 

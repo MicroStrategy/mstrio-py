@@ -3,6 +3,7 @@ import logging
 from mstrio import config
 from mstrio.connection import Connection
 from mstrio.types import ObjectTypes
+from mstrio.users_and_groups.user import User
 from mstrio.utils.entity import Entity
 from mstrio.utils.helper import _prepare_objects as filter_objects
 from mstrio.utils.helper import delete_none_values
@@ -21,7 +22,7 @@ def list_drivers(
     Optionally filter the drivers by specifying filters.
 
     Args:
-        connection: MicroStrategy connection object
+        connection: Strategy One connection object
         to_dictionary: If True returns a list of Driver dicts,
            otherwise returns a list of Driver objects
        **filters: Available filter parameters:
@@ -32,10 +33,10 @@ def list_drivers(
 
 @class_version_handler('11.3.0960')
 class Driver(Entity):
-    """Object representation of Microstrategy Driver
+    """Object representation of Strategy One Driver
 
     Attributes:
-        connection: A MicroStrategy connection object
+        connection: A Strategy One connection object
         id: Driver's ID
         name: Driver's name
         is_enabled: specifies if a Driver is enabled
@@ -60,7 +61,6 @@ class Driver(Entity):
     """
 
     _OBJECT_TYPE = ObjectTypes.DRIVER
-    _FROM_DICT_MAP = {**Entity._FROM_DICT_MAP}
     _API_GETTERS = {
         (
             'name',
@@ -80,12 +80,16 @@ class Driver(Entity):
             'acg',
             'acl',
             'comments',
+            'owner',
         ): objects_processors.get_info,
         ('id', 'name', 'is_enabled', 'is_odbc'): drivers.get,
     }
     _API_PATCH: dict = {
         'enabled': (drivers.update, 'patch'),
-        'comments': (objects_processors.update, 'partial_put'),
+        (
+            'comments',
+            'owner',
+        ): (objects_processors.update, 'partial_put'),
     }
 
     def __init__(
@@ -95,7 +99,7 @@ class Driver(Entity):
         When `id` is provided, `name` is omitted.
 
         Args:
-            connection (Connection): MicroStrategy connection object
+            connection (Connection): Strategy One connection object
             id (str): ID of Driver
             name (str): name of Driver
         """
@@ -125,15 +129,25 @@ class Driver(Entity):
         self.is_odbc = kwargs.get('is_odbc')
 
     def alter(
-        self, is_enabled: bool | None = None, comments: str | None = None
+        self,
+        is_enabled: bool | None = None,
+        comments: str | None = None,
+        owner: str | User | None = None,
     ) -> None:
         """Update properties of a Driver
 
         Args:
-           is_enabled (bool, optional): specifies if a Driver is enabled
-           comments (str, optional): long description of the Driver
+            is_enabled (bool, optional): specifies if a Driver is enabled
+            comments (str, optional): long description of the Driver
+            owner: (str, User, optional): owner of the Driver
         """
-        properties = {'enabled': is_enabled, 'comments': comments}
+        if isinstance(owner, User):
+            owner = owner.id
+        properties = {
+            'enabled': is_enabled,
+            'comments': comments,
+            'owner': owner,
+        }
         not_none_properties = delete_none_values(properties, recursion=False)
         self._alter_properties(**not_none_properties)
 
@@ -149,7 +163,7 @@ class Driver(Entity):
         Optionally filter the drivers by specifying filters.
 
         Args:
-            connection (Connection): MicroStrategy connection object
+            connection (Connection): Strategy One connection object
             to_dictionary (bool): If True returns a list of Driver dicts,
                otherwise returns a list of Driver objects
            **filters: Available filter parameters:

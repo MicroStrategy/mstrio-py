@@ -65,7 +65,7 @@ def list_metrics(
         then its value is overwritten by `project_id` from `connection` object.
 
     Args:
-        connection: MicroStrategy connection object returned by
+        connection: Strategy One connection object returned by
             `connection.Connection()`
         name (str, optional): characters that the metric name must
             begin with
@@ -114,8 +114,6 @@ def list_metrics(
         limit=limit,
         **filters,
     )
-    for obj_ in objects_:
-        obj_['project_id'] = project_id
 
     if to_dictionary:
         return objects_
@@ -245,7 +243,7 @@ class Threshold(Dictable):
 
 
 class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin, ModelVldbMixin):  # noqa: F811
-    """Python representation of MicroStrategy Metric object.
+    """Python representation of Strategy One Metric object.
 
     Attributes:
         id: metric's ID
@@ -439,7 +437,12 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin, ModelVldbMixin):  # noqa
             'metric_format_type',
             'thresholds',
         ): (metrics.update_metric, 'partial_put'),
-        ('folder_id', 'hidden', 'comments'): (objects_processors.update, 'partial_put'),
+        (
+            'folder_id',
+            'hidden',
+            'comments',
+            'owner',
+        ): (objects_processors.update, 'partial_put'),
     }
     _FROM_DICT_MAP = {
         **Entity._FROM_DICT_MAP,
@@ -496,7 +499,7 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin, ModelVldbMixin):  # noqa
         """Initializes a new instance of Metric class
 
         Args:
-            connection (Connection): MicroStrategy connection object returned
+            connection (Connection): Strategy One connection object returned
                 by `connection.Connection()`
             id (str, optional): Metric's ID. Defaults to None.
             name (str, optional): Metric's name. Defaults to None.
@@ -637,7 +640,7 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin, ModelVldbMixin):  # noqa
         """Create a new metric with specified properties.
 
         Args:
-            connection: MicroStrategy connection object returned
+            connection: Strategy One connection object returned
                 by `connection.Connection()`
             name: metric's name
             sub_type: metric's sub_type
@@ -759,6 +762,7 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin, ModelVldbMixin):  # noqa
         show_expression_as: ExpressionFormat | str = ExpressionFormat.TOKENS,
         hidden: bool | None = None,
         comments: str | None = None,
+        owner: User | str | None = None,
     ):
         """Alter a metric's specified properties
 
@@ -793,8 +797,11 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin, ModelVldbMixin):  # noqa
                 - `ExpressionFormat.TREE` or `tree`
                 - `ExpressionFormat.TOKENS or `tokens` (default)
             hidden: Specifies whether the metric is hidden
+            owner: owner of the metric
         """
         name = name or self.name
+        if isinstance(owner, User):
+            owner = owner.id
         properties = filter_params_for_func(self.alter, locals(), exclude=['self'])
         self._alter_properties(**properties)
 

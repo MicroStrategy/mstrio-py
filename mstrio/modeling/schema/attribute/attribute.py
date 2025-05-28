@@ -26,6 +26,7 @@ from mstrio.object_management.folder import Folder
 from mstrio.object_management.search_enums import SearchPattern
 from mstrio.types import ObjectSubTypes, ObjectTypes
 from mstrio.utils.dtos.create_attribute_dto import CreateAttributeDto
+from mstrio.users_and_groups.user import User
 from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, MoveMixin
 from mstrio.utils.enum_helper import get_enum_val
 from mstrio.utils.helper import (
@@ -75,7 +76,7 @@ def list_attributes(
         then its value is overwritten by `project_id` from `connection` object.
 
     Args:
-        connection: MicroStrategy connection object returned by
+        connection: Strategy One connection object returned by
             `connection.Connection()`
         name (string, optional): value the search pattern is set to, which
             will be applied to the names of attributes being searched
@@ -151,7 +152,7 @@ def list_attributes(
 
 @class_version_handler('11.3.0100')
 class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
-    """Python representation of MicroStrategy Attribute object.
+    """Python representation of Strategy One Attribute object.
 
     Attributes:
         id: attribute's ID
@@ -237,7 +238,12 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
             'sorts',
         ): (attributes.update_attribute, 'partial_put'),
         'relationships': (hierarchies.update_attribute_relationships, 'partial_put'),
-        ('folder_id', 'hidden', 'comments'): (
+        (
+            'folder_id',
+            'hidden',
+            'comments',
+            'owner',
+        ): (
             objects_processors.update,
             'partial_put',
         ),
@@ -388,7 +394,7 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
         """Alter attribute properties.
 
         Args:
-            connection: MicroStrategy connection object returned
+            connection: Strategy One connection object returned
                 by `connection.Connection()`
             name: attribute's name
             sub_type: attribute's sub_type
@@ -565,7 +571,7 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
         """Initializes a new instance of Attribute class
 
         Args:
-            connection (Connection): MicroStrategy connection object returned
+            connection (Connection): Strategy One connection object returned
                 by `connection.Connection()`
             id (str, optional): Attribute's ID. Defaults to None.
             name (str, optional): Attribute's name. Defaults to None.
@@ -665,6 +671,7 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
         relationships: Relationship | None = None,
         hidden: bool | None = None,
         comments: str | None = None,
+        owner: str | User | None = None,
     ):
         """Alter attribute properties.
 
@@ -691,7 +698,8 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
                 of the attribute.
             relationships: the list of relationships that one attribute has.
             hidden: Specifies whether the attribute is hidden.
-            comments: long description of the attribute
+            comments: Long description of the attribute
+            owner: Owner user for the attribute
         """
         hidden = hidden if self.hidden != hidden else None
         if any(
@@ -717,6 +725,8 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
             )
             sorts = self.validate_sorts(sorts or self.sorts, forms or self.forms)
 
+        if isinstance(owner, User):
+            owner = owner.id
         properties = filter_params_for_func(self.alter, locals(), exclude=['self'])
         self._alter_properties(**properties)
 

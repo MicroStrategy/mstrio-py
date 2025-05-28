@@ -12,11 +12,11 @@ def get(connection: Connection, id: str) -> dict:
     """Get migration by a specific ID.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         id: ID of the Migration
 
     Returns:
-        dict representing driver object
+        dict representing a migration object
     """
     data = migrations_api.get_migration(
         connection, migration_id=id, show_content='default'

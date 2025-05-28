@@ -19,7 +19,7 @@ def delete_addresses_from_departed_users(connection: "Connection") -> List[dict]
     For each successfully removed address a message will be printed.
 
     Args:
-        connection: MicroStrategy connection object returned by
+        connection: Strategy One connection object returned by
             `connection.Connection()`
     """
 

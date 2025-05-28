@@ -2,14 +2,14 @@ from mstrio.utils.error_handlers import ErrorHandler
 
 
 @ErrorHandler(
-    err_msg="Error obtaining the list of registered nodes from the MicroStrategy "
+    err_msg="Error obtaining the list of registered nodes from the Strategy One "
     "deployment."
 )
 def get_nodes(connection, error_msg=None):
-    """Obtain the list of registered nodes from the MicroStrategy deployment.
+    """Obtain the list of registered nodes from the Strategy One deployment.
 
     Args:
-        connection(object): MicroStrategy connection object returned by
+        connection(object): Strategy One connection object returned by
             'connection.Connection().
         error_msg (string, optional): Custom Error Message for Error Handling
     """
@@ -18,14 +18,14 @@ def get_nodes(connection, error_msg=None):
 
 @ErrorHandler(
     err_msg="Error obtaining the list of registered services available from "
-    "the MicroStrategy deployment"
+    "the Strategy One deployment"
 )
 def get_services(connection, error_msg=None):
-    """Obtain the list of registered services available from the MicroStrategy
+    """Obtain the list of registered services available from the Strategy One
     deployment.
 
     Args:
-        connection(object): MicroStrategy connection object returned by
+        connection(object): Strategy One connection object returned by
             'connection.Connection().
         error_msg (string, optional): Custom Error Message for Error Handling
     """
@@ -34,14 +34,14 @@ def get_services(connection, error_msg=None):
 
 @ErrorHandler(
     err_msg="Error obtaining the metadata information for the registered services"
-    " available from the MicroStrategy deployment."
+    " available from the Strategy One deployment."
 )
 def get_services_metadata(connection, error_msg=None):
     """Obtain the metadata information for the registered services available
-    from the MicroStrategy deployment.
+    from the Strategy One deployment.
 
     Args:
-        connection(object): MicroStrategy connection object returned by
+        connection(object): Strategy One connection object returned by
             "connection.Connection().
         error_msg (string, optional): Custom Error Message for Error Handling
     """
@@ -55,7 +55,7 @@ def start_stop_service(
     """Start or stop registered service.
 
     Args:
-        connection(object): MicroStrategy connection object returned by
+        connection(object): Strategy One connection object returned by
             'connection.Connection()
         login (string): login for SSH operation
         password (string): password for SSH operation

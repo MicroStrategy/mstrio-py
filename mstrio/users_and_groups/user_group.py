@@ -49,7 +49,7 @@ def list_user_groups(
         e.g. name_begins = ?onny will return Sonny and Tonny
 
     Args:
-        connection: MicroStrategy connection object returned by
+        connection: Strategy One connection object returned by
             `connection.Connection()`
         name_begins: Beginning of a User Groups name which we want to list
         to_dictionary: If True returns dict, by default (False) returns
@@ -75,10 +75,10 @@ def list_user_groups(
 
 
 class UserGroup(Entity, DeleteMixin, TrusteeACLMixin):
-    """Object representation of MicroStrategy User Group object.
+    """Object representation of Strategy One User Group object.
 
     Attributes:
-        connection: A MicroStrategy connection object
+        connection: A Strategy One connection object
         memberships: User Groups that the User Group is a member of
         members: users that are members of User Group
         security_roles: security roles that the User Group is a member of
@@ -151,15 +151,11 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin):
         'privileges': usergroups.get_privileges,
         'settings': usergroups_processors.get_settings,
     }
-    _PATCH_PATH_TYPES = {
-        "name": str,
-        "description": str,
-        "abbreviation": str,
-    }
     _API_PATCH: dict = {
         (
             'abbreviation',
             'comments',
+            'owner',
         ): (objects_processors.update, 'partial_put'),
         (
             'name',
@@ -182,7 +178,7 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin):
         provided (not `None`), `name` is omitted.
 
         Args:
-            connection: MicroStrategy connection object returned
+            connection: Strategy One connection object returned
                 by `connection.Connection()`
             name: name of User Group
             id: ID of User Group
@@ -229,7 +225,7 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin):
         """Create a new User Group on the I-Server. Returns `UserGroup` object.
 
         Args:
-            connection: MicroStrategy connection object returned by
+            connection: Strategy One connection object returned by
                 `connection.Connection()`
             name: Name of a newly created User Group
             description: Description of a newly created User Group
@@ -306,6 +302,7 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin):
         description: str | None = None,
         ldapdn: str = None,
         comments: str | None = None,
+        owner: 'str | User | None' = None,
     ):
         """Alter User Group name or/and description.
 
@@ -313,7 +310,12 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin):
             name: New name of the User Group
             description: New description of the User Group
             comments: Long description of the User Group
+            owner: owner of the User Group
         """
+        from mstrio.users_and_groups.user import User
+
+        if isinstance(owner, User):
+            owner = owner.id
 
         properties = filter_params_for_func(self.alter, locals(), exclude=['self'])
         self._alter_properties(**properties)

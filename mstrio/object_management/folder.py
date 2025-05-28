@@ -11,8 +11,8 @@ from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, MoveMixin
 from mstrio.utils.helper import (
     fetch_objects_async,
     get_default_args_from_func,
-    get_valid_project_id,
     get_temp_connection,
+    get_valid_project_id,
 )
 from mstrio.utils.response_processors import objects as objects_processors
 
@@ -47,7 +47,7 @@ def list_folders(
         have to specify it explicitly.
 
     Args:
-        connection (object): MicroStrategy connection object returned by
+        connection (object): Strategy One connection object returned by
             `connection.Connection()`
         project_id (string, optional): project ID
         project_name (string, optional): project name
@@ -145,7 +145,7 @@ def get_my_personal_objects_contents(
         then its value is overwritten by `project_id` from `connection` object.
 
     Args:
-        connection (object): MicroStrategy connection object returned by
+        connection (object): Strategy One connection object returned by
             `connection.Connection()`
         project_id (string, optional): project ID
         project_name (string, optional): project name
@@ -180,7 +180,7 @@ def get_predefined_folder_contents(
     limit: int | None = None,
     **filters,
 ) -> list:
-    """Get contents of a pre-defined MicroStrategy folder in a specific project.
+    """Get contents of a pre-defined Strategy One folder in a specific project.
     Available values for `folder_type` are stored in enum `PredefinedFolders`.
 
     Specify either `project_id` or `project_name`.
@@ -195,7 +195,7 @@ def get_predefined_folder_contents(
         `project_id` from `connection` object.
 
     Args:
-        connection (object): MicroStrategy connection object returned by
+        connection (object): Strategy One connection object returned by
             `connection.Connection()`
         folder_type (enum): pre-defined folder type. Available values are
             stored in enum `PredefinedFolders`.
@@ -242,7 +242,7 @@ def get_folder_id_from_path(connection: "Connection", path: str) -> str:
     """Get folder id from folder path.
 
     Args:
-        connection (Connection): MicroStrategy connection object returned by
+        connection (Connection): Strategy One connection object returned by
             `connection.Connection()`
         path (str): path of the Folder
             the path has to be provided in the following format:
@@ -321,7 +321,7 @@ def _get_parent_folder_id(
 
 
 class Folder(Entity, CopyMixin, MoveMixin, DeleteMixin):
-    """Object representation of MicroStrategy Folder object.
+    """Object representation of Strategy One Folder object.
 
     Attributes:
         connection: MSTR Connection object
@@ -360,6 +360,7 @@ class Folder(Entity, CopyMixin, MoveMixin, DeleteMixin):
             'hidden',
             'folder_id',
             'comments',
+            'owner',
         ): (objects_processors.update, 'partial_put')
     }
 
@@ -380,7 +381,7 @@ class Folder(Entity, CopyMixin, MoveMixin, DeleteMixin):
             uniquely identify folder.
 
         Args:
-            connection: MicroStrategy connection object returned by
+            connection: Strategy One connection object returned by
                 `connection.Connection()`.
             id (str, optional): Identifier of a pre-existing folder containing
                 the required data.
@@ -415,7 +416,7 @@ class Folder(Entity, CopyMixin, MoveMixin, DeleteMixin):
         by providing its name, id of parent folder and optionally description.
 
         Args:
-            connection: MicroStrategy connection object returned by
+            connection: Strategy One connection object returned by
                 `connection.Connection()`.
             name (str): name of a new folder.
             parent (str): id of a parent folder in which new folder will be
@@ -455,15 +456,19 @@ class Folder(Entity, CopyMixin, MoveMixin, DeleteMixin):
         description: str | None = None,
         hidden: bool | None = None,
         comments: str | None = None,
+        owner: str | User | None = None,
     ) -> None:
         """Alter the folder properties.
 
         Args:
             name: folder name
             description: folder description
-            hidden: Specifies whether the metric is hidden
+            hidden: Specifies whether the folder is hidden
             comments: long description of the folder
+            owner: (str, User, optional): owner of the folder
         """
+        if isinstance(owner, User):
+            owner = owner.id
         func = self.alter
         default_dict = get_default_args_from_func(func)
         local = locals()

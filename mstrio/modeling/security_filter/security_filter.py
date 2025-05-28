@@ -18,11 +18,13 @@ from mstrio.utils.entity import (
 )
 from mstrio.utils.enum_helper import get_enum_val
 from mstrio.utils.helper import (
+    construct_expression_body,
     delete_none_values,
     exception_handler,
     fetch_objects,
     filter_params_for_func,
     find_object_with_name,
+    get_string_exp_body,
     get_valid_project_id,
     get_valid_project_name,
 )
@@ -66,7 +68,7 @@ def list_security_filters(
         When `project_id` is `None` and `project_name` is `None`,
         then its value is overwritten by `project_id` from `connection` object.
     Args:
-        connection (object): MicroStrategy connection object returned by
+        connection (object): Strategy One connection object returned by
             `connection.Connection()`
         name_contains (str, optional): Text that security filter's name
             must contain
@@ -174,7 +176,7 @@ class UpdateOperator(Enum):
 
 @class_version_handler('11.3.0100')
 class SecurityFilter(Entity, CopyMixin, DeleteMixin, MoveMixin):
-    """Python representation of MicroStrategy Security Filter object.
+    """Python representation of Strategy One Security Filter object.
 
     Attributes:
         name: name of the security filter
@@ -265,17 +267,16 @@ class SecurityFilter(Entity, CopyMixin, DeleteMixin, MoveMixin):
             'folder_id',
             'hidden',
             'comments',
+            'owner',
         ): (objects_processors.update, 'partial_put'),
     }
     _PATCH_PATH_TYPES = {
-        'name': str,
-        'description': str,
+        **Entity._PATCH_PATH_TYPES,
         'destination_folder_id': str,
         'qualification': dict,
         'is_embedded': bool,
         'top_level': list,
         'below_level': list,
-        'hidden': bool,
     }
     _ALLOW_NONE_ATTRIBUTES = ['qualification']
 
@@ -290,7 +291,7 @@ class SecurityFilter(Entity, CopyMixin, DeleteMixin, MoveMixin):
         """Initialize security filter object by its identifier.
 
         Args:
-            connection: MicroStrategy connection object returned
+            connection: Strategy One connection object returned
                 by `connection.Connection()`
             id (str): identifier of a pre-existing security filter containing
                 the required data. Defaults to None.
@@ -374,7 +375,7 @@ class SecurityFilter(Entity, CopyMixin, DeleteMixin, MoveMixin):
         connection: "Connection",
         name: str,
         destination_folder: Folder | str,
-        qualification: Expression | dict,
+        qualification: Expression | dict | str,
         description: str | None = None,
         is_embedded: bool = False,
         primary_locale: str | None = None,
@@ -386,15 +387,15 @@ class SecurityFilter(Entity, CopyMixin, DeleteMixin, MoveMixin):
         """Create a new security filter in a specific project.
 
         Args:
-            connection: MicroStrategy connection object returned by
+            connection: Strategy One connection object returned by
                 `connection.Connection()`
             name (str): name of a new security filter
             destination_folder (str or object): a globally unique identifier or
                 unique folder name used to distinguish between metadata objects
                 within the same project
-            qualification (Expression or dict): new security filter
-                definition written as an expression tree over predicate nodes.
-                It can be provided as `Qualification` object or dictionary.
+            qualification (Expression, dict or str): new filter qualification
+                definition. It can be provided as `Expression` object,
+                dictionary or string representing filter expression.
             description (str, optional): optional description of a new
                 security filter
             is_embedded (bool, optional): if true indicates that the target
@@ -452,11 +453,7 @@ class SecurityFilter(Entity, CopyMixin, DeleteMixin, MoveMixin):
             ),
         }
         body = delete_none_values(body, recursion=True)
-        body["qualification"] = (
-            qualification.to_dict()
-            if isinstance(qualification, Expression)
-            else qualification
-        )
+        body["qualification"] = construct_expression_body(qualification)
         response = security_filters.create_security_filter(
             connection=connection,
             body=body,
@@ -483,12 +480,13 @@ class SecurityFilter(Entity, CopyMixin, DeleteMixin, MoveMixin):
         name: str | None = None,
         description: str | None = None,
         destination_folder_id: str | None = None,
-        qualification: Expression | dict | None = None,
+        qualification: Expression | dict | str | None = None,
         is_embedded: bool | None = None,
         top_level: list[dict] | list[SchemaObjectReference] | None = None,
         bottom_level: list[dict] | list[SchemaObjectReference] | None = None,
         hidden: bool | None = None,
         comments: str | None = None,
+        owner: str | User | None = None,
     ):
         """Alter the security filter properties.
 
@@ -497,8 +495,9 @@ class SecurityFilter(Entity, CopyMixin, DeleteMixin, MoveMixin):
             description(str, optional): description of a security filter
             destination_folder_id (str, optional): a globally unique identifier
                 used to distinguish between objects within the same project
-            qualification (Expression, dict, optional): the security filter
-            definition written as an expression tree over predicate nodes
+            qualification (Expression, dict or str): new filter qualification
+                definition. It can be provided as `Expression` object,
+                dictionary or string representing filter expression.
             is_embedded (bool, optional): if true indicates that the target
                 object of this reference is embedded within this object
             top_level(list of SchemaObjectReference or list of dicts, optional):
@@ -507,8 +506,15 @@ class SecurityFilter(Entity, CopyMixin, DeleteMixin, MoveMixin):
                 optional): the bottom level attribute list
             hidden (bool, optional): Specifies whether the object is hidden.
                 Default value: False.
-            comments (str, optional): Long description of the security filter.s
+            comments (str, optional): Long description of the security filter.
+            owner: (str, User, optional): Owner of the security filter.
         """
+        if isinstance(owner, User):
+            owner = owner.id
+        if qualification and isinstance(qualification, str):
+            qualification = get_string_exp_body(qualification)
+        if qualification is None:
+            qualification = self.qualification
         properties = filter_params_for_func(self.alter, locals(), exclude=['self'])
         self._alter_properties(**properties)
 

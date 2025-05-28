@@ -1,8 +1,8 @@
 # Usage
 
-## Connect to MicroStrategy
+## Connect to Strategy One
 
-The `Connection` object manages your connection to MicroStrategy. Connect to your MicroStrategy environment by providing the URL to the MicroStrategy REST API server, your username, password and the ID of the Project to connect to. When a `Connection` object is created the user will be automatically logged-in. Connection object automatically renews the connection or reconnects, if session becomes inactive. Reconnection doesn't work if authenticated with identity token.
+The `Connection` object manages your connection to Strategy One. Connect to your Strategy One environment by providing the URL to the Strategy One REST API server, your username, password and the ID of the Project to connect to. When a `Connection` object is created the user will be automatically logged-in. Connection object automatically renews the connection or reconnects, if session becomes inactive. Reconnection doesn't work if authenticated with identity token.
 
 ```python
 from mstrio.connection import Connection
@@ -36,7 +36,7 @@ Currently, supported authentication modes are **Standard** (the default) and **L
 conn = Connection(base_url, mstr_username, mstr_password, project_id=project_id, login_mode=16)
 ```
 
-Optionally, the `Connection` object can be created by passing the `identity_token` parameter, which will create a delegated session. The identity token can be obtained by sending a request to MicroStrategy REST API `/auth/identityToken` endpoint.
+Optionally, the `Connection` object can be created by passing the `identity_token` parameter, which will create a delegated session. The identity token can be obtained by sending a request to Strategy One REST API `/auth/identityToken` endpoint.
 
 ```python
 conn = Connection(base_url, identity_token=identity_token, project_id=project_id)
@@ -66,7 +66,7 @@ conn = Connection(base_url, mstr_username, mstr_password, project_id=project_id,
 
 ### Proxy
 
-Optionally, proxy settings can be set for the MicroStrategy `Connection` object.
+Optionally, proxy settings can be set for the Strategy One `Connection` object.
 
 ```python
 proxies = {'http': 'foo.bar:3128', 'http://host.name': 'foo.bar:4012'}
@@ -104,7 +104,7 @@ df = my_report.to_dataframe()
 
 By default, all rows are imported when `my_cube.to_dataframe()` or `my_report.to_dataframe()` are called. Filter the contents of a `Cube` / `Report` by passing the selected object IDs for the metrics, attributes, and attribute elements to the `apply_filters()` method.
 
-To get the list of object IDs of the metrics, attributes, or attribute elements that are available within the Cube / Report MicroStrategy objects, use the following `Cube` / `Report` class properties:
+To get the list of object IDs of the metrics, attributes, or attribute elements that are available within the Cube / Report Strategy One objects, use the following `Cube` / `Report` class properties:
 
 ```python
 my_cube.metrics
@@ -137,11 +137,11 @@ my_cube.apply_filters(
 df = my_cube.to_dataframe()
 ```
 
-## Export Data into MicroStrategy with Datasets
+## Export Data into Strategy One with Datasets
 
 ### Create a New SuperCube
 
-With **mstrio-py** you can create and publish single or multi-table Datasets. This is done by passing Pandas DataFrames to the `SuperCube` constructor which translates the data into the format needed by MicroStrategy.
+With **mstrio-py** you can create and publish single or multi-table Datasets. This is done by passing Pandas DataFrames to the `SuperCube` constructor which translates the data into the format needed by Strategy One.
 
 ```python
 import pandas as pd
@@ -164,7 +164,7 @@ ds.create()
 
 By default `SuperCube.create()` will create a SuperCube, upload the data to the Intelligence Server and publish it. If you just want to _create_ the SuperCube and upload the row-level data but leave it unpublished, use `SuperCube.create(auto_publish=False)`. If you want to _create_ an empty SuperCube, use `SuperCube.create(auto_upload=False, auto_publish=False)`. Skipped actions can be performed later using `SuperCube.update()` and `SuperCube.publish()` methods.
 
-When using `SuperCube.add_table()`, Pandas data types are mapped to MicroStrategy data types. By default, numeric data (integers and floats) are modeled as MicroStrategy Metrics and non-numeric data are modeled as MicroStrategy Attributes. This can be problematic if your data contains columns with integers that should behave as Attributes (e.g. a row ID), or if your data contains string-based, numeric-_looking_ data which should be Metrics (e.g. formatted sales data: `["$450", "$325"]`). To control this behavior, provide a list of columns that you want to convert from one type to another.
+When using `SuperCube.add_table()`, Pandas data types are mapped to Strategy One data types. By default, numeric data (integers and floats) are modeled as Strategy One Metrics and non-numeric data are modeled as Strategy One Attributes. This can be problematic if your data contains columns with integers that should behave as Attributes (e.g. a row ID), or if your data contains string-based, numeric-_looking_ data which should be Metrics (e.g. formatted sales data: `["$450", "$325"]`). To control this behavior, provide a list of columns that you want to convert from one type to another.
 
 ```python
 ds.add_table(name="Stores", data_frame=stores_df, update_policy="add",
@@ -181,7 +181,7 @@ After creating the SuperCube, you can obtain its ID using `SuperCube.id`. This I
 
 ### Update a SuperCube
 
-When the source data changes and users need the latest data for analysis and reporting in MicroStrategy, **mstrio-py** allows you to update the previously created SuperCube.
+When the source data changes and users need the latest data for analysis and reporting in Strategy One, **mstrio-py** allows you to update the previously created SuperCube.
 
 ```python
 from mstrio.project_objects import SuperCube
@@ -210,9 +210,9 @@ Use `SuperCube.certify()` to certify / decertify an existing super cube.
 
 ### Limitations
 
-Updating Datasets that were **not** created using the MicroStrategy REST API is not possible. This applies for example to Cubes created via MicroStrategy Web client.
+Updating Datasets that were **not** created using the Strategy One REST API is not possible. This applies for example to Cubes created via Strategy One Web client.
 
-## Using mstrio as a MicroStrategy Intelligence Server administration tool
+## Using mstrio as a Strategy One Intelligence Server administration tool
 
 - Project management module (see [code_snippets](https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/project_mgmt.py))
 - Server management module (see [code_snippets](https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/server_mgmt.py))

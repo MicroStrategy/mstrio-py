@@ -1,4 +1,5 @@
 import logging
+from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
 
 from mstrio import config
@@ -53,9 +54,9 @@ def get_prompt_answer(
 def answer_prompts_helper(
     instance_id: str,
     prompt_answers: list['Prompt'],
-    get_status_func: callable,
-    get_prompts_func: callable,
-    answer_prompts_func: callable,
+    get_status_func: Callable,
+    get_prompts_func: Callable,
+    answer_prompts_func: Callable,
     force: bool,
 ) -> bool:
     """Helper function to answer prompts for a report or dashboard/document.

@@ -29,7 +29,7 @@ def list_security_roles_per_user(
     It is possible to provide either name or id of user group.
 
     Args:
-        connection: MicroStrategy connection object returned by
+        connection: Strategy One connection object returned by
             `connection.Connection()`
         user_group_name (str): name of the user group
         user_group_id (str): id of the user group

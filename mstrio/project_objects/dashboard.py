@@ -11,6 +11,7 @@ from mstrio.project_objects.document import Document
 from mstrio.server.environment import Environment
 from mstrio.types import ObjectSubTypes
 from mstrio.users_and_groups import UserOrGroup
+from mstrio.users_and_groups.user import User
 from mstrio.utils import helper
 from mstrio.utils.cache import CacheSource
 from mstrio.utils.helper import Dictable, get_valid_project_id, is_dashboard
@@ -35,7 +36,7 @@ def list_dashboards(
     If `to_dictionary` is True, `to_dataframe` is omitted.
 
     Args:
-        connection(object): MicroStrategy connection object returned
+        connection(object): Strategy One connection object returned
             by 'connection.Connection()'
         name: characters that the dashboard name must contain
         to_dictionary(bool, optional): if True, return Dashboards as
@@ -80,7 +81,7 @@ def list_dashboards_across_projects(
     If `to_dictionary` is True, `to_dataframe` is omitted.
 
     Args:
-        connection(object): MicroStrategy connection object returned
+        connection(object): Strategy One connection object returned
             by 'connection.Connection()'
         name: characters that the dashboard name must contain
         to_dictionary(bool, optional): if True, return Dashboards as
@@ -154,7 +155,7 @@ class Dashboard(Document, RelatedSubscriptionMixin):
         """Initialize Dashboard object by passing name or id.
 
         Args:
-            connection (object): MicroStrategy connection object returned
+            connection (object): Strategy One connection object returned
                 by `connection.Connection()`
             name (string, optional): name of Dashboard
             id (string, optional): ID of Dashboard
@@ -231,8 +232,10 @@ class Dashboard(Document, RelatedSubscriptionMixin):
         description: str | None = None,
         folder_id: Folder | str | None = None,
         hidden: bool | None = None,
+        comments: str | None = None,
+        owner: str | User | None = None,
     ):
-        """Alter Dashboard name, description and/or folder id.
+        """Alter Dashboard's basic properties.
 
         Args:
             name (string, optional): new name of the Dashboard
@@ -242,8 +245,10 @@ class Dashboard(Document, RelatedSubscriptionMixin):
                 project. It is possible for two metadata objects in different
                 projects to have the same Object Id.
             hidden (bool, optional): specifies whether the dashboard is hidden
+            comments (str, optional): long description of the dashboard
+            owner: (str | User, optional): owner of the dashboard
         """
-        super().alter(name, description, folder_id, hidden)
+        super().alter(name, description, folder_id, hidden, comments, owner)
 
     def publish(self, recipients: UserOrGroup | list[UserOrGroup] | None = None):
         """Publish the dashboard for authenticated user. If `recipients`

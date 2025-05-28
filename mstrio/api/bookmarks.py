@@ -6,7 +6,7 @@ def get_bookmarks_from_shortcut(connection, shortcut_id, error_msg=None):
     """Get a Bookmark list from a Shortcut Object.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         shortcut_id (string): Shortcut  ID
         error_msg (string, optional): Custom Error Message for Error Handling
 
@@ -21,7 +21,7 @@ def update_information_for_shortcut(connection, shortcut_id, body, error_msg=Non
     """Update info for a shortcut.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         shortcut_id (string): The ID of the document shortcut to execute
         error_msg (string, optional): Custom Error Message for Error Handling
 
@@ -36,7 +36,7 @@ def refresh_document_instance(connection, error_msg=None):
     """Add a new bookmark into current shortcut object.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
@@ -50,7 +50,7 @@ def delete_bookmarks(connection, shortcut_id: str, bookmark_ids: list, error_msg
     """Bulk deletion of bookmarks.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         shortcut_id: Shortcut ID
         bookmark_ids: IDs of bookmarks to be deleted
         error_msg (string, optional): Custom Error Message for Error Handling
@@ -69,7 +69,7 @@ def delete_single_bookmark(
     """Delete a bookmark.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         shortcut_id: Shortcut ID
         bookmark_id (string): Bookmark ID
         error_msg (string, optional): Custom Error Message for Error Handling
@@ -87,7 +87,7 @@ def update_bookmark(connection, bookmark_id, body, error_msg=None):
     """Update a bookmark.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         bookmark_id (string): Bookmark ID
         body: JSON-formatted information used to format the document
         error_msg (string, optional): Custom Error Message for Error Handling
@@ -106,7 +106,7 @@ def add_bookmark(
     """Update a bookmark.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
@@ -122,7 +122,7 @@ def get_document_shortcut(connection, document_id, instance_id, error_msg=None):
     """Retrieve a published shortcut from the document definition.
 
     Args:
-        connection: MicroStrategy REST API connection object
+        connection: Strategy One REST API connection object
         document_id (string): Document  ID
         instance_id (string): Instance  ID
         error_msg (string, optional): Custom Error Message for Error Handling

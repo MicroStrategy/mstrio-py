@@ -1,13 +1,13 @@
-import logging
 import inspect
-
+import logging
 from functools import wraps
 from inspect import getattr_static, getmembers
-from packaging.version import parse as ver_parser, Version as PackageVersion
+
+from packaging.version import Version as PackageVersion
+from packaging.version import parse as ver_parser
 
 from mstrio.connection import Connection
 from mstrio.helpers import VersionException
-
 
 logger = logging.getLogger(__name__)
 
@@ -144,7 +144,7 @@ def is_server_min_version(connection: 'Connection', version_str: str) -> bool:
     """Check if iServer version is greater or equal than given version.
 
     Args:
-        connection (Connection): MicroStrategy REST API connection object
+        connection (Connection): Strategy One REST API connection object
         version_str (str): String containing iServer version number
 
     Returns:

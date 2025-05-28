@@ -17,8 +17,6 @@ class PredefinedFolders(Enum):
     EVENTS = 72
     LINKS = 83
     LOCALES = 74
-    MY_DOSSIERS = 96
-    MY_SHARED_DOSSIERS = 97
     MY_DASHBOARDS = 96
     MY_SHARED_DASHBOARDS = 97
     PALETTES = 94

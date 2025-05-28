@@ -30,7 +30,7 @@ def delete_inactive_caches(
     `last_time_updated` was earlier than `days_diff` before.
 
     Args:
-        connection: MicroStrategy connection object returned by
+        connection: Strategy One connection object returned by
             `connection.Connection()`
         days_diff (int, optional): number of days to determine whether to delete
             cache when its `hit_count` equals 0. Default value is 30.

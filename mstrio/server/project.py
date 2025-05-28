@@ -12,7 +12,7 @@ from mstrio import config
 from mstrio.api import datasources as datasources_api
 from mstrio.api import monitors, objects, projects
 from mstrio.connection import Connection
-from mstrio.helpers import IServerError
+from mstrio.helpers import IServerError, VersionException
 from mstrio.server.project_languages import (
     DataLanguageSettings,
     MetadataLanguageSettings,
@@ -22,14 +22,16 @@ from mstrio.utils.entity import DeleteMixin, Entity, ObjectTypes
 from mstrio.utils.enum_helper import AutoName, get_enum_val
 from mstrio.utils.response_processors import datasources as datasources_processors
 from mstrio.utils.response_processors import projects as projects_processors
+from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.settings.base_settings import BaseSettings
 from mstrio.utils.time_helper import DatetimeFormats
-from mstrio.utils.version_helper import method_version_handler
+from mstrio.utils.version_helper import is_server_min_version, method_version_handler
 from mstrio.utils.vldb_mixin import ModelVldbMixin
 from mstrio.utils.wip import wip
 
 if TYPE_CHECKING:
     from mstrio.datasources import DatasourceInstance
+    from mstrio.server.environment import Environment
     from mstrio.server.node import Node
     from mstrio.users_and_groups import User
 
@@ -153,11 +155,46 @@ def compare_project_settings(
     return df
 
 
-class Project(Entity, ModelVldbMixin, DeleteMixin):
-    """Object representation of MicroStrategy Project (Project) object.
+def list_projects(
+    # allows for `conn` to be Env to support `list_projects(env)` syntax
+    conn: "Connection | Environment | None" = None,
+    env: "Environment | None" = None,
+    *args,
+    **kwargs,
+):
+    """Return list of project objects or project dicts if `to_dictionary=True`.
+    Optionally filter the Projects by specifying the filters keyword arguments.
+
+    This is a helper method using `Environment.list_projects()` under the hood.
+    See `Environment.list_projects()` documentation for more details.
+
+    Either `conn` or `env` must be provided.
 
     Attributes:
-        connection: A MicroStrategy connection object
+        conn (Connection, optional): A Strategy One connection object.
+        env (Environment, optional): Environment object instance.
+        ... (optional): Additional parameters to pass to
+            `Environment.list_projects()`.
+    """
+    if conn is None and env is None:
+        raise ValueError("Either connection or environment must be provided.")
+
+    from mstrio.server.environment import Environment
+
+    if not env and isinstance(conn, Environment):
+        env = conn
+
+    if env:
+        return env.list_projects(*args, **kwargs)
+
+    return Project._list_projects(conn, *args, **kwargs)
+
+
+class Project(Entity, ModelVldbMixin, DeleteMixin):
+    """Object representation of Strategy One Project (Project) object.
+
+    Attributes:
+        connection: A Strategy One connection object
         settings: Project settings object
         id: Project ID
         name: Project name
@@ -221,6 +258,18 @@ class Project(Entity, ModelVldbMixin, DeleteMixin):
         ): projects_processors.get_project_internalization,
         'lock_status': projects_processors.get_project_lock,
     }
+    _API_PATCH = {
+        **Entity._API_PATCH,
+        'alias': (projects.update_project, 'patch'),
+        (
+            'comments',
+            'owner',
+        ): (objects_processors.update, 'partial_put'),
+    }
+    _PATCH_PATH_TYPES = {
+        **Entity._PATCH_PATH_TYPES,
+        'alias': str,
+    }
     _API_DELETE = staticmethod(projects.delete_project)
     _FROM_DICT_MAP = {
         **Entity._FROM_DICT_MAP,
@@ -250,7 +299,7 @@ class Project(Entity, ModelVldbMixin, DeleteMixin):
         provided (not `None`), `name` is omitted.
 
         Args:
-            connection: MicroStrategy connection object returned
+            connection: Strategy One connection object returned
                 by `connection.Connection()`
             name: Project name
             id: Project ID
@@ -415,14 +464,29 @@ class Project(Entity, ModelVldbMixin, DeleteMixin):
         name: str | None = None,
         description: str | None = None,
         comments: str | None = None,
-    ):
+        owner: 'str | User | None' = None,
+        alias: str | None = None,
+    ) -> None:
         """Alter project name or/and description.
 
         Args:
-            name: new name of the project.
-            description: new description of the project.
-            comments: long description of the project.
+            name (str, optional): new name of the project.
+            description (str, optional): new description of the project.
+            comments (str, optional): long description of the project.
+            owner: (str, User, optional): owner of the project.
+            alias (str, optional): new alias of the project.
         """
+        from mstrio.users_and_groups import User
+
+        if alias and not is_server_min_version(self.connection, '11.5.0300'):
+            msg = (
+                "Environments must run IServer version `11.5.0300` or newer. "
+                "Please update your environments to alter project alias."
+            )
+            raise VersionException(msg)
+        if isinstance(owner, User):
+            owner = owner.id
+
         properties = helper.filter_params_for_func(
             self.alter, locals(), exclude=['self']
         )
@@ -1019,7 +1083,7 @@ class Project(Entity, ModelVldbMixin, DeleteMixin):
 
 
 class ProjectSettings(BaseSettings):
-    """Object representation of MicroStrategy Project (Project) Settings.
+    """Object representation of Strategy One Project (Project) Settings.
 
     Used to fetch, view, modify, update, export to file, import from file and
     validate Project settings.
@@ -1032,7 +1096,7 @@ class ProjectSettings(BaseSettings):
     project using the `update()` method.
 
     Attributes:
-        connection: A MicroStrategy connection object
+        connection: A Strategy One connection object
     """
 
     _TYPE = "allProjectSettings"
@@ -1076,7 +1140,7 @@ class ProjectSettings(BaseSettings):
         """Initialize `ProjectSettings` object.
 
         Args:
-            connection: MicroStrategy connection object returned by
+            connection: Strategy One connection object returned by
                 `connection.Connection()`.
             project_id: Project ID
         """
@@ -1106,6 +1170,9 @@ class ProjectSettings(BaseSettings):
         """
         self._check_params(project_id)
         set_dict = self._prepare_settings_push()
+        if not set_dict and config.verbose:
+            logger.info('No settings to update.')
+            return
         response = projects.update_project_settings(
             self._connection, self._project_id, set_dict
         )
@@ -1115,6 +1182,7 @@ class ProjectSettings(BaseSettings):
             elif response.status_code == 207:
                 partial_succ = response.json()
                 logging.info(f'Project settings partially successful.\n{partial_succ}')
+        super().update()
 
     def __setattr__(self, key, value) -> None:
         if isinstance(value, Enum):

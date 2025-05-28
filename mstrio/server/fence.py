@@ -33,7 +33,7 @@ def list_fences(
     """Get list of fences.
 
     Args:
-        connection (Connection): MicroStrategy connection object returned by
+        connection (Connection): Strategy One connection object returned by
             `connection.Connection()`
         to_dictionary (bool, optional): If True returns dicts, by default
             (False) returns objects.
@@ -61,7 +61,7 @@ def list_fences(
 
 @class_version_handler('11.3.0800')
 class Fence(EntityBase, DeleteMixin):
-    """Python representation of a MicroStrategy Fence object.
+    """Python representation of a Strategy One Fence object.
 
     Attributes:
         id (str): ID of the fence.
@@ -125,7 +125,7 @@ class Fence(EntityBase, DeleteMixin):
         """Initializes a new instance of a Fence class
 
         Args:
-            connection (Connection): MicroStrategy connection object returned
+            connection (Connection): Strategy One connection object returned
                 by `connection.Connection()`
             id (str, Optional): ID of the fence.
             name (str, Optional): Name of the fence.
@@ -226,7 +226,7 @@ class Fence(EntityBase, DeleteMixin):
         """Create a new Fence.
 
         Args:
-            connection (Connection): MicroStrategy connection object returned
+            connection (Connection): Strategy One connection object returned
                 by `connection.Connection()`
             rank (int): Rank or precedence of the fence.
             name (str): Name of the fence.
