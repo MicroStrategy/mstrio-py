@@ -23,7 +23,7 @@ administrative workflows for maintaining a Strategy One environment.
 """
 
 __title__ = "ni-mstrio-py"
-__version__ = "2025.0.0"  # NOSONAR
+__version__ = "2025.1.0"  # NOSONAR
 __license__ = "Apache License 2.0"
 __description__ = "NI-customized Python interface for the MicroStrategy REST API"
 __author__ = "NI"
