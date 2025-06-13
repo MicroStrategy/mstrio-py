@@ -1,6 +1,7 @@
 from mstrio.connection import Connection
 from mstrio.utils.api_helpers import changeset_manager, unpack_information
 from mstrio.utils.dtos.create_attribute_dto import CreateAttributeDto
+from mstrio.utils.dtos.update_attribute_dto import UpdateAttributeDto
 from mstrio.utils.error_handlers import ErrorHandler
 
 
@@ -241,3 +242,60 @@ def get_attribute_elements(
             'fields': fields,
         },
     )
+
+
+@unpack_information
+@ErrorHandler(err_msg="Error updating attributes")
+def update_attributes(
+    connection: Connection,
+    update_attribute_dtos: list[UpdateAttributeDto],
+    changeset_id: str | None = None
+):
+    """Update multiple attributes at once.
+
+    Args:
+        connection: MicroStrategy connection object
+        update_attribute_dtos: List of update attribute DTOs containing update data
+        changeset_id: ID of the changeset to apply updates in. If not provided,
+                   a new changeset will be created
+    Returns:
+        List of HTTP response objects with updated attribute data
+    """
+    if not changeset_id:
+        with changeset_manager(connection) as changeset_id:
+            responses = [_update_attribute(connection, dto.id, dto.body, changeset_id,
+                                       dto.show_expression_as, dto.show_potential_tables,
+                                       dto.show_fields, dto.fields, dto.remove_invalid_fields)
+                        for dto in update_attribute_dtos]
+            return responses
+
+    responses = [_update_attribute(connection, dto.id, dto.body, changeset_id,
+                                dto.show_expression_as, dto.show_potential_tables,
+                                dto.show_fields, dto.fields, dto.remove_invalid_fields)
+                for dto in update_attribute_dtos]
+    return responses
+
+def _update_attribute(
+    connection: Connection,
+    id: str,
+    body: dict,
+    changeset_id: str,
+    show_expression_as: list[str] | None = None,
+    show_potential_tables: str | None = None,
+    show_fields: str | None = None,
+    fields: str | None = None,
+    remove_invalid_fields: str | None = None
+):
+    """Helper function to update a single attribute."""
+    return connection.patch(
+            endpoint=f'/api/model/attributes/{id}',
+            headers={'X-MSTR-MS-Changeset': changeset_id},
+            params={
+                'showExpressionAs': show_expression_as,
+                'showPotentialTables': show_potential_tables,
+                'showFields': show_fields,
+                'fields': fields,
+                'removeInvalidFields': remove_invalid_fields,
+            },
+            json=body,
+        )

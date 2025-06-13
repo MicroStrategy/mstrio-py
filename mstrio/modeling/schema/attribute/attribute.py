@@ -26,6 +26,7 @@ from mstrio.object_management.folder import Folder
 from mstrio.object_management.search_enums import SearchPattern
 from mstrio.types import ObjectSubTypes, ObjectTypes
 from mstrio.utils.dtos.create_attribute_dto import CreateAttributeDto
+from mstrio.utils.dtos.update_attribute_dto import UpdateAttributeDto
 from mstrio.users_and_groups.user import User
 from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, MoveMixin
 from mstrio.utils.enum_helper import get_enum_val
@@ -515,7 +516,6 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
             body=body, show_expression_as=attribute_data.show_expression_as)
         
         return create_attribute_dto
-    
     
     @classmethod
     def _get_create_body(
@@ -1349,3 +1349,84 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
     @property
     def relationships(self):
         return self._relationships
+    
+    @classmethod
+    def _attribute_data_to_update_attribute_dto(cls, attribute: 'Attribute', attribute_data: AttributeData) -> UpdateAttributeDto:
+        """Convert AttributeData to UpdateAttributeDto for the update operation"""
+        body = cls._get_create_body(
+            name=attribute_data.name,
+            sub_type=attribute_data.sub_type,
+            destination_folder=attribute_data.destination_folder,
+            forms=attribute_data.forms,
+            key_form=attribute_data.key_form,
+            displays=attribute_data.displays,
+            description=attribute_data.description,
+            is_embedded=attribute_data.is_embedded,
+            attribute_lookup_table=attribute_data.attribute_lookup_table,
+            sorts=attribute_data.sorts,
+        )
+        
+        update_attribute_dto = UpdateAttributeDto(
+            id=attribute.id,
+            body=body,
+            show_expression_as=attribute_data.show_expression_as
+        )
+        
+        return update_attribute_dto
+
+    @classmethod
+    def update_many(
+        cls,
+        connection: 'Connection',
+        attributes_list: list['Attribute'],
+        attributes_data: list[AttributeData],
+    ) -> list['Attribute']:
+        """Update multiple attributes at once.
+
+        Args:
+            connection: MicroStrategy connection object returned
+                by `connection.Connection()`
+            attributes: list of Attribute objects to update
+            attributes_data: list of AttributeData objects containing update data
+        Returns:
+            List of updated Attribute objects.
+            
+        Note:
+            The attributes and attributes_data lists must be in corresponding order,
+            i.e., attributes[i] will be updated with attributes_data[i].
+        """
+        if len(attributes_list) != len(attributes_data):
+            raise ValueError(
+                "Length of attributes list must match length of attributes_data list"
+            )
+            
+        update_attribute_dtos = [
+            cls._attribute_data_to_update_attribute_dto(attribute, attribute_data)
+            for attribute, attribute_data in zip(attributes_list, attributes_data)
+        ]
+        
+        responses = attributes.update_attributes(
+            connection=connection,
+            update_attribute_dtos=update_attribute_dtos
+        )
+
+        updated_attributes = [
+            cls.from_dict(
+                source={**response.json(), 'show_expression_as': attribute_data.show_expression_as},
+                connection=connection
+            )
+            for response, attribute_data in zip(responses, attributes_data)
+        ]
+        
+        # Update hidden property if specified
+        attributes_data_dict = {attribute_data.name: attribute_data for attribute_data in attributes_data}
+        for attribute in updated_attributes:
+            if config.verbose:
+                logger.info(
+                    f"Successfully updated attribute named: '{attribute.name}' with ID: '{attribute.id}'"
+                )
+            attribute_data = attributes_data_dict[attribute.name]
+            if attribute_data.hidden:
+                attribute.alter(hidden=attribute_data.hidden)
+                
+        return updated_attributes
