@@ -3,6 +3,7 @@ from typing import Any, TypeVar
 
 from mstrio.api import browsing
 from mstrio.connection import Connection
+from mstrio.object_management.folder import Folder
 from mstrio.object_management.search_enums import SearchDomain
 from mstrio.object_management.search_operations import full_search
 from mstrio.server.project import Project
@@ -25,10 +26,16 @@ class ShortcutInfoFlags(IntFlag):
 
 def list_shortcuts(
     connection: Connection,
+    name: str | None = None,
     project_id: str | None = None,
     project_name: str | None = None,
     project: Project | None = None,
     to_dictionary: bool = False,
+    limit: int | None = None,
+    folder: Folder | None = None,
+    folder_id: str | None = None,
+    folder_path: str | None = None,
+    **filters,
 ):
     """List all shortcuts in a project.
 
@@ -39,6 +46,9 @@ def list_shortcuts(
     Args:
         connection (Connection): Strategy One connection object returned
             by `connection.Connection()`.
+        name (string, optional): The search pattern for listing shortcuts.
+            Supports wildcards '*' (any number of characters) and '?' (exactly
+            one character).
         project_id (str, optional): ID of the project to search in.
         project_name (str, optional): Name of the project to search in.
             May be used instead of `project_id`.
@@ -47,6 +57,21 @@ def list_shortcuts(
         to_dictionary (bool, optional): If True, the method will return
             dictionaries with the shortcuts' properties instead of Shortcut
             objects. Defaults to False.
+        limit (integer, optional): limit the number of elements returned. If
+            None all object are returned.
+        folder (Folder, optional): Folder object specifying where the search
+            will be performed.
+        folder_id (string, optional): ID of a folder where the search
+            will be performed. Can be provided as an alternative to `folder`
+            parameter.
+        folder_path (str, optional): Path of the folder in which the search
+            will be performed. Can be provided as an alternative to `folder`
+            and `folder_id` parameters. The path has to be provided in the
+            forward-slash format, beginning with project name, e.g.
+            "/MicroStrategy Tutorial/Public Objects/Metrics".
+        **filters: Available filter parameters: ['id', 'type', 'subtype',
+            'date_created', 'date_modified', 'version', 'owner', 'ext_type',
+            'view_media', 'certified_info']
 
     """
 
@@ -58,6 +83,10 @@ def list_shortcuts(
         project_name=project_name,
         with_fallback=True,
     )
+    if folder and not folder_id:
+        folder_id = folder.id
+    if folder_path and folder_id:
+        folder_path = None
 
     # No endpoint for listing shortcuts. Using full_search instead.
     objects = full_search(
@@ -65,6 +94,11 @@ def list_shortcuts(
         object_types=[ObjectTypes.SHORTCUT_TYPE],
         domain=SearchDomain.PROJECT,
         project=project_id,
+        name=name,
+        limit=limit,
+        root=folder_id,
+        root_path=folder_path,
+        **filters,
     )
 
     if to_dictionary:
@@ -99,7 +133,7 @@ class Shortcut(Entity, CopyMixin, MoveMixin, DeleteMixin):
         encode_html_content (bool): Flag indicating whether to encode
             HTML content
         current_page_key (str): Current page node key
-        stid (int): Shortcut Sate ID
+        stid (int): Shortcut State ID
         current_bookmark (dict): Name and ID of the current bookmark
         prompted (bool): Flag indicating whether the target object has prompts
         datasets_cache_info_hash (str): The hash value for the Dashboard dataset

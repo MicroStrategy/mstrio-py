@@ -100,9 +100,9 @@ def list_reports(
                             /MicroStrategy Tutorial/Public Objects/Metrics
                         if it's a root folder, example:
                             /CASTOR_SERVER_CONFIGURATION/Users
-        **filters: Available filter parameters: ['id', 'name', 'type',
-            'subtype', 'date_created', 'date_modified', 'version', 'owner',
-            'ext_type', 'view_media', 'certified_info']
+        **filters: Available filter parameters: ['id', 'type', 'subtype',
+            'date_created', 'date_modified', 'version', 'owner', 'ext_type',
+            'view_media', 'certified_info']
 
     Returns:
         list with Report objects or list of dictionaries

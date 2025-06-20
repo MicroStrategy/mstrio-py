@@ -1,5 +1,27 @@
 # Changelog
 
+## 11.5.6.101 - 2025/06/20
+
+### Setup
+
+- connections done through class `Connection` are now being identified by their own application type 76 "DssXmlApplicationPython"
+
+### New features
+
+### Minor changes
+
+- added `working_set` and `max_search` optional parameters when creating `Connection` object
+- added `get_api_token` method to `User` class to allow creating API Token by administrator for the user
+- added filtering arguments in `list_shortcuts`
+- added `invalidate` and bulk `invalidate_caches` methods for content cache management
+
+### Bug fixes
+
+- fixed `UserGroup.remove_all_users()` not working with empty User Groups
+- fixed the issue with `ContentCache.list_caches()` not working when caches in the 'binary_definition, binary_data' format exist
+- fixed Metric retrieval failing if series formatting is set
+- fixed invalid `ScheduleEnums.YearlyPattern` enum throwing error for yearly schedule
+
 ## 11.5.5.101 - 2025/05/23
 
 ### New features

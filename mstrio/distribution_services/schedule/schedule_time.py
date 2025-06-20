@@ -51,7 +51,7 @@ class ScheduleEnums:
 
     class YearlyPattern(AutoName):
         DAY = auto()
-        DAYOFWEEK = auto()
+        DAY_OF_WEEK = auto()
         NONE = None
 
 
@@ -322,7 +322,7 @@ class ScheduleTime(Dictable):
             self.month = month
             if yearly_pattern == ScheduleEnums.YearlyPattern.DAY:
                 self.day = day
-            if yearly_pattern == ScheduleEnums.YearlyPattern.DAYOFWEEK:
+            if yearly_pattern == ScheduleEnums.YearlyPattern.DAY_OF_WEEK:
                 self.week_offset = (
                     week_offset
                     if isinstance(week_offset, ScheduleEnums.WeekOffset)

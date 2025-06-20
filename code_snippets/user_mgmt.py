@@ -108,6 +108,11 @@ user_group = UserGroup(connection=conn, id=USER_GROUP_ID)
 # add user to user_group
 user_group.add_users(users=[user.id])
 
+# To create API Token for a specific user to log in as them you need a
+# "Create and Edit Users and User Groups" privilege
+# and you create the API Token by using the below method:
+api_token = user.get_api_token()
+
 # Available values for permissions are 'grant', 'deny', 'default' or None
 grant_right = 'right'
 

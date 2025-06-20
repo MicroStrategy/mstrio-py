@@ -21,7 +21,8 @@ With mstrio-py for **data science**, it’s easy to integrate cross-departmental
 - [Usage Remarks](#usage-remarks)
 - [Installation](#installation)
   - [Prerequisites](#prerequisites)
-  - [Install the `mstrio-py` Package](#install-the-mstrio-py-package)
+  - [Install `mstrio-py` Package](#install-the-mstrio-py-package)
+    - [Issues or Specific Use Cases](#install-the-mstrio-py-package-issues)
 - [Versioning & Changelog](#versioning--changelog)
 - [Deprecating Features](#deprecating-features)
 - [More Resources](#more-resources)
@@ -139,22 +140,59 @@ Error getting cube metadata information. I-Server Error ERR001, (ServiceManager:
 
 <a id="install-the-mstrio-py-package" name="install-the-mstrio-py-package"></a>
 
-## Install the `mstrio-py` Package
+## Install `mstrio-py` Package
 
-**Note**: it is NOT recommended to install mstrio-py in an Anaconda environment.
-For a seamless experience, install and run it in Python's [virtual environment][python_venv] instead.
+> **Note**: it is NOT recommended to install mstrio-py in an **Anaconda** environment.
+> For a seamless experience, install and run it in Python's [virtual environment][python_venv] instead.
 
-Installation is easy when using [pip](https://pypi.org/project/mstrio-py).
+Install latest version of [mstrio-py](https://pypi.org/project/mstrio-py) using `pip` command in Terminal:
 
 ```bash
 pip install mstrio-py
 ```
 
+To install a specific, archived version of mstrio, choose the desired version available on [PyPI package archive][pypi_archive] and install with `pip`, as follows:
+
+```bash
+pip install mstrio-py==10.11.1
+```
+
+<a id="install-the-mstrio-py-package-issues" name="install-the-mstrio-py-package-issues"></a>
+
+### Issues or specific use cases
+
+If there are any issues with the installation process it is possible your setup may differ from usual.
+In that case, please see below some examples of most common situations and how to resolve them.
+
+In all other cases, please refer to the [official Python libraries installation guide](https://packaging.python.org/en/latest/tutorials/installing-packages/).
+
+#### Offline System or Proxy with Blacklisted `PyPI`
+
+> **Note**: optimally, you should contact your system administrator and either request access to `PyPI` or some proxy setup whitelisting all or some of the `PyPI` libraries.
+
+If your setup does not allow to get packages online directly from Python Packages Index (PyPI) using `pip`, you can download the package manually and install it locally.
+
+1. download `.whl` file from here: <https://pypi.org/project/mstrio-py/#files>
+1. in the terminal `cd` into a folder where you want to install _mstrio-py_
+1. use the command provided below after filling the path
+   - `py -m` tells the terminal to use default install execution of python available locally on the machine
+   - `--user` flag says "install only for my user on this machine"
+1. If you have issues with `py` command, try the same with `python` instead
+
+```bash
+cd path/where/mstrio/will/be/installed
+py -m pip install --user path/to/downloaded/wheel/file/mstrio-py.whl
+```
+
+#### No Python or `pip` Installed on the Machine
+
+You cannot use `mstrio-py` without Python installed on your machine unless directly via **Strategy Workstation**.
+
 <a id="versioning--changelog" name="versioning--changelog"></a>
 
 # Versioning & Changelog
 
-Current version: **11.5.5.101** (23 May 2025). Check out [**Changelog**][release_notes] to see what's new.
+Current version: **11.5.6.101** (20 June 2025). Check out [**Changelog**][release_notes] to see what's new.
 
 mstrio-py is constantly developed to support newest Strategy One REST APIs. Functionalities may be added to mstrio on monthly basis. It is **recommended** to always install the newest version of mstrio-py, as it will be most stable and still maintain backwards compatibility with various Strategy One installations, dating back to 11.1.4.
 
@@ -170,12 +208,6 @@ If you intend to use mstrio with MicroStrategy 2019 Update 3 (11.1.3) or older, 
 - MicroStrategy 2019 Update 3 (11.1.3)
 
 Refer to the [PyPI package archive][pypi_archive] for a list of available versions.
-
-To install a specific, archived version of mstrio, choose the desired version available on [PyPI package archive][pypi_archive] and install with `pip`, as follows:
-
-```python
-pip install mstrio-py==10.11.1
-```
 
 <a id="deprecating-features" name="deprecating-features"></a>
 

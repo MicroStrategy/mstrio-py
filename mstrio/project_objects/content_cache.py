@@ -27,6 +27,8 @@ class ContentCacheFormat(AutoName):
     HTML5 = auto()
     FLASH = auto()
     TRANSACTION = auto()
+    BINARY_DEFINITION_BINARY_DATA = 'binary_definition,binary_data'
+    BINARY_DATA_BINARY_DEFINITION = 'binary_data,binary_definition'
 
 
 @class_version_handler('11.3.0700')
@@ -107,6 +109,7 @@ class ContentCache(Cache, ContentCacheMixin):
             connection=self._connection,
             project_id=self._project_id,
             nodes=self._nodes,
+            status=None,
             id=self.id,
             to_dictionary=True,
         )
@@ -136,6 +139,7 @@ class ContentCache(Cache, ContentCacheMixin):
             'replace/loaded/True': 'load',
             'replace/loaded/False': 'unload',
             'remove/None/None': 'delete',
+            'replace/invalid/True': 'invalidate',
         }.get(f'{op}/{status}/{value}')
         if not self.combined_id and config.verbose:
             logger.info(
@@ -216,6 +220,22 @@ class ContentCache(Cache, ContentCacheMixin):
             if config.verbose and result:
                 logger.info(f"Successfully deleted content cache with ID: '{self.id}'.")
             return result
+
+    def invalidate(self) -> bool:
+        """Invalidate content cache. Invalidated cache will be removed from
+        the server."""
+        nodes = self._nodes
+        result = self.__alter_status(
+            op='replace', value=True, status='invalid', nodes=nodes
+        )
+        if result.ok:
+            self.status.invalid = True
+            if config.verbose:
+                logger.info(
+                    f'Successfully invalidated content cache with id: {self.id}'
+                )
+            return True
+        return False
 
     @classmethod
     def from_dict(

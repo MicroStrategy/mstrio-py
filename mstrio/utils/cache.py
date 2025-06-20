@@ -190,6 +190,7 @@ class ContentCacheMixin:
             'replace/loaded/True': 'load',
             'replace/loaded/False': 'unload',
             'remove/None/None': 'delete',
+            'replace/invalid/True': 'invalidate',
         }.get(f'{op}/{status}/{value}')
 
         for cache_id in cache_ids:
@@ -299,12 +300,36 @@ class ContentCacheMixin:
                 logger.info('Successfully deleted content caches')
             return result
 
+    @staticmethod
+    def invalidate_caches(
+        connection: 'Connection', cache_ids: list[str]
+    ) -> Response | None:
+        """Bulk invalidate caches.
+
+        Args:
+            connection (Connection): Strategy One connection object returned
+            by 'connection.Connection()'
+            cache_ids (list[str]): List of cache ids to be invalidated
+
+        Returns:
+            Response object."""
+        result = ContentCacheMixin.__alter_status(
+            connection=connection,
+            op='replace',
+            cache_ids=cache_ids,
+            value=True,
+            status='invalid',
+        )
+        if config.verbose and result:
+            logger.info('Successfully invalidated content caches')
+        return result
+
     @classmethod
     def list_caches(
         cls,
         connection: 'Connection',
         to_dictionary: bool = False,
-        status: str = 'ready',
+        status: str | None = 'ready',
         project_id: str | None = None,
         nodes: list[str] | str | None = None,
         content_type: CacheSource.Type | str | None = None,
@@ -386,8 +411,6 @@ class ContentCacheMixin:
         validate_param_value('limit', limit, int, min_val=1, special_values=[None])
         # This is a result limitation because every time we list caches, we need
         # to fetch them all first to do proper filtering on the mstrio-py side
-        if limit:
-            caches = caches[:limit]
 
         caches = [{**cache[1], 'combined_id': cache[0]} for cache in caches]
 
@@ -409,6 +432,8 @@ class ContentCacheMixin:
             caches = [
                 cache for cache in caches if not cache.get('status').get('loaded')
             ]
+        if limit:
+            caches = caches[:limit]
 
         if to_dictionary:
             return caches

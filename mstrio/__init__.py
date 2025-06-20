@@ -23,8 +23,8 @@ administrative workflows for maintaining a Strategy One environment.
 """
 
 __title__ = "mstrio-py"
-__version__ = "11.5.5.101"  # NOSONAR
-__license__ = "Apache License 2.0"
+__version__ = "11.5.6.101"  # NOSONAR
+__license__ = "DUAL-TIER LICENSE AGREEMENT"
 __description__ = "Python interface for the Strategy One REST API"
 __author__ = "Strategy One"
 __author_email__ = "bkaczynski@strategy.com"

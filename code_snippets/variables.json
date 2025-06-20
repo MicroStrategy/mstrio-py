@@ -2091,6 +2091,10 @@
     "other_cache_id": {
       "type": "text",
       "multiple": false
+    },
+    "wh_table_used_id": {
+      "type": "text",
+      "multiple": false
     }
   },
   "document.py": {
