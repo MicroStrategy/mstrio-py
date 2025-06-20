@@ -24,10 +24,13 @@ else:
 
 from mstrio import config
 from mstrio.api import authentication, hooks, misc, projects
-from mstrio.helpers import IServerException, VersionException
+from mstrio.helpers import IServerError, IServerException, VersionException
 from mstrio.utils import helper, sessions
 
 logger = logging.getLogger(__name__)
+
+APPLICATION_TYPE_PYTHON = 76
+APPLICATION_TYPE_WEB = 35
 
 
 class LoginMode(IntEnum):
@@ -160,6 +163,9 @@ class Connection:
         iserver_version: Version of the I-Server
         web_version: Version of the Web Server
         token: authentication token
+        working_set: Number of report/document instances that are kept in memory
+            on the server before the oldest instance is replaced.
+        max_search: Maximum number of concurrent searches.
         timeout: time after the server's session expires, in seconds
     """
 
@@ -177,6 +183,8 @@ class Connection:
         identity_token: str | None = None,
         api_token: str | None = None,
         application_id: 'str | Application | None' = None,
+        working_set: int | None = None,
+        max_search: int | None = None,
         verbose: bool = True,
     ):
         """Establish a connection with Strategy One REST API.
@@ -225,6 +233,12 @@ class Connection:
             application_id (str, Application, optional): Login using the
                 login mode configured in a custom application. If it's
                 not provided, the server login modes are used.
+            working_set (int, optional): Number of report/document instances
+                that are kept in memory on the server before the oldest instance
+                is replaced. Minimum value is 3, if None, will be set to 10 by
+                default.
+            max_search (int, optional): Maximum number of concurrent searches.
+                If None, will be set to 3 by default.
             verbose (bool, optional): True by default. Controls the amount of
                 feedback from the I-Server.
         """
@@ -232,6 +246,12 @@ class Connection:
             login_mode = 4096 if api_token else 1
 
         login_mode = get_enum_val(login_mode, LoginMode)
+
+        helper.validate_param_value(
+            'working_set', working_set, int, min_val=3, special_values=[None]
+        )
+        if max_search is not None:
+            helper.validate_param_value('max_search', max_search, int)
 
         # set the verbosity globally
         config.verbose = bool(verbose and config.verbose)
@@ -251,6 +271,13 @@ class Connection:
         self.__password = password
         self.last_active = None
         self.timeout = None
+        self.working_set = working_set
+        self.max_search = max_search
+
+        # do not check application type if delegated
+        self._application_type = (
+            APPLICATION_TYPE_PYTHON if identity_token is None else None
+        )
 
         from mstrio.project_objects.applications import Application
 
@@ -266,18 +293,7 @@ class Connection:
         else:
             self.connect()
 
-        if self.__check_version():
-            from mstrio.utils.version_helper import is_server_min_version
-
-            if application_id and not is_server_min_version(self, '11.3.1200'):
-                logger.warning(
-                    "The `application_id` argument requires iServer version 11.3.1200 "
-                    f"or later. Since your server version: {self._iserver_version} "
-                    "is not compatible, this parameter will be omitted."
-                )
-                self.application_id = None
-            self.select_project(project_id, project_name)
-        else:
+        if not self.__check_version():
             msg = (
                 f'This version of mstrio is only supported on MicroStrategy 11.1.0400 '
                 f'or higher.\n'
@@ -289,6 +305,30 @@ class Connection:
                 msg='MicroStrategy Version not supported.',
                 exception_type=VersionException,
             )
+            return
+
+        from mstrio.utils.version_helper import is_server_min_version
+
+        # In some versions APPLICATION_TYPE_PYTHON is supported at login,
+        # but several features are not available. Reconnect with
+        # APPLICATION_TYPE_WEB if the server version is not compatible
+        if (
+            self._application_type
+            and self._application_type != APPLICATION_TYPE_WEB
+            and not is_server_min_version(self, '11.5.0600')
+        ):
+            self._application_type = APPLICATION_TYPE_WEB
+            self.token = None
+            self.connect()
+
+        if application_id and not is_server_min_version(self, '11.3.1200'):
+            logger.warning(
+                "The `application_id` argument requires iServer version 11.3.1200 "
+                f"or later. Since your server version: {self._iserver_version} "
+                "is not compatible, this parameter will be omitted."
+            )
+            self.application_id = None
+        self.select_project(project_id, project_name)
 
     def __enter__(self):
         return self
@@ -314,7 +354,7 @@ class Connection:
             response = self._login()
             self._reset_timeout()
             self.token = response.headers['X-MSTR-AuthToken']
-            self.timeout = self._get_session_timeout()
+            self._fetch_session_info()
 
             if config.verbose:
                 logger.info(
@@ -333,7 +373,7 @@ class Connection:
         if response.ok:
             self._reset_timeout()
             self.token = response.headers['X-MSTR-AuthToken']
-            self.timeout = self._get_session_timeout()
+            self._fetch_session_info()
             if config.verbose:
                 logger.info(
                     'Connection with Strategy One Intelligence Server has been '
@@ -500,7 +540,15 @@ class Connection:
         return authentication.session_status(connection=self)
 
     def _login(self):
-        return authentication.login(connection=self)
+        try:
+            return authentication.login(connection=self)
+        except IServerError as e:
+            if 'constraint violations' in str(e):
+                # The error indicates APPLICATION_TYPE_PYTHON is not supported
+                self._application_type = APPLICATION_TYPE_WEB
+                return authentication.login(connection=self)
+            else:
+                raise e
 
     def _renew(self):
         return authentication.session_renew(connection=self)
@@ -515,9 +563,12 @@ class Connection:
         if response and response.ok:
             self._reset_timeout()
 
-    def _get_session_timeout(self):
+    def _fetch_session_info(self):
         res = self._status()
-        return res.json()['timeout'] if res.ok else None
+        json_data = res.json() if res.ok else {}
+        self.timeout = json_data.get('timeout')
+        self.working_set = json_data.get('workingSet')
+        self.max_search = json_data.get('maxSearch')
 
     def _reset_timeout(self):
         self.last_active = datetime.now()

@@ -102,7 +102,15 @@ class ObjectType(AutoName):
     REPORT = auto()
     CUBE = auto()
     DOCUMENT = auto()
-    DASHBOARD = 'dossier'
+    DASHBOARD = auto()
+
+    @classmethod
+    def _missing_(cls, value):
+        """Handle missing values in ObjectType enum."""
+        if value == 'dossier':
+            return cls.DASHBOARD
+        else:
+            return super()._missing_(value)
 
 
 class PUName(AutoName):

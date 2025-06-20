@@ -261,9 +261,7 @@ class EntityBase(helper.Dictable):
                         self._add_missing_attributes(key, json)
 
                     self._set_object_attributes(**object_dict)
-                elif isinstance(json, list) and json:
-                    # it is possible to have [] for json and fail
-                    # if object does not exist
+                elif isinstance(json, list):
                     self._set_object_attributes(**{key: json})
 
             # keep track of fetched attributes
@@ -1308,8 +1306,8 @@ class Entity(EntityBase, ACLMixin, DependenceMixin, TranslationMixin):
     def location(self) -> str:
         if self.ancestors:
             self._location = ''
-            for anc in self.ancestors:
-                self._location += '/' + anc.get('name')
+            for ancestor in self.ancestors:
+                self._location += '/' + ancestor.get('name')
             self._location += '/' + self.name
         return self._location
 

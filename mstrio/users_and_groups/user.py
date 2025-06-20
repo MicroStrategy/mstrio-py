@@ -11,6 +11,7 @@ from requests.exceptions import HTTPError
 from mstrio import config
 from mstrio.access_and_security.privilege_mode import PrivilegeMode
 from mstrio.access_and_security.security_role import SecurityRole
+from mstrio.api import authentication as auth_api
 from mstrio.api import users as users_api
 from mstrio.connection import Connection
 from mstrio.server.language import Language
@@ -1220,6 +1221,14 @@ class User(Entity, TrusteeACLMixin, RelatedSubscriptionMixin):
         if config.verbose:
             logger.info(f"Successfully deleted User with ID: '{self.id}'.")
         return True
+
+    def get_api_token(self) -> str:
+        """Get the API token for the user.
+
+        Returns:
+            API token for the user.
+        """
+        return auth_api.api_token(self.connection, self.id).json()['apiToken']
 
     def _to_dataframe_as_columns(
         self, properties: list[str] | None = None
