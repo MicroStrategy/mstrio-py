@@ -461,6 +461,7 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
         cls,
         connection: 'Connection',
         attributes_data: list[AttributeData],
+        changeset_id: str | None = None
     ) -> list['Attribute']:
         """ Create multiple attributes at once.
 
@@ -477,7 +478,9 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
         ]
         
         responses = attributes.create_attributes(
-            connection=connection, create_attribute_dtos=create_attribute_dtos
+            connection=connection,
+            create_attribute_dtos=create_attribute_dtos,
+            changeset_id=changeset_id
         )
 
         created_attributes = [
@@ -1380,6 +1383,7 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
         connection: 'Connection',
         attributes_list: list['Attribute'],
         attributes_data: list[AttributeData],
+        changeset_id: str | None = None
     ) -> list['Attribute']:
         """Update multiple attributes at once.
 
@@ -1407,7 +1411,8 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
         
         responses = attributes.update_attributes(
             connection=connection,
-            update_attribute_dtos=update_attribute_dtos
+            update_attribute_dtos=update_attribute_dtos,
+            changeset_id=changeset_id
         )
 
         updated_attributes = [
