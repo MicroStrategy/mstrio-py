@@ -297,7 +297,7 @@ class IsIndependent(Enum):
 
 
 class ExpressionFormat(AutoName):
-    """ "Expression format to be fetched from server, it might be tree or token:
+    """Expression format to be fetched from server, it might be tree or token:
     - tree: tree data structure fully defining the expression. This format can
     be used if you want to examine and modify the expression programmatically.
     - tokens: list of parsed tokens. This format can be used if you want

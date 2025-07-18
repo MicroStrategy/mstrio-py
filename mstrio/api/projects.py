@@ -591,3 +591,90 @@ def update_project(
         },
         params={'fields': fields},
     )
+
+
+@ErrorHandler(err_msg="Error getting project duplications")
+def get_project_duplications(
+    connection: 'Connection',
+    offset: int = 0,
+    limit: int = 100,
+    error_msg: str | None = None,
+) -> Response:
+    """Get project duplications.
+
+    Args:
+        connection (Connection): Strategy One REST API connection object
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object. 200 on success.
+    """
+    return connection.get(endpoint='/api/projectDuplications')
+
+
+@ErrorHandler(err_msg="Error triggering a new project duplication")
+def trigger_project_duplication(
+    connection: 'Connection',
+    id: str,
+    body: dict,
+    prefer: str = 'respond-async',
+    error_msg: str | None = None,
+) -> Response:
+    """Trigger a new project duplication.
+
+    Args:
+        connection (Connection): Strategy One REST API connection object
+        id (string): Project ID
+        body (dict): Dictionary containing the project duplication settings
+        prefer (str, optional): The preferred response mode. Defaults to
+            'respond-async'
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object. 201 on success.
+    """
+    return connection.post(
+        endpoint='/api/projectDuplications',
+        json=body,
+        headers={'X-MSTR-ProjectID': id, 'Prefer': prefer},
+    )
+
+
+@ErrorHandler(err_msg="Error getting project duplication with ID {id}")
+def get_project_duplication(
+    connection: 'Connection',
+    id: str,
+    error_msg: str | None = None,
+) -> Response:
+    """Get a specific project duplication.
+
+    Args:
+        connection (Connection): Strategy One REST API connection object
+        id (string): Project duplication ID
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object. 200 on success.
+    """
+    return connection.get(endpoint=f'/api/projectDuplications/{id}')
+
+
+@ErrorHandler(err_msg="Error cancelling project duplication with ID: {id}")
+def cancel_project_duplication(
+    connection: 'Connection',
+    id: str,
+    body: dict,
+    error_msg: str | None = None,
+) -> Response:
+    """Cancel a specific project duplication.
+
+    Args:
+        connection (Connection): Strategy One REST API connection object
+        id (string): Project duplication ID
+        body (dict): Dictionary containing status update properties
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        HTTP response object. 204 on success.
+    """
+    return connection.put(endpoint=f'/api/projectDuplications/{id}/status', json=body)

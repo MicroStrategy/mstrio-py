@@ -1,7 +1,7 @@
-import pandas as pd
-
 from itertools import chain
 from typing import TYPE_CHECKING
+
+import pandas as pd
 
 from mstrio.utils.helper import exception_handler
 

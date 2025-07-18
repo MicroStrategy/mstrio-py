@@ -1,6 +1,6 @@
 import logging
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum, IntEnum, auto
 from typing import TYPE_CHECKING
@@ -17,15 +17,18 @@ from mstrio.server.project_languages import (
     DataLanguageSettings,
     MetadataLanguageSettings,
 )
-from mstrio.utils import helper
-from mstrio.utils.entity import DeleteMixin, Entity, ObjectTypes
-from mstrio.utils.enum_helper import AutoName, get_enum_val
+from mstrio.utils import helper, time_helper
+from mstrio.utils.entity import DeleteMixin, Entity, EntityBase, ObjectTypes
+from mstrio.utils.enum_helper import AutoName, AutoUpperName, get_enum_val
 from mstrio.utils.response_processors import datasources as datasources_processors
-from mstrio.utils.response_processors import projects as projects_processors
 from mstrio.utils.response_processors import objects as objects_processors
+from mstrio.utils.response_processors import projects as projects_processors
 from mstrio.utils.settings.base_settings import BaseSettings
 from mstrio.utils.time_helper import DatetimeFormats
-from mstrio.utils.version_helper import is_server_min_version, method_version_handler
+from mstrio.utils.version_helper import (
+    is_server_min_version,
+    method_version_handler,
+)
 from mstrio.utils.vldb_mixin import ModelVldbMixin
 from mstrio.utils.wip import wip
 
@@ -1021,6 +1024,53 @@ class Project(Entity, ModelVldbMixin, DeleteMixin):
             ).json()['status']
         )
 
+    @method_version_handler('11.5.0700')
+    def duplicate(
+        self,
+        target_name: str,
+        duplication_config: 'dict | DuplicationConfig | None' = None,
+    ) -> 'ProjectDuplication':
+        """Duplicate the project with a new name.
+
+        Args:
+            target_name (str): New name for the duplicated project.
+            duplication_config (dict, DuplicationConfig, optional):
+                Configuration for the duplication process. If not provided
+                `DuplicationConfig()` with default values will be used.
+
+        Returns:
+            ProjectDuplication object.
+        """
+
+        if not duplication_config:
+            duplication_config = DuplicationConfig()
+        if isinstance(duplication_config, DuplicationConfig):
+            duplication_config = duplication_config.to_dict()
+        body = {
+            "source": {
+                "environment": {
+                    "id": self.connection.base_url,
+                    "name": self.connection.base_url,
+                },
+                "project": {
+                    "id": self.id,
+                    "name": self.name,
+                },
+            },
+            "target": {
+                "environment": {
+                    "id": self.connection.base_url,
+                    "name": self.connection.base_url,
+                },
+                "project": {"name": target_name},
+            },
+            "settings": duplication_config,
+        }
+        resp = projects.trigger_project_duplication(self.connection, self.id, body)
+        return ProjectDuplication.from_dict(
+            helper.get_response_json(resp), connection=self.connection
+        )
+
     @property
     def load_on_startup(self):
         """View nodes (servers) to load project on startup."""
@@ -1266,3 +1316,306 @@ class ProjectSettings(BaseSettings):
             ).items()
             if any(word in k.lower() for word in ("cache", "caching"))
         }
+
+
+@dataclass
+class DuplicationConfig(helper.Dictable):
+    """Configuration for project duplication.
+
+    Attributes:
+        schema_objects_only (bool, optional): If True, only schema objects will
+            be duplicated.
+        skip_empty_profile_folders (bool, optional): Whether to skip empty
+            profile folders during duplication.
+        include_user_subscriptions (bool, optional): Whether to include user
+            subscriptions in the duplication.
+        include_contact_subscriptions (bool, optional): Whether to include
+            contact subscriptions in the duplication.
+        import_description (str, optional): Description for the import operation
+            to be stored in ProjectDuplication class object.
+        import_default_locale (int, optional): Locale used for
+            internationalization in imported project. Please provide Language
+            object 'lcid' attribute.
+        import_locales (list[int], optional): List of locale ids for imported
+            project. Please provide Language object 'lcid' attribute.
+    """
+
+    schema_objects_only: bool = True
+    skip_empty_profile_folders: bool = True
+    include_user_subscriptions: bool = True
+    include_contact_subscriptions: bool = True
+    import_description: str | None = 'Project Duplication'
+    import_default_locale: int | None = 0
+    import_locales: list[int] | None = field(default_factory=lambda: [0])
+
+    def __post_init__(self):
+        if self.import_default_locale not in self.import_locales:
+            raise ValueError("Default locale must be included in the import locales.")
+
+    def to_dict(self) -> dict:
+        """Convert the duplication configuration to a dictionary accepted by
+        the API."""
+        settings = {
+            "export": {
+                "projectObjectsPreference": {
+                    "schemaObjectsOnly": self.schema_objects_only,
+                    "skipEmptyProfileFolders": self.skip_empty_profile_folders,
+                },
+                "subscriptionPreferences": {
+                    "includeUserSubscriptions": self.include_user_subscriptions,
+                    "includeContactSubscriptions": self.include_contact_subscriptions,
+                },
+            },
+            "import": {
+                "description": self.import_description,
+                "defaultLocale": self.import_default_locale,
+                "locales": self.import_locales,
+            },
+        }
+        return settings
+
+    @classmethod
+    def from_dict(cls, source, **kwargs):
+        """Initialize DuplicationConfig object from raw settings dictionary."""
+        source = helper.camel_to_snake(source)
+        export_sets = source.get('export', {})
+        import_sets = source.get('import', {})
+        obj = DuplicationConfig(
+            schema_objects_only=export_sets.get('project_objects_preference', {}).get(
+                'schema_objects_only', True
+            ),
+            skip_empty_profile_folders=export_sets.get(
+                'project_objects_preference', {}
+            ).get('skip_empty_profile_folders', True),
+            include_user_subscriptions=export_sets.get(
+                'subscription_preferences', {}
+            ).get('include_user_subscriptions', True),
+            include_contact_subscriptions=export_sets.get(
+                'subscription_preferences', {}
+            ).get('include_contact_subscriptions', True),
+            import_description=import_sets.get('description', None),
+            import_default_locale=import_sets.get('default_locale', 0),
+            import_locales=import_sets.get('locales', [0]),
+        )
+        return obj
+
+
+@dataclass
+class ProjectInfo(helper.Dictable):
+    """Dataclass to store project duplication record info. It stores
+    environment, project, and creator info."""
+
+    creator: dict = field(default_factory=dict)
+    environment: dict = field(default_factory=dict)
+    project: dict = field(default_factory=dict)
+
+    @classmethod
+    def from_dict(cls, source, **kwargs):
+        """Initialize ProjectInfo from a dictionary."""
+        return cls(
+            creator=source.get('creator', {}),
+            environment=source.get('environment', {}),
+            project=source.get('project', {}),
+        )
+
+
+class ProjectDuplicationStatus(AutoUpperName):
+    """Enum representing the status of a project duplication."""
+
+    UNKNOWN = auto()
+    CREATED = auto()
+    CREATE_FAILED = auto()
+    EXPORTING = auto()
+    EXPORTED = auto()
+    EXPORT_FAILED = auto()
+    IMPORTING = auto()
+    IMPORT_FAILED = auto()
+    COMPLETED = auto()
+    CANCELLED = auto()
+    CANCELLING = auto()
+    EXPORT_SYNCING = auto()
+    IMPORT_SYNCING = auto()
+
+
+@method_version_handler('11.5.0700')
+def list_projects_duplications(
+    connection: Connection, limit: int | None = None, to_dictionary: bool = False
+) -> list['ProjectDuplication | dict']:
+    """Get project duplications.
+
+    Args:
+        connection: Strategy One connection object returned by
+            `connection.Connection()`
+        limit (int, optional): Limit the number of elements returned. If `None`
+            (default), all objects are returned.
+        to_dictionary (bool, optional): If `True` returns dict, by default
+            (False) returns ProjectDuplication objects.
+
+    Returns:
+        List of ProjectDuplication objects or list od dicts.
+    """
+    duplications = projects_processors.get_project_duplications(
+        connection=connection, limit=limit
+    )
+
+    duplications = helper.camel_to_snake(duplications)
+    if to_dictionary:
+        return duplications
+    return [
+        ProjectDuplication.from_dict(
+            source=duplication, connection=connection, with_missing_value=False
+        )
+        for duplication in duplications
+    ]
+
+
+class ProjectDuplication(EntityBase):
+    """Object representation of a project duplication request.
+
+    Attributes:
+        id (str): Duplication job ID.
+        source (ProjectInfo): Source environment, project, and creator info.
+        target (ProjectInfo): Target environment, project, and creator info.
+        created_date (datetime): Duplication creation date.
+        last_updated_date (datetime): Duplication last update date.
+        status (ProjectDuplicationStatus): Duplication status.
+        progress (int): Duplication progress percentage.
+        message (str): Status or error message.
+        settings (DuplicationConfig): Duplication settings.
+    """
+
+    _API_GETTERS = {
+        (
+            'id',
+            'source',
+            'target',
+            'created_date',
+            'last_updated_date',
+            'status',
+            'progress',
+            'message',
+            'settings',
+        ): projects.get_project_duplication
+    }
+
+    _FROM_DICT_MAP = {
+        **EntityBase._FROM_DICT_MAP,
+        'created_date': DatetimeFormats.FULLDATETIME,
+        'last_updated_date': DatetimeFormats.FULLDATETIME,
+        'settings': DuplicationConfig.from_dict,
+        'source': ProjectInfo.from_dict,
+        'status': ProjectDuplicationStatus,
+        'target': ProjectInfo.from_dict,
+    }
+
+    def __init__(
+        self,
+        connection: "Connection",
+        id: str,
+    ) -> None:
+        """Initialize ProjectDuplication object.
+
+        Args:
+            connection: Strategy One connection object returned by
+                `connection.Connection()`.
+            id: ID of the ProjectDuplication
+        """
+
+        super().__init__(connection=connection, object_id=id)
+
+    def _init_variables(self, **kwargs) -> None:
+        super()._init_variables(**kwargs)
+        self.source = (
+            ProjectInfo.from_dict(kwargs.get('source', {}))
+            if kwargs.get('source')
+            else {}
+        )
+        self.target = (
+            ProjectInfo.from_dict(kwargs.get('target', {}))
+            if kwargs.get('target')
+            else {}
+        )
+        self.created_date = time_helper.map_str_to_datetime(
+            "created_date", kwargs.get("created_date"), self._FROM_DICT_MAP
+        )
+        self.last_updated_date = time_helper.map_str_to_datetime(
+            "last_updated_date", kwargs.get("last_updated_date"), self._FROM_DICT_MAP
+        )
+        self.status = (
+            ProjectDuplicationStatus(kwargs.get('status'))
+            if kwargs.get('status')
+            else None
+        )
+        self.progress = kwargs.get('progress', 0)
+        self.message = kwargs.get('message', '')
+        self.settings = (
+            DuplicationConfig.from_dict(kwargs.get('settings'))
+            if kwargs.get('settings')
+            else None
+        )
+
+    @classmethod
+    def from_dict(
+        cls,
+        source: dict,
+        connection: 'Connection | None' = None,
+        with_missing_value: bool = False,
+    ):
+        return super().from_dict(
+            source=source,
+            connection=connection,
+            with_missing_value=with_missing_value,
+        )
+
+    def cancel(self) -> bool:
+        """Cancel the project duplication job.
+
+        Returns:
+            bool: True if the cancellation was successful, False otherwise.
+        """
+        body = {"status": "cancelled"}
+        response = projects.cancel_project_duplication(self.connection, self.id, body)
+        if response.status_code == 204:
+            if config.verbose:
+                logger.info(
+                    f"Project duplication with ID '{self.id}' cancelled successfully."
+                )
+            return True
+        else:
+            if config.verbose:
+                logger.error(
+                    f"Failed to cancel project duplication with ID '{self.id}'."
+                )
+            return False
+
+    def __repr__(self) -> str:
+        return (
+            f"{self.__class__.__name__}(id='{self.id}', "
+            f"progress={self.progress}, "
+            f"source_project='{self.source.project.get('name')}', "
+            f"target_project='{self.target.project.get('name')}')"
+        )
+
+    def wait_for_stable_status(
+        self, timeout: int = 240, interval: int = 2
+    ) -> 'ProjectDuplication':
+        """Wait for the project duplication to reach a stable status.
+
+        Args:
+            timeout (int, optional): Maximum time to wait in seconds.
+            interval (int, optional): Time between status checks in seconds.
+
+        Returns:
+            ProjectDuplication: The project duplication object with updated
+                status.
+        """
+        not_stable_statuses = [
+            ProjectDuplicationStatus.CANCELLING,
+            ProjectDuplicationStatus.EXPORTING,
+            ProjectDuplicationStatus.EXPORT_SYNCING,
+            ProjectDuplicationStatus.IMPORTING,
+            ProjectDuplicationStatus.IMPORT_SYNCING,
+        ]
+        return helper.wait_for_stable_status(
+            self, 'status', not_stable_statuses, timeout=timeout, interval=interval
+        )

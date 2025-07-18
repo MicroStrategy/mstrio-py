@@ -15,12 +15,17 @@ from .license import (
 )
 from .node import Node
 from .project import (
+    DuplicationConfig,
     IdleMode,
     Project,
+    ProjectDuplication,
+    ProjectDuplicationStatus,
+    ProjectInfo,
     ProjectSettings,
     ProjectStatus,
     compare_project_settings,
     list_projects,
+    list_projects_duplications,
 )
 from .server import ServerSettings
 

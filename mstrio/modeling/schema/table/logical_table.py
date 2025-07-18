@@ -120,7 +120,7 @@ def list_logical_tables(
             logical_tables = [
                 remove_physical_table(table)
                 for table in logical_tables
-                if table.get("physical_table").get("type") == table_type
+                if table.get("physical_table", {}).get("type") == table_type
             ]
             logical_tables = logical_tables[:limit] if limit else logical_tables
         else:
