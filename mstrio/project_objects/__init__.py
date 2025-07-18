@@ -1,10 +1,9 @@
 # flake8: noqa
+# this order of imports is important to avoid circular imports
 from .bots import Bot, list_bots
 from .content_cache import ContentCache
 from .content_group import ContentGroup, list_content_groups
 from .datasets import *
-
-
 from .document import Document, list_documents, list_documents_across_projects
 from .dashboard import (
     ChapterPage,

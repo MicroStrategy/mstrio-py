@@ -15,7 +15,7 @@ from mstrio.datasources.datasource_instance import (
 from mstrio.modeling.schema import ObjectSubType, SchemaObjectReference
 from mstrio.modeling.schema.helpers import TableColumn, TableColumnMergeOption
 from mstrio.modeling.schema.table.logical_table import LogicalTable, list_logical_tables
-from mstrio.utils.helper import Dictable, fetch_objects
+from mstrio.utils.helper import Dictable, fetch_objects, get_response_json
 from mstrio.utils.sessions import FuturesSessionWithRenewal
 from mstrio.utils.version_helper import method_version_handler
 
@@ -595,9 +595,9 @@ class WarehouseTable(Dictable):
             list[dict]: A list of namespaces retrieved from the future.
         """
         resp = future.result()
-        data = resp.json()
+        data = get_response_json(resp, throw_error=False)
         if isinstance(data, dict):
-            return data.get("namespaces")
+            return data.get("namespaces", [])
         return []
 
     @staticmethod
@@ -617,7 +617,7 @@ class WarehouseTable(Dictable):
         """
         warehouse_tables = []
         resp = future.result()
-        tables = resp.json().get("tables")
+        tables = get_response_json(resp).get("tables")
         if tables:
             for table in tables:
                 table["connection"] = session.connection

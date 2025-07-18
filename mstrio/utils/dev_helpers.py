@@ -1,9 +1,8 @@
 import inspect
 import logging
-
 from collections import defaultdict
+from collections.abc import Callable
 from pprint import pformat
-from typing import Callable
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +74,7 @@ def what_can_i_do_with(source) -> None:
                     'You can access a value stored under any of those via: '
                     '`<some_var>.<property>`',
                 )
-                logger.info((kinds['property']))
+                logger.info(kinds['property'])
                 del kinds['property']
 
             if 'method' in kinds:
@@ -86,7 +85,7 @@ def what_can_i_do_with(source) -> None:
                     '`what_can_i_do_with(<some_var>.<method>)` '
                     '(<method> without brackets!).',
                 )
-                logger.info((kinds['method']))
+                logger.info(kinds['method'])
                 del kinds['method']
 
             if 'class method' in kinds:
@@ -97,7 +96,7 @@ def what_can_i_do_with(source) -> None:
                     'You can call them like any method above, or using: \n'
                     f'  {cls_name}.<class_method>(<instance>, *<args>)',
                 )
-                logger.info((kinds['class method']))
+                logger.info(kinds['class method'])
                 del kinds['class method']
 
             if 'static method' in kinds:
@@ -109,7 +108,7 @@ def what_can_i_do_with(source) -> None:
                     f'`what_can_i_do_with({cls_name}.<static_method>)` '
                     '(<static_method> without brackets!).',
                 )
-                logger.info((kinds['static method']))
+                logger.info(kinds['static method'])
                 del kinds['static method']
 
             if kinds:

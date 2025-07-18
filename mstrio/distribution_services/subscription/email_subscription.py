@@ -84,7 +84,7 @@ class EmailSubscription(Subscription):
                 Schedules IDs or Schedule objects,
             contents (Content | list[Content], optional): The content settings.
             recipients (list[str] | list[dict], optional): list of recipients
-                IDs or dicts,
+                IDs or dicts (for example users ids or usergroups ids),
             delivery_expiration_date (str, optional): expiration date of the
                 subscription, format should be yyyy - MM - dd,
             delivery_expiration_timezone (str, optional): expiration timezone

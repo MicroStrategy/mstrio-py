@@ -7,7 +7,7 @@ ease its usage.
 """
 from mstrio.connection import get_connection
 from mstrio.datasources import DatasourceInstance
-from mstrio.server import Environment, Project, compare_project_settings
+from mstrio.server import DuplicationConfig, Environment, Project, compare_project_settings, list_languages
 from mstrio.server.project import LockType
 from mstrio.server.setting_types import FailedEmailDelivery
 
@@ -52,6 +52,30 @@ project.unlock(lock_type=LockType.TEMPORAL_INDIVIDUAL, force=True)
 
 # get settings of a project as a dataframe
 project_settings_df = project.settings.to_dataframe()
+
+# duplicate a project by default
+DUPLICATION_NAME = $duplication_name  # Insert name of duplicated project
+project.duplicate(target_name=DUPLICATION_NAME)
+
+# duplicate the project with no default settings
+# list languages to select from in duplication settings
+langs = list_languages(conn)
+
+selected_langs = langs[:5]  # Select first 5 languages for duplication
+selected_default_project_lang = langs[0].lcid  # Select first language as default locale
+
+# Define not default duplication settings
+duplication_config= DuplicationConfig(schema_objects_only=False,
+                                      skip_empty_profile_folders=False,
+                                      include_user_subscriptions=False,
+                                      include_contact_subscriptions=False,
+                                      import_description="test duplication with languages",
+                                      import_default_locale=selected_default_project_lang,
+                                      import_locales=[lang.lcid for lang in selected_langs])
+
+# perform duplication
+project.duplicate(target_name=(DUPLICATION_NAME + '_non_default'),
+                  duplication_config= duplication_config)
 
 # Define variables which can be later used in a script
 PROJECT_DESCRIPTION = $project_description  # Insert description of newly created project
