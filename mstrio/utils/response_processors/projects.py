@@ -95,3 +95,37 @@ def get_project_lock(connection: Connection, id: str):
             connection=connection, id=id
         ).json()
     }
+
+
+def get_project_duplications(connection: Connection, limit: int | None) -> list:
+    """Get project duplications."""
+    limit_per_call = 1000
+    offset = 0
+    duplications = []
+
+    while True:
+        batch_limit = (
+            min(limit_per_call, limit - len(duplications))
+            if limit is not None
+            else limit_per_call
+        )
+        new_duplications = (
+            projects_api.get_project_duplications(
+                connection=connection,
+                limit=batch_limit,
+                offset=offset,
+            )
+            .json()
+            .get('duplications', [])
+        )
+        if len(new_duplications) == 0:
+            break
+        duplications.extend(new_duplications)
+        offset += len(new_duplications)
+        if limit is not None and len(duplications) >= limit:
+            duplications = duplications[:limit]
+            break
+        if len(new_duplications) < batch_limit:
+            break
+
+    return duplications

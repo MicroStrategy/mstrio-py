@@ -33,6 +33,7 @@ from mstrio.utils.enum_helper import AutoUpperName
 from mstrio.utils.helper import (
     get_args_from_func,
     get_default_args_from_func,
+    get_response_json,
     get_valid_project_id,
 )
 from mstrio.utils.response_processors import subscriptions as subscriptions_processors
@@ -797,7 +798,7 @@ class Subscription(EntityBase):
             c_id: str,
             c_type: str,
         ) -> bool:
-            prompts = get_prompts_func().json()
+            prompts = get_response_json(get_prompts_func())
             if any(prompt.get('required') for prompt in prompts):
                 if not inst_id:
                     err_msg = (
@@ -810,7 +811,7 @@ class Subscription(EntityBase):
                     )
                     raise ValueError(err_msg)
 
-                status = get_status_func().json().get('status')
+                status = get_response_json(get_status_func()).get('status')
                 if status == 2:
                     err_msg = (
                         f"{c_type.capitalize()}.instance_id: {inst_id} "
@@ -1108,12 +1109,12 @@ class Subscription(EntityBase):
 
         body = helper.delete_none_values(body, recursion=True)
         response = subscriptions.create_subscription(connection, project_id, body)
+        unpacked_response = response.json()
         if config.verbose:
-            unpacked_response = response.json()
             logger.info(
                 f"Created subscription '{name}' with ID: '{unpacked_response['id']}'."
             )
-        return cls.from_dict(response.json(), connection, project_id)
+        return cls.from_dict(unpacked_response, connection, project_id)
 
     @staticmethod
     def _validate_recipients(

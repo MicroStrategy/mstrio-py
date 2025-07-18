@@ -204,6 +204,17 @@ print(my_obj_mig.validation)
 # Migrate to target environment
 my_obj_mig.migrate(target_env=conn_target, target_project_name=TARGET_PROJECT_NAME)
 
+# Get migration object on target environment
+my_obj_mig_target = Migration(conn_target, id=my_obj_mig.id)
+
+# Waiting for migration to finish
+while my_obj_mig_target.import_info.status in [ImportStatus.IMPORTING, ImportStatus.PENDING]:
+    sleep(2)
+    my_obj_mig_target.fetch()
+
+# Print final ImportStatus here
+print(my_obj_mig_target.import_info.status)
+
 REUSE_TARGET_PROJECT_NAME = $reuse_target_project_name
 my_obj_mig.reuse(target_env=conn_target, target_project_name=REUSE_TARGET_PROJECT_NAME)
 

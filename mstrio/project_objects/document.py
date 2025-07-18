@@ -5,18 +5,15 @@ from typing import TYPE_CHECKING
 from pandas import DataFrame, concat
 
 from mstrio import config
-from mstrio.api import documents, library, objects
-from mstrio.api.schedules import get_contents_schedule
+from mstrio.api import documents, library
 from mstrio.connection import Connection
-from mstrio.distribution_services.schedule import Schedule
-from mstrio.helpers import IServerError
 from mstrio.object_management import Folder, SearchPattern, search_operations
 from mstrio.project_objects import OlapCube, SuperCube
 from mstrio.project_objects.helpers import answer_prompts_helper
 from mstrio.project_objects.palette import Palette
 from mstrio.server.environment import Environment
 from mstrio.types import ObjectSubTypes
-from mstrio.users_and_groups import User, UserGroup, UserOrGroup
+from mstrio.users_and_groups import User
 from mstrio.utils import helper
 from mstrio.utils.cache import CacheSource, ContentCacheMixin
 from mstrio.utils.certified_info import CertifiedInfo
@@ -34,6 +31,7 @@ from mstrio.utils.helper import (
     get_valid_project_id,
     is_document,
 )
+from mstrio.utils.library import LibraryMixin
 from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.version_helper import method_version_handler
 
@@ -41,9 +39,6 @@ if TYPE_CHECKING:
     from mstrio.project_objects.prompt import Prompt
 
 logger = logging.getLogger(__name__)
-
-REPORT_PROPERTIES_PROPERTY_SET_ID = "70A27C6E239911D5BF2200B0D02A21E0"
-ALLOW_HTML_EXECUTION_PROPERTY_INDEX = 12
 
 
 def list_documents(
@@ -164,6 +159,7 @@ class Document(
     MoveMixin,
     DeleteMixin,
     ContentCacheMixin,
+    LibraryMixin,
 ):
     """Python representation of Strategy One Document object
 
@@ -218,7 +214,6 @@ class Document(
         super()._init_variables(default_value=default_value, **kwargs)
         self._instance_id = ""
         self._recipients = kwargs.get('recipients', default_value)
-        self._project_id = self.connection.project_id
         self._template_info = kwargs.get('templateInfo', default_value)
         self._folder_id = None
 
@@ -283,156 +278,6 @@ class Document(
         self._alter_properties(**properties)
         if folder_id:
             self._folder_id = folder_id
-
-    def __validate_user(self, recipient_id: str) -> str | None:
-        try:
-            User(self.connection, id=recipient_id)
-        except IServerError:
-            if config.verbose:
-                logger.info(f'{recipient_id} is not a valid value for User ID')
-            return None
-        return recipient_id
-
-    def publish(self, recipients: UserOrGroup | list[UserOrGroup] | None = None):
-        """Publish the document for authenticated user. If `recipients`
-        parameter is specified publishes the document for the given users.
-
-        Args:
-            recipients(UserOrGroup | list[UserOrGroup], optional): list of users
-                or user groups to publish the document to (can be a list of IDs
-                or a list of User and UserGroup elements)
-        """
-        if not isinstance(recipients, list) and recipients is not None:
-            recipients = [recipients]
-
-        if recipients is None:
-            recipients = [self.connection.user_id]
-        elif all(isinstance(el, User) for el in recipients):
-            recipients = [recipient.id for recipient in recipients]
-        elif all(isinstance(el, UserGroup) for el in recipients):
-            users = [user for group in recipients for user in group.members]
-            recipients = [user.id for user in users]
-        elif any(not isinstance(el, str) for el in recipients):
-            raise ValueError(
-                'Please provide either list of User, UserGroup or str elements.'
-            )
-        for recipient in recipients:
-            if not self.__validate_user(recipient):
-                recipients.remove(recipient)  # noqa B038
-        body = {'id': self.id, 'recipients': recipients}
-        library.publish_document(self.connection, body)
-        self.fetch(attr='recipients')
-
-    def unpublish(self, recipients: UserOrGroup | list[UserOrGroup] | None = None):
-        """Unpublish the document for all users it was previously published to.
-        If `recipients` parameter is specified unpublishes the document for the
-        given users.
-
-        Args:
-            recipients(UserOrGroup | list[UserOrGroup], optional): list of users
-                or user groups to publish the document to (can be a list of IDs
-                or a list of User and UserGroup elements)
-        """
-
-        if recipients is None:
-            library.unpublish_document(self.connection, id=self.id)
-        else:
-            if not isinstance(recipients, list):
-                recipients = [recipients]
-            if all(isinstance(el, User) for el in recipients):
-                recipients = [recipient.id for recipient in recipients]
-            elif all(isinstance(el, UserGroup) for el in recipients):
-                users = [user for group in recipients for user in group.members]
-                recipients = [user.id for user in users]
-            elif any(not isinstance(el, str) for el in recipients):
-                raise ValueError(
-                    'Please provide either list User and UserGroup elements or str '
-                    'elements.'
-                )
-            for user_id in recipients:
-                if self.__validate_user(user_id):
-                    library.unpublish_document_for_user(
-                        self.connection, document_id=self.id, user_id=user_id
-                    )
-        self.fetch(attr='recipients')
-
-    @method_version_handler('11.3.0600')
-    def list_available_schedules(
-        self, to_dictionary: bool = False
-    ) -> list["Schedule"] | list[dict]:
-        """Get a list of schedules available for the object instance.
-
-        Args:
-            to_dictionary (bool, optional): If True returns a list of
-                dictionaries, otherwise returns a list of Schedules.
-                False by default.
-
-        Returns:
-            List of Schedule objects or list of dictionaries.
-        """
-        schedules_list_response = (
-            get_contents_schedule(
-                connection=self.connection,
-                project_id=self.connection.project_id,
-                body={'id': self.id, 'type': 'document'},
-            ).json()
-        ).get('schedules')
-        if to_dictionary:
-            return schedules_list_response
-        else:
-            return [
-                Schedule.from_dict(connection=self.connection, source=schedule_id)
-                for schedule_id in schedules_list_response
-            ]
-
-    def share_to(self, users: UserOrGroup | list[UserOrGroup]):
-        """Shares the document to the listed users' libraries.
-
-        Args:
-            users(UserOrGroup | list[UserOrGroup]): list of users or user
-                groups to publish the document to (can be a list of IDs or a
-                list of User and UserGroup elements).
-        """
-        self.publish(users)
-
-    def is_html_js_execution_enabled(self) -> bool | None:
-        """Check whether HTML and JavaScript execution is enabled
-        for the document.
-        Returns:
-            bool: True if HTML and JavaScript execution is enabled,
-                False otherwise.
-        """
-        res = objects.get_property_set(
-            self.connection,
-            id=self.id,
-            obj_type=self._OBJECT_TYPE.value,
-            property_set_id=REPORT_PROPERTIES_PROPERTY_SET_ID,
-        ).json()
-        prop_in_list = [
-            prop for prop in res if prop['id'] == ALLOW_HTML_EXECUTION_PROPERTY_INDEX
-        ]
-        prop = bool(prop_in_list[0]['value']) if prop_in_list else None
-
-        return prop
-
-    def set_html_js_execution_enabled(self, enabled: bool) -> None:
-        """Enable or disable HTML and JavaScript execution for the document.
-
-        Args:
-            enabled (bool): True to enable HTML and JavaScript execution,
-                False to disable."""
-
-        body = [
-            {
-                "properties": [
-                    {"value": int(enabled), "id": ALLOW_HTML_EXECUTION_PROPERTY_INDEX}
-                ],
-                "id": REPORT_PROPERTIES_PROPERTY_SET_ID,
-            }
-        ]
-        objects.update_property_set(
-            self.connection, id=self.id, obj_type=self._OBJECT_TYPE.value, body=body
-        )
 
     @classmethod
     def _list_all(
@@ -548,7 +393,7 @@ class Document(
 
     @property
     def instance_id(self) -> str:
-        if self._instance_id == '':
+        if not self.get('_instance_id'):
             body = {"resolveOnly": True, "persistViewState": True}
             response = documents.create_new_document_instance(
                 connection=self.connection, document_id=self.id, body=body

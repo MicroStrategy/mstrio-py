@@ -13,6 +13,7 @@ from mstrio.utils.helper import (
     auto_match_args,
     delete_none_values,
     get_parallel_number,
+    get_response_json,
     response_handler,
 )
 from mstrio.utils.sessions import FuturesSessionWithRenewal
@@ -53,7 +54,7 @@ def unpack_information(func):
                 kwargs['body'].update(info)
 
         resp = func(*args, **kwargs)
-        response_json = resp.json()
+        response_json = get_response_json(resp)
 
         if response_json.get('information'):
             response_json.update(response_json.pop('information'))

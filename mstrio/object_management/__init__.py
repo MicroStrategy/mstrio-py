@@ -33,5 +33,5 @@ from .search_operations import (
     quick_search_from_object,
     start_full_search,
 )
-from .shortcut import list_shortcuts, Shortcut, ShortcutInfoFlags, get_shortcuts
+from .shortcut import Shortcut, ShortcutInfoFlags, get_shortcuts, list_shortcuts
 from .translation import Translation, list_translations

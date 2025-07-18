@@ -3,6 +3,7 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
 
 from mstrio import config
+from mstrio.utils.helper import get_response_json
 
 if TYPE_CHECKING:
     from mstrio.project_objects import Prompt
@@ -80,7 +81,7 @@ def answer_prompts_helper(
     Returns:
         bool: True if prompts were answered successfully, False otherwise.
     """
-    instance_status = get_status_func().json().get('status')
+    instance_status = get_response_json(get_status_func()).get('status')
 
     if instance_status != 2:
         if config.verbose:
@@ -94,7 +95,7 @@ def answer_prompts_helper(
     prompt_answers = [prompt.to_dict() for prompt in prompt_answers]
 
     while instance_status == 2:
-        prompted_instance = get_prompts_func().json()
+        prompted_instance = get_response_json(get_prompts_func())
 
         body = [
             {
@@ -110,7 +111,7 @@ def answer_prompts_helper(
 
         answer_prompts_func(body={'prompts': body})
 
-        instance_status = get_status_func().json().get('status')
+        instance_status = get_response_json(get_status_func()).get('status')
 
     if config.verbose:
         msg = f'Prompts for the instance with ID: {instance_id} have been answered.'

@@ -1,7 +1,7 @@
 from collections.abc import Callable
 
 from mstrio.api import monitors
-from mstrio.utils.helper import _prepare_objects, auto_match_args, response_handler
+from mstrio.utils.helper import _prepare_objects, auto_match_args, get_response_json
 from mstrio.utils.sessions import FuturesSessionWithRenewal
 
 
@@ -56,11 +56,11 @@ def all_nodes_async(
         objects = []
         for f in futures:
             response = f.result()
-            if not response.ok:
-                response_handler(response, error_msg, throw_error=False)
-            else:
-                obj = _prepare_objects(response.json(), filters, unpack_value)
+            res_json = get_response_json(response, msg=error_msg, throw_error=False)
+            if res_json:
+                obj = _prepare_objects(res_json, filters, unpack_value)
                 objects.extend(obj)
+
     if limit:
         objects = objects[:limit]
     return objects

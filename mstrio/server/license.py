@@ -1,14 +1,14 @@
 import csv
-import humps
 import json
 import logging
-import pandas as pd
-
 from dataclasses import dataclass
 from datetime import datetime
 from enum import auto
 from time import sleep
 from typing import TYPE_CHECKING
+
+import humps
+import pandas as pd
 
 from mstrio import config
 from mstrio.api import license as license_api
@@ -471,7 +471,7 @@ class License(Dictable):
             if not any(product.module == module for product in self.products):
                 raise ValueError(
                     f"Module '{module}' not found. Available modules: "
-                    f"{', '.join(set(product.module for product in self.products))}"
+                    f"{', '.join({product.module for product in self.products})}"
                 )
             products = [
                 product for product in self.products if product.module == module
@@ -1008,10 +1008,10 @@ class License(Dictable):
 
         try:
             if file_ext == 'json':
-                with open(file_path, 'r') as f:
+                with open(file_path) as f:
                     return json.load(f)
             if file_ext == 'csv':
-                with open(file_path, 'r', newline='') as f:
+                with open(file_path, newline='') as f:
                     reader = csv.DictReader(f)
                     data = next(reader)
                     for key, value in data.items():

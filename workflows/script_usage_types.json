@@ -34,5 +34,6 @@
     "disable_inactive_users.py": "Standard",
     "create_prompted_subscription.py": "Standard",
     "create_bursting_subscription.py": "Standard",
-    "compare_advanced_properties.py": "Standard"
+    "compare_advanced_properties.py": "Standard",
+    "duplicate_project.py": "Standard"
 }
