@@ -17,7 +17,7 @@ from mstrio.helpers import (
 from mstrio.server import Node, Project
 from mstrio.utils.entity import Entity, EntityBase
 from mstrio.utils.enum_helper import AutoName
-from mstrio.utils.helper import validate_param_value, exception_handler
+from mstrio.utils.helper import exception_handler, validate_param_value
 from mstrio.utils.monitors import all_nodes_async
 from mstrio.utils.time_helper import DatetimeFormats, map_str_to_datetime
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
@@ -102,7 +102,15 @@ class ObjectType(AutoName):
     REPORT = auto()
     CUBE = auto()
     DOCUMENT = auto()
-    DASHBOARD = 'dossier'
+    DASHBOARD = auto()
+
+    @classmethod
+    def _missing_(cls, value):
+        """Handle missing values in ObjectType enum."""
+        if value == 'dossier':
+            return cls.DASHBOARD
+        else:
+            return super()._missing_(value)
 
 
 class PUName(AutoName):
@@ -760,7 +768,7 @@ class Job(EntityBase):
         self._object_type = (
             ObjectType(kwargs.get('object_type')) if kwargs.get('object_type') else None
         )
-        self._object_name = kwargs.get('object_name', None)
+        self._object_name = kwargs.get('object_name')
         self._sql = kwargs.get('sql')
         self._subscription_owner = kwargs.get('subscription_owner')
         self._subscription_recipient = kwargs.get('subscription_recipient')

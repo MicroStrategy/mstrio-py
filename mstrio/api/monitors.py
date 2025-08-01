@@ -10,6 +10,7 @@ from mstrio.utils.error_handlers import ErrorHandler, bulk_operation_response_ha
 from mstrio.utils.helper import (
     delete_none_values,
     filter_list_of_dicts,
+    get_response_json,
     response_handler,
 )
 from mstrio.utils.sessions import FuturesSessionWithRenewal
@@ -644,10 +645,9 @@ def get_job(
         jobs = []
         for f in futures:
             response = f.result()
-            if not response.ok:
-                response_handler(response, error_msg, throw_error=False)
-            else:
-                jobs.extend(response.json()['jobs'])
+            res_json = get_response_json(response, msg=error_msg, throw_error=False)
+            if res_json and 'jobs' in res_json:
+                jobs.extend(res_json['jobs'])
 
     job = filter_list_of_dicts(jobs, id=id)
     if not job:

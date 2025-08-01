@@ -1,5 +1,47 @@
 # Changelog
 
+## 11.5.7.101 - 2025/07/18
+
+### New features
+
+- added `duplicate` method to `Project` class that allows duplicating projects on the same environment
+- added `ProjectDuplication`, `ProjectDuplicationStatus`, `DuplicationConfig`, `ProjectInfo` classes and `list_projects_duplications` function in mstrio.server.project to support project duplication process
+- added `LibraryShortcut` class and `list_library_shortcuts` method in `Library` class to manage items as published to the user's Library
+- added `get_library_shortcut` method in `Document`, `Dashboard` and `Bot` to manage published items
+
+### Minor changes
+
+- added Library-related methods to `Bot` class
+- added code snippet `logging.py` to show how to add custom logging inside custom scripts
+- updated `publish()` to use User Groups as a whole instead of each user separately
+- updated `unpublish()` to enable unpublishing for User Groups
+
+### Bug fixes
+
+- fixed the `execute()` method for Subscription classes failing with multiple contents
+- fixed `Document` class initialization incorrectly overwriting `project_id` with a one from `Connection` object
+- fixed `list_bots` skipping Bots 2.0 and Universal Bots
+
+## 11.5.6.101 - 2025/06/20
+
+### Setup
+
+- connections done through class `Connection` are now being identified by their own application type 76 "DssXmlApplicationPython"
+
+### Minor changes
+
+- added `working_set` and `max_search` optional parameters when creating `Connection` object
+- added `get_api_token` method to `User` class to allow creating API Token by administrator for the user
+- added filtering arguments in `list_shortcuts`
+- added `invalidate` and bulk `invalidate_caches` methods for content cache management
+
+### Bug fixes
+
+- fixed `UserGroup.remove_all_users()` not working with empty User Groups
+- fixed the issue with `ContentCache.list_caches()` not working when caches in the 'binary_definition, binary_data' format exist
+- fixed Metric retrieval failing if series formatting is set
+- fixed invalid `ScheduleEnums.YearlyPattern` enum throwing error for yearly schedule
+
 ## 11.5.5.101 - 2025/05/23
 
 ### New features

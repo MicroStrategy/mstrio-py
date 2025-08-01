@@ -31,12 +31,17 @@ def login(connection: 'Connection') -> 'Response':
     """
 
     ENDPOINT = '/api/auth/login'
-    APPLICATION_TYPE = 35
 
     auth_data = {
         'loginMode': connection.login_mode,
-        'applicationType': APPLICATION_TYPE,
+        'applicationType': connection._application_type,
     }
+
+    if work_set := connection.working_set:
+        auth_data['workingSet'] = work_set
+
+    if (max_search := connection.max_search) is not None:
+        auth_data['maxSearch'] = max_search
 
     if app_id := connection.application_id:
         auth_data['applicationId'] = app_id
@@ -60,7 +65,7 @@ def login(connection: 'Connection') -> 'Response':
 
 
 @ErrorHandler(err_msg="Failed to logout.")
-def logout(connection, error_msg=None, whitelist=None):
+def logout(connection: 'Connection', error_msg=None, whitelist=None) -> 'Response':
     """Close all existing sessions for the authenticated user.
 
     Args:
@@ -76,7 +81,7 @@ def logout(connection, error_msg=None, whitelist=None):
     )
 
 
-def session_renew(connection):
+def session_renew(connection: 'Connection') -> 'Response':
     """Extends the HTTP and Intelligence Server sessions by resetting the
     timeouts.
 
@@ -94,7 +99,7 @@ def session_renew(connection):
     )
 
 
-def session_status(connection):
+def session_status(connection: 'Connection') -> 'Response':
     """Checks Intelligence Server session status.
 
     Args:
@@ -111,7 +116,7 @@ def session_status(connection):
 
 
 @ErrorHandler(err_msg="Could not get identity token.")
-def identity_token(connection):
+def identity_token(connection: 'Connection') -> 'Response':
     """Create a new identity token.
 
     An identity token is used to share an existing session with another
@@ -130,23 +135,34 @@ def identity_token(connection):
 
 
 @ErrorHandler(err_msg="Could not get API token.")
-def api_token(connection):
+def api_token(
+    connection: 'Connection', target_user_id: str | None = None
+) -> 'Response':
     """Create a new API token.
 
     An API token is used to authenticate a user via login mode 4096.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy One REST API connection object.
+        target_user_id: User id of the user for whom the API token
+            is to be created. When omitted, token is for `connection`'s user.
 
     Returns:
         Complete HTTP response object.
     """
+    kwargs = {}
+    if target_user_id:
+        kwargs['json'] = {'userId': target_user_id}
+
     return connection.post(
         endpoint='/api/auth/apiTokens',
+        **kwargs,
     )
 
 
-def validate_identity_token(connection, identity_token):
+def validate_identity_token(
+    connection: 'Connection', identity_token: str
+) -> 'Response':
     """Validate an identity token.
 
     Args:
@@ -166,7 +182,9 @@ def validate_identity_token(connection, identity_token):
     err_msg="Error creating a new Web server session that shares an existing IServer "
     "session."
 )
-def delegate(connection, identity_token, whitelist=None):
+def delegate(
+    connection: 'Connection', identity_token: str, whitelist=None
+) -> 'Response':
     """Returns authentication token and cookies from given X-MSTR-
     IdentityToken.
 
@@ -186,7 +204,7 @@ def delegate(connection, identity_token, whitelist=None):
 
 
 @ErrorHandler(err_msg="Error getting privileges list.")
-def user_privileges(connection):
+def user_privileges(connection: 'Connection') -> 'Response':
     """Get the list of privileges for the authenticated user.
 
     The response includes the name, ID, and description of each
@@ -202,7 +220,9 @@ def user_privileges(connection):
 
 
 @ErrorHandler(err_msg="Error getting info for authenticated user.")
-def get_info_for_authenticated_user(connection, error_msg=None):
+def get_info_for_authenticated_user(
+    connection: 'Connection', error_msg=None
+) -> 'Response':
     """Get information for the authenticated user.
 
     Args:

@@ -4,6 +4,7 @@ from collections.abc import Callable
 from functools import wraps
 from typing import Any
 
+from requests import JSONDecodeError
 from requests.adapters import Response
 
 from mstrio import config
@@ -52,17 +53,36 @@ class ErrorHandler:
         @wraps(func)
         def inner(*args, **kwargs):
             response = func(*args, **kwargs)
-            error_msg = (
-                kwargs.get("error_msg") if kwargs.get("error_msg") else self._err_msg
-            )
+            error_msg = kwargs.get("error_msg") or self._err_msg
             if isinstance(response, list):
+                # Handle list of responses
                 handler_kwargs = self._get_resp_handler_kwargs(kwargs)
                 error_msg = self._replace_with_values(error_msg, func, *args, **kwargs)
+                # Remove 'msg' from handler_kwargs to avoid conflict
+                handler_kwargs.pop('msg', None)
                 response_list_handler(response, error_msg, **handler_kwargs)
-            elif not response.ok:
-                handler_kwargs = self._get_resp_handler_kwargs(kwargs)
-                error_msg = self._replace_with_values(error_msg, func, *args, **kwargs)
-                response_handler(response, error_msg, **handler_kwargs)
+            else:
+                # Handle single response with improved JSON handling
+                res_json: dict | None = None
+
+                try:
+                    # it's possible for `response.ok` to be True and
+                    # `response.json()` to fail so we need to handle it
+                    # via `response_handler`
+                    res_json = response.json()
+                except JSONDecodeError:
+                    if response.ok and (
+                        response.status_code == 204 or response.request.method == 'HEAD'
+                    ):
+                        # 204 No Content or HEAD request: both are valid
+                        res_json = {}
+
+                if not response.ok or res_json is None:
+                    handler_kwargs = self._get_resp_handler_kwargs(kwargs)
+                    handler_kwargs['msg'] = self._replace_with_values(
+                        error_msg, func, *args, **kwargs
+                    )
+                    response_handler(response, **handler_kwargs)
             return response
 
         return inner

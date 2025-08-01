@@ -12,6 +12,8 @@ from datetime import datetime
 from enum import Enum
 from functools import reduce, wraps
 from json.decoder import JSONDecodeError
+from pprint import pformat
+from time import sleep
 from typing import TYPE_CHECKING, Any, TypeVar
 
 import humps
@@ -43,6 +45,7 @@ if TYPE_CHECKING:
     from mstrio.project_objects.datasets import OlapCube, SuperCube
     from mstrio.server import Project
     from mstrio.types import ObjectTypes  # noqa: F401
+    from mstrio.utils.entity import EntityBase
 
 logger = logging.getLogger(__name__)
 
@@ -231,7 +234,7 @@ def response_list_handler(responses, msg, throw_error=True, verbose=True, whitel
 
 def response_handler(
     response: 'Response',
-    msg: str,
+    msg: str | None = None,
     throw_error: bool = True,
     verbose: bool = True,
     whitelist: list | None = None,
@@ -240,26 +243,41 @@ def response_handler(
 
     Args:
         response: Response object returned by HTTP request.
-        msg (str): Message to print in addition to any server-generated error
-            message(s)
-        throw_error (bool): Flag indicates if the error should be thrown
+        msg (str, optional): Message to print in addition to any
+            server-generated error message(s).
+        throw_error (bool, optional): Flag indicates if the error should
+            be thrown (defaults to True).
         verbose (bool, optional): controls if messages/errors will be printed
-        whitelist(list): list of tuples of I-Server Error and HTTP errors codes
-            respectively, which will not be handled
+            (defaults to True).
+        whitelist(list, optional): list of tuples of I-Server Error and
+            HTTP errors codes respectively, which will not be handled
+            (defaults to None).
             i.e. whitelist = [('ERR001', 500),('ERR004', 404)]
     """
     whitelist = whitelist or []
 
     try:
         logger.debug(f"{response} url = '{response.url}'")
-        logger.debug(f"headers = {response.headers}")
+        logger.debug(f"headers = {pformat(response.headers)}")
         logger.debug(f"content = {response.text}")
-        res = response.json()
+
+        if response.ok and (
+            response.status_code == 204 or response.request.method == 'HEAD'
+        ):
+            # 204 No Content or HEAD request: both are valid
+            return
+
+        res: dict | list = response.json()
+
+        if response.ok:
+            return
 
         if res.get('errors') is not None:
             res = res.get('errors')
             if len(res) > 0:
                 res = res[0]
+            else:
+                res = {}
 
         server_code = res.get('code')
         server_msg = res.get('message')
@@ -290,11 +308,11 @@ def response_handler(
                 )
             if verbose:
                 logger.error(
-                    f'{msg}\n'
-                    f'I-Server Error {server_code}, {server_msg}\n'
+                    (f'{msg}\n' if msg else '')
+                    + f'I-Server Error {server_code}, {server_msg}\n'
                     f'Ticket ID: {ticket_id}'
                 )
-            if throw_error:
+            if throw_error and server_code:
                 raise IServerError(
                     message=(
                         f"{server_msg}; code: '{server_code}', ticket_id: '{ticket_id}'"
@@ -306,13 +324,48 @@ def response_handler(
 
         if verbose:
             logger.error(
-                f"{msg}\n"
-                f"Could not decode the response from the I-Server. Please check if "
-                f"I-Server is running correctly"
+                (f"{msg}\n" if msg else '')
+                + "Could not decode the response from the I-Server. Please check if "
+                "I-Server is running correctly"
             )
             # raise error if I-Server response cannot be decoded
             if throw_error:
                 response.raise_for_status()
+
+
+def get_response_json(response, /, **kwargs):
+    """Get JSON from response object(s) in a safe, error-handled way.
+
+    Under the hood, it uses `response_handler` to handle errors but returns
+    simply `response.json()` if the response is OK.
+
+    Args:
+        response: Response object or list of Response objects returned by HTTP request.
+        **kwargs: Additional arguments to pass to `response_handler`.
+
+    Returns:
+        dict or list[dict]: Parsed JSON from the response(s).
+    """
+    if isinstance(response, list):
+        # Handle list of responses
+        result = []
+        for resp in response:
+            if not resp.ok:
+                response_handler(resp, **kwargs)
+                # if `response_handler` does not raise an error, it means
+                # we want to fall through and return the JSON,
+                # even if the response is not OK.
+            result.append(resp.json())
+        return result
+    else:
+        # Handle single response
+        if not response.ok:
+            response_handler(response, **kwargs)
+            # if `response_handler` does not raise an error, it means
+            # we want to fall through and return the JSON,
+            # even if the response is not OK.
+
+        return response.json()
 
 
 def fallback_on_timeout(min_limit: int = 50):
@@ -1404,3 +1457,35 @@ def deduplicated_name(name: str, existing_names: list[str]) -> str:
         i += 1
 
     return f"{name} ({i})"
+
+
+def wait_for_stable_status(
+    obj: 'EntityBase',
+    property: str,
+    not_stable_val: list,
+    timeout: int = 240,
+    interval: int = 1,
+) -> bool:
+    """Wait for a specific property of an object to reach a stable state.
+
+    Args:
+        obj (EntityBase): The object to monitor.
+        property (str): The property to check.
+        not_stable_val (list): List of values that indicate the property is not
+            stable.
+        timeout (int, optional): Maximum time to wait in seconds.
+            Defaults to 240.
+        interval (int, optional): Time between checks in seconds.
+            Defaults to 1.
+
+    Returns:
+        bool: True if stable state is reached False otherwise.
+    """
+    start_time = datetime.now()
+    while (getattr(obj, property) in not_stable_val) and (
+        (datetime.now() - start_time).total_seconds() < timeout
+    ):
+        obj.fetch()
+        sleep(interval)
+
+    return getattr(obj, property) not in not_stable_val

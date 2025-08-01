@@ -1021,6 +1021,16 @@
       "multiple": false
     }
   },
+  "library.py": {
+    "project_name": {
+      "type": "text",
+      "multiple": false
+    },
+    "dashboard_id": {
+      "type": "text",
+      "multiple": false
+    }
+  },
   "license_mgmt.py": {
     "new_license_key": {
       "type": "secret",
@@ -1087,6 +1097,7 @@
       "multiple": false
     }
   },
+  "logging.py": {},
   "metrics.py": {
     "project_name": {
       "type": "text",
@@ -1287,6 +1298,10 @@
       "multiple": false
     },
     "project_description": {
+      "type": "text",
+      "multiple": false
+    },
+    "duplication_name": {
       "type": "text",
       "multiple": false
     },
@@ -2089,6 +2104,10 @@
       "multiple": false
     },
     "other_cache_id": {
+      "type": "text",
+      "multiple": false
+    },
+    "wh_table_used_id": {
       "type": "text",
       "multiple": false
     }

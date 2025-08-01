@@ -1,4 +1,5 @@
 import json
+from collections.abc import Callable
 from datetime import datetime
 from enum import Enum
 from functools import wraps
@@ -241,19 +242,24 @@ def override_datetime_format(
             probably they need to be unpacked
     """
 
-    def decorator_datetime(func):
+    def decorator_datetime(func: Callable):
+        from mstrio.utils.helper import get_response_json
+
         @wraps(func)
         def wrapped(*args, **kwargs):
             response = func(*args, **kwargs)
-            response_json = response.json()
+            response_json = get_response_json(response)
+
             try:
                 iterable = response_json[to_unpack] if to_unpack else [response_json]
             except KeyError:
                 iterable = []
+
             for obj in iterable:
                 for field in fields:
                     datetime_obj = str_to_datetime(obj[field], original_format)
                     obj[field] = datetime_to_str(datetime_obj, expected_format)
+
             response.encoding, response._content = 'utf-8', json.dumps(
                 response_json
             ).encode('utf-8')

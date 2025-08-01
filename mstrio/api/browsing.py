@@ -355,6 +355,8 @@ def get_shortcut(
         response_json = response.json()
         if len(response_json) > 0:
             response_json = response_json[0]
+        else:
+            raise ValueError('Shortcut not found.')
         response.encoding, response._content = 'utf-8', json.dumps(
             response_json
         ).encode('utf-8')

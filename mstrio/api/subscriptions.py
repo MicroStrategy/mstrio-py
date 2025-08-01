@@ -508,7 +508,7 @@ def send_subscription(
         HTTP response object returned by the Strategy One REST server
     """
     return connection.post(
-        endpoint=f'/api/subscriptions/{subscription_id}/send',
+        endpoint=f'/api/v2/subscriptions/{subscription_id}/send',
         params={'fields': fields},
         headers={'X-MSTR-ProjectID': project_id},
     )

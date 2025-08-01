@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling >= 1.14.0", "hatch-requirements-txt"]
+requires = ["hatchling >= 1.26.0", "hatch-requirements-txt"]
 build-backend = "hatchling.build"
 
 [tool.hatch.version]
@@ -25,7 +25,8 @@ name = "ni-mstrio-py"
 description = "NI-customized Python interface for the MicroStrategy REST API"
 authors = [{ name = "NI", email = "robert.szarvas@emerson.com" }]
 requires-python = ">=3.10,<3.14"
-license = { text = "Apache License 2.0" }
+license = "LicenseRef-Proprietary"
+license-files = ["LICENSE"]
 readme = "README.md"
 dynamic = ["version"]
 
@@ -47,15 +48,15 @@ classifiers = [
     "Topic :: Software Development",
 ]
 
-# when changing this section, make sure to update `[strict]` deps below
+# FYI: when changing this section, make sure to update `[strict]` deps below
 dependencies = [
-    "packaging >= 23",
+    "packaging >= 24.2",
     # FYI: <https://github.com/pandas-dev/pandas/blob/fa5c2550e81c3e745eb7948b56adac45454853d5/pyproject.toml#L60>
     "pandas[output-formatting,pyarrow] >= 1.1.5",
     "pyhumps >= 3.8",
     "pypika >= 0.48.9",
     "requests >= 2.32.3",
-    "requests-futures >= 1.0.0",
+    "requests-futures >= 1",
     "stringcase >= 1.2",
     "tqdm >= 4.66.4",
 ]
@@ -68,7 +69,7 @@ dependencies = [
 strict = [
     "jinja2 >= 3.1.5",
     "numpy >= 2",
-    "packaging >= 24",
+    "packaging >= 24.2",
     "pandas[output-formatting,pyarrow] >= 2",
     "pyarrow >= 19",
     "pyhumps >= 3.8",
@@ -80,23 +81,51 @@ strict = [
     "tqdm >= 4.66.4",
     "urllib3 >= 2",
 ]
+
+# FYI: do not apply versioning to any dev-deps here - add them in `dev_constraints.txt`
+# subsets of deps: mainly for `tox` deps use
+config = [
+    "pipdeptree",
+]
+docs = [
+    "enum-tools[sphinx]",
+    "m2r2",
+    "mistune",
+    "recommonmark",
+    "Sphinx",
+]
+jupyter = [
+    "notebook",
+]
+lint = [
+    "black",
+    "flake8",
+    "flake8-black",
+    "yapf",
+]
+pre-commit = [
+    "codespell",
+    "isort",
+    "pre-commit",
+]
+test = [
+    "coverage",
+    "flaky",
+    "nose",
+    "pytest",
+    "pytest-cov",
+    "python-decouple",
+]
+
+# templates of deps: mainly for actual development
 dev = [
-    "flake8 == 7.0.0",
-    "mypy == 1.10.0",
-    "yapf == 0.40.2",
-    "nose == 1.3.7",
-    "coverage == 7.3.4",
-    "pytest == 8.2.0",
-    "pytest-cov == 4.1.0",
-    "python-dotenv[cli] == 1.0.1",
-    "isort == 5.13.2",
-    "pre-commit == 3.7.1",
-    "flaky == 3.8.1",
-    "python-decouple == 3.8",
-    "notebook == 6.5.7",
-    "black == 24.4.2",
-    "flake8-black == 0.3.6",
-    "tox == 4.23.2",               # if you change this version, update Dockerfile as well
+    "mypy",
+    "python-dotenv[cli]",
+    "tox",
+    "mstrio-py[lint,pre-commit,test]",
+]
+all = [
+    "mstrio-py[config,docs,jupyter,lint,pre-commit,test,dev]",
 ]
 
 [project.urls]
@@ -128,7 +157,6 @@ exclude_lines = [
 ]
 omit = ["mstrio/api/*", "mstrio/utils/datasources.py"]
 show_missing = true
-
 
 [tool.black]
 target-version = ["py310"]

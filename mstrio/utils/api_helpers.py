@@ -13,6 +13,7 @@ from mstrio.utils.helper import (
     auto_match_args,
     delete_none_values,
     get_parallel_number,
+    get_response_json,
     response_handler,
 )
 from mstrio.utils.sessions import FuturesSessionWithRenewal
@@ -67,14 +68,15 @@ def unpack_information(func):
                 kwargs['body'].update(info)
 
         resp = func(*args, **kwargs)
+        response_json = get_response_json(resp)
 
         if isinstance(resp, list):
-            response_json = [process_response(item.json()) for item in resp]
+            response_json = [process_response(item_json) for item_json in response_json]
             resp = [item for item in resp]
             for i, item in enumerate(resp):
                 item.encoding, item._content = 'utf-8', dumps(response_json[i]).encode('utf-8')
         else:
-            response_json = process_response(resp.json())
+            response_json = process_response(response_json)
             resp.encoding, resp._content = 'utf-8', dumps(response_json).encode('utf-8')
         return resp
 

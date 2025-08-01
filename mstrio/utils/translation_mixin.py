@@ -1,6 +1,5 @@
 from typing import TYPE_CHECKING
 
-
 if TYPE_CHECKING:
     from mstrio.object_management.translation import Translation
     from mstrio.utils.entity import Entity

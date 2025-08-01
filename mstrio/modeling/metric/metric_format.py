@@ -154,6 +154,14 @@ class FormatProperty(Dictable):
         BACKGROUND_GRADIENT_ANGLE = auto()
         BACKGROUND_GRADIENT_X_OFFSET = auto()
         BACKGROUND_GRADIENT_Y_OFFSET = auto()
+        SERIES_FILL_STYLE = auto()
+        SERIES_FILL_COLOR = auto()
+        SERIES_GRADIENT_COLOR = auto()
+        SERIES_GRADIENT_ANGLE = auto()
+        SERIES_GRADIENT_X_OFFSET = auto()
+        SERIES_GRADIENT_Y_OFFSET = auto()
+        SERIES_PATTERN_STYLE = auto()
+        SERIES_PATTERN_COLOR = auto()
 
     Color = _Color
 

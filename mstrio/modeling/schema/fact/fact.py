@@ -120,7 +120,7 @@ class Fact(Entity, CopyMixin, DeleteMixin, MoveMixin):
         sub_type: string literal used to identify the type of a metadata object
         description: fact's description
         type: object type, `ObjectTypes` enum
-        subtype: object subtype, `ObjectSupTypes` enum
+        subtype: object subtype, `ObjectSubTypes` enum
         ext_type: object extended type, `ExtendedType` enum
         ancestors: list of ancestor folders
         date_created: creation time, `DateTime` object

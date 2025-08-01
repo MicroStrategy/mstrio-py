@@ -94,18 +94,18 @@ class PartialSuccess(Exception):
 
 
 class Rights(IntFlag):
-    """ "Enumeration constants used to specify the access granted attribute of
+    """Enumeration constants used to specify the access granted attribute of
     the DSS objects."""
 
-    EXECUTE = 0b10000000
-    USE = 0b01000000
-    CONTROL = 0b00100000
-    DELETE = 0b00010000
-    WRITE = 0b00001000
-    READ = 0b00000100
-    USE_EXECUTE = 0b00000010  # This constant is deprecated
-    BROWSE = 0b00000001
-    INHERITABLE = 0b100000000000000000000000000000
+    EXECUTE = 0b10000000  # 128
+    USE = 0b01000000  # 64
+    CONTROL = 0b00100000  # 32
+    DELETE = 0b00010000  # 16
+    WRITE = 0b00001000  # 8
+    READ = 0b00000100  # 4
+    USE_EXECUTE = 0b00000010  # 2 (deprecated)
+    BROWSE = 0b00000001  # 1
+    INHERITABLE = 0b100000000000000000000000000000  # 536870912
 
 
 class Permissions(Enum):
@@ -127,8 +127,8 @@ class Permissions(Enum):
 class AggregatedRights(IntFlag):
     """Enumeration constants used to specify combination of Rights values."""
 
-    NONE = 0b00000000
-    CONSUME = 0b01000101
-    VIEW = 0b11000101
-    MODIFY = 0b11011101
-    ALL = 0b11111111
+    NONE = 0b00000000  # 0
+    CONSUME = 0b01000101  # 69
+    VIEW = 0b11000101  # 197
+    MODIFY = 0b11011101  # 221
+    ALL = 0b11111111  # 255

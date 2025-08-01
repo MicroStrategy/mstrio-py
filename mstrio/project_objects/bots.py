@@ -1,3 +1,4 @@
+from mstrio.api import library
 from mstrio.connection import Connection
 from mstrio.object_management import search_operations
 from mstrio.object_management.folder import get_folder_id_from_path
@@ -10,6 +11,7 @@ from mstrio.utils.helper import (
     find_object_with_name,
     get_valid_project_id,
 )
+from mstrio.utils.library import LibraryMixin
 from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
@@ -53,7 +55,11 @@ def list_bots(
 
     objects = search_operations.full_search(
         connection=connection,
-        object_types=ObjectSubTypes.DOCUMENT_BOT,
+        object_types=[
+            ObjectSubTypes.DOCUMENT_BOT,
+            ObjectSubTypes.DOCUMENT_BOT_2_0,
+            ObjectSubTypes.DOCUMENT_BOT_UNIVERSAL,
+        ],
         project=project_id,
         name=name,
         limit=limit,
@@ -67,12 +73,19 @@ def list_bots(
 
 
 @class_version_handler('11.4.0300')
-class Bot(Entity, CertifyMixin, CopyMixin, DeleteMixin, MoveMixin):
+class Bot(Entity, CertifyMixin, CopyMixin, DeleteMixin, MoveMixin, LibraryMixin):
     """Python representation of a Strategy One Bot object"""
 
     _OBJECT_TYPE = ObjectTypes.DOCUMENT_DEFINITION
+
+    # May also initialize to DOCUMENT_BOT_2_0 or DOCUMENT_BOT_UNIVERSAL
     _OBJECT_SUBTYPE = ObjectSubTypes.DOCUMENT_BOT
-    _API_GETTERS = {**Entity._API_GETTERS, ('status',): objects_processors.get_info}
+
+    _API_GETTERS = {
+        **Entity._API_GETTERS,
+        'status': objects_processors.get_info,
+        'recipients': library.get_document,
+    }
     _API_PATCH: dict = {
         **Entity._API_PATCH,
         ('status', 'folder_id', 'owner'): (objects_processors.update, 'partial_put'),
@@ -80,6 +93,7 @@ class Bot(Entity, CertifyMixin, CopyMixin, DeleteMixin, MoveMixin):
     _FROM_DICT_MAP = {
         **Entity._FROM_DICT_MAP,
         'certified_info': CertifiedInfo.from_dict,
+        'recipients': [User.from_dict],
     }
 
     def __init__(

@@ -36,21 +36,22 @@ def unpublish_document(connection, id, error_msg=None):
 
 
 @ErrorHandler(err_msg="Error unpublishing document with ID {document_id}")
-def unpublish_document_for_user(connection, document_id, user_id, error_msg=None):
+def unpublish_document_for_user(connection, document_id, recipient_id, error_msg=None):
     """Unpublish a previously published document. This makes the document no
-    longer available in the library of each user specified in `user_id`
+    longer available in the library of each recipient (user or group)
+    specified in `recipient_id`
 
     Args:
         connection: Strategy One REST API connection object
         document_id (string): Document ID
-        user_id (string): user ID
+        recipient_id (string): ID of recipient (user or user group)
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
         Complete HTTP response object.
     """
     connection._validate_project_selected()
-    endpoint = f'/api/library/{document_id}/recipients/{user_id}'
+    endpoint = f'/api/library/{document_id}/recipients/{recipient_id}'
     return connection.delete(endpoint=endpoint)
 
 
@@ -66,6 +67,21 @@ def get_library(connection, error_msg=None):
         Complete HTTP response object.
     """
     endpoint = '/api/library'
+    return connection.get(endpoint=endpoint, headers={'X-MSTR-ProjectID': None})
+
+
+@ErrorHandler(err_msg="Error getting library.")
+def get_library_v2(connection, error_msg=None):
+    """Get the library for the authenticated user.
+
+    Args:
+        connection: Strategy One REST API connection object
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object.
+    """
+    endpoint = '/api/v2/library'
     return connection.get(endpoint=endpoint, headers={'X-MSTR-ProjectID': None})
 
 

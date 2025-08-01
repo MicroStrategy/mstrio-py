@@ -19,7 +19,11 @@ from mstrio.types import MISSING, ExtendedType, ObjectSubTypes, ObjectTypes
 from mstrio.utils import helper
 from mstrio.utils.acl import ACE, ACLMixin
 from mstrio.utils.dependence_mixin import DependenceMixin
-from mstrio.utils.helper import get_valid_project_id, rename_dict_keys
+from mstrio.utils.helper import (
+    get_response_json,
+    get_valid_project_id,
+    rename_dict_keys,
+)
 from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.time_helper import (
     DatetimeFormats,
@@ -246,10 +250,20 @@ class EntityBase(helper.Dictable):
 
             if response:
                 json = (
-                    response if isinstance(response, (dict, list)) else response.json()
+                    response
+                    if isinstance(response, (dict, list))
+                    else get_response_json(response)
                 )
 
-                if self._OBJECT_SUBTYPES and (subtype := json['subtype']):
+                # In some cases the endpoint does not include subtype in
+                # response. We can skip the subtype check, because in cases
+                # where subtype must be populated, it is included (and checked
+                # for) in one of the _API_GETTERS.
+                if (
+                    self._OBJECT_SUBTYPES
+                    and 'subtype' in json
+                    and (subtype := json['subtype'])
+                ):
                     self._check_object_subtype(subtype)
                 if isinstance(json, dict):
                     object_dict = {
@@ -261,9 +275,7 @@ class EntityBase(helper.Dictable):
                         self._add_missing_attributes(key, json)
 
                     self._set_object_attributes(**object_dict)
-                elif isinstance(json, list) and json:
-                    # it is possible to have [] for json and fail
-                    # if object does not exist
+                elif isinstance(json, list):
                     self._set_object_attributes(**{key: json})
 
             # keep track of fetched attributes
@@ -280,7 +292,7 @@ class EntityBase(helper.Dictable):
             None
 
         Raises:
-            NotSupportedError: If suptype is not in _OBJECT_SUBTYPES list.
+            NotSupportedError: If subtype is not in _OBJECT_SUBTYPES list.
         """
         if cls._OBJECT_SUBTYPES and not cls._is_subtype_supported(subtype):
             raise NotSupportedError(
@@ -815,7 +827,9 @@ class EntityBase(helper.Dictable):
             if response:
                 changed.append(True)
                 json = (
-                    response if isinstance(response, (dict, list)) else response.json()
+                    response
+                    if isinstance(response, (dict, list))
+                    else get_response_json(response)
                 )
                 if isinstance(json, dict):
                     self._set_object_attributes(**json)
@@ -1308,8 +1322,8 @@ class Entity(EntityBase, ACLMixin, DependenceMixin, TranslationMixin):
     def location(self) -> str:
         if self.ancestors:
             self._location = ''
-            for anc in self.ancestors:
-                self._location += '/' + anc.get('name')
+            for ancestor in self.ancestors:
+                self._location += '/' + ancestor.get('name')
             self._location += '/' + self.name
         return self._location
 

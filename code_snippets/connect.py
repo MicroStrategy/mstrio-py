@@ -51,6 +51,11 @@ API_TOKEN = $api_token  # insert your api token here
 # Strategy One REST API /auth/apiTokens endpoint.
 conn = Connection(BASE_URL, api_token=API_TOKEN, project_id=PROJECT_ID)
 
+# Once logged in, regardless of the method used, you can generate API Token for yourself
+# by using the below method:
+api_token = conn.get_api_token()
+# Some users can create API Tokens for other users. Learn more in `user_mgmt.py` code snippets.
+
 # Define a variable which can be later used in a script
 IDENTITY_TOKEN = $identity_token  # Insert your identity token here
 
