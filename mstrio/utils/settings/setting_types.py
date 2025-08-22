@@ -89,7 +89,7 @@ class EnumSetting(SettingValue):
 
     def _validate_value(self, value, exception=True):
         options = helper.extract_all_dict_values(self.options)
-        if self.type == list:
+        if self.type is list:
             options.append('')
         return helper.validate_param_value(
             self.name, value, self.type, special_values=options, exception=exception

@@ -1,5 +1,4 @@
 import logging
-from functools import partial
 
 import pandas as pd
 import requests
@@ -12,8 +11,7 @@ from mstrio.api.schedules import get_contents_schedule
 from mstrio.connection import Connection
 from mstrio.distribution_services.schedule import Schedule
 from mstrio.object_management.search_operations import SearchPattern, full_search
-from mstrio.project_objects.helpers import answer_prompts_helper
-from mstrio.project_objects.prompt import Prompt
+from mstrio.modeling import Prompt
 from mstrio.users_and_groups.user import User
 from mstrio.utils.cache import CacheSource, ContentCacheMixin
 from mstrio.utils.certified_info import CertifiedInfo
@@ -25,6 +23,7 @@ from mstrio.utils.entity import (
     MoveMixin,
     ObjectSubTypes,
     ObjectTypes,
+    PromptMixin,
     VldbMixin,
 )
 from mstrio.utils.filter import Filter
@@ -33,15 +32,18 @@ from mstrio.utils.helper import (
     fallback_on_timeout,
     find_object_with_name,
     get_parallel_number,
+    get_total_count_of_objects,
     get_valid_project_id,
+    key_fn_for_sort_object_properties,
     response_handler,
-    sort_object_properties,
 )
 from mstrio.utils.parser import Parser
 from mstrio.utils.related_subscription_mixin import RelatedSubscriptionMixin
 from mstrio.utils.response_processors import objects as objects_processors
+from mstrio.utils.response_processors import reports as reports_processors_api
 from mstrio.utils.sessions import FuturesSessionWithRenewal
 from mstrio.utils.version_helper import meets_minimal_version
+from mstrio.utils.vldb_mixin import ModelVldbMixin
 
 logger = logging.getLogger(__name__)
 
@@ -146,6 +148,7 @@ class Report(
     DeleteMixin,
     ContentCacheMixin,
     VldbMixin,
+    PromptMixin,
     RelatedSubscriptionMixin,
 ):
     """Access, filter, publish, and extract data from in-memory reports.
@@ -202,6 +205,7 @@ class Report(
         ObjectSubTypes.REPORT_GRID,
         ObjectSubTypes.REPORT_GRAPH,
         ObjectSubTypes.REPORT_ENGINE,
+        ObjectSubTypes.REPORT_DATAMART,
         ObjectSubTypes.REPORT_GRID_AND_GRAPH,
         ObjectSubTypes.REPORT_TRANSACTION,
         ObjectSubTypes.REPORT_HYPER_CARD,
@@ -227,6 +231,11 @@ class Report(
             'partial_put',
         )
     }
+    _API_GET_PROMPTS = staticmethod(reports_api.get_report_prompts)
+    _API_PROMPT_GET_INSTANCE = staticmethod(reports_api.report_instance)
+    _API_PROMPT_GET_OBJ_STATUS = staticmethod(reports_processors_api.get_report_status)
+    _API_PROMPT_GET_PROMPTED_INSTANCE = staticmethod(reports_api.get_prompted_instance)
+    _API_PROMPT_ANSWER_PROMPTS = staticmethod(reports_api.answer_report_prompts)
 
     def __init__(
         self,
@@ -287,6 +296,19 @@ class Report(
                 progress_bar=progress_bar,
             )
 
+        # Report exposes VLDB property methods through both VldbMixin and
+        # ModelVldbMixin. Due to name confusion, the Modeling Service methods
+        # are prefixed with 'model_'.
+        self._model_vldb = ModelVldbMixin()
+        self._model_vldb._MODEL_VLDB_API = {
+            'GET_ADVANCED': reports_api.get_vldb_settings,
+            'GET_APPLICABLE': reports_api.get_applicable_vldb_settings,
+        }
+        self._model_vldb.connection = self.connection
+        self._model_vldb.id = self.id
+
+        self.model_list_vldb_settings = self._model_vldb.list_vldb_settings
+
     def _init_variables(self, default_value, **kwargs):
         super()._init_variables(default_value=default_value, **kwargs)
         self.instance_id = kwargs.get("instance_id")
@@ -301,7 +323,6 @@ class Report(
         self._page_by_elements = {}
         self._sql = None
         self._current_page_by = []
-        self._prompts = None
 
         self._attributes = []
         self._metrics = []
@@ -410,6 +431,7 @@ class Report(
                 report_id=self.id,
                 instance_id=self.instance_id,
                 body=json,
+                project_id=self.project_id,
             )
             # Get the instance results again, as they weren't generated
             # properly until the prompts were answered
@@ -600,6 +622,7 @@ class Report(
         response = reports_api.report_instance(
             connection=self._connection,
             report_id=self._id,
+            project_id=self.project_id,
             body=body,
             offset=0,
             limit=limit or self._initial_limit,
@@ -766,10 +789,13 @@ class Report(
                     offset=0,
                     limit=limit,
                 )
-                # Get total number of rows from headers.
-                total = int(response.headers['x-mstr-total-count'])
+                # Get total number of rows
+                total = get_total_count_of_objects(response)
                 # Get attribute elements from the response.
                 elements = response.json()
+
+                assert isinstance(limit, int) and limit > 0
+                assert isinstance(total, int) and total >= 0
 
                 # If total number of elements is bigger than the chunk size
                 # (limit), fetch them incrementally.
@@ -842,8 +868,8 @@ class Report(
                             response, f"Error getting attribute {attr['name']} elements"
                         )
                     elements = response.json()
-                    # Get total number of rows from headers.
-                    total = int(response.headers['x-mstr-total-count'])
+                    # Get total number of rows
+                    total = get_total_count_of_objects(response)
                     for _offset in range(limit, total, limit):
                         response = reports_api.report_single_attribute_elements(
                             connection=self._connection,
@@ -905,7 +931,7 @@ class Report(
         }
         return {
             key: attributes[key]
-            for key in sorted(attributes, key=sort_object_properties)
+            for key in sorted(attributes, key=key_fn_for_sort_object_properties)
         }
 
     def list_available_schedules(
@@ -936,57 +962,6 @@ class Report(
             Schedule.from_dict(connection=self.connection, source=schedule_id)
             for schedule_id in schedules_list_response
         ]
-
-    def answer_prompts(self, prompt_answers: list[Prompt], force: bool = False) -> bool:
-        """Answer prompts of the report.
-
-        Args:
-            prompt_answers (list[Prompt]): List of Prompt class objects
-                answering the prompts of the report.
-            force (bool): If True, then the report's existing prompt will be
-                overwritten by ones from the prompt_answers list, and additional
-                input from the user won't be asked. Otherwise, the user will be
-                asked for input if the prompt is not answered, or if prompt was
-                already answered.
-
-        Returns:
-            bool: True if prompts were answered successfully, False otherwise.
-        """
-        instance_id = self.instance_id or reports_api.report_instance(
-            connection=self.connection,
-            report_id=self.id,
-        ).json().get('instanceId')
-
-        common_args = {
-            'connection': self.connection,
-            'report_id': self.id,
-            'instance_id': instance_id,
-        }
-
-        if not answer_prompts_helper(
-            instance_id=instance_id,
-            prompt_answers=prompt_answers,
-            get_status_func=partial(
-                reports_api.get_report_status,
-                **common_args,
-                project_id=self.project_id,
-            ),
-            get_prompts_func=partial(
-                reports_api.get_prompted_instance,
-                **common_args,
-                closed=False,
-            ),
-            answer_prompts_func=partial(
-                reports_api.answer_report_prompts, **common_args
-            ),
-            force=force,
-        ):
-            return False
-
-        # If prompts were answered successfully, update the instance_id
-        self.instance_id = instance_id
-
-        return True
 
     @property
     def attributes(self):
@@ -1103,13 +1078,3 @@ class Report(
                 .get('sqlStatement')
             )
         return self._sql
-
-    @property
-    def prompts(self) -> dict:
-        """Prompts of the report."""
-        if self._prompts is None:
-            prompts = reports_api.get_report_prompts(
-                connection=self.connection, report_id=self.id
-            ).json()
-            self._prompts = [Prompt.from_dict(prompt) for prompt in prompts]
-        return self._prompts

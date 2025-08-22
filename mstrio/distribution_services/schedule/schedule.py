@@ -314,7 +314,7 @@ class Schedule(Entity, DeleteMixin, RelatedSubscriptionMixin):
 
         return {
             key: attributes[key]
-            for key in sorted(attributes, key=helper.sort_object_properties)
+            for key in sorted(attributes, key=helper.key_fn_for_sort_object_properties)
         }
 
     @classmethod

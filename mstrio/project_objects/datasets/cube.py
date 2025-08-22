@@ -25,9 +25,10 @@ from mstrio.utils.helper import (
     exception_handler,
     fallback_on_timeout,
     get_parallel_number,
+    get_total_count_of_objects,
     get_valid_project_id,
+    key_fn_for_sort_object_properties,
     response_handler,
-    sort_object_properties,
 )
 from mstrio.utils.parser import Parser
 from mstrio.utils.response_processors import cubes as cube_processors
@@ -300,7 +301,12 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
     """
 
     _OBJECT_TYPE = ObjectTypes.REPORT_DEFINITION
+
+    # Not to be confused with EntityBase._OBJECT_SUBTYPES field, which is a list
+    # used in fetch() to validate subtype. This field is overridden in
+    # subclasses and used in __init__ workflow.
     _OBJECT_SUBTYPE = None
+
     _API_GETTERS = {
         (
             'id',
@@ -726,7 +732,7 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
         }
         return {
             key: attributes[key]
-            for key in sorted(attributes, key=sort_object_properties)
+            for key in sorted(attributes, key=key_fn_for_sort_object_properties)
         }
 
     def _get_definition(self) -> None:
@@ -807,10 +813,13 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
                     offset=0,
                     limit=limit,
                 )
-                # Get total number of rows from headers.
-                total = int(response.headers['x-mstr-total-count'])
+                # Get total number of rows
+                total = get_total_count_of_objects(response)
                 # Get attribute elements from the response.
                 elements = response.json()
+
+                assert isinstance(limit, int) and limit > 0
+                assert isinstance(total, int) and total >= 0
 
                 # If total number of elements is bigger than the chunk size
                 # (limit), fetch them incrementally.
@@ -874,8 +883,8 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
                             response, f"Error getting attribute {attr['name']} elements"
                         )
                     elements = response.json()
-                    # Get total number of rows from headers.
-                    total = int(response.headers['x-mstr-total-count'])
+                    # Get total number of rows
+                    total = get_total_count_of_objects(response)
                     for _offset in range(limit, total, limit):
                         response = cubes.cube_single_attribute_elements(
                             connection=self._connection,

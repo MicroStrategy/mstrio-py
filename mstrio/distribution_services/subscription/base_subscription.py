@@ -26,6 +26,7 @@ from mstrio.distribution_services.subscription.subscription_status import (
     SubscriptionStatus,
 )
 from mstrio.helpers import NotSupportedError
+from mstrio.modeling import Prompt
 from mstrio.users_and_groups import User
 from mstrio.utils import helper, time_helper
 from mstrio.utils.entity import EntityBase
@@ -105,6 +106,7 @@ class Subscription(EntityBase):
     _API_PATCH = [subscriptions.update_subscription]
     _RECIPIENTS_TYPES = RecipientsTypes
     _RECIPIENTS_INCLUDE = ['TO', 'CC', 'BCC', None]
+    _API_GET_PROMPTS = staticmethod(subscriptions.get_subscription_prompts)
 
     def __init__(
         self,
@@ -191,6 +193,7 @@ class Subscription(EntityBase):
         )
         self.project_id = project_id
         self._status = kwargs.get('status')
+        self._prompts = None
 
     @method_version_handler('11.3.0000')
     def alter(
@@ -1207,7 +1210,7 @@ class Subscription(EntityBase):
         """
 
         from mstrio.project_objects.document import Document
-        from mstrio.project_objects.prompt import Prompt
+        from mstrio.modeling.prompt import Prompt
         from mstrio.project_objects.report import Report
 
         contents: list[dict] = [cont.to_dict() for cont in self.contents]
@@ -1265,3 +1268,23 @@ class Subscription(EntityBase):
                 if k not in ['status', 'last_run']
             }
         super().fetch(attr)
+
+    @method_version_handler('11.5.0900')
+    @property
+    def prompts(self) -> dict:
+        """Prompts of the report."""
+        if self._prompts is None:
+            prompts = (
+                subscriptions.get_subscription_prompts(
+                    connection=self.connection,
+                    subscription_id=self.id,
+                    project_id=self.project_id,
+                )
+                .json()
+                .get('prompts', [])
+            )
+            self._prompts = [
+                Prompt.from_dict(source=prompt, connection=self.connection)
+                for prompt in prompts
+            ]
+        return self._prompts

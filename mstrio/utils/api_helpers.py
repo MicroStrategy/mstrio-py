@@ -2,7 +2,9 @@ from concurrent.futures import as_completed
 from contextlib import contextmanager
 from functools import wraps
 from json import dumps
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
+
+import requests
 
 from mstrio.api.changesets import (
     commit_changeset_changes,
@@ -167,3 +169,23 @@ def async_get(
             all_objects.append(response.json())
 
     return all_objects
+
+
+def is_response_like(response: Any) -> bool:
+    """
+    Check if the `response` is like a requests.Response object.
+    This is used to determine if the response can be processed
+    by functions that expect a requests.Response object.
+
+    Args:
+        response: The response object to check.
+
+    Returns:
+        bool: True if the response is like a requests.Response object,
+            False otherwise.
+    """
+    return isinstance(response, requests.Response) or (
+        hasattr(response, 'ok')
+        and hasattr(response, 'json')
+        and hasattr(response, 'headers')
+    )

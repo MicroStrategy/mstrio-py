@@ -34,6 +34,12 @@ REPORT_CACHE = ContentCache(connection=conn, id=REPORT_CACHE_ID)
 # Listing properties of a cache
 REPORT_CACHE.list_properties()
 
+# Invalidating specific caches for reports
+Report.invalidate_caches(connection=conn, ids=[REPORT_CACHE_ID])
+
+# Deleting all caches for all reports
+Report.delete_all_caches(connection=conn, force=True)
+
 # Deleting a specific cache
 REPORT_CACHE.delete(force=True)
 

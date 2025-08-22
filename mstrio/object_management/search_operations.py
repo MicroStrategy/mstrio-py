@@ -1,9 +1,13 @@
+from datetime import datetime
 import itertools
 import logging
 from concurrent.futures import as_completed
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Optional
 
+from requests import Response
+
+from mstrio import config
 from mstrio.api import browsing, objects
 from mstrio.connection import Connection
 from mstrio.helpers import IServerError
@@ -12,30 +16,136 @@ from mstrio.object_management.search_enums import (
     SearchDomain,
     SearchPattern,
     SearchResultsFormat,
+    SearchScope,
 )
 from mstrio.server import Environment
 from mstrio.server.project import Project
 from mstrio.types import ObjectSubTypes, ObjectTypes
 from mstrio.users_and_groups import User
+from mstrio.utils import helper
 from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, EntityBase, MoveMixin
 from mstrio.utils.helper import (
     Dictable,
     _prepare_objects,
+    camel_to_snake,
     exception_handler,
     get_args_from_func,
     get_enum_val,
     get_objects_id,
+    get_owner_id,
+    get_project_id_or_none,
     merge_id_and_type,
 )
 from mstrio.utils.response_processors import browsing as browsing_processors
 from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.sessions import FuturesSessionWithRenewal
-from mstrio.utils.version_helper import class_version_handler, method_version_handler
+from mstrio.utils.time_helper import DatetimeFormats, str_to_datetime
+from mstrio.utils.version_helper import (
+    class_version_handler,
+    meets_minimal_version,
+    method_version_handler,
+)
+from mstrio.utils.wip import WipLevels, wip
 
 if TYPE_CHECKING:
     from mstrio.types import TypeOrSubtype
+    from mstrio.object_management.folder import Folder
 
 logger = logging.getLogger(__name__)
+
+
+class DateQuery(Dictable):
+    """Object that specifies a date query for searches: either a date range or
+    number of days or months before the current date.
+
+    Attributes:
+        begin_time (datetime | None): Start date of the range.
+        end_time (datetime | None): End date of the range. `begin_time` and
+            `end_time` must be provided together. They must be the only
+            parameters provided if used.
+        since_days (int | None): Number of days before the current date.
+            Must be the only parameter provided if used.
+        since_months (int | None): Number of months before the current date.
+            Must be the only parameter provided if used.
+    """
+
+    def __init__(
+        self,
+        begin_time: datetime | str | None = None,
+        end_time: datetime | str | None = None,
+        since_days: int | None = None,
+        since_months: int | None = None,
+    ) -> None:
+        """Initialize DateQuery object.
+
+        Args:
+            begin_time (datetime, optional): Start date of the range.
+            end_time (datetime, optional): End date of the range.
+            since_days (int, optional): Number of days before the current date.
+            since_months (int, optional): Number of months before the current
+                date.
+        """
+
+        if not any([begin_time, end_time, since_days, since_months]):
+            exception_handler(
+                msg="At least one of the following parameters must be provided: "
+                "'begin_time', 'end_time', 'since_days', 'since_months'.",
+                exception_type=ValueError,
+            )
+        if begin_time and not end_time:
+            exception_handler(
+                msg="If 'begin_time' is provided, 'end_time' must also be provided.",
+                exception_type=ValueError,
+            )
+        if end_time and not begin_time:
+            exception_handler(
+                msg="If 'end_time' is provided, 'begin_time' must also be provided.",
+                exception_type=ValueError,
+            )
+        is_range = begin_time is not None
+        is_since_days = since_days is not None
+        is_since_months = since_months is not None
+
+        if is_range + is_since_days + is_since_months > 1:
+            exception_handler(
+                msg="Only one kind of the date query can be provided: "
+                "'begin_time' and 'end_time' (date range), 'since_days', "
+                "'since_months'.",
+                exception_type=ValueError,
+            )
+
+        self.begin_time = (
+            str_to_datetime(begin_time, DatetimeFormats.FULLDATETIME.value)
+            if isinstance(begin_time, str)
+            else begin_time
+        )
+        self.end_time = (
+            str_to_datetime(end_time, DatetimeFormats.FULLDATETIME.value)
+            if isinstance(end_time, str)
+            else end_time
+        )
+        self.since_days = since_days
+        self.since_months = since_months
+
+    def to_dict(self, camel_case=True) -> dict:
+        """Convert DateQuery object to a dictionary.
+
+        Args:
+            camel_case (bool): If True, returns keys in camelCase format,
+                otherwise returns keys in snake_case format.
+
+        Returns:
+            dict: Dictionary representation of the DateQuery object.
+        """
+
+        result = {
+            'beginTime': self.begin_time.isoformat() if self.begin_time else None,
+            'endTime': self.end_time.isoformat() if self.end_time else None,
+            'sinceDays': self.since_days,
+            'sinceMonths': self.since_months,
+        }
+
+        return result if camel_case else camel_to_snake(result)
 
 
 @class_version_handler('11.3.0100')
@@ -43,27 +153,60 @@ class SearchObject(Entity, CopyMixin, MoveMixin, DeleteMixin):
     """Search object describing criteria that specify a search for objects.
 
     Attributes:
-        connection: A Strategy One connection object
-        id: Object ID
-        name: Object name
-        description: Object description
-        abbreviation: Object abbreviation
-        type: Object type
-        subtype: Object subtype
-        ext_type: Object extended type
-        date_created: Creation time, DateTime object
-        date_modified: Last modification time, DateTime object
-        version: Version ID
-        owner: Owner ID and name
-        icon_path: Object icon path
-        view_media: View media settings
-        ancestors: List of ancestor folders
-        acg: Access rights (See EnumDSSXMLAccessRightFlags for possible values)
-        acl: Object access control list
+        connection (Connection): A Strategy One connection object
+        id (str): Object ID
+        name (str): Object name
+        description (str): Object description
+        abbreviation (str): Object abbreviation
+        type (int): Object type
+        subtype (int): Object subtype
+        ext_type (int, optional): Object extended type
+        date_created (datetime): Creation time, DateTime object
+        date_modified (datetime): Last modification time, DateTime object
+        version (str): Version ID
+        owner (dict): Owner ID and name
+        icon_path (str, optional): Object icon path
+        view_media (str, optional): View media settings
+        ancestors (list[Folder]): List of ancestor folders
+        acg (int): Access rights (See EnumDSSXMLAccessRightFlags for
+            possible values)
+        acl (list[dict]): Object access control list
+        name_query (str, optional): Object name to search for
+        description_query (str, optional): Object description to search for
+        root_folder_query (str, optional): Root folder to search in
+        object_types_query (list[ObjectTypes], optional): Object types to
+            search for in the query
+        object_subtypes_query (list[ObjectSubTypes], optional): Object subtypes
+            to search for in the query
+        date_created_query (DateQuery, optional): Date created query
+        date_modified_query (DateQuery, optional): Date modified query
+        owner_query (str, optional): Owner query
+        lcid_query (int, optional): Locale query
+        include_hidden (bool, optional): Whether to include hidden objects
+        include_subfolders (bool, optional): Whether to include subfolders
+        exclude_folders (list[str], optional): Folder IDs to exclude
+            from the search
+        scope (SearchScope, optional): Scope of the search with regard to
+            System Managed Objects.
     """
 
+    @staticmethod
+    def _date_query_or_none(source, *args, **kwargs) -> DateQuery | None:
+        """Create a DateQuery object from a dictionary or return None."""
+        if source is None:
+            return None
+        return DateQuery.from_dict(source, *args, **kwargs)
+
     _OBJECT_TYPE = ObjectTypes.SEARCH
-    _FROM_DICT_MAP = {**Entity._FROM_DICT_MAP, 'owner': User.from_dict}
+    _FROM_DICT_MAP = {
+        **Entity._FROM_DICT_MAP,
+        'owner': User.from_dict,
+        'object_types_query': [ObjectTypes.from_rest_value],
+        'object_subtypes_query': [ObjectSubTypes.from_rest_value],
+        'date_created_query': _date_query_or_none,
+        'date_modified_query': _date_query_or_none,
+        'scope': SearchScope,
+    }
     _API_PATCH: dict = {
         **Entity._API_PATCH,
         'folder_id': (objects_processors.update, 'partial_put'),
@@ -77,7 +220,262 @@ class SearchObject(Entity, CopyMixin, MoveMixin, DeleteMixin):
                 `connection.Connection()`.
             id: ID of SearchObject
         """
+        if meets_minimal_version(connection.iserver_version, '11.4.1200'):
+            self._API_GETTERS.update(
+                {
+                    (
+                        "name_query",
+                        "description_query",
+                        "root_folder_query",
+                        "object_types_query",
+                        "object_subtypes_query",
+                        "date_created_query",
+                        "date_modified_query",
+                        "owner_query",
+                        "lcid_query",
+                        "include_hidden",
+                        "include_subfolders",
+                        "exclude_folders",
+                        "scope",
+                    ): browsing_processors.get_search_object,
+                }
+            )
         super().__init__(connection=connection, object_id=id)
+
+    def _init_variables(self, default_value, **kwargs) -> None:
+        super()._init_variables(default_value=default_value, **kwargs)
+        self.name_query = kwargs.get('name_query', None)
+        self.description_query = kwargs.get('description_query', None)
+        self.root_folder_query = kwargs.get('root_folder_query', None)
+        self.object_types_query = kwargs.get('object_types_query', None)
+        self.object_subtypes_query = kwargs.get('object_subtypes_query', None)
+        self.date_created_query = kwargs.get('date_created_query', None)
+        self.date_modified_query = kwargs.get('date_modified_query', None)
+        self.owner_query = kwargs.get('owner_query', None)
+        self.lcid_query = kwargs.get('lcid_query', None)
+        self.include_hidden = kwargs.get('include_hidden', None)
+        self.include_subfolders = kwargs.get('include_subfolders', None)
+        self.exclude_folders = kwargs.get('exclude_folders', None)
+        self.scope = kwargs.get('scope', None)
+
+    @staticmethod
+    def _get_date_query_fields(
+        date_created_query: DateQuery | None,
+        date_modified_query: DateQuery | None,
+    ) -> tuple[str | None, dict | None]:
+        """Convert a pair of date query field values to REST schema of shape
+        (date_query_type, date_query).
+
+        Args:
+            date_created_query: The date created query field.
+            date_modified_query: The date modified query field.
+
+        Returns:
+            tuple[str | None, dict | None]: A tuple containing the date query
+                type (str) and the date query. Both set to None if no date
+                query is provided.
+        """
+        if date_created_query and date_modified_query:
+            exception_handler(
+                msg="Only one of 'date_created_query' or 'date_modified_query' "
+                "should be provided.",
+                exception_type=ValueError,
+            )
+
+        if date_created_query:
+            date_query_type = 'created'
+        elif date_modified_query:
+            date_query_type = 'modified'
+        else:
+            date_query_type = None
+        if (date_query := date_created_query or date_modified_query) is not None:
+            if isinstance(date_query, DateQuery):
+                date_query = date_query.to_dict(camel_case=False)
+
+        return date_query_type, date_query
+
+    @staticmethod
+    def _type_to_rest(t: ObjectTypes | ObjectSubTypes | int, cls) -> str:
+        """Convert a type or subtype specification to a string accepted by REST.
+
+        Args:
+            t (ObjectTypes | ObjectSubTypes | int): The type or subtype
+                to convert.
+            cls: The class to use for the conversion, `ObjectTypes` or
+                `ObjectSubTypes`.
+
+        Returns:
+            str: The converted type as a string.
+        """
+        if cls not in (ObjectTypes, ObjectSubTypes):
+            raise ValueError(f"Invalid class: {cls}")
+        if isinstance(t, int):
+            t = cls(t)
+        return t.to_rest_value()
+
+    @classmethod
+    @wip(level=WipLevels.PREVIEW)
+    def create(
+        cls,
+        connection: Connection,
+        name: str | None,
+        destination_folder: 'str | Folder',
+        project: Project | None = None,
+        project_id: str | None = None,
+        project_name: str | None = None,
+        name_query: str | None = None,
+        description_query: str | None = None,
+        root_folder_query: 'str | Folder | None' = None,
+        object_types_query: ObjectTypes | int | list[ObjectTypes | int] | None = None,
+        object_subtypes_query: (
+            ObjectSubTypes | int | list[ObjectSubTypes | int] | None
+        ) = None,
+        date_created_query: DateQuery | None = None,
+        date_modified_query: DateQuery | None = None,
+        owner_query: str | User | None = None,
+        owner_query_id: str | None = None,
+        owner_query_username: str | None = None,
+        lcid_query: int | None = None,
+        include_hidden: bool | None = None,
+        include_subfolders: bool | None = None,
+        exclude_folders: 'list[str | Folder] | None' = None,
+        scope: SearchScope | None = None,
+        to_dictionary: bool = False,
+    ) -> 'SearchObject | dict':
+        """Create a new SearchObject.
+
+        Args:
+            connection (Connection): Strategy One connection object returned by
+                `connection.Connection()`.
+            name (str or None): Name of the SearchObject. If None, a default
+                name will be generated.
+            destination_folder (str or Folder): Folder (ID or Folder object)
+                where the SearchObject will be created.
+            project (Project, optional): Project object where the SearchObject
+                will be created. If not provided, the connection's project
+                will be used.
+            project_id (str, optional): Project ID where the SearchObject
+                will be created. May be used instead of `project`.
+            project_name (str, optional): Project name where the SearchObject
+                will be created. May be used instead of `project`.
+            name_query (str, optional): Object name to search for.
+            description_query (str, optional): Object description to search for.
+            root_folder_query (str, optional): Root folder ID to search in.
+            object_types_query (list[ObjectTypes | int], int, optional):
+                Object types to search for in the query.
+            object_subtypes_query (list[ObjectSubTypes | int], int, optional):
+                Object subtypes to search for in the query.
+            date_created_query (DateQuery, optional): Date created query.
+            date_modified_query (DateQuery, optional): Date modified query.
+                Only one of `date_created_query` or `date_modified_query`
+                should be provided.
+            owner_query (str, User, optional): username, user ID, or User object
+                representing the object owner specified in the query. If
+                `owner_query` is provided, `owner_query_id` and
+                `owner_query_username` are ignored
+            owner_query_id (str, optional): ID of the object owner specified in
+                the query. If only owner_query_id and owner_query_username are
+                provided, then owner_query_username is omitted and the owner is
+                set to the user with the given ID
+            owner_query_username (str, optional): username of the the object
+                owner specified in the query
+            lcid_query (int, optional): Locale query.
+            include_hidden (bool, optional): Whether to include hidden objects.
+            include_subfolders (bool, optional): Whether to include subfolders.
+            exclude_folders (list[str], optional): Folder IDs to exclude
+                from the search
+            scope (SearchScope, str, optional): Scope of the search with regard
+                to System Managed Objects. Possible values are
+                "not_managed_only", "managed_only", "all". Defaults to
+                "not_managed_only".
+            to_dictionary (bool): If True, returns a dictionary with the new
+                object's details instead of a SearchObject. Defaults to False.
+
+        Returns:
+            The new Search Object.
+        """
+        from mstrio.object_management import Folder
+
+        project_id = get_project_id_or_none(
+            connection=connection,
+            project=project,
+            project_id=project_id,
+            project_name=project_name,
+        )
+
+        if isinstance(destination_folder, Folder):
+            destination_folder = destination_folder.id
+        if isinstance(root_folder_query, Folder):
+            root_folder_query = root_folder_query.id
+
+        date_query_type, date_query = SearchObject._get_date_query_fields(
+            date_created_query=date_created_query,
+            date_modified_query=date_modified_query,
+        )
+
+        if isinstance(object_types_query, ObjectTypes):
+            object_types_query = [object_types_query]
+        if object_types_query is not None:
+            object_types_query = [
+                SearchObject._type_to_rest(t, ObjectTypes) for t in object_types_query
+            ]
+        if isinstance(object_subtypes_query, ObjectSubTypes):
+            object_subtypes_query = [object_subtypes_query]
+        if object_subtypes_query is not None:
+            object_subtypes_query = [
+                SearchObject._type_to_rest(t, ObjectSubTypes)
+                for t in object_subtypes_query
+            ]
+
+        owner_query = get_owner_id(
+            connection, owner_query, owner_query_id, owner_query_username
+        )
+
+        visibility = 'ALL' if include_hidden else 'VISIBLE'
+
+        if exclude_folders is not None:
+            exclude_folders = [
+                folder.id if isinstance(folder, Folder) else folder
+                for folder in exclude_folders
+            ]
+
+        if isinstance(scope, SearchScope):
+            scope = scope.value
+
+        body = {
+            "name": name,
+            "location": destination_folder,
+            "nameQuery": name_query,
+            "descriptionQuery": description_query,
+            "root": root_folder_query,
+            "types": object_types_query,
+            "subtypes": object_subtypes_query,
+            "dateFilterType": date_query_type,
+            "timeRange": date_query,
+            "visibility": visibility,
+            "includeSubfolders": include_subfolders,
+            "excludedFolders": exclude_folders,
+            "ownerId": owner_query,
+            "localeId": lcid_query,
+            "scope": scope,
+        }
+        body = helper.delete_none_values(source=body, recursion=True)
+        res: Response = browsing.create_search_object(
+            connection=connection,
+            project_id=project_id,
+            body=body,
+        )
+        new_id = res.json().get('id')
+        new_search = cls(
+            connection=connection,
+            id=new_id,
+        )
+        if config.verbose:
+            logger.info(
+                f"Successfully created Search Object named: '{new_search}' "
+                f"with ID: '{new_id}'"
+            )
+        return new_search.to_dict() if to_dictionary else new_search
 
 
 @method_version_handler('11.3.0000')
@@ -773,7 +1171,9 @@ def quick_search_by_id(
 
     search_data = search_data if isinstance(search_data, list) else [search_data]
     body = {"projectIdAndObjectIds": [obj.to_dict() for obj in search_data]}
-    response = browsing_processors.get_search_objects(connection=connection, body=body)
+    response = browsing_processors.get_objects_from_quick_search(
+        connection=connection, body=body
+    )
     prepared_objects = _prepare_objects(response, filters)
 
     if to_dictionary:

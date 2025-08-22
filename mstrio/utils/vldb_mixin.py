@@ -203,6 +203,8 @@ class ModelVldbMixin:
         ).json()['advancedProperties']['vldbProperties']
         self._vldb_settings = VldbSettingsDict()
         for key, applicable in applicable_properties.items():
+            if key not in advanced_properties:
+                continue
             vldb_setting = VldbSetting.from_dict(
                 {
                     'propertySet': ''.join(key.split('.')[0][1:-1]),

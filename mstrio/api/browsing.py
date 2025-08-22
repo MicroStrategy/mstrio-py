@@ -396,7 +396,7 @@ def get_search_suggestions(
 
 
 @ErrorHandler(err_msg="Error getting specified objects.")
-def get_search_objects(
+def get_objects_from_quick_search(
     connection: 'Connection',
     body: dict,
     include_ancestors: bool = False,
@@ -425,4 +425,51 @@ def get_search_objects(
             'showNavigationPath': show_navigation_path,
             'fields': fields,
         },
+    )
+
+
+@ErrorHandler(err_msg="Error getting search object with ID {id}.")
+def get_search_object(
+    connection: 'Connection',
+    id: str,
+    error_msg: str | None = None,
+):
+    """Get information about a specific search object.
+
+    Args:
+        connection: Strategy One REST API connection object
+        id: ID of the search object
+        error_msg: Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object.
+    """
+    return connection.get(
+        endpoint=f'/api/searchObjects/{id}',
+    )
+
+
+@ErrorHandler(err_msg="Error creating search object.")
+def create_search_object(
+    connection: 'Connection',
+    project_id: str,
+    body: dict,
+    error_msg: str | None = None,
+):
+    """Create a search object.
+
+    Args:
+        connection: Strategy One REST API connection object
+        project_id: ID of the project where the search object will be created
+        body: Dictionary containing the search object details
+        error_msg: Custom Error Message for Error Handling
+
+    Returns:
+        HTTP response object.
+    """
+
+    return connection.post(
+        endpoint='/api/searchObjects',
+        headers={'X-MSTR-ProjectID': project_id},
+        json=body,
     )

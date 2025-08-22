@@ -101,12 +101,17 @@ documents = list_objects(conn, ObjectTypes.DOCUMENT_DEFINITION)
 OBJECT_ID = $object_id
 OBJECT_NAME = $object_name
 OBJECT_DESCRIPTION = $object_description
+OBJECT_NEW_OWNER = $object_new_owner
 
 # initialize an object of a given type (in this case `FOLDER`) with a given id
 object = Object(conn, ObjectTypes.FOLDER, OBJECT_ID)  # see types.py for ObjectTypes values
 
 # alter name and description of an object
 object.alter(name=OBJECT_NAME, description=OBJECT_DESCRIPTION)
+
+# alter object's owner field (owner can be passed as a username, user ID, or User object)
+object.alter(owner = OBJECT_NEW_OWNER)
+
 
 # Define variables which can be later used in a script
 REPORT_ID = $report_id

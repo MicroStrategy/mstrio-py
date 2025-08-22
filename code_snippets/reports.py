@@ -9,7 +9,7 @@ from mstrio.connection import get_connection
 from mstrio.server import Environment
 from mstrio.project_objects.content_cache import ContentCache
 from mstrio.project_objects.report import Report, list_reports
-from mstrio.project_objects.prompt import Prompt
+from mstrio.modeling.prompt import Prompt
 
 # Define a variable which can be later used in a script
 PROJECT_NAME = $project_name  # Insert name of project here

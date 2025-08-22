@@ -195,15 +195,7 @@ def get_info_all_user_groups(
     You can refine the set of user groups that are returned with a query
     parameter that specifies the characters that the user group name must begin
     with; if you omit the nameBegins query parameter, all user groups are
-    returned. You can limit the results that are returned with two query
-    parameters. The offset parameter specifies the location in the list of
-    users groups to begin returning results and the limit parameter specifies
-    the maximum number of matching user groups that can be returned; if you set
-    the limit parameter to -1, all results are returned (subject to Governing
-    settings). The total count of results returned is included in the response
-    header as "x-mstr-total-count". You obtain the authorization token needed
-    to execute the request using POST /auth/login; you pass the authorization
-    token in the request header.
+    returned.
 
     Args:
         connection (object): Strategy One connection object returned by

@@ -19,7 +19,7 @@ from mstrio.utils.helper import (
     Dictable,
     IServerError,
     camel_to_snake,
-    sort_object_properties,
+    key_fn_for_sort_object_properties,
 )
 from mstrio.utils.version_helper import class_version_handler
 
@@ -438,7 +438,7 @@ class License(Dictable):
 
         return {
             key: attributes[key]
-            for key in sorted(attributes, key=sort_object_properties)
+            for key in sorted(attributes, key=key_fn_for_sort_object_properties)
         }
 
     def list_products(
@@ -504,7 +504,7 @@ class License(Dictable):
 
         return {
             key: attributes[key]
-            for key in sorted(attributes, key=sort_object_properties)
+            for key in sorted(attributes, key=key_fn_for_sort_object_properties)
         }
 
     def fetch(self) -> None:

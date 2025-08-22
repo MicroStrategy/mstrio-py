@@ -57,6 +57,7 @@ def report_definition(connection: 'Connection', report_id: str) -> 'Response':
 def report_instance(
     connection: 'Connection',
     report_id: str,
+    project_id: str | None = None,
     body: dict | None = None,
     offset: int = 0,
     limit: int = 5000,
@@ -91,9 +92,13 @@ def report_instance(
         params['fields'] = CUBE_FIELDS
     if execution_stage:
         params['executionStage'] = execution_stage
+    headers = {'X-MSTR-ProjectID': project_id} if project_id else {}
 
     return connection.post(
-        endpoint=f'/api/v2/reports/{report_id}/instances/', json=body, params=params
+        endpoint=f'/api/v2/reports/{report_id}/instances/',
+        json=body,
+        params=params,
+        headers=headers,
     )
 
 
@@ -251,7 +256,11 @@ def get_report_prompts(
 
 @ErrorHandler(err_msg="Error providing prompt answers for report {report_id}.")
 def answer_report_prompts(
-    connection: 'Connection', report_id: str, instance_id: str, body: dict
+    connection: 'Connection',
+    report_id: str,
+    instance_id: str,
+    body: dict,
+    project_id: str | None = None,
 ) -> 'Response':
     """Provide answers to the prompts in a report instance.
 
@@ -278,12 +287,17 @@ def answer_report_prompts(
                 }
             The available prompt types are:
                     UNSUPPORTED, VALUE, ELEMENTS, EXPRESSION, OBJECTS, LEVEL
+        project_id (str, optional): Project ID.
 
     Returns:
         HTTP response object returned by the Strategy One REST server.
     """
+    if not project_id:
+        project_id = connection.project_id
     endpoint = f'/api/reports/{report_id}/instances/{instance_id}/prompts/answers'
-    return connection.put(endpoint=endpoint, json=body)
+    return connection.put(
+        endpoint=endpoint, json=body, headers={'X-MSTR-ProjectID': project_id}
+    )
 
 
 @ErrorHandler(err_msg="Error getting prompted report {report_id} instance.")
@@ -293,6 +307,7 @@ def get_prompted_instance(
     instance_id: str,
     closed: bool | None = None,
     fields: str | None = None,
+    project_id: str | None = None,
 ) -> 'Response':
     """Get the collection of prompts and their respective definitions from a
     report instance. This endpoint will return data only when the report
@@ -311,9 +326,13 @@ def get_prompted_instance(
             part of the response model.
 
     """
+    if not project_id:
+        project_id = connection.project_id
     endpoint = f'/api/reports/{report_id}/instances/{instance_id}/prompts'
     return connection.get(
-        endpoint=endpoint, params={'closed': closed, 'fields': fields}
+        endpoint=endpoint,
+        params={'closed': closed, 'fields': fields},
+        headers={'X-MSTR-ProjectID': project_id},
     )
 
 
@@ -376,4 +395,83 @@ def get_report_status(
         endpoint=endpoint,
         headers=headers,
         params={'fields': fields},
+    )
+
+
+@ErrorHandler(err_msg="Error getting VLDB settings for report with ID: {id}")
+def get_vldb_settings(
+    connection: 'Connection',
+    id: str,
+    instance_id: str | None = None,
+    error_msg: str | None = None,
+):
+    """Get advanced VLDB settings for a report.
+
+    Args:
+        connection (Connection): Strategy One REST API connection object
+        id (string): Datasource ID
+        instance_id (string, optional): Report Instance ID
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object.
+    """
+
+    return connection.get(
+        endpoint=f'/api/model/reports/{id}?showAdvancedProperties=true',
+        headers={'X-MSTR-MS-Instance': instance_id},
+    )
+
+
+@ErrorHandler(err_msg="Error updating VLDB settings for report with ID {id}")
+def update_vldb_settings(
+    connection: 'Connection',
+    id: str,
+    body: dict,
+    instance_id: str,
+    project_id: str | None = None,
+    error_msg: str | None = None,
+):
+    """Update metadata of advanced VLDB settings for a report.
+
+    Args:
+        connection (Connection): Strategy One REST API connection object
+        id (string): Report ID
+        instance_id (string): Report Instance ID
+        body (dict): JSON-formatted data used to update VLDB settings
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object.
+    """
+
+    return connection.put(
+        endpoint=f'/api/model/reports/{id}',
+        headers={'X-MSTR-MS-Instance': instance_id, 'X-MSTR-ProjectID': project_id},
+        json=body,
+    )
+
+
+@ErrorHandler(err_msg="Error getting metadata of VLDB settings for report with ID {id}")
+def get_applicable_vldb_settings(
+    connection: 'Connection',
+    id: str,
+    instance_id: str | None = None,
+    error_msg: str | None = None,
+):
+    """Get metadata of advanced VLDB settings for a report.
+
+    Args:
+        connection (Connection): Strategy One REST API connection object
+        id (string): Report ID
+        instance_id (string, optional): Report Instance ID
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object.
+    """
+
+    return connection.get(
+        endpoint=f'/api/model/reports/{id}/applicableVldbProperties',
+        headers={'X-MSTR-MS-Instance': instance_id},
     )
