@@ -1,4 +1,6 @@
-from enum import Enum, IntEnum
+from enum import Enum, IntEnum, auto
+
+from mstrio.utils.enum_helper import AutoUpperName
 
 
 class CertifiedStatus(Enum):
@@ -39,3 +41,13 @@ class SearchResultsFormat(Enum):
 
     LIST = 'LIST'
     TREE = 'TREE'
+
+
+class SearchScope(AutoUpperName):
+    """Enumeration constants used to specify the scope of the search with regard
+    to System Managed Objects."""
+
+    ROOTED = auto()  # For compatibility
+    NOT_MANAGED_ONLY = auto()
+    MANAGED_ONLY = auto()
+    ALL = auto()

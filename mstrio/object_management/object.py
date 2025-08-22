@@ -16,6 +16,7 @@ from mstrio.utils.helper import (
     get_args_from_func,
     get_default_args_from_func,
     get_valid_project_id,
+    get_owner_id,
 )
 from mstrio.utils.response_processors import objects as objects_processors
 
@@ -165,6 +166,7 @@ class Object(Entity, ACLMixin, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin):
             'hidden',
             'folder_id',
             'comments',
+            'owner',
         ): (objects_processors.update, 'partial_put'),
     }
 
@@ -199,16 +201,31 @@ class Object(Entity, ACLMixin, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin):
         abbreviation: str | None = None,
         hidden: bool | None = None,
         comments: str | None = None,
+        owner: str | User | None = None,
+        owner_id: str | None = None,
+        owner_username: str | None = None,
     ) -> None:
         """Alter the object properties.
 
         Args:
-            name: object name
-            description: object description
-            abbreviation: abbreviation
-            hidden: Specifies whether the metric is hidden
-            comments: long description of the object
+            name (str, optional): object name
+            description (str, optional): object description
+            abbreviation (str, optional): abbreviation
+            hidden (str, optional): Specifies whether the metric is hidden
+            comments (str, optional): long description of the object
+            owner (str, User, optional): username, user ID, or User object
+                representing the new owner of the object. If `owner` is
+                provided, `owner_id` and `owner_username` are ignored
+            owner_id (str, optional): ID of the new owner of the object. If only
+                owner_id and owner_username are provided, then owner_username is
+                omitted and the owner is set to the user with the given ID
+            owner_username (str, optional): username of the new owner of the
+                object
         """
+        if owner or owner_id or owner_username:
+            owner = get_owner_id(self.connection, owner, owner_id, owner_username)
+            owner_id = None
+            owner_username = None
         func = self.alter
         args = get_args_from_func(func)
         defaults = get_default_args_from_func(func)

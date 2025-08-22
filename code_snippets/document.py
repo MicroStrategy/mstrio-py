@@ -141,6 +141,9 @@ show_caches_status()
 Document.load_all_caches(connection=conn, status=CACHE_STATUS)
 show_caches_status()
 
+# Invalidating specific caches for documents
+Document.invalidate_caches(connection=conn, ids=[CACHE_ID])
+
 # Delete multiple document caches
 Document.delete_caches(connection=conn, cache_ids=[CACHE_ID, OTHER_CACHE_ID], force=True)
 

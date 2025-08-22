@@ -5,7 +5,7 @@ from mstrio.api import content_groups
 from mstrio.connection import Connection
 from mstrio.modeling.metric.metric_format import FormatProperty
 from mstrio.server.project import Project
-from mstrio.types import ObjectTypes
+from mstrio.types import ObjectSubTypes, ObjectTypes
 from mstrio.users_and_groups import User, UserGroup, UserOrGroup
 from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity
 from mstrio.utils.helper import (
@@ -241,7 +241,11 @@ class ContentGroup(Entity, CopyMixin, DeleteMixin):
         if content.get('type') == 3:
             return Report(connection=connection, id=content.get('id'))
         elif content.get('type') == 55:
-            if content.get('subtype') == 14084:
+            if content.get('subtype') in [
+                ObjectSubTypes.DOCUMENT_BOT.value,
+                ObjectSubTypes.DOCUMENT_BOT_2_0.value,
+                ObjectSubTypes.DOCUMENT_BOT_UNIVERSAL.value,
+            ]:
                 return Bot(connection=connection, id=content.get('id'))
             elif is_dashboard(content.get('viewMedia')):
                 return Dashboard(connection=connection, id=content.get('id'))

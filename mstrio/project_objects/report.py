@@ -42,6 +42,7 @@ from mstrio.utils.related_subscription_mixin import RelatedSubscriptionMixin
 from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.sessions import FuturesSessionWithRenewal
 from mstrio.utils.version_helper import meets_minimal_version
+from mstrio.utils.vldb_mixin import ModelVldbMixin
 
 logger = logging.getLogger(__name__)
 
@@ -202,6 +203,7 @@ class Report(
         ObjectSubTypes.REPORT_GRID,
         ObjectSubTypes.REPORT_GRAPH,
         ObjectSubTypes.REPORT_ENGINE,
+        ObjectSubTypes.REPORT_DATAMART,
         ObjectSubTypes.REPORT_GRID_AND_GRAPH,
         ObjectSubTypes.REPORT_TRANSACTION,
         ObjectSubTypes.REPORT_HYPER_CARD,
@@ -286,6 +288,19 @@ class Report(
                 parallel=parallel,
                 progress_bar=progress_bar,
             )
+
+        # Report exposes VLDB property methods through both VldbMixin and
+        # ModelVldbMixin. Due to name confusion, the Modeling Service methods
+        # are prefixed with 'model_'.
+        self._model_vldb = ModelVldbMixin()
+        self._model_vldb._MODEL_VLDB_API = {
+            'GET_ADVANCED': reports_api.get_vldb_settings,
+            'GET_APPLICABLE': reports_api.get_applicable_vldb_settings,
+        }
+        self._model_vldb.connection = self.connection
+        self._model_vldb.id = self.id
+
+        self.model_list_vldb_settings = self._model_vldb.list_vldb_settings
 
     def _init_variables(self, default_value, **kwargs):
         super()._init_variables(default_value=default_value, **kwargs)
@@ -600,6 +615,7 @@ class Report(
         response = reports_api.report_instance(
             connection=self._connection,
             report_id=self._id,
+            project_id=self.project_id,
             body=body,
             offset=0,
             limit=limit or self._initial_limit,

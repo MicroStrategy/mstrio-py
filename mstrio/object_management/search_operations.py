@@ -1,3 +1,4 @@
+from datetime import date
 import itertools
 import logging
 from concurrent.futures import as_completed
@@ -21,6 +22,7 @@ from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, EntityBase, Move
 from mstrio.utils.helper import (
     Dictable,
     _prepare_objects,
+    camel_to_snake,
     exception_handler,
     get_args_from_func,
     get_enum_val,
@@ -36,6 +38,98 @@ if TYPE_CHECKING:
     from mstrio.types import TypeOrSubtype
 
 logger = logging.getLogger(__name__)
+
+
+class DateQuery(Dictable):
+    """Object that specifies a date query for searches: either a date range or
+    number of days or months before the current date.
+
+    Attributes:
+        begin_date (date | None): Start date of the range.
+        end_date (date | None): End date of the range. `begin_date` and
+            `end_date` must be provided together. They must be the only
+            parameters provided if used.
+        since_days (int | None): Number of days before the current date.
+            Must be the only parameter provided if used.
+        since_months (int | None): Number of months before the current date.
+            Must be the only parameter provided if used.
+    """
+
+    def __init__(
+        self,
+        begin_date: date | str | None = None,
+        end_date: date | str | None = None,
+        since_days: int | None = None,
+        since_months: int | None = None,
+    ) -> None:
+        """Initialize DateQuery object.
+
+        Args:
+            begin_date (datetime, optional): Start date of the range.
+            end_date (datetime, optional): End date of the range.
+            since_days (int, optional): Number of days before the current date.
+            since_months (int, optional): Number of months before the current
+                date.
+        """
+
+        if not any([begin_date, end_date, since_days, since_months]):
+            exception_handler(
+                msg="At least one of the following parameters must be provided: "
+                "'begin_date', 'end_date', 'since_days', 'since_months'.",
+                exception_type=ValueError,
+            )
+        if begin_date and not end_date:
+            exception_handler(
+                msg="If 'begin_date' is provided, 'end_date' must also be provided.",
+                exception_type=ValueError,
+            )
+        if end_date and not begin_date:
+            exception_handler(
+                msg="If 'end_date' is provided, 'begin_date' must also be provided.",
+                exception_type=ValueError,
+            )
+        is_range = begin_date is not None
+        is_since_days = since_days is not None
+        is_since_months = since_months is not None
+
+        if is_range + is_since_days + is_since_months > 1:
+            exception_handler(
+                msg="Only one kind of the date query can be provided: "
+                "'begin_date' and 'end_date' (date range), 'since_days', "
+                "'since_months'.",
+                exception_type=ValueError,
+            )
+
+        self.begin_date = (
+            date.fromisoformat(begin_date)
+            if isinstance(begin_date, str)
+            else begin_date
+        )
+        self.end_date = (
+            date.fromisoformat(end_date) if isinstance(end_date, str) else end_date
+        )
+        self.since_days = since_days
+        self.since_months = since_months
+
+    def to_dict(self, camel_case=True) -> dict:
+        """Convert DateQuery object to a dictionary.
+
+        Args:
+            camel_case (bool): If True, returns keys in camelCase format,
+                otherwise returns keys in snake_case format.
+
+        Returns:
+            dict: Dictionary representation of the DateQuery object.
+        """
+
+        result = {
+            'beginDate': self.begin_date.isoformat() if self.begin_date else None,
+            'endDate': self.end_date.isoformat() if self.end_date else None,
+            'sinceDays': self.since_days,
+            'sinceMonths': self.since_months,
+        }
+
+        return result if camel_case else camel_to_snake(result)
 
 
 @class_version_handler('11.3.0100')
@@ -773,7 +867,9 @@ def quick_search_by_id(
 
     search_data = search_data if isinstance(search_data, list) else [search_data]
     body = {"projectIdAndObjectIds": [obj.to_dict() for obj in search_data]}
-    response = browsing_processors.get_search_objects(connection=connection, body=body)
+    response = browsing_processors.get_objects_from_quick_search(
+        connection=connection, body=body
+    )
     prepared_objects = _prepare_objects(response, filters)
 
     if to_dictionary:
