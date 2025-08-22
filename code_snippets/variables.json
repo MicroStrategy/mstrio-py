@@ -1235,6 +1235,10 @@
       "type": "text",
       "multiple": false
     },
+    "object_new_owner": {
+      "type": "text",
+      "multiple": false
+    },
     "report_id": {
       "type": "text",
       "multiple": false

@@ -281,6 +281,7 @@ class Application(Entity, CopyMixin, DeleteMixin):
                     filter_panel_allow_close: bool | None = None,
                     comments_panel_allow_close: bool | None = None,
                     ai_assistant_allow_close: bool | None = None,
+                    use_application_name_as_library_title: bool | None = None,
                     **kwargs,
                 ):
                     self.my_content = my_content
@@ -407,6 +408,9 @@ class Application(Entity, CopyMixin, DeleteMixin):
                     self.filter_panel_allow_close = filter_panel_allow_close
                     self.comments_panel_allow_close = comments_panel_allow_close
                     self.ai_assistant_allow_close = ai_assistant_allow_close
+                    self.use_application_name_as_library_title = (
+                        use_application_name_as_library_title
+                    )
 
                     possible_new_args = [
                         'new_dossier',

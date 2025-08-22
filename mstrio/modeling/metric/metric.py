@@ -14,7 +14,7 @@ from mstrio.modeling.schema.helpers import (
     SchemaObjectReference,
 )
 from mstrio.object_management import Folder, SearchPattern, search_operations
-from mstrio.types import ObjectTypes
+from mstrio.types import ObjectSubTypes, ObjectTypes
 from mstrio.users_and_groups.user import User
 from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, MoveMixin
 from mstrio.utils.enum_helper import AutoName, get_enum_val
@@ -33,6 +33,13 @@ if TYPE_CHECKING:
     from mstrio.modeling.metric import Metric
 
 logger = logging.getLogger(__name__)
+
+
+METRIC_SUBTYPES = (
+    ObjectSubTypes.METRIC,
+    ObjectSubTypes.METRIC_DMX,
+    ObjectSubTypes.METRIC_TRAINING,
+)
 
 
 @method_version_handler(version='11.3.0500')
@@ -104,6 +111,11 @@ def list_metrics(
         project_name=project_name,
         with_fallback=not project_name,
     )
+
+    # For METRIC, exclude subtotal subtypes.
+    # Did not set default value to allow explicitly passing METRIC
+    if metric_type == ObjectTypes.METRIC:
+        metric_type = list(METRIC_SUBTYPES)
 
     objects_ = search_operations.full_search(
         connection,
@@ -374,6 +386,7 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin, ModelVldbMixin):  # noqa
         OUTER = auto()
 
     _OBJECT_TYPE = ObjectTypes.METRIC
+    _OBJECT_SUBTYPES = METRIC_SUBTYPES
     _API_GETTERS = {
         (
             'id',

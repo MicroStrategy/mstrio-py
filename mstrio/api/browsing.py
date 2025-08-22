@@ -396,7 +396,7 @@ def get_search_suggestions(
 
 
 @ErrorHandler(err_msg="Error getting specified objects.")
-def get_search_objects(
+def get_objects_from_quick_search(
     connection: 'Connection',
     body: dict,
     include_ancestors: bool = False,

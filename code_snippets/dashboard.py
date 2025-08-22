@@ -144,6 +144,9 @@ show_caches_status()
 Dashboard.load_all_caches(connection=conn, status=CACHE_STATUS)
 show_caches_status()
 
+# Invalidating specific caches for dashboards
+Dashboard.invalidate_caches(connection=conn, ids=[CACHE_ID])
+
 # Delete multiple dashboard caches
 Dashboard.delete_caches(connection=conn, cache_ids=[CACHE_ID, OTHER_CACHE_ID], force=True)
 

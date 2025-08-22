@@ -55,11 +55,7 @@ def list_bots(
 
     objects = search_operations.full_search(
         connection=connection,
-        object_types=[
-            ObjectSubTypes.DOCUMENT_BOT,
-            ObjectSubTypes.DOCUMENT_BOT_2_0,
-            ObjectSubTypes.DOCUMENT_BOT_UNIVERSAL,
-        ],
+        object_types=Bot._OBJECT_SUBTYPES,
         project=project_id,
         name=name,
         limit=limit,
@@ -79,7 +75,11 @@ class Bot(Entity, CertifyMixin, CopyMixin, DeleteMixin, MoveMixin, LibraryMixin)
     _OBJECT_TYPE = ObjectTypes.DOCUMENT_DEFINITION
 
     # May also initialize to DOCUMENT_BOT_2_0 or DOCUMENT_BOT_UNIVERSAL
-    _OBJECT_SUBTYPE = ObjectSubTypes.DOCUMENT_BOT
+    _OBJECT_SUBTYPES = [
+        ObjectSubTypes.DOCUMENT_BOT,
+        ObjectSubTypes.DOCUMENT_BOT_2_0,
+        ObjectSubTypes.DOCUMENT_BOT_UNIVERSAL,
+    ]
 
     _API_GETTERS = {
         **Entity._API_GETTERS,

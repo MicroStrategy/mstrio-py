@@ -1,3 +1,4 @@
+import inspect
 import logging
 import os
 from base64 import b64encode
@@ -32,9 +33,23 @@ logger = logging.getLogger(__name__)
 APPLICATION_TYPE_PYTHON = 76
 APPLICATION_TYPE_WEB = 35
 
+try:
+    # assigned right away instead of being calculated in a method so that
+    # if a user creates their own `workstationData` variable, this will still
+    # show false as this is run before the script is executed in most cases
+    _is_in_workstation: bool | None = any(
+        'workstationData' in dict(inspect.getmembers(frame[0]))['f_globals']
+        for frame in inspect.stack()
+    )
+except Exception:
+    # This is not essential enough info to try to handle it
+    # in a more sophisticated way
+    _is_in_workstation = None
+
 
 class LoginMode(IntEnum):
     STANDARD = 1
+    ANONYMOUS = 8
     LDAP = 16
     API_TOKEN = 4096
 
@@ -111,13 +126,15 @@ def get_connection(
     )
     if response.ok:
         # create connection to I-Server
-        return Connection(
+        conn = Connection(
             base_url,
             identity_token=response.headers['X-MSTR-IdentityToken'],
             project_id=project_id,
             project_name=project_name,
             ssl_verify=ssl_verify,
         )
+        conn._through_get_connection = True
+        return conn
 
     logger.error(
         f'HTTP {response.status_code} - {response.reason}, Message {response.text}'
@@ -273,6 +290,7 @@ class Connection:
         self.timeout = None
         self.working_set = working_set
         self.max_search = max_search
+        self.__through_get_connection: bool = False
 
         # do not check application type if delegated
         self._application_type = (
@@ -330,7 +348,27 @@ class Connection:
             self.application_id = None
         self.select_project(project_id, project_name)
 
+    @property
+    def _through_get_connection(self) -> bool:
+        """Indicates if the connection was established via `get_connection`."""
+        return self.__through_get_connection
+
+    @_through_get_connection.setter
+    def _through_get_connection(self, value: bool) -> None:
+        if value is True and not self.is_run_in_workstation():
+            raise SyntaxError(
+                "Connection established via `get_connection` can only be used "
+                "inside Workstation."
+            )
+        self.__through_get_connection = value
+
     def __enter__(self):
+        if self._through_get_connection:
+            raise SyntaxError(
+                "Connection established via `get_connection` cannot be used "
+                "as a context manager (aka. using `with` syntax) as running "
+                "the script would disconnect you from Workstation."
+            )
         return self
 
     def __exit__(self, exception_type, exception_value, exception_traceback):
@@ -403,6 +441,12 @@ class Connection:
 
     def close(self):
         """Closes a connection with Strategy One REST API."""
+        if self._through_get_connection:
+            raise SyntaxError(
+                "Connection established via `get_connection` cannot be closed "
+                "as it would disconnect you from Workstation."
+            )
+
         authentication.logout(connection=self, whitelist=[('ERR009', 401)])
 
         self._session.close()
@@ -545,6 +589,12 @@ class Connection:
         except IServerError as e:
             if 'constraint violations' in str(e):
                 # The error indicates APPLICATION_TYPE_PYTHON is not supported
+                logger.error(
+                    'Server does not support new Python Application Type '
+                    f'({APPLICATION_TYPE_PYTHON}). Retrying connection with old '
+                    f'setup: WEB Application Type ({APPLICATION_TYPE_WEB}).'
+                )
+
                 self._application_type = APPLICATION_TYPE_WEB
                 return authentication.login(connection=self)
             else:
@@ -723,6 +773,16 @@ class Connection:
         self._user_id = response.get("id")
         self._user_full_name = response.get("fullName")
         self._user_initials = response.get("initials")
+
+    @classmethod
+    def is_run_in_workstation(cls) -> bool | None:
+        """Check if the script is run in Workstation.
+
+        Returns:
+            bool: True if the script is run in Workstation, False otherwise.
+                It may return None when gathering this info failed.
+        """
+        return _is_in_workstation
 
     @property
     def user_id(self) -> str:

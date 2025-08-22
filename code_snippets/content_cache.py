@@ -45,6 +45,13 @@ content_cache.invalidate()
 # Delete content cache
 content_cache.delete(force=True)
 
+# Invalidating specific caches
+ContentCache.invalidate_caches(connection=conn, ids=[CACHE_ID])
+
+# Deleting all caches
+ContentCache.delete_all_caches(connection=conn, force=True)
+
+
 # Define a variable which can be later used in a script
 OTHER_CACHE_ID = $other_cache_id  # Insert ID of cache on which you want to perform actions
 

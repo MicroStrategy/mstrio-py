@@ -45,6 +45,7 @@ if TYPE_CHECKING:
     from mstrio.project_objects.datasets import OlapCube, SuperCube
     from mstrio.server import Project
     from mstrio.types import ObjectTypes  # noqa: F401
+    from mstrio.users_and_groups import User
     from mstrio.utils.entity import EntityBase
 
 logger = logging.getLogger(__name__)
@@ -235,10 +236,12 @@ def response_handler(
         logger.debug(f"headers = {pformat(response.headers)}")
         logger.debug(f"content = {response.text}")
 
-        if response.ok and (
-            response.status_code == 204 or response.request.method == 'HEAD'
+        if (
+            response.ok
+            and response.text == ''
+            and (200 < response.status_code < 300 or response.request.method == 'HEAD')
         ):
-            # 204 No Content or HEAD request: both are valid
+            # we can expect empty response body and it's fine
             return
 
         res: dict | list = response.json()
@@ -1450,3 +1453,86 @@ def wait_for_stable_status(
         sleep(interval)
 
     return getattr(obj, property) not in not_stable_val
+
+
+def get_owner_id(
+    connection: 'Connection',
+    owner: 'str | User | None' = None,
+    owner_id: str | None = None,
+    owner_username: str | None = None,
+) -> str:
+    """Get owner ID based on provided parameters.
+
+    Args:
+        connection (Connection): Strategy One connection object.
+        owner (str | User | None): Owner's username, ID or User object.
+        owner_id (str | None): Owner's ID.
+        owner_username (str | None): Owner's username.
+
+    Returns:
+        str: User ID of the owner.
+    """
+    from mstrio.users_and_groups import User
+
+    # If owner is a User object, return its ID directly
+    if isinstance(owner, User):
+        return owner.id
+
+    # Determine the user identifier to look up
+    user_identifier = owner or owner_id or owner_username
+    if not user_identifier:
+        return None
+
+    # Get user and return ID if found
+    if user := get_user_based_on_id_or_username(
+        connection, user_identifier, user_identifier
+    ):
+        return user.id
+
+    return None
+
+
+def get_user_based_on_id_or_username(
+    connection: 'Connection',
+    user_id: str | None = None,
+    user_username: str | None = None,
+) -> 'User | None':
+    """Get User object based on provided user ID or username.
+
+    Args:
+        connection (Connection): Strategy One connection object.
+        user_id (str | None): User's ID.
+        user_username (str | None): User's username.
+
+    Returns:
+        User | None: User object if found, None otherwise.
+    """
+    from mstrio.users_and_groups import User
+
+    both_the_same = False
+    if user_id == user_username:
+        both_the_same = True
+    if user_id:
+        try:
+            return User(connection=connection, id=user_id)
+        except IServerError:
+            if not both_the_same:
+                logger.warning(
+                    f"Could not find user with ID '{user_id}'. "
+                    "Please provide a valid user ID."
+                )
+    if user_username:
+        try:
+            return User(connection=connection, username=user_username)
+        except ValueError:
+            if not both_the_same:
+                logger.warning(
+                    f"Could not find user with username '{user_username}'. "
+                    "Please provide a valid user username."
+                )
+    if both_the_same:
+        logger.warning(
+            f"Could not find user with ID or username '{user_id}'. "
+            "Please provide a valid user ID or username."
+        )
+    return None

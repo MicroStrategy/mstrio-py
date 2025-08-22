@@ -300,7 +300,12 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
     """
 
     _OBJECT_TYPE = ObjectTypes.REPORT_DEFINITION
+
+    # Not to be confused with EntityBase._OBJECT_SUBTYPES field, which is a list
+    # used in fetch() to validate subtype. This field is overridden in
+    # subclasses and used in __init__ workflow.
     _OBJECT_SUBTYPE = None
+
     _API_GETTERS = {
         (
             'id',

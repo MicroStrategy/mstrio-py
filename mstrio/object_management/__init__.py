@@ -19,6 +19,7 @@ from .search_enums import (
 )
 from .search_operations import (
     CertifiedStatus,
+    DateQuery,
     QuickSearchData,
     SearchDomain,
     SearchObject,

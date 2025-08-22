@@ -1,5 +1,22 @@
 # Changelog
 
+## 11.5.8.101 - 2025/08/22
+
+### Minor changes
+
+- added `is_run_in_workstation` method to `Connection` class to check if the script is run in Workstation context
+- added prevention logic to `get_connection` method disallowing accidental connection closing
+- added `model_list_vldb_settings` method to `Report`
+- added possibility to alter `owner` field with `Object` class `alter()` method
+- added possibility to set application name as Library title of `Application` object
+- added `data_source_script_all_users.py` and `transaction_edit_users.py` script templates
+- improved error message for server not supporting new Python Application Type during login
+- added support for object subtypes corresponding to Bots 2.0, Universal Bots and Datamart Reports
+
+### Bug fixes
+
+- fixed `Metric` and `list_metrics` erroneously supporting Subtotal objects
+
 ## 11.5.7.101 - 2025/07/18
 
 ### New features
