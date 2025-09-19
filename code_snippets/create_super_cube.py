@@ -51,7 +51,7 @@ dates_df = pd.DataFrame(dates, columns=["dates"])
 dates_df["dates"] = pd.to_datetime(dates_df["dates"]).dt.date
 
 # Define a variable which can be later used in a script
-SUPER_CUBE_NAME = $super_cube_name  # Insert name of created suber cube here
+SUPER_CUBE_NAME = $super_cube_name  # Insert name of created super cube here
 
 # Add tables to the super cube and create it. By default 'create()' will
 # additionally upload data to the I-Server and publish it. You can manipulate it

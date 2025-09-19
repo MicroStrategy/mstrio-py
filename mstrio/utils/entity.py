@@ -3,6 +3,7 @@ import inspect
 import logging
 from collections.abc import Callable
 from enum import Enum
+from functools import partial
 from os.path import join as joinpath
 from pprint import pprint
 from sys import version_info
@@ -34,6 +35,7 @@ from mstrio.utils.translation_mixin import TranslationMixin
 from mstrio.utils.version_helper import method_version_handler
 
 if TYPE_CHECKING:
+    from mstrio.modeling import Prompt
     from mstrio.object_management import Folder, Shortcut
     from mstrio.server import Project
 
@@ -483,8 +485,9 @@ class EntityBase(helper.Dictable):
                     self.__class__, lambda x: isinstance(x, property)
                 )
             ]
-            attr = list(set(attr))
             excluded_properties = excluded_properties or []
+            attr = [a for a in attr if a not in excluded_properties]
+            attr = list(set(attr))
             for a in attr:
                 try:
                     getattr(self, a)
@@ -508,7 +511,7 @@ class EntityBase(helper.Dictable):
 
         return {
             key: attributes[key]
-            for key in sorted(attributes, key=helper.sort_object_properties)
+            for key in sorted(attributes, key=helper.key_fn_for_sort_object_properties)
         }
 
     def to_dataframe(self) -> DataFrame:
@@ -1573,11 +1576,156 @@ class VldbMixin:
         return self._vldb_settings
 
 
+class PromptMixin:
+    """Mixin that adds prompt functionality to Strategy One objects.
+
+    Enables objects to retrieve and answer prompts - interactive input elements
+    that collect user responses before execution. Must be mixed in with Entity
+    or its subclasses.
+
+    Attributes:
+        _API_GET_PROMPTS (Callable): Function to retrieve object prompts
+        _API_PROMPT_GET_INSTANCE (Callable): Function to get object instance
+        _API_PROMPT_GET_OBJ_STATUS (Callable): Function to check object status
+        _API_PROMPT_GET_PROMPTED_INSTANCE (Callable): Function to get prompted
+            instance
+        _API_PROMPT_ANSWER_PROMPTS (Callable): Function to submit prompt answers
+
+    Properties:
+        prompts (list[Prompt]): List of Prompt objects for the object
+
+    Methods:
+        answer_prompts: Submit answers to object prompts
+
+    Example:
+        >>> report = Report(connection, id='report_id')
+        >>> prompts = report.prompts
+        >>> prompt_answers = [Prompt(key='prompt_key', answers=['value1'])]
+        >>> success = report.answer_prompts(prompt_answers)
+    """
+
+    _API_GET_PROMPTS: Callable
+    _API_PROMPT_GET_INSTANCE: Callable
+    _API_PROMPT_GET_OBJ_STATUS: Callable
+    _API_PROMPT_GET_PROMPTED_INSTANCE: Callable
+    _API_PROMPT_ANSWER_PROMPTS: Callable
+    _prompts: None | list['Prompt'] = None
+
+    @property
+    def prompts(self) -> list['Prompt']:
+        """Get prompts of the object."""
+
+        from mstrio.modeling.prompt import Prompt
+
+        if self._prompts is None:
+            param_value_dict = auto_match_args_entity(
+                self._API_GET_PROMPTS, self, id_weak_match=True
+            )
+            if (
+                'project_id' in param_value_dict
+                and param_value_dict['project_id'] is None
+            ):
+                param_value_dict['project_id'] = self.connection.project_id
+            response = self._API_GET_PROMPTS(**param_value_dict)
+            prompts = response.json()
+            self._prompts = [
+                Prompt.from_dict(source=prompt, connection=self.connection)
+                for prompt in prompts
+            ]
+        return self._prompts
+
+    def answer_prompts(
+        self,
+        prompt_answers: 'list[Prompt] | Prompt | None' = None,
+        force: bool = False,
+        instance_id: str | None = None,
+    ) -> bool:
+        """Answer prompts of the object.
+
+        Args:
+            prompt_answers (list[Prompt], Prompt | optional): List of Prompt
+                objects containing answers for the object's prompts. Each prompt
+                can specify either 'answers' (custom values) or
+                'use_default=True' (to use the prompt's default value).
+                If None, the user will be prompted interactively for input.
+                Defaults to None.
+            force (bool, optional): Controls prompt answer behavior:
+                - If True: Apply provided prompt answers without any
+                    confirmation questions. If a required prompt is missing
+                    from prompt_answers, raises an error.
+                - If False: Ask user for confirmation before overriding existing
+                    answers. If prompt answers are not provided, opens
+                    interactive user input.
+                Defaults to False.
+            instance_id (str | None, optional): Instance ID for the prompt
+                answers.
+
+        Returns:
+            bool: True if prompts were answered successfully, False otherwise.
+        """
+        from mstrio.modeling import Prompt
+        from mstrio.project_objects.helpers import answer_prompts_helper
+
+        is_report = (
+            hasattr(self, '_OBJECT_TYPE')
+            and self._OBJECT_TYPE == ObjectTypes.REPORT_DEFINITION
+        )
+        id_param_name = 'report_id' if is_report else 'document_id'
+
+        instance_id = (
+            instance_id
+            or self.instance_id
+            or (
+                self._API_PROMPT_GET_INSTANCE(
+                    connection=self.connection, **{id_param_name: self.id}
+                )
+                .json()
+                .get('instanceId')
+                if is_report
+                else None
+            )
+        )
+
+        api_context = {
+            'connection': self.connection,
+            id_param_name: self.id,
+            'instance_id': instance_id,
+            'project_id': getattr(self, '_project_id', None)
+            or self.connection.project_id,
+        }
+
+        if isinstance(prompt_answers, Prompt):
+            prompt_answers = [prompt_answers]
+
+        if not answer_prompts_helper(
+            instance_id=instance_id,
+            prompt_answers=prompt_answers,
+            get_status_func=partial(
+                self._API_PROMPT_GET_OBJ_STATUS,
+                **api_context,
+            ),
+            get_prompts_func=partial(
+                self._API_PROMPT_GET_PROMPTED_INSTANCE,
+                **api_context,
+                closed=False,
+            ),
+            answer_prompts_func=partial(self._API_PROMPT_ANSWER_PROMPTS, **api_context),
+            force=force,
+        ):
+            return False
+
+        # If prompts were answered successfully, update the instance_id
+        self._instance_id = instance_id
+
+        return True
+
+
 def auto_match_args_entity(
     func: Callable,
     obj: EntityBase,
     exclude: list | None = None,
     include_defaults: bool = True,
+    id_weak_match: bool = False,
 ) -> dict:
     """Automatically match `obj` object data to function arguments.
 
@@ -1599,7 +1747,9 @@ def auto_match_args_entity(
         key[1:] if key.startswith("_") else key: val
         for key, val in obj.__dict__.items()
     }
-    kwargs = helper.auto_match_args(func, obj_dict, exclude, include_defaults)
+    kwargs = helper.auto_match_args(
+        func, obj_dict, exclude, include_defaults, id_weak_match
+    )
 
     if "object_type" in kwargs:
         kwargs.update({"object_type": obj._OBJECT_TYPE.value})

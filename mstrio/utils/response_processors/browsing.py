@@ -20,3 +20,40 @@ def get_objects_from_quick_search(
         .json()
         .get('result')
     )
+
+
+def get_search_object(
+    connection: 'Connection',
+    id: str,
+):
+    result_dict: dict = browsing_api.get_search_object(
+        connection=connection, id=id
+    ).json()
+
+    time_range = result_dict.pop('timeRange', None)
+    date_filter_type = result_dict.pop('dateFilterType', None)
+    if date_filter_type and date_filter_type.upper() == 'CREATED':
+        result_dict['dateCreatedQuery'] = time_range
+    elif date_filter_type and date_filter_type.upper() == 'MODIFIED':
+        result_dict['dateModifiedQuery'] = time_range
+
+    search_visibility = result_dict.pop('visibility', None)
+    if search_visibility and search_visibility.upper() == 'VISIBLE':
+        result_dict['includeHidden'] = False
+    elif search_visibility and search_visibility.upper() == 'ALL':
+        result_dict['includeHidden'] = True
+
+    if 'root' in result_dict:
+        result_dict['rootFolderQuery'] = result_dict.pop('root')
+    if 'types' in result_dict:
+        result_dict['objectTypesQuery'] = result_dict.pop('types')
+    if 'subtypes' in result_dict:
+        result_dict['objectSubtypesQuery'] = result_dict.pop('subtypes')
+    if 'ownerId' in result_dict:
+        result_dict['ownerQuery'] = result_dict.pop('ownerId')
+    if 'localeId' in result_dict:
+        result_dict['lcidQuery'] = result_dict.pop('localeId')
+    if 'excludedFolders' in result_dict:
+        result_dict['excludeFolders'] = result_dict.pop('excludedFolders')
+
+    return result_dict

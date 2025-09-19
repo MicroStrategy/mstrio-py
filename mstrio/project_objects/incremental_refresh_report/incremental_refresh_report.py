@@ -5,11 +5,13 @@ import pandas as pd
 
 from mstrio import config
 from mstrio.api import incremental_refresh_reports as refresh_api
+from mstrio.api import reports as reports_api
 from mstrio.connection import Connection
 from mstrio.modeling import (
     Expression,
     ExpressionFormat,
     ObjectSubType,
+    Prompt,
     SchemaObjectReference,
 )
 from mstrio.object_management import Folder, SearchPattern, full_search
@@ -397,6 +399,7 @@ class IncrementalRefreshReport(
         )
         self._show_filter_tokens = kwargs.get('show_filter_tokens', False)
         self._show_advanced_properties = kwargs.get('show_advanced_properties', False)
+        self._prompts = None
 
     def execute(
         self,
@@ -736,3 +739,16 @@ class IncrementalRefreshReport(
         parser.parse(response=json)
 
         return parser.dataframe
+
+    @property
+    def prompts(self) -> dict:
+        """Prompts of the report."""
+        if self._prompts is None:
+            prompts = reports_api.get_report_prompts(
+                connection=self.connection, report_id=self.id
+            ).json()
+            self._prompts = [
+                Prompt.from_dict(source=prompt, connection=self.connection)
+                for prompt in prompts
+            ]
+        return self._prompts

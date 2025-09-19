@@ -83,6 +83,8 @@ def list_migration_possible_content(
         if isinstance(obj_subtype, list):
             types_to_search.extend(obj_subtype)
         elif obj_subtype is not None:
+            types_to_search.append(obj_subtype)
+        else:
             types_to_search.append(obj_type)
 
     return types_to_search

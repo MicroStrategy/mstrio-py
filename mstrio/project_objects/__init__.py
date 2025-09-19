@@ -21,5 +21,7 @@ from .incremental_refresh_report import (
     list_incremental_refresh_reports,
 )
 from .library import Library
-from .prompt import Prompt
 from .report import Report, list_reports
+
+
+from mstrio.project_objects.prompt import Prompt

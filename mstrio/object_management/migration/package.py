@@ -619,7 +619,7 @@ CATALOG_ITEMS = {
             ObjectSubTypes.REPORT_NON_INTERACTIVE,
             ObjectSubTypes.INCREMENTAL_REFRESH_REPORT,
             ObjectSubTypes.REPORT_TRANSACTION,
-            ObjectSubTypes.SUBER_CUBE_IRR,
+            ObjectSubTypes.SUPER_CUBE_IRR,
             ObjectSubTypes.REPORT_DATAMART,
         ],
     ),  # Report

@@ -2,6 +2,7 @@ import json
 from typing import TYPE_CHECKING, Union
 
 from mstrio.utils.error_handlers import ErrorHandler
+from mstrio.utils.helper import delete_none_values
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
@@ -106,6 +107,116 @@ def store_search_instance(
             'beginModificationTime': begin_modification_time,
             'endModificationTime': end_modification_time,
         },
+    )
+
+
+@ErrorHandler(err_msg="Error searching metadata.")
+def store_search_instance_v2(
+    connection: 'Connection',
+    body: dict,
+    project_id: str | None = None,
+    name: str | None = None,
+    pattern: int | None = None,
+    domain: int | None = None,
+    scope: str | None = None,
+    root: str | None = None,
+    type: list[int] | None = None,
+    uses_object: str | None = None,
+    uses_recursive: bool = False,
+    uses_one_of: bool | None = None,
+    used_by_object: str | None = None,
+    used_by_recursive: bool | None = None,
+    used_by_one_of: bool | None = None,
+    begin_modification_time: str | None = None,
+    end_modification_time: str | None = None,
+    visibility: str | None = None,
+    error_msg: str | None = None,
+):
+    """
+    Search the metadata and store an instance of search results.
+
+    Args:
+        connection (object): Strategy One connection object returned by
+            `connection.Connection()`.
+        body (dict): Request body containing extra search params
+        project_id (string, optional): Project ID
+        name (string, optional): Value the search pattern is set to, which will
+            be applied to the names of object types being searched. For example,
+            search for all report objects (type) whose name begins with
+            (pattern) B (name).
+        pattern (integer, optional): Pattern to search for, such as Begin With
+            or Exactly. Possible values are available in enum
+            `mstrio.object_management.SearchPattern.` Default value is
+            CONTAINS (4).
+        domain (integer, optional): Domain where the search will be performed,
+            such as Local or Project. Possible values are available in enum
+            `mstrio.object_management.SearchDomain.` Default value is
+            DOMAIN_PROJECT (2).
+        scope (string, optional): Scope of the search in relation to managed
+            objects. Possible values are available in enum
+            `mstrio.object_management.SearchScope.` Default value is 'managed'.
+        root (string, optional): Folder ID of the root folder where the search
+            will be performed.
+        type (list of integers, optional): Type(s) of object(s) to be searched.
+            Possible values are available in enums `mstrio.types.ObjectTypes`
+            and `mstrio.types.ObjectSubTypes`.
+        uses_object (string, optional): Constrain the search to only return
+            objects which use the given object. The value should be 'objectId;
+            object type', for example 'E02FE6DC430378A8BBD315AA791FC580;3'. It
+            is not allowed to use both 'uses_object' and 'used_by_object' in one
+            request.
+        uses_recursive (boolean, optional): Control the Intelligence server to
+            also find objects that use the given objects indirectly. Default
+            value is false.
+        uses_one_of (boolean): Control the Intelligence server to also find
+            objects that use one of or all of given objects indirectly.
+            Default value is false.
+        used_by_object (string, optional): Constrain the search to only return
+            objects which are used by the given object. The value should be
+            'object Id; object type', for example:
+            'E02FE6DC430378A8BBD315AA791FC580;3'. It is not allowed to use both
+            'uses_object' and 'used_by_object' in one request.
+        used_by_recursive (boolean, optional): Control the Intelligence server
+            to also find objects that are used by the given objects indirectly.
+            Default value is false.
+        used_by_one_of (boolean): Control the Intelligence server to also
+            find objects that are used by one of or all of given objects
+            indirectly. Default value is false.
+        begin_modification_time (string, optional): Field to filter request
+            to return records newer than a given date in
+            format 'yyyy-MM-dd'T'HH:mm:ssZ', for example 2021-04-04T06:33:32Z.
+        end_modification_time (string, optional): Field to filter request
+            to return records  older than a given date in
+            format 'yyyy-MM-dd'T'HH:mm:ssZ', for example 2022-04-04T06:33:32Z.
+        visibility (string, optional): Filter the result based on the `hidden`
+            field of objects. If not passed, no filtering will be applied.
+            Available values are 'visible' and 'all'.
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        HTTP response returned by the Strategy One REST server.
+    """
+    return connection.post(
+        endpoint='/api/v2/metadataSearches/results',
+        headers={'X-MSTR-ProjectID': project_id},
+        params={
+            'name': name,
+            'pattern': pattern,
+            'domain': domain,
+            'scope': scope,
+            'root': root,
+            'type': type,
+            'usesObject': uses_object,
+            'usesRecursive': uses_recursive,
+            'usedByObject': used_by_object,
+            'usedByRecursive': used_by_recursive,
+            'usesOneOf': uses_one_of,
+            'usedByOneOf': used_by_one_of,
+            'beginModificationTime': begin_modification_time,
+            'endModificationTime': end_modification_time,
+            'visibility': visibility,
+        },
+        json=delete_none_values(body, recursion=True),
     )
 
 
@@ -425,4 +536,51 @@ def get_objects_from_quick_search(
             'showNavigationPath': show_navigation_path,
             'fields': fields,
         },
+    )
+
+
+@ErrorHandler(err_msg="Error getting search object with ID {id}.")
+def get_search_object(
+    connection: 'Connection',
+    id: str,
+    error_msg: str | None = None,
+):
+    """Get information about a specific search object.
+
+    Args:
+        connection: Strategy One REST API connection object
+        id: ID of the search object
+        error_msg: Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object.
+    """
+    return connection.get(
+        endpoint=f'/api/searchObjects/{id}',
+    )
+
+
+@ErrorHandler(err_msg="Error creating search object.")
+def create_search_object(
+    connection: 'Connection',
+    project_id: str,
+    body: dict,
+    error_msg: str | None = None,
+):
+    """Create a search object.
+
+    Args:
+        connection: Strategy One REST API connection object
+        project_id: ID of the project where the search object will be created
+        body: Dictionary containing the search object details
+        error_msg: Custom Error Message for Error Handling
+
+    Returns:
+        HTTP response object.
+    """
+
+    return connection.post(
+        endpoint='/api/searchObjects',
+        headers={'X-MSTR-ProjectID': project_id},
+        json=body,
     )

@@ -256,7 +256,11 @@ def get_report_prompts(
 
 @ErrorHandler(err_msg="Error providing prompt answers for report {report_id}.")
 def answer_report_prompts(
-    connection: 'Connection', report_id: str, instance_id: str, body: dict
+    connection: 'Connection',
+    report_id: str,
+    instance_id: str,
+    body: dict,
+    project_id: str | None = None,
 ) -> 'Response':
     """Provide answers to the prompts in a report instance.
 
@@ -283,12 +287,17 @@ def answer_report_prompts(
                 }
             The available prompt types are:
                     UNSUPPORTED, VALUE, ELEMENTS, EXPRESSION, OBJECTS, LEVEL
+        project_id (str, optional): Project ID.
 
     Returns:
         HTTP response object returned by the Strategy One REST server.
     """
+    if not project_id:
+        project_id = connection.project_id
     endpoint = f'/api/reports/{report_id}/instances/{instance_id}/prompts/answers'
-    return connection.put(endpoint=endpoint, json=body)
+    return connection.put(
+        endpoint=endpoint, json=body, headers={'X-MSTR-ProjectID': project_id}
+    )
 
 
 @ErrorHandler(err_msg="Error getting prompted report {report_id} instance.")
@@ -298,6 +307,7 @@ def get_prompted_instance(
     instance_id: str,
     closed: bool | None = None,
     fields: str | None = None,
+    project_id: str | None = None,
 ) -> 'Response':
     """Get the collection of prompts and their respective definitions from a
     report instance. This endpoint will return data only when the report
@@ -316,9 +326,13 @@ def get_prompted_instance(
             part of the response model.
 
     """
+    if not project_id:
+        project_id = connection.project_id
     endpoint = f'/api/reports/{report_id}/instances/{instance_id}/prompts'
     return connection.get(
-        endpoint=endpoint, params={'closed': closed, 'fields': fields}
+        endpoint=endpoint,
+        params={'closed': closed, 'fields': fields},
+        headers={'X-MSTR-ProjectID': project_id},
     )
 
 
@@ -460,4 +474,49 @@ def get_applicable_vldb_settings(
     return connection.get(
         endpoint=f'/api/model/reports/{id}/applicableVldbProperties',
         headers={'X-MSTR-MS-Instance': instance_id},
+    )
+
+
+@ErrorHandler(err_msg="Error executing report {report_id}.")
+def execute_report(
+    connection: 'Connection',
+    report_id: str,
+    prefer: str = 'respond-async',
+    instance_id: str | None = None,
+    project_id: str | None = None,
+    execution_stage: str | None = None,
+    error_msg: str | None = None,
+):
+    """Execute a report. A project_id is required to execute the request if
+    instance_id is not provided in the header. Set "Prefer" to respond-async to
+    execute this API asynchronously.
+
+    Args:
+        connection (Connection): Strategy One REST API connection object.
+        report_id (str): Unique ID of the report you wish to execute.
+        prefer (str, optional): Response preference. Default is 'respond-async'.
+        instance_id (str, optional): Unique ID of an existing in-memory instance
+            of a published report.
+        project_id (str, optional): Unique ID of the project containing the
+            report.
+        execution_stage (str, optional): Execution stage the report is executed
+            to. Available values: 'resolve_prompts', 'execute_data', 'no_action'
+        error_msg (str, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object.
+    """
+
+    headers = {'Prefer': prefer}
+    params = {}
+    if project_id:
+        headers['X-MSTR-ProjectID'] = project_id
+    if instance_id:
+        headers['X-MSTR-MS-Instance'] = instance_id
+    if execution_stage:
+        params['executionStage'] = execution_stage
+    return connection.post(
+        endpoint=f'/api/model/reports/{report_id}/instances',
+        headers=headers,
+        params=params,
     )

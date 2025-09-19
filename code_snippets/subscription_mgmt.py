@@ -17,6 +17,7 @@ from mstrio.distribution_services import (
     Subscription,
     SubscriptionManager
 )
+from mstrio.modeling import Prompt
 from mstrio.users_and_groups.user import User
 from mstrio.connection import get_connection
 
@@ -209,3 +210,25 @@ for s in sub_mngr.list_subscriptions(to_dictionary=False):
     if USER_TO_REMOVE_ID in [r['id'] for r in s.recipients]:
         s.add_recipient(recipients=ADMIN_USER_ID)
         s.remove_recipient(recipients=USER_TO_REMOVE_ID)
+
+PROMPTED_SUBSCRIPTION_ID = $prompted_subscription_id
+
+prompted_sub = Subscription(connection=CONN, subscription_id=PROMPTED_SUBSCRIPTION_ID)
+
+# Print prompted subscription prompts
+print(prompted_sub.prompts)
+
+PROMPT_KEY_1 = $prompt_key_1
+PROMPT_KEY_2 = $prompt_key_2
+PROMPT_1_ANSWERS = "<PLACEHOLDER_FOR_PROMPT_1_ANSWERS>"
+
+# Prepare prompt answers
+PROMPT_1 = Prompt(key=PROMPT_KEY_1, answers=PROMPT_1_ANSWERS)
+PROMPT_2 = Prompt(key=PROMPT_KEY_2, use_default=True)
+
+# Change prompted subscription answers
+prompted_sub.answer_prompts(prompt_answers=[PROMPT_1, PROMPT_2], force=True)
+
+# Execute prompted subscription with new answers
+prompted_sub.execute()
+

@@ -3,6 +3,7 @@
 2. Create a list of prompts for the report
 3. Answer the prompts
 4. Create an email subscription with the answered prompts
+5. Execute the subscription with defined prompt answers
 """
 
 from mstrio.connection import get_connection
@@ -120,3 +121,6 @@ email_sub = EmailSubscription.create(
     recipients=['54F3D26011D2896560009A8E67019608'],
     email_subject='<Email subject>',
 )
+
+# Execute the subscription with defined prompt answers
+email_sub.execute()
