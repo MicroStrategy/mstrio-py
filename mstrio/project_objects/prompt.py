@@ -1,7 +1,10 @@
 from dataclasses import dataclass
 from typing import Any
 
-from mstrio.utils.helper import Dictable
+from mstrio.utils.helper import Dictable, deprecation_warning
+
+
+deprecation_warning("mstrio.project_objects.prompt", "mstrio.modeling.prompt", "11.6.9")
 
 
 @dataclass

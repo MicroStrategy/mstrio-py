@@ -26,6 +26,7 @@ from mstrio.distribution_services.subscription.subscription_status import (
     SubscriptionStatus,
 )
 from mstrio.helpers import NotSupportedError
+from mstrio.modeling import Prompt
 from mstrio.users_and_groups import User
 from mstrio.utils import helper, time_helper
 from mstrio.utils.entity import EntityBase
@@ -105,6 +106,7 @@ class Subscription(EntityBase):
     _API_PATCH = [subscriptions.update_subscription]
     _RECIPIENTS_TYPES = RecipientsTypes
     _RECIPIENTS_INCLUDE = ['TO', 'CC', 'BCC', None]
+    _API_GET_PROMPTS = staticmethod(subscriptions.get_subscription_prompts)
 
     def __init__(
         self,
@@ -191,6 +193,7 @@ class Subscription(EntityBase):
         )
         self.project_id = project_id
         self._status = kwargs.get('status')
+        self._prompts = None
 
     @method_version_handler('11.3.0000')
     def alter(
@@ -549,6 +552,9 @@ class Subscription(EntityBase):
         include_type of single recipient, or just pass recipients list as a
         list of dictionaries.
 
+        Note:
+            When providing recipient ID remember to also provide its type.
+
         Args:
             recipients: list of ids or dicts containing recipients, dict format:
                 {"id": recipient_id,
@@ -579,6 +585,9 @@ class Subscription(EntityBase):
                 "Specify either a recipient ID, type and include type or pass "
                 "recipients dictionaries"
             )
+            helper.exception_handler(msg, ValueError)
+        elif recipients == [] and recipient_id and recipient_type is None:
+            msg = "When providing recipient ID remember to also provide its type."
             helper.exception_handler(msg, ValueError)
 
         all_recipients = self.recipients.copy()
@@ -1207,7 +1216,7 @@ class Subscription(EntityBase):
         """
 
         from mstrio.project_objects.document import Document
-        from mstrio.project_objects.prompt import Prompt
+        from mstrio.modeling.prompt import Prompt
         from mstrio.project_objects.report import Report
 
         contents: list[dict] = [cont.to_dict() for cont in self.contents]
@@ -1225,11 +1234,11 @@ class Subscription(EntityBase):
             }
             if content_type == 'report':
                 rep = Report(self.connection, content['id'])
-                rep.answer_prompts(Prompt.bulk_from_dict(prompts_data))
+                rep.answer_prompts(Prompt.bulk_from_dict(prompts_data), True)
                 dict_update['instanceId'] = rep.instance_id
             elif content_type in ['document', 'dossier']:
                 doc = Document(self.connection, content['id'])
-                doc.answer_prompts(prompts_data)
+                doc.answer_prompts(prompts_data, True)
                 dict_update['instanceId'] = doc.instance_id
             content['personalization'].update({'prompt': dict_update})
         return contents
@@ -1265,3 +1274,78 @@ class Subscription(EntityBase):
                 if k not in ['status', 'last_run']
             }
         super().fetch(attr)
+
+    def answer_prompts(
+        self,
+        prompt_answers: list["Prompt"],
+        force: bool = False,
+    ) -> bool:
+        """Answer prompts of the object.
+
+        Args:
+            prompt_answers (list[Prompt]): List of Prompt class objects
+                answering the prompts of the object.
+            force (bool): If True, then the object's existing prompt will be
+                overwritten by ones from the prompt_answers list, and additional
+                input from the user won't be asked. Otherwise, the user will be
+                asked for input if the prompt is not answered, or if prompt was
+                already answered.
+
+        Returns:
+            bool: True if prompts were answered successfully, False otherwise.
+        """
+        from mstrio.project_objects import Report, Document
+
+        new_contents = []
+        for content_obj in self.contents:
+            selected_obj = None
+            if content_obj.type == Content.Type.REPORT:
+                selected_obj = Report(self.connection, content_obj.id)
+            elif content_obj.type in [
+                Content.Type.DOCUMENT,
+                Content.Type.DASHBOARD,
+            ]:
+                selected_obj = Document(self.connection, content_obj.id)
+            else:
+                raise NotSupportedError(
+                    f"Answering prompts is not supported for content type "
+                    f"'{content_obj.type}'."
+                )
+
+            selected_obj.answer_prompts(prompt_answers, force=force)
+            new_contents.append(
+                Content(
+                    id=selected_obj.id,
+                    type=content_obj.type,
+                    personalization=Content.Properties(
+                        format_type=content_obj.personalization.format_type,
+                        prompt=Content.Properties.Prompt(
+                            enabled=True,
+                            instance_id=selected_obj.instance_id,
+                        ),
+                    ),
+                )
+            )
+
+        self.alter(contents=new_contents)
+        return True
+
+    @property
+    @method_version_handler('11.5.0900')
+    def prompts(self) -> dict:
+        """Prompts of the report."""
+        if self._prompts is None:
+            prompts = (
+                subscriptions.get_subscription_prompts(
+                    connection=self.connection,
+                    subscription_id=self.id,
+                    project_id=self.project_id,
+                )
+                .json()
+                .get('prompts', [])
+            )
+            self._prompts = [
+                Prompt.from_dict(source=prompt, connection=self.connection)
+                for prompt in prompts
+            ]
+        return self._prompts

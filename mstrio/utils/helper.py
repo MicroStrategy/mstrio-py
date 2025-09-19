@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING, Any, TypeVar
 
 import humps
 from pypika import Query
+from requests import Response
 
 from mstrio import config
 from mstrio.helpers import (
@@ -37,8 +38,6 @@ from mstrio.utils.time_helper import (
 )
 
 if TYPE_CHECKING:
-    from requests import Response
-
     from mstrio.connection import Connection
     from mstrio.modeling.expression import Expression
     from mstrio.object_management import SearchPattern  # noqa: F401
@@ -396,6 +395,60 @@ def _prepare_objects(
     return objects
 
 
+def get_total_count_of_objects(
+    source: Callable[["Connection", int], Response] | Response,
+    connection: "Connection | None" = None,
+    **kwargs: Any,
+) -> int:
+    """Get total count of objects from server Response object
+    or getter returning server Response object.
+
+    Args:
+        source: GET API wrapper function that will return a Response object
+            (fn accepting `limit` parameter) or Response object with
+            the total count in headers
+        connection: Strategy One REST API connection object if `source`
+            is a callable.
+        **kwargs: additional parameters to pass to the `source` function if it
+            is a callable
+
+    Returns:
+        int: total count of objects
+    """
+    # circular import prevention
+    from mstrio.connection import Connection
+    from mstrio.utils.api_helpers import is_response_like
+
+    HEADER_KEY = 'x-mstr-total-count'
+
+    if is_response_like(source):
+        assert HEADER_KEY in source.headers, (
+            f"Response headers do not contain '{HEADER_KEY}' entry. "
+            "Cannot get total count of objects from this response."
+        )
+        v = source.headers.get(HEADER_KEY)
+        assert isinstance(v, int) or (
+            isinstance(v, str) and v.isnumeric()
+        ), f"Expected '{HEADER_KEY}' header to be numerical, got {v}."
+        return int(v)
+
+    if callable(source):
+        kwargs.pop('limit', None)  # limit for count is forced in this fn
+
+        assert isinstance(connection, Connection), (
+            "Expected 'connection' to be a Connection object when 'source' "
+            "is a callable."
+        )
+        return get_total_count_of_objects(
+            source=source(connection, limit=1, **kwargs),
+            connection=connection,
+        )
+
+    raise TypeError(
+        f"Expected 'source' to be a Response object or a callable, got {type(source)}"
+    )
+
+
 def fetch_objects_async(
     connection: "Connection",
     api: Callable,
@@ -448,8 +501,7 @@ def fetch_objects_async(
     objects = _prepare_objects(response.json(), filters, dict_unpack_value, project_id)
     all_objects.extend(objects)
     current_count = offset + chunk_size
-    # TODO Total count of subscriptions is not always true (see. US523782)
-    total_objects = int(response.headers.get('x-mstr-total-count'))
+    total_objects = get_total_count_of_objects(response)
     total_objects = min(limit, total_objects) if limit else total_objects
 
     if total_objects > current_count:
@@ -509,7 +561,8 @@ def fetch_objects(
         api: GET API wrapper function that will return list of objects in bulk
         dict_unpack_value: if the response needs to be unpacked to get into
             the values specify the keyword
-        limit: cut-off value for the number of objects returned
+        limit: value to be provided in REST request to limit count of
+            returned objects
         error_msg: specifies error_msg for failed requests
         **filters: dict that specifies filter expressions by which objects will
             be filtered locally
@@ -519,23 +572,32 @@ def fetch_objects(
     validate_param_value('limit', limit, int, min_val=1, special_values=[None])
 
     # Extract parameters of the api wrapper and set them using kwargs
-    param_value_dict = auto_match_args(api, kwargs, exclude=['connection', 'error_msg'])
+    dic = {**kwargs}
+    if limit is not None:
+        dic['limit'] = limit  # yes, overwrite if exists
+
+    param_value_dict = auto_match_args(api, dic, exclude=['connection', 'error_msg'])
     response = api(connection=connection, error_msg=error_msg, **param_value_dict)
-    project_id = kwargs.get('project_id') or kwargs.get('project')
+
     if response.ok:
+        project_id = kwargs.get('project_id') or kwargs.get('project')
         objects = _prepare_objects(
             response.json(), filters, dict_unpack_value, project_id
         )
-        if limit:
+        if limit is not None:
+            # If response returned more than `limit` objects -> cut-off.
+            # This can happen if limiting is done ex. per node.
+            # Some endpoints return `limit` objects PER NODE.
+            # We don't validate: just get first `limit` amount of them.
             objects = objects[:limit]
         return objects
     else:
         return []
 
 
-def sort_object_properties(source: dict) -> int:
+def key_fn_for_sort_object_properties(source: Any) -> int:
     """Sort all properties of an object representing an MSTR object."""
-    preffered_order = {
+    preferred_order = {
         'id': 1,
         'name': 2,
         'description': 3,
@@ -546,7 +608,7 @@ def sort_object_properties(source: dict) -> int:
         'acg': 101,
         'acl': 102,
     }
-    return preffered_order.get(source, 50)
+    return preferred_order.get(source, 50)
 
 
 def auto_match_args(
@@ -554,6 +616,7 @@ def auto_match_args(
     param_dict: dict,
     exclude: list | None = None,
     include_defaults: bool = True,
+    id_weak_match: bool = False,
 ) -> dict:
     """Automatically match dict data to function arguments.
 
@@ -569,6 +632,8 @@ def auto_match_args(
         exclude: set `exclude` parameter to exclude specific param-value pairs
         include_defaults: if `False` then values which have the same value as
             default will not be included in the result
+        id_weak_match: if `True`, the function will try to match IDs even if
+            they are not exact (e.g. by ignoring certain prefixes)
     Raises:
         KeyError: could not match all required arguments
     """
@@ -582,18 +647,31 @@ def auto_match_args(
         if arg in exclude:
             continue
 
-        val = (
-            param_dict.get(arg)
-            if param_dict.get(arg) is not None
-            else default_dict.get(arg)
-        )
+        val = get_val_safely(param_dict, arg, default_dict)
         if not include_defaults and arg in default_dict and val == default_dict[arg]:
             continue
+
+        if (
+            id_weak_match
+            and val is None
+            and arg != 'project_id'
+            and arg.endswith('_id')
+        ):
+            val = get_val_safely(param_dict, 'id', default_dict)
 
         val = val.value if isinstance(val, Enum) else val
         param_value_dict.update({arg: val})
 
     return param_value_dict
+
+
+def get_val_safely(param_dict: dict, key: str, default_dict: dict) -> Any:
+    """Safely get a value from a dictionary."""
+    return (
+        param_dict.get(key)
+        if param_dict.get(key) is not None
+        else default_dict.get(key)
+    )
 
 
 def flatten2list(object) -> list:
@@ -1097,7 +1175,8 @@ class Dictable:
             result, whitelist_attributes=self._ALLOW_NONE_ATTRIBUTES, recursion=False
         )
         result = {
-            key: result[key] for key in sorted(result, key=sort_object_properties)
+            key: result[key]
+            for key in sorted(result, key=key_fn_for_sort_object_properties)
         }
         return (
             snake_to_camel(result, whitelist=self._KEEP_CAMEL_CASE)
@@ -1460,7 +1539,7 @@ def get_owner_id(
     owner: 'str | User | None' = None,
     owner_id: str | None = None,
     owner_username: str | None = None,
-) -> str:
+) -> str | None:
     """Get owner ID based on provided parameters.
 
     Args:
@@ -1470,7 +1549,7 @@ def get_owner_id(
         owner_username (str | None): Owner's username.
 
     Returns:
-        str: User ID of the owner.
+        str | None: User ID of the owner or None if not found.
     """
     from mstrio.users_and_groups import User
 
@@ -1536,3 +1615,18 @@ def get_user_based_on_id_or_username(
             "Please provide a valid user ID or username."
         )
     return None
+
+
+def is_valid_str_id(str_id: str | None) -> bool:
+    """Check if the provided Strategy ID has valid format.
+
+    Args:
+        str_id (str | None): The Strategy ID to check.
+
+    Returns:
+        bool: True if the ID is valid, False otherwise.
+    """
+    if not str_id:
+        return False
+    HEX32 = re.compile(r"^[0-9A-F]{32}$")
+    return HEX32.match(str_id) is not None

@@ -268,6 +268,7 @@ def get_attribute_element_for_prompt(
     instance_id: str,
     prompt_identifier: str,
     error_msg: str | None = None,
+    project_id: str | None = None,
 ) -> 'Response':
     """Get available attribute element for dashboard/document's
     attribute element prompt.
@@ -278,15 +279,18 @@ def get_attribute_element_for_prompt(
         instance_id (string): Document Instance ID
         prompt_identifier (string): Prompt key or ID
         error_msg (string, optional): Custom Error Message for Error Handling
+        project_id (string, optional): Project ID
 
     Returns:
         Complete HTTP response object.
     """
+    if not project_id:
+        project_id = connection.project_id
     endpoint = (
         f'/api/documents/{document_id}/instances/{instance_id}'
         f'/prompts/{prompt_identifier}/elements'
     )
-    return connection.get(endpoint=endpoint, headers={'X-MSTR-ProjectID': None})
+    return connection.get(endpoint=endpoint, headers={'X-MSTR-ProjectID': project_id})
 
 
 @ErrorHandler(err_msg="Error getting available object for prompt {prompt_identifier}")

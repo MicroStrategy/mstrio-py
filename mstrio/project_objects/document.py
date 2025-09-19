@@ -1,6 +1,4 @@
 import logging
-from functools import partial
-from typing import TYPE_CHECKING
 
 from pandas import DataFrame, concat
 
@@ -9,7 +7,6 @@ from mstrio.api import documents, library
 from mstrio.connection import Connection
 from mstrio.object_management import Folder, SearchPattern, search_operations
 from mstrio.project_objects import OlapCube, SuperCube
-from mstrio.project_objects.helpers import answer_prompts_helper
 from mstrio.project_objects.palette import Palette
 from mstrio.server.environment import Environment
 from mstrio.types import ObjectSubTypes
@@ -23,6 +20,7 @@ from mstrio.utils.entity import (
     Entity,
     MoveMixin,
     ObjectTypes,
+    PromptMixin,
     VldbMixin,
 )
 from mstrio.utils.helper import (
@@ -35,8 +33,6 @@ from mstrio.utils.library import LibraryMixin
 from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.version_helper import method_version_handler
 
-if TYPE_CHECKING:
-    from mstrio.project_objects.prompt import Prompt
 
 logger = logging.getLogger(__name__)
 
@@ -160,6 +156,7 @@ class Document(
     DeleteMixin,
     ContentCacheMixin,
     LibraryMixin,
+    PromptMixin,
 ):
     """Python representation of Strategy One Document object
 
@@ -182,6 +179,11 @@ class Document(
         'certified_info': CertifiedInfo.from_dict,
         'recipients': [User.from_dict],
     }
+    _API_GET_PROMPTS = staticmethod(documents.get_prompts)
+    _API_PROMPT_GET_INSTANCE = staticmethod(documents.create_new_document_instance)
+    _API_PROMPT_GET_OBJ_STATUS = staticmethod(documents.get_document_status)
+    _API_PROMPT_GET_PROMPTED_INSTANCE = staticmethod(documents.get_prompts_for_instance)
+    _API_PROMPT_ANSWER_PROMPTS = staticmethod(documents.answer_prompts)
 
     def __init__(
         self, connection: Connection, name: str | None = None, id: str | None = None
@@ -346,49 +348,6 @@ class Document(
             A list of color palettes used by the document."""
         return self.list_dependencies(
             object_types=ObjectTypes.PALETTE, to_dictionary=to_dictionary
-        )
-
-    def answer_prompts(
-        self, prompt_answers: list['Prompt'], force: bool = False
-    ) -> bool:
-        """Answer prompts of the report.
-
-        Args:
-            prompt_answers (list[Prompt]): List of Prompt class objects
-                answering the prompts of the report.
-            force (bool): If True, then the document's existing prompt will be
-                overwritten by ones from the prompt_answers list, and additional
-                input from the user won't be asked. Otherwise, the user will be
-                asked for input if the prompt is not answered, or if prompt was
-                already answered.
-
-        Returns:
-            bool: True if prompts were answered successfully, False otherwise.
-        """
-        common_args = {
-            'connection': self.connection,
-            'document_id': self.id,
-            'instance_id': self.instance_id,
-            'project_id': self.project_id,
-        }
-
-        return answer_prompts_helper(
-            instance_id=self.instance_id,
-            prompt_answers=prompt_answers,
-            get_status_func=partial(
-                documents.get_document_status,
-                **common_args,
-            ),
-            get_prompts_func=partial(
-                documents.get_prompts_for_instance,
-                **common_args,
-                closed=False,
-            ),
-            answer_prompts_func=partial(
-                documents.answer_prompts,
-                **common_args,
-            ),
-            force=force,
         )
 
     @property

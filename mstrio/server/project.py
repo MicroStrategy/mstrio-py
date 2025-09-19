@@ -27,6 +27,7 @@ from mstrio.utils.settings.base_settings import BaseSettings
 from mstrio.utils.time_helper import DatetimeFormats
 from mstrio.utils.version_helper import (
     is_server_min_version,
+    meets_minimal_version,
     method_version_handler,
 )
 from mstrio.utils.vldb_mixin import ModelVldbMixin
@@ -513,6 +514,21 @@ class Project(Entity, ModelVldbMixin, DeleteMixin):
                 exception_type=TypeError,
             )
 
+    def _change_project_state_all_nodes(
+        self, status: str, delete_sessions: bool | None = None
+    ):
+        body = {"status": status}
+        response = monitors.update_project_status(
+            self.connection,
+            body,
+            project_id=self.id,
+            delete_sessions=delete_sessions,
+        )
+        if response.status_code == 202 and config.verbose:
+            logger.info(
+                f"Project '{self.id}' changed status to '{status}' on all nodes."
+            )
+
     @method_version_handler('11.2.0000')
     def idle(
         self,
@@ -605,6 +621,22 @@ class Project(Entity, ModelVldbMixin, DeleteMixin):
             return [node.name if isinstance(node, Node) else node for node in on_nodes]
         return on_nodes.name if isinstance(on_nodes, Node) else on_nodes
 
+    def _load_project(self, node):
+        body = {
+            "operationList": [
+                {"op": "replace", "path": self._STATUS_PATH, "value": "loaded"}
+            ]
+        }
+        response = monitors.update_node_properties(self.connection, node, self.id, body)
+        if response.status_code == 202:
+            tmp = helper.filter_list_of_dicts(self.nodes, name=node)
+            tmp[0]['projects'] = [response.json()['project']]
+            self._nodes = tmp
+            if tmp[0]['projects'][0]['status'] != 'loaded':
+                self.fetch('nodes')
+            if config.verbose:
+                logger.info(f"Project '{self.id}' loaded on node '{node}'.")
+
     @method_version_handler('11.2.0000')
     def load(
         self, on_nodes: 'str | list[str] | Node | list[Node] | None' = None
@@ -617,30 +649,42 @@ class Project(Entity, ModelVldbMixin, DeleteMixin):
                 on all of the nodes.
         """
         on_nodes = self._normalize_nodes(on_nodes)
+        all_nodes_are_selected = on_nodes is None or {
+            node['name'] for node in self.nodes
+        } == set(on_nodes)
 
-        def load_project(node):
-            body = {
-                "operationList": [
-                    {"op": "replace", "path": self._STATUS_PATH, "value": "loaded"}
-                ]
-            }
-            response = monitors.update_node_properties(
-                self.connection, node, self.id, body
-            )
-            if response.status_code == 202:
-                tmp = helper.filter_list_of_dicts(self.nodes, name=node)
-                tmp[0]['projects'] = [response.json()['project']]
-                self._nodes = tmp
-                if tmp[0]['projects'][0]['status'] != 'loaded':
-                    self.fetch('nodes')
-                if config.verbose:
-                    logger.info(f"Project '{self.id}' loaded on node '{node}'.")
+        if all_nodes_are_selected and meets_minimal_version(
+            self.connection.iserver_version, '11.5.0500'
+        ):
+            self._change_project_state_all_nodes(status="loaded")
+        else:
+            self.__change_project_state(func=self._load_project, on_nodes=on_nodes)
 
-        self.__change_project_state(func=load_project, on_nodes=on_nodes)
+    def _unload_project(self, node):
+        body = {
+            "operationList": [
+                {"op": "replace", "path": self._STATUS_PATH, "value": "unloaded"}
+            ]
+        }
+        response = monitors.update_node_properties(
+            self.connection, node, self.id, body, whitelist=[('ERR001', 500)]
+        )
+        if response.status_code == 202:
+            tmp = helper.filter_list_of_dicts(self.nodes, name=node)
+            tmp[0]['projects'] = [response.json()['project']]
+            self._nodes = tmp
+            if tmp[0]['projects'][0]['status'] != 'unloaded':
+                self.fetch('nodes')
+            if config.verbose:
+                logger.info(f"Project '{self.id}' unloaded on node '{node}'.")
+        if response.status_code == 500 and config.verbose:  # handle whitelisted
+            logger.warning(f"Project '{self.id}' already unloaded on node '{node}'.")
 
     @method_version_handler('11.2.0000')
     def unload(
-        self, on_nodes: 'str | list[str] | Node | list[Node] | None' = None
+        self,
+        on_nodes: 'str | list[str] | Node | list[Node] | None' = None,
+        delete_sessions: bool | None = None,
     ) -> None:
         """Request to unload the project from the chosen cluster nodes. If
         nodes are not specified, the project will be unloaded on all nodes.
@@ -651,32 +695,30 @@ class Project(Entity, ModelVldbMixin, DeleteMixin):
         Args:
             on_nodes: Name of node, if not passed, project will be unloaded
                 on all of the nodes.
+            delete_sessions: If True, will delete all project sessions
+                immediately before unloading.
         """
         on_nodes = self._normalize_nodes(on_nodes)
+        all_nodes_are_selected = on_nodes is None or {
+            node['name'] for node in self.nodes
+        } == set(on_nodes)
 
-        def unload_project(node):
-            body = {
-                "operationList": [
-                    {"op": "replace", "path": self._STATUS_PATH, "value": "unloaded"}
-                ]
-            }
-            response = monitors.update_node_properties(
-                self.connection, node, self.id, body, whitelist=[('ERR001', 500)]
+        supports_server_wide_endpoint = meets_minimal_version(
+            self.connection.iserver_version, '11.5.0500'
+        )
+        if delete_sessions is not None and not supports_server_wide_endpoint:
+            logger.warning(
+                "The `delete_sessions` argument requires iServer version 11.5.0500 or "
+                f"later. Since your server version: {self.connection.iserver_version} "
+                "is not compatible, this parameter will be omitted."
             )
-            if response.status_code == 202:
-                tmp = helper.filter_list_of_dicts(self.nodes, name=node)
-                tmp[0]['projects'] = [response.json()['project']]
-                self._nodes = tmp
-                if tmp[0]['projects'][0]['status'] != 'unloaded':
-                    self.fetch('nodes')
-                if config.verbose:
-                    logger.info(f"Project '{self.id}' unloaded on node '{node}'.")
-            if response.status_code == 500 and config.verbose:  # handle whitelisted
-                logger.warning(
-                    f"Project '{self.id}' already unloaded on node '{node}'."
-                )
 
-        self.__change_project_state(func=unload_project, on_nodes=on_nodes)
+        if all_nodes_are_selected and supports_server_wide_endpoint:
+            self._change_project_state_all_nodes(
+                status="unloaded", delete_sessions=delete_sessions
+            )
+        else:
+            self.__change_project_state(func=self._unload_project, on_nodes=on_nodes)
 
     @method_version_handler('11.3.0800')
     def delete(self: Entity) -> bool:

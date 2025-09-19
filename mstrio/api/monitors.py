@@ -180,6 +180,45 @@ def get_project_status_on_node(
     )
 
 
+@ErrorHandler(err_msg='Error updating project status.')
+def update_project_status(
+    connection: 'Connection',
+    body: dict,
+    project_id: str | None = None,
+    project_name: str | None = None,
+    delete_sessions: bool | None = None,
+    error_msg: str | None = None,
+):
+    """Update status of a project on all cluster nodes.
+
+    Args:
+        connection (object): Strategy One connection object returned by
+            `connection.Connection()`.
+        body (dict): Request body containing the updated project status.
+        project_id (str, optional): Project ID to select. Must be provided if
+            `project_name` is not provided.
+        project_name (str, optional): Project name to select. Will be ignored if
+            `project_id` is provided.
+        delete_sessions (bool, optional): If True, will delete all project
+            sessions immediately.
+        error_msg (string, optional): Custom error message for error handling
+
+    Returns:
+        HTTP response object returned by the Strategy One REST server.
+    """
+    params = {
+        'projectId': project_id,
+        'projectName': project_name,
+        'deleteSessions': delete_sessions,
+    }
+    params = delete_none_values(params, recursion=False)
+    return connection.patch(
+        endpoint='/api/monitors/projects/status',
+        params=params,
+        json=body,
+    )
+
+
 @ErrorHandler(
     err_msg='Error adding node {node_name} to connected Intelligence Server cluster.'
 )

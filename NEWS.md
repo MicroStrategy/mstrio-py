@@ -1,5 +1,29 @@
 # Changelog
 
+## 11.5.9.101 - 2025/09/19
+
+### New features
+
+- updated the `SearchObject` class
+  - added properties related to search query
+  - (preview) added methods `create` and `run`
+- updated `Prompt` class to support general prompt management
+
+### Minor changes
+
+- updated `Project.load()` and `Project.unload()` to use more performant endpoint with server-wide operations
+- improved answering prompts in Report, Document, Dashboard, Subscription
+
+### Bug fixes
+
+- fixed error in enum value name `ObjectSubTypes.SUPER_CUBE_IRR`
+- restored several object types missing in Migration Package contents
+
+### Deprecated
+
+- `mstrio.project_objects.prompt` module is superseded by
+  `mstrio.modeling.prompt` and will be removed in the future, after 1-year deprecation period
+
 ## 11.5.8.101 - 2025/08/22
 
 ### Minor changes
