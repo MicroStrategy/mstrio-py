@@ -120,7 +120,7 @@ def store_search_instance_v2(
     domain: int | None = None,
     scope: str | None = None,
     root: str | None = None,
-    type: list[int] | None = None,
+    object_types: list[int] | None = None,
     uses_object: str | None = None,
     uses_recursive: bool = False,
     uses_one_of: bool | None = None,
@@ -157,9 +157,9 @@ def store_search_instance_v2(
             `mstrio.object_management.SearchScope.` Default value is 'managed'.
         root (string, optional): Folder ID of the root folder where the search
             will be performed.
-        type (list of integers, optional): Type(s) of object(s) to be searched.
-            Possible values are available in enums `mstrio.types.ObjectTypes`
-            and `mstrio.types.ObjectSubTypes`.
+        object_types (list of integers, optional): Type(s) of object(s) to be
+            searched. Possible values are available in enums
+            `mstrio.types.ObjectTypes` and `mstrio.types.ObjectSubTypes`.
         uses_object (string, optional): Constrain the search to only return
             objects which use the given object. The value should be 'objectId;
             object type', for example 'E02FE6DC430378A8BBD315AA791FC580;3'. It
@@ -205,7 +205,7 @@ def store_search_instance_v2(
             'domain': domain,
             'scope': scope,
             'root': root,
-            'type': type,
+            'type': object_types,
             'usesObject': uses_object,
             'usesRecursive': uses_recursive,
             'usedByObject': used_by_object,
@@ -582,5 +582,32 @@ def create_search_object(
     return connection.post(
         endpoint='/api/searchObjects',
         headers={'X-MSTR-ProjectID': project_id},
+        json=body,
+    )
+
+
+@ErrorHandler(err_msg="Error updating search object with ID {id}.")
+def update_search_object(
+    connection: 'Connection',
+    id: str,
+    body: dict,
+    error_msg: str | None = None,
+):
+    """
+    Alter a stored search object.
+
+    Args:
+        connection (object): Strategy One connection object returned by
+            `connection.Connection()`.
+        id (string): Search ID (identifies the search instance to alter)
+        body (dict): Dictionary containing the search object details
+        error_msg (string, optional): Custom error message for error handling
+
+    Returns:
+        HTTP response returned by the Strategy One REST server.
+    """
+
+    return connection.patch(
+        endpoint=f'/api/searchObjects/{id}',
         json=body,
     )

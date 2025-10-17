@@ -40,6 +40,7 @@ class TransmitterDeliveryType(AutoName):
     ANDROID = auto()
     ONEDRIVE = auto()
     SHAREPOINT = auto()
+    S3 = auto()
     UNSUPPORTED = auto()
 
 

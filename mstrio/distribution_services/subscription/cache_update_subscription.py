@@ -1,9 +1,14 @@
+from typing import TYPE_CHECKING
+
 from mstrio.connection import Connection
 
 from ..schedule import Schedule
 from .base_subscription import Subscription
 from .content import Content
 from .delivery import CacheType, Delivery, LibraryCacheTypes, ShortcutCacheFormat
+
+if TYPE_CHECKING:
+    from mstrio.server.project import Project
 
 
 class CacheUpdateSubscription(Subscription):
@@ -15,13 +20,12 @@ class CacheUpdateSubscription(Subscription):
         connection: Connection,
         id: str | None = None,
         subscription_id: str | None = None,
+        project: 'Project | str | None' = None,
         project_id: str | None = None,
         project_name: str | None = None,
     ):
         """Initialize CacheUpdateSubscription object, populates it with
         I-Server data if id or subscription_id is passed.
-        Specify either `project_id` or `project_name`.
-        When `project_id` is provided (not `None`), `project_name` is omitted.
 
         Args:
             connection (Connection): Strategy One connection object returned
@@ -31,16 +35,22 @@ class CacheUpdateSubscription(Subscription):
                 provided id will take precedence
             subscription_id (str, optional): ID of the subscription to be
                 initialized
+            project (Project | str, optional): Project object or ID or name
+                specifying the project. May be used instead of `project_id` or
+                `project_name`.
             project_id (str, optional): Project ID
             project_name (str, optional): Project name
         """
-        super().__init__(connection, id, subscription_id, project_id, project_name)
+        super().__init__(
+            connection, id, subscription_id, project, project_id, project_name
+        )
 
     @classmethod
     def create(
         cls,
         connection: Connection,
         name: str,
+        project: 'Project | str | None' = None,
         project_id: str | None = None,
         project_name: str | None = None,
         allow_delivery_changes: bool | None = None,
@@ -68,8 +78,11 @@ class CacheUpdateSubscription(Subscription):
         Args:
             connection (Connection): a Strategy One connection object
             name (str): name of the subscription,
-            project_id (str, optional): project ID,
-            project_name (str, optional): project name,
+            project (Project | str, optional): Project object or ID or name
+                specifying the project. May be used instead of `project_id` or
+                `project_name`.
+            project_id (str, optional): Project ID
+            project_name (str, optional): Project name
             allow_delivery_changes (bool, optional): whether the recipients can
                 change the delivery of the subscription,
             allow_personalization_changes (bool, optional): whether the
@@ -127,6 +140,7 @@ class CacheUpdateSubscription(Subscription):
         return super()._Subscription__create(
             connection=connection,
             name=name,
+            project=project,
             project_id=project_id,
             project_name=project_name,
             allow_delivery_changes=allow_delivery_changes,

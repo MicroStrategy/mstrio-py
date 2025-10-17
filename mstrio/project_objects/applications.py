@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from mstrio import config
 from mstrio.api import applications
 from mstrio.connection import Connection
+from mstrio.helpers import IServerError
 from mstrio.project_objects.palette import Palette
 from mstrio.types import ObjectTypes
 from mstrio.users_and_groups.user import User
@@ -98,7 +99,7 @@ class Application(Entity, CopyMixin, DeleteMixin):
                 Possible values:
                     -0: use Library (default)
                     -1: use Dashboard/Document
-                    -2: use Bot
+                    -2: use Agent
             home_document (HomeDocument): home document settings
             home_library (HomeLibrary): home library settings
             theme (Theme): theme settings
@@ -1043,7 +1044,17 @@ class Application(Entity, CopyMixin, DeleteMixin):
             recursion=True,
             whitelist_attributes=['objectNames', 'objectAcl'],
         )
-        applications.create_application(connection=connection, body=body)
+        try:
+            applications.create_application(connection=connection, body=body)
+        except IServerError as err:
+            if "type 'Palette' does not exist in the metadata" in str(err):
+                raise AttributeError(
+                    "Application cannot be created: at least one palette parameter "
+                    "is either invalid or refers to project-level palette. "
+                    "Please select a valid configuration-level palette(s) instead."
+                ) from err
+            raise err
+
         if config.verbose:
             logger.info(f'Application "{name}" has been created.')
         # The endpoint returns nothing, so we need to return app manually

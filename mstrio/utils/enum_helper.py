@@ -24,7 +24,10 @@ class AutoCapitalizedName(Enum):
 
 
 def __get_enum_helper(
-    obj, enum: type[Enum] = Enum, get_value: bool = False
+    obj,
+    enum: type[Enum] = Enum,
+    get_value: bool = False,
+    throw_on_unknown: bool = True,
 ) -> str | int | type[Enum] | None:
     """Helper function for `get_enum` and `get_enum_val`."""
     if obj is None:
@@ -34,24 +37,32 @@ def __get_enum_helper(
         return obj.value if get_value else obj
 
     if isinstance(obj, (str, int)):
-        validate_enum_value(obj, enum)
+        validate_enum_value(obj, enum, throw_on_unknown=throw_on_unknown)
         return obj if get_value else enum(obj)
 
     raise TypeError(f"Incorrect type. Value should be of type: {enum}.")
 
 
-def get_enum(obj, enum: type[Enum] = Enum) -> type[Enum] | None:
+def get_enum(
+    obj, enum: type[Enum] = Enum, throw_on_unknown: bool = True
+) -> type[Enum] | None:
     """Safely get enum from enum or str."""
-    return __get_enum_helper(obj, enum)
+    return __get_enum_helper(obj, enum, throw_on_unknown=throw_on_unknown)
 
 
-def get_enum_val(obj, enum: type[Enum] = Enum) -> str | int | None:
+def get_enum_val(
+    obj, enum: type[Enum] = Enum, throw_on_unknown: bool = True
+) -> str | int | None:
     """Safely extract value from enum or str."""
-    return __get_enum_helper(obj, enum, True)
+    return __get_enum_helper(
+        obj, enum, get_value=True, throw_on_unknown=throw_on_unknown
+    )
 
 
 def validate_enum_value(
-    obj: str | int, enum: type[Enum] | tuple[type[Enum]] | list[type[Enum]]
+    obj: str | int,
+    enum: type[Enum] | tuple[type[Enum]] | list[type[Enum]],
+    throw_on_unknown: bool = True,
 ) -> None:
     """Validate provided value. If not correct,
     error message with possible options will be displayed.
@@ -63,6 +74,9 @@ def validate_enum_value(
         for item in enum
         for e in (item if isinstance(enum, (tuple, list)) else [item])
     ]
-    err_msg = f"Incorrect enum value '{obj}'. Possible values are {possible_values}"
+    err_msg = f"Unknown enum value '{obj}'. Known possible values are {possible_values}"
+
     if obj not in possible_values:
-        exception_handler(err_msg, exception_type=ValueError)
+        exception_handler(
+            err_msg, exception_type=ValueError if throw_on_unknown else Warning
+        )

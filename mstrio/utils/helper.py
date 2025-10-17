@@ -52,7 +52,7 @@ logger = logging.getLogger(__name__)
 
 def deprecation_warning(
     deprecated: str,
-    new: str,
+    new: str | None,
     version: str,
     module: bool = True,
     change_compatible_immediately=True,
@@ -76,13 +76,13 @@ def deprecation_warning(
     if change_compatible_immediately:
         msg = (
             f"{deprecated}{module} is deprecated and will not be supported starting "
-            f"from mstrio-py {version}. Please use {new} instead."
+            f"from mstrio-py {version}."
         )
+        if new:
+            msg += f" Please use {new} instead."
     else:
-        msg = (
-            f"From version {version} {deprecated}{module} will be removed and replaced "
-            f"with {new}"
-        )
+        suffix = f" and replaced with {new}" if new else ""
+        msg = f"From version {version} {deprecated}{module} will be removed{suffix}."
     exception_handler(msg=msg, exception_type=DeprecationWarning)
 
 
@@ -224,9 +224,12 @@ def response_handler(
         verbose (bool, optional): controls if messages/errors will be printed
             (defaults to True).
         whitelist(list, optional): list of tuples of I-Server Error and
-            HTTP errors codes respectively, which will not be handled
-            (defaults to None).
-            i.e. whitelist = [('ERR001', 500),('ERR004', 404)]
+            HTTP errors codes respectively (you may add optional third value
+            as string, representing message that the error need to contain to
+            be whitelisted), which will not be handled (defaults to None).
+            i.e. whitelist = [
+                ('ERR001', 500),('ERR004', 404),('ERR003', 403, 'not allowed')
+            ]
     """
     whitelist = whitelist or []
 
@@ -259,9 +262,25 @@ def response_handler(
         server_msg = res.get('message')
         ticket_id = res.get('ticketId')
         iserver_code = res.get('iServerCode')
-        is_whitelisted = (server_code, response.status_code) in whitelist
 
-        if not is_whitelisted:
+        def check_if_whitelisted():
+            if not whitelist:
+                return False
+            for item in whitelist:
+                if len(item) == 2:
+                    code, http_code = item
+                    if (server_code, response.status_code) == (code, http_code):
+                        return True
+                elif len(item) == 3:
+                    code, http_code, part_of_msg = item
+                    if (server_code, response.status_code) == (
+                        code,
+                        http_code,
+                    ) and part_of_msg in server_msg:
+                        return True
+            return False
+
+        if not check_if_whitelisted():
             if (
                 server_code == 'ERR004'
                 and response.status_code == 404
@@ -623,7 +642,8 @@ def auto_match_args(
     Handles default parameters. Extracts value from Enums. Returns matched
     arguments as dict.
 
-    Note: don't use it for alter purposes as, changing parameter value
+    Note:
+        don't use it for alter purposes as, changing parameter value
         back to default currently doesn't work (Rework line 413?)
 
     Args:
@@ -960,120 +980,17 @@ def choose_cube(
         return SuperCube.from_dict(cube_dict, connection)
 
 
-def get_valid_project_id(
-    connection: "Connection",
-    project_id: str | None = None,
-    project_name: str | None = None,
-    with_fallback: bool = False,
-):
-    """Check if the project name exists and return the project ID.
-
-    Args:
-        connection(object): Strategy One connection object
-        project_id: Project ID
-        project_name: Project name
-        with_fallback: Specify if the project should be taken from `connection`
-        object if `project_id` is not specified and the project failed to be
-        found based on `project_name`
-    """
-    from mstrio.server import Project
-
-    # Search for a project by its name if id was not specified, but name was
-    if not project_id:
-        project_loaded_list = (
-            Project._list_loaded_projects(
-                connection, to_dictionary=True, name=project_name
-            )
-            if project_name
-            else []
-        )
-        if project_loaded_list:
-            project_id = project_loaded_list[0]['id']
-        else:
-            if project_name:
-                msg = (
-                    f"There is no project with the given name: '{project_name}'"
-                    f" or the project is not loaded."
-                )
-            else:
-                msg = "`project_id` and `project_name` were not provided. "
-            if with_fallback:
-                logger.info(msg + "Project from `connection` object is used instead.")
-                project_id = fallback_to_conn_project_id(connection)
-            else:
-                exception_handler(
-                    msg + "Please specify valid `project_id` or `project_name`",
-                    exception_type=ValueError,
-                )
-
-    return project_id
-
-
-def get_project_id_or_none(
-    connection: "Connection",
-    project_id: str | None = None,
-    project_name: str | None = None,
-    project: "Project| None" = None,
-) -> str | None:
-    """Get project ID or None if project is not specified. This is used
-    for operations where we want to allow specifying a project either
-    by id, obj or name, but the project is optional.
-    """
-    if project and not project_id:
-        return project.id
-    try:
-        return get_valid_project_id(
-            connection=connection,
-            project_id=project_id,
-            project_name=project_name,
-            with_fallback=False,
-        )
-    except ValueError:
-        return None
-
-
-def fallback_to_conn_project_id(connection: "Connection") -> str | None:
-    try:
-        connection._validate_project_selected()
-        return connection.project_id
-    except AttributeError:
-        exception_handler(
-            msg="Project could not be determined.", exception_type=ValueError
-        )
-
-
-def get_valid_project_name(connection: "Connection", project_id: str):
-    """Returns project name of given project based on its ID.
-
-    Args:
-        connection(object): Strategy One connection object
-        project_id: Project ID
-    """
-    from mstrio.server import Project
-
-    project_loaded_list = Project._list_loaded_projects(
-        connection, to_dictionary=True, id=project_id
-    )
-    project_name = project_loaded_list[0]['name']
-
-    return project_name
-
-
 def get_temp_connection(
     connection: "Connection",
     project_id: str | None = None,
-    project_name: str | None = None,
 ) -> "Connection":
     """Return a temporary connection object with a selected project.
+
     Args:
         connection: Strategy One connection object
         project_id: Project ID
-        project_name: Project name
     """
-    if project_id or project_name:
-        project_id = get_valid_project_id(
-            connection=connection, project_id=project_id, project_name=project_name
-        )
+    if project_id:
         temp_conn = deepcopy(connection)
         temp_conn.select_project(project_id=project_id)
     else:
@@ -1319,7 +1236,10 @@ def rename_dict_keys(source: dict, mapping: dict) -> dict:
 
 
 def verify_project_status(
-    project: 'Project', correct_statuses: list[str] | str, node: str | None = None
+    project: 'Project',
+    correct_statuses: list[str] | str,
+    node: str | None = None,
+    timeout: int = 60,
 ) -> bool:
     """Verify if provided status is correct for given project.
 
@@ -1359,7 +1279,7 @@ def verify_project_status(
         correct_statuses if isinstance(correct_statuses, list) else [correct_statuses]
     )
 
-    while status not in correct_statuses and iteration < 20:
+    while status not in correct_statuses and iteration < timeout:
         time.sleep(1)
         project.fetch('nodes')
         status = get_status(project=project, node=node)
@@ -1536,7 +1456,7 @@ def wait_for_stable_status(
 
 def get_owner_id(
     connection: 'Connection',
-    owner: 'str | User | None' = None,
+    owner: 'str | User | dict | None' = None,
     owner_id: str | None = None,
     owner_username: str | None = None,
 ) -> str | None:
@@ -1544,7 +1464,8 @@ def get_owner_id(
 
     Args:
         connection (Connection): Strategy One connection object.
-        owner (str | User | None): Owner's username, ID or User object.
+        owner (str | User | dict | None): Owner as ID, User object or dict.
+            Will take precedence over other parameters.
         owner_id (str | None): Owner's ID.
         owner_username (str | None): Owner's username.
 
@@ -1557,14 +1478,21 @@ def get_owner_id(
     if isinstance(owner, User):
         return owner.id
 
+    owner_name = None
+    # Dict can contain 'id', but also only 'name'
+    if isinstance(owner, dict):
+        owner_id = owner.get('id')
+        owner_name = owner.get('name')
+        owner = None
+
     # Determine the user identifier to look up
     user_identifier = owner or owner_id or owner_username
-    if not user_identifier:
+    if not user_identifier and not owner_name:
         return None
 
     # Get user and return ID if found
     if user := get_user_based_on_id_or_username(
-        connection, user_identifier, user_identifier
+        connection, user_identifier, user_identifier, owner_name
     ):
         return user.id
 
@@ -1575,25 +1503,26 @@ def get_user_based_on_id_or_username(
     connection: 'Connection',
     user_id: str | None = None,
     user_username: str | None = None,
+    user_name: str | None = None,
 ) -> 'User | None':
     """Get User object based on provided user ID or username.
 
     Args:
         connection (Connection): Strategy One connection object.
         user_id (str | None): User's ID.
-        user_username (str | None): User's username.
+        user_username (str | None): User's username (e.g. 'mstr').
+        user_name (str | None): User's name (e.g. 'MSTR User').
 
     Returns:
         User | None: User object if found, None otherwise.
     """
     from mstrio.users_and_groups import User
 
-    both_the_same = False
-    if user_id == user_username:
-        both_the_same = True
+    both_the_same = user_id == user_username
     if user_id:
         try:
-            return User(connection=connection, id=user_id)
+            with config.temp_verbose_disable():
+                return User(connection=connection, id=user_id)
         except IServerError:
             if not both_the_same:
                 logger.warning(
@@ -1602,7 +1531,8 @@ def get_user_based_on_id_or_username(
                 )
     if user_username:
         try:
-            return User(connection=connection, username=user_username)
+            with config.temp_verbose_disable():
+                return User(connection=connection, username=user_username)
         except ValueError:
             if not both_the_same:
                 logger.warning(
@@ -1614,6 +1544,15 @@ def get_user_based_on_id_or_username(
             f"Could not find user with ID or username '{user_id}'. "
             "Please provide a valid user ID or username."
         )
+    if user_name:
+        try:
+            return User(connection=connection, name=user_name)
+        except ValueError:
+            if not both_the_same:
+                logger.warning(
+                    f"Could not find user with name '{user_name}'. "
+                    "Please provide a valid user name."
+                )
     return None
 
 
@@ -1626,7 +1565,8 @@ def is_valid_str_id(str_id: str | None) -> bool:
     Returns:
         bool: True if the ID is valid, False otherwise.
     """
-    if not str_id:
+    if not str_id or not isinstance(str_id, str) or len(str_id) != 32:
         return False
+
     HEX32 = re.compile(r"^[0-9A-F]{32}$")
     return HEX32.match(str_id) is not None

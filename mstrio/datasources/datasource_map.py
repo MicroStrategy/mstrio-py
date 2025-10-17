@@ -12,6 +12,7 @@ from mstrio.users_and_groups import User, UserGroup
 from mstrio.utils import helper
 from mstrio.utils.entity import DeleteMixin, EntityBase
 from mstrio.utils.helper import delete_none_values, get_objects_id
+from mstrio.utils.resolvers import get_project_id_from_params_set
 from mstrio.utils.response_processors import datasources as datasources_processors
 from mstrio.utils.version_helper import method_version_handler
 
@@ -21,7 +22,7 @@ logger = logging.getLogger(__name__)
 @method_version_handler('11.3.0000')
 def list_datasource_mappings(
     connection: 'Connection',
-    project: Project | str | None = None,
+    project: 'Project | str | None' = None,
     to_dictionary: bool = False,
     limit: int | None = None,
     user: User | UserGroup | str | None = None,
@@ -61,11 +62,11 @@ def list_datasource_mappings(
         >>> list_datasource_mappings(connection)
     """
     if default_connection_map:
-        project_id = project.id if isinstance(project, Project) else project
-        project = helper.get_valid_project_id(
-            connection=connection,
-            project_id=project_id,
-            with_fallback=True,
+        project = get_project_id_from_params_set(
+            connection,
+            project,
+            None,
+            None,
         )
 
     return DatasourceMap._list(

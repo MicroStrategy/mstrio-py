@@ -4,7 +4,7 @@ from datetime import datetime
 from enum import auto
 from functools import partial
 from pprint import pformat
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from mstrio import config
 from mstrio.api import documents, reports, subscriptions
@@ -35,10 +35,14 @@ from mstrio.utils.helper import (
     get_args_from_func,
     get_default_args_from_func,
     get_response_json,
-    get_valid_project_id,
 )
+from mstrio.utils.resolvers import get_project_id_from_params_set
 from mstrio.utils.response_processors import subscriptions as subscriptions_processors
 from mstrio.utils.version_helper import is_server_min_version, method_version_handler
+
+if TYPE_CHECKING:
+    from mstrio.server.project import Project
+
 
 logger = logging.getLogger(__name__)
 
@@ -113,29 +117,32 @@ class Subscription(EntityBase):
         connection: Connection,
         id: str | None = None,
         subscription_id: str | None = None,
+        project: 'Project | str | None' = None,
         project_id: str | None = None,
         project_name: str | None = None,
     ):
         """Initialize Subscription object, populates it with I-Server data.
-        Specify either `project_id` or `project_name`.
-        When `project_id` is provided (not `None`), `project_name` is omitted.
 
         Args:
             connection (Connection): Strategy One connection object returned
                 by `connection.Connection()`
             id (str, optional): ID of the subscription to be initialized, only
                 id or subscription_id have to be provided at once, if both
-                are provided id will take precedence
+                are provided `id` will take precedence
             subscription_id (str, optional): ID of the subscription to be
                 initialized
+            project (Project | str, optional): Project object or ID or name
+                specifying the project. May be used instead of `project_id` or
+                `project_name`.
             project_id (str, optional): Project ID
             project_name (str, optional): Project name
         """
-        project_id = get_valid_project_id(
-            connection=connection,
-            project_id=project_id,
-            project_name=project_name,
-            with_fallback=not project_name,
+
+        proj_id = get_project_id_from_params_set(
+            connection,
+            project,
+            project_id,
+            project_name,
         )
 
         subscription_id = id or subscription_id
@@ -145,7 +152,7 @@ class Subscription(EntityBase):
                 exception_type=ValueError,
             )
 
-        super().__init__(connection, subscription_id, project_id=project_id)
+        super().__init__(connection, subscription_id, project_id=proj_id)
 
     def _init_variables(self, project_id, **kwargs):
         super()._init_variables(**kwargs)
@@ -775,22 +782,35 @@ class Subscription(EntityBase):
         cls,
         source: dict[str, Any],
         connection: "Connection" = None,
+        project: 'Project | str | None' = None,
         project_id: str | None = None,
         project_name: str | None = None,
     ) -> "Subscription":
         """Initialize Subscription object from dictionary.
-        Specify either `project_id` or `project_name`.
-        When `project_id` is provided (not `None`), `project_name` is omitted"""
-        if source.get('project_id') and not project_id:
-            project_id = source['project_id']
-        project_id = get_valid_project_id(
-            connection=connection,
-            project_id=project_id,
-            project_name=project_name,
+
+        Args:
+            source: (dict) A dictionary containing subscription data.
+            connection: (Connection) A Strategy connection object.
+            project (Project | str, optional): Project object or ID or name
+                specifying the project. May be used instead of `project_id` or
+                `project_name`.
+            project_id (str, optional): Project ID
+            project_name (str, optional): Project name
+
+        Returns:
+            A Subscription object.
+        """
+
+        proj_id = get_project_id_from_params_set(
+            connection,
+            project,
+            project_id or source.get('project_id'),
+            project_name,
         )
+
         _source = {
             **source,
-            "project_id": project_id,
+            "project_id": proj_id,
         }
         obj: Subscription = super().from_dict(_source, connection)
 
@@ -892,6 +912,7 @@ class Subscription(EntityBase):
         connection: Connection,
         name: str,
         contents: Content | dict,
+        project: 'Project | str | None' = None,
         project_id: str | None = None,
         project_name: str | None = None,
         multiple_contents: bool | None = None,
@@ -944,8 +965,11 @@ class Subscription(EntityBase):
             connection (Connection): a Strategy One connection object
             name (str): name of the subscription,
             contents (Content): The content settings.
-            project_id (str): project ID,
-            project_name (str): project name,
+            project (Project | str, optional): Project object or ID or name
+                specifying the project. May be used instead of `project_id` or
+                `project_name`.
+            project_id (str, optional): Project ID
+            project_name (str, optional): Project name
             multiple_contents (bool, optional): whether multiple contents are
                 allowed
             allow_delivery_changes (bool): whether the recipients can change
@@ -1029,11 +1053,11 @@ class Subscription(EntityBase):
                 "Name too long. Max name length is 255 characters."
             )
         )
-        project_id = get_valid_project_id(
-            connection=connection,
-            project_id=project_id,
-            project_name=project_name,
-            with_fallback=not project_name,
+        proj_id = get_project_id_from_params_set(
+            connection,
+            project,
+            project_id,
+            project_name,
         )
 
         if not schedules:
@@ -1046,7 +1070,7 @@ class Subscription(EntityBase):
         contents = cls.__validate_contents(contents)
 
         for content in contents:
-            cls._check_is_content_prompted(connection, content, project_id)
+            cls._check_is_content_prompted(connection, content, proj_id)
 
         # Delivery logic
         delivery_expiration_timezone = cls.__validate_expiration_time_zone(
@@ -1098,7 +1122,7 @@ class Subscription(EntityBase):
 
         # Recipients logic
         recipients = cls._validate_recipients(
-            connection, contents, recipients, project_id, delivery['mode']
+            connection, contents, recipients, proj_id, delivery['mode']
         )
 
         # Create body
@@ -1117,13 +1141,13 @@ class Subscription(EntityBase):
         }
 
         body = helper.delete_none_values(body, recursion=True)
-        response = subscriptions.create_subscription(connection, project_id, body)
+        response = subscriptions.create_subscription(connection, proj_id, body)
         unpacked_response = response.json()
         if config.verbose:
             logger.info(
                 f"Created subscription '{name}' with ID: '{unpacked_response['id']}'."
             )
-        return cls.from_dict(unpacked_response, connection, project_id)
+        return cls.from_dict(unpacked_response, connection, proj_id)
 
     @staticmethod
     def _validate_recipients(
@@ -1215,8 +1239,8 @@ class Subscription(EntityBase):
             list[dict]: list of content dicts to be included in REST payload
         """
 
-        from mstrio.project_objects.document import Document
         from mstrio.modeling.prompt import Prompt
+        from mstrio.project_objects.document import Document
         from mstrio.project_objects.report import Report
 
         contents: list[dict] = [cont.to_dict() for cont in self.contents]
@@ -1294,7 +1318,7 @@ class Subscription(EntityBase):
         Returns:
             bool: True if prompts were answered successfully, False otherwise.
         """
-        from mstrio.project_objects import Report, Document
+        from mstrio.project_objects import Document, Report
 
         new_contents = []
         for content_obj in self.contents:

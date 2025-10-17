@@ -1,5 +1,6 @@
 import logging
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from mstrio import config
 from mstrio.api import subscriptions
@@ -12,15 +13,19 @@ from mstrio.utils.helper import (
     fetch_objects_async,
     filter_params_for_func,
     find_object_with_name,
-    get_valid_project_id,
 )
+from mstrio.utils.resolvers import get_project_id_from_params_set
 from mstrio.utils.version_helper import class_version_handler, meets_minimal_version
+
+if TYPE_CHECKING:
+    from mstrio.server.project import Project
 
 logger = logging.getLogger(__name__)
 
 
 def list_dynamic_recipient_lists(
     connection: Connection,
+    project: 'Project | str | None' = None,
     project_id: str | None = None,
     project_name: str | None = None,
     to_dictionary: bool = False,
@@ -29,16 +34,14 @@ def list_dynamic_recipient_lists(
 ) -> list["DynamicRecipientList"] | list[dict]:
     """Get list of Dynamic Recipient List objects or dicts with them.
 
-    Note:
-        When `project_id` is specified, `project_name` is omitted.
-        If neither is specified then `project_id` from `connection` object
-        is taken.
-
     Args:
         connection: Strategy One connection object returned by
             `connection.Connection()`
-        project_id (str, optional): ID of the project to list the metrics from
-        project_name (str, optional): name of the project
+        project (Project | str, optional): Project object or ID or name
+            specifying the project. May be used instead of `project_id` or
+            `project_name`.
+        project_id (str, optional): Project ID
+        project_name (str, optional): Project name
         to_dictionary (bool, optional): If True returns list of dictionaries,
             by default (False) returns DynamicRecipientList objects
         limit (integer, optional): limit the number of elements returned. If
@@ -49,11 +52,11 @@ def list_dynamic_recipient_lists(
     Returns:
         list with DynamicRecipientList objects or list of dictionaries
     """
-    project_id = get_valid_project_id(
-        connection=connection,
-        project_id=project_id,
-        project_name=project_name,
-        with_fallback=not project_name,
+    proj_id = get_project_id_from_params_set(
+        connection,
+        project,
+        project_id,
+        project_name,
     )
 
     msg = "Error getting Dynamic Recipient List list."
@@ -72,7 +75,7 @@ def list_dynamic_recipient_lists(
         filters=filters,
         error_msg=msg,
         dict_unpack_value='listOfDynamicRecipientLists',
-        project_id=project_id,
+        project_id=proj_id,
     )
 
     if to_dictionary:
@@ -162,6 +165,7 @@ class DynamicRecipientList(EntityBase, DeleteMixin):
         connection: Connection,
         id: str | None = None,
         name: str | None = None,
+        project: 'Project | str | None' = None,
         project_id: str | None = None,
         project_name: str | None = None,
     ) -> None:
@@ -172,6 +176,11 @@ class DynamicRecipientList(EntityBase, DeleteMixin):
                 by `connection.Connection()`
             id (str, optional): DynamicRecipientList's ID. Defaults to None
             name (str, optional): DynamicRecipientList's name. Defaults to None
+            project (Project | str, optional): Project object or ID or name
+                specifying the project. May be used instead of `project_id` or
+                `project_name`.
+            project_id (str, optional): Project ID
+            project_name (str, optional): Project name
 
         Note:
             Parameter `name` is not used when fetching. If only `name` parameter
@@ -194,14 +203,15 @@ class DynamicRecipientList(EntityBase, DeleteMixin):
                 exception_handler(
                     msg='Must provide valid id or name', exception_type=ValueError
                 )
-        project_id = get_valid_project_id(
-            connection=connection,
-            project_id=project_id,
-            project_name=project_name,
-            with_fallback=not project_name,
+
+        proj_id = get_project_id_from_params_set(
+            connection,
+            project,
+            project_id,
+            project_name,
         )
         super().__init__(
-            connection=connection, object_id=id, name=name, project_id=project_id
+            connection=connection, object_id=id, name=name, project_id=proj_id
         )
 
     def _init_variables(self, **kwargs) -> None:
@@ -255,6 +265,7 @@ class DynamicRecipientList(EntityBase, DeleteMixin):
         physical_address: MappingField,
         linked_user: MappingField,
         device: MappingField,
+        project: 'Project | str | None' = None,
         project_id: str | None = None,
         project_name: str | None = None,
         description: str | None = None,
@@ -275,12 +286,11 @@ class DynamicRecipientList(EntityBase, DeleteMixin):
                 User for the DynamicRecipientList
             device (MappingField): Mapping Field representing the Device for
                 the DynamicRecipientList
-            project_id (string, optional): ID of the project in which the
-                DynamicRecipientList is to be created, if not provided, ID will
-                be taken from project_name, if neither is provided, project will
-                be extracted from the connection
-            project_name (string, optional): name of the project in which the
-                DynamicRecipientList is to be created
+            project (Project | str, optional): Project object or ID or name
+                specifying the project. May be used instead of `project_id` or
+                `project_name`.
+            project_id (str, optional): Project ID
+            project_name (str, optional): Project name
             description (string, optional): DynamicRecipientList's description
             recipient_name (MappingField, optional): Mapping Field representing
                 the Recipient Name for the DynamicRecipientList
@@ -313,14 +323,14 @@ class DynamicRecipientList(EntityBase, DeleteMixin):
             'personalization': personalization.to_dict() if personalization else None,
         }
         body = delete_none_values(source=body, recursion=True)
-        project_id = get_valid_project_id(
-            connection=connection,
-            project_id=project_id,
-            project_name=project_name,
-            with_fallback=not project_name,
+        proj_id = get_project_id_from_params_set(
+            connection,
+            project,
+            project_id,
+            project_name,
         )
         response = subscriptions.create_dynamic_recipient_list(
-            connection=connection, project_id=project_id, body=body
+            connection=connection, project_id=proj_id, body=body
         ).json()
 
         if config.verbose:

@@ -1,5 +1,6 @@
 import logging
 from enum import auto
+from typing import TYPE_CHECKING
 
 import pandas as pd
 
@@ -28,12 +29,15 @@ from mstrio.utils.helper import (
     filter_params_for_func,
     find_object_with_name,
     get_objects_id,
-    get_valid_project_id,
 )
 from mstrio.utils.parser import Parser
+from mstrio.utils.resolvers import get_project_id_from_params_set
 from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 from mstrio.utils.vldb_mixin import ModelVldbMixin
+
+if TYPE_CHECKING:
+    from mstrio.server.project import Project
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +47,7 @@ def list_incremental_refresh_reports(
     connection: Connection,
     name: str | None = None,
     pattern: SearchPattern | int = SearchPattern.CONTAINS,
+    project: 'Project | str | None' = None,
     project_id: str | None = None,
     project_name: str | None = None,
     to_dictionary: bool = False,
@@ -64,15 +69,8 @@ def list_incremental_refresh_reports(
         * - 0 or more of any characters
         e.g. name = ?onny will return Sonny and Tonny
 
-    Specify either `project_id` or `project_name`.
-    When `project_id` is provided (not `None`), `project_name` is omitted.
-
-    Note:
-        When `project_id` is `None` and `project_name` is `None`,
-        then its value is overwritten by `project_id` from `connection` object.
-
     Args:
-        connection: Strategy One connection object returned by
+        connection (Connection): Strategy One connection object returned by
             `connection.Connection()`
         name (string, optional): value the search pattern is set to, which
             will be applied to the names of reports being searched
@@ -80,8 +78,11 @@ def list_incremental_refresh_reports(
             for, such as Begin With or Contains. Possible values are available
             in ENUM mstrio.object_management.SearchPattern.
             Default value is BEGIN WITH (4).
-        project_id (string, optional): Project ID
-        project_name (string, optional): Project name
+        project (Project | str, optional): Project object or ID or name
+            specifying the project. May be used instead of `project_id` or
+            `project_name`.
+        project_id (str, optional): Project ID
+        project_name (str, optional): Project name
         to_dictionary (bool, optional): If True returns dict, by default (False)
             returns Report objects
         limit (integer, optional): limit the number of elements returned. If
@@ -118,11 +119,11 @@ def list_incremental_refresh_reports(
             'subtype', 'date_created', 'date_modified', 'version', 'owner',
             'ext_type', 'view_media', 'certified_info']
     """
-    project_id = get_valid_project_id(
-        connection=connection,
-        project_id=project_id,
-        project_name=project_name,
-        with_fallback=not project_name,
+    proj_id = get_project_id_from_params_set(
+        connection,
+        project,
+        project_id,
+        project_name,
     )
     filters = filters or {}
 
@@ -134,7 +135,7 @@ def list_incremental_refresh_reports(
     objects = full_search(
         connection,
         object_types=ObjectSubTypes.INCREMENTAL_REFRESH_REPORT,
-        project=project_id,
+        project=proj_id,
         name=name,
         pattern=pattern,
         limit=limit,
@@ -404,6 +405,7 @@ class IncrementalRefreshReport(
     def execute(
         self,
         fields: str | None = None,
+        project: 'Project | str | None' = None,
         project_id: str | None = None,
         project_name: str | None = None,
     ) -> Job:
@@ -412,20 +414,26 @@ class IncrementalRefreshReport(
         Args:
             fields (str, optional): A comma-separated list of fields to include
                 in the response. By default, all fields are returned.
+            project (Project | str, optional): Project object or ID or name
+                specifying the project. May be used instead of `project_id` or
+                `project_name`.
             project_id (str, optional): Project ID
             project_name (str, optional): Project name
 
         Returns:
             Job instance.
         """
-        project_id = get_valid_project_id(
-            self.connection, project_id, project_name, with_fallback=True
+        proj_id = get_project_id_from_params_set(
+            self.connection,
+            project,
+            project_id,
+            project_name,
         )
 
         response = refresh_api.execute_incremental_refresh_report(
             self.connection,
             id=self.id,
-            project_id=project_id,
+            project_id=proj_id,
             fields=fields,
         )
 

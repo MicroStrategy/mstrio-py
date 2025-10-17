@@ -29,6 +29,7 @@ from mstrio.object_management.object import Object
 from mstrio.object_management.search_operations import SearchObject  # noqa: F401
 from mstrio.object_management.shortcut import Shortcut  # noqa: F401
 from mstrio.project_objects import Document, Report  # noqa: F401
+from mstrio.project_objects.agents import Agent  # noqa: F401
 from mstrio.project_objects.applications import Application  # noqa: F401
 from mstrio.project_objects.bots import Bot  # noqa: F401
 from mstrio.project_objects.content_group import ContentGroup  # noqa: F401
@@ -82,6 +83,8 @@ class SubTypeObjectMapping(Enum):
     User = ObjectSubTypes.USER  # noqa: F811
     UserGroup = ObjectSubTypes.USER_GROUP  # noqa: F811
     Bot = ObjectSubTypes.DOCUMENT_BOT  # noqa: F811
+    Agent = ObjectSubTypes.DOCUMENT_AGENT  # noqa: F811
+    AgentUniversal = ObjectSubTypes.DOCUMENT_AGENT_UNIVERSAL  # noqa: F811
 
 
 def __str_to_class(classname):

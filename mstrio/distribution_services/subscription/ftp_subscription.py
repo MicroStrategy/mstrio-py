@@ -1,7 +1,12 @@
+from typing import TYPE_CHECKING
+
 from mstrio.connection import Connection
 from mstrio.distribution_services.schedule import Schedule
 from mstrio.distribution_services.subscription import Content, Delivery, Subscription
 from mstrio.utils.version_helper import class_version_handler
+
+if TYPE_CHECKING:
+    from mstrio.server.project import Project
 
 
 @class_version_handler('11.3.0600')
@@ -13,13 +18,13 @@ class FTPSubscription(Subscription):
         connection: Connection,
         id: str | None = None,
         subscription_id: str | None = None,
+        project: 'Project | str | None' = None,
         project_id: str | None = None,
         project_name: str | None = None,
     ):
         """Initializes FTPSubscription object and populates it with
         I-Server data if id or subscription_id is passed.
-        Specify either `project_id` or `project_name`.
-        When `project_id` is provided (not `None`), `project_name` is omitted.
+
         Args:
             connection (Connection): Strategy One connection object returned
                 by `connection.Connection()`
@@ -28,10 +33,15 @@ class FTPSubscription(Subscription):
                 provided id will take precedence
             subscription_id (str, optional): ID of the subscription to be
                 initialized
+            project (Project | str, optional): Project object or ID or name
+                specifying the project. May be used instead of `project_id` or
+                `project_name`.
             project_id (str, optional): Project ID
             project_name (str, optional): Project name
         """
-        super().__init__(connection, id, subscription_id, project_id, project_name)
+        super().__init__(
+            connection, id, subscription_id, project, project_id, project_name
+        )
 
     @classmethod
     def create(
@@ -40,6 +50,7 @@ class FTPSubscription(Subscription):
         name: str,
         space_delimiter: str | None = ' ',
         filename: str | None = None,
+        project: 'Project | str | None' = None,
         project_id: str | None = None,
         project_name: str | None = None,
         multiple_contents: bool | None = False,
@@ -68,8 +79,11 @@ class FTPSubscription(Subscription):
             space_delimiter(str): space delimiter,
             filename (str): the filename that will be delivered when
                 the subscription is executed
-            project_id (str, optional): project ID
-            project_name (str, optional): project name
+            project (Project | str, optional): Project object or ID or name
+                specifying the project. May be used instead of `project_id` or
+                `project_name`.
+            project_id (str, optional): Project ID
+            project_name (str, optional): Project name
             multiple_contents (bool, optional): whether multiple contents are
                 allowed
             allow_delivery_changes (bool, optional): whether the
@@ -128,6 +142,7 @@ class FTPSubscription(Subscription):
             name=name,
             space_delimiter=space_delimiter,
             filename=filename,
+            project=project,
             project_id=project_id,
             project_name=project_name,
             multiple_contents=multiple_contents,

@@ -406,6 +406,7 @@ class MigratedObjectTypes(AutoName):
     REPORT = auto()
     DATASET = auto()
     BOT = auto()
+    AGENT = "bot"
     ATTRIBUTE = auto()
     BASE_FORMULA = auto()
     CONSOLIDATION = auto()
@@ -589,6 +590,7 @@ class PackageInfo(Dictable):
 
 OBJECT_MIGRATION_TYPES_MIN_VERSION = {
     MigratedObjectTypes.BOT: '11.3.0760',
+    MigratedObjectTypes.AGENT: '11.5.1000',
     MigratedObjectTypes.SMART_ATTRIBUTE: '11.3.0760',
     MigratedObjectTypes.SCRIPT: '11.3.0760',
     MigratedObjectTypes.CALENDAR: '11.3.0760',
@@ -634,6 +636,13 @@ CATALOG_ITEMS = {
         ObjectTypes.DOCUMENT_DEFINITION,
         ObjectSubTypes.DOCUMENT_BOT,
     ),  # Bot
+    MigratedObjectTypes.AGENT: (
+        ObjectTypes.DOCUMENT_DEFINITION,
+        [
+            ObjectSubTypes.DOCUMENT_BOT_2_0,
+            ObjectSubTypes.DOCUMENT_BOT_UNIVERSAL,
+        ],
+    ),  # Agent
     MigratedObjectTypes.ATTRIBUTE: (
         ObjectTypes.ATTRIBUTE,
         [
@@ -767,6 +776,7 @@ OBJECT_MIGRATION_TYPES_OBJECT = {
     MigratedObjectTypes.REPORT,
     MigratedObjectTypes.DATASET,
     MigratedObjectTypes.BOT,
+    MigratedObjectTypes.AGENT,
     MigratedObjectTypes.ATTRIBUTE,
     MigratedObjectTypes.BASE_FORMULA,
     MigratedObjectTypes.CONSOLIDATION,

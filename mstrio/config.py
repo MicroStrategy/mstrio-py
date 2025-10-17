@@ -1,3 +1,4 @@
+import contextlib
 import logging
 import sys
 import warnings
@@ -64,3 +65,21 @@ def toggle_debug_mode() -> None:
     global debug
     debug = not debug
     logger.setLevel(get_logging_level())
+
+
+@contextlib.contextmanager
+def temp_verbose_disable():
+    """Temporarily disable verbose logging, with keeping current state.
+
+    Built to be used as context with `with` statement:
+
+        >>> with temp_verbose_disable():
+        >>>     ...
+    """
+    global verbose
+    old_verbose = verbose
+    verbose = False
+    try:
+        yield
+    finally:
+        verbose = old_verbose

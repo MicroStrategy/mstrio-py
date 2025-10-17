@@ -1,4 +1,5 @@
 from logging import getLogger
+from typing import TYPE_CHECKING
 
 from requests import Response
 
@@ -9,9 +10,13 @@ from mstrio.types import ObjectSubTypes, ObjectTypes
 from mstrio.users_and_groups.user import User
 from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity
 from mstrio.utils.format import Color
-from mstrio.utils.helper import delete_none_values, get_project_id_or_none
+from mstrio.utils.helper import delete_none_values
+from mstrio.utils.resolvers import get_project_id_from_params_set
 from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
+
+if TYPE_CHECKING:
+    from mstrio.server.project import Project
 
 logger = getLogger(__name__)
 
@@ -20,24 +25,31 @@ logger = getLogger(__name__)
 def list_palettes(
     connection: Connection,
     to_dictionary: bool = False,
+    project: 'Project | str | None' = None,
     project_id: str | None = None,
     project_name: str | None = None,
 ) -> list['Palette'] | list[dict]:
     """List all palettes in the environment.
+
+    Note:
+        If no project related parameter is provided, configuration-level
+        palettes will be listed.
 
     Args:
         connection (Connection): Strategy One connection object returned
             by `connection.Connection()`
         to_dictionary: If True, returns a list of dictionaries, otherwise
             returns a list of Palette objects.
-        project_id (str, optional): Project ID. If neither ID or name is
-            provided, configuration-level palettes will be listed.
-        project_name (str, optional): Project name. If neither ID or name is
-            provided, configuration-level palettes will be listed.
+        project (Project | str, optional): Project object or ID or name
+            specifying the project. May be used instead of `project_id` or
+            `project_name`.
+        project_id (str, optional): Project ID
+        project_name (str, optional): Project name
     """
     return Palette._list_all(
         connection=connection,
         to_dictionary=to_dictionary,
+        project=project,
         project_id=project_id,
         project_name=project_name,
     )
@@ -102,8 +114,31 @@ class Palette(Entity, CopyMixin, DeleteMixin):
         connection: Connection,
         id: str | None = None,
         name: str | None = None,
+        project: 'Project | str | None' = None,
         project_id: str | None = None,
-    ):
+        project_name: str | None = None,
+    ) -> None:
+        """Initialize a Palette object.
+
+        Args:
+            connection (Connection): Strategy One connection object returned
+                by `connection.Connection()`
+            id (str, optional): ID of the palette.
+            name (str, optional): Name of the palette.
+            project (Project | str | None, optional): Project object or ID or
+                name specifying the project. May be used instead of
+                `project_id` or `project_name`.
+            project_id (str, optional): Project ID
+            project_name (str, optional): Project name
+        """
+        proj_id = get_project_id_from_params_set(
+            connection,
+            project,
+            project_id,
+            project_name,
+            assert_id_exists=False,
+        )
+
         if not id:
             if name:
                 # not using find_object_with_name as api lacks search by name
@@ -111,16 +146,16 @@ class Palette(Entity, CopyMixin, DeleteMixin):
                     c
                     for c in Palette._list_all(
                         connection=connection,
-                        project_id=project_id,
+                        project_id=proj_id,
                         to_dictionary=True,
                     )
                     if c['name'] == name
                 ]
                 if not pals_with_name:
                     raise ValueError(f"Palette with name '{name}' not found.")
-                if (num_of_cals := len(pals_with_name)) > 1:
+                if (num_of_pals := len(pals_with_name)) > 1:
                     raise ValueError(
-                        f"Found {num_of_cals} calendars with name '{name}'. "
+                        f"Found {num_of_pals} palettes with name '{name}'. "
                         "Please provide 'id' argument."
                     )
                 object_id = pals_with_name[0]['id']
@@ -132,7 +167,7 @@ class Palette(Entity, CopyMixin, DeleteMixin):
             connection=connection,
             object_id=object_id,
             name=name,
-            project_id=project_id,
+            project_id=proj_id,
         )
 
     def _init_variables(self, default_value, **kwargs) -> None:
@@ -155,10 +190,15 @@ class Palette(Entity, CopyMixin, DeleteMixin):
         colors: list[Color] | list[str],
         abbreviation: str | None = None,
         description: str | None = None,
+        project: 'Project | str | None' = None,
         project_id: str | None = None,
         project_name: str | None = None,
     ) -> 'Palette':
         """Create a new color palette.
+
+        Note:
+            If no project related parameter is provided, configuration-level
+            palettes will be created.
 
         Args:
             connection (Connection): Strategy One connection object returned by
@@ -169,10 +209,11 @@ class Palette(Entity, CopyMixin, DeleteMixin):
                 single integer, e.g. "16737843" (16,737,843 = 0xff6633)
             abbreviation (str, optional): Abbreviation of the object name.
             description (str, optional): Description of the palette object.
-            project_id (str, optional): Project ID. If neither ID or name is
-                provided, configuration-level palettes will be created.
-            project_name (str, optional): Project name. If neither ID or name is
-                provided, configuration-level palettes will be created.
+            project (Project | str, optional): Project object or ID or name
+                specifying the project. May be used instead of `project_id` or
+                `project_name`.
+            project_id (str, optional): Project ID
+            project_name (str, optional): Project name
 
         Returns:
             The newly created palette.
@@ -182,10 +223,12 @@ class Palette(Entity, CopyMixin, DeleteMixin):
             color.server_value if isinstance(color, Color) else color
             for color in colors
         ]
-        project_id = get_project_id_or_none(
-            connection=connection,
-            project_id=project_id,
-            project_name=project_name,
+        proj_id = get_project_id_from_params_set(
+            connection,
+            project,
+            project_id,
+            project_name,
+            assert_id_exists=False,
         )
         body = {
             'name': name,
@@ -197,13 +240,13 @@ class Palette(Entity, CopyMixin, DeleteMixin):
         res: Response = palettes_api.create_palette(
             connection=connection,
             body=body,
-            project_id=project_id,
+            project_id=proj_id,
         )
         new_id = res.json().get('id')
         new_pal = cls(
             connection=connection,
             id=new_id,
-            project_id=project_id,
+            project_id=proj_id,
         )
         if config.verbose:
             # duplicate name won't be accepted and won't create a changed name
@@ -259,19 +302,22 @@ class Palette(Entity, CopyMixin, DeleteMixin):
         cls,
         connection: Connection,
         to_dictionary: bool = False,
+        project: 'Project | str | None' = None,
         project_id: str | None = None,
         project_name: str | None = None,
     ) -> list['Palette'] | list[dict]:
-        project_id = get_project_id_or_none(
-            connection=connection,
-            project_id=project_id,
-            project_name=project_name,
+        proj_id = get_project_id_from_params_set(
+            connection,
+            project,
+            project_id,
+            project_name,
+            assert_id_exists=False,
         )
 
         # not using fetch_objects as api lacks pagination
         res: Response = palettes_api.list_palettes(
             connection=connection,
-            project_id=project_id,
+            project_id=proj_id,
             fields='palettes',
         )
         objects = res.json().get('palettes', [])

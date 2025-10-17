@@ -177,7 +177,7 @@ class AttributeForm(Entity):  # noqa
         if self.FormType.has_value(kwargs.get('type')):
             self.form_type = self.FormType(kwargs.get('type'))
         elif kwargs.get('type'):
-            self.type = kwargs.get('type')
+            self._type = kwargs.get('type')
 
         self.is_multilingual = kwargs.get('is_multilingual', False)
         self.is_form_group = kwargs.get('is_form_group', False)

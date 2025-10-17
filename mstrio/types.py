@@ -91,6 +91,7 @@ class ObjectTypes(Enum):
     DRIVER = 84
     INTERFACE_LANGUAGE = 85
     WORKFLOW = 86
+    TEST_SUITE = 93
     NOT_SUPPORTED = None
 
     def __new__(cls, value):
@@ -113,7 +114,7 @@ class ObjectTypes(Enum):
             ObjectTypes.SERVER_DEFINITION: 'server_def',
             ObjectTypes.SUBSCRIPTION_TRANSMITTER: 'transmitter',
             ObjectTypes.PACKAGE_DEFINITION: 'function_package_definition',
-            ObjectTypes.DOCUMENT_DEFINITION: 'document_def',
+            ObjectTypes.DBTABLE: 'db_table',
             ObjectTypes.DBMS: 'type_dbms',
             ObjectTypes.SECURITY_FILTER: 'md_security_filter',
             ObjectTypes.SHORTCUT: 'external_shortcut',
@@ -280,6 +281,8 @@ class ObjectSubTypes(Enum):
     DOCUMENT_BOT = 14084
     DOCUMENT_BOT_2_0 = 14087
     DOCUMENT_BOT_UNIVERSAL = 14091
+    DOCUMENT_AGENT = 14087
+    DOCUMENT_AGENT_UNIVERSAL = 14091
     DRILL_MAP = 14336
     DBMS = 14592
     MD_SECURITY_FILTER = 14848
@@ -378,6 +381,8 @@ class ObjectSubTypes(Enum):
             ObjectSubTypes.DOCUMENT_BOT: 'chat_bot',
             ObjectSubTypes.DOCUMENT_BOT_2_0: 'chat_bot_v2',
             ObjectSubTypes.DOCUMENT_BOT_UNIVERSAL: 'universal_chat_bot',
+            ObjectSubTypes.DOCUMENT_AGENT: 'chat_bot_v2',
+            ObjectSubTypes.DOCUMENT_AGENT_UNIVERSAL: 'universal_chat_bot',
             ObjectSubTypes.PROMPT_ANSWER_BIG_DECIMAL: 'prompt_answer_bigdecimal',
             ObjectSubTypes.CHANGE_JOURNAL_SEARCH: 'changejournal_search',
             ObjectSubTypes.CHANGE_JOURNAL: 'changejournal',
@@ -412,21 +417,23 @@ class ExtendedType(Enum):
     MDX = 2
     CUSTOM_SQL_FREE_FORM = 3
     CUSTOM_SQL_WIZARD = 4
-    DATA_IMPORT_GENERAL = 256
-    DATA_IMPORT_FILE_EXCEL = 272
-    DATA_IMPORT_FILE_TEXT = 288
-    DATA_IMPORT_CUSTOM_SQL = 304
-    DATA_IMPORT_TABLE = 320
-    DATA_IMPORT_OAUTH = 336
-    DATA_IMPORT_OAUTH_SFDC = 337
-    DATA_IMPORT_OAUTH_GDRIVE = 338
-    DATA_IMPORT_OAUTH_DROPBOX = 339
-    _ = 341
-    DATA_IMPORT_CUSTOM_SQL_WIZARD = 352
-    DATA_IMPORT_SPARK = 416
-    DATA_IMPORT_DATASET = 448
-    DATA_IMPORT_OLAP_CUBE = 4096
-    DATA_IMPORT_LIVE_CUBE = 4097
+    FLAT_FILE = 5
+    DATA_IMPORT_GENERAL = 0x100
+    DATA_IMPORT_FILE_EXCEL = 0x110
+    DATA_IMPORT_FILE_TEXT = 0x120
+    DATA_IMPORT_CUSTOM_SQL = 0x130
+    DATA_IMPORT_TABLE = 0x140
+    DATA_IMPORT_OAUTH = 0x150
+    DATA_IMPORT_OAUTH_SFDC = 0x151
+    DATA_IMPORT_OAUTH_GDRIVE = 0x152
+    DATA_IMPORT_OAUTH_DROPBOX = 0x153
+    _ = 0x155
+    DATA_IMPORT_CUSTOM_SQL_WIZARD = 0x160
+    DATA_IMPORT_SINGLE_TABLE = 0x170
+    DATA_IMPORT_SPARK = 0x1A0
+    DATA_IMPORT_DATASET = 0x1C0
+    DATA_IMPORT_OLAP_CUBE = 0x1000
+    DATA_IMPORT_LIVE_CUBE = 0x1001
 
     def __new__(cls, value):
         member = object.__new__(cls)

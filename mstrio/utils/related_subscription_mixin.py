@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 
 from mstrio.api import subscriptions
-from mstrio.utils.helper import get_valid_project_id
+from mstrio.utils.resolvers import get_project_id_from_params_set
 from mstrio.utils.version_helper import method_version_handler
 
 if TYPE_CHECKING:
@@ -32,8 +32,11 @@ class RelatedSubscriptionMixin:
         if object_type in ['user', 'event', 'schedule']:
             project_id = None
         else:
-            project_id = self.project_id or get_valid_project_id(
-                self.connection, with_fallback=True
+            project_id = get_project_id_from_params_set(
+                self.connection,
+                self.project_id,
+                None,
+                None,
             )
 
         objects = (

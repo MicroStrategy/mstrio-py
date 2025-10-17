@@ -54,7 +54,7 @@ contact_address = ContactAddress(
 contact_address = ContactAddress(
     name=CONTACT_ADDRESS_NAME,
     physical_address=PHYSICAL_ADDRESS,
-    # the ContactDeliveryType values can be found in distribution_services/contact/contact.py
+    # the ContactDeliveryType values can be found in users_and_groups/contact.py
     delivery_type=ContactDeliveryType.EMAIL,
     device=DEVICE_ID,
     is_default=True,

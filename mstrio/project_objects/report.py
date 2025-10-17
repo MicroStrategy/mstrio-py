@@ -1,4 +1,5 @@
 import logging
+from typing import TYPE_CHECKING
 
 import pandas as pd
 import requests
@@ -10,8 +11,8 @@ from mstrio.api import reports as reports_api
 from mstrio.api.schedules import get_contents_schedule
 from mstrio.connection import Connection
 from mstrio.distribution_services.schedule import Schedule
-from mstrio.object_management.search_operations import SearchPattern, full_search
 from mstrio.modeling import Prompt
+from mstrio.object_management.search_operations import SearchPattern, full_search
 from mstrio.users_and_groups.user import User
 from mstrio.utils.cache import CacheSource, ContentCacheMixin
 from mstrio.utils.certified_info import CertifiedInfo
@@ -33,17 +34,23 @@ from mstrio.utils.helper import (
     find_object_with_name,
     get_parallel_number,
     get_total_count_of_objects,
-    get_valid_project_id,
     key_fn_for_sort_object_properties,
     response_handler,
 )
 from mstrio.utils.parser import Parser
 from mstrio.utils.related_subscription_mixin import RelatedSubscriptionMixin
+from mstrio.utils.resolvers import (
+    get_project_id_from_params_set,
+    validate_owner_key_in_filters,
+)
 from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.response_processors import reports as reports_processors_api
 from mstrio.utils.sessions import FuturesSessionWithRenewal
 from mstrio.utils.version_helper import meets_minimal_version
 from mstrio.utils.vldb_mixin import ModelVldbMixin
+
+if TYPE_CHECKING:
+    from mstrio.server.project import Project
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +59,7 @@ def list_reports(
     connection: Connection,
     name: str | None = None,
     search_pattern: SearchPattern | int = SearchPattern.CONTAINS,
+    project: 'Project | str | None' = None,
     project_id: str | None = None,
     project_name: str | None = None,
     to_dictionary: bool = False,
@@ -70,13 +78,6 @@ def list_reports(
         * - 0 or more of any characters
         e.g. name = ?onny will return Sonny and Tonny
 
-    Specify either `project_id` or `project_name`.
-    When `project_id` is provided (not `None`), `project_name` is omitted.
-
-    Note:
-        When `project_id` is `None` and `project_name` is `None`,
-        then its value is overwritten by `project_id` from `connection` object.
-
     Args:
         connection: Strategy One connection object returned by
             `connection.Connection()`
@@ -88,8 +89,11 @@ def list_reports(
             for, such as Begin With or Contains. Possible values are available
             in ENUM mstrio.object_management.SearchPattern.
             Default value is BEGIN WITH (4).
-        project_id (string, optional): Project ID
-        project_name (string, optional): Project name
+        project (Project | str, optional): Project object or ID or name
+            specifying the project. May be used instead of `project_id` or
+            `project_name`.
+        project_id (str, optional): Project ID
+        project_name (str, optional): Project name
         limit (integer, optional): limit the number of elements returned. If
             None all object are returned.
         folder_id (string, optional): ID of a folder where the search
@@ -109,17 +113,19 @@ def list_reports(
     Returns:
         list with Report objects or list of dictionaries
     """
-    project_id = get_valid_project_id(
-        connection=connection,
-        project_id=project_id,
-        project_name=project_name,
-        with_fallback=not project_name,
+    proj_id = get_project_id_from_params_set(
+        connection,
+        project,
+        project_id,
+        project_name,
     )
+
+    validate_owner_key_in_filters(filters)
 
     objects_ = full_search(
         connection,
         object_types=ObjectTypes.REPORT_DEFINITION,
-        project=project_id,
+        project=proj_id,
         name=name,
         pattern=search_pattern,
         limit=limit,

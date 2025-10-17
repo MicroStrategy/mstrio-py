@@ -44,8 +44,8 @@ def update_package_holder(
         body (dict): dictionarized PackageConfig object (with `to_dict()`)
         id (str): ID of the package to be updated
         prefer (str, optional): API currently just supports asynchronous mode,
-        not support synchronous mode, so header parameter ‘Prefer’ must be set
-        to ‘respond-async’ in your request. Defaults to "respond-async".
+        not support synchronous mode, so header parameter `Prefer` must be set
+        to `respond-async` in your request. Defaults to "respond-async".
         project_id (Optional[str]): Optional ID of a project. Defaults to None.
         error_msg (Optional[str]): Optional error message. Defaults to None.
 
@@ -158,8 +158,8 @@ def delete_package_holder(
         connection (Connection): Strategy One REST API connection object.
         id (str): ID of the package to be deleted.
         prefer (str, optional): API currently just supports asynchronous mode,
-        not support synchronous mode, so header parameter ‘Prefer’ must be set
-        to ‘respond-async’ in your request. Defaults to "respond-async".
+        not support synchronous mode, so header parameter `Prefer` must be set
+        to `respond-async` in your request. Defaults to "respond-async".
         project_id (Optional[str]): Optional ID of a project. Defaults to None.
         error_msg (Optional[str]): Optional error message. Defaults to None.
 

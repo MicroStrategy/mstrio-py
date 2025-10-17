@@ -22,9 +22,9 @@ from mstrio.utils.acl import ACE, ACLMixin
 from mstrio.utils.dependence_mixin import DependenceMixin
 from mstrio.utils.helper import (
     get_response_json,
-    get_valid_project_id,
     rename_dict_keys,
 )
+from mstrio.utils.resolvers import get_project_id_from_params_set
 from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.time_helper import (
     DatetimeFormats,
@@ -312,7 +312,20 @@ class EntityBase(helper.Dictable):
             True if subtype is supported by class.
             False if subtype is not supported.
         """
-        return subtype in [item.value for item in cls._OBJECT_SUBTYPES]
+        return subtype in cls._get_subtypes_as_raw_values()
+
+    @classmethod
+    def _get_subtypes_as_raw_values(cls) -> list[int]:
+        """Returns a list of supported subtypes as raw integer values.
+
+        Returns:
+            A list of integers representing supported subtypes.
+        """
+        return (
+            [item.value for item in cls._OBJECT_SUBTYPES]
+            if cls._OBJECT_SUBTYPES
+            else []
+        )
 
     def _add_missing_attributes(self, key, json) -> None:
         # Set the keys that are missing in the response to None
@@ -385,12 +398,13 @@ class EntityBase(helper.Dictable):
         return rename_dict_keys(response, cls._REST_ATTR_MAP)
 
     @classmethod
-    def _python_to_rest(cls, request_body: dict) -> dict:
+    def _python_to_rest(cls, request_body: dict, to_camel=False) -> dict:
         """Map Python API field names to REST API field names as specified in
         cls._REST_ATTR_MAP.
 
         Args:
             request_body (dict): A dictionary representing an HTTP request body.
+            to_camel (bool): If True, converts keys to camelCase format.
 
         Returns:
             dict: A dictionary with field names converted to REST API names.
@@ -399,6 +413,8 @@ class EntityBase(helper.Dictable):
         for rest_name, python_name in cls._REST_ATTR_MAP.items():
             if python_name in body:
                 body[rest_name] = body.pop(python_name)
+        if to_camel:
+            body = helper.snake_to_camel(body, whitelist=cls._KEEP_CAMEL_CASE)
         return body
 
     def __compose_val(self, key: str, val: Any) -> Any:
@@ -538,7 +554,7 @@ class EntityBase(helper.Dictable):
         connection: Connection,
         to_snake_case: bool = True,
         with_missing_value: bool = False,
-    ) -> type[T]:
+    ) -> T:
         """Overrides `Dictable.from_dict()` to instantiate an object from
             a dictionary without calling any additional getters.
 
@@ -801,18 +817,15 @@ class EntityBase(helper.Dictable):
                 'patch').
         """
         changed = []
-        camel_properties = helper.snake_to_camel(
-            properties, whitelist=self._KEEP_CAMEL_CASE
-        )
         for attrs, (func, func_type) in self._API_PATCH.items():
             if func_type == 'partial_put':
-                translated_properties = self._python_to_rest(camel_properties)
+                translated_properties = self._python_to_rest(properties, to_camel=True)
                 body = self.__partial_put_body(attrs, translated_properties)
             elif func_type == 'put':  # Update using the generic update_object()
                 body = self.__put_body(attrs, properties)
                 body = self._python_to_rest(body)
             elif func_type == 'patch':
-                translated_properties = self._python_to_rest(camel_properties)
+                translated_properties = self._python_to_rest(properties, to_camel=True)
                 body = self.__patch_body(attrs, translated_properties, op)
             else:
                 msg = (
@@ -1181,9 +1194,9 @@ class Entity(EntityBase, ACLMixin, DependenceMixin, TranslationMixin):
         target_folder_id: str | None = None,
         target_folder_path: str | None = None,
         target_folder: 'Folder | None' = None,
+        project: 'Project | str | None' = None,
         project_id: str | None = None,
         project_name: str | None = None,
-        project: 'Project | None' = None,
         to_dictionary: bool = False,
     ) -> 'Shortcut':
         """Create a shortcut to the object.
@@ -1197,14 +1210,11 @@ class Entity(EntityBase, ACLMixin, DependenceMixin, TranslationMixin):
                 May be used instead of `target_folder_id`.
             target_folder (Folder, optional): Target folder object.
                 May be used instead of `target_folder_id`.
-            project_id (str, optional): ID of the target project of the new
-                shortcut. The project may be specified by either `project_id`,
-                `project_name` or `project`. If the project is not specified in
-                either way, the project from the `connection` object is used.
-            project_name (str, optional): Name of the target project.
-                May be used instead of `project_id`.
-            project (Project, optional): Project object specifying the target
-                project. May be used instead of `project_id`.
+            project (Project | str, optional): Project object or ID or name
+                specifying the project. May be used instead of `project_id` or
+                `project_name`.
+            project_id (str, optional): Project ID
+            project_name (str, optional): Project name
             to_dictionary (bool, optional): If True, the method will return
                 a dictionary with the shortcut's properties instead of a
                 Shortcut object. Defaults to False.
@@ -1222,13 +1232,11 @@ class Entity(EntityBase, ACLMixin, DependenceMixin, TranslationMixin):
         if not target_folder_id:
             raise ValueError("Target folder not specified.")
 
-        if project_id is None and project is not None:
-            project_id = project.id
-        project_id = get_valid_project_id(
-            connection=self.connection,
-            project_id=project_id,
-            project_name=project_name,
-            with_fallback=True,
+        proj_id = get_project_id_from_params_set(
+            self.connection,
+            project,
+            project_id,
+            project_name,
         )
 
         body = {
@@ -1240,7 +1248,7 @@ class Entity(EntityBase, ACLMixin, DependenceMixin, TranslationMixin):
             id=self.id,
             object_type=self._OBJECT_TYPE.value,
             body=body,
-            project_id=project_id,
+            project_id=proj_id,
         )
         body = res.json()
         shortcut_id = body.get('id')
@@ -1339,11 +1347,11 @@ class CopyMixin:
     """
 
     def create_copy(
-        self: Entity,
+        self: T,
         name: str | None = None,
         folder_id: str | None = None,
         project: 'Project | str | None' = None,
-    ) -> Any:
+    ) -> T:
         """Create a copy of the object on the I-Server.
 
         Args:

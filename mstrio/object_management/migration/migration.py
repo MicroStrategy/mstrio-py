@@ -7,7 +7,7 @@ from hashlib import sha256
 from mstrio import config
 from mstrio.api import migration as migration_api
 from mstrio.connection import Connection
-from mstrio.object_management import Object
+from mstrio.object_management import Object, SearchObject
 from mstrio.object_management.migration.package import (
     CATALOG_ITEMS,
     OBJECT_MIGRATION_TYPES_ADMINISTRATION,
@@ -36,12 +36,9 @@ from mstrio.types import ObjectSubTypes, ObjectTypes
 from mstrio.users_and_groups import User
 from mstrio.utils.entity import DeleteMixin, EntityBase
 from mstrio.utils.enum_helper import get_enum_val
-from mstrio.utils.helper import (
-    camel_to_snake,
-    get_valid_project_id,
-    get_valid_project_name,
-)
+from mstrio.utils.helper import camel_to_snake
 from mstrio.utils.progress_bar_mixin import ProgressBarMixin
+from mstrio.utils.resolvers import get_project_id_from_params_set
 from mstrio.utils.response_processors import migrations
 from mstrio.utils.time_helper import datetime_to_str
 from mstrio.utils.version_helper import (
@@ -282,16 +279,24 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
         cls,
         connection: 'Connection',
         body: dict,
+        project: 'Project | str | None' = None,
         project_id: str | None = None,
         project_name: str | None = None,
     ) -> 'Migration':
         """Create a totally new migration object.
 
+        Note:
+            Project parameters are obsolete when `body` package info is a
+            `PackageType.ADMINISTRATION` type.
+
         Args:
-            connection: A Strategy One connection object
-            body: a json body with migration details
-            project_id: ID of the project
-            project_name: Name of the project
+            connection (Connection): A Strategy One connection object
+            body (dict): a json body with migration details
+            project (Project | str, optional): Project object or ID or name
+                specifying the project. May be used instead of `project_id` or
+                `project_name`.
+            project_id (str, optional): Project ID
+            project_name (str, optional): Project name
 
         Returns:
             A new Migration object
@@ -304,24 +309,27 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
                 prefer='respond-async',
             )
         else:
-            project_id = get_valid_project_id(
-                connection=connection,
-                project_id=project_id,
-                project_name=project_name,
-                with_fallback=not project_name,
+            proj_id = get_project_id_from_params_set(
+                connection,
+                project,
+                project_id,
+                project_name,
             )
             response = migration_api.create_new_migration(
                 connection=connection,
                 body=body,
                 prefer='respond-async',
-                project_id=project_id,
+                project_id=proj_id,
             )
+
         response_data = response.json()
+
         if config.verbose:
             logger.info(
                 "Successfully started creation of migration object with ID:"
                 f" '{response_data.get('id')}'"
             )
+
         return cls.from_dict(
             source=camel_to_snake(response_data), connection=connection
         )
@@ -333,6 +341,7 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
         toc_view: dict | PackageConfig,
         tree_view: str | None = None,
         name: str | None = None,
+        project: 'Project | str | None' = None,
         project_id: str | None = None,
         project_name: str | None = None,
     ) -> 'Migration':
@@ -347,8 +356,11 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
             name (str, optional): Name of the migration. Used for identification
                 purposes for the convenience of the user. If None default name
                 will be generated.
-            project_id (str, optional): ID of the project.
-            project_name (str, optional): Name of the project.
+            project (Project | str, optional): Project object or ID or name
+                specifying the project. May be used instead of `project_id` or
+                `project_name`.
+            project_id (str, optional): Project ID
+            project_name (str, optional): Project name
 
         Returns:
             A new Migration object.
@@ -360,7 +372,7 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
             connection, toc_view, tree_view, name
         )
         base_body['packageInfo']['type'] = PackageType.OBJECT.value
-        return cls.create(connection, base_body, project_id, project_name)
+        return cls.create(connection, base_body, project, project_id, project_name)
 
     @classmethod
     def create_admin_migration(
@@ -401,6 +413,7 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
         toc_view: dict | ProjectMergePackageSettings | ProjectMergePackageTocView,
         tree_view: str | None = None,
         name: str | None = None,
+        project: 'Project | str | None' = None,
         project_id: str | None = None,
         project_name: str | None = None,
     ) -> 'Migration':
@@ -415,8 +428,11 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
             name (str, optional): Name of the migration. Used for identification
                 purposes for the convenience of the user. If None default name
                 will be generated.
-            project_id (str, optional): ID of the project.
-            project_name (str, optional): Name of the project.
+            project (Project | str, optional): Project object or ID or name
+                specifying the project. May be used instead of `project_id` or
+                `project_name`.
+            project_id (str, optional): Project ID
+            project_name (str, optional): Project name
 
         Returns:
             A new Migration object.
@@ -435,11 +451,12 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
         )
         base_body['packageInfo']['type'] = PackageType.OBJECT.value
         base_body['packageInfo']['purpose'] = MigrationPurpose.PROJECT_MERGE.value
-        return cls.create(connection, base_body, project_id, project_name)
+        return cls.create(connection, base_body, project, project_id, project_name)
 
     def reuse(
         self,
         target_env: Connection | Environment,
+        target_project: 'Project | str | None' = None,
         target_project_id: str | None = None,
         target_project_name: str | None = None,
     ) -> 'Migration':
@@ -451,27 +468,33 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
         Args:
             target_env (Connection, Environment): Target environment to migrate
                 reused package to.
-            target_project_id (str, optional): ID of the target project. Project
-                information is required in case of object migration.
-            target_project_name (str, optional): Name of the target project.
-                Project information is required in case of object migration.
+            target_project (Project | str, optional): Project object or ID or
+                name specifying the project. May be used instead of
+                `target_project_id` or `target_project_name`.
+            target_project_id (str, optional): Project ID
+            target_project_name (str, optional): Project name
 
         Returns:
             A new Migration object based on the reused package.
         """
         target_id = Migration._get_env_id(target_env)
         body = {"importInfo": {"environment": {'id': target_id, 'name': target_id}}}
+
         if self._package_info.type == PackageType.OBJECT:
             if isinstance(target_env, Environment):
                 target_env = target_env.connection
-            target_project_id = get_valid_project_id(
-                target_env, target_project_id, target_project_name
+            target_proj_id = get_project_id_from_params_set(
+                target_env,
+                target_project,
+                target_project_id,
+                target_project_name,
             )
-            target_project_name = get_valid_project_name(target_env, target_project_id)
+            target_proj_name = Project(target_env, id=target_proj_id).name
             body['importInfo']['project'] = {
-                'id': target_project_id,
-                'name': target_project_name,
+                'id': target_proj_id,
+                'name': target_proj_name,
             }
+
         response_data = migration_api.create_new_migration(
             connection=self.connection, package_id=self._package_info.id, body=body
         ).json()
@@ -546,6 +569,7 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
         file_path: str,
         package_type: PackageType | str,
         name: str | None = None,
+        target_project: 'Project | str | None' = None,
         target_project_id: str | None = None,
         target_project_name: str | None = None,
     ) -> 'Migration':
@@ -559,22 +583,24 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
             package_type (PackageType | str): Type of the package.
             name (str, optional): Name of the migration. Used for identification
                 purposes for the convenience of the user. Defaults to None.
-            target_project_id (str, optional): ID of the target project. Project
-                information is required in case of object migration.
-            target_project_name (str, optional): Name of the target project.
-                Project information is required in case of object migration.
+            target_project (Project | str, optional): Project object or ID or
+                name specifying the project. May be used instead of
+                `target_project_id` or `target_project_name`.
+            target_project_id (str, optional): Project ID
+            target_project_name (str, optional): Project name
 
         Returns:
             Migration: A new Migration object.
         """
-        if target_project_id or target_project_name:
-            target_project_id = get_valid_project_id(
-                connection, target_project_id, target_project_name
-            )
-            target_project_name = get_valid_project_name(
-                connection=connection,
-                project_id=target_project_id,
-            )
+        target_proj_id = get_project_id_from_params_set(
+            connection,
+            target_project,
+            target_project_id,
+            target_project_name,
+            assert_id_exists=False,
+            no_fallback_from_connection=True,
+        )
+
         package_type = get_enum_val(package_type, PackageType)
         with open(file_path, mode='rb') as file:  # b is important -> binary
             file_content = file.read()
@@ -607,21 +633,23 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
             },
         }
 
-        if target_project_id:
+        if target_proj_id:
+            target_proj_name = Project(connection, id=target_proj_id).name
+
             body['importInfo']['project'] = {
-                'id': target_project_id,
-                'name': target_project_name,
+                'id': target_proj_id,
+                'name': target_proj_name,
             }
             body['packageInfo']['project'] = {
-                'id': target_project_id,
-                'name': target_project_name,
+                'id': target_proj_id,
+                'name': target_proj_name,
             }
 
         response_data = migration_api.create_new_migration(
             connection=connection,
             body=body,
             prefer='respond-async',
-            project_id=target_project_id,
+            project_id=target_proj_id,
         )
         mig_id = response_data.json().get('id')
         logger.info(f"Successfully started migration from file with ID: '{mig_id}'.")
@@ -641,6 +669,7 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
     def trigger_validation(
         self,
         target_env: Connection | Environment,
+        target_project: 'Project | str | None' = None,
         target_project_id: str | None = None,
         target_project_name: str | None = None,
     ) -> None:
@@ -649,26 +678,33 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
         defined, without committing any changes to the metadata.
         This API can only be called by administrator when package is created.
 
+        Note:
+            Project parameters are obsolete if no project-level objects are
+            migrated.
+
         Args:
             target_env (Connection, Environment): Destination environment
                 to validate the package.
-            target_project_id (str, optional): ID of the target project. Project
-                information is required in case of object migration.
-            target_project_name (str, optional): Name of the target project.
-                Project information is required in case of object migration.
+            target_project (Project | str, optional): Project object or ID or
+                name specifying the project. May be used instead of
+                `target_project_id` or `target_project_name`.
+            target_project_id (str, optional): Project ID
+            target_project_name (str, optional): Project name
 
         """
 
         if isinstance(target_env, Environment):
             target_env = target_env.connection
-        if target_project_id or target_project_name:
-            target_project_id = get_valid_project_id(
-                target_env, target_project_id, target_project_name
-            )
-            target_project_name = get_valid_project_name(
-                connection=target_env,
-                project_id=target_project_id,
-            )
+
+        target_proj_id = get_project_id_from_params_set(
+            target_env,
+            target_project,
+            target_project_id,
+            target_project_name,
+            assert_id_exists=False,
+            no_fallback_from_connection=True,
+        )
+
         target_id = Migration._get_env_id(target_env)
         body = {
             'id': self.id,
@@ -682,10 +718,10 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
             },
         }
 
-        if target_project_id:
+        if target_proj_id:
             body['importInfo']['project'] = {
-                'id': target_project_id,
-                'name': target_project_name,
+                'id': target_proj_id,
+                'name': Project(target_env, id=target_proj_id).name,
             }
 
         migration_api.update_migration(
@@ -698,7 +734,7 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
             connection=target_env,
             id=self.id,
             body=fetched_body,
-            project_id=target_project_id,
+            project_id=target_proj_id,
         )
         status_change = {"validation": {"status": "validating"}}
         migration_api.update_migration(
@@ -839,32 +875,52 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
         return super().from_dict(data, connection, to_snake_case)
 
     def reverse(
-        self, target_env: Environment | Connection, target_project_id: str | None = None
+        self,
+        target_env: Environment | Connection,
+        target_project: 'Project | str | None' = None,
+        target_project_id: str | None = None,
+        target_project_name: str | None = None,
     ) -> None:
         """Reverse the migration process by importing the undo package.
+
+        Note:
+            Project parameters are obsolete if no project-level objects were
+            migrated.
 
         Args:
             target_env (Environment, Connection): Destination environment to
                 reverse the migration.
-            target_project_id (str, optional): ID of the target project. Project
-                information is required in case of object migration.
+            target_project (Project | str, optional): Project object or ID or
+                name specifying the project. May be used instead of
+                `target_project_id` or `target_project_name`.
+            target_project_id (str, optional): Project ID
+            target_project_name (str, optional): Project name
         """
         if isinstance(target_env, Environment):
             target_env = target_env.connection
+
+        target_proj_id = get_project_id_from_params_set(
+            target_env,
+            target_project,
+            target_project_id,
+            target_project_name,
+            assert_id_exists=False,
+            no_fallback_from_connection=True,
+        )
 
         migration_api.update_migration(
             connection=target_env,
             migration_id=self.id,
             body={'importInfo': {'undoRequestStatus': 'requested'}},
             prefer='respond-async',
-            project_id=target_project_id,
+            project_id=target_proj_id,
         )
         migration_api.update_migration(
             connection=target_env,
             migration_id=self.id,
             body={'importInfo': {'undoRequestStatus': 'approved'}},
             prefer='respond-async',
-            project_id=target_project_id,
+            project_id=target_proj_id,
         )
         if config.verbose:
             logger.info(f"Successfully reversed migration with ID: '{self.id}'")
@@ -872,6 +928,7 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
     def migrate(
         self,
         target_env: Connection | Environment,
+        target_project: 'Project | str | None' = None,
         target_project_id: str | None = None,
         target_project_name: str | None = None,
         generate_undo: bool = True,
@@ -882,10 +939,11 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
         Args:
             target_env (Connection, Environment): Destination environment
                 to migrate the package.
-            target_project_id (str, optional): ID of the target project. Project
-                information is required in case of object migration.
-            target_project_name (str, optional): Name of the target project.
-                Project information is required in case of object migration.
+            target_project (Project | str, optional): Project object or ID or
+                name specifying the project. May be used instead of
+                `target_project_id` or `target_project_name`.
+            target_project_id (str, optional): Project ID
+            target_project_name (str, optional): Project name
             generate_undo (bool, optional): Specify weather to generate an undo
                 package or not. True by default.
         """
@@ -893,14 +951,14 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
         if isinstance(target_env, Environment):
             target_env = target_env.connection
 
-        if target_project_id or target_project_name:
-            target_project_id = get_valid_project_id(
-                target_env, target_project_id, target_project_name
-            )
-            target_project_name = get_valid_project_name(
-                connection=target_env,
-                project_id=target_project_id,
-            )
+        target_proj_id = get_project_id_from_params_set(
+            target_env,
+            target_project,
+            target_project_id,
+            target_project_name,
+            assert_id_exists=False,
+            no_fallback_from_connection=True,
+        )
 
         target_id = Migration._get_env_id(target_env)
         body = {
@@ -909,10 +967,10 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
                 "importRequestStatus": RequestStatus.REQUESTED.value,
             },
         }
-        if target_project_id:
+        if target_proj_id:
             body['importInfo']['project'] = {
-                'id': target_project_id,
-                'name': target_project_name,
+                'id': target_proj_id,
+                'name': Project(target_env, id=target_proj_id).name,
             }
 
         migration_api.update_migration(
@@ -932,8 +990,9 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
             prefer='respond-async',
             generate_undo=generate_undo,
             body=fetched_body,
-            project_id=target_project_id,
+            project_id=target_proj_id,
         )
+
         if response.ok and config.verbose:
             logger.info(
                 f"Successfully migrated migration '{self.name}' with ID: '{self.id}'"
@@ -943,7 +1002,9 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
         self,
         name: str | None = None,
         target_env: Connection | Environment | str = None,
-        target_project: Project | str = None,
+        target_project: 'Project | str | None' = None,
+        target_project_id: str | None = None,
+        target_project_name: str | None = None,
     ) -> None:
         """Alter the migration object info.
 
@@ -958,8 +1019,23 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
                 the project ID.
 
         """
+        if isinstance(target_env, Environment):
+            target_env = target_env.connection
+
+        target_proj_id = get_project_id_from_params_set(
+            target_env if isinstance(target_env, Connection) else None,
+            target_project,
+            target_project_id,
+            target_project_name,
+            assert_id_exists=False,
+            no_fallback_from_connection=True,
+        )
+
+        if target_proj_id and isinstance(target_env, Connection):
+            target_proj_id = Project(target_env, id=target_proj_id)
+
         request_body = self._build_body_to_alter_migration_info(
-            name=name, target_env=target_env, target_project=target_project
+            name=name, target_env=target_env, target_project=target_proj_id
         )
         response = migration_api.update_migration(
             connection=self.connection, migration_id=self.id, body=request_body
@@ -971,7 +1047,7 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
     def _build_body_to_alter_migration_info(
         name: str | None = None,
         target_env: Connection | Environment | str = None,
-        target_project: Project | str = None,
+        target_project: 'Project | str | None' = None,
     ) -> dict:
         request_body = {}
         if name:
@@ -1047,7 +1123,7 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
     @staticmethod
     def build_package_config(
         connection: Connection,
-        content: list[Object | dict],
+        content: list[Object | dict] | SearchObject,
         package_settings: PackageSettings,
         object_action_map: list[tuple] | None = None,
         object_dependents_map: list[tuple] | None = None,
@@ -1060,7 +1136,8 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
 
         Args:
             connection (Connection): A Strategy One connection object.
-            content (list[Object | dict]): List of objects to migrate.
+            content (list[Object | dict] | SearchObject): List of objects to
+                migrate or a SearchObject instance.
             package_settings (PackageSettings): Package settings information.
             object_action_map (list[tuple], optional): List of tuples where the
                 first element is the object type and the second element is the
@@ -1084,6 +1161,8 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
         """
         default_action = default_action or package_settings.default_action
         content_list = []
+        if isinstance(content, SearchObject):
+            content = content.run()
         for obj in content:
             if isinstance(obj, dict):
                 obj = Object.from_dict(source=obj, connection=connection)

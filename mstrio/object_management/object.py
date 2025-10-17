@@ -6,30 +6,34 @@ from mstrio.object_management.search_operations import (
     SearchPattern,
     full_search,
 )
-from mstrio.types import ObjectTypes
+from mstrio.types import ObjectTypes, TypeOrSubtype
 from mstrio.users_and_groups.user import User
 from mstrio.utils.acl import ACLMixin
 from mstrio.utils.certified_info import CertifiedInfo
 from mstrio.utils.entity import CertifyMixin, CopyMixin, DeleteMixin, Entity, MoveMixin
-from mstrio.utils.enum_helper import get_enum
 from mstrio.utils.helper import (
     get_args_from_func,
     get_default_args_from_func,
-    get_valid_project_id,
     get_owner_id,
+)
+from mstrio.utils.resolvers import (
+    get_project_id_from_params_set,
+    validate_owner_key_in_filters,
 )
 from mstrio.utils.response_processors import objects as objects_processors
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
+    from mstrio.server.project import Project
 
 logger = logging.getLogger(__name__)
 
 
 def list_objects(
     connection: "Connection",
-    object_type: ObjectTypes | int,
+    object_type: TypeOrSubtype | int,
     name: str | None = None,
+    project: "Project | str | None" = None,
     project_id: str | None = None,
     project_name: str | None = None,
     domain: SearchDomain | int = SearchDomain.CONFIGURATION,
@@ -41,28 +45,29 @@ def list_objects(
     """Get list of objects or dicts. Optionally filter the
     objects by specifying filters.
 
-    Specify either `project_id` or `project_name`.
-    When `project_id` is provided (not `None`), `project_name` is omitted.
-
     Args:
-        connection: Strategy One connection object returned by
+        connection (Connection): Strategy One connection object returned by
             `connection.Connection()`
-        object_type: Object type. Possible values can
+        object_type (TypeOrSubtype | int): Object type. Possible values can
             be found in EnumDSSXMLObjectTypes
         name (string, optional): value the search pattern is set to, which
             will be applied to the names of objects being searched
-        project_id: ID of the project for which the objects are to be listed
-        project_name: project name
-        domain: domain where the search will be performed,
-            such as Local or Project, possible values
+        project (Project | str, optional): Project object or ID or name
+            specifying the project. May be used instead of `project_id` or
+            `project_name`.
+        project_id (str, optional): Project ID
+        project_name (str, optional): Project name
+        domain (SearchDomain | int, optional): domain where the search will be
+            performed, such as Local or Project, possible values
             are defined in EnumDSSXMLSearchDomain
-        search_pattern (SearchPattern enum or int, optional): pattern to search
+        search_pattern (SearchPattern | int, optional): pattern to search
             for, such as Begin With or Exactly. Possible values are available in
             ENUM mstrio.object_management.SearchPattern.
             Default value is CONTAINS (4).
-        to_dictionary: If True returns dict, by default (False) returns Objects.
-        limit: limit the number of elements returned. If `None` (default), all
-            objects are returned.
+        to_dictionary (bool, optional): If True returns dict, by default
+            (False) returns Objects.
+        limit (int, optional): limit the number of elements returned. If `None`
+            (default), all objects are returned.
         **filters: Available filter parameters: ['id', 'name', 'description',
             'date_created', 'date_modified', 'acg', 'owner', 'ext_type']
 
@@ -70,18 +75,20 @@ def list_objects(
         >>> list_objects(connection, object_type=ObjectTypes.USER)
     """
 
-    project_id = get_valid_project_id(
-        connection=connection,
-        project_id=project_id,
-        project_name=project_name,
-        with_fallback=True,
+    proj_id = get_project_id_from_params_set(
+        connection,
+        project,
+        project_id,
+        project_name,
     )
+
+    validate_owner_key_in_filters(filters)
 
     result = Object._list_objects(
         connection=connection,
         object_type=object_type,
         name=name,
-        project_id=project_id,
+        project_id=proj_id,
         domain=domain,
         pattern=search_pattern,
         to_dictionary=to_dictionary,
@@ -241,7 +248,7 @@ class Object(Entity, ACLMixin, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin):
     def _list_objects(
         cls,
         connection: "Connection",
-        object_type: ObjectTypes | int,
+        object_type: TypeOrSubtype | int,
         name: str | None = None,
         project_id: str | None = None,
         to_dictionary: bool = False,
@@ -252,7 +259,7 @@ class Object(Entity, ACLMixin, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin):
     ) -> list["Object"] | list[dict]:
         objects = full_search(
             connection,
-            object_types=get_enum(object_type, ObjectTypes),
+            object_types=object_type,
             name=name,
             project=project_id,
             domain=domain,

@@ -16,7 +16,10 @@ from mstrio.utils.helper import (
     filter_params_for_func,
     find_object_with_name,
     get_string_exp_body,
-    get_valid_project_id,
+)
+from mstrio.utils.resolvers import (
+    get_project_id_from_params_set,
+    validate_owner_key_in_filters,
 )
 from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
@@ -25,6 +28,7 @@ from mstrio.modeling.expression import Expression, ExpressionFormat  # isort:ski
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
+    from mstrio.server.project import Project
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +39,7 @@ def list_filters(
     name: str | None = None,
     to_dictionary: bool = False,
     limit: int | None = None,
+    project: 'Project | str | None' = None,
     project_id: str | None = None,
     project_name: str | None = None,
     search_pattern: SearchPattern | int = SearchPattern.CONTAINS,
@@ -45,13 +50,6 @@ def list_filters(
     """Get a list of Filter objects or dicts. Optionally filter the
     objects by specifying filters parameter.
 
-    Specify either `project_id` or `project_name`.
-    When `project_id` is provided (not `None`), `project_name` is omitted.
-
-    Note:
-        When `project_id` is `None` and `project_name` is `None`,
-        then its value is overwritten by `project_id` from `connection` object.
-
     Args:
         connection (object): Strategy One connection object returned by
             `connection.Connection()`
@@ -61,6 +59,9 @@ def list_filters(
             default (`False`) returns `Filter` objects.
         limit (int, optional): limit the number of elements returned. If `None`
             (default), all objects are returned.
+        project (Project | str, optional): Project object or ID or name
+            specifying the project. May be used instead of `project_id` or
+            `project_name`.
         project_id (str, optional): Project ID
         project_name (str, optional): Project name
         search_pattern (SearchPattern enum or int, optional): pattern to
@@ -88,17 +89,19 @@ def list_filters(
     Returns:
         list of filter objects or list of filter dictionaries.
     """
-    project_id = get_valid_project_id(
-        connection=connection,
-        project_id=project_id,
-        project_name=project_name,
-        with_fallback=not project_name,
+    proj_id = get_project_id_from_params_set(
+        connection,
+        project,
+        project_id,
+        project_name,
     )
+
+    validate_owner_key_in_filters(filters)
 
     objects = search_operations.full_search(
         connection,
         object_types=ObjectSubTypes.FILTER,
-        project=project_id,
+        project=proj_id,
         pattern=search_pattern,
         name=name,
         limit=limit,

@@ -12,18 +12,23 @@ from mstrio.utils.helper import (
     fetch_objects_async,
     get_default_args_from_func,
     get_temp_connection,
-    get_valid_project_id,
+)
+from mstrio.utils.resolvers import (
+    get_project_id_from_params_set,
+    validate_owner_key_in_filters,
 )
 from mstrio.utils.response_processors import objects as objects_processors
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
+    from mstrio.server.project import Project
 
 logger = logging.getLogger(__name__)
 
 
 def list_folders(
     connection: "Connection",
+    project: "Project | str | None" = None,
     project_id: str | None = None,
     project_name: str | None = None,
     to_dictionary: bool = False,
@@ -36,21 +41,21 @@ def list_folders(
     folders that are outside of projects, called configuration-level folders.
     The list of configuration-level folders includes folders such as users, user
     groups, databases, etc. which are not project-specific. If you pass
-    a `project_id` or `project_name`, you get folders in that project;
+    any project-related parameter, you get folders in that project;
     if not, then you get configuration-level folders.
-
-    Specify either `project_id` or `project_name`.
-    When `project_id` is provided (not `None`), `project_name` is omitted.
 
     Note:
         Id of project is not taken directly from `Connection` object, so you
         have to specify it explicitly.
 
     Args:
-        connection (object): Strategy One connection object returned by
+        connection (Connection): Strategy One connection object returned by
             `connection.Connection()`
-        project_id (string, optional): project ID
-        project_name (string, optional): project name
+        project (Project | str, optional): Project object or ID or name
+            specifying the project. May be used instead of `project_id` or
+            `project_name`.
+        project_id (str, optional): Project ID
+        project_name (str, optional): Project name
         to_dictionary (bool, optional): If True returns dicts, by default
             (False) returns objects.
         limit (int): limit the number of elements returned. If `None` (default),
@@ -78,10 +83,21 @@ def list_folders(
     Returns:
         list of `Folder` objects or list of dictionaries
     """
+    proj_id = get_project_id_from_params_set(
+        connection,
+        project,
+        project_id,
+        project_name,
+        assert_id_exists=False,
+        no_fallback_from_connection=True,
+    )
+
+    validate_owner_key_in_filters(filters)
+
     # Project is validated only if project was specified in arguments -
     # otherwise fetch is performed from a non-project area.
-    temp_conn = get_temp_connection(connection, project_id, project_name)
-    verbose_state = config.verbose
+    temp_conn = get_temp_connection(connection, proj_id)
+
     if not parent_folder:
         objects = fetch_objects_async(
             temp_conn,
@@ -89,13 +105,13 @@ def list_folders(
             folders.list_folders_async,
             limit=limit,
             chunk_size=1000,
-            project_id=project_id,
+            project_id=proj_id,
             filters=filters,
         )
     else:
         parent_folder_id = _get_parent_folder_id(temp_conn, parent_folder)
-        try:
-            config.verbose = False
+
+        with config.temp_verbose_disable():
             parent_folder = Folder(connection=temp_conn, id=parent_folder_id)
             objects = parent_folder.get_contents(
                 include_subfolders=include_subfolders,
@@ -103,22 +119,20 @@ def list_folders(
                 to_dictionary=True,
                 type=8,
             )
-        finally:
-            config.verbose = verbose_state
 
     if include_subfolders:
         recursive_objects = []
-        try:
-            config.verbose = False
+
+        with config.temp_verbose_disable():
             new_limit = limit - len(objects) if limit else None
             for obj in objects:
                 folder = Folder(connection=temp_conn, id=obj.get('id'))
                 recursive_objects += folder.get_contents(
                     to_dictionary=True, include_subfolders=True, limit=new_limit, type=8
                 )
-        finally:
-            config.verbose = verbose_state
+
         objects += recursive_objects
+
     objects = objects[:limit]
 
     if to_dictionary:
@@ -131,38 +145,35 @@ def list_folders(
 
 def get_my_personal_objects_contents(
     connection: "Connection",
+    project: "Project | str | None" = None,
     project_id: str | None = None,
     project_name: str | None = None,
     to_dictionary: bool = False,
 ) -> list:
     """Get contents of `My Personal Objects` folder in a specific project.
 
-    Specify either `project_id` or `project_name`.
-    When `project_id` is provided (not `None`), `project_name` is omitted.
-
-    Note:
-        When `project_id` is `None` and `project_name` is `None`,
-        then its value is overwritten by `project_id` from `connection` object.
-
     Args:
-        connection (object): Strategy One connection object returned by
+        connection (Connection): Strategy One connection object returned by
             `connection.Connection()`
-        project_id (string, optional): project ID
-        project_name (string, optional): project name
+        project (Project | str, optional): Project object or ID or name
+            specifying the project. May be used instead of `project_id` or
+            `project_name`.
+        project_id (str, optional): Project ID
+        project_name (str, optional): Project name
         to_dictionary (bool, optional): If True returns dicts, by default
             (False) returns objects.
 
     Returns:
         list of objects or list of dictionaries
     """
-    project_id = get_valid_project_id(
-        connection=connection,
-        project_id=project_id,
-        project_name=project_name,
-        with_fallback=not project_name,
+    proj_id = get_project_id_from_params_set(
+        connection,
+        project,
+        project_id,
+        project_name,
     )
 
-    objects = folders.get_my_personal_objects_contents(connection, project_id).json()
+    objects = folders.get_my_personal_objects_contents(connection, proj_id).json()
     if to_dictionary:
         return objects
     else:
@@ -174,6 +185,7 @@ def get_my_personal_objects_contents(
 def get_predefined_folder_contents(
     connection: "Connection",
     folder_type: PredefinedFolders,
+    project: "Project | str | None" = None,
     project_id: str | None = None,
     project_name: str | None = None,
     to_dictionary: bool = False,
@@ -183,24 +195,16 @@ def get_predefined_folder_contents(
     """Get contents of a pre-defined Strategy One folder in a specific project.
     Available values for `folder_type` are stored in enum `PredefinedFolders`.
 
-    Specify either `project_id` or `project_name`.
-    When `project_id` is provided (not `None`), `project_name` is omitted.
-
-    Note:
-        When `project_id` is `None` and `project_name` is `None`,
-        then its value is overwritten by `project_id` from `connection` object.
-
-    Note:
-        When `project_id` is `None`, then its value is overwritten by
-        `project_id` from `connection` object.
-
     Args:
         connection (object): Strategy One connection object returned by
             `connection.Connection()`
         folder_type (enum): pre-defined folder type. Available values are
             stored in enum `PredefinedFolders`.
-        project_id (string, optional): project ID
-        project_name (string, optional): project name
+        project (Project | str, optional): Project object or ID or name
+            specifying the project. May be used instead of `project_id` or
+            `project_name`.
+        project_id (str, optional): Project ID
+        project_name (str, optional): Project name
         to_dictionary (bool, optional): If True returns dicts, by default
             (False) returns objects.
         limit (int): limit the number of elements returned. If `None` (default),
@@ -212,11 +216,11 @@ def get_predefined_folder_contents(
         list of objects or list of dictionaries
     """
 
-    project_id = get_valid_project_id(
-        connection=connection,
-        project_id=project_id,
-        project_name=project_name,
-        with_fallback=not project_name,
+    proj_id = get_project_id_from_params_set(
+        connection,
+        project,
+        project_id,
+        project_name,
     )
 
     objects = fetch_objects_async(
@@ -226,7 +230,7 @@ def get_predefined_folder_contents(
         limit=limit,
         chunk_size=1000,
         folder_type=folder_type.value,
-        project_id=project_id,
+        project_id=proj_id,
         filters=filters,
     )
 
@@ -260,8 +264,10 @@ def get_folder_id_from_path(connection: "Connection", path: str) -> str:
         path = path[:-1]
     folders_in_path = path.split('/')
     project_id = (
-        get_valid_project_id(project_name=folders_in_path[0], connection=connection)
+        # FYI: EXPECT project ID if project-level...
+        get_project_id_from_params_set(connection, project_name=folders_in_path[0])
         if folders_in_path[0] != 'CASTOR_SERVER_CONFIGURATION'
+        # ... `None` only otherwise
         else None
     )
     try:
@@ -307,13 +313,9 @@ def _get_parent_folder_id(
     temp_conn: "Connection",
     parent_folder: "str | Folder | None",
 ) -> str:
-    verbose_state = config.verbose
     if isinstance(parent_folder, str) and '/' in parent_folder:
-        try:
-            config.verbose = False
+        with config.temp_verbose_disable():
             return get_folder_id_from_path(temp_conn, parent_folder)
-        finally:
-            config.verbose = verbose_state
     elif isinstance(parent_folder, Folder):
         return parent_folder.id
     else:
@@ -507,6 +509,8 @@ class Folder(Entity, CopyMixin, MoveMixin, DeleteMixin):
         """
         queue = deque([self.id])
         objects = []
+
+        validate_owner_key_in_filters(filters)
 
         while queue and (limit is None or len(objects) < limit):
             current_id = queue.popleft()

@@ -17,6 +17,7 @@ from mstrio.utils.helper import (
     filter_list_of_dicts,
     filter_params_for_func,
 )
+from mstrio.utils.resolvers import validate_owner_key_in_filters
 from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.response_processors import usergroups as usergroups_processors
 from mstrio.utils.version_helper import method_version_handler
@@ -263,6 +264,8 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin):
         limit: int | None = None,
         **filters,
     ) -> list["UserGroup"]:
+        validate_owner_key_in_filters(filters)
+
         msg = "Error getting information for a set of User Groups."
         objects = fetch_objects_async(
             connection,
@@ -363,8 +366,12 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin):
                 full_name', enabled'
         """
         self.fetch('members')
+
         if not filters:
             return self.members
+
+        validate_owner_key_in_filters(filters)
+
         filtered_dicts = filter_list_of_dicts(
             [member.to_dict() for member in self.members], **filters
         )

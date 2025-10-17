@@ -236,17 +236,20 @@ class ContentGroup(Entity, CopyMixin, DeleteMixin):
 
     def _process_content(self, connection, content) -> Entity:
         """Process a single content item and return the corresponding object."""
-        from mstrio.project_objects import Bot, Dashboard, Document, Report
+        from mstrio.project_objects import Agent, Dashboard, Document, Report
 
         if content.get('type') == 3:
             return Report(connection=connection, id=content.get('id'))
         elif content.get('type') == 55:
-            if content.get('subtype') in [
-                ObjectSubTypes.DOCUMENT_BOT.value,
-                ObjectSubTypes.DOCUMENT_BOT_2_0.value,
-                ObjectSubTypes.DOCUMENT_BOT_UNIVERSAL.value,
-            ]:
+            if content.get('subtype') == ObjectSubTypes.DOCUMENT_BOT.value:
+                from mstrio.project_objects.bots import Bot
+
                 return Bot(connection=connection, id=content.get('id'))
+            elif content.get('subtype') in [
+                ObjectSubTypes.DOCUMENT_AGENT.value,
+                ObjectSubTypes.DOCUMENT_AGENT_UNIVERSAL.value,
+            ]:
+                return Agent(connection=connection, id=content.get('id'))
             elif is_dashboard(content.get('viewMedia')):
                 return Dashboard(connection=connection, id=content.get('id'))
             else:
@@ -289,7 +292,7 @@ class ContentGroup(Entity, CopyMixin, DeleteMixin):
         Args:
             content_to_add (list, optional): list of content objects to add to
                 the content group. Provided as a list of Entity-based objects.
-                Supported content types: Bot, Dashboard, Document, Report
+                Supported content types: Agent, Dashboard, Document, Report
             content_to_remove (list. optional): list of content objects to
                 remove from the content group. Provided as a list of
                 Entity-based objects.

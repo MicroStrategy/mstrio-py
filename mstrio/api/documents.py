@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING
 from requests import Response
 
 from mstrio.utils.error_handlers import ErrorHandler
-from mstrio.utils.helper import get_valid_project_id
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
@@ -408,9 +407,7 @@ def export_document_to_pdf(
     Returns:
         Complete HTTP response object.
     """
-    project_id = get_valid_project_id(
-        connection=connection, project_id=connection.project_id
-    )
+    project_id = connection.project_id
     endpoint = f'/api/documents/{document_id}/instances/{instance_id}/pdf'
     return connection.post(
         endpoint=endpoint, headers={'X-MSTR-ProjectID': project_id}, json=body
@@ -437,9 +434,7 @@ def export_document_to_mstr(
     Returns:
         Complete HTTP response object.
     """
-    project_id = get_valid_project_id(
-        connection=connection, project_id=connection.project_id
-    )
+    project_id = connection.project_id
     endpoint = f'/api/documents/{document_id}/instances/{instance_id}/mstr'
     return connection.post(
         endpoint=endpoint, headers={'X-MSTR-ProjectID': project_id}, json=body
@@ -466,9 +461,7 @@ def export_document_to_excel(
     Returns:
         Complete HTTP response object.
     """
-    project_id = get_valid_project_id(
-        connection=connection, project_id=connection.project_id
-    )
+    project_id = connection.project_id
     endpoint = f'/api/documents/{document_id}/instances/{instance_id}/excel'
     return connection.post(
         endpoint=endpoint, headers={'X-MSTR-ProjectID': project_id}, json=body

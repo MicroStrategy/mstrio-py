@@ -25,10 +25,12 @@ from mstrio.utils.helper import (
     Dictable,
     VersionException,
     filter_params_for_func,
-    get_project_id_or_none,
-    get_valid_project_id,
 )
 from mstrio.utils.related_subscription_mixin import RelatedSubscriptionMixin
+from mstrio.utils.resolvers import (
+    get_project_id_from_params_set,
+    validate_owner_key_in_filters,
+)
 from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.response_processors import users
 from mstrio.utils.version_helper import is_server_min_version, method_version_handler
@@ -319,7 +321,13 @@ class User(Entity, TrusteeACLMixin, RelatedSubscriptionMixin):
             )
 
             if users:
-                [id] = users
+                if len(users) == 1:
+                    [id] = users
+                else:
+                    raise ValueError(
+                        "Could not uniquely identify User by name. "
+                        "Please provide ID or username instead."
+                    )
             else:
                 temp_name = name if name else username
                 helper.exception_handler(
@@ -540,6 +548,8 @@ class User(Entity, TrusteeACLMixin, RelatedSubscriptionMixin):
         limit: int | None = None,
         **filters,
     ) -> list["User"] | list[dict]:
+        validate_owner_key_in_filters(filters)
+
         msg = "Error getting information for a set of users."
         objects = users.get_all(
             connection=connection,
@@ -1335,26 +1345,23 @@ class User(Entity, TrusteeACLMixin, RelatedSubscriptionMixin):
     def create_profile_folder(
         self,
         destination_folder: 'Folder | str | None' = None,
+        project: 'Project | str | None' = None,
         project_id: str | None = None,
         project_name: str | None = None,
-        project: 'Project | None' = None,
     ) -> 'Folder':
         """Creates a profile folder for the user.
 
         Args:
             destination_folder (Folder or str, optional): Destination folder
                 where the profile folder will be created.
-            project_id (str, optional) : ID of the project for which
-                the profile folder will be created. If the project is not
-                specified, the profile folder will be created in the project
-                corresponding to the connection used to retrieve the user.
-                May be substituted with `project_name` or `project` parameter.
-            project_name (str, optional): Name the project for which the
-                profile folder will be created. May be used instead of
-                `project_id`.
-            project (Project, optional): Object for the project for which the
-                profile folder will be created. May be used instead of
-                `project_id`.
+            project (Project | str, optional): Project object or ID or name
+                specifying the project. May be used instead of `project_id` or
+                `project_name`.
+            project_id (str, optional): Project ID
+            project_name (str, optional): Project name
+
+        Returns:
+            Folder: The created profile folder.
         """
 
         from mstrio.object_management.folder import Folder
@@ -1365,12 +1372,12 @@ class User(Entity, TrusteeACLMixin, RelatedSubscriptionMixin):
             else destination_folder
         )
 
-        if project and not project_id:
-            project_id = project.id
-        if not project_id and project_name:
-            project_id = get_valid_project_id(
-                self.connection, project_name, with_fallback=True
-            )
+        proj_id = get_project_id_from_params_set(
+            self.connection,
+            project,
+            project_id,
+            project_name,
+        )
 
         body = {
             'locationId': destination_folder_id,
@@ -1380,13 +1387,13 @@ class User(Entity, TrusteeACLMixin, RelatedSubscriptionMixin):
             self.connection,
             self.id,
             body,
-            project_id,
+            proj_id,
         ).json()
 
         if config.verbose:
             logger.info(
                 f"Successfully created profile folder for user '{self.username}' "
-                f"for project id '{project_id}'"
+                f"for project id '{proj_id}'"
             )
 
         return Folder.from_dict(res, self.connection)
@@ -1394,25 +1401,19 @@ class User(Entity, TrusteeACLMixin, RelatedSubscriptionMixin):
     @method_version_handler(_DEL_PROF_MIN_VER)
     def delete_profile_folder(
         self,
+        project: 'Project | str | None' = None,
         project_id: str | None = None,
         project_name: str | None = None,
-        project: 'Project | None' = None,
         force: bool = False,
     ) -> bool:
         """Deletes the user's profile folder.
 
         Args:
-            project_id (str, Project, optional) : ID of the project from which
-                the profile folder will be deleted. May be substituted with
-                `project_name` or `project` parameter. If the project is not
-                specified, the profile folder will be deleted from all
-                loaded projects.
-            project_name (str, optional): Name the project for which the
-                profile folder will be deleted. May be used instead of
-                `project_id`.
-            project (Project, optional): Object for the project for which the
-                profile folder will be deleted. May be used instead of
-                `project_id`.
+            project (Project | str, optional): Project object or ID or name
+                specifying the project. May be used instead of `project_id` or
+                `project_name`.
+            project_id (str, optional): Project ID
+            project_name (str, optional): Project name
             force (bool, optional): If True, no additional prompt will be shown
                 before deleting User's profile folder
 
@@ -1426,17 +1427,24 @@ class User(Entity, TrusteeACLMixin, RelatedSubscriptionMixin):
         if not force and input(message) != 'Y':
             return False
 
-        project_id = get_project_id_or_none(
-            self.connection, project_id, project_name, project
+        proj_id = get_project_id_from_params_set(
+            self.connection,
+            project,
+            project_id,
+            project_name,
         )
 
-        res = users_api.delete_user_profile(self.connection, self.id, project_id)
-        if not res.ok:
-            return False
+        whitelist = [('ERR001', 500, 'user profile does not exist')]
+        res = users_api.delete_user_profile(  # will raise if issue not in whitelist
+            self.connection, self.id, proj_id, whitelist=whitelist
+        )
         if config.verbose:
-            logger.info(
-                f"Successfully deleted profile folder for user with ID: '{self.id}'"
-            )
+            if not res.ok:
+                logger.info(f'No profile folder to delete for user with ID: {self.id}')
+            else:
+                logger.info(
+                    f"Successfully deleted profile folder for user with ID: '{self.id}'"
+                )
         return True
 
     @property

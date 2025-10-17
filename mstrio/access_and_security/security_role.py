@@ -9,6 +9,7 @@ from mstrio.connection import Connection
 from mstrio.utils import helper
 from mstrio.utils.collections import remove_duplicate_objects
 from mstrio.utils.entity import DeleteMixin, Entity, ObjectTypes
+from mstrio.utils.resolvers import validate_owner_key_in_filters
 from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
@@ -208,6 +209,8 @@ class SecurityRole(Entity, DeleteMixin):
         limit: int | None = None,
         **filters,
     ) -> list["SecurityRole"] | list[dict[str, Any]] | DataFrame:
+        validate_owner_key_in_filters(filters)
+
         if to_dictionary and to_dataframe:
             helper.exception_handler(
                 "Please select either to_dictionary=True or to_dataframe=True, "

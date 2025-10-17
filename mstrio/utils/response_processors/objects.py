@@ -7,7 +7,7 @@ def get_info(
     connection: Connection,
     id: str,
     object_type: int,
-    project_id: str = None,
+    project_id: str | None = None,
 ) -> dict:
     """Get information for a specific object in a specific project; if you do
     not specify a project ID, you get information for the object just in the
@@ -113,7 +113,7 @@ def update_translations(
 
 def get_translations(
     connection: Connection,
-    project_id: str,
+    project_id: str | None,
     target_id: str,
     object_type: int,
 ):
