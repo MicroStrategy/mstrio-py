@@ -1,4 +1,5 @@
 import logging
+from typing import TYPE_CHECKING
 
 from tqdm import tqdm
 
@@ -27,11 +28,14 @@ from mstrio.utils.helper import (
     fetch_objects,
     get_args_from_func,
     get_default_args_from_func,
-    get_valid_project_id,
 )
+from mstrio.utils.resolvers import get_project_id_from_params_set
 from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.response_processors import tables
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
+
+if TYPE_CHECKING:
+    from mstrio.server.project import Project
 
 NO_PROJECT_ERR_MSG = "You must specify or select a project."
 
@@ -47,6 +51,7 @@ def list_logical_tables(
     folder_id: str | None = None,
     folder_path: str | None = None,
     folder_name: str | None = None,
+    project: 'Project | str | None' = None,
     project_id: str | None = None,
     project_name: str | None = None,
     filters: dict | None = None,
@@ -57,11 +62,13 @@ def list_logical_tables(
 
     Args:
         connection (Connection): Object representation of MSTR Connection.
-        name (Optional[str], optional): Name of a table.
-        project_id (Optional[str], optional): ID of a project. Defaults to None.
-        project_name (Optional[str], optional): Name of a project. Defaults to
-            None.
-        folder_id (Optional[str], optional): ID of a folder in which to look for
+        name (str, optional): Name of a table.
+        project (Project | str, optional): Project object or ID or name
+            specifying the project. May be used instead of `project_id` or
+            `project_name`.
+        project_id (str, optional): Project ID
+        project_name (str, optional): Project name
+        folder_id (str, optional): ID of a folder in which to look for
             logical tables. Defaults to None.
         folder_path (str, optional): Path of the folder in which to look for
             logical tables. Can be provided as an alternative to `folder_id`
@@ -71,7 +78,7 @@ def list_logical_tables(
                             /MicroStrategy Tutorial/Public Objects/Metrics
                         if it's a root folder, example:
                             /CASTOR_SERVER_CONFIGURATION/Users
-        folder_name (Optional[str], optional): Name of a folder in which to look
+        folder_name (str, optional): Name of a folder in which to look
             for logical tables. Defaults to None.
         to_dictionary (bool, optional): If True returns a list of dictionaries.
             Defaults to False.
@@ -89,7 +96,9 @@ def list_logical_tables(
         list["LogicalTable"] | list[dict]: A list of LogicalTable objects
             or dictionaries representing logical tables.
     """
-    if any([name, folder_id, folder_path, folder_name, project_id, project_name]):
+    if any(
+        [name, folder_id, folder_path, folder_name, project, project_id, project_name]
+    ):
         return _full_search_logical_tables(
             connection=connection,
             to_dictionary=to_dictionary,
@@ -97,6 +106,7 @@ def list_logical_tables(
             folder_id=folder_id,
             folder_path=folder_path,
             folder_name=folder_name,
+            project=project,
             project_id=project_id,
             project_name=project_name,
             limit=limit,
@@ -148,6 +158,7 @@ def _full_search_logical_tables(
     folder_id: str | None = None,
     folder_path: str | None = None,
     folder_name: str | None = None,
+    project: 'Project | str | None' = None,
     project_id: str | None = None,
     project_name: str | None = None,
     limit: int | None = None,
@@ -156,19 +167,14 @@ def _full_search_logical_tables(
     """Searches for a logical table in a specified project. You can narrow the
        search result by folder's id or name.
 
-    Specify either `project_id` or `project_name`.
-    When `project_id` is provided (not `None`), `project_name` is omitted.
-
-    Note:
-        When `project_id` is `None` and `project_name` is `None`,
-        then its value is overwritten by `project_id` from `connection` object.
-
     Args:
         connection (Connection): Object representation of MSTR Connection.
         name (Optional[str], optional): Name of a table.
-        project_id (Optional[str], optional): ID of a project. Defaults to None.
-        project_name (Optional[str], optional): Name of a project. Defaults to
-            None.
+        project (Project | str, optional): Project object or ID or name
+            specifying the project. May be used instead of `project_id` or
+            `project_name`.
+        project_id (str, optional): Project ID
+        project_name (str, optional): Project name
         folder_id (Optional[str], optional): ID of a folder in which to look for
             logical tables. Defaults to None.
         folder_path (str, optional): Path of the folder in which to look for
@@ -203,17 +209,17 @@ def _full_search_logical_tables(
                                        project_name='MicroStrategy Tutorial',
                                        folder_name='My Answers')
     """
-    project_id = get_valid_project_id(
-        connection=connection,
-        project_id=project_id,
-        project_name=project_name,
-        with_fallback=not project_name,
+    proj_id = get_project_id_from_params_set(
+        connection,
+        project,
+        project_id,
+        project_name,
     )
 
     if folder_name and not (folder_id or folder_path):
         folders = full_search(
             connection=connection,
-            project=project_id,
+            project=proj_id,
             object_types=ObjectTypes.FOLDER,
             limit=limit,
         )
@@ -231,7 +237,7 @@ def _full_search_logical_tables(
     logical_tables = full_search(
         connection=connection,
         name=name,
-        project=project_id,
+        project=proj_id,
         object_types=ObjectTypes.TABLE,
         root=folder_id,
         root_path=folder_path,
@@ -249,6 +255,7 @@ def _full_search_logical_tables(
 @method_version_handler('11.3.0100')
 def list_changeset_tables(
     connection: Connection,
+    project: 'Project | str | None' = None,
     project_id: str | None = None,
     project_name: str | None = None,
     limit: int | None = None,
@@ -261,18 +268,18 @@ def list_changeset_tables(
             msg="You must specify changeset ID.", exception_type=ValueError
         )
 
-    project_id = get_valid_project_id(
-        connection=connection,
-        project_id=project_id,
-        project_name=project_name,
-        with_fallback=not project_name,
+    proj_id = get_project_id_from_params_set(
+        connection,
+        project,
+        project_id,
+        project_name,
     )
 
     tables_list = fetch_objects(
         connection=connection,
         api=tables_api.get_tables,
         limit=limit,
-        project_id=project_id,
+        project_id=proj_id,
         changeset_id=changeset_id,
         dict_unpack_value="tables",
         filters=filters,
@@ -326,7 +333,7 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
             logical attribute definitions to assign a size to each table in the
             project.
         is_logical_size_locked: An indication if the logical table size of a
-            table is locked or not. When a table’s logical size is locked, the
+            table is locked or not. When a table's logical size is locked, the
             table is excluded from the logical table size calculation when a
             schema update is performed.
         is_part_of_partition: An indication whether this table is part of
@@ -453,6 +460,7 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
         connection: Connection,
         id: str | None = None,
         name: str | None = None,
+        project: 'Project | str | None' = None,
         project_id: str | None = None,
         project_name: str | None = None,
     ):
@@ -461,22 +469,16 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
             either `project_id` or `project_name` if Connection object provided
             as `connection` is not mapped to a project.
 
-        Specify either `project_id` or `project_name`.
-        When `project_id` is provided (not `None`), `project_name` is omitted.
-
-        Note:
-            When `project_id` is `None` and `project_name` is `None`, then
-            its value is overwritten by `project_id` from `connection` object.
-
         Args:
             connection (Connection): Object representation of MSTR Connection.
             id (Optional[str], optional): ID of a table. Defaults to None.
             name (Optional[str], optional): Name of a table. Defaults to
                 None.
-            project_id (Optional[str], optional): ID of a project. Defaults to
-                None.
-            project_name (Optional[str], optional): Name of a project. Defaults
-                to None.
+            project (Project | str, optional): Project object or ID or name
+                specifying the project. May be used instead of `project_id` or
+                `project_name`.
+            project_id (str, optional): Project ID
+            project_name (str, optional): Project name
 
         Throws:
             ValueError if:
@@ -490,11 +492,11 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
             >>> LogicalTable(connection, name='lu_day_of_week')
         """
 
-        project_id = get_valid_project_id(
-            connection=connection,
-            project_id=project_id,
-            project_name=project_name,
-            with_fallback=not project_name,
+        proj_id = get_project_id_from_params_set(
+            connection,
+            project,
+            project_id,
+            project_name,
         )
 
         if not id and not name:
@@ -506,7 +508,7 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
             try:
                 id = full_search(
                     connection=connection,
-                    project=project_id,
+                    project=proj_id,
                     object_types=ObjectTypes.TABLE,
                     name=name,
                 )[0].get("id")
@@ -878,7 +880,7 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
             description (str, optional): Logical table description
             is_logical_size_locked (Optional[bool], optional): An indication if
                 the logical table size of a table is locked or not. When a
-                table’s logical size is locked, the table is excluded from the
+                table's logical size is locked, the table is excluded from the
                 logical table size calculation when a schema update is
                 performed. Defaults to None.
             primary_data_source (Optional[SchemaObjectReference], optional):

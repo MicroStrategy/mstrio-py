@@ -19,6 +19,7 @@ from mstrio.utils.helper import (
     get_default_args_from_func,
     get_objects_id,
 )
+from mstrio.utils.resolvers import validate_owner_key_in_filters
 from mstrio.utils.response_processors import datasources as datasources_processors
 from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
@@ -482,6 +483,8 @@ class DatasourceInstance(Entity, CopyMixin, DeleteMixin, ModelVldbMixin):
         project: Project | str | None = None,
         **filters,
     ) -> list["DatasourceInstance"] | list[dict]:
+        validate_owner_key_in_filters(filters)
+
         project_id = project.id if isinstance(project, Project) else project
         objects = helper.fetch_objects(
             connection=connection,
@@ -536,7 +539,7 @@ class DatasourceInstance(Entity, CopyMixin, DeleteMixin, ModelVldbMixin):
         """Execute an SQL query on the given datasource.
 
         Args:
-            project_id (str | Project): project ID
+            project_id (str | Project): project ID or Project class instance
             query (str): query to be executed
             max_retries (int, optional): maximum number of retries in case
                 the query execution fails. Default is 10.

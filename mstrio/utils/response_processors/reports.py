@@ -1,5 +1,6 @@
-from requests import Response
 from time import sleep, time
+
+from requests import Response
 
 from mstrio.api import reports as reports_api
 from mstrio.connection import Connection
@@ -17,7 +18,7 @@ def get_report_status(
     """Get stable status of a report instance.
 
     Args:
-        connection: MicroStrategy connection object returned by
+        connection: Strategy connection object returned by
             `connection.Connection()`.
         report_id (str): ID of the report.
         instance_id (str): ID of the report instance.

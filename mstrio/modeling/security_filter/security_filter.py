@@ -7,6 +7,7 @@ from mstrio.api import security_filters
 from mstrio.modeling import ExpressionFormat
 from mstrio.modeling.schema import ObjectSubType, SchemaObjectReference
 from mstrio.object_management.folder import Folder
+from mstrio.server.project import Project
 from mstrio.types import ObjectTypes
 from mstrio.users_and_groups import User, UserGroup
 from mstrio.utils.entity import (
@@ -25,9 +26,8 @@ from mstrio.utils.helper import (
     filter_params_for_func,
     find_object_with_name,
     get_string_exp_body,
-    get_valid_project_id,
-    get_valid_project_name,
 )
+from mstrio.utils.resolvers import get_project_id_from_params_set
 from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
@@ -46,6 +46,7 @@ def list_security_filters(
     to_dictionary: bool = False,
     offset: int | None = None,
     limit: int | None = None,
+    project: 'Project | str | None' = None,
     project_id: str | None = None,
     project_name: str | None = None,
     show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
@@ -58,15 +59,10 @@ def list_security_filters(
     objects by specifying filters parameter.
     It can also be filtered by user or user group.
 
-    Note: It is not possible to provide both `user` and `user_group` parameter.
+    Note:
+        It is not possible to provide both `user` and `user_group` parameter.
         When both arguments are provided error is raised.
 
-    Specify either `project_id` or `project_name`.
-    When `project_id` is provided (not `None`), `project_name` is omitted.
-
-    Note:
-        When `project_id` is `None` and `project_name` is `None`,
-        then its value is overwritten by `project_id` from `connection` object.
     Args:
         connection (object): Strategy One connection object returned by
             `connection.Connection()`
@@ -78,6 +74,9 @@ def list_security_filters(
             results. Used to control paging behavior.
         limit (int, optional): Limit the number of elements returned. If `None`
             (default), all objects are returned.
+        project (Project | str, optional): Project object or ID or name
+            specifying the project. May be used instead of `project_id` or
+            `project_name`.
         project_id (str, optional): Project ID
         project_name (str, optional): Project name
         show_expression_as (ExpressionFormat or str, optional): Specify how
@@ -104,28 +103,27 @@ def list_security_filters(
     Returns:
         list of security filter objects or list of security filter dictionaries.
     """
-    project_id = get_valid_project_id(
-        connection=connection,
-        project_id=project_id,
-        project_name=project_name,
-        with_fallback=not project_name,
+    proj_id = get_project_id_from_params_set(
+        connection,
+        project,
+        project_id,
+        project_name,
     )
-    project_name = get_valid_project_name(
-        connection=connection,
-        project_id=project_id,
-    )
+
     if user and user_group:
         exception_handler(
             msg="You cannot filter by both `user` and `user_group` at the same time.",
             exception_type=ValueError,
         )
 
+    proj_name = Project(connection, id=proj_id).name
+
     if user:
         user = User(connection, id=user) if isinstance(user, str) else user
         # Filter security filters by user for project defined by
         # `project_name` - assigned based on valid `project_id`
-        objects = user.list_security_filters(project_id, to_dictionary=True).get(
-            project_name, []
+        objects = user.list_security_filters(proj_id, to_dictionary=True).get(
+            proj_name, []
         )
     elif user_group:
         user_group = (
@@ -135,13 +133,13 @@ def list_security_filters(
         )
         # filter security filters by the user group for project defined by
         # `project_name` - assigned based on valid `project_id`
-        objects = user_group.list_security_filters(project_id, to_dictionary=True).get(
-            project_name, []
+        objects = user_group.list_security_filters(proj_id, to_dictionary=True).get(
+            proj_name, []
         )
     else:
         objects = fetch_objects(
             connection=connection,
-            project_id=project_id,
+            project_id=proj_id,
             api=security_filters.get_security_filters,
             limit=limit,
             offset=offset,

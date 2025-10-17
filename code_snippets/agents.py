@@ -1,9 +1,9 @@
-"""This is the demo script to show how to manage bots. Its basic goal
+"""This is the demo script to show how to manage agents. Its basic goal
 is to present what can be done with this module and to ease its usage.
 """
 
 from mstrio.connection import get_connection
-from mstrio.project_objects.bots import Bot, list_bots
+from mstrio.project_objects.agents import Agent, list_agents
 
 # Define a variable which can be later used in a script
 PROJECT_NAME = $project_name  # Insert name of project here
@@ -11,16 +11,16 @@ PROJECT_NAME = $project_name  # Insert name of project here
 # Get connection to the environment
 conn = get_connection(workstationData, project_name=PROJECT_NAME)
 
-# List all bots
-bots = list_bots(connection=conn)
-# List all bots as dictionaries
-bots_as_dicts = list_bots(connection=conn, to_dictionary=True)
+# List all agents
+agents = list_agents(connection=conn)
+# List all agents as dictionaries
+agents_as_dicts = list_agents(connection=conn, to_dictionary=True)
 
 # Define a variable which can be later used in a script
-BOT_ID = $bot_id
+AGENT_ID = $agent_id
 
-# Initialize a bot
-test_bot = Bot(connection=conn, id=BOT_ID)
+# Initialize an agent
+test_agent = Agent(connection=conn, id=AGENT_ID)
 
 # Define variables which can be later used in a script
 NEW_NAME = $new_name
@@ -30,8 +30,8 @@ NEW_HIDDEN = $new_hidden == 'True'
 NEW_STATUS = $new_status
 NEW_COMMENTS = $new_comments
 
-# Alter the bot's properties
-test_bot.alter(
+# Alter the agent's properties
+test_agent.alter(
     name=NEW_NAME,
     description=NEW_DESCRIPTION,
     abbreviation=NEW_ABBREVIATION,
@@ -40,9 +40,9 @@ test_bot.alter(
     comments=NEW_COMMENTS,
 )
 
-# Disable and enable a bot
-test_bot.disable()
-test_bot.enable()
+# Disable and enable an agent
+test_agent.disable()
+test_agent.enable()
 
-# Delete a bot
-test_bot.delete(force=True)
+# Delete an agent
+test_agent.delete(force=True)

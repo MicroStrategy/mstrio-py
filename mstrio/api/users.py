@@ -631,6 +631,7 @@ def delete_user_profile(
     id: str,
     project_id: str | None = None,
     fields: str | None = None,
+    whitelist: list | None = None,
     error_msg: str | None = None,
 ) -> Response:
     """Delete user profile for a specific user.
@@ -642,6 +643,9 @@ def delete_user_profile(
         project_id (str, optional): Project ID
         fields (str, optional): Comma separated top-level field whitelist. This
             allows client to selectively retrieve part of the response
+        whitelist (list, optional): list of tuples of I-Server Error and HTTP
+            errors codes respectively, which will not be handled
+            i.e. whitelist = [('ERR001', 500),('ERR004', 404)]
         error_msg (str, optional): Custom Error Message for Error Handling
 
     Returns:

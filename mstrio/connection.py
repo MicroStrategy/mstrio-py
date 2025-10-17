@@ -13,18 +13,20 @@ from requests.adapters import HTTPAdapter, Retry
 from requests.cookies import RequestsCookieJar
 
 from mstrio.utils.enum_helper import get_enum_val
+from mstrio.utils.resolvers import get_project_id_from_params_set
 
 if TYPE_CHECKING:
     from urllib3 import disable_warnings
     from urllib3.exceptions import InsecureRequestWarning
 
     from mstrio.project_objects.applications import Application
+    from mstrio.server.project import Project
 else:
     from requests.packages.urllib3.exceptions import InsecureRequestWarning
     from requests.packages.urllib3 import disable_warnings
 
 from mstrio import config
-from mstrio.api import authentication, hooks, misc, projects
+from mstrio.api import authentication, hooks, misc
 from mstrio.helpers import IServerError, IServerException, VersionException
 from mstrio.utils import helper, sessions
 
@@ -56,16 +58,15 @@ class LoginMode(IntEnum):
 
 def get_connection(
     workstation_data: dict,
-    project_name: str | None = None,
+    project: 'Project | str | None' = None,
     project_id: str | None = None,
+    project_name: str | None = None,
     ssl_verify: bool = False,
 ) -> 'Connection | None':
     """Connect to environment without providing user's credentials.
 
-    It is possible to provide `project_id` or `project_name` to select
-    project. When both `project_id` and `project_name` are `None`,
-    project selection is cleared. When both `project_id` and
-    `project_name` are provided, `project_name` is ignored.
+    It is possible to provide `project`, `project_id` or `project_name` to
+    select project. When all are `None`, project selection is cleared.
     Project can be also selected later by calling method
     `select_project` on Connection object.
 
@@ -78,15 +79,15 @@ def get_connection(
     Args:
         workstation_data (object): object which is stored in a 'workstationData'
             variable within Workstation
-        project_name (str, optional): name of project (aka project)
-            to select
-        project_id (str, optional): id of project (aka project)
-            to select
+        project (Project, str, optional): Project object or ID or name
+            of the project to be selected
+        project_id (str, optional): ID of project to be selected
+        project_name (str, optional): Name of project to be selected
         ssl_verify (bool, optional): If False (default), does not verify the
             server's SSL certificates
 
     Returns:
-        connection to I-Server or None is case of some error
+        connection to I-Server or None in case of some error
     """
     if not ssl_verify:
         disable_warnings(category=InsecureRequestWarning)
@@ -129,6 +130,7 @@ def get_connection(
         conn = Connection(
             base_url,
             identity_token=response.headers['X-MSTR-IdentityToken'],
+            project=project,
             project_id=project_id,
             project_name=project_name,
             ssl_verify=ssl_verify,
@@ -168,8 +170,8 @@ class Connection:
     Attributes:
         base_url: URL of the Strategy One REST API server.
         username: Username.
-        project_name: Name of the connected Strategy One Project.
         project_id: Id of the connected Strategy One Project.
+        project_name: Name of the connected Strategy One Project.
         login_mode: Authentication mode. Standard = 1 (default), LDAP = 16
             or API Token = 4096.
         ssl_verify: If True (default), verifies the server's SSL certificates
@@ -191,8 +193,9 @@ class Connection:
         base_url: str,
         username: str | None = None,
         password: str | None = None,
-        project_name: str | None = None,
+        project: 'Project | str | None' = None,
         project_id: str | None = None,
+        project_name: str | None = None,
         login_mode: int | LoginMode | None = None,
         ssl_verify: bool = True,
         certificate_path: str | None = None,
@@ -214,9 +217,9 @@ class Connection:
         or omitted, the connection is established using API Token and
         all other authentication parameters are ignored.
 
-        When both `project_id` and `project_name` are `None`,
-        project selection is cleared. When both `project_id`
-        and `project_name` are provided, `project_name` is ignored.
+        Note:
+            When project cannot be established or is not provided, it is reset
+            to `None`.
 
         Args:
             base_url (str): URL of the Strategy One REST API server.
@@ -259,6 +262,7 @@ class Connection:
             verbose (bool, optional): True by default. Controls the amount of
                 feedback from the I-Server.
         """
+
         if login_mode is None:
             login_mode = 4096 if api_token else 1
 
@@ -346,7 +350,9 @@ class Connection:
                 "is not compatible, this parameter will be omitted."
             )
             self.application_id = None
-        self.select_project(project_id, project_name)
+
+        self.project_id = None
+        self.select_project(project, project_id, project_name)
 
     @property
     def _through_get_connection(self) -> bool:
@@ -474,61 +480,50 @@ class Connection:
             return False
 
     def select_project(
-        self, project_id: str | None = None, project_name: str | None = None
+        self,
+        project: 'Project | str | None' = None,
+        project_id: str | None = None,
+        project_name: str | None = None,
     ) -> None:
-        """Select project for the given connection based on project_id or
-        project_name.
-
-        When both `project_id` and `project_name` are `None`, project selection
-        is cleared. When both `project_id` and `project_name` are provided,
-        `project_name` is ignored.
+        """Select project for the given connection based.
 
         Args:
-            project_id: id of project to select
-            project_name: name of project to select
+            project (Project | str, optional): Project object or ID or name
+                specifying the project. May be used instead of `project_id` or
+                `project_name`.
+            project_id (str, optional): Project ID
+            project_name (str, optional): Project name
 
         Raises:
-            ValueError: if project with given id or name does not exist
+            ValueError: if project with given id or name does not exist or
+                cannot find a unique project with given name
         """
-        if project_id is None and project_name is None:
+
+        proj_id = get_project_id_from_params_set(
+            self,
+            project,
+            project_id,
+            project_name,
+            assert_id_exists=False,
+            no_fallback_from_connection=True,
+        )
+
+        if not proj_id:
             self.project_id = None
-            self.project_name = None
             self._session.headers['X-MSTR-ProjectID'] = None
+
             if config.verbose:
-                logger.info('No project selected.')
+                logger.info('No Project selected in Connection object.')
+
             return None
 
-        if project_id and project_name:
-            tmp_msg = (
-                'Both `project_id` and `project_name` arguments provided. '
-                'Selecting project based on `project_id`.'
-            )
-            helper.exception_handler(msg=tmp_msg, exception_type=Warning)
+        if config.verbose:
+            from mstrio.server.project import Project
 
-        _projects = projects.get_projects(connection=self).json()
-        if project_id:
-            # Find which project name matches the project ID provided
-            tmp_projects = helper.filter_list_of_dicts(_projects, id=project_id)
-            if not tmp_projects:
-                self.project_id, self.project_name = None, None
-                tmp_msg = (
-                    f"Error connecting to project with id: {project_id}. "
-                    "Project with given id does not exist or user has no access."
-                )
-                raise ValueError(tmp_msg)
-        elif project_name:
-            # Find which project ID matches the project name provided
-            tmp_projects = helper.filter_list_of_dicts(_projects, name=project_name)
-            if not tmp_projects:
-                self.project_id, self.project_name = None, None
-                tmp_msg = (
-                    f"Error connecting to project with name: {project_name}. "
-                    "Project with given name does not exist or user has no access."
-                )
-                raise ValueError(tmp_msg)
+            logger.info('Project selected in Connection object:')
+            Project(self, id=proj_id)  # this will log the project info
 
-        self.project_id = tmp_projects[0]['id']
-        self.project_name = tmp_projects[0]['name']
+        self.project_id = proj_id
         self._session.headers['X-MSTR-ProjectID'] = self.project_id
 
     @sessions.log_request(logger)
@@ -785,6 +780,15 @@ class Connection:
         return _is_in_workstation
 
     @property
+    def project_name(self) -> str | None:
+        if self.project_id is None:
+            return None
+
+        from mstrio.server.project import Project
+
+        return Project(self, id=self.project_id).name
+
+    @property
     def user_id(self) -> str:
         if not self._user_id:
             self.__get_user_info()
@@ -831,6 +835,6 @@ class Connection:
 
     @property
     def environment(self):
-        from mstrio.server import Environment
+        from mstrio.server.environment import Environment
 
         return Environment(connection=self)

@@ -15,7 +15,7 @@ from mstrio.object_management import (
     get_folder_id_from_path,
 )
 from mstrio.server import Project
-from mstrio.types import ObjectTypes, ObjectSubTypes
+from mstrio.types import ObjectSubTypes, ObjectTypes
 from mstrio.users_and_groups.user import User
 from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, MoveMixin
 from mstrio.utils.enum_helper import AutoName, AutoUpperName, get_enum_val
@@ -23,12 +23,15 @@ from mstrio.utils.helper import (
     Dictable,
     filter_params_for_func,
     find_object_with_name,
-    get_valid_project_id,
     get_owner_id,
     is_valid_str_id,
 )
+from mstrio.utils.resolvers import (
+    get_project_id_from_params_set,
+    validate_owner_key_in_filters,
+)
 from mstrio.utils.response_processors import objects as objects_processors
-from mstrio.utils.version_helper import method_version_handler, is_server_min_version
+from mstrio.utils.version_helper import is_server_min_version, method_version_handler
 
 
 class PromptType(AutoUpperName):
@@ -82,18 +85,14 @@ def list_prompts(
     name: str | None = None,
     to_dictionary: bool = False,
     limit: int | None = None,
+    project: 'Project | str | None' = None,
     project_id: str | None = None,
     project_name: str | None = None,
-    project: Project | None = None,
     search_pattern: SearchPattern | int = SearchPattern.CONTAINS,
     show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
     **filters,
 ) -> list['Prompt'] | list[dict]:
     """Get list of Prompt objects or dicts with them.
-
-    The project may be specified by either `project_id`, `project_name` or
-        `project`. If the project is not specified in either way, the project
-        from the `connection` object is used.
 
     Args:
         connection (object): Strategy One connection object returned by
@@ -104,11 +103,11 @@ def list_prompts(
             default (`False`) returns `Prompt` objects.
         limit (optional, int): limit the number of elements returned. If `None`
             (default), all objects are returned.
-        project_id (str, optional): ID of the project to search in.
-        project_name (str, optional): Name of the project to search in.
-            May be used instead of `project_id`.
-        project (Project, optional): Project object specifying the project to
-            search in. May be used instead of `project_id`.
+        project (Project | str, optional): Project object or ID or name
+            specifying the project. May be used instead of `project_id` or
+            `project_name`.
+        project_id (str, optional): Project ID
+        project_name (str, optional): Project name
         search_pattern (SearchPattern enum or int, optional): pattern to
             search for, such as Begin With or Exactly. Possible values are
             available in ENUM `mstrio.object_management.SearchPattern`.
@@ -126,19 +125,19 @@ def list_prompts(
         list of prompt objects or list of prompt dictionaries.
     """
 
-    if project_id is None and project is not None:
-        project_id = project.id
-    project_id = get_valid_project_id(
-        connection=connection,
-        project_id=project_id,
-        project_name=project_name,
-        with_fallback=not project_name,
+    proj_id = get_project_id_from_params_set(
+        connection,
+        project,
+        project_id,
+        project_name,
     )
+
+    validate_owner_key_in_filters(filters)
 
     objects = full_search(
         connection,
         object_types=ObjectTypes.PROMPT,
-        project=project_id,
+        project=proj_id,
         name=name,
         pattern=search_pattern,
         limit=limit,
@@ -359,13 +358,13 @@ class Prompt(CopyMixin, DeleteMixin, Entity, MoveMixin):
     def _init_variables(self, default_value, **kwargs) -> None:
         """Initialize all properties of the Prompt class."""
         super()._init_variables(default_value=default_value, **kwargs)
-        self.answers = kwargs.get('answers', None)
-        self.use_default = kwargs.get('use_default', None)
-        self.name = kwargs.get('name', None)
+        self.answers = kwargs.get('answers')
+        self.use_default = kwargs.get('use_default')
+        self.name = kwargs.get('name')
         self.default_answer = kwargs.get('default_answer', {})
-        self.required = kwargs.get('required', None)
-        self.closed = kwargs.get('closed', None)
-        self.instruction = kwargs.get('instruction', None)
+        self.required = kwargs.get('required')
+        self.closed = kwargs.get('closed')
+        self.instruction = kwargs.get('instruction')
         self.question = kwargs.get('question', {})
         self.sub_type = (
             ObjectSubType(kwargs.get('sub_type')) if kwargs.get('sub_type') else None
@@ -376,15 +375,15 @@ class Prompt(CopyMixin, DeleteMixin, Entity, MoveMixin):
             else None
         )
 
-        self.data_type = kwargs.get('data_type', None)
-        self.title = kwargs.get('title', None)
+        self.data_type = kwargs.get('data_type')
+        self.title = kwargs.get('title')
         self._personal_answers = kwargs.get('personal_answers', [])
         self.prompt_type = (
             PromptType(kwargs.get('type'))
             if kwargs.get('type') in PromptType.__members__
             else None
         )
-        self.key = kwargs.get('key', None)
+        self.key = kwargs.get('key')
 
     @classmethod
     @method_version_handler('11.4.0600')

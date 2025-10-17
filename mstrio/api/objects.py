@@ -1,6 +1,7 @@
 import logging
 from typing import TYPE_CHECKING
 
+from mstrio import config
 from mstrio.connection import Connection
 from mstrio.types import ObjectTypes
 from mstrio.utils.error_handlers import ErrorHandler
@@ -11,9 +12,38 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+def _validate_project_id(
+    source: 'Connection | FuturesSessionWithRenewal',
+    object_type: int,
+    project_id: str | None,
+    log_info_on_scope: bool = True,
+) -> str | None:
+    is_asking_for_project = object_type == ObjectTypes.PROJECT.value
+    if is_asking_for_project:
+        project_id = None
+    elif project_id is None:  # do NOT fall through if we want PROJECT
+        project_id = (
+            source.project_id
+            if isinstance(source, Connection)
+            else source.connection.project_id
+        )
+
+    if (
+        log_info_on_scope
+        and not is_asking_for_project
+        and not project_id
+        and config.verbose
+    ):
+        logger.info(
+            'Project was not selected. Action is performed for the non-project area'
+        )
+
+    return project_id
+
+
 @ErrorHandler(err_msg="Error getting information for the object with ID {id}")
 def get_object_info(
-    connection,
+    connection: Connection,
     id,
     object_type,
     project_id=None,
@@ -37,19 +67,14 @@ def get_object_info(
         I-Server configuration), 58 (Security Filter)
         project_id(str): ID of a project in which the object is located.
         error_msg (string, optional): Custom Error Message for Error Handling
+        whitelist (list, optional): List of tuples containing error codes and
+            status codes that should be ignored by the error handler.
+            Defaults to [('ERR001 ', 500)] - ignore "Object not found" errors.
 
     Returns:
         HTTP response object returned by the Strategy One REST server.
     """
-    if object_type == ObjectTypes.PROJECT.value:
-        project_id = str(id)
-    elif project_id is None:
-        project_id = connection.project_id
-
-    if not project_id:
-        logger.info(
-            'Project was not selected. Search is performed for the non-project area'
-        )
+    project_id = _validate_project_id(connection, object_type, project_id)
 
     return connection.get(
         endpoint=f'/api/objects/{id}',
@@ -81,15 +106,7 @@ def get_object_info_async(
     Returns:
         HTTP response object returned by the Strategy One REST server.
     """
-    if object_type == ObjectTypes.PROJECT.value:
-        project_id = str(id)
-    elif project_id is None:
-        project_id = future_session.connection.project_id
-
-    if not project_id:
-        logger.info(
-            "Project was not selected. Search is performed for the non-project area"
-        )
+    project_id = _validate_project_id(future_session, object_type, project_id)
 
     return future_session.get(
         endpoint=f'/api/objects/{id}',
@@ -99,10 +116,15 @@ def get_object_info_async(
 
 
 @ErrorHandler(err_msg="Error deleting object with ID {id}")
-def delete_object(connection, id, object_type, project_id=None, error_msg=None):
-    """Get information for a specific object in a specific project; if you do
-    not specify a project ID, you get information for the object in all
-    projects.
+def delete_object(
+    connection: Connection,
+    id,
+    object_type,
+    project_id=None,
+    error_msg=None,
+):
+    """Delete a specific object in a specific project; if you do not specify a
+    project ID, you delete information for the object in all projects.
 
     You identify the object with the object ID and object type. You specify
     the object type as a query parameter; possible values for object type are
@@ -115,16 +137,13 @@ def delete_object(connection, id, object_type, project_id=None, error_msg=None):
         object_type (int): One of EnumDSSXMLObjectTypes. Ex. 34 (User or
         UserGroup), 44 (Security Role), 32 (Project), 8 (Folder), 36 (type of
         I-Server configuration)
-        project_id(str): ID of a project in which the object is located.
+        project_id (str): ID of a project in which the object is located.
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
         HTTP response object returned by the Strategy One REST server.
     """
-    if object_type == ObjectTypes.PROJECT.value:
-        project_id = str(id)
-    elif project_id is None:
-        project_id = connection.project_id
+    project_id = _validate_project_id(connection, object_type, project_id, False)
 
     return connection.delete(
         endpoint=f'/api/objects/{id}',
@@ -133,9 +152,63 @@ def delete_object(connection, id, object_type, project_id=None, error_msg=None):
     )
 
 
+@ErrorHandler(err_msg="Error bulk deleting objects with IDs {ids}")
+def bulk_delete_objects(
+    connection: Connection,
+    ids,
+    object_types,
+    project_id=None,
+    error_msg=None,
+):
+    """Delete multiple objects in a specific project.
+
+    You identify the objects with their object IDs and object types. You
+    specify the object types as a query parameter; possible values for object
+    type are provided in EnumDSSXMLObjectTypes.
+
+    Note:
+        `ids` and `object_types` must have the same `len` to be zipped together.
+
+    Args:
+        connection(object): Strategy One connection object returned by
+            `connection.Connection()`.
+        ids (list): List of Object IDs
+        object_types (list): List of Object Types
+        project_id (str): ID of a project in which the objects are located.
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        HTTP response object returned by the Strategy One REST server.
+    """
+    if (
+        not ids
+        or not object_types
+        or not (zipped := zip(ids, object_types, strict=True))
+    ):
+        raise ValueError("Both ids and object_types must be provided.")
+
+    if project_id is None:
+        connection._validate_project_selected()
+        project_id = connection.project_id
+
+    body = [{"did": did, "tp": tp, "pip": project_id} for did, tp in zipped]
+    body = {"delete": body}
+    return connection.post(
+        endpoint='/api/objects/deleteObjects',
+        headers={'X-MSTR-ProjectID': project_id},
+        json=body,
+    )
+
+
 @ErrorHandler(err_msg="Error updating object with ID {id}")
 def update_object(
-    connection, id, body, object_type, project_id=None, error_msg=None, verbose=True
+    connection: Connection,
+    id,
+    body,
+    object_type,
+    project_id=None,
+    error_msg=None,
+    verbose=True,
 ):
     """Get information for a specific object in a specific project; if you do
     not specify a project ID, you get information for the object in all
@@ -159,10 +232,7 @@ def update_object(
     Returns:
         HTTP response object returned by the Strategy One REST server.
     """
-    if object_type == ObjectTypes.PROJECT.value:
-        project_id = str(id)
-    elif project_id is None:
-        project_id = connection.project_id
+    project_id = _validate_project_id(connection, object_type, project_id, False)
 
     return connection.put(
         endpoint=f'/api/objects/{id}',
@@ -174,7 +244,13 @@ def update_object(
 
 @ErrorHandler(err_msg="Error creating a copy of object with ID {id}")
 def copy_object(
-    connection, id, name, folder_id, object_type, project_id=None, error_msg=None
+    connection: Connection,
+    id,
+    name,
+    folder_id,
+    object_type,
+    project_id=None,
+    error_msg=None,
 ):
     """Create a copy of a specific object.
 
@@ -202,10 +278,7 @@ def copy_object(
     Returns:
         HTTP response object returned by the Strategy One REST server.
     """
-    if object_type == ObjectTypes.PROJECT.value:
-        project_id = str(id)
-    elif project_id is None:
-        project_id = connection.project_id
+    project_id = _validate_project_id(connection, object_type, project_id, False)
 
     if not project_id:
         raise ValueError("Project needs to be specified.")
@@ -221,7 +294,7 @@ def copy_object(
 
 @ErrorHandler(err_msg="Error getting property set for object with ID {id}")
 def get_property_set(
-    connection,
+    connection: Connection,
     id: str,
     obj_type: int,
     property_set_id: str,
@@ -247,7 +320,11 @@ def get_property_set(
 
 @ErrorHandler(err_msg="Error updating property set for object with ID {id}")
 def update_property_set(
-    connection, id: str, obj_type: int, body: dict, error_msg: str | None = None
+    connection: Connection,
+    id: str,
+    obj_type: int,
+    body: dict,
+    error_msg: str | None = None,
 ):
     """Update a property set for an object.
 
@@ -267,7 +344,9 @@ def update_property_set(
 
 
 @ErrorHandler(err_msg="Error getting VLDB settings for object with ID {id}")
-def get_vldb_settings(connection, id, object_type, project_id=None, error_msg=None):
+def get_vldb_settings(
+    connection: Connection, id, object_type, project_id=None, error_msg=None
+):
     """Get vldb settings for an object.
 
     Args:
@@ -299,7 +378,9 @@ def get_vldb_settings(connection, id, object_type, project_id=None, error_msg=No
 @ErrorHandler(
     err_msg="Error resetting all custom vldb settings for object with ID {id}"
 )
-def delete_vldb_settings(connection, id, object_type, project_id=None, error_msg=None):
+def delete_vldb_settings(
+    connection: Connection, id, object_type, project_id=None, error_msg=None
+):
     """Delete all customized vldb settings in one object, this operation will
     reset all vldb settings to default.
 
@@ -333,7 +414,7 @@ def delete_vldb_settings(connection, id, object_type, project_id=None, error_msg
     err_msg="Error resetting all custom vldb settings for object with ID {id}"
 )
 def set_vldb_settings(
-    connection, id, object_type, name, body, project_id=None, error_msg=None
+    connection: Connection, id, object_type, name, body, project_id=None, error_msg=None
 ):
     """Set vldb settings for one property set in one object.
 
@@ -369,7 +450,7 @@ def set_vldb_settings(
 
 @ErrorHandler(err_msg="Error getting objects.")
 def create_search_objects_instance(
-    connection,
+    connection: Connection,
     name=None,
     pattern=4,
     domain=2,
@@ -411,7 +492,12 @@ def create_search_objects_instance(
 
 @ErrorHandler(err_msg="Error getting objects using search with ID {search_id}")
 def get_objects(
-    connection, search_id, offset=0, limit=-1, get_tree=False, error_msg=None
+    connection: Connection,
+    search_id,
+    offset=0,
+    limit=-1,
+    get_tree=False,
+    error_msg=None,
 ):
     """Get list of objects from metadata.
 
@@ -486,7 +572,7 @@ def get_objects_async(
 
 
 @ErrorHandler(err_msg="Error certifying object with ID {id}")
-def toggle_certification(connection, id, object_type=3, certify=True):
+def toggle_certification(connection: Connection, id, object_type=3, certify=True):
     """Certify/Uncertify a multi-table dataset.
 
     Args:
@@ -513,7 +599,12 @@ def toggle_certification(connection, id, object_type=3, certify=True):
 
 @ErrorHandler(err_msg='Error updating translations for object with ID {id}')
 def update_translations(
-    connection, project_id: str, id: str, object_type: int, body: dict, fields
+    connection: Connection,
+    project_id: str,
+    id: str,
+    object_type: int,
+    body: dict,
+    fields,
 ):
     """Update translations for a specific object.
     Args:
@@ -538,12 +629,15 @@ def update_translations(
 
 
 @ErrorHandler(err_msg='Error getting translations for object with ID {id}')
-def get_translations(connection, project_id: str, id: str, object_type: int, fields):
+def get_translations(
+    connection: Connection, project_id: str | None, id: str, object_type: int, fields
+):
     """Get translations for a specific object.
     Args:
         connection (Connection): Strategy One connection object returned by
             `connection.Connection()`
-        project_id (str): ID of the project in which the object is located
+        project_id (str | None): ID of the project in which the object is
+            located in.
         id (str): ID of the object
         object_type (int): Type of the object
         fields(list, optional): Comma separated top-level field whitelist. This

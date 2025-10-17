@@ -43,17 +43,7 @@ def get_search_object(
     elif search_visibility and search_visibility.upper() == 'ALL':
         result_dict['includeHidden'] = True
 
-    if 'root' in result_dict:
-        result_dict['rootFolderQuery'] = result_dict.pop('root')
-    if 'types' in result_dict:
-        result_dict['objectTypesQuery'] = result_dict.pop('types')
-    if 'subtypes' in result_dict:
-        result_dict['objectSubtypesQuery'] = result_dict.pop('subtypes')
     if 'ownerId' in result_dict:
         result_dict['ownerQuery'] = result_dict.pop('ownerId')
-    if 'localeId' in result_dict:
-        result_dict['lcidQuery'] = result_dict.pop('localeId')
-    if 'excludedFolders' in result_dict:
-        result_dict['excludeFolders'] = result_dict.pop('excludedFolders')
 
     return result_dict

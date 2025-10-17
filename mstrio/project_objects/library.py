@@ -1,12 +1,19 @@
+import contextlib
+from typing import TYPE_CHECKING
+
 from mstrio.api import library
 from mstrio.connection import Connection
 from mstrio.helpers import VersionException
 from mstrio.object_management.library_shortcut import LibraryShortcut
-from mstrio.project_objects.bots import Bot, list_bots
+from mstrio.project_objects.agents import Agent, list_agents
 from mstrio.project_objects.dashboard import Dashboard, list_dashboards
 from mstrio.project_objects.document import Document, list_documents
 from mstrio.project_objects.report import Report, list_reports
-from mstrio.utils.helper import get_valid_project_id
+from mstrio.utils.helper import deprecation_warning
+from mstrio.utils.resolvers import get_project_id_from_params_set
+
+if TYPE_CHECKING:
+    from mstrio.server.project import Project
 
 
 class Library:
@@ -18,7 +25,6 @@ class Library:
         connection (Connection): Strategy One connection object returned
             by `connection.Connection()`.
         project_id (str): ID of the project that the Library is in.
-        project_name (str): Name of the project that the Library is in.
         user_id (str): ID of the authenticated user.
         documents (list[Document]): List of documents in the Library.
         dashboards (list[Dashboard]): List of dashboards in the Library.
@@ -29,17 +35,29 @@ class Library:
     def __init__(
         self,
         connection: Connection,
+        project: 'Project | str | None' = None,
         project_id: str | None = None,
         project_name: str | None = None,
     ):
+        """Initialize the Library object.
+
+        Args:
+            connection (Connection): Strategy One connection object returned
+                by `connection.Connection()`.
+            project (Project | str, optional): Project object or ID or name
+                specifying the project. May be used instead of `project_id` or
+                `project_name`.
+            project_id (str, optional): Project ID
+            project_name (str, optional): Project name
+        """
         self.connection = connection
         self.user_id = connection.user_id
 
-        self.project_id = get_valid_project_id(
-            connection=connection,
-            project_id=project_id,
-            project_name=project_name,
-            with_fallback=True,
+        self.project_id = get_project_id_from_params_set(
+            connection,
+            project,
+            project_id,
+            project_name,
         )
 
         # Shortcut data dicts, as they are retrieved from the Library API.
@@ -47,23 +65,23 @@ class Library:
         # Dashboards are grouped together in the response, hence the joint dict
         self._doc_dbd_shortcuts_data: list[dict] = []
         self._report_shortcuts_data: list[dict] = []
-        self._bot_shortcuts_data: list[dict] = []
+        self._agent_shortcuts_data: list[dict] = []
 
         # Cached shortcut IDs for quick to avoid unnecessary retrieval of target
         # objects after the shortcuts list changes
         self._doc_dbd_cached_short_ids: set[str] = set()
         self._report_cached_short_ids: set[str] = set()
-        self._bot_cached_short_ids: set[str] = set()
+        self._agent_cached_short_ids: set[str] = set()
 
         # The shortcuts themselves and corresponding target objects
         self._documents: list[Document] = []
         self._dashboards: list[Dashboard] = []
         self._reports: list[Report] = []
-        self._bots: list[Bot] = []
+        self._agents: list[Agent] = []
         self._document_shortcuts: list[LibraryShortcut] = []
         self._dashboard_shortcuts: list[LibraryShortcut] = []
         self._report_shortcuts: list[LibraryShortcut] = []
-        self._bot_shortcuts: list[LibraryShortcut] = []
+        self._agent_shortcuts: list[LibraryShortcut] = []
 
         self.fetch()
 
@@ -71,7 +89,7 @@ class Library:
         response: dict = library.get_library_v2(self.connection).json()
         self._doc_dbd_shortcuts_data = response.get('documentContents', [])
         self._report_shortcuts_data = response.get('reportContents', [])
-        self._bot_shortcuts_data = response.get('aiBotContents', [])
+        self._agent_shortcuts_data = response.get('aiBotContents', [])
 
     @staticmethod
     def _get_target_ids(shortcuts_data: list[dict]) -> list[str]:
@@ -109,21 +127,21 @@ class Library:
 
     @property
     def documents(self):
-        doc_dbd_live_short_ids = set(doc['id'] for doc in self._doc_dbd_shortcuts_data)
+        doc_dbd_live_short_ids = {doc['id'] for doc in self._doc_dbd_shortcuts_data}
         if doc_dbd_live_short_ids != self._doc_dbd_cached_short_ids:
             self._set_documents_dashboards(doc_dbd_live_short_ids)
         return self._documents
 
     @property
     def dashboards(self):
-        doc_dbd_live_short_ids = set(doc['id'] for doc in self._doc_dbd_shortcuts_data)
+        doc_dbd_live_short_ids = {doc['id'] for doc in self._doc_dbd_shortcuts_data}
         if doc_dbd_live_short_ids != self._doc_dbd_cached_short_ids:
             self._set_documents_dashboards(doc_dbd_live_short_ids)
         return self._dashboards
 
     @property
     def reports(self):
-        report_live_short_ids = set(rep['id'] for rep in self._report_shortcuts_data)
+        report_live_short_ids = {rep['id'] for rep in self._report_shortcuts_data}
         if report_live_short_ids != self._report_cached_short_ids:
             report_ids = self._get_target_ids(self._report_shortcuts_data)
             self._reports = list_reports(
@@ -140,28 +158,33 @@ class Library:
 
     @property
     def bots(self):
-        bot_live_short_ids = set(bot['id'] for bot in self._bot_shortcuts_data)
-        if bot_live_short_ids != self._bot_cached_short_ids:
-            bot_ids = self._get_target_ids(self._bot_shortcuts_data)
-            try:
-                self._bots = list_bots(
+        deprecation_warning(
+            'Library.bots', 'Library.agents', '11.6.1.101', module=False  # NOSONAR
+        )
+        return self.agents
+
+    @property
+    def agents(self):
+        agent_live_short_ids = {agent['id'] for agent in self._agent_shortcuts_data}
+        if agent_live_short_ids != self._agent_cached_short_ids:
+            agent_ids = self._get_target_ids(self._agent_shortcuts_data)
+            with contextlib.suppress(VersionException):
+                # Leave the agents field empty if no support
+                self._agents = list_agents(
                     self.connection,
                     project_id=self.project_id,
-                    id=bot_ids,
+                    id=agent_ids,
                 )
-            except VersionException:
-                # Leave the bots field empty if no support
-                pass
-            self._bot_cached_short_ids = bot_live_short_ids
-            self._bot_shortcuts = [
+            self._agent_cached_short_ids = agent_live_short_ids
+            self._agent_shortcuts = [
                 LibraryShortcut.from_dict(sho, self.connection)
-                for sho in self._bot_shortcuts_data
+                for sho in self._agent_shortcuts_data
             ]
-        return self._bots
+        return self._agents
 
     @property
     def contents(self):
-        return self.documents + self.dashboards + self.reports + self.bots
+        return self.documents + self.dashboards + self.reports + self.agents
 
     def publish(self, contents: "list | Dashboard | Document | str"):
         """Publishes dashboard or document to the authenticated user's library.
@@ -204,5 +227,5 @@ class Library:
             LibraryShortcut.from_dict(sho, self.connection)
             for sho in self._doc_dbd_shortcuts_data
             + self._report_shortcuts_data
-            + self._bot_shortcuts_data
+            + self._agent_shortcuts_data
         ]

@@ -1,5 +1,5 @@
 from enum import IntFlag
-from typing import Any, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 
 from mstrio.api import browsing
 from mstrio.connection import Connection
@@ -10,9 +10,12 @@ from mstrio.utils.enum_helper import get_enum_val
 from mstrio.utils.helper import (
     fetch_objects,
     get_default_args_from_func,
-    get_valid_project_id,
 )
+from mstrio.utils.resolvers import get_project_id_from_params_set
 from mstrio.utils.response_processors import objects as objects_processors
+
+if TYPE_CHECKING:
+    from mstrio.server.project import Project
 
 
 class ShortcutInfoFlags(IntFlag):
@@ -119,6 +122,7 @@ class LibraryShortcut(Entity):
         self,
         connection: Connection,
         id: str,
+        project: 'Project | str | None' = None,
         project_id: str = None,
         project_name: str = None,
         shortcut_info_flag: (
@@ -128,34 +132,29 @@ class LibraryShortcut(Entity):
         """Initialize the LibraryShortcut object and populate it with
             I-Server data.
 
-        Specify either `project_id` or `project_name`.
-        When `project_id` is provided (not `None`), `project_name` is omitted.
-
-        Note:
-            When `project_id` is `None` and `project_name` is `None`, then
-            its value is overwritten by `project_id` from `connection` object.
-
         Args:
             connection (Connection): Strategy One connection object returned
                 by `connection.Connection()`.
             id (str): Shortcut ID
-            project_id (str, optional): ID of the project that the shortcut is
-                used in.
-            project_name (str, optional): Name of the project that the
-                shortcut is used in. May be used instead of `project_id`.
+            project (Project | str, optional): Project object or ID or name
+                specifying the project. May be used instead of `project_id` or
+                `project_name`.
+            project_id (str, optional): Project ID
+            project_name (str, optional): Project name
             shortcut_info_flag (ShortcutInfoFlags, int): flag indicating what
                 information about the shortcut should be loaded
         """
-        project_id = get_valid_project_id(
-            connection=connection,
-            project_id=project_id,
-            project_name=project_name,
-            with_fallback=not project_name,
+        proj_id = get_project_id_from_params_set(
+            connection,
+            project,
+            project_id,
+            project_name,
         )
+
         super().__init__(
             connection=connection,
             object_id=id,
-            project_id=project_id,
+            project_id=proj_id,
             shortcut_info_flag=get_enum_val(shortcut_info_flag, ShortcutInfoFlags),
         )
 
@@ -283,6 +282,7 @@ class LibraryShortcut(Entity):
 def get_shortcuts(
     connection: Connection,
     shortcut_ids: list[str],
+    project: 'Project | str | None' = None,
     project_id: str = None,
     project_name: str = None,
     shortcut_info_flag: (
@@ -295,30 +295,29 @@ def get_shortcuts(
     """Retrieve information about specific Library shortcuts
     in specific project.
 
-    Specify either `project_id` or `project_name`.
-    When `project_id` is provided (not `None`), `project_name` is omitted.
-
-    Note: When `project_id` is `None` and `project_name` is `None`, its value is
-        overwritten by `project_id` from `connection` object.
-
     Args:
-        shortcut_ids: ids of target shortcuts
-        project_id: id of project that the shortcuts are in
-        project_name: Project name
-        shortcut_info_flag: a single ShortcutInfoFlags that describes what
-        exact info are to be fetched
-        to_dictionary: parameter describing output format
+        connection (Connection): Connection object
+        shortcut_ids (list[str]): ids of target shortcuts
+        project (Project | str, optional): Project object or ID or name
+            specifying the project. May be used instead of `project_id` or
+            `project_name`.
+        project_id (str, optional): Project ID
+        project_name (str, optional): Project name
+        shortcut_info_flag (ShortcutInfoFlags | int): a single ShortcutInfoFlags
+            that describes what exact info are to be fetched
+        to_dictionary (bool): parameter describing output format
         limit (int): limit the number of elements returned.
             If `None` (default), all objects are returned.
+
     Return:
         list of dictionaries or Shortcut objects,
         depending on `to_dictionary` parameter
     """
-    project_id = get_valid_project_id(
-        connection=connection,
-        project_id=project_id,
-        project_name=project_name,
-        with_fallback=not project_name,
+    proj_id = get_project_id_from_params_set(
+        connection,
+        project,
+        project_id,
+        project_name,
     )
 
     shortcuts = fetch_objects(
@@ -327,7 +326,7 @@ def get_shortcuts(
         dict_unpack_value="shortcuts",
         limit=limit,
         filters=filters,
-        body=[{"projectId": project_id, "shortcutIds": shortcut_ids}],
+        body=[{"projectId": proj_id, "shortcutIds": shortcut_ids}],
         shortcut_info_flag=get_enum_val(shortcut_info_flag, ShortcutInfoFlags),
     )
 

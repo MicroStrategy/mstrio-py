@@ -311,7 +311,7 @@ class Language(Entity, DeleteMixin):
         self,
         name: str | None = None,
         comments: str | None = None,
-        owner: 'str | User | None' = None,
+        owner: str | User | None = None,
         formatting_settings: TimeInterval | None = None,
     ) -> None:
         """Alter the language's specified properties.

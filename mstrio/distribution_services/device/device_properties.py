@@ -739,8 +739,9 @@ class SharePointDeviceProperties(Dictable):
     """Device properties for SharePoint device type.
 
     Attributes:
-        file_location: File Location Setting, FileLocation class
-        file_system: File System Options, FileSystem class
+        file_location (FileLocation): File location options
+        file_system (FileSystem): File system options
+        iam_id (str, optional): IAM service ID\
     """
 
     _FROM_DICT_MAP = {
@@ -752,6 +753,7 @@ class SharePointDeviceProperties(Dictable):
         self,
         file_location: FileLocation | dict,
         file_system: FileSystem | dict,
+        iam_id: str | None = None,
     ):
         self.file_location = (
             FileLocation.from_dict(file_location)
@@ -762,4 +764,77 @@ class SharePointDeviceProperties(Dictable):
             FileSystem.from_dict(file_system)
             if isinstance(file_system, dict)
             else file_system
+        )
+        self.iam_id = iam_id
+
+
+class S3Credentials(Dictable):
+    """Connection parameters for S3 devices.
+
+    Attributes:
+        region (str): The AWS region where the S3 bucket is hosted,
+            e.g. 'us-east-1'.
+        access_key_id (str): The AWS Access Key ID used for authenticating
+            API requests
+        secret_access_key (str, optional): The AWS Secret Access Key paired with
+            Access Key ID for secure authentication
+    """
+
+    def __init__(
+        self,
+        region: str,
+        access_key_id: str,
+        secret_access_key: str | None = None,
+    ):
+        self.region = region
+        self.access_key_id = access_key_id
+        self.secret_access_key = secret_access_key
+
+    @classmethod
+    def from_dict_or_none(cls, *args, **kwargs):
+        # REST may return empty object for s3_credentials. We want to treat it
+        # the same way as if the field was not set
+        if not args and not kwargs:
+            return None
+        return cls(*args, **kwargs)
+
+
+class S3DeviceProperties(SharePointDeviceProperties):
+    """Device properties for S3 device type.
+
+    Attributes:
+        file_location (FileLocation): File location options
+        file_system (FileSystem): File system options
+        s3_credentials (S3Credentials): Connection parameters for S3
+    """
+
+    _FROM_DICT_MAP = {
+        "file_location": FileLocation.from_dict,
+        "file_system": FileSystem.from_dict,
+        "s3_credentials": S3Credentials.from_dict_or_none,
+    }
+
+    def __init__(
+        self,
+        file_location: FileLocation | dict,
+        file_system: FileSystem | dict,
+        s3_credentials: S3Credentials | dict | None = None,
+    ):
+        self.file_location = (
+            FileLocation.from_dict(file_location)
+            if isinstance(file_location, dict)
+            else file_location
+        )
+        self.file_system = (
+            FileSystem.from_dict(file_system)
+            if isinstance(file_system, dict)
+            else file_system
+        )
+        # if not present, REST may return empty object
+        if not s3_credentials:
+            self.s3_credentials = None
+        self.s3_credentials = (
+            S3Credentials.from_dict(s3_credentials)
+            if isinstance(s3_credentials, dict)
+            else s3_credentials
         )

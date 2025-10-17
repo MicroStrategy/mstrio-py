@@ -1,11 +1,13 @@
 import logging
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from pandas import DataFrame, concat
 
 from mstrio import config
 from mstrio.api import documents
 from mstrio.connection import Connection
+from mstrio.helpers import IServerError
 from mstrio.object_management import Folder, SearchPattern, search_operations
 from mstrio.project_objects.document import Document
 from mstrio.server.environment import Environment
@@ -14,8 +16,15 @@ from mstrio.users_and_groups import UserOrGroup
 from mstrio.users_and_groups.user import User
 from mstrio.utils import helper
 from mstrio.utils.cache import CacheSource
-from mstrio.utils.helper import Dictable, get_valid_project_id, is_dashboard
+from mstrio.utils.helper import Dictable, is_dashboard
 from mstrio.utils.related_subscription_mixin import RelatedSubscriptionMixin
+from mstrio.utils.resolvers import (
+    get_project_id_from_params_set,
+    validate_owner_key_in_filters,
+)
+
+if TYPE_CHECKING:
+    from mstrio.server.project import Project
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +35,7 @@ def list_dashboards(
     to_dictionary: bool = False,
     to_dataframe: bool = False,
     limit: int | None = None,
+    project: 'Project | str | None' = None,
     project_id: str | None = None,
     project_name: str | None = None,
     **filters,
@@ -45,6 +55,9 @@ def list_dashboards(
             pandas DataFrame
         limit(int): limit the number of elements returned. If `None` (default),
             all objects are returned.
+        project (Project | str, optional): Project object or ID or name
+            specifying the project. May be used instead of `project_id` or
+            `project_name`.
         project_id (str, optional): Project ID
         project_name (str, optional): Project name
         **filters: Available filter parameters: ['name', 'id', 'type',
@@ -61,6 +74,7 @@ def list_dashboards(
         name=name,
         limit=limit,
         to_dataframe=to_dataframe,
+        project=project,
         project_id=project_id,
         project_name=project_name,
         **filters,
@@ -112,19 +126,24 @@ def list_dashboards_across_projects(
                     f'to it'
                 )
             continue
-        dashboards = Dashboard._list_all(
-            connection,
-            to_dictionary=to_dictionary,
-            name=name,
-            limit=limit,
-            to_dataframe=to_dataframe,
-            **filters,
-        )
+        try:
+            dashboards = Dashboard._list_all(
+                connection,
+                to_dictionary=to_dictionary,
+                name=name,
+                limit=limit,
+                to_dataframe=to_dataframe,
+                **filters,
+            )
 
-        if to_dataframe:
-            output = concat([output, dashboards], ignore_index=True)
-        else:
-            output.extend(dashboards)
+            if to_dataframe:
+                output = concat([output, dashboards], ignore_index=True)
+            else:
+                output.extend(dashboards)
+        except IServerError as e:
+            if config.verbose:
+                logger.info(f'Project {project.name} ({project.id}) is skipped - {e}')
+            continue
 
     connection.select_project(project_id=project_id_before)
     return output[:limit]
@@ -176,6 +195,7 @@ class Dashboard(Document, RelatedSubscriptionMixin):
         to_dictionary: bool = False,
         to_dataframe: bool = False,
         limit: int | None = None,
+        project: 'Project | str | None' = None,
         project_id: str | None = None,
         project_name: str | None = None,
         **filters,
@@ -186,17 +206,20 @@ class Dashboard(Document, RelatedSubscriptionMixin):
                 "both.",
                 ValueError,
             )
-        project_id = get_valid_project_id(
-            connection=connection,
-            project_id=project_id,
-            project_name=project_name,
-            with_fallback=not project_name,
+
+        proj_id = get_project_id_from_params_set(
+            connection,
+            project,
+            project_id,
+            project_name,
         )
+
+        validate_owner_key_in_filters(filters)
 
         objects = search_operations.full_search(
             connection,
             object_types=ObjectSubTypes.REPORT_WRITING_DOCUMENT,
-            project=project_id,
+            project=proj_id,
             name=name,
             pattern=search_pattern,
             **filters,

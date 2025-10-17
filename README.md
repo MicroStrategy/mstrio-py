@@ -124,10 +124,12 @@ Since version **11.3.0.1**, **mstrio-py** includes also administration modules:
 - **Translation** module (see [code_snippets][code_snippet_translations])
 - **Report** module (see [code_snippets][code_snippet_report])
 - **Incremental Refresh Report** module (see [code_snippets][code_snippet_irr])
-- **Bots** module (see [code_snippets][code_snippet_bots])
+- **Agents** module (see [code_snippets][code_snippet_agents])
 - **Content Group** module (see [code_snippets][code_snippet_content_groups])
 - **Applications** module (see [code_snippets][code_snippet_applications])
 - **Fence** module (see [code_snippets][code_snippet_fences])
+- **Prompt** module (see [code_snippets][code_snippet_prompt])
+- **Search Object** module (see [code_snippets][code_snippet_search_object])
 
 <!-- tox:docs:sort:end -->
 <!-- tox:docs: main features :end -->
@@ -136,7 +138,7 @@ Since version **11.3.0.1**, **mstrio-py** includes also administration modules:
 
 ## Versioning & Changelog
 
-Current version: **11.5.9.101** (19 September 2025). Check out [CHANGELOG][release_notes] to see what's new.
+Current version: **11.5.10.101** (17 October 2025). Check out [CHANGELOG][release_notes] to see what's new.
 
 `mstrio-py` is constantly developed to support newest Strategy One REST APIs. Functionalities may be added to mstrio on monthly basis. It is **recommended** to always install the newest version of mstrio-py, as it will be most stable and still maintain backwards compatibility with various Strategy One installations, dating back to 11.1.4.
 
@@ -225,7 +227,9 @@ When features (modules, parameters, attributes, methods etc.) are marked for dep
 [code_snippet_irr]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/incremental_refresh_report.py
 [code_snippet_report_cache]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/report_cache.py
 [code_snippet_report]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/reports.py
-[code_snippet_bots]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/bots.py
+[code_snippet_agents]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/agents.py
 [code_snippet_content_groups]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/content_groups.py
 [code_snippet_applications]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/applications.py
 [code_snippet_fences]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/fences.py
+[code_snippet_prompt]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/prompt_mgmt.py
+[code_snippet_search_object]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/search_object.py

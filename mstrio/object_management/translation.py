@@ -1,5 +1,6 @@
 import logging
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 import pandas as pd
 import pypika as sql
@@ -7,6 +8,7 @@ import pypika as sql
 from mstrio import config
 from mstrio.connection import Connection
 from mstrio.datasources import DatasourceInstance
+from mstrio.server.project import Project
 from mstrio.types import ObjectTypes
 from mstrio.utils.entity import Entity
 from mstrio.utils.enum_helper import get_enum_val
@@ -14,11 +16,13 @@ from mstrio.utils.helper import (
     Dictable,
     IServerError,
     VersionException,
-    get_valid_project_id,
-    get_valid_project_name,
 )
+from mstrio.utils.resolvers import get_project_id_from_params_set
 from mstrio.utils.response_processors import objects, projects
 from mstrio.utils.version_helper import is_server_min_version, method_version_handler
+
+if TYPE_CHECKING:
+    from mstrio.server.language import Language
 
 logger = logging.getLogger(__name__)
 
@@ -28,8 +32,10 @@ def list_translations(
     connection: Connection,
     id: str,
     object_type: int | ObjectTypes,
+    project: 'Project | str | None' = None,
     project_id: str | None = None,
-    languages: list | None = None,
+    project_name: str | None = None,
+    languages: 'list[Language | str] | None' = None,
     to_dictionary: bool = False,
 ) -> list['Translation'] | list[dict]:
     """Lists translations of the given Object.
@@ -40,8 +46,11 @@ def list_translations(
         id (str): ID of the Object the translations will be listed for
         object_type (int | ObjectTypes): type of the Object the translations
             will be listed for
-        project_id (str, optional): project ID of the project the Object is on,
-            if not provided will be taken from connection
+        project (Project | str, optional): Project object or ID or name
+            specifying the project. May be used instead of `project_id` or
+            `project_name`.
+        project_id (str, optional): Project ID
+        project_name (str, optional): Project name
         languages (list, optional): list of languages to list the translations
             for, only translations from these languages will be listed.
             Languages in the list should be one of the following:
@@ -53,16 +62,21 @@ def list_translations(
 
     Returns:
         A list of dictionaries representing translations for the Object or a
-        list of Translation Objects."""
+        list of Translation Objects.
+    """
     object_type = get_enum_val(object_type, ObjectTypes)
 
-    project_id = get_valid_project_id(
-        connection=connection, project_id=project_id, with_fallback=True
+    proj_id = get_project_id_from_params_set(
+        connection,
+        project,
+        project_id,
+        project_name,
+        assert_id_exists=False,
     )
 
     output = objects.get_translations(
         connection=connection,
-        project_id=project_id,
+        project_id=proj_id,
         target_id=id,
         object_type=object_type,
     )
@@ -173,7 +187,9 @@ class Translation(Dictable):
         id: str,
         object_type: int | ObjectTypes,
         translations: list[OperationData],
+        project: 'Project | str | None' = None,
         project_id: str | None = None,
+        project_name: str | None = None,
     ) -> list['Translation']:
         """Adds translations to the Object.
 
@@ -184,14 +200,21 @@ class Translation(Dictable):
             object_type (int | ObjectTypes): type of the Object
             translations (list[OperationData]): list of translations to be added
                 to the Object
-            project_id (str, optional): project ID of the project the Object is
-                located in, if not specified will be taken from the Connection
+            project (Project | str, optional): Project object or ID or name
+                specifying the project. May be used instead of `project_id` or
+                `project_name`.
+            project_id (str, optional): Project ID
+            project_name (str, optional): Project name
 
         Returns:
             A list of translations for the Object.
         """
-        project_id = get_valid_project_id(
-            connection=connection, project_id=project_id, with_fallback=True
+        proj_id = get_project_id_from_params_set(
+            connection,
+            project,
+            project_id,
+            project_name,
+            assert_id_exists=False,
         )
 
         object_type = get_enum_val(object_type, ObjectTypes)
@@ -201,7 +224,7 @@ class Translation(Dictable):
             translations=translations,
             id=id,
             object_type=object_type,
-            project_id=project_id,
+            project_id=proj_id,
             operation_type='adding',
         )
 
@@ -222,7 +245,7 @@ class Translation(Dictable):
         output = objects.update_translations(
             connection=connection,
             target_id=id,
-            project_id=project_id,
+            project_id=proj_id,
             body=body,
             object_type=object_type,
         )
@@ -240,7 +263,9 @@ class Translation(Dictable):
         id: str,
         object_type: int | ObjectTypes,
         translations: list[OperationData],
+        project: 'Project | str | None' = None,
         project_id: str | None = None,
+        project_name: str | None = None,
     ) -> None:
         """Alters translations for the Object.
 
@@ -251,11 +276,18 @@ class Translation(Dictable):
             object_type (int | ObjectTypes): type of the Object
             translations (list[OperationData]): list of translations to be added
                 to the Object
-            project_id (str, optional): project ID of the project the Object is
-                located in, if not specified will be taken from the Connection
+            project (Project | str, optional): Project object or ID or name
+                specifying the project. May be used instead of `project_id` or
+                `project_name`.
+            project_id (str, optional): Project ID
+            project_name (str, optional): Project name
         """
-        project_id = get_valid_project_id(
-            connection=connection, project_id=project_id, with_fallback=True
+        proj_id = get_project_id_from_params_set(
+            connection,
+            project,
+            project_id,
+            project_name,
+            assert_id_exists=False,
         )
 
         object_type = get_enum_val(object_type, ObjectTypes)
@@ -264,14 +296,14 @@ class Translation(Dictable):
             connection=connection,
             id=id,
             object_type=object_type,
-            project_id=project_id,
+            project_id=proj_id,
         )
         translations = Translation._get_valid_target_ids(
             connection=connection,
             translations=translations,
             id=id,
             object_type=object_type,
-            project_id=project_id,
+            project_id=proj_id,
             operation_type='altering',
         )
 
@@ -312,10 +344,11 @@ class Translation(Dictable):
         objects.update_translations(
             connection=connection,
             target_id=id,
-            project_id=project_id,
+            project_id=proj_id,
             body=body,
             object_type=object_type,
         )
+
         if config.verbose:
             logger.info(f"Successfully altered Translations of Object with ID: {id}")
 
@@ -326,7 +359,9 @@ class Translation(Dictable):
         id: str,
         object_type: int | ObjectTypes,
         translations: list[OperationData],
+        project: 'Project | str | None' = None,
         project_id: str | None = None,
+        project_name: str | None = None,
     ) -> None:
         """Removes translations from the Object.
 
@@ -337,11 +372,18 @@ class Translation(Dictable):
             object_type (int | ObjectTypes): type of the Object
             translations (list[OperationData]): list of translations to be added
                 to the Object
-            project_id (str, optional): project ID of the project the Object is
-                located in, if not specified will be taken from the Connection
+            project (Project | str, optional): Project object or ID or name
+                specifying the project. May be used instead of `project_id` or
+                `project_name`.
+            project_id (str, optional): Project ID
+            project_name (str, optional): Project name
         """
-        project_id = get_valid_project_id(
-            connection=connection, project_id=project_id, with_fallback=True
+        proj_id = get_project_id_from_params_set(
+            connection,
+            project,
+            project_id,
+            project_name,
+            assert_id_exists=False,
         )
 
         object_type = get_enum_val(object_type, ObjectTypes)
@@ -351,7 +393,7 @@ class Translation(Dictable):
             translations=translations,
             id=id,
             object_type=object_type,
-            project_id=project_id,
+            project_id=proj_id,
             operation_type='deleting',
         )
 
@@ -374,10 +416,11 @@ class Translation(Dictable):
         objects.update_translations(
             connection=connection,
             target_id=id,
-            project_id=project_id,
+            project_id=proj_id,
             body=body,
             object_type=object_type,
         )
+
         if config.verbose:
             logger.info(f"Successfully deleted Translations for Object with ID: {id}")
 
@@ -389,7 +432,9 @@ class Translation(Dictable):
         separator: str = ';',
         languages: list | None = None,
         file_path: str | None = None,
+        project: 'Project | str | None' = None,
         project_id: str | None = None,
+        project_name: str | None = None,
         denormalized_form: bool = False,
         add_object_path: bool = False,
         add_object_description: bool = False,
@@ -415,8 +460,11 @@ class Translation(Dictable):
                     - Language class object
             file_path (str, optional): a path specifying where to save the csv
                 file
-            project_id (str, optional): ID of the project the Objects are a part
-                of, if not provided will be taken from connection
+            project (Project | str, optional): Project object or ID or name
+                specifying the project. May be used instead of `project_id` or
+                `project_name`.
+            project_id (str, optional): Project ID
+            project_name (str, optional): Project name
             denormalized_form (bool, optional): if True exports the data in a
                 denormalized form, if False exports the data in a normalized
                 form. False by default.
@@ -437,11 +485,16 @@ class Translation(Dictable):
 
         Returns:
             String representation of the CSV file if no path was given or
-            None if path was provided.
+            `None` if path was provided.
         """
-        project_id = get_valid_project_id(
-            connection=connection, project_id=project_id, with_fallback=True
+        proj_id = get_project_id_from_params_set(
+            connection,
+            project,
+            project_id,
+            project_name,
+            assert_id_exists=False,
         )
+
         _prepare_dataframe = (
             Translation._prepare_denormalized_dataframe
             if denormalized_form
@@ -449,7 +502,7 @@ class Translation(Dictable):
         )
         dataframe = _prepare_dataframe(
             connection=connection,
-            project_id=project_id,
+            project_id=proj_id,
             object_list=object_list,
             languages=languages,
             path=add_object_path,
@@ -466,7 +519,9 @@ class Translation(Dictable):
         connection: Connection,
         file_path: str,
         separator: str = ';',
+        project: 'Project | str | None' = None,
         project_id: str | None = None,
+        project_name: str | None = None,
         delete: bool = False,
         automatch_target_ids: bool = False,
     ) -> None:
@@ -478,8 +533,11 @@ class Translation(Dictable):
             file_path (str): a path specifying the CSV file
             separator (str, optional): specify the separator of the csv file.
                 Defaults to a semicolon ;
-            project_id (str, optional): ID of the project the Objects are a part
-                of, if not provided will be taken from connection
+            project (Project | str, optional): Project object or ID or name
+                specifying the project. May be used instead of `project_id` or
+                `project_name`.
+            project_id (str, optional): Project ID
+            project_name (str, optional): Project name
             delete (bool, optional): if True deletes translations for languages
                 that are empty in the CSV file. False by default.
             automatch_target_ids (bool, optional): if True tries to match the
@@ -492,14 +550,20 @@ class Translation(Dictable):
         type and target ID) but new columns cannot be added. The column order
         does not matter.
         """
-        project_id = get_valid_project_id(
-            connection=connection, project_id=project_id, with_fallback=True
+
+        proj_id = get_project_id_from_params_set(
+            connection,
+            project,
+            project_id,
+            project_name,
+            assert_id_exists=False,
         )
         df = pd.read_csv(file_path, na_filter=False, sep=separator)
+
         Translation._implement_changes_from_dataframe(
             connection=connection,
             df=df,
-            project_id=project_id,
+            project_id=proj_id,
             delete=delete,
             automatch_target_ids=automatch_target_ids,
         )
@@ -515,7 +579,9 @@ class Translation(Dictable):
         datasource: DatasourceInstance | str,
         database_type: str | None = None,
         languages: list | None = None,
+        project: 'Project | str | None' = None,
         project_id: str | None = None,
+        project_name: str | None = None,
         denormalized_form: bool = False,
         add_object_path: bool = False,
         add_object_description: bool = False,
@@ -552,8 +618,11 @@ class Translation(Dictable):
                 Languages in the list should be one of the following:
                     - ID of the language
                     - Language class object
-            project_id (str, optional): ID of the project the Objects are a part
-                of, if not provided will be taken from connection
+            project (Project | str, optional): Project object or ID or name
+                specifying the project. May be used instead of `project_id` or
+                `project_name`.
+            project_id (str, optional): Project ID
+            project_name (str, optional): Project name
             denormalized_form (bool, optional): if True exports the data in a
                 denormalized form, if False exports the data in a normalized
                 form. False by default.
@@ -581,9 +650,15 @@ class Translation(Dictable):
             )
             if user_input != "Y":
                 return None
-        project_id = get_valid_project_id(
-            connection=connection, project_id=project_id, with_fallback=True
+
+        proj_id = get_project_id_from_params_set(
+            connection,
+            project,
+            project_id,
+            project_name,
+            assert_id_exists=False,
         )
+
         if isinstance(datasource, DatasourceInstance):
             datasource = datasource.id
         _prepare_dataframe = (
@@ -593,7 +668,7 @@ class Translation(Dictable):
         )
         dataframe = _prepare_dataframe(
             connection=connection,
-            project_id=project_id,
+            project_id=proj_id,
             object_list=object_list,
             languages=languages,
             path=add_object_path,
@@ -608,7 +683,7 @@ class Translation(Dictable):
             connection=connection,
             query=sql.Query.drop_table(table_name).if_exists(),
             datasource_id=datasource,
-            project_id=project_id,
+            project_id=proj_id,
         )
 
         if config.verbose:
@@ -621,7 +696,7 @@ class Translation(Dictable):
                 database_type=database_type,
             ),
             datasource_id=datasource,
-            project_id=project_id,
+            project_id=proj_id,
         )
 
         if config.verbose:
@@ -634,7 +709,7 @@ class Translation(Dictable):
                 database_type=database_type,
             ),
             datasource_id=datasource,
-            project_id=project_id,
+            project_id=proj_id,
         )
 
         if config.verbose:
@@ -646,7 +721,9 @@ class Translation(Dictable):
         connection: Connection,
         table_name: str,
         datasource: DatasourceInstance | str,
+        project: 'Project | str | None' = None,
         project_id: str | None = None,
+        project_name: str | None = None,
         delete: bool = False,
         automatch_target_ids: bool = False,
     ) -> None:
@@ -659,8 +736,11 @@ class Translation(Dictable):
             datasource (DatasourceInstance | str): DatasourceInstance object or
                 ID of the DatasourceInstance containing the connection to the
                 database to export the data to
-            project_id (str, optional): ID of the project the Objects are a part
-                of, if not provided will be taken from connection
+            project (Project | str, optional): Project object or ID or name
+                specifying the project. May be used instead of `project_id` or
+                `project_name`.
+            project_id (str, optional): Project ID
+            project_name (str, optional): Project name
             delete (bool, optional): if True deletes translations for languages
                 that are empty in the database table. False by default.
             automatch_target_ids (bool, optional): if True tries to match the
@@ -672,9 +752,15 @@ class Translation(Dictable):
         cannot be renamed. Columns can be deleted (with the exception of object
         ID, object type and target ID) but new columns cannot be added.
         """
-        project_id = get_valid_project_id(
-            connection=connection, project_id=project_id, with_fallback=True
+
+        proj_id = get_project_id_from_params_set(
+            connection,
+            project,
+            project_id,
+            project_name,
+            assert_id_exists=False,
         )
+
         if isinstance(datasource, DatasourceInstance):
             datasource = datasource.id
         if config.verbose:
@@ -683,7 +769,7 @@ class Translation(Dictable):
             connection=connection,
             query=sql.Query.from_(table_name).select('*'),
             datasource_id=datasource,
-            project_id=project_id,
+            project_id=proj_id,
         )
         df = pd.DataFrame.from_dict(
             data=execution_data.get('results').get('data'), orient='columns'
@@ -691,7 +777,7 @@ class Translation(Dictable):
         Translation._implement_changes_from_dataframe(
             connection=connection,
             df=df,
-            project_id=project_id,
+            project_id=proj_id,
             delete=delete,
             automatch_target_ids=automatch_target_ids,
         )
@@ -705,7 +791,9 @@ class Translation(Dictable):
         object_list: list[Entity],
         languages: list | None = None,
         file_path: str | None = None,
+        project: 'Project | str | None' = None,
         project_id: str | None = None,
+        project_name: str | None = None,
         denormalized_form: bool = False,
         add_object_path: bool = False,
         add_object_description: bool = False,
@@ -729,8 +817,11 @@ class Translation(Dictable):
                     - Language class object
             file_path (str, optional): a path specifying where to save the
                 json file
-            project_id (str, optional): ID of the project the Objects are a part
-                of, if not provided will be taken from connection
+            project (Project | str, optional): Project object or ID or name
+                specifying the project. May be used instead of `project_id` or
+                `project_name`.
+            project_id (str, optional): Project ID
+            project_name (str, optional): Project name
             denormalized_form (bool, optional): if True exports the data in a
                 denormalized form, if False exports the data in a normalized
                 form. False by default.
@@ -751,11 +842,17 @@ class Translation(Dictable):
 
         Returns:
             String representation of the JSON file if no path was given or
-            None if path was provided.
+            `None` if path was provided.
         """
-        project_id = get_valid_project_id(
-            connection=connection, project_id=project_id, with_fallback=True
+
+        proj_id = get_project_id_from_params_set(
+            connection,
+            project,
+            project_id,
+            project_name,
+            assert_id_exists=False,
         )
+
         _prepare_dataframe = (
             Translation._prepare_denormalized_dataframe
             if denormalized_form
@@ -763,7 +860,7 @@ class Translation(Dictable):
         )
         dataframe = _prepare_dataframe(
             connection=connection,
-            project_id=project_id,
+            project_id=proj_id,
             object_list=object_list,
             languages=languages,
             path=add_object_path,
@@ -788,7 +885,9 @@ class Translation(Dictable):
     def add_translations_from_json(
         connection: Connection,
         file_path: str,
+        project: 'Project | str | None' = None,
         project_id: str | None = None,
+        project_name: str | None = None,
         delete: bool = False,
         automatch_target_ids: bool = False,
     ) -> None:
@@ -798,8 +897,11 @@ class Translation(Dictable):
             connection (Connection): Strategy One connection object returned by
                 `connection.Connection()`
             file_path (str): a path specifying the JSON file
-            project_id (str, optional): ID of the project the Objects are a part
-                of, if not provided will be taken from connection
+            project (Project | str, optional): Project object or ID or name
+                specifying the project. May be used instead of `project_id` or
+                `project_name`.
+            project_id (str, optional): Project ID
+            project_name (str, optional): Project name
             delete (bool, optional): if True deletes translations for languages
                 that are empty in the JSON file. False by default.
             automatch_target_ids (bool, optional): if True tries to match the
@@ -812,17 +914,23 @@ class Translation(Dictable):
         type and target ID) but new columns cannot be added. The column order
         does not matter.
         """
-        project_id = get_valid_project_id(
-            connection=connection, project_id=project_id, with_fallback=True
+        proj_id = get_project_id_from_params_set(
+            connection,
+            project,
+            project_id,
+            project_name,
+            assert_id_exists=False,
         )
         df = pd.read_json(file_path, orient='records')
+
         Translation._implement_changes_from_dataframe(
             connection=connection,
             df=df,
-            project_id=project_id,
+            project_id=proj_id,
             delete=delete,
             automatch_target_ids=automatch_target_ids,
         )
+
         if config.verbose:
             logger.info("Successfully implemented changes from the JSON file.")
 
@@ -832,7 +940,9 @@ class Translation(Dictable):
         connection: Connection,
         object_list: list[Entity],
         languages: list | None = None,
+        project: 'Project | str | None' = None,
         project_id: str | None = None,
+        project_name: str | None = None,
         denormalized_form: bool = False,
         add_object_path: bool = False,
         add_object_description: bool = False,
@@ -854,8 +964,11 @@ class Translation(Dictable):
                 Languages in the list should be one of the following:
                     - ID of the language
                     - Language class object
-            project_id (str, optional): ID of the project the Objects are a part
-                of, if not provided will be taken from connection
+            project (Project | str, optional): Project object or ID or name
+                specifying the project. May be used instead of `project_id` or
+                `project_name`.
+            project_id (str, optional): Project ID
+            project_name (str, optional): Project name
             denormalized_form (bool, optional): if True exports the data in a
                 denormalized form, if False exports the data in a normalized
                 form. False by default.
@@ -877,8 +990,12 @@ class Translation(Dictable):
         Returns:
             A pandas Dataframe containing the translation data.
         """
-        project_id = get_valid_project_id(
-            connection=connection, project_id=project_id, with_fallback=True
+        proj_id = get_project_id_from_params_set(
+            connection,
+            project,
+            project_id,
+            project_name,
+            assert_id_exists=False,
         )
         _prepare_dataframe = (
             Translation._prepare_denormalized_dataframe
@@ -887,7 +1004,7 @@ class Translation(Dictable):
         )
         dataframe = _prepare_dataframe(
             connection=connection,
-            project_id=project_id,
+            project_id=proj_id,
             object_list=object_list,
             languages=languages,
             path=add_object_path,
@@ -903,7 +1020,9 @@ class Translation(Dictable):
     def add_translations_from_dataframe(
         connection: Connection,
         dataframe: pd.DataFrame,
+        project: 'Project | str | None' = None,
         project_id: str | None = None,
+        project_name: str | None = None,
         delete: bool = False,
         automatch_target_ids: bool = False,
     ) -> None:
@@ -914,8 +1033,11 @@ class Translation(Dictable):
                 `connection.Connection()`
             dataframe (pd.DataFrame): dataframe containing the data to be
                 imported
-            project_id (str, optional): ID of the project the Objects are a part
-                of, if not provided will be taken from connection
+            project (Project | str, optional): Project object or ID or name
+                specifying the project. May be used instead of `project_id` or
+                `project_name`.
+            project_id (str, optional): Project ID
+            project_name (str, optional): Project name
             delete (bool, optional): if True deletes translations for languages
                 that are empty in the dataframe. False by default.
             automatch_target_ids (bool, optional): if True tries to match the
@@ -928,16 +1050,22 @@ class Translation(Dictable):
         object type and target ID) but new columns cannot be added. The column
         order does not matter.
         """
-        project_id = get_valid_project_id(
-            connection=connection, project_id=project_id, with_fallback=True
+        proj_id = get_project_id_from_params_set(
+            connection,
+            project,
+            project_id,
+            project_name,
+            assert_id_exists=False,
         )
+
         Translation._implement_changes_from_dataframe(
             connection=connection,
             df=dataframe,
-            project_id=project_id,
+            project_id=proj_id,
             delete=delete,
             automatch_target_ids=automatch_target_ids,
         )
+
         if config.verbose:
             logger.info("Successfully implemented changes from the dataframe.")
 
@@ -1076,12 +1204,12 @@ class Translation(Dictable):
                 'List of objects to export translations for is empty. '
                 'Please make sure to provide at least one object in object_list.'
             )
+
         languages_list = []
         languages_list_lcid = []
         dataframes = []
-        project_name = get_valid_project_name(
-            connection=connection, project_id=project_id
-        )
+        project_name = Project(connection, id=project_id).name
+
         if languages:
             for lang in languages:
                 if isinstance(lang, str):
@@ -1216,12 +1344,12 @@ class Translation(Dictable):
                 'List of objects to export translations for is empty. '
                 'Please make sure to provide at least one object in object_list.'
             )
+
         languages_list = []
         languages_list_lcid = []
         dataframes = []
-        project_name = get_valid_project_name(
-            connection=connection, project_id=project_id
-        )
+        project_name = Project(connection, id=project_id).name
+
         if languages:
             for lang in languages:
                 if isinstance(lang, str):

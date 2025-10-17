@@ -1,4 +1,4 @@
-"""This is the demo script to show how to manage content groups. 
+"""This is the demo script to show how to manage content groups.
 Its basic goal is to present what can be done with this module and to ease
 its usage.
 """
@@ -60,7 +60,7 @@ DASHBOARD_ID_1 = $dashboard_id_1
 DASHBOARD_ID_2 = $dashboard_id_2
 
 # Add Contents to a Content Group
-# Accepted content types are: Dashboard, Document, Report and Bot
+# Accepted content types are: Dashboard, Document, Report and Agent
 cg.update_contents(
     content_to_add=[
         Dashboard(connection=conn, id=DASHBOARD_ID_1),

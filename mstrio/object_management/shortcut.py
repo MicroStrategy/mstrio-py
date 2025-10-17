@@ -3,7 +3,7 @@ from typing import Any, TypeVar
 from mstrio.connection import Connection
 from mstrio.object_management.folder import Folder
 
-# Moved to library_shortcuts
+# Moved to library_shortcuts (imported for backwards compatibility)
 from mstrio.object_management.library_shortcut import (  # noqa: F401
     ShortcutInfoFlags,
     get_shortcuts,
@@ -14,16 +14,20 @@ from mstrio.server.project import Project
 from mstrio.types import ObjectSubTypes
 from mstrio.users_and_groups.user import User
 from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, MoveMixin, ObjectTypes
-from mstrio.utils.helper import get_default_args_from_func, get_valid_project_id
+from mstrio.utils.helper import get_default_args_from_func
+from mstrio.utils.resolvers import (
+    get_project_id_from_params_set,
+    validate_owner_key_in_filters,
+)
 from mstrio.utils.response_processors import objects as objects_processors
 
 
 def list_shortcuts(
     connection: Connection,
     name: str | None = None,
+    project: 'Project | str | None' = None,
     project_id: str | None = None,
     project_name: str | None = None,
-    project: Project | None = None,
     to_dictionary: bool = False,
     limit: int | None = None,
     folder: Folder | None = None,
@@ -43,11 +47,11 @@ def list_shortcuts(
         name (string, optional): The search pattern for listing shortcuts.
             Supports wildcards '*' (any number of characters) and '?' (exactly
             one character).
-        project_id (str, optional): ID of the project to search in.
-        project_name (str, optional): Name of the project to search in.
-            May be used instead of `project_id`.
-        project (Project, optional): Project object specifying the project to
-            search in. May be used instead of `project_id`.
+        project (Project | str, optional): Project object or ID or name
+            specifying the project. May be used instead of `project_id` or
+            `project_name`.
+        project_id (str, optional): Project ID
+        project_name (str, optional): Project name
         to_dictionary (bool, optional): If True, the method will return
             dictionaries with the shortcuts' properties instead of Shortcut
             objects. Defaults to False.
@@ -69,14 +73,15 @@ def list_shortcuts(
 
     """
 
-    if project_id is None and project is not None:
-        project_id = project.id
-    project_id = get_valid_project_id(
-        connection=connection,
-        project_id=project_id,
-        project_name=project_name,
-        with_fallback=True,
+    proj_id = get_project_id_from_params_set(
+        connection,
+        project,
+        project_id,
+        project_name,
     )
+
+    validate_owner_key_in_filters(filters)
+
     if folder and not folder_id:
         folder_id = folder.id
     if folder_path and folder_id:
@@ -87,7 +92,7 @@ def list_shortcuts(
         connection,
         object_types=ObjectSubTypes.SHORTCUT,
         domain=SearchDomain.PROJECT,
-        project=project_id,
+        project=proj_id,
         name=name,
         limit=limit,
         root=folder_id,
@@ -169,38 +174,33 @@ class Shortcut(Entity, CopyMixin, MoveMixin, DeleteMixin):
         self,
         connection: Connection,
         id: str,
+        project: 'Project | str | None' = None,
         project_id: str = None,
         project_name: str = None,
     ):
         """Initialize the Shortcut object and populate it with I-Server data.
-
-        Specify either `project_id` or `project_name`.
-        When `project_id` is provided (not `None`), `project_name` is omitted.
-
-        Note:
-            When `project_id` is `None` and `project_name` is `None`, then
-            its value is overwritten by `project_id` from `connection` object.
 
         Args:
             connection: Strategy One connection object returned
                 by `connection.Connection()`.
             id: Shortcut ID
             project_id: ID of the project that the shortcut is in
-            project_name: Project name
         """
+
         if id is None:
             raise AttributeError("Please specify 'id' parameter in the constructor.")
         else:
-            project_id = get_valid_project_id(
-                connection=connection,
-                project_id=project_id,
-                project_name=project_name,
-                with_fallback=not project_name,
+            proj_id = get_project_id_from_params_set(
+                connection,
+                project,
+                project_id,
+                project_name,
             )
+
             super().__init__(
                 connection=connection,
                 object_id=id,
-                project_id=project_id,
+                project_id=proj_id,
             )
 
     T = TypeVar('T')
@@ -256,9 +256,9 @@ class Shortcut(Entity, CopyMixin, MoveMixin, DeleteMixin):
         target_folder_id=None,
         target_folder_path=None,
         target_folder=None,
+        project=None,
         project_id=None,
         project_name=None,
-        project=None,
         to_dictionary=False,
     ):
         raise ValueError("Shortcut cannot refer to another shortcut.")

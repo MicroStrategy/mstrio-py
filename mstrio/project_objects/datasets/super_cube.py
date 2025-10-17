@@ -2,6 +2,7 @@ import logging
 import math
 import time
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 import pandas as pd
 from tqdm.auto import tqdm
@@ -19,9 +20,16 @@ from mstrio.utils import helper
 from mstrio.utils.encoder import Encoder
 from mstrio.utils.entity import CertifyMixin, ObjectSubTypes
 from mstrio.utils.model import Model
+from mstrio.utils.resolvers import (
+    get_project_id_from_params_set,
+    validate_owner_key_in_filters,
+)
 from mstrio.utils.version_helper import is_server_min_version
 
 from .cube import _Cube
+
+if TYPE_CHECKING:
+    from mstrio.server.project import Project
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +38,7 @@ def list_super_cubes(
     connection: Connection,
     name: str | None = None,
     search_pattern: SearchPattern | int = SearchPattern.CONTAINS,
+    project: 'Project | str | None' = None,
     project_id: str | None = None,
     project_name: str | None = None,
     to_dictionary: bool = False,
@@ -46,15 +55,8 @@ def list_super_cubes(
         * - 0 or more of any characters
         e.g. name = ?onny will return Sonny and Tonny
 
-    Specify either `project_id` or `project_name`.
-    When `project_id` is provided (not `None`), `project_name` is omitted.
-
-    Note:
-        When `project_id` is `None` and `project_name` is `None`,
-        then its value is overwritten by `project_id` from `connection` object.
-
     Args:
-        connection: Strategy One connection object returned by
+        connection (Connection): Strategy One connection object returned by
             `connection.Connection()`
         name (string, optional): value the search pattern is set to, which
             will be applied to the names of super cubes being searched
@@ -62,8 +64,11 @@ def list_super_cubes(
             for, such as Begin With or Contains. Possible values are available
             in ENUM mstrio.object_management.SearchPattern.
             Default value is BEGIN WITH (4).
-        project_id (string, optional): Project ID
-        project_name (string, optional): Project name
+        project (Project | str, optional): Project object or ID or name
+            specifying the project. May be used instead of `project_id` or
+            `project_name`.
+        project_id (str, optional): Project ID
+        project_name (str, optional): Project name
         to_dictionary (bool, optional): If True returns dict, by default (False)
             returns SuperCube objects
         limit (integer, optional): limit the number of elements returned. If
@@ -75,17 +80,19 @@ def list_super_cubes(
     Returns:
         list with SuperCubes or list of dictionaries
     """
-    project_id = helper.get_valid_project_id(
-        connection=connection,
-        project_id=project_id,
-        project_name=project_name,
-        with_fallback=not project_name,
+    proj_id = get_project_id_from_params_set(
+        connection,
+        project,
+        project_id,
+        project_name,
     )
+
+    validate_owner_key_in_filters(filters)
 
     objects_ = full_search(
         connection,
         object_types=ObjectSubTypes.SUPER_CUBE,
-        project=project_id,
+        project=proj_id,
         name=name,
         pattern=search_pattern,
         limit=limit,

@@ -1,14 +1,18 @@
 import logging
 from enum import auto
-from typing import Optional, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 from mstrio.api import schema
 from mstrio.connection import Connection
 from mstrio.utils.entity import auto_match_args_entity
 from mstrio.utils.enum_helper import AutoName, get_enum, get_enum_val
-from mstrio.utils.helper import Dictable, exception_handler, get_valid_project_id
+from mstrio.utils.helper import Dictable, exception_handler
+from mstrio.utils.resolvers import get_project_id_from_params_set
 from mstrio.utils.time_helper import DatetimeFormats, map_str_to_datetime
 from mstrio.utils.version_helper import class_version_handler
+
+if TYPE_CHECKING:
+    from mstrio.server.project import Project
 
 logger = logging.getLogger(__name__)
 
@@ -194,7 +198,6 @@ class SchemaManagement:
         connection: instance of `Connection` object
         lock_type: type of lock which is placed on the schema
         project_id: ID of project on which schema is managed
-        project_name: Project name
         tasks: array with objects of type `SchemaTask`. It represents
             tasks which were created for the current object of
             `SchemaManagement`. They are created when schema is reloaded
@@ -204,35 +207,30 @@ class SchemaManagement:
     def __init__(
         self,
         connection: "Connection",
+        project: "Project | str | None" = None,
         project_id: str | None = None,
         project_name: str | None = None,
     ):
         """Initialize schema management object for the given project.
 
-        Specify either `project_id` or `project_name`.
-        When `project_id` is provided (not `None`), `project_name` is omitted.
-
-        Note:
-            When `project_id` is `None` and `project_name` is `None`, then
-            its value is overwritten by `project_id` from `connection` object.
-
         Args:
-            connection: Strategy One connection object returned by
+            connection (Connection): Strategy One connection object returned by
                 `connection.Connection()`.
-            project_id (optional, str): ID of project on which schema will be
-                managed.
-            project_name (optional, str): Project name
+            project (Project | str, optional): Project object or ID or name
+                specifying the project. May be used instead of `project_id` or
+                `project_name`.
+            project_id (str, optional): Project ID
+            project_name (str, optional): Project name
 
         Raises:
-            `AttributeError` when `project_id` is not provided and project is
-            not selected in the `connection` object.
+            `ValueError` when project cannot be established.
         """
         self.connection = connection
-        self._project_id = get_valid_project_id(
-            connection=connection,
-            project_id=project_id,
-            project_name=project_name,
-            with_fallback=not project_name,
+        self._project_id = get_project_id_from_params_set(
+            connection,
+            project,
+            project_id,
+            project_name,
         )
         self._tasks = None
         self._lock_type = None

@@ -13,6 +13,7 @@ from mstrio.distribution_services.device.device_properties import (
     IOSDeviceProperties,
     PrinterDeviceProperties,
     SharePointDeviceProperties,
+    S3DeviceProperties,
 )
 from mstrio.distribution_services.transmitter import Transmitter
 from mstrio.types import ObjectTypes
@@ -46,6 +47,7 @@ class DeviceType(AutoName):
     ANDROID = auto()
     ONEDRIVE = auto()
     SHAREPOINT = auto()
+    S3 = auto()
     ALL = auto()
     UNSUPPORTED = auto()
 
@@ -80,7 +82,7 @@ class Device(Entity, DeleteMixin):
     """Devices are Distribution Services components that specify the format
      and transmission process of subscribed reports and documents.
      They are instances of transmitters that contain specific settings
-     specific to a user’s environments.
+     specific to a user's environments.
 
     Attributes:
         name: name of the device
@@ -113,6 +115,7 @@ class Device(Entity, DeleteMixin):
         'printer': PrinterDeviceProperties,
         'onedrive': SharePointDeviceProperties,
         'sharepoint': SharePointDeviceProperties,
+        's3': S3DeviceProperties,
     }
 
     @staticmethod

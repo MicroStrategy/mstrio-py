@@ -1,10 +1,15 @@
 import logging
+from typing import TYPE_CHECKING
 
 from mstrio import config
 from mstrio.api import subscriptions as subscriptions_
 from mstrio.connection import Connection
 from mstrio.utils import helper
 from mstrio.utils.enum_helper import get_enum_val
+from mstrio.utils.resolvers import (
+    get_project_id_from_params_set,
+    validate_owner_key_in_filters,
+)
 from mstrio.utils.version_helper import (
     class_version_handler,
     is_server_min_version,
@@ -23,12 +28,16 @@ from . import (
 from .content import Content
 from .delivery import Delivery
 
+if TYPE_CHECKING:
+    from mstrio.server.project import Project
+
 logger = logging.getLogger(__name__)
 
 
 @method_version_handler('11.2.0203')
 def list_subscriptions(
     connection: Connection,
+    project: 'Project | str | None' = None,
     project_id: str | None = None,
     project_name: str | None = None,
     to_dictionary: bool = False,
@@ -40,40 +49,42 @@ def list_subscriptions(
     dictionaries.
 
     Optionally filter the subscriptions by specifying filters.
-    Specify either `project_id` or `project_name`.
-    When `project_id` is provided (not `None`), `project_name` is omitted.
-
-    Note:
-    When `project_id` is `None` and `project_name` is `None`,
-    then its value is overwritten by `project_id` from `connection` object.
 
     Args:
-        connection(object): Strategy One connection object
-        project_id: Project ID
-        project_name: Project name
-        to_dictionary: If True returns a list of subscription dicts,
+        connection (Connection): Strategy One connection object
+        project (Project | str, optional): Project object or ID or name
+            specifying the project. May be used instead of `project_id` or
+            `project_name`.
+        project_id (str, optional): Project ID
+        project_name (str, optional): Project name
+        to_dictionary (bool): If True returns a list of subscription dicts,
             otherwise (default) returns a list of subscription objects
-        limit: limit the number of elements returned. If `None` (default), all
-            objects are returned.
-        last_run: If True, adds the last time that the subscription ran.
+        limit (int | None): limit the number of elements returned. If `None`
+            (default), all objects are returned.
+        last_run (bool): If True, adds the last time that the subscription ran.
         **filters: Available filter parameters: ['id', 'multiple_contents',
             'name', 'editable', 'allow_delivery_changes'
             'allow_personalization_changes', 'allow_unsubscribe',
             'date_created', 'date_modified', 'owner', 'delivery']
     """
-    project_id = helper.get_valid_project_id(
-        connection=connection,
-        project_id=project_id,
-        project_name=project_name,
-        with_fallback=not project_name,
+
+    proj_id = get_project_id_from_params_set(
+        connection,
+        project,
+        project_id,
+        project_name,
     )
     chunk_size = 1000 if is_server_min_version(connection, '11.3.0300') else 1000000
+
+    validate_owner_key_in_filters(filters)
+
     if (
         not is_server_min_version(connection, '11.4.0600')
         and last_run
         and config.verbose
     ):
         logger.info('`last_run` argument is available from iServer Version 11.4.0600')
+
     msg = 'Error getting subscription list.'
     objects = helper.fetch_objects_async(
         connection=connection,
@@ -84,7 +95,7 @@ def list_subscriptions(
         filters=filters,
         error_msg=msg,
         dict_unpack_value="subscriptions",
-        project_id=project_id,
+        project_id=proj_id,
         last_run=last_run,
     )
 
@@ -94,7 +105,7 @@ def list_subscriptions(
         dispatch_from_dict(
             source=obj,
             connection=connection,
-            project_id=project_id,
+            project_id=proj_id,
         )
         for obj in objects
     ]
@@ -119,7 +130,9 @@ def get_subscription_type_from_delivery_mode(mode: DeliveryMode):
     return subscription_type_from_delivery_mode_dict.get(mode, Subscription)
 
 
-def dispatch_from_dict(source: dict, connection: Connection, project_id: str):
+def dispatch_from_dict(
+    source: dict, connection: Connection, project_id: str
+) -> 'Subscription':
     """Returns the subscription type object from the provided source
 
     Args:
@@ -127,7 +140,11 @@ def dispatch_from_dict(source: dict, connection: Connection, project_id: str):
             subscription
         connection: Strategy One connection object returned
             by `connection.Connection()`
-        project_id: Project ID"""
+        project_id: Project ID
+
+    Returns:
+        Subscription: The subscription type object
+    """
     delivery_mode = DeliveryMode(source["delivery"]["mode"])
     sub_type = get_subscription_type_from_delivery_mode(delivery_mode)
     return sub_type.from_dict(source, connection, project_id)
@@ -140,24 +157,27 @@ class SubscriptionManager:
     def __init__(
         self,
         connection: Connection,
+        project: 'Project | str | None' = None,
         project_id: str | None = None,
         project_name: str | None = None,
     ):
         """Initialize the SubscriptionManager object.
-        Specify either `project_id` or `project_name`.
-        When `project_id` is provided (not `None`), `project_name` is omitted.
 
         Args:
-            connection: Strategy One connection object returned
+            connection (Connection): Strategy One connection object returned
                 by `connection.Connection()`
-            project_id: Project ID
-            project_name: Project name
+            project (Project | str, optional): Project object or ID or name
+                specifying the project. May be used instead of `project_id` or
+                `project_name`.
+            project_id (str, optional): Project ID
+            project_name (str, optional): Project name
         """
         self.connection = connection
-        self.project_id = helper.get_valid_project_id(
-            connection=connection,
-            project_id=project_id,
-            project_name=project_name,
+        self.project_id = get_project_id_from_params_set(
+            connection,
+            project,
+            project_id,
+            project_name,
         )
 
     def list_subscriptions(
@@ -228,6 +248,7 @@ class SubscriptionManager:
         self,
         subscription: Subscription | str,
         name: str | None = None,
+        project: 'Project | str | None' = None,
         project_id: str | None = None,
         project_name: str | None = None,
         send_now: bool = False,
@@ -235,16 +256,17 @@ class SubscriptionManager:
         """Create a copy of the subscription on the I-Server.
 
         Args:
-            subscription: Subscription object or ID of the subscription to be
-                copied
-            name: New name of the object. If None, a default name is generated,
-                such as 'Old Name (1)'
-            project_id: Project ID
-            project_name: Project name. If neither `project_id` nor
-                `project_name` is provided, the project ID from the source
-                subscription is used.
+            subscription (Subscription | str): Subscription object or ID of the
+                subscription to be copied
+            name (str, optional): New name of the object. If None, a default
+                name is generated, such as 'Old Name (1)'
+            project (Project | str, optional): Project object or ID or name
+                specifying the project. May be used instead of `project_id` or
+                `project_name`.
+            project_id (str, optional): Project ID
+            project_name (str, optional): Project name
             send_now (bool): indicates whether to execute the subscription
-                immediately,
+                immediately.
 
         Returns:
             New object, the copied subscription. The subscription's name might
@@ -263,19 +285,25 @@ class SubscriptionManager:
             for s in list_subscriptions(
                 subscription.connection,
                 to_dictionary=True,
+                project=project,
                 project_id=project_id,
                 project_name=project_name,
             )
         ]
         new_name = helper.deduplicated_name(name, existing_names)
 
-        if not project_id and not project_name:
-            project_id = subscription.project_id
+        proj_id = get_project_id_from_params_set(
+            self.connection,
+            project,
+            project_id or self.project_id,
+            project_name,
+        )
+
         return Subscription._Subscription__create(
             connection=subscription.connection,
             name=new_name,
             contents=subscription.contents,
-            project_id=project_id,
+            project_id=proj_id,
             project_name=project_name,
             multiple_contents=subscription.multiple_contents,
             allow_delivery_changes=subscription.allow_delivery_changes,

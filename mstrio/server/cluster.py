@@ -14,9 +14,9 @@ from mstrio.utils.enum_helper import AutoName, AutoUpperName
 from mstrio.utils.helper import (
     exception_handler,
     filter_list_of_dicts,
-    get_valid_project_id,
     validate_param_value,
 )
+from mstrio.utils.resolvers import get_project_id_from_params_set
 from mstrio.utils.version_helper import is_server_min_version, method_version_handler
 
 from .node import Node, Service, ServiceWithNode
@@ -64,7 +64,8 @@ class Cluster:
     @method_version_handler('11.2.0000')
     def list_nodes(
         self,
-        project: 'str | Project | None' = None,
+        project: 'Project | str | None' = None,
+        project_id: str | None = None,
         project_name: str | None = None,
         node: str | Node | None = None,
         to_dictionary: bool = False,
@@ -72,7 +73,10 @@ class Cluster:
         """Return a list of nodes and their properties within the cluster.
 
         Args:
-            project (str, Project, optional): Project ID or object
+            project (Project | str, optional): Project object or ID or name
+                specifying the project. May be used instead of `project_id` or
+                `project_name`.
+            project_id (str, optional): Project ID
             project_name (str, optional): Project name
             node (str, optional): Node name or object
             to_dictionary (bool, optional): If True returns dict, by default
@@ -81,19 +85,16 @@ class Cluster:
         Returns:
             A list of dictionaries representing nodes or a list of Node Objects.
         """
-        from mstrio.server.project import Project
-
-        project_id = project.id if isinstance(project, Project) else project
-
-        if not project_id and project_name:
-            project_id = get_valid_project_id(
-                connection=self.connection,
-                project_name=project_name,
-                with_fallback=True,
-            )
+        proj_id = get_project_id_from_params_set(
+            self.connection,
+            project,
+            project_id,
+            project_name,
+            assert_id_exists=False,
+        )
 
         node_name = node.name if isinstance(node, Node) else node
-        response = monitors.get_node_info(self.connection, project_id, node_name)
+        response = monitors.get_node_info(self.connection, proj_id, node_name)
         node_dicts = response.json()['nodes']
         if to_dictionary:
             return node_dicts

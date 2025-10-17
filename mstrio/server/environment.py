@@ -1,4 +1,6 @@
 import logging
+from enum import Enum
+from typing import TYPE_CHECKING
 
 from pandas import DataFrame
 
@@ -12,9 +14,122 @@ from mstrio.server.project import Project, compare_project_settings
 from mstrio.server.server import ServerSettings
 from mstrio.server.storage import StorageService, StorageType
 from mstrio.utils import helper
+from mstrio.utils.resolvers import get_project_id_from_params_set
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
+if TYPE_CHECKING:
+    from mstrio.connection import Connection
+
 logger = logging.getLogger(__name__)
+
+
+class _LDAPBatchImport:
+    """Class for handling LDAP batch import operations.
+
+    This class is used to perform batch import operations on LDAP
+    directories. It is not intended to be used directly by users.
+    """
+
+    class ImportStatus(Enum):
+        NO_IMPORT = "No import"
+        IN_PROGRESS = "In progress"
+        FINISHED = "Finished"
+        CANCELED = "Canceled"
+        ERROR = "Error"
+        UNKNOWN = "Unknown"  # local, not REST
+
+    def __init__(self, parent: 'Environment'):
+        """Initialize _LDAPBatchImport object.
+
+        Args:
+            parent: Environment object to which this import belongs.
+        """
+        self._parent = parent
+        self._cached_status = self.ImportStatus.UNKNOWN
+        self._status_data: dict | None = None
+
+    def start(self) -> bool:
+        """Start the LDAP batch import operation.
+
+        Returns:
+            bool: True if the import operation was started successfully,
+                False otherwise.
+        """
+        res = admin_api.do_ldap_batch_import(self._connection)
+        if not res.ok:
+            self._cached_status = self.ImportStatus.ERROR
+        else:
+            self._cached_status = self.ImportStatus.IN_PROGRESS
+
+        return res.ok
+
+    def check_status(self) -> 'ImportStatus':
+        """Check the status of the LDAP batch import operation.
+
+        Returns:
+            ImportStatus: The current status of the import operation.
+        """
+        res = admin_api.get_ldap_batch_import_status(self._connection)
+        if not res.ok:
+            self._cached_status = self.ImportStatus.UNKNOWN
+        else:
+            self._status_data = res.json()
+            try:
+                self._cached_status = self.ImportStatus(
+                    stat := self._status_data.get('statusDescription')
+                )
+            except (ValueError, KeyError):
+                logger.warning(
+                    "Unexpected status of LDAP batch import received from server: "
+                    f"{stat}."
+                )
+                self._cached_status = self.ImportStatus.UNKNOWN
+
+        return self._cached_status
+
+    def stop(self) -> bool:
+        """Stop the LDAP batch import operation.
+
+        Returns:
+            bool: True if the import operation was stopped successfully,
+        """
+        res = admin_api.stop_ldap_batch_import(self._connection)
+        if not res.ok:
+            self._cached_status = self.ImportStatus.UNKNOWN
+        elif self._cached_status != self.ImportStatus.FINISHED:
+            self._cached_status = self.ImportStatus.CANCELED
+        # if finished already, do not override
+
+        return res.ok
+
+    def get_status_data(self) -> dict:
+        """Get the status data of the LDAP batch import operation.
+
+        Returns:
+            dict: The status data of the import operation.
+        """
+        self.check_status()
+        return self._status_data
+
+    @property
+    def _connection(self) -> 'Connection':
+        """Return the connection object taken from environment."""
+        return self._parent.connection
+
+    @property
+    def status(self) -> 'ImportStatus':
+        """Get the current status of the LDAP batch import operation.
+
+        This value is cached. If you want to check the current server status,
+        use `check_status()` method.
+
+        Returns:
+            ImportStatus: The current status of the import operation.
+        """
+        if not self._cached_status or self._cached_status == self.ImportStatus.UNKNOWN:
+            self.check_status()
+
+        return self._cached_status
 
 
 @class_version_handler('11.3.0000')
@@ -30,7 +145,7 @@ class Environment:
         node_names: List of I-Server node names.
     """
 
-    def __init__(self, connection):
+    def __init__(self, connection: 'Connection'):
         """Initialize Environment object.
 
         Args:
@@ -40,6 +155,7 @@ class Environment:
         self.connection = connection
         self._nodes = None
         self._storage_service: StorageService | None = None
+        self._ldap_batch_import_controller = _LDAPBatchImport(self)
 
     @property
     def server_settings(self) -> ServerSettings:
@@ -250,18 +366,30 @@ class Environment:
     def list_nodes(
         self,
         project: 'Project | str | None' = None,
+        project_id: str | None = None,
+        project_name: str | None = None,
         node_name: str | None = None,
     ) -> list[dict]:
         """Return a list of I-Server nodes and their properties. Optionally
         filter by `project` or `node_name`.
 
         Args:
-            project: ID of project or Project object
-            node_name: Name of node
+            project (Project | str, optional): Project object or ID or name
+                specifying the project. May be used instead of `project_id` or
+                `project_name`.
+            project_id (str, optional): Project ID
+            project_name (str, optional): Project name
+            node_name (str, optional): Name of node
         """
-        project_id = project.id if isinstance(project, Project) else project
+        proj_id = get_project_id_from_params_set(
+            self.connection,
+            project,
+            project_id,
+            project_name,
+            assert_id_exists=False,
+        )
         response = monitors_api.get_node_info(
-            self.connection, project_id, node_name
+            self.connection, proj_id, node_name
         ).json()
         return response['nodes']
 
@@ -285,34 +413,35 @@ class Environment:
         return _list_fences(self.connection, to_dictionary, limit, **filters)
 
     def is_loaded(
-        self, project_id: str | None = None, project_name: str | None = None
+        self,
+        project: 'Project | str | None' = None,
+        project_id: str | None = None,
+        project_name: str | None = None,
     ) -> bool:
         """Check if project is loaded, by passing project ID or name,
         returns True or False.
 
         Args:
-            project_id: Project ID
-            project_name: Project name
-        """
-        if project_id is None and project_name is None:
-            helper.exception_handler(
-                "Please specify either 'project_name' or 'project_id' argument."
-            )
-        if project_id is None:
-            project_list = Project._list_project_ids(self.connection, name=project_name)
-            if project_list:
-                project_id = project_list[0]
-            else:
-                msg = f"There is no project with the given name: '{project_name}'"
-                raise ValueError(msg)
+            project (Project | str, optional): Project object or ID or name
+                specifying the project. May be used instead of `project_id` or
+                `project_name`.
+            project_id (str, optional): Project ID
+            project_name (str, optional): Project name
 
-        nodes = self.list_nodes(project=project_id)
+        Returns:
+            bool: True if project is loaded, False otherwise.
+        """
+        nodes = self.list_nodes(
+            project=project, project_id=project_id, project_name=project_name
+        )
         loaded = False
+
         for node in nodes:
             status = node['projects'][0]['status']
             loaded = status == 'loaded'
             if loaded:
                 break
+
         return loaded
 
     def compare_settings(
@@ -399,3 +528,7 @@ class Environment:
     @property
     def node_names(self):
         return [node['name'] for node in self.nodes]
+
+    @property
+    def ldap_batch_import(self):
+        return self._ldap_batch_import_controller

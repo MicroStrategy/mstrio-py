@@ -10,11 +10,13 @@ from mstrio.object_management.search_operations import full_search
 from mstrio.types import ObjectTypes
 from mstrio.users_and_groups import User
 from mstrio.utils.entity import Entity
-from mstrio.utils.helper import fetch_objects, get_valid_project_id
+from mstrio.utils.helper import fetch_objects
+from mstrio.utils.resolvers import get_project_id_from_params_set
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
 if TYPE_CHECKING:
     from mstrio.modeling.schema.table.logical_table import LogicalTable
+    from mstrio.server.project import Project
 
 NO_PROJECT_ERR_MSG = "You must specify or select a project."
 
@@ -24,6 +26,7 @@ logger = logging.getLogger(__name__)
 @method_version_handler('11.3.0100')
 def list_physical_tables(
     connection: Connection,
+    project: 'Project | str | None' = None,
     project_id: str | None = None,
     project_name: str | None = None,
     filters: dict | None = None,
@@ -33,18 +36,13 @@ def list_physical_tables(
 ) -> list["PhysicalTable"] | list[dict]:
     """List all physical tables in a project.
 
-    Specify either `project_id` or `project_name`.
-    When `project_id` is provided (not `None`), `project_name` is omitted.
-
-    Note:
-        When `project_id` is `None` and `project_name` is `None`,
-        then its value is overwritten by `project_id` from `connection` object.
-
     Args:
         connection (Connection): Object representation of MSTR Connection.
-        project_id (Optional[str], optional): ID of a project. Defaults to None.
-        project_name (Optional[str], optional): Name of a project. Defaults to
-            None.
+        project (Project | str, optional): Project object or ID or name
+            specifying the project. May be used instead of `project_id` or
+            `project_name`.
+        project_id (str, optional): Project ID
+        project_name (str, optional): Project name
         limit(int, optional) limit the number of elements returned.
             If `None` (default), all objects are returned.
         to_dictionary(bool, optional): If True returns a list of dictionaries.
@@ -59,16 +57,17 @@ def list_physical_tables(
         Union[list["PhysicalTable"], list[dict]]: A list of PhysicalTable
             objects or dictionaries representing physical tables.
     """
-    project_id = get_valid_project_id(
-        connection=connection,
-        project_id=project_id,
-        project_name=project_name,
-        with_fallback=not project_name,
+    proj_id = get_project_id_from_params_set(
+        connection,
+        project,
+        project_id,
+        project_name,
     )
+
     if include_unassigned_tables:
         tables = full_search(
             connection=connection,
-            project=project_id,
+            project=proj_id,
             object_types=ObjectTypes.DBTABLE,
             limit=limit,
             **(filters or {}),
@@ -78,7 +77,7 @@ def list_physical_tables(
             connection=connection,
             api=tables_api.get_tables,
             limit=limit,
-            project_id=project_id,
+            project_id=proj_id,
             filters=filters or {},
             dict_unpack_value="tables",
             fields="physicalTable",
@@ -96,29 +95,32 @@ def list_physical_tables(
 @method_version_handler('11.3.0100')
 def list_tables_prefixes(
     connection: Connection,
+    project: 'Project | str | None' = None,
     project_id: str | None = None,
     project_name: str | None = None,
 ):
     """Returns the prefixes for the physical tables
 
     Args:
-        connection: Object representation of MSTR Connection
-        project_id (Optional[str], optional): ID of a project. Defaults to None
-        project_name (Optional[str], optional): Name of a project. Defaults to
-            None.
+        connection (Connection): Object representation of MSTR Connection
+        project (Project | str, optional): Project object or ID or name
+            specifying the project. May be used instead of `project_id` or
+            `project_name`.
+        project_id (str, optional): Project ID
+        project_name (str, optional): Project name
 
     Returns:
         A dictionary of prefixes for all the physical tables
     """
-    project_id = get_valid_project_id(
-        connection=connection,
-        project_id=project_id,
-        project_name=project_name,
-        with_fallback=not project_name,
+    proj_id = get_project_id_from_params_set(
+        connection,
+        project,
+        project_id,
+        project_name,
     )
 
     physical_tables = list_physical_tables(
-        connection, project_id=project_id, to_dictionary=True
+        connection, project_id=proj_id, to_dictionary=True
     )
     return {table.get("table_prefix") for table in physical_tables}
 
@@ -198,6 +200,7 @@ class PhysicalTable(Entity):
         connection: Connection,
         id: str,
         name: str | None = None,
+        project: 'Project | str | None' = None,
         project_id: str | None = None,
         project_name: str | None = None,
     ):
@@ -211,30 +214,25 @@ class PhysicalTable(Entity):
             Info: It's necessary to provide an ID of the table. If you only
                 provide the name of a table, it will not be initialized
 
-        Specify either `project_id` or `project_name`.
-        When `project_id` is provided (not `None`), `project_name` is omitted.
-
-        Note:
-            When `project_id` is `None` and `project_name` is `None`, then
-             its value is overwritten by `project_id` from `connection` object.
-
         Args:
             connection (Connection): Object representation of MSTR Connection.
             id (str): ID of a physical table object.
             name (str, optional) read-only, Used to improve readability of
                 the PhysicalTable class string representation
-            project_id (str, optional): ID of a project. Defaults to None.
-            project_name (str, optional): Name of a project. Defaults to
-                None.
+            project (Project | str, optional): Project object or ID or name
+                specifying the project. May be used instead of `project_id` or
+                `project_name`.
+            project_id (str, optional): Project ID
+            project_name (str, optional): Project name
 
         Examples:
             >>> PhysicalTable(connection, id='5DE0F8934CBD82437D6FA1AFF75F6C58')
         """
-        project_id = get_valid_project_id(
-            connection=connection,
-            project_id=project_id,
-            project_name=project_name,
-            with_fallback=not project_name,
+        proj_id = get_project_id_from_params_set(
+            connection,
+            project,
+            project_id,
+            project_name,
         )
 
         super().__init__(connection=connection, object_id=id)
@@ -242,7 +240,7 @@ class PhysicalTable(Entity):
             # If the physical table is included in a project, more info can be
             # fetched.
             physical_tables: list[dict] = list_physical_tables(
-                connection, project_id, to_dictionary=True, filters={'id': id}
+                connection, proj_id, to_dictionary=True, filters={'id': id}
             )
             table = physical_tables[0]
             table.update({"table_type": table.pop("type", None)})

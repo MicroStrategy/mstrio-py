@@ -11,14 +11,15 @@ from mstrio.utils.helper import (
     Dictable,
     camel_to_snake,
     delete_none_values,
-    get_valid_project_id,
     snake_to_camel,
 )
+from mstrio.utils.resolvers import get_project_id_from_params_set
 
 from .enums import DependenceType, DimtyType, ExpressionType, NodeType
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
+    from mstrio.server.project import Project
 
 
 @dataclass(kw_only=True)
@@ -207,6 +208,7 @@ def list_functions(
     name: str | None = None,
     to_dictionary: bool = False,
     search_pattern: SearchPattern | int = SearchPattern.CONTAINS,
+    project: 'Project | str | None' = None,
     project_id: str | None = None,
     project_name: str | None = None,
     limit: int | None = None,
@@ -227,13 +229,6 @@ def list_functions(
         * - 0 or more of any characters
         e.g. name_begins = ?onny will return Sonny and Tonny
 
-    Specify either `project_id` or `project_name`.
-    When `project_id` is provided (not `None`), `project_name` is omitted.
-
-    Note:
-        When `project_id` is `None` and `project_name` is `None`,
-        then its value is overwritten by `project_id` from `connection` object.
-
     Args:
         connection: Strategy One connection object returned by
             `connection.Connection()`
@@ -245,10 +240,13 @@ def list_functions(
             search for, such as Begin With or Exactly. Possible values are
             available in ENUM mstrio.object_management.SearchPattern.
             Default value is CONTAINS (4).
-        project_id (string, optional): Project ID
-        project_name(string, optional): Project name
+        project (Project | str, optional): Project object or ID or name
+            specifying the project. May be used instead of `project_id` or
+            `project_name`.
+        project_id (str, optional): Project ID
+        project_name (str, optional): Project name
         limit (integer, optional): limit the number of elements returned. If
-            None all object are returned.
+            `None`, all object are returned.
         **filters: Available filter parameters:
             id str: Attribute's id
             name str: Attribute's name
@@ -262,17 +260,17 @@ def list_functions(
     Returns:
         list with SchemaObjectReference objects or list of dictionaries
     """
-    project_id = get_valid_project_id(
-        connection=connection,
-        project_id=project_id,
-        project_name=project_name,
-        with_fallback=not project_name,
+    proj_id = get_project_id_from_params_set(
+        connection,
+        project,
+        project_id,
+        project_name,
     )
 
     objects = search_operations.full_search(
         connection,
         object_types=ObjectTypes.FUNCTION,
-        project=project_id,
+        project=proj_id,
         name=name,
         pattern=search_pattern,
         limit=limit,

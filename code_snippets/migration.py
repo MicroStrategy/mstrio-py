@@ -14,7 +14,7 @@ from mstrio.object_management.migration import (
     list_migrations,
     list_migration_possible_content,
 )
-from mstrio.object_management import full_search
+from mstrio.object_management import SearchObject, full_search
 from mstrio.object_management.migration import (
     PackageType,
     MigrationPurpose,
@@ -161,6 +161,16 @@ package_config_search_results = Migration.build_package_config(
     object_action_map,
     object_dependents_map)
 print(package_config_search_results.to_dict())
+
+# Another way to build PackageConfig is to use SearchObject
+SEARCH_OBJ_ID = $search_obj_id
+search_obj = SearchObject(connection=conn_source, id=SEARCH_OBJ_ID)
+
+package_config_search_obj = Migration.build_package_config(
+    conn_source,
+    content=search_obj,
+    package_settings=package_settings)
+print(package_config_search_obj.to_dict())
 
 # Create the migration
 my_obj_mig = Migration.create_object_migration(

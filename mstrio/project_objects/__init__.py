@@ -1,7 +1,8 @@
 # flake8: noqa
 # this order of imports is important to avoid circular imports
 from .applications import Application, list_applications
-from .bots import Bot, list_bots
+from mstrio.project_objects.bots import Bot, list_bots
+from .agents import Agent, list_agents
 from .content_cache import ContentCache
 from .content_group import ContentGroup, list_content_groups
 from .datasets import *

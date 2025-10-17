@@ -1,10 +1,12 @@
 import logging
+from typing import TYPE_CHECKING
 
 from pandas import DataFrame, concat
 
 from mstrio import config
 from mstrio.api import documents, library
 from mstrio.connection import Connection
+from mstrio.helpers import IServerError
 from mstrio.object_management import Folder, SearchPattern, search_operations
 from mstrio.project_objects import OlapCube, SuperCube
 from mstrio.project_objects.palette import Palette
@@ -26,12 +28,18 @@ from mstrio.utils.entity import (
 from mstrio.utils.helper import (
     filter_params_for_func,
     find_object_with_name,
-    get_valid_project_id,
     is_document,
 )
 from mstrio.utils.library import LibraryMixin
+from mstrio.utils.resolvers import (
+    get_project_id_from_params_set,
+    validate_owner_key_in_filters,
+)
 from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.version_helper import method_version_handler
+
+if TYPE_CHECKING:
+    from mstrio.server.project import Project
 
 
 logger = logging.getLogger(__name__)
@@ -43,6 +51,7 @@ def list_documents(
     to_dataframe: bool = False,
     limit: int | None = None,
     name: str | None = None,
+    project: 'Project | str | None' = None,
     project_id: str | None = None,
     project_name: str | None = None,
     **filters,
@@ -63,11 +72,14 @@ def list_documents(
         limit (int, optional): limit the number of elements returned.
             If `None` (default), all objects are returned.
         name (str, optional): characters that the document name must contain
+        project (Project | str, optional): Project object or ID or name
+            specifying the project. May be used instead of `project_id` or
+            `project_name`.
         project_id (str, optional): Project ID
         project_name (str, optional): Project name
         **filters: Available filter parameters: ['name', 'id', 'type',
             'subtype', 'date_created', 'date_modified', 'version', 'acg',
-            'owner', 'ext_type', 'view_media', 'certified_info', 'project_id']
+            'owner', 'ext_type', 'view_media', 'certified_info']
 
     Returns:
             List of documents or list of dictionaries or DataFrame object
@@ -79,6 +91,7 @@ def list_documents(
         name=name,
         limit=limit,
         to_dataframe=to_dataframe,
+        project=project,
         project_id=project_id,
         project_name=project_name,
         **filters,
@@ -130,19 +143,23 @@ def list_documents_across_projects(
                     f'to it'
                 )
             continue
-
-        docs = Document._list_all(
-            connection,
-            to_dictionary=to_dictionary,
-            name=name,
-            limit=limit,
-            to_dataframe=to_dataframe,
-            **filters,
-        )
-        if to_dataframe:
-            output = concat([output, docs], ignore_index=True)
-        else:
-            output.extend(docs)
+        try:
+            docs = Document._list_all(
+                connection,
+                to_dictionary=to_dictionary,
+                name=name,
+                limit=limit,
+                to_dataframe=to_dataframe,
+                **filters,
+            )
+            if to_dataframe:
+                output = concat([output, docs], ignore_index=True)
+            else:
+                output.extend(docs)
+        except IServerError as e:
+            if config.verbose:
+                logger.info(f'Project {project.name} ({project.id}) is skipped - {e}')
+            continue
 
     connection.select_project(project_id=project_id_before)
     return output[:limit]
@@ -290,6 +307,7 @@ class Document(
         to_dictionary: bool = False,
         to_dataframe: bool = False,
         limit: int | None = None,
+        project: 'Project | str | None' = None,
         project_id: str | None = None,
         project_name: str | None = None,
         **filters,
@@ -300,17 +318,20 @@ class Document(
                 "not both.",
                 ValueError,
             )
-        project_id = get_valid_project_id(
-            connection=connection,
-            project_id=project_id,
-            project_name=project_name,
-            with_fallback=not project_name,
+
+        proj_id = get_project_id_from_params_set(
+            connection,
+            project,
+            project_id,
+            project_name,
         )
+
+        validate_owner_key_in_filters(filters)
 
         objects = search_operations.full_search(
             connection,
             object_types=ObjectSubTypes.REPORT_WRITING_DOCUMENT,
-            project=project_id,
+            project=proj_id,
             name=name,
             pattern=search_pattern,
             **filters,

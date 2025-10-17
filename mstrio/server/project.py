@@ -20,6 +20,7 @@ from mstrio.server.project_languages import (
 from mstrio.utils import helper, time_helper
 from mstrio.utils.entity import DeleteMixin, Entity, EntityBase, ObjectTypes
 from mstrio.utils.enum_helper import AutoName, AutoUpperName, get_enum_val
+from mstrio.utils.resolvers import validate_owner_key_in_filters
 from mstrio.utils.response_processors import datasources as datasources_processors
 from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.response_processors import projects as projects_processors
@@ -34,6 +35,8 @@ from mstrio.utils.vldb_mixin import ModelVldbMixin
 from mstrio.utils.wip import wip
 
 if TYPE_CHECKING:
+    from requests import Response
+
     from mstrio.datasources import DatasourceInstance
     from mstrio.server.environment import Environment
     from mstrio.server.node import Node
@@ -372,9 +375,7 @@ class Project(Entity, ModelVldbMixin, DeleteMixin):
                 leave=False,
                 disable=config.verbose,
             ):
-                projects.create_project(
-                    connection, {"name": name, "description": description}
-                )
+                projects.create_project(connection, name, description)
                 http_status, i_server_status = 500, 'ERR001'
                 while http_status == 500 and i_server_status == 'ERR001':
                     time.sleep(1)
@@ -399,6 +400,8 @@ class Project(Entity, ModelVldbMixin, DeleteMixin):
         limit: int | None = None,
         **filters,
     ) -> list["Project"] | list[dict]:
+        validate_owner_key_in_filters(filters)
+
         msg = "Error getting information for a set of Projects."
         objects = helper.fetch_objects_async(
             connection,
@@ -449,6 +452,8 @@ class Project(Entity, ModelVldbMixin, DeleteMixin):
     def _list_loaded_projects(
         cls, connection: Connection, to_dictionary: bool = False, **filters
     ) -> list["Project"] | list[dict]:
+        validate_owner_key_in_filters(filters)
+
         response = projects.get_projects(connection, whitelist=[('ERR014', 403)])
         list_of_dicts = response.json() if response.ok else []
         list_of_dicts = helper.camel_to_snake(list_of_dicts)  # Convert keys
@@ -1066,6 +1071,168 @@ class Project(Entity, ModelVldbMixin, DeleteMixin):
             ).json()['status']
         )
 
+    @method_version_handler('11.4.1200')
+    def delete_unused_managed_objects(
+        self,
+        try_force_delete: bool = False,
+        return_failed_items: bool = False,
+    ) -> bool | list[dict]:
+        """Delete all unused managed objects in the project.
+
+        Managed Objects in scope of this method are objects of type:
+        - ObjectTypes.ATTRIBUTE,
+        - ObjectTypes.METRIC,
+        - ObjectTypes.CONSOLIDATION,
+        - ObjectTypes.CONSOLIDATION_ELEMENT,
+
+        Note:
+            This method is known to be resource and time intensive. Use only
+            if necessary.
+
+        Args:
+            try_force_delete (bool, optional): If `True`, will attempt to delete
+                items that could not be confirmed whether they are unused, for
+                any reason. Server should not allow deleting of those and throw
+                error which will be caught by this method. Defaults to `False`.
+            return_failed_items (bool, optional): If `True`, will return a list
+                of dicts of data of objects that could not be deleted. If
+                `False`, will return a boolean indicating whether all unused
+                objects were deleted successfully. Defaults to `False`.
+
+        Returns:
+            If `return_failed_items` is `False`, returns `True` if all unused
+            managed objects were deleted successfully, `False` otherwise.
+            If `return_failed_items` is `True`, returns a list of dicts of
+            objects that could not be deleted. If all objects were deleted
+            successfully, returns an empty list.
+        """
+        from mstrio.object_management.object import Object
+        from mstrio.object_management.search_enums import SearchDomain, SearchScope
+        from mstrio.object_management.search_operations import full_search
+
+        items = full_search(
+            self.connection,
+            scope=SearchScope.MANAGED_ONLY,
+            domain=SearchDomain.PROJECT,
+            object_types=[
+                ObjectTypes.ATTRIBUTE,
+                ObjectTypes.METRIC,
+                ObjectTypes.CONSOLIDATION,
+                ObjectTypes.CONSOLIDATION_ELEMENT,
+            ],
+            project=self,
+            include_hidden=True,
+            to_dictionary=True,
+        )
+
+        if config.verbose:
+            logger.info(f"Found {len(items)} managed objects to check if unused.")
+
+        problematic_items: list[dict] = []
+        final_items: list["Object"] = []
+        final_len = 0  # cumulative final items length
+
+        def bulk_delete(objs: list["Object"]) -> bool:
+            FAIL_MSG = "Deleting some of the unused managed objects failed."
+
+            try:
+                res: Response = objects.bulk_delete_objects(
+                    self.connection,
+                    [obj.id for obj in objs],
+                    [obj.type.value for obj in objs],
+                    project_id=self.id,
+                    error_msg=FAIL_MSG,
+                )
+
+                if config.verbose and res.ok:
+                    logger.info(
+                        "Successfully deleted a batch of unused managed "
+                        f"objects in project '{self.id}'."
+                    )
+
+                return res.ok
+            except Exception:
+                logger.warning(FAIL_MSG)
+                return False
+
+        def perform_bulk_delete(checked: int, unused: int) -> None:
+            nonlocal problematic_items, final_items
+
+            if config.verbose:
+                logger.info(
+                    f"Checked {checked} items so far. Found {unused} are "
+                    "confirmed unused."
+                    + (" Deleting this new batch now." if final_items else "")
+                )
+
+            if final_items:
+                if not bulk_delete(final_items):
+                    # bulk delete may have failed due to only some of items,
+                    # not all. Retry one by one to find problematic ones.
+                    for obj in final_items:
+                        try:
+                            obj.delete(force=True)
+                        except Exception:
+                            problematic_items.append(obj.to_dict())
+
+                final_items = []
+
+        for i, itm in enumerate(items):
+            if i % 100 == 0 and i > 0:
+                perform_bulk_delete(i, final_len)
+
+            try:
+                obj = Object.from_dict(
+                    itm,
+                    self.connection,
+                    with_missing_value=True,
+                )
+
+                if not obj.has_dependents():
+                    final_len += 1
+                    final_items.append(obj)
+            except Exception:
+                problematic_items.append(itm)
+
+        perform_bulk_delete(len(items), final_len)
+
+        if problematic_items and try_force_delete:
+            # At this point we were either not able to delete the item, not
+            # able to check if there are dependents, or something happened
+            # during the bulk delete. As a last resort, we will try the most
+            # raw delete method just to see.
+            #
+            # This will fail if there are dependents and this is what we want.
+            if config.verbose:
+                logger.info(
+                    "Some items could not be confirmed whether they are unused. "
+                    "Will try to delete them (this will fail if they are used)."
+                )
+
+            for prob_dict in problematic_items.copy():
+                try:
+                    with config.temp_verbose_disable():
+                        objects.delete_object(
+                            self.connection,
+                            prob_dict['id'],
+                            prob_dict['type'],
+                            project_id=self.id,
+                        )
+                    problematic_items.remove(prob_dict)
+                except Exception:
+                    continue
+
+        if problematic_items:
+            logger.warning(
+                "For the following items, could not check if they are unused "
+                "or could not delete them: "
+                f"{[p.get('id') for p in problematic_items]}. They were skipped."
+            )
+
+        if return_failed_items:
+            return problematic_items
+        return len(problematic_items) == 0
+
     @method_version_handler('11.5.0700')
     def duplicate(
         self,
@@ -1175,7 +1342,7 @@ class Project(Entity, ModelVldbMixin, DeleteMixin):
 
 
 class ProjectSettings(BaseSettings):
-    """Object representation of Strategy One Project (Project) Settings.
+    """Object representation of Strategy One Project Settings.
 
     Used to fetch, view, modify, update, export to file, import from file and
     validate Project settings.
@@ -1435,7 +1602,7 @@ class DuplicationConfig(helper.Dictable):
             include_contact_subscriptions=export_sets.get(
                 'subscription_preferences', {}
             ).get('include_contact_subscriptions', True),
-            import_description=import_sets.get('description', None),
+            import_description=import_sets.get('description'),
             import_default_locale=import_sets.get('default_locale', 0),
             import_locales=import_sets.get('locales', [0]),
         )

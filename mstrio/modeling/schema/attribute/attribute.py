@@ -32,13 +32,14 @@ from mstrio.utils.helper import (
     exception_handler,
     filter_params_for_func,
     find_object_with_name,
-    get_valid_project_id,
 )
+from mstrio.utils.resolvers import get_project_id_from_params_set
 from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
 if TYPE_CHECKING:
     from mstrio.modeling.schema.attribute import Attribute
+    from mstrio.server.project import Project
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +52,7 @@ def list_attributes(
     to_dictionary: bool = False,
     limit: int | None = None,
     search_pattern: SearchPattern | int = SearchPattern.CONTAINS,
+    project: 'Project | str | None' = None,
     project_id: str | None = None,
     project_name: str | None = None,
     show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
@@ -66,13 +68,6 @@ def list_attributes(
         * - 0 or more of any characters
         e.g. name_begins = ?onny will return Sonny and Tonny
 
-    Specify either `project_id` or `project_name`.
-    When `project_id` is provided (not `None`), `project_name` is omitted.
-
-    Note:
-        When `project_id` is `None` and `project_name` is `None`,
-        then its value is overwritten by `project_id` from `connection` object.
-
     Args:
         connection: Strategy One connection object returned by
             `connection.Connection()`
@@ -85,6 +80,9 @@ def list_attributes(
             returns Attribute objects
         limit (integer, optional): limit the number of elements returned. If
             None all object are returned.
+        project (Project | str, optional): Project object or ID or name
+            specifying the project. May be used instead of `project_id` or
+            `project_name`.
         project_id (str, optional): Project ID
         project_name (str, optional): Project name
         search_pattern (SearchPattern enum or int, optional): pattern to search
@@ -112,11 +110,11 @@ def list_attributes(
     Returns:
         list with Attribute objects or list of dictionaries
     """
-    project_id = get_valid_project_id(
-        connection=connection,
-        project_id=project_id,
-        project_name=project_name,
-        with_fallback=not project_name,
+    proj_id = get_project_id_from_params_set(
+        connection,
+        project,
+        project_id,
+        project_name,
     )
 
     if attribute_subtype is None:
@@ -124,7 +122,7 @@ def list_attributes(
     objects_ = search_operations.full_search(
         connection,
         object_types=attribute_subtype,
-        project=project_id,
+        project=proj_id,
         name=name,
         pattern=search_pattern,
         limit=limit,
