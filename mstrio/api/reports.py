@@ -520,3 +520,46 @@ def execute_report(
         headers=headers,
         params=params,
     )
+
+
+@ErrorHandler(
+    err_msg="Error getting available page-by elements for report {report_id}."
+)
+def get_available_page_by_elements(
+    connection: 'Connection',
+    project_id: str,
+    report_id: str,
+    instance_id: str,
+    offset: int | None = None,
+    limit: int | None = None,
+    fields: list[str] | None = None,
+) -> 'Response':
+    """Get available page-by elements for a specific report.
+
+    Args:
+        connection: Strategy One REST API connection object.
+        project_id (str): Unique ID of the project containing the report.
+        report_id (str): Unique ID of the report you wish to extract information
+            from.
+        instance_id (str): Unique ID of the report instance.
+        offset (int, optional): Starting point within the collection of returned
+            results. Default is 0.
+        limit (int, optional): Maximum number of results to return. Default is
+            1000. Use -1 to return all available results.
+        fields (list, optional): List of top-level fields to return. If None,
+            all fields are returned.
+
+    Returns:
+        Complete HTTP response object.
+
+    """
+
+    connection._validate_project_selected()
+    if not project_id:
+        project_id = connection.project_id
+
+    return connection.get(
+        endpoint=f'/api/v2/reports/{report_id}/instances/{instance_id}/pageBy/elements',
+        params={'offset': offset, 'limit': limit, 'fields': fields},
+        headers={'X-MSTR-ProjectID': project_id},
+    )

@@ -74,21 +74,26 @@ class ServerSettings(BaseSettings):
         """Update the current I-Server settings using this `ServerSettings`
         object."""
         set_dict = self._prepare_settings_push()
-        if hl_property := set_dict.get('hLRepositoryType', {}):
-            if (
-                is_server_min_version(self._connection, '11.4.0600')
-                and hl_property.get('value') != 3
-            ):
-                set_dict.pop('hLRepositoryType')
+
+        if (
+            (hl_property := set_dict.get('hLRepositoryType', {}))
+            and is_server_min_version(self._connection, '11.4.0600')
+            and hl_property.get('value') != 3
+        ):
+            set_dict.pop('hLRepositoryType')
+
         if not set_dict and config.verbose:
             logger.info('No settings to update.')
             return
 
         response = administration.update_iserver_settings(self._connection, set_dict)
+
         if response.status_code in [200, 204] and config.verbose:
             logger.info('I-Server settings updated.')
+
         if response.status_code == 207:
             helper.exception_handler("Some settings could not be updated.", Warning)
+
         super().update()
 
     def _fetch(self) -> dict:
@@ -102,8 +107,8 @@ class ServerSettings(BaseSettings):
             ServerSettings._CONFIG = response.json()
             super()._get_config()
 
-    def __override_settings_config(self, value: SettingValue) -> None:  # NOSONAR
-        # config not accurate, needs override DE179361
+    def _override_settings_config(self, value: SettingValue) -> None:
+        # FYI: config not accurate, needs override, resolved in newer versions
         if not meets_minimal_version(self._connection.iserver_version, "11.3.0000"):
             if value.name in ['maxJobsPerServer', 'maxInteractiveJobsPerServer']:
                 value.max_value = 100000

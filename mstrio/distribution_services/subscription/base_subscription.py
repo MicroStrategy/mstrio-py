@@ -29,7 +29,7 @@ from mstrio.helpers import NotSupportedError
 from mstrio.modeling import Prompt
 from mstrio.users_and_groups import User
 from mstrio.utils import helper, time_helper
-from mstrio.utils.entity import EntityBase
+from mstrio.utils.entity import ChangeJournalMixin, EntityBase
 from mstrio.utils.enum_helper import AutoUpperName
 from mstrio.utils.helper import (
     get_args_from_func,
@@ -56,7 +56,7 @@ class RecipientsTypes(AutoUpperName):
     UNSUPPORTED = auto()
 
 
-class Subscription(EntityBase):
+class Subscription(EntityBase, ChangeJournalMixin):
     """Class representation of Strategy One Subscription object.
 
     Attributes:

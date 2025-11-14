@@ -40,6 +40,7 @@ from mstrio.utils.sessions import FuturesSessionWithRenewal
 from mstrio.utils.time_helper import str_to_datetime
 
 if TYPE_CHECKING:
+    from mstrio.object_management.folder import Folder
     from mstrio.server.project import Project
 
     from .cube_cache import CubeCache
@@ -107,6 +108,10 @@ def list_all_cubes(
     project: 'Project | str | None' = None,
     project_id: str | None = None,
     project_name: str | None = None,
+    folder: 'Folder | tuple[str] | list[str] | str | None' = None,
+    folder_id: str | None = None,
+    folder_name: str | None = None,
+    folder_path: tuple[str] | list[str] | str | None = None,
     to_dictionary: bool = False,
     limit: int | None = None,
     **filters,
@@ -135,6 +140,17 @@ def list_all_cubes(
             `project_name`.
         project_id (str, optional): Project ID
         project_name (str, optional): Project name
+        folder (Folder | tuple | list | str, optional): Folder object or ID or
+            name or path specifying the folder. May be used instead of
+            `folder_id`, `folder_name` or `folder_path`.
+        folder_id (str, optional): ID of a folder.
+        folder_name (str, optional): Name of a folder.
+        folder_path (str, optional): Path of the folder.
+            The path has to be provided in the following format:
+                if it's inside of a project, start with a Project Name:
+                    /MicroStrategy Tutorial/Public Objects/Metrics
+                if it's a root folder, start with `CASTOR_SERVER_CONFIGURATION`:
+                    /CASTOR_SERVER_CONFIGURATION/Users
         to_dictionary (bool, optional): If True returns dict, by default (False)
             returns SuperCube/OlapCube objects
         limit (integer, optional): limit the number of elements returned. If
@@ -161,6 +177,10 @@ def list_all_cubes(
         name=name,
         object_types=[ObjectSubTypes.OLAP_CUBE, ObjectSubTypes.SUPER_CUBE],
         pattern=search_pattern,
+        root=folder,
+        root_id=folder_id,
+        root_name=folder_name,
+        root_path=folder_path,
         limit=limit,
         **filters,
     )
@@ -193,12 +213,14 @@ def load_cube(
     connection: Connection,
     cube_id: str | None = None,
     cube_name: str | None = None,
+    folder: 'Folder | tuple[str] | list[str] | str | None' = None,
     folder_id: str | None = None,
-    folder_path: str | None = None,
+    folder_name: str | None = None,
+    folder_path: tuple[str] | list[str] | str | None = None,
     instance_id: str | None = None,
 ) -> 'OlapCube | SuperCube | list[OlapCube | SuperCube]':
     """Load single cube specified by either 'cube_id' or both 'cube_name' and
-    'folder_id'.
+    one of the folder-related parameters.
 
     It is also possible to load cube by providing only `cube_name`, but in that
     case we may retrieve more than one cube as cube's name is unique only within
@@ -211,15 +233,17 @@ def load_cube(
             `connection.Connection()`
         cube_id(string, optional): ID of cube
         cube_name(string, optional): name of cube
-        folder_id(string, optional): ID of folder in which the cube is stored
-        folder_path (str, optional): Path of the folder in which the cube is
-                stored. Can be provided as an alternative to `folder_id`
-                parameter. If both are provided, `folder_id` is used.
-                    the path has to be provided in the following format:
-                        if it's inside of a project, example:
-                            /MicroStrategy Tutorial/Public Objects/Metrics
-                        if it's a root folder, example:
-                            /CASTOR_SERVER_CONFIGURATION/Users
+        folder (Folder | tuple | list | str, optional): Folder object or ID or
+            name or path specifying the folder. May be used instead of
+            `folder_id`, `folder_name` or `folder_path`.
+        folder_id (str, optional): ID of a folder.
+        folder_name (str, optional): Name of a folder.
+        folder_path (str, optional): Path of the folder.
+            The path has to be provided in the following format:
+                if it's inside of a project, start with a Project Name:
+                    /MicroStrategy Tutorial/Public Objects/Metrics
+                if it's a root folder, start with `CASTOR_SERVER_CONFIGURATION`:
+                    /CASTOR_SERVER_CONFIGURATION/Users
         instance_id (str, optional): Identifier of an instance if cube instance
             has been already initialized. Will be used if only one cube is
             found. `None` by default.
@@ -234,18 +258,6 @@ def load_cube(
     connection._validate_project_selected()
 
     if cube_id:
-        if cube_name:
-            msg = (
-                "Both `cube_id` and `cube_name` provided. Loading cube based on "
-                "`cube_id`."
-            )
-            exception_handler(msg, Warning, False)
-        elif folder_id or folder_path:
-            msg = (
-                "Both `cube_id` and `folder_id` or `folder_path` provided. "
-                "Loading cube based on `cube_id` from all folders."
-            )
-            exception_handler(msg, Warning, False)
         objects_ = full_search(
             connection,
             project=connection.project_id,
@@ -263,7 +275,9 @@ def load_cube(
             name=cube_name,
             object_types=[ObjectSubTypes.OLAP_CUBE, ObjectSubTypes.SUPER_CUBE],
             pattern=SearchPattern.EXACTLY,
-            root=folder_id,
+            root=folder,
+            root_id=folder_id,
+            root_name=folder_name,
             root_path=folder_path,
         )
 

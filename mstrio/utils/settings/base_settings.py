@@ -296,10 +296,10 @@ class BaseSettings(metaclass=ABCMeta):
         for setting, cfg in self._CONFIG.items():
             factory = SettingValueFactory()
             value = factory.get_setting(cfg)
-            self.__override_settings_config(value)
+            self._override_settings_config(value)
             super().__setattr__(setting, value)
 
-    def __override_settings_config(self, value: SettingValue) -> None:
+    def _override_settings_config(self, value: SettingValue) -> None:
         # placeholder to be overwritten
         return
 

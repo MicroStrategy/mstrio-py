@@ -138,7 +138,7 @@ Since version **11.3.0.1**, **mstrio-py** includes also administration modules:
 
 ## Versioning & Changelog
 
-Current version: **11.5.10.101** (17 October 2025). Check out [CHANGELOG][release_notes] to see what's new.
+Current version: **11.5.11.101** (14 November 2025). Check out [CHANGELOG][release_notes] to see what's new.
 
 `mstrio-py` is constantly developed to support newest Strategy One REST APIs. Functionalities may be added to mstrio on monthly basis. It is **recommended** to always install the newest version of mstrio-py, as it will be most stable and still maintain backwards compatibility with various Strategy One installations, dating back to 11.1.4.
 
@@ -161,11 +161,19 @@ Refer to the [PyPI package archive][pypi_archive] for a list of available versio
 
 ## Additional Information
 
+### `mstrio-py` Configuration
+
+You can customize some global `mstrio-py`'s behavior by setting global configuration. Learn more in [config code snippets][code_snippet_config].
+
+### Search for ID without additional data
+
+`mstrio-py` has a dedicated method to identify what a particular object is knowing only its ID. Learn more in [search actions code snippet][code_snippet_search_actions]
+
 ### Deprecating Features
 
 When features (modules, parameters, attributes, methods etc.) are marked for deprecation but still accessed, the following `DeprecationWarning` will be shown (example below). The functionality will continue to work until the version specified in the warning is released.
 
-![Deprecation warning ][deprecation]
+![Deprecation warning][deprecation]
 
 ### More Resources
 
@@ -187,6 +195,7 @@ When features (modules, parameters, attributes, methods etc.) are marked for dep
 [logo]: https://github.com/MicroStrategy/mstrio-py/blob/master/strategy-logo.png?raw=true
 [deprecation]: https://github.com/MicroStrategy/mstrio-py/blob/master/deprecation.png?raw=true
 [code_snippet_attribute]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/attributes.py
+[code_snippet_config]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/config_mgmt.py
 [code_snippet_conn]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/connect.py
 [code_snippet_contact]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/contacts.py
 [code_snippet_contact_group]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/contact_group_mgmt.py
@@ -233,3 +242,4 @@ When features (modules, parameters, attributes, methods etc.) are marked for dep
 [code_snippet_fences]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/fences.py
 [code_snippet_prompt]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/prompt_mgmt.py
 [code_snippet_search_object]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/search_object.py
+[code_snippet_search_actions]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/search_actions.py

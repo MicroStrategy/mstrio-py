@@ -7,7 +7,7 @@ from mstrio.api import usergroups as usergroups_api
 from mstrio.api import users as users_api
 from mstrio.connection import Connection
 from mstrio.helpers import IServerError
-from mstrio.utils.helper import deprecation_warning, fetch_objects, fetch_objects_async
+from mstrio.utils.helper import fetch_objects
 from mstrio.utils.version_helper import method_version_handler
 
 TIMEOUT = 60
@@ -131,23 +131,18 @@ def get_all(
         list of dicts representing users
     """
     if filters.get('initials'):
-        deprecation_warning(
-            deprecated="possibility of providing 'initials' as a filter",
-            new="New options to filter on 'full_name' and 'enabled' fields instead",
-            version="11.3.13.101",
-            module=False,
-        )
-        return fetch_objects_async(
+        return fetch_objects(
+            # can't use async as there's no `total` header with filtering by ids
             connection=connection,
             api=users_api.get_users_info,
-            async_api=users_api.get_users_info_async,
-            limit=limit,
-            chunk_size=1000,
-            error_msg=msg,
             name_begins=name_begins,
             abbreviation_begins=abbreviation_begins,
+            user_ids=filters.pop('id', None),
             filters=filters,
+            limit=limit,
+            error_msg=msg,
         )
+
     if filters.get('name') or name_begins:
         name_begins_filter = ('starts', name_begins) if name_begins else None
 
@@ -160,6 +155,7 @@ def get_all(
         filters['abbreviation'] = (
             filters.get('abbreviation') or abbreviation_begins_filter
         )
+
     # Getting information from members of 'Everyone' user group
     return fetch_objects(
         connection=connection,

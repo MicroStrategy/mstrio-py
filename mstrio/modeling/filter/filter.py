@@ -18,6 +18,7 @@ from mstrio.utils.helper import (
     get_string_exp_body,
 )
 from mstrio.utils.resolvers import (
+    get_folder_id_from_params_set,
     get_project_id_from_params_set,
     validate_owner_key_in_filters,
 )
@@ -45,6 +46,10 @@ def list_filters(
     search_pattern: SearchPattern | int = SearchPattern.CONTAINS,
     show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
     show_filter_tokens: bool = False,
+    folder: 'Folder | tuple[str] | list[str] | str | None' = None,
+    folder_id: str | None = None,
+    folder_name: str | None = None,
+    folder_path: tuple[str] | list[str] | str | None = None,
     **filters,
 ) -> list["Filter"] | list[dict]:
     """Get a list of Filter objects or dicts. Optionally filter the
@@ -83,6 +88,17 @@ def list_filters(
             - If omitted or false, only `text` and `tree`
             formats are returned.
             - If true, all `text`, `tree` and `tokens` formats are returned.
+        folder (Folder | tuple | list | str, optional): Folder object or ID or
+            name or path specifying the folder. May be used instead of
+            `folder_id`, `folder_name` or `folder_path`.
+        folder_id (str, optional): ID of a folder.
+        folder_name (str, optional): Name of a folder.
+        folder_path (str, optional): Path of the folder.
+            The path has to be provided in the following format:
+                if it's inside of a project, start with a Project Name:
+                    /MicroStrategy Tutorial/Public Objects/Metrics
+                if it's a root folder, start with `CASTOR_SERVER_CONFIGURATION`:
+                    /CASTOR_SERVER_CONFIGURATION/Users
         **filters: Available filter parameters: ['id', 'name',
             'type', 'subtype', 'date_created', 'date_modified', 'version',
             'acg', 'owner', 'ext_type']
@@ -104,6 +120,10 @@ def list_filters(
         project=proj_id,
         pattern=search_pattern,
         name=name,
+        root=folder,
+        root_id=folder_id,
+        root_name=folder_name,
+        root_path=folder_path,
         limit=limit,
         **filters,
     )
@@ -296,7 +316,8 @@ class Filter(Entity, CopyMixin, DeleteMixin, MoveMixin):
         cls,
         connection: "Connection",
         name: str,
-        destination_folder: Folder | str,
+        destination_folder: 'Folder | tuple[str] | list[str] | str | None' = None,
+        destination_folder_path: tuple[str] | list[str] | str | None = None,
         qualification: Expression | dict | str | None = None,
         description: str | None = None,
         is_embedded: bool | None = False,
@@ -310,9 +331,12 @@ class Filter(Entity, CopyMixin, DeleteMixin, MoveMixin):
             connection: Strategy One connection object returned by
                 `connection.Connection()`
             name (str): name of a new filter
-            destination_folder (str or object): a globally unique identifier or
-                unique folder name used to distinguish between metadata objects
-                within the same project
+            destination_folder (Folder | tuple | list | str, optional): Folder
+                object or ID or name or path specifying the folder where to
+                create object.
+            destination_folder_path (str, optional): Path of the folder.
+                The path has to be provided in the following format:
+                    /MicroStrategy Tutorial/Public Objects/Metrics
             qualification (Expression, dict or str, optional): new filter
                 qualification definition. It can be provided as `Expression`
                 object, dictionary or string representing filter expression.
@@ -344,15 +368,17 @@ class Filter(Entity, CopyMixin, DeleteMixin, MoveMixin):
             Filter object
         """
         qualification = {} if qualification is None else qualification
+        dest_id = get_folder_id_from_params_set(
+            connection,
+            connection.project_id,
+            folder=destination_folder,
+            folder_path=destination_folder_path,
+        )
         body = {
             "information": {
                 "name": name,
                 "description": description,
-                "destinationFolderId": (
-                    destination_folder.id
-                    if isinstance(destination_folder, Folder)
-                    else destination_folder
-                ),
+                "destinationFolderId": dest_id,
                 "primaryLocale": primary_locale,
                 "isEmbedded": is_embedded,
             }
@@ -384,7 +410,6 @@ class Filter(Entity, CopyMixin, DeleteMixin, MoveMixin):
         self,
         name: str | None = None,
         description: str | None = None,
-        destination_folder_id: str | None = None,
         qualification: Expression | dict | str | None = None,
         is_embedded: bool | None = None,
         hidden: bool | None = None,
@@ -396,8 +421,6 @@ class Filter(Entity, CopyMixin, DeleteMixin, MoveMixin):
         Args:
             name (str, optional): name of a filter
             description(str, optional): description of a filter
-            destination_folder_id (str, optional): a globally unique identifier
-                used to distinguish between objects within the same project
             qualification (Expression, dict or str, optional): new filter
                 qualification definition. It can be provided as `Expression`
                 object, dictionary or string representing filter expression.

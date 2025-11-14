@@ -18,11 +18,13 @@ from mstrio.utils.helper import (
     get_default_args_from_func,
     get_enum_val,
 )
+from mstrio.utils.resolvers import get_folder_id_from_params_set
 from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
+    from mstrio.object_management.folder import Folder
 
 logger = logging.getLogger(__name__)
 
@@ -348,8 +350,9 @@ class UserHierarchy(Entity, CopyMixin, MoveMixin, DeleteMixin):
         connection: "Connection",
         name: str,
         sub_type: str | UserHierarchySubType,
-        destination_folder_id: str,
         attributes: list[HierarchyAttribute] | list[dict],
+        destination_folder: 'Folder | tuple[str] | list[str] | str | None' = None,
+        destination_folder_path: tuple[str] | list[str] | str | None = None,
         use_as_drill_hierarchy: bool = True,
         description: str = None,
         is_embedded: bool = False,
@@ -366,8 +369,12 @@ class UserHierarchy(Entity, CopyMixin, MoveMixin, DeleteMixin):
                 a metadata object, UserHierarchySubType enum
             attributes (list): the list of attributes that
                 do have any relationships currently
-            destination_folder_id (str): a globally unique identifier used
-                to distinguish between metadata objects within the same project
+            destination_folder (Folder | tuple | list | str, optional): Folder
+                object or ID or name or path specifying the folder where to
+                create object.
+            destination_folder_path (str, optional): Path of the folder.
+                The path has to be provided in the following format:
+                    /MicroStrategy Tutorial/Public Objects/Metrics
             use_as_drill_hierarchy (bool, optional): whether this user hierarchy
                 is used as drill hierarchy
             description (str, optional): optional description of a new
@@ -394,12 +401,18 @@ class UserHierarchy(Entity, CopyMixin, MoveMixin, DeleteMixin):
             if relationships
             else None
         )
+        dest_id = get_folder_id_from_params_set(
+            connection,
+            connection.project_id,
+            folder=destination_folder,
+            folder_path=destination_folder_path,
+        )
         body = {
             "information": {
                 "name": name,
                 "description": description,
                 "subType": get_enum_val(sub_type, UserHierarchySubType),
-                "destinationFolderId": destination_folder_id,
+                "destinationFolderId": dest_id,
                 "isEmbedded": is_embedded,
                 "primaryLocale": primary_locale,
             },
@@ -425,7 +438,6 @@ class UserHierarchy(Entity, CopyMixin, MoveMixin, DeleteMixin):
         use_as_drill_hierarchy: bool | None = None,
         description: str | None = None,
         is_embedded: bool = False,
-        destination_folder_id: str | None = None,
         relationships: list[HierarchyRelationship] | list[dict] | None = None,
         hidden: bool | None = None,
         comments: str | None = None,
@@ -444,8 +456,6 @@ class UserHierarchy(Entity, CopyMixin, MoveMixin, DeleteMixin):
                 do have any relationships currently
             is_embedded (bool, optional): if true indicates that the target
                 object of this reference is embedded within this object
-            destination_folder_id (str, optional): a globally unique identifier
-                used to distinguish between objects within the same project
             relationships (list, optional): the list of attribute
                 relationships stored in the system hierarchy
             hidden (bool, optional): Specifies whether the object is hidden.

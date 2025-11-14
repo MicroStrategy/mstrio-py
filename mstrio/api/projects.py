@@ -614,7 +614,9 @@ def get_project_duplications(
     Returns:
         Complete HTTP response object. 200 on success.
     """
-    return connection.get(endpoint='/api/projectDuplications')
+    return connection.get(
+        endpoint='/api/projectDuplications', params={'offset': offset, 'limit': limit}
+    )
 
 
 @ErrorHandler(err_msg="Error triggering a new project duplication")

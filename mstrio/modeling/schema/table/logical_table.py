@@ -29,7 +29,10 @@ from mstrio.utils.helper import (
     get_args_from_func,
     get_default_args_from_func,
 )
-from mstrio.utils.resolvers import get_project_id_from_params_set
+from mstrio.utils.resolvers import (
+    get_folder_id_from_params_set,
+    get_project_id_from_params_set,
+)
 from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.response_processors import tables
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
@@ -48,9 +51,10 @@ def list_logical_tables(
     to_dictionary: bool = False,
     table_type: PhysicalTableType | None = None,
     name: str | None = None,
+    folder: 'Folder | tuple[str] | list[str] | str | None' = None,
     folder_id: str | None = None,
-    folder_path: str | None = None,
     folder_name: str | None = None,
+    folder_path: tuple[str] | list[str] | str | None = None,
     project: 'Project | str | None' = None,
     project_id: str | None = None,
     project_name: str | None = None,
@@ -68,24 +72,23 @@ def list_logical_tables(
             `project_name`.
         project_id (str, optional): Project ID
         project_name (str, optional): Project name
-        folder_id (str, optional): ID of a folder in which to look for
-            logical tables. Defaults to None.
-        folder_path (str, optional): Path of the folder in which to look for
-            logical tables. Can be provided as an alternative to `folder_id`
-            parameter. If both are provided, `folder_id` is used.
-                    the path has to be provided in the following format:
-                        if it's inside of a project, example:
-                            /MicroStrategy Tutorial/Public Objects/Metrics
-                        if it's a root folder, example:
-                            /CASTOR_SERVER_CONFIGURATION/Users
-        folder_name (str, optional): Name of a folder in which to look
-            for logical tables. Defaults to None.
+        folder (Folder | tuple | list | str, optional): Folder object or ID or
+            name or path specifying the folder. May be used instead of
+            `folder_id`, `folder_name` or `folder_path`.
+        folder_id (str, optional): ID of a folder.
+        folder_name (str, optional): Name of a folder.
+        folder_path (str, optional): Path of the folder.
+            The path has to be provided in the following format:
+                if it's inside of a project, start with a Project Name:
+                    /MicroStrategy Tutorial/Public Objects/Metrics
+                if it's a root folder, start with `CASTOR_SERVER_CONFIGURATION`:
+                    /CASTOR_SERVER_CONFIGURATION/Users
         to_dictionary (bool, optional): If True returns a list of dictionaries.
             Defaults to False.
         table_type(PhysicalTableType, optional): If specified, returns a list
             of logical tables with physical table with this type.
         filters: dict that specifies filter expressions. Only used if a name,
-            folder_id, folder_name, project_id or project_name are provided.
+            folder or project are provided.
             Available filters are:
             ['date_created', 'date_modified', 'version_id', 'acg',
              'primary_locale', 'sub_type', 'name', 'id']
@@ -97,15 +100,25 @@ def list_logical_tables(
             or dictionaries representing logical tables.
     """
     if any(
-        [name, folder_id, folder_path, folder_name, project, project_id, project_name]
+        [
+            name,
+            folder,
+            folder_id,
+            folder_path,
+            folder_name,
+            project,
+            project_id,
+            project_name,
+        ]
     ):
         return _full_search_logical_tables(
             connection=connection,
             to_dictionary=to_dictionary,
             name=name,
+            folder=folder,
             folder_id=folder_id,
-            folder_path=folder_path,
             folder_name=folder_name,
+            folder_path=folder_path,
             project=project,
             project_id=project_id,
             project_name=project_name,
@@ -155,9 +168,10 @@ def list_logical_tables(
 def _full_search_logical_tables(
     connection: Connection,
     name: str | None = None,
+    folder: 'Folder | tuple[str] | list[str] | str | None' = None,
     folder_id: str | None = None,
-    folder_path: str | None = None,
     folder_name: str | None = None,
+    folder_path: tuple[str] | list[str] | str | None = None,
     project: 'Project | str | None' = None,
     project_id: str | None = None,
     project_name: str | None = None,
@@ -175,18 +189,17 @@ def _full_search_logical_tables(
             `project_name`.
         project_id (str, optional): Project ID
         project_name (str, optional): Project name
-        folder_id (Optional[str], optional): ID of a folder in which to look for
-            logical tables. Defaults to None.
-        folder_path (str, optional): Path of the folder in which to look for
-            logical tables. Can be provided as an alternative to `folder_id`
-            parameter. If both are provided, `folder_id` is used.
-                    the path has to be provided in the following format:
-                        if it's inside of a project, example:
-                            /MicroStrategy Tutorial/Public Objects/Metrics
-                        if it's a root folder, example:
-                            /CASTOR_SERVER_CONFIGURATION/Users
-        folder_name (Optional[str], optional): Name of a folder in which to look
-            for logical tables. Defaults to None.
+        folder (Folder | tuple | list | str, optional): Folder object or ID or
+            name or path specifying the folder. May be used instead of
+            `folder_id`, `folder_name` or `folder_path`.
+        folder_id (str, optional): ID of a folder.
+        folder_name (str, optional): Name of a folder.
+        folder_path (str, optional): Path of the folder.
+            The path has to be provided in the following format:
+                if it's inside of a project, start with a Project Name:
+                    /MicroStrategy Tutorial/Public Objects/Metrics
+                if it's a root folder, start with `CASTOR_SERVER_CONFIGURATION`:
+                    /CASTOR_SERVER_CONFIGURATION/Users
         to_dictionary (bool, optional): If True, the function will return list
             of dictionaries. Otherwise, list of LogicalTable objects.
             Defaults to False.
@@ -215,34 +228,18 @@ def _full_search_logical_tables(
         project_id,
         project_name,
     )
-
-    if folder_name and not (folder_id or folder_path):
-        folders = full_search(
-            connection=connection,
-            project=proj_id,
-            object_types=ObjectTypes.FOLDER,
-            limit=limit,
-        )
-        folder = next(
-            filter(lambda _folder: _folder.get("name") == folder_name, folders), None
-        )
-        folder_id = (
-            folder["id"]
-            if folder
-            else exception_handler(
-                'Folder with a given name was not found.', exception_type=ValueError
-            )
-        )
-
     logical_tables = full_search(
         connection=connection,
         name=name,
         project=proj_id,
         object_types=ObjectTypes.TABLE,
-        root=folder_id,
+        root=folder,
+        root_id=folder_id,
+        root_name=folder_name,
         root_path=folder_path,
         limit=limit,
     )
+
     return (
         logical_tables
         if to_dictionary
@@ -593,7 +590,8 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
         table_name: str | None = None,
         table_description: str | None = None,
         sub_type: ObjectSubType | str | None = ObjectSubType.LOGICAL_TABLE,
-        destination_folder: Folder | str | None = None,
+        destination_folder: 'Folder | tuple[str] | list[str] | str | None' = None,
+        destination_folder_path: tuple[str] | list[str] | str | None = None,
         is_embedded: bool | None = None,
         physical_table: PhysicalTable | dict | None = None,
         physical_table_name: str | None = None,
@@ -625,9 +623,12 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
             table_description (str, optional): Logical table description
             sub_type (enum, str, optional): String literal used to identify the
                 type of a metadata object.
-            destination_folder (object, str, optional): Globally unique
-                identifier used to distinguish between metadata objects within
-                the same project
+            destination_folder (Folder | tuple | list | str, optional): Folder
+                object or ID or name or path specifying the folder where to
+                create object.
+            destination_folder_path (str, optional): Path of the folder.
+                The path has to be provided in the following format:
+                    /MicroStrategy Tutorial/Public Objects/Metrics
             is_embedded (bool, optional): if true indicates that the target
                 object of this reference is embedded within this object
             physical_table (object, dict, optional): Physical table
@@ -764,16 +765,19 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
             "sqlStatement": getattr(physical_table, "sql_statement", sql_statement),
         }
 
+        dest_id = get_folder_id_from_params_set(
+            connection,
+            connection.project_id,
+            folder=destination_folder,
+            folder_path=destination_folder_path,
+            assert_id_exists=False,
+        )
         body = {
             "information": {
                 "name": table_name,
                 "description": table_description,
                 "subType": get_enum_val(sub_type, ObjectSubType),
-                "destinationFolderId": (
-                    destination_folder.id
-                    if isinstance(destination_folder, Folder)
-                    else destination_folder
-                ),
+                "destinationFolderId": dest_id,
                 "isEmbedded": is_embedded,
             },
             "logicalSize": logical_size,
@@ -806,8 +810,8 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
         # destination_folder attribute is ignored by Modeling Service
         # logical table object is always placed in the default folder
         # so move to different folder after creation
-        if destination_folder:
-            table.move(destination_folder)
+        if dest_id:
+            table.move(dest_id)
 
         return table
 
@@ -907,7 +911,7 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
                 A list of new columns of a physical table mapped to the logical
                 table. Defaults to None.
             folder_id (Optional[str], optional): The ID of a folder to which a
-                logical  table should be moved. Defaults to None.
+                logical table should be moved. Defaults to None.
             hidden (bool, optional): Specifies whether the object is hidden.
                 Default value: False.
             comments (str, optional): Comments added to the object. Defaults to

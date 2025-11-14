@@ -55,7 +55,7 @@ def deprecation_warning(
     new: str | None,
     version: str,
     module: bool = True,
-    change_compatible_immediately=True,
+    change_compatible_immediately: bool = True,
 ):
     """This function is used to provide a user with a warning, that a given
     functionality is now deprecated, and won't be supported from a given
@@ -83,7 +83,13 @@ def deprecation_warning(
     else:
         suffix = f" and replaced with {new}" if new else ""
         msg = f"From version {version} {deprecated}{module} will be removed{suffix}."
-    exception_handler(msg=msg, exception_type=DeprecationWarning)
+
+    ASSIGN_WARNING_TO_ACTUAL_DEPRECATED_SOURCE_AND_NOT_CALLER__MAGIC_INT = 1
+    exception_handler(
+        msg=msg,
+        exception_type=DeprecationWarning,
+        stack_lvl=ASSIGN_WARNING_TO_ACTUAL_DEPRECATED_SOURCE_AND_NOT_CALLER__MAGIC_INT,
+    )
 
 
 def url_check(url):
@@ -203,7 +209,7 @@ def exception_handler(
     ):
         raise exception_type(msg)
     elif issubclass(exception_type, Warning):
-        warnings.warn(msg, exception_type, stacklevel=stack_lvl)
+        warnings.warn(message=msg, category=exception_type, stacklevel=stack_lvl)
 
 
 def response_handler(
@@ -990,11 +996,8 @@ def get_temp_connection(
         connection: Strategy One connection object
         project_id: Project ID
     """
-    if project_id:
-        temp_conn = deepcopy(connection)
-        temp_conn.select_project(project_id=project_id)
-    else:
-        temp_conn = connection
+    temp_conn = deepcopy(connection)
+    temp_conn.select_project(project_id=project_id)
     return temp_conn
 
 
@@ -1556,11 +1559,11 @@ def get_user_based_on_id_or_username(
     return None
 
 
-def is_valid_str_id(str_id: str | None) -> bool:
+def is_valid_str_id(str_id: Any) -> bool:
     """Check if the provided Strategy ID has valid format.
 
     Args:
-        str_id (str | None): The Strategy ID to check.
+        str_id (Any): The Strategy ID to check.
 
     Returns:
         bool: True if the ID is valid, False otherwise.

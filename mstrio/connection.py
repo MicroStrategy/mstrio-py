@@ -1,14 +1,21 @@
+import contextlib
 import inspect
 import logging
 import os
 from base64 import b64encode
 from datetime import datetime
 from enum import IntEnum
+from functools import partial
 from getpass import getpass
 from typing import TYPE_CHECKING
 
 import requests
-from requests import Session
+from requests import (  # NOQA F401 (imports for ease of access)
+    ConnectTimeout,
+    ReadTimeout,
+    Session,
+    Timeout,
+)
 from requests.adapters import HTTPAdapter, Retry
 from requests.cookies import RequestsCookieJar
 
@@ -49,6 +56,9 @@ except Exception:
     _is_in_workstation = None
 
 
+_validate_or_none = partial(helper.validate_param_value, special_values=[None])
+
+
 class LoginMode(IntEnum):
     STANDARD = 1
     ANONYMOUS = 8
@@ -62,6 +72,9 @@ def get_connection(
     project_id: str | None = None,
     project_name: str | None = None,
     ssl_verify: bool = False,
+    verbose: bool = True,
+    request_timeout: int | float | None = None,
+    request_retry_on_timeout_count: int | None = None,
 ) -> 'Connection | None':
     """Connect to environment without providing user's credentials.
 
@@ -85,6 +98,17 @@ def get_connection(
         project_name (str, optional): Name of project to be selected
         ssl_verify (bool, optional): If False (default), does not verify the
             server's SSL certificates
+        verbose (bool, optional): True by default. Controls the amount of
+            feedback from the I-Server logged by mstrio-py (logger level INFO
+            if `True`, WARNING if `False`).
+        request_timeout (int | float, optional): Time (in seconds) after
+            which every request aborts waiting for response and raises
+            `requests.Timeout`. Defaults to `None`, meaning no timeout.
+            If set to `None`, fallbacks to
+            `mstrio.config.default_request_timeout` value, if set.
+        request_retry_on_timeout_count (int, optional): Number of times
+            to retry a request in case of a timeout. If `None` or less
+            than 2, no retries will be attempted.
 
     Returns:
         connection to I-Server or None in case of some error
@@ -134,6 +158,9 @@ def get_connection(
             project_id=project_id,
             project_name=project_name,
             ssl_verify=ssl_verify,
+            verbose=verbose,
+            request_timeout=request_timeout,
+            request_retry_on_timeout_count=request_retry_on_timeout_count,
         )
         conn._through_get_connection = True
         return conn
@@ -186,6 +213,10 @@ class Connection:
             on the server before the oldest instance is replaced.
         max_search: Maximum number of concurrent searches.
         timeout: time after the server's session expires, in seconds
+        request_timeout: time (in seconds) after which every request aborts
+            waiting for response and raises `requests.Timeout`. If not
+            provided explicitly, defaults to
+            `mstrio.config.default_request_timeout` parameter value.
     """
 
     def __init__(
@@ -206,6 +237,8 @@ class Connection:
         working_set: int | None = None,
         max_search: int | None = None,
         verbose: bool = True,
+        request_timeout: int | float | None = None,
+        request_retry_on_timeout_count: int | None = None,
     ):
         """Establish a connection with Strategy One REST API.
 
@@ -250,7 +283,7 @@ class Connection:
                 session. Used for connection initialized by GUI.
             api_token (str, optional): API token for authenticating using
                 `login_mode` 4096. For other login modes it is ignored.
-            application_id (str, Application, optional): Login using the
+            application_id (str, Application, optional): Log in using the
                 login mode configured in a custom application. If it's
                 not provided, the server login modes are used.
             working_set (int, optional): Number of report/document instances
@@ -260,7 +293,16 @@ class Connection:
             max_search (int, optional): Maximum number of concurrent searches.
                 If None, will be set to 3 by default.
             verbose (bool, optional): True by default. Controls the amount of
-                feedback from the I-Server.
+                feedback from the I-Server logged by mstrio-py (logger level
+                INFO if `True`, WARNING if `False`).
+            request_timeout (int | float, optional): Time (in seconds) after
+                which every request aborts waiting for response and raises
+                `requests.Timeout`. Defaults to `None`, meaning no timeout.
+                If set to `None`, fallbacks to
+                `mstrio.config.default_request_timeout` value, if set.
+            request_retry_on_timeout_count (int, optional): Number of times
+                to retry a request in case of a timeout. If `None` or less
+                than 1, no retries will be attempted.
         """
 
         if login_mode is None:
@@ -268,11 +310,10 @@ class Connection:
 
         login_mode = get_enum_val(login_mode, LoginMode)
 
-        helper.validate_param_value(
-            'working_set', working_set, int, min_val=3, special_values=[None]
-        )
         if max_search is not None:
             helper.validate_param_value('max_search', max_search, int)
+
+        _validate_or_none('working_set', working_set, int, min_val=3)
 
         # set the verbosity globally
         config.verbose = bool(verbose and config.verbose)
@@ -295,6 +336,10 @@ class Connection:
         self.working_set = working_set
         self.max_search = max_search
         self.__through_get_connection: bool = False
+        self._request_timeout = None
+        self.set_request_timeout(request_timeout)
+        self._request_retry_on_timeout_count = None
+        self.set_request_retry_on_timeout_count(request_retry_on_timeout_count)
 
         # do not check application type if delegated
         self._application_type = (
@@ -407,6 +452,7 @@ class Connection:
                 )
 
     renew = connect
+    open = connect
 
     def delegate(self):
         """Delegates identity token to get authentication token and connect to
@@ -454,15 +500,15 @@ class Connection:
             )
 
         authentication.logout(connection=self, whitelist=[('ERR009', 401)])
-
         self._session.close()
-
         self.token = None
 
         if config.verbose:
             logger.info(
                 'Connection to Strategy One Intelligence Server has been closed.'
             )
+
+    disconnect = close
 
     def status(self) -> bool:
         """Checks if the session is still alive.
@@ -508,6 +554,9 @@ class Connection:
             no_fallback_from_connection=True,
         )
 
+        if self.project_id == proj_id:
+            return
+
         if not proj_id:
             self.project_id = None
             self._session.headers['X-MSTR-ProjectID'] = None
@@ -525,6 +574,73 @@ class Connection:
 
         self.project_id = proj_id
         self._session.headers['X-MSTR-ProjectID'] = self.project_id
+
+    @contextlib.contextmanager
+    def temporary_project_change(
+        self,
+        project: 'Project | str | None' = None,
+        project_id: str | None = None,
+        project_name: str | None = None,
+    ):
+        """Context manager for temporary changing the selected project.
+
+        Note:
+            This just changes the project assigned to this `Connection`
+            instance temporarily. Designed to be called using `with` statement.
+            See `Examples` below for usage.
+
+        Args:
+            project (Project | str, optional): Project object or ID or name
+                specifying the project. May be used instead of `project_id` or
+                `project_name`.
+            project_id (str, optional): Project ID
+            project_name (str, optional): Project name
+
+        Examples:
+            >>> from mstrio import Connection
+            >>>
+            >>> # initially we select project "MicroStrategy Tutorial"
+            >>> conn = Connection(..., project="MicroStrategy Tutorial")
+            >>> # ... some actions on the `conn` ...
+            >>>
+            >>> with conn.temporary_project_change(project=None):
+            >>>     # ... inside this block no project is selected ...
+            >>>
+            >>> # ... outside the `with` block again ...
+            >>> # ... "MicroStrategy Tutorial" is selected ...
+        """
+        orig_project_id = self.project_id
+        self.select_project(
+            project=project, project_id=project_id, project_name=project_name
+        )
+        try:
+            yield self  # grabbing this yield is not necessary but may be useful
+        finally:
+            if self and getattr(self, 'select_project', None):  # some edge-case-cover
+                self.select_project(project=orig_project_id)
+
+    def set_request_timeout(self, timeout: int | float | None) -> None:
+        """Set the request timeout time for this connection's requests.
+
+        Args:
+            timeout (int | float | None): Time (in seconds) after which every
+                request made by this connection will be aborted if
+                not completed. If set to `None`, fallbacks to
+                `mstrio.config.default_request_timeout` value, if set.
+        """
+        _validate_or_none('timeout', timeout, [float, int], min_val=0.001)
+        self._request_timeout = timeout
+
+    def set_request_retry_on_timeout_count(self, count: int | None) -> None:
+        """Set the number of times to retry a request in case of a timeout.
+
+        Args:
+            count (int | None): Number of times to retry a request in case of
+                a timeout. If `None` or less than 1, no retries will be
+                attempted.
+        """
+        _validate_or_none('count', count, int, min_val=0)
+        self._request_retry_on_timeout_count = count
 
     @sessions.log_request(logger)
     @sessions.renew_session
@@ -548,8 +664,23 @@ class Connection:
             'HEAD': self._session.head,
         }
         method = name2method[method_name.upper()]
+        kwargs = {"timeout": self.request_timeout, **kwargs}
 
-        return method(url, **kwargs)
+        retry_count = self._request_retry_on_timeout_count
+        retries_left = retry_count + 1 if retry_count else 1
+
+        while retries_left > 0:
+            try:
+                return method(url, **kwargs)
+            except Timeout as err:
+                retries_left -= 1
+                if not retries_left:
+                    if retry_count:
+                        raise err.__class__(
+                            f"Retrying request {retry_count} times failed. "
+                            "See traceback for more details."
+                        ) from err
+                    raise err
 
     def get(self, url=None, *, endpoint=None, **kwargs):
         """Sends a GET request."""
@@ -786,7 +917,8 @@ class Connection:
 
         from mstrio.server.project import Project
 
-        return Project(self, id=self.project_id).name
+        with config.temp_verbose_disable():
+            return Project(self, id=self.project_id).name
 
     @property
     def user_id(self) -> str:
@@ -819,6 +951,16 @@ class Connection:
             self.__check_version()
 
         return self._iserver_version
+
+    @property
+    def request_timeout(self) -> int | float | None:
+        if self._request_timeout is not None:
+            return self._request_timeout
+        return config.default_request_timeout
+
+    @property
+    def request_retry_on_timeout_count(self) -> int | None:
+        return self._request_retry_on_timeout_count
 
     @property
     def token(self) -> str:

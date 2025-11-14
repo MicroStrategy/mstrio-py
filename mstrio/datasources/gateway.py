@@ -1,6 +1,6 @@
 from mstrio.connection import Connection
 from mstrio.datasources.helpers import DBType, GatewayType
-from mstrio.utils.entity import EntityBase
+from mstrio.utils.entity import ChangeJournalMixin, EntityBase
 from mstrio.utils.enum_helper import get_enum_val
 from mstrio.utils.helper import _prepare_objects as filter_objects
 from mstrio.utils.response_processors import gateways
@@ -25,7 +25,7 @@ def list_gateways(
 
 
 @class_version_handler('11.3.0960')
-class Gateway(EntityBase):
+class Gateway(EntityBase, ChangeJournalMixin):
     """Object representation of Strategy One Gateway
 
     Attributes:

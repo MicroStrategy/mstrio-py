@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING
 
 from mstrio.api import datasources
 from mstrio.utils import helper
-from mstrio.utils.entity import EntityBase
+from mstrio.utils.entity import ChangeJournalMixin, EntityBase
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
 if TYPE_CHECKING:
@@ -38,7 +38,7 @@ def list_available_dbms(
 
 
 @class_version_handler('11.3.0000')
-class Dbms(EntityBase):
+class Dbms(EntityBase, ChangeJournalMixin):
     """Object representation of Strategy One Database management system (DBMS)
 
     Attributes:

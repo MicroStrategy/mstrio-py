@@ -8,7 +8,12 @@ from typing import TYPE_CHECKING, Union
 from mstrio import config
 from mstrio.api import contact_groups
 from mstrio.users_and_groups.user import User
-from mstrio.utils.entity import DeleteMixin, EntityBase, auto_match_args_entity
+from mstrio.utils.entity import (
+    ChangeJournalMixin,
+    DeleteMixin,
+    EntityBase,
+    auto_match_args_entity,
+)
 from mstrio.utils.enum_helper import AutoName
 from mstrio.utils.helper import (
     Dictable,
@@ -123,7 +128,7 @@ def list_contact_groups(
 
 
 @class_version_handler('11.3.0200')
-class ContactGroup(EntityBase, DeleteMixin):
+class ContactGroup(EntityBase, ChangeJournalMixin, DeleteMixin):
     """Object representation of Strategy One Contact Group object
 
     Attributes:

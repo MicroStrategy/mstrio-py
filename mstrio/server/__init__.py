@@ -1,4 +1,11 @@
 # flake8: noqa
+from .change_journal import (
+    ChangeJournalEntry,
+    ChangeType,
+    TransactionType,
+    list_change_journal_entries,
+    purge_change_journal_entries,
+)
 from .cluster import Cluster, GroupBy, ServiceAction
 from .environment import Environment
 from .language import Language, list_interface_languages, list_languages

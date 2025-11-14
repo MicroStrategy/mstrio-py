@@ -54,6 +54,10 @@ def list_documents(
     project: 'Project | str | None' = None,
     project_id: str | None = None,
     project_name: str | None = None,
+    folder: 'Folder | tuple[str] | list[str] | str | None' = None,
+    folder_id: str | None = None,
+    folder_name: str | None = None,
+    folder_path: tuple[str] | list[str] | str | None = None,
     **filters,
 ) -> list["Document"] | list[dict] | DataFrame:
     """Get all Documents available in the project specified within the
@@ -77,6 +81,17 @@ def list_documents(
             `project_name`.
         project_id (str, optional): Project ID
         project_name (str, optional): Project name
+        folder (Folder | tuple | list | str, optional): Folder object or ID or
+            name or path specifying the folder. May be used instead of
+            `folder_id`, `folder_name` or `folder_path`.
+        folder_id (str, optional): ID of a folder.
+        folder_name (str, optional): Name of a folder.
+        folder_path (str, optional): Path of the folder.
+            The path has to be provided in the following format:
+                if it's inside of a project, start with a Project Name:
+                    /MicroStrategy Tutorial/Public Objects/Metrics
+                if it's a root folder, start with `CASTOR_SERVER_CONFIGURATION`:
+                    /CASTOR_SERVER_CONFIGURATION/Users
         **filters: Available filter parameters: ['name', 'id', 'type',
             'subtype', 'date_created', 'date_modified', 'version', 'acg',
             'owner', 'ext_type', 'view_media', 'certified_info']
@@ -94,6 +109,10 @@ def list_documents(
         project=project,
         project_id=project_id,
         project_name=project_name,
+        folder=folder,
+        folder_id=folder_id,
+        folder_name=folder_name,
+        folder_path=folder_path,
         **filters,
     )
 
@@ -310,6 +329,10 @@ class Document(
         project: 'Project | str | None' = None,
         project_id: str | None = None,
         project_name: str | None = None,
+        folder: 'Folder | tuple[str] | list[str] | str | None' = None,
+        folder_id: str | None = None,
+        folder_name: str | None = None,
+        folder_path: tuple[str] | list[str] | str | None = None,
         **filters,
     ) -> list["Document"] | list[dict] | DataFrame:
         if to_dictionary and to_dataframe:
@@ -334,10 +357,13 @@ class Document(
             project=proj_id,
             name=name,
             pattern=search_pattern,
+            root=folder,
+            root_id=folder_id,
+            root_name=folder_name,
+            root_path=folder_path,
             **filters,
         )
         documents = [obj for obj in objects if is_document(obj['view_media'])]
-
         documents = documents[:limit] if limit else documents
 
         if to_dictionary:

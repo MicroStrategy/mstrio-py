@@ -7,7 +7,7 @@ from mstrio.api import administration
 from mstrio.connection import Connection
 from mstrio.server.project import Project
 from mstrio.users_and_groups.user_group import UserGroup
-from mstrio.utils.entity import DeleteMixin, EntityBase
+from mstrio.utils.entity import ChangeJournalMixin, DeleteMixin, EntityBase
 from mstrio.utils.enum_helper import AutoName, get_enum_val
 from mstrio.utils.helper import fetch_objects, find_object_with_name
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
@@ -60,7 +60,7 @@ def list_fences(
 
 
 @class_version_handler('11.3.0800')
-class Fence(EntityBase, DeleteMixin):
+class Fence(EntityBase, ChangeJournalMixin, DeleteMixin):
     """Python representation of a Strategy One Fence object.
 
     Attributes:

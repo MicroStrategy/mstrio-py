@@ -4,7 +4,10 @@ will not work without replacing parameters with real values. Its basic goal is
 to present what can be done with this module and to ease its usage.
 """
 
-from mstrio.connection import get_connection, Connection
+from mstrio.connection import (
+    get_connection, Connection, Timeout, ConnectTimeout, ReadTimeout
+)
+from mstrio import config
 
 # Define a variable which can be later used in a script
 PROJECT_NAME = $project_name  # Insert project name here
@@ -27,7 +30,11 @@ conn = get_connection(workstationData, project_name=PROJECT_NAME)
 # To manage the connection the following methods are made available:
 conn.connect()  # triggered by default during Connection class initialization
 conn.renew()  # alias for `connect`
+conn.open()  # alias for `connect`
+
 conn.close()
+conn.disconnect()  # alias for `close`
+
 conn.status()
 
 # Define variables which can be later used in a script
@@ -92,6 +99,51 @@ conn = Connection(
     certificate_path=CERTIFICATE_PATH
 )
 
+# Retries and Request Timeout
+# You may want to set some retry logic or timeout for requests done in your
+# scripts by mstrio-py.
+#
+# Keep in mind, those settings are for "per request" and DO NOT apply to server
+# timeout or machine timeout (like runtimes in Workstation)
+#
+# You can set them by any of the below ways:
+#
+# set global config value (only for request timeout, not retries):
+# (learn more about mstrio-py's config in `config_mgmt.py` code snippet)
+config.default_request_timeout = 60 * 10  # value in seconds == 10min, for example
+#
+# set parameters during `Connection` initialization:
+conn = Connection(
+    BASE_URL,
+    MSTR_USERNAME,
+    MSTR_PASSWORD,
+    request_timeout=60 * 10,  # value in seconds == 10min, for example
+    request_retry_on_timeout_count=3,
+)
+#
+# set parameters on existing `conn` instance:
+conn.set_request_timeout(60 * 10)  # value in seconds == 10min, for example
+conn.set_request_retry_on_timeout_count(3)
+#
+# once set, if hit the timeout will raise `requests.Timeout` error.
+# this is a `requests` library's custom error that mstrio-py just reuses.
+# It can be either `Timeout` or specifically `ConnectTimeout` or `ReadTimeout`.
+# They can be than caught and handled, if needed:
+try:
+    # some action that does a REST API request
+    do_something(connection=conn)
+except ConnectTimeout as err:
+    # this will catch only connection timeouts, raised if no response was
+    # received from server within timeout period
+    ...
+except ReadTimeout as err:
+    # this will catch only read timeouts, raised if server did not send all data
+    # within timeout period
+    ...
+except Timeout as err:
+    # this will catch all of them: `Timeout`, `ConnectTimeout`, `ReadTimeout`
+    ...
+
 # Define variables which can be later used in a script
 PROXIES_HTTP_VALUE = $proxies_http_value  # f.e. 'foo.bar:3128'
 PROXIES_HTTPS_KEY = $proxies_https_key  # f.e. 'https://host.name'
@@ -108,3 +160,14 @@ conn = Connection(BASE_URL, MSTR_USERNAME, MSTR_PASSWORD, project_id=PROJECT_ID,
 # Basic Auth:
 proxies = {'http': PROXIES_HTTP_VALUE_USERNAME_AND_PASSWORD}
 conn = Connection(BASE_URL, MSTR_USERNAME, MSTR_PASSWORD, project_id=PROJECT_ID, proxies=proxies)
+
+# There might be situations where you want to temporarily unselect a project in
+# your `Connection` object or select a different one. In such cases, you can use
+# a helper method as below.
+with conn.temporary_project_change(project=None):
+    ...
+    # inside `with` block code will work on `conn` without project selected
+    ...
+...
+# outside, this code is back to use `conn` with `PROJECT_NAME` selected earlier
+...

@@ -61,6 +61,7 @@ def get_users_info(
     abbreviation_begins: str,
     offset=0,
     limit=-1,
+    user_ids=None,
     fields=None,
     error_msg=None,
 ):
@@ -77,6 +78,7 @@ def get_users_info(
         limit (int): Maximum number of items returned for a single search
             request. Used to control paging behavior. Use -1 (default ) for no
             limit (subject to governing settings).
+        user_ids (list, optional): List of user IDs to filter the results.
         fields (list, optional): Comma separated top-level field whitelist. This
             allows client to selectively retrieve part of the response model.
         error_msg (string, optional): Custom Error Message for Error Handling
@@ -84,15 +86,19 @@ def get_users_info(
     Returns:
         HTTP response object returned by the Strategy One REST server.
     """
+    params = {
+        'nameBegins': name_begins,
+        'abbreviationBegins': abbreviation_begins,
+        'offset': offset,
+        'limit': limit,
+        'fields': fields,
+    }
+    if user_ids:
+        params['id'] = user_ids
+
     return connection.get(
         endpoint='/api/users/',
-        params={
-            'nameBegins': name_begins,
-            'abbreviationBegins': abbreviation_begins,
-            'offset': offset,
-            'limit': limit,
-            'fields': fields,
-        },
+        params=params,
         headers={'X-MSTR-ProjectID': None},
     )
 
@@ -103,6 +109,7 @@ def get_users_info_async(
     abbreviation_begins,
     offset=0,
     limit=-1,
+    user_ids=None,
     fields=None,
 ):
     """Get information for a set of users asynchronously.
@@ -118,6 +125,7 @@ def get_users_info_async(
         limit (int): Maximum number of items returned for a single search
             request. Used to control paging behavior. Use -1 (default ) for no
             limit (subject to governing settings).
+        user_ids (list, optional): List of user IDs to filter the results.
         fields (list, optional): Comma separated top-level field whitelist. This
             allows client to selectively retrieve part of the response model.
 
@@ -131,10 +139,13 @@ def get_users_info_async(
         'limit': limit,
         'fields': fields,
     }
+    if user_ids:
+        params['id'] = user_ids
+
     endpoint = '/api/users/'
     headers = {'X-MSTR-ProjectID': None}
-    future = future_session.get(endpoint=endpoint, headers=headers, params=params)
-    return future
+
+    return future_session.get(endpoint=endpoint, headers=headers, params=params)
 
 
 @ErrorHandler(err_msg="Error creating a new user with username: {username}")

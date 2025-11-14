@@ -24,5 +24,7 @@ from .incremental_refresh_report import (
 from .library import Library
 from .report import Report, list_reports
 
-
-from mstrio.project_objects.prompt import Prompt
+import warnings as _w
+with _w.catch_warnings():  # FYI: simpler setup was added in 3.11
+    _w.simplefilter(action="ignore", category=DeprecationWarning)
+    from mstrio.project_objects.prompt import Prompt

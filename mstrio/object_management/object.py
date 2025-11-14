@@ -24,6 +24,7 @@ from mstrio.utils.response_processors import objects as objects_processors
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
+    from mstrio.object_management.folder import Folder
     from mstrio.server.project import Project
 
 logger = logging.getLogger(__name__)
@@ -38,6 +39,10 @@ def list_objects(
     project_name: str | None = None,
     domain: SearchDomain | int = SearchDomain.CONFIGURATION,
     search_pattern: SearchPattern | int = SearchPattern.CONTAINS,
+    folder: 'Folder | tuple[str] | list[str] | str | None' = None,
+    folder_id: str | None = None,
+    folder_name: str | None = None,
+    folder_path: tuple[str] | list[str] | str | None = None,
     to_dictionary: bool = False,
     limit: int = None,
     **filters,
@@ -64,6 +69,17 @@ def list_objects(
             for, such as Begin With or Exactly. Possible values are available in
             ENUM mstrio.object_management.SearchPattern.
             Default value is CONTAINS (4).
+        folder (Folder | tuple | list | str, optional): Folder object or ID or
+            name or path specifying the folder. May be used instead of
+            `folder_id`, `folder_name` or `folder_path`.
+        folder_id (str, optional): ID of a folder.
+        folder_name (str, optional): Name of a folder.
+        folder_path (str, optional): Path of the folder.
+            The path has to be provided in the following format:
+                if it's inside of a project, start with a Project Name:
+                    /MicroStrategy Tutorial/Public Objects/Metrics
+                if it's a root folder, start with `CASTOR_SERVER_CONFIGURATION`:
+                    /CASTOR_SERVER_CONFIGURATION/Users
         to_dictionary (bool, optional): If True returns dict, by default
             (False) returns Objects.
         limit (int, optional): limit the number of elements returned. If `None`
@@ -92,6 +108,10 @@ def list_objects(
         domain=domain,
         pattern=search_pattern,
         to_dictionary=to_dictionary,
+        folder=folder,
+        folder_id=folder_id,
+        folder_name=folder_name,
+        folder_path=folder_path,
         limit=limit,
         **filters,
     )
@@ -254,6 +274,10 @@ class Object(Entity, ACLMixin, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin):
         to_dictionary: bool = False,
         domain: int | SearchDomain = SearchDomain.CONFIGURATION,
         pattern: int | SearchPattern = SearchPattern.CONTAINS,
+        folder: 'Folder | tuple[str] | list[str] | str | None' = None,
+        folder_id: str | None = None,
+        folder_name: str | None = None,
+        folder_path: tuple[str] | list[str] | str | None = None,
         limit: int | None = None,
         **filters,
     ) -> list["Object"] | list[dict]:
@@ -264,6 +288,10 @@ class Object(Entity, ACLMixin, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin):
             project=project_id,
             domain=domain,
             pattern=pattern,
+            root=folder,
+            root_id=folder_id,
+            root_name=folder_name,
+            root_path=folder_path,
             limit=limit,
             **filters,
         )

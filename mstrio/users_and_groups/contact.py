@@ -9,7 +9,12 @@ from mstrio import config
 from mstrio.api import contacts
 from mstrio.users_and_groups.contact_group import ContactGroup
 from mstrio.users_and_groups.user import User
-from mstrio.utils.entity import DeleteMixin, EntityBase, auto_match_args_entity
+from mstrio.utils.entity import (
+    ChangeJournalMixin,
+    DeleteMixin,
+    EntityBase,
+    auto_match_args_entity,
+)
 from mstrio.utils.enum_helper import AutoName
 from mstrio.utils.helper import (
     Dictable,
@@ -169,7 +174,7 @@ def list_contacts(
 
 
 @class_version_handler('11.3.0100')
-class Contact(EntityBase, DeleteMixin):
+class Contact(EntityBase, ChangeJournalMixin, DeleteMixin):
     """Object representation of Strategy One Contact object
 
     Attributes:

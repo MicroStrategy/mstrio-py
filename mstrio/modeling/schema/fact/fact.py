@@ -23,6 +23,7 @@ from mstrio.utils.helper import (
     find_object_with_name,
 )
 from mstrio.utils.resolvers import (
+    get_folder_id_from_params_set,
     get_project_id_from_params_set,
     validate_owner_key_in_filters,
 )
@@ -46,6 +47,10 @@ def list_facts(
     project_name: str | None = None,
     search_pattern: SearchPattern | int = SearchPattern.CONTAINS,
     show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
+    folder: 'Folder | tuple[str] | list[str] | str | None' = None,
+    folder_id: str | None = None,
+    folder_name: str | None = None,
+    folder_path: tuple[str] | list[str] | str | None = None,
     **filters,
 ) -> list["Fact"] | list[dict]:
     """Get list of Fact objects or dicts with them.
@@ -73,6 +78,17 @@ def list_facts(
             Available values:
                 - `ExpressionFormat.TREE` or `tree` (default)
                 - `ExpressionFormat.TOKENS or `tokens`
+        folder (Folder | tuple | list | str, optional): Folder object or ID or
+            name or path specifying the folder. May be used instead of
+            `folder_id`, `folder_name` or `folder_path`.
+        folder_id (str, optional): ID of a folder.
+        folder_name (str, optional): Name of a folder.
+        folder_path (str, optional): Path of the folder.
+            The path has to be provided in the following format:
+                if it's inside of a project, start with a Project Name:
+                    /MicroStrategy Tutorial/Public Objects/Metrics
+                if it's a root folder, start with `CASTOR_SERVER_CONFIGURATION`:
+                    /CASTOR_SERVER_CONFIGURATION/Users
         **filters: Available filter parameters: ['id', 'name',
             'type', 'subtype', 'date_created', 'date_modified', 'version',
             'acg', 'owner', 'ext_type']
@@ -95,6 +111,10 @@ def list_facts(
         project=proj_id,
         name=name,
         pattern=search_pattern,
+        root=folder,
+        root_id=folder_id,
+        root_name=folder_name,
+        root_path=folder_path,
         limit=limit,
         **filters,
     )
@@ -308,8 +328,9 @@ class Fact(Entity, CopyMixin, DeleteMixin, MoveMixin):
         cls,
         connection: Connection,
         name: str,
-        destination_folder: Folder | str,
         expressions: list[FactExpression | dict],
+        destination_folder: 'Folder | tuple[str] | list[str] | str | None' = None,
+        destination_folder_path: tuple[str] | list[str] | str | None = None,
         data_type: DataType | dict | None = None,
         description: str | None = None,
         is_embedded: bool = False,
@@ -322,11 +343,12 @@ class Fact(Entity, CopyMixin, DeleteMixin, MoveMixin):
                 by `connection.Connection()`
             name (str): new fact's name
             sub_type (str, enum): new fact's sub_type
-            destination_folder (str or object): A globally unique identifier or
-                unique folder name used to distinguish between metadata objects
-                within the same project.
-                It is possible for two metadata objects in different
-                projects to have the same Object Id.
+            destination_folder (Folder | tuple | list | str, optional): Folder
+                object or ID or name or path specifying the folder where to
+                create object.
+            destination_folder_path (str, optional): Path of the folder.
+                The path has to be provided in the following format:
+                    /MicroStrategy Tutorial/Public Objects/Metrics
             expressions (list): List of `FactExpression` objects or dictionaries
                 representing the fact object.
             data_type (object or dict): `DataType` object or dict with
@@ -348,17 +370,20 @@ class Fact(Entity, CopyMixin, DeleteMixin, MoveMixin):
         """
         if not isinstance(expressions, list):
             expressions = [expressions]
+
+        dest_id = get_folder_id_from_params_set(
+            connection,
+            connection.project_id,
+            folder=destination_folder,
+            folder_path=destination_folder_path,
+        )
         body = {
             "information": {
                 "name": name,
                 "subType": ObjectSubType.FACT.value,
                 "isEmbedded": is_embedded,
                 "description": description,
-                "destinationFolderId": (
-                    destination_folder.id
-                    if isinstance(destination_folder, Folder)
-                    else destination_folder
-                ),
+                "destinationFolderId": dest_id,
             },
             "dataType": (
                 data_type.to_dict() if isinstance(data_type, DataType) else data_type

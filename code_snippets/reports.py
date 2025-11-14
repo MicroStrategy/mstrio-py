@@ -179,9 +179,14 @@ df = REPORT.to_dataframe(prompt_answers=[PROMPT, PROMPT_2])
 # Execute a report with page-by attribute elements -define page_by_attribute_id variable.
 PAGE_BY_ELEMENTS = REPORT.page_by_elements
 PAGE_BY_ATTRS = REPORT.page_by_attributes
-PAGE_BY_ATTRS_ID = PAGE_BY_ATTRS[0]['id']
+VALID_PAGE_BY_ELEMENTS = REPORT.valid_page_by_elements
 
+# Select first valid combination of page-by elements and apply it to the report
+PAGE_BY_ATTRS_ID = REPORT.get_selected_page_by_elements(VALID_PAGE_BY_ELEMENTS[0])
 page_by_dataframe = REPORT.to_dataframe(page_element_id=PAGE_BY_ATTRS_ID)
+
+# Print current page-by elements that were applied to above dataframe
+print(REPORT.current_page_by)
 
 # Get sql property of a report
 sql = REPORT.sql

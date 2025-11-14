@@ -91,7 +91,7 @@ new_user_hierarchy = UserHierarchy.create(
     sub_type=UserHierarchySubType.DIMENSION_USER_HIERARCHY,
     attributes=[attribute1, attribute2],
     relationships=[relationship],
-    destination_folder_id=FOLDER_ID,
+    destination_folder=FOLDER_ID,
 )
 
 # Any changes to a schema objects must be followed by schema_reload

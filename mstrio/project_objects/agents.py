@@ -21,6 +21,7 @@ from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
 if TYPE_CHECKING:
+    from mstrio.object_management.folder import Folder
     from mstrio.server.project import Project
 
 
@@ -34,6 +35,10 @@ def _list_implementation(
     project: 'Project | str | None' = None,
     project_id: str | None = None,
     project_name: str | None = None,
+    folder: 'Folder | tuple[str] | list[str] | str | None' = None,
+    folder_id: str | None = None,
+    folder_name: str | None = None,
+    folder_path: tuple[str] | list[str] | str | None = None,
     **filters,
 ):
     from mstrio.object_management.search_enums import SearchPattern
@@ -53,6 +58,10 @@ def _list_implementation(
         pattern=SearchPattern.EXACTLY,
         project=proj_id,
         name=name,
+        root=folder,
+        root_id=folder_id,
+        root_name=folder_name,
+        root_path=folder_path,
         limit=limit,
         **filters,
     )
@@ -74,6 +83,10 @@ def list_agents(
     project: 'Project | str | None' = None,
     project_id: str | None = None,
     project_name: str | None = None,
+    folder: 'Folder | tuple[str] | list[str] | str | None' = None,
+    folder_id: str | None = None,
+    folder_name: str | None = None,
+    folder_path: tuple[str] | list[str] | str | None = None,
     **filters,
 ) -> list['Agent'] | list[dict]:
     """Get a list of Agents.
@@ -91,6 +104,17 @@ def list_agents(
             `project_name`.
         project_id (str, optional): Project ID
         project_name (str, optional): Project name
+        folder (Folder | tuple | list | str, optional): Folder object or ID or
+            name or path specifying the folder. May be used instead of
+            `folder_id`, `folder_name` or `folder_path`.
+        folder_id (str, optional): ID of a folder.
+        folder_name (str, optional): Name of a folder.
+        folder_path (str, optional): Path of the folder.
+            The path has to be provided in the following format:
+                if it's inside of a project, start with a Project Name:
+                    /MicroStrategy Tutorial/Public Objects/Metrics
+                if it's a root folder, start with `CASTOR_SERVER_CONFIGURATION`:
+                    /CASTOR_SERVER_CONFIGURATION/Users
         **filters: Available filter parameters: ['name', 'id', 'type',
             'subtype', 'date_created', 'date_modified', 'version',
             'owner', 'ext_type', 'view_media', 'certified_info']
@@ -107,6 +131,10 @@ def list_agents(
         project=project,
         project_id=project_id,
         project_name=project_name,
+        folder=folder,
+        folder_id=folder_id,
+        folder_name=folder_name,
+        folder_path=folder_path,
         **filters,
     )
 

@@ -33,7 +33,11 @@ from mstrio.utils.helper import (
     filter_params_for_func,
     find_object_with_name,
 )
-from mstrio.utils.resolvers import get_project_id_from_params_set
+from mstrio.utils.resolvers import (
+    get_folder_id_from_params_set,
+    get_project_id_from_params_set,
+    validate_owner_key_in_filters,
+)
 from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
@@ -56,6 +60,10 @@ def list_attributes(
     project_id: str | None = None,
     project_name: str | None = None,
     show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
+    folder: 'Folder | tuple[str] | list[str] | str | None' = None,
+    folder_id: str | None = None,
+    folder_name: str | None = None,
+    folder_path: tuple[str] | list[str] | str | None = None,
     **filters,
 ) -> list["Attribute"] | list[dict]:
     """Get list of Attribute objects or dicts with them.
@@ -94,6 +102,17 @@ def list_attributes(
             Available values:
                 - `ExpressionFormat.TREE` or `tree` (default)
                 - `ExpressionFormat.TOKENS or `tokens`
+        folder (Folder | tuple | list | str, optional): Folder object or ID or
+            name or path specifying the folder. May be used instead of
+            `folder_id`, `folder_name` or `folder_path`.
+        folder_id (str, optional): ID of a folder.
+        folder_name (str, optional): Name of a folder.
+        folder_path (str, optional): Path of the folder.
+            The path has to be provided in the following format:
+                if it's inside of a project, start with a Project Name:
+                    /MicroStrategy Tutorial/Public Objects/Metrics
+                if it's a root folder, start with `CASTOR_SERVER_CONFIGURATION`:
+                    /CASTOR_SERVER_CONFIGURATION/Users
         **filters: Available filter parameters:
             id str: Attribute's ID
             name str: Attribute's name
@@ -101,8 +120,7 @@ def list_attributes(
             date_created str: format: 2001-01-02T20:48:05.000+0000
             date_modified str: format: 2001-01-02T20:48:05.000+0000
             version str: Attribute's version
-            owner dict: e.g. {'id': <user's id>, 'name': <user's name>},
-                with one or both of the keys: id, name
+            owner dict | str | User: Owner ID
             acg str | int: access control group
             subtype str: object's subtype
             ext_type str: object's extended type
@@ -117,14 +135,21 @@ def list_attributes(
         project_name,
     )
 
+    validate_owner_key_in_filters(filters)
+
     if attribute_subtype is None:
         attribute_subtype = ObjectTypes.ATTRIBUTE
+
     objects_ = search_operations.full_search(
         connection,
         object_types=attribute_subtype,
         project=proj_id,
         name=name,
         pattern=search_pattern,
+        root=folder,
+        root_id=folder_id,
+        root_name=folder_name,
+        root_path=folder_path,
         limit=limit,
         **filters,
     )
@@ -376,10 +401,11 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
         connection: 'Connection',
         name: str,
         sub_type: ObjectSubType | str,
-        destination_folder: Folder | str,
         forms: list[AttributeForm],
         key_form: FormReference,
         displays: AttributeDisplays,
+        destination_folder: 'Folder | tuple[str] | list[str] | str | None' = None,
+        destination_folder_path: tuple[str] | list[str] | str | None = None,
         description: str | None = None,
         is_embedded: bool = False,
         attribute_lookup_table: SchemaObjectReference | None = None,
@@ -394,10 +420,12 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
                 by `connection.Connection()`
             name: attribute's name
             sub_type: attribute's sub_type
-            destination_folder: A globally unique identifier used to
-                distinguish between metadata objects within the same project.
-                It is possible for two metadata objects in different projects
-                to have the same Object ID.
+            destination_folder (Folder | tuple | list | str, optional): Folder
+                object or ID or name or path specifying the folder where to
+                create object.
+            destination_folder_path (str, optional): Path of the folder.
+                The path has to be provided in the following format:
+                    /MicroStrategy Tutorial/Public Objects/Metrics
             forms: attribute's forms list
             key_form: a key form of an attribute
             displays: The collections of attribute displays and browse displays
@@ -429,17 +457,19 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
         displays = cls.validate_displays(displays=displays, forms=forms)
         sorts = cls.validate_sorts(sorts, forms)
 
+        dest_id = get_folder_id_from_params_set(
+            connection,
+            connection.project_id,
+            folder=destination_folder,
+            folder_path=destination_folder_path,
+        )
         body = {
             'information': {
                 'name': name,
                 'subType': get_enum_val(sub_type, ObjectSubType),
                 'isEmbedded': is_embedded,
                 'description': description,
-                'destinationFolderId': (
-                    destination_folder.id
-                    if isinstance(destination_folder, Folder)
-                    else destination_folder
-                ),
+                'destinationFolderId': dest_id,
             },
             'forms': [form.to_dict() for form in forms] if forms else None,
             'attributeLookupTable': (
@@ -576,7 +606,6 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
         name: str | None = None,
         is_embedded: bool | None = None,
         description: str | None = None,
-        destination_folder_id: str | None = None,
         forms: list[AttributeForm] | None = None,
         attribute_lookup_table: SchemaObjectReference | None = None,
         key_form: FormReference | None = None,
@@ -596,10 +625,6 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
                 reference is embedded within this object. Alternatively if
                 this object is itself embedded, then it means that the target
                 object is embedded in the same container as this object.
-            destination_folder_id: A globally unique identifier used to
-                distinguish between metadata objects within the same project.
-                It is possible for two metadata objects in different projects
-                to have the same Object Id.
             forms: attribute's forms list
             attribute_lookup_table: Information about an object referenced
                 within the  specification of another object. An object reference
@@ -622,7 +647,6 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
                 name,
                 is_embedded,
                 description,
-                destination_folder_id,
                 forms,
                 attribute_lookup_table,
                 key_form,
