@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from mstrio import config
 from mstrio.api import subscriptions
 from mstrio.connection import Connection
-from mstrio.utils.entity import DeleteMixin, EntityBase
+from mstrio.utils.entity import ChangeJournalMixin, DeleteMixin, EntityBase
 from mstrio.utils.helper import (
     Dictable,
     delete_none_values,
@@ -88,7 +88,7 @@ def list_dynamic_recipient_lists(
 
 
 @class_version_handler('11.3.0600')
-class DynamicRecipientList(EntityBase, DeleteMixin):
+class DynamicRecipientList(EntityBase, ChangeJournalMixin, DeleteMixin):
     """Python representation of Strategy One DynamicRecipientList object.
 
     Attributes:

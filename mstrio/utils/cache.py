@@ -129,7 +129,7 @@ class CacheSource(Dictable):
 
     def __repr__(self):
         return (
-            f"CacheSource(id='{self.id}, name='{self.name}, type='{self.type.value}')"
+            f"CacheSource(id='{self.id}', name='{self.name}', type='{self.type.value}')"
         )
 
 
@@ -353,32 +353,32 @@ class ContentCacheMixin:
                 `connection.Connection()`.
             to_dictionary (bool, optional): If True returns dict, by default
                 (False) returns ContentCache objects
-            status (string, optional): When provided, only caches with given
+            status (str, optional): When provided, only caches with given
                 status will be returned (if any). Default value `ready`
-            project_id (string, optional): When provided only caches
+            project_id (str, optional): When provided only caches
                 for project with given ID will be returned (if any).
-            nodes (list[string] | string, optional): names of nodes on which
+            nodes (list[str] | str, optional): names of nodes on which
                 caches will be searched. By default, it equals `None` and in
                 that case all nodes names are loaded from the cluster.
-            content_type (string | CacheSource.Type, optional): When provided,
+            content_type (str | CacheSource.Type, optional): When provided,
                 only caches of given type will be returned (if any).
-            limit (integer, optional): Cut-off value for the number of objects
+            limit (int, optional): Cut-off value for the number of objects
                 returned. This is a local limit as we always need to fetch all
                 caches first to allow proper filtering on mstrio-py side.
-            db_connection_id (string, optional): When provided, only caches for
+            db_connection_id (str, optional): When provided, only caches for
                 the database connection with given ID will be returned (if any).
-            db_login_id (string, optional): When provided, only caches for
+            db_login_id (str, optional): When provided, only caches for
                 the database login with given ID will be returned (if any).
-            id (string, optional): When provided, only cache with
+            id (str, optional): When provided, only cache with
                 given ID will be returned (if any).
-            owner (string, optional): Owner of the content cache. Exact match on
+            owner (str, optional): Owner of the content cache. Exact match on
                 the owner's full name.
-            size (string, optional): Size condition for the content cache
+            size (str, optional): Size condition for the content cache
                 (in KB). When provided, only caches which satisfy the condition
                 will be returned (if any).
-            wh_tables (string, optional):  When provided, only caches using
-                given warehouse tables will be returned (if any).
-            security_filter_id (string, optional): When provided, only caches
+            wh_tables (str | list[str], optional):  When provided, only caches
+                using any of given warehouse tables will be returned (if any).
+            security_filter_id (str, optional): When provided, only caches
                 using given security filter will be returned (if any).
 
         Returns:
@@ -391,6 +391,8 @@ class ContentCacheMixin:
             nodes = ContentCacheMixin.fetch_nodes(connection, project_id)
         if not content_type:
             content_type = cls._CACHE_TYPE
+        if isinstance(wh_tables, str):
+            wh_tables = [wh_tables]
         unloaded = False
         if status == 'unloaded':
             unloaded = True
@@ -407,12 +409,9 @@ class ContentCacheMixin:
             owner=owner,
         )
 
-        caches = [list(cache.items())[0] for cache in caches]
         validate_param_value('limit', limit, int, min_val=1, special_values=[None])
         # This is a result limitation because every time we list caches, we need
         # to fetch them all first to do proper filtering on the mstrio-py side
-
-        caches = [{**cache[1], 'combined_id': cache[0]} for cache in caches]
 
         # apply filtering
         def filtered_caches(str_arg, arg):
@@ -424,10 +423,17 @@ class ContentCacheMixin:
             caches = filtered_caches('databaseConnectionId', db_connection_id)
         if db_login_id:
             caches = filtered_caches('databaseLoginId', db_login_id)
-        if wh_tables:
-            caches = filtered_caches('warehouseTablesUsed', wh_tables)
         if security_filter_id:
             caches = filtered_caches('securityFilterId', security_filter_id)
+        if wh_tables:
+            caches = [
+                cache
+                for cache in caches
+                if any(
+                    wh_table in cache.get('warehouseTablesUsed', [])
+                    for wh_table in wh_tables
+                )
+            ]
         if unloaded:
             caches = [
                 cache for cache in caches if not cache.get('status').get('loaded')

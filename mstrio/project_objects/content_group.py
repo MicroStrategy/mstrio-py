@@ -276,7 +276,7 @@ class ContentGroup(Entity, CopyMixin, DeleteMixin):
         ).json()
         contents = []
         for project in response:
-            project_change = None if project == self.connection.project_id else project
+            project_change = project or self.connection.project_id
             temp_conn = get_temp_connection(self.connection, project_change)
             for content in response.get(project):
                 contents.append(self._process_content(temp_conn, content))

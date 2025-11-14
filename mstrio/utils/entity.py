@@ -24,7 +24,10 @@ from mstrio.utils.helper import (
     get_response_json,
     rename_dict_keys,
 )
-from mstrio.utils.resolvers import get_project_id_from_params_set
+from mstrio.utils.resolvers import (
+    get_folder_id_from_params_set,
+    get_project_id_from_params_set,
+)
 from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.time_helper import (
     DatetimeFormats,
@@ -32,16 +35,39 @@ from mstrio.utils.time_helper import (
     map_str_to_datetime,
 )
 from mstrio.utils.translation_mixin import TranslationMixin
-from mstrio.utils.version_helper import method_version_handler
+from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
 if TYPE_CHECKING:
     from mstrio.modeling import Prompt
     from mstrio.object_management import Folder, Shortcut
-    from mstrio.server import Project
+    from mstrio.server import ChangeJournalEntry, Project
 
 logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
+
+
+@class_version_handler('11.4.0900')
+class ChangeJournalMixin:
+    """Mixin class for adding change journal functionality to entities."""
+
+    _change_journal: None | list['ChangeJournalEntry'] = None
+
+    @property
+    def change_journal(self) -> list['ChangeJournalEntry']:
+        """Get change journal entries of the object."""
+        if self._change_journal is None:
+            self.fetch_all_change_journal_entries()
+        return self._change_journal
+
+    def fetch_all_change_journal_entries(self) -> None:
+        """Fetch change journal entries from the API."""
+        from mstrio.server import list_change_journal_entries
+
+        self._change_journal = list_change_journal_entries(
+            connection=self.connection,
+            affected_objects=self.id,
+        )
 
 
 class EntityBase(helper.Dictable):
@@ -835,6 +861,7 @@ class EntityBase(helper.Dictable):
 
             if not body:
                 continue
+
             # send patch request from the specified update wrapper
             param_value_dict = auto_match_args_entity(func, self, exclude=["body"])
             param_value_dict['body'] = body
@@ -1054,7 +1081,9 @@ class EntityBase(helper.Dictable):
         return self._type
 
 
-class Entity(EntityBase, ACLMixin, DependenceMixin, TranslationMixin):
+class Entity(
+    EntityBase, ACLMixin, ChangeJournalMixin, DependenceMixin, TranslationMixin
+):
     """Base class representation of the Strategy One object.
 
     Provides methods to fetch, update, and view the object. To implement
@@ -1171,7 +1200,6 @@ class Entity(EntityBase, ACLMixin, DependenceMixin, TranslationMixin):
         self._icon_path = kwargs.get("icon_path", default_value)
         self._view_media = kwargs.get("view_media", default_value)
         self._ancestors = kwargs.get("ancestors", default_value)
-        self._location = None
         self._certified_info = (
             CertifiedInfo.from_dict(kwargs.get("certified_info"), self.connection)
             if kwargs.get("certified_info")
@@ -1191,9 +1219,10 @@ class Entity(EntityBase, ACLMixin, DependenceMixin, TranslationMixin):
     @method_version_handler(version="11.3.0200")
     def create_shortcut(
         self,
+        target_folder: 'Folder | tuple[str] | list[str] | str | None' = None,
         target_folder_id: str | None = None,
-        target_folder_path: str | None = None,
-        target_folder: 'Folder | None' = None,
+        target_folder_name: str | None = None,
+        target_folder_path: tuple[str] | list[str] | str | None = None,
         project: 'Project | str | None' = None,
         project_id: str | None = None,
         project_name: str | None = None,
@@ -1202,14 +1231,15 @@ class Entity(EntityBase, ACLMixin, DependenceMixin, TranslationMixin):
         """Create a shortcut to the object.
 
         Args:
-            target_folder_id (str, optional): ID of the target folder. Target
-                folder must be specified, but `target_folder_id` may be
-                substituted with `target_folder_path` or `target_folder`.
-            target_folder_path (str, optional): Path to the target folder, e.g.
-                '/MicroStrategy Tutorial/Public Objects'.
-                May be used instead of `target_folder_id`.
-            target_folder (Folder, optional): Target folder object.
-                May be used instead of `target_folder_id`.
+            target_folder (Folder | tuple | list | str, optional): Folder
+                object or ID or name or path specifying the folder. May be used
+                instead of `target_folder_id`, `target_folder_name` or
+                `target_folder_path`.
+            target_folder_id (str, optional): ID of a folder.
+            target_folder_name (str, optional): Name of a folder.
+            target_folder_path (str, optional): Path of the folder.
+                The path has to be provided in the following format:
+                    /MicroStrategy Tutorial/Public Objects/Metrics
             project (Project | str, optional): Project object or ID or name
                 specifying the project. May be used instead of `project_id` or
                 `project_name`.
@@ -1220,17 +1250,7 @@ class Entity(EntityBase, ACLMixin, DependenceMixin, TranslationMixin):
                 Shortcut object. Defaults to False.
 
         """
-        from mstrio.object_management.folder import get_folder_id_from_path
         from mstrio.object_management.shortcut import Shortcut
-
-        if target_folder:
-            target_folder_id = target_folder.id
-        elif target_folder_path:
-            target_folder_id = get_folder_id_from_path(
-                self.connection, target_folder_path
-            )
-        if not target_folder_id:
-            raise ValueError("Target folder not specified.")
 
         proj_id = get_project_id_from_params_set(
             self.connection,
@@ -1238,9 +1258,16 @@ class Entity(EntityBase, ACLMixin, DependenceMixin, TranslationMixin):
             project_id,
             project_name,
         )
-
+        fold_id = get_folder_id_from_params_set(
+            self.connection,
+            proj_id,
+            target_folder,
+            target_folder_id,
+            target_folder_name,
+            target_folder_path,
+        )
         body = {
-            'folderId': target_folder_id,
+            'folderId': fold_id,
         }
 
         res = objects.create_shortcut(
@@ -1252,11 +1279,13 @@ class Entity(EntityBase, ACLMixin, DependenceMixin, TranslationMixin):
         )
         body = res.json()
         shortcut_id = body.get('id')
+
         if config.verbose:
             logger.info(
                 f"Successfully created Shortcut for object named '{self.name}' "
                 f"with ID: '{self.id}'. Shortcut ID: '{shortcut_id}'."
             )
+
         if to_dictionary:
             return body
         return Shortcut.from_dict(source=body, connection=self.connection)
@@ -1331,12 +1360,11 @@ class Entity(EntityBase, ACLMixin, DependenceMixin, TranslationMixin):
 
     @property
     def location(self) -> str:
-        if self.ancestors:
-            self._location = ''
-            for ancestor in self.ancestors:
-                self._location += '/' + ancestor.get('name')
-            self._location += '/' + self.name
-        return self._location
+        if not self.ancestors:
+            return ''
+
+        ancestors = sorted(self.ancestors, key=lambda x: -x["level"])
+        return "/" + "/".join([a["name"] for a in ancestors] + [self.name])
 
 
 class CopyMixin:
@@ -1347,7 +1375,7 @@ class CopyMixin:
     """
 
     def create_copy(
-        self: T,
+        self: 'Entity[T]',
         name: str | None = None,
         folder_id: str | None = None,
         project: 'Project | str | None' = None,
@@ -1364,7 +1392,7 @@ class CopyMixin:
                 project where the current object exists.
 
         Returns:
-                New python object holding the copied object.
+            New python object holding the copied object.
         """
         if self._OBJECT_TYPE.value in [32]:
             raise NotSupportedError("Copying of object with type 32 is not supported.")
@@ -1379,6 +1407,7 @@ class CopyMixin:
             object_type=self._OBJECT_TYPE.value,
             project_id=project.id if isinstance(project, Project) else project,
         )
+
         return self.from_dict(source=response.json(), connection=self.connection)
 
 
@@ -1387,17 +1416,38 @@ class MoveMixin:
     Must be mixedin with Entity or its subclasses.
     """
 
-    def move(self: Entity, folder: 'Folder | str'):
+    def move(
+        self: Entity,
+        folder: 'Folder | tuple[str] | list[str] | str | None' = None,
+        folder_id: str | None = None,
+        folder_name: str | None = None,
+        folder_path: tuple[str] | list[str] | str | None = None,
+    ) -> None:
         """Move the object to a folder on the I-Server.
 
         Args:
-            folder: Destination folder, specified either by id
-                or the Folder object.
+            folder (Folder | tuple | list | str, optional): Folder object or ID
+                or name or path specifying the folder. May be used instead of
+                `folder_id`, `folder_name` or `folder_path`.
+            folder_id (str, optional): ID of a folder.
+            folder_name (str, optional): Name of a folder.
+            folder_path (str, optional): Path of the folder.
+                The path has to be provided in the following format:
+                    if it's inside of a project, start with a Project Name:
+                        /MicroStrategy Tutorial/Public Objects/Metrics
+                    if it's a root folder, start with
+                    `CASTOR_SERVER_CONFIGURATION`:
+                        /CASTOR_SERVER_CONFIGURATION/Users
         """
-        from mstrio.object_management.folder import Folder
-
-        folder = folder.id if isinstance(folder, Folder) else folder
-        self._alter_properties(folder_id=folder)
+        fold_id = get_folder_id_from_params_set(
+            self.connection,
+            self.connection.project_id,
+            folder,
+            folder_id,
+            folder_name,
+            folder_path,
+        )
+        self._alter_properties(folder_id=fold_id)
 
 
 class DeleteMixin:

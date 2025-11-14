@@ -30,9 +30,10 @@ def list_shortcuts(
     project_name: str | None = None,
     to_dictionary: bool = False,
     limit: int | None = None,
-    folder: Folder | None = None,
+    folder: 'Folder | tuple[str] | list[str] | str | None' = None,
     folder_id: str | None = None,
-    folder_path: str | None = None,
+    folder_name: str | None = None,
+    folder_path: tuple[str] | list[str] | str | None = None,
     **filters,
 ):
     """List all shortcuts in a project.
@@ -57,16 +58,17 @@ def list_shortcuts(
             objects. Defaults to False.
         limit (integer, optional): limit the number of elements returned. If
             None all object are returned.
-        folder (Folder, optional): Folder object specifying where the search
-            will be performed.
-        folder_id (string, optional): ID of a folder where the search
-            will be performed. Can be provided as an alternative to `folder`
-            parameter.
-        folder_path (str, optional): Path of the folder in which the search
-            will be performed. Can be provided as an alternative to `folder`
-            and `folder_id` parameters. The path has to be provided in the
-            forward-slash format, beginning with project name, e.g.
-            "/MicroStrategy Tutorial/Public Objects/Metrics".
+        folder (Folder | tuple | list | str, optional): Folder object or ID or
+            name or path specifying the folder. May be used instead of
+            `folder_id`, `folder_name` or `folder_path`.
+        folder_id (str, optional): ID of a folder.
+        folder_name (str, optional): Name of a folder.
+        folder_path (str, optional): Path of the folder.
+            The path has to be provided in the following format:
+                if it's inside of a project, start with a Project Name:
+                    /MicroStrategy Tutorial/Public Objects/Metrics
+                if it's a root folder, start with `CASTOR_SERVER_CONFIGURATION`:
+                    /CASTOR_SERVER_CONFIGURATION/Users
         **filters: Available filter parameters: ['id', 'type', 'subtype',
             'date_created', 'date_modified', 'version', 'owner', 'ext_type',
             'view_media', 'certified_info']
@@ -82,11 +84,6 @@ def list_shortcuts(
 
     validate_owner_key_in_filters(filters)
 
-    if folder and not folder_id:
-        folder_id = folder.id
-    if folder_path and folder_id:
-        folder_path = None
-
     # No endpoint for listing shortcuts. Using full_search instead.
     objects = full_search(
         connection,
@@ -95,7 +92,9 @@ def list_shortcuts(
         project=proj_id,
         name=name,
         limit=limit,
-        root=folder_id,
+        root=folder,
+        root_id=folder_id,
+        root_name=folder_name,
         root_path=folder_path,
         **filters,
     )
@@ -253,12 +252,7 @@ class Shortcut(Entity, CopyMixin, MoveMixin, DeleteMixin):
 
     def create_shortcut(
         self,
-        target_folder_id=None,
-        target_folder_path=None,
-        target_folder=None,
-        project=None,
-        project_id=None,
-        project_name=None,
-        to_dictionary=False,
+        *args,
+        **kwargs,
     ):
         raise ValueError("Shortcut cannot refer to another shortcut.")

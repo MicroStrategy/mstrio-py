@@ -129,6 +129,9 @@ class Delivery(DeliveryDictable):
         cache: Cache delivery properties
         mobile: Mobile delivery properties object
         history_list: HistoryList delivery properties
+        onedrive: OneDrive delivery properties
+        sharepoint: SharePoint delivery properties
+        s3: S3 delivery properties
     """
 
     class DeliveryMode(AutoUpperName):
@@ -142,6 +145,9 @@ class Delivery(DeliveryDictable):
         SNAPSHOT = auto()
         PERSONAL_VIEW = auto()
         SHARED_LINK = auto()
+        ONEDRIVE = auto()
+        SHAREPOINT = auto()
+        S3 = auto()
         UNSUPPORTED = auto()
 
     class Email(DeliveryDictable):
@@ -401,6 +407,39 @@ class Delivery(DeliveryDictable):
             self.overwrite_older_version = overwrite_older_version
             self.re_run_hl = re_run_hl
 
+    class _REST(Ftp):
+        """Base Class for a set of delivery types. Currently, 1:1 with FTP"""
+
+    class OneDrive(_REST):
+        """Delivery properties for OneDrive subscriptions
+
+        Attributes:
+            filename: The filename that will be delivered when the subscription
+                is executed
+            space_delimiter: The space delimiter
+            zip: Optional compression settings object
+        """
+
+    class SharePoint(_REST):
+        """Delivery properties for SharePoint subscriptions
+
+        Attributes:
+            filename: The filename that will be delivered when the subscription
+                is executed
+            space_delimiter: The space delimiter
+            zip: Optional compression settings object
+        """
+
+    class S3(_REST):
+        """Delivery properties for S3 subscriptions
+
+        Attributes:
+            filename: The filename that will be delivered when the subscription
+                is executed
+            space_delimiter: The space delimiter
+            zip: Optional compression settings object
+        """
+
     VALIDATION_DICT = {
         "mode": [str, True],
         "expiration": [str, False],
@@ -413,6 +452,9 @@ class Delivery(DeliveryDictable):
         "cache": [Cache, False],
         "mobile": [Mobile, False],
         "history_list": [HistoryList, False],
+        "onedrive": [OneDrive, False],
+        "sharepoint": [SharePoint, False],
+        "s3": [S3, False],
     }
 
     def __init__(
@@ -509,6 +551,13 @@ class Delivery(DeliveryDictable):
                 overwrite_older_version,
                 re_run_hl,
             )
+        elif self.DeliveryMode(mode) == self.DeliveryMode.ONEDRIVE:
+            self.onedrive = self.OneDrive(space_delimiter, filename, temp_zip)
+        elif self.DeliveryMode(mode) == self.DeliveryMode.SHAREPOINT:
+            self.sharepoint = self.SharePoint(space_delimiter, filename, temp_zip)
+        elif self.DeliveryMode(mode) == self.DeliveryMode.S3:
+            self.s3 = self.S3(space_delimiter, filename, temp_zip)
+
         if notification_enabled:
             self.notification_enabled = notification_enabled
             self.personal_notification = {
@@ -544,6 +593,12 @@ class Delivery(DeliveryDictable):
             self.__setattr__(mode_name, self.Cache.from_dict(mode_value))
         elif mode_name == 'history_list':
             self.__setattr__(mode_name, self.HistoryList.from_dict(mode_value))
+        elif mode_name == 'onedrive':
+            self.__setattr__(mode_name, self.OneDrive.from_dict(mode_value))
+        elif mode_name == 'sharepoint':
+            self.__setattr__(mode_name, self.SharePoint.from_dict(mode_value))
+        elif mode_name == 's3':
+            self.__setattr__(mode_name, self.S3.from_dict(mode_value))
         else:
             return False
         return True

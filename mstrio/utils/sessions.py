@@ -1,11 +1,15 @@
 import functools
 import logging
+from typing import TYPE_CHECKING
 
 from requests_futures.sessions import FuturesSession
 
+if TYPE_CHECKING:
+    from mstrio.connection import Connection
+
 
 class FuturesSessionWithRenewal(FuturesSession):
-    def __init__(self, *, connection, **kwargs):
+    def __init__(self, *, connection: 'Connection', **kwargs):
         super().__init__(session=connection._session, **kwargs)
         self.connection = connection
 
@@ -111,7 +115,7 @@ class FuturesSessionWithRenewal(FuturesSession):
 
 def renew_session(func):
     @functools.wraps(func)
-    def wrapper(self, *args, **kwargs):
+    def wrapper(self: 'Connection', *args, **kwargs):
         if (
             not kwargs.pop('skip_expiration_check', False)
             and self._is_session_expired()
@@ -123,16 +127,19 @@ def renew_session(func):
     return wrapper
 
 
-def log_request(logger):
+def log_request(logger: 'logging.Logger'):
     def decorator(func):
         @functools.wraps(func)
-        def wrapper(self, method_name, url=None, endpoint=None, **kwargs):
+        def wrapper(self: 'Connection', method_name, url=None, endpoint=None, **kwargs):
             if logger.isEnabledFor(logging.DEBUG):
+                from pprint import pformat
+
                 log_url = url or self.base_url + endpoint
                 logger.debug("method = %s url = '%s'", method_name, log_url)
-                logger.debug("headers = %s", self._session.headers)
-                logger.debug("headers additional = %s", kwargs.get('headers'))
-                logger.debug("body = %s", kwargs.get('json'))
+                logger.debug("headers = %s", pformat(self._session.headers))
+                logger.debug("headers additional = %s", pformat(kwargs.get('headers')))
+                logger.debug("body = %s", pformat(kwargs.get('json')))
+
             return func(self, method_name, url=url, endpoint=endpoint, **kwargs)
 
         return wrapper

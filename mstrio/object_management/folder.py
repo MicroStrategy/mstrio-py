@@ -1,9 +1,11 @@
+import contextlib
 import logging
 from collections import deque
 from typing import TYPE_CHECKING
 
 from mstrio import config
 from mstrio.api import folders
+from mstrio.helpers import IServerError
 from mstrio.object_management import PredefinedFolders
 from mstrio.types import ObjectTypes
 from mstrio.users_and_groups import User
@@ -14,6 +16,7 @@ from mstrio.utils.helper import (
     get_temp_connection,
 )
 from mstrio.utils.resolvers import (
+    get_folder_id_from_params_set,
     get_project_id_from_params_set,
     validate_owner_key_in_filters,
 )
@@ -26,6 +29,10 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+# This root Project folder is hardcoded in every Environment
+ROOT_PROJECT_FOLDER_ID = "D43364C684E34A5F9B2F9AD7108F7828"
+
+
 def list_folders(
     connection: "Connection",
     project: "Project | str | None" = None,
@@ -34,7 +41,7 @@ def list_folders(
     to_dictionary: bool = False,
     limit: int | None = None,
     include_subfolders: bool = False,
-    parent_folder: "str | Folder | None" = None,
+    parent_folder: 'Folder | tuple[str] | list[str] | str | None' = None,
     **filters,
 ) -> list["Folder"] | list[dict]:
     """Get a list of folders - either all folders in a specific project or all
@@ -64,17 +71,13 @@ def list_folders(
             result. Default is False.
             Note that using this option will result in a large number of
                 objects being fetched, as it will fetch all folders available.
-        parent_folder (string or Folder, optional): Parent folder from which to
-            list folders. Can be provided with three forms of input:
-                - Folder object
-                - Folder ID
-                - Folder path. The path has to be provided in the following
-                    format:
-                        if it's inside of a project, example:
-                            /MicroStrategy Tutorial/Public Objects/Metrics
-                        if it's a root folder, example:
-                            /CASTOR_SERVER_CONFIGURATION/Users
-
+        parent_folder (Folder | tuple | list | str, optional): Folder object or
+            ID or name or path specifying the folder.
+            The path has to be provided in the following format:
+                if it's inside of a project, start with a Project Name:
+                    /MicroStrategy Tutorial/Public Objects/Metrics
+                if it's a root folder, start with `CASTOR_SERVER_CONFIGURATION`:
+                    /CASTOR_SERVER_CONFIGURATION/Users
         **filters: Available filter parameters: ['name', 'id', 'type',
             'subtype', 'date_created', 'date_modified', 'version', 'acg',
              'owner', 'hidden',
@@ -109,7 +112,9 @@ def list_folders(
             filters=filters,
         )
     else:
-        parent_folder_id = _get_parent_folder_id(temp_conn, parent_folder)
+        parent_folder_id = get_folder_id_from_params_set(
+            temp_conn, proj_id, folder=parent_folder
+        )
 
         with config.temp_verbose_disable():
             parent_folder = Folder(connection=temp_conn, id=parent_folder_id)
@@ -242,7 +247,10 @@ def get_predefined_folder_contents(
         return map_objects_list(connection, objects)
 
 
-def get_folder_id_from_path(connection: "Connection", path: str) -> str:
+def get_folder_id_from_path(
+    connection: "Connection",
+    path: str | tuple[str] | list[str],
+) -> str:
     """Get folder id from folder path.
 
     Args:
@@ -258,68 +266,87 @@ def get_folder_id_from_path(connection: "Connection", path: str) -> str:
     Returns:
         Folder id.
     """
-    if path[0] == '/':
-        path = path[1:]
-    if path[-1] == '/':
-        path = path[:-1]
-    folders_in_path = path.split('/')
-    project_id = (
-        # FYI: EXPECT project ID if project-level...
-        get_project_id_from_params_set(connection, project_name=folders_in_path[0])
-        if folders_in_path[0] != 'CASTOR_SERVER_CONFIGURATION'
-        # ... `None` only otherwise
-        else None
-    )
+
+    def get_err_msg(f_name: str) -> str:
+        return (
+            f"Couldn't find folder with given name {f_name} "
+            f"while exploring the path. Check if provided path is correct."
+        )
+
+    if isinstance(path, str):
+        if path:
+            if path[0] == '/':
+                path = path[1:]
+            if path[-1] == '/':
+                path = path[:-1]
+        folders_in_path = path.split('/') if path else []
+    else:
+        folders_in_path = path
+
+    if not folders_in_path:
+        raise ValueError(get_err_msg("<EMPTY>"))
+
     try:
+        project_id = (
+            # FYI: EXPECT project ID if project-level...
+            get_project_id_from_params_set(connection, project_name=folders_in_path[0])
+            if folders_in_path[0] != 'CASTOR_SERVER_CONFIGURATION'
+            # ... `None` only otherwise
+            else None
+        )
+    except ValueError as err:
+        if "Could not uniquely identify the Project by it's name" in str(err):
+            raise ValueError(get_err_msg(folders_in_path[0])) from err
+        raise err
+
+    with connection.temporary_project_change(project_id):
         if project_id:
-            original_project_id = connection.project_id
-            connection.project_id = project_id
-            # This root Project folder is hardcoded in every Environment
-            folder = Folder(
-                connection=connection, id='D43364C684E34A5F9B2F9AD7108F7828'
-            )
+            with config.temp_verbose_disable():
+                folder = Folder(connection=connection, id=ROOT_PROJECT_FOLDER_ID)
         else:
             castor_id = (
                 folders.get_predefined_folder_id(connection=connection, folder_type=39)
                 .json()
                 .get('id')
             )
-            folder = Folder(connection=connection, id=castor_id)
-        for i in range(1, len(folders_in_path)):
-            temp_ids = [
-                item.get('id')
-                for item in folder.get_contents(to_dictionary=True)
-                if item.get('type') == 8 and item.get('name') == folders_in_path[i]
-            ]
-            if not temp_ids:
-                error_message = (
-                    f"Couldn't find folder with given name {folders_in_path[i]} "
-                    f"while exploring the path. Check if provided path is correct."
-                )
-                raise ValueError(error_message)
-            folder = Folder(
-                connection=connection,
-                id=temp_ids[0],
+            with config.temp_verbose_disable():
+                folder = Folder(connection=connection, id=castor_id)
+
+        for f_name in folders_in_path[1:]:
+            temp_folder = next(
+                (f for f in folder.get_subfolders() if f.name == f_name),
+                None,
             )
+
+            if not temp_folder:
+                raise ValueError(get_err_msg(f_name))
+
+            with config.temp_verbose_disable():
+                folder = Folder(connection=connection, id=temp_folder.id)
+
         return folder.id
-    finally:
-        if project_id:
-            connection.project_id = (
-                original_project_id if original_project_id else connection.project_id
-            )
 
 
-def _get_parent_folder_id(
-    temp_conn: "Connection",
-    parent_folder: "str | Folder | None",
-) -> str:
-    if isinstance(parent_folder, str) and '/' in parent_folder:
-        with config.temp_verbose_disable():
-            return get_folder_id_from_path(temp_conn, parent_folder)
-    elif isinstance(parent_folder, Folder):
-        return parent_folder.id
-    else:
-        return parent_folder
+def _folder_bfs_traversal(start_queue: deque["Folder"]):
+    queue = start_queue.copy()
+    while queue:
+        current_folder = queue.popleft()
+        yield current_folder
+
+        with contextlib.suppress(IServerError):
+            subfolders = current_folder.get_subfolders()
+            queue.extend(subfolders)
+
+
+def _folder_dfs_traversal(start_stack: list["Folder"]):
+    stack = start_stack.copy()
+    while stack:
+        current_folder = stack.pop()
+        yield current_folder
+
+        with contextlib.suppress(IServerError):
+            subfolders = current_folder.get_subfolders()
+            stack.extend(reversed(subfolders))
 
 
 class Folder(Entity, CopyMixin, MoveMixin, DeleteMixin):
@@ -350,6 +377,7 @@ class Folder(Entity, CopyMixin, MoveMixin, DeleteMixin):
             certification, and information about the certifier (currently only
             for document and report)
         contents: contents of folder
+        path: folder path string built from `ancestors`
     """
 
     _FROM_DICT_MAP = {**Entity._FROM_DICT_MAP, 'owner': User.from_dict}
@@ -373,35 +401,42 @@ class Folder(Entity, CopyMixin, MoveMixin, DeleteMixin):
         self,
         connection: "Connection",
         id: str | None = None,
-        path: str | None = None,
         name: str | None = None,
+        path: tuple[str] | list[str] | str | None = None,
     ):
         """Initialize folder object by its identifier.
 
         Note:
-            Parameter `name` is not used when fetching. `id` is always used to
-            uniquely identify folder.
+            Providing only `name` as identifier can be significantly
+            slower, based on amount of folders in the environment, and
+            does not guarantee finding correct folder when there are many with
+            the same name. This will initialize first found name match.
+            Use ID or Path to guarantee uniqueness.
 
         Args:
-            connection: Strategy One connection object returned by
+            connection (Connection): Strategy One connection object returned by
                 `connection.Connection()`.
             id (str, optional): Identifier of a pre-existing folder containing
                 the required data.
-            path (str, optional): path of a a pre-existing folder containing
-                the required data. Can be provided as an alternative to
-                `id` parameter. If both are provided, `id` is used.
-                    the path has to be provided in the following format:
-                        if it's inside of a project, example:
-                            /MicroStrategy Tutorial/Public Objects/Metrics
-                        if it's a root folder, example:
-                            /CASTOR_SERVER_CONFIGURATION/Users
-            name (str): name of folder.
+            path (list | tuple | str, optional): Path of the pre-existing
+                folder. The path has to be provided in the following format:
+                    if it's inside of a project, start with a Project Name:
+                        /MicroStrategy Tutorial/Public Objects/Metrics
+                    if it's a root folder, start with
+                    `CASTOR_SERVER_CONFIGURATION`:
+                        /CASTOR_SERVER_CONFIGURATION/Users
+            name (str, optional): name of folder.
         """
         if not id:
-            if path:
-                id = get_folder_id_from_path(connection, path)
+            if name or path:
+                id = get_folder_id_from_params_set(
+                    connection,
+                    connection.project_id,
+                    folder_name=name,
+                    folder_path=path,
+                )
             else:
-                raise ValueError("Either 'id' or 'path' has to be provided.")
+                raise ValueError("Either 'id', 'name' or 'path' has to be provided.")
 
         super().__init__(connection, id, name=name)
 
@@ -410,8 +445,10 @@ class Folder(Entity, CopyMixin, MoveMixin, DeleteMixin):
         cls,
         connection: "Connection",
         name: str,
-        parent: str | None = None,
-        parent_path: str | None = None,
+        parent: 'Folder | tuple[str] | list[str] | str | None' = None,
+        parent_id: str | None = None,
+        parent_name: str | None = None,
+        parent_path: tuple[str] | list[str] | str | None = None,
         description: str | None = None,
     ) -> "Folder":
         """Create a new folder in a folder selected within connection object
@@ -421,16 +458,18 @@ class Folder(Entity, CopyMixin, MoveMixin, DeleteMixin):
             connection: Strategy One connection object returned by
                 `connection.Connection()`.
             name (str): name of a new folder.
-            parent (str): id of a parent folder in which new folder will be
-                created.
-            parent_path (str, optional): path of a parent folder in which new
-                folder will be created. Can be provided as an alternative to
-                `parent` parameter. If both are provided, `parent` is used.
-                    the path has to be provided in the following format:
-                        if it's inside of a project, example:
-                            /MicroStrategy Tutorial/Public Objects/Metrics
-                        if it's a root folder, example:
-                            /CASTOR_SERVER_CONFIGURATION/Users
+            parent (Folder | tuple | list | str, optional): Folder object or ID
+                or name or path specifying the folder. May be used instead of
+                `parent_id`, `parent_name` or `parent_path`.
+            parent_id (str, optional): ID of a folder.
+            parent_name (str, optional): Name of a folder.
+            parent_path (str, optional): Path of the folder.
+                The path has to be provided in the following format:
+                    if it's inside of a project, start with a Project Name:
+                        /MicroStrategy Tutorial/Public Objects/Metrics
+                    if it's a root folder, start with
+                    `CASTOR_SERVER_CONFIGURATION`:
+                        /CASTOR_SERVER_CONFIGURATION/Users
             description (str, optional): optional description of a new folder.
 
         Returns:
@@ -438,13 +477,16 @@ class Folder(Entity, CopyMixin, MoveMixin, DeleteMixin):
         """
         connection._validate_project_selected()
 
-        if not parent:
-            if parent_path:
-                parent = get_folder_id_from_path(connection, parent_path)
-            else:
-                raise ValueError("Either 'parent' or 'parent_path' has to be provided.")
+        par_id = get_folder_id_from_params_set(
+            connection,
+            connection.project_id,
+            folder=parent,
+            folder_id=parent_id,
+            folder_name=parent_name,
+            folder_path=parent_path,
+        )
 
-        response = folders.create_folder(connection, name, parent, description).json()
+        response = folders.create_folder(connection, name, par_id, description).json()
         if config.verbose:
             logger.info(
                 f"Successfully created folder named: '{response.get('name')}' "
@@ -483,7 +525,7 @@ class Folder(Entity, CopyMixin, MoveMixin, DeleteMixin):
     def get_contents(
         self,
         to_dictionary: bool = False,
-        include_subfolders=False,
+        include_subfolders: bool = False,
         limit: int | None = None,
         **filters,
     ) -> list:
@@ -547,3 +589,109 @@ class Folder(Entity, CopyMixin, MoveMixin, DeleteMixin):
             from mstrio.utils.object_mapping import map_objects_list
 
             return map_objects_list(self.connection, objects)
+
+    def get_subfolders(self, to_dictionary: bool = False) -> 'list[Folder | dict]':
+        """Get direct subfolders of the folder.
+
+        Args:
+            to_dictionary (bool, optional): If True returns list of dicts, by
+                default (False) returns list of Folder class instances.
+
+        Returns:
+            List of direct subfolders as Folder objects or dictionaries.
+        """
+        return self.get_contents(
+            type=ObjectTypes.FOLDER,
+            include_subfolders=False,
+            to_dictionary=to_dictionary,
+        )
+
+    def traversal(
+        self,
+        yield_self: bool = True,
+        dfs: bool = False,
+    ):
+        """Generate traversal specifically for this folder's structure,
+        starting with a folder itself.
+
+        Note:
+            This is a Generator method yielding folders one by one in an
+            efficient way, making REST requests along the way but allowing for
+            interactions with already gathered folders in the meantime.
+
+            Please see Example section below for instructions on how to use it.
+
+        Args:
+            yield_self (bool): if `True` (default), the traversal starts with
+                the folder itself. If `False`, only its children and their
+                descendants are yielded.
+            dfs (bool): if `True`, depth-first search is used traversing as deep
+                in folder's children children as possible before going to next
+                child. If `False` (default), breadth-first search is used, going
+                through all direct children of a folder before going level
+                deeper.
+
+        Example:
+            >>> from mstrio.connection import Connection
+            >>> from mstrio.object_management import Folder
+            >>>
+            >>> conn = Connection(...)
+            >>>
+            >>> root_folder = Folder(connection=conn, id="<some-id>")
+            >>> for folder in root_folder.traversal():
+            ...     print(folder.name)
+        """
+
+        with contextlib.suppress(IServerError):
+            if dfs:
+                yield from _folder_dfs_traversal(
+                    [self] if yield_self else list(reversed(self.get_subfolders()))
+                )
+            else:
+                yield from _folder_bfs_traversal(
+                    deque([self] if yield_self else self.get_subfolders())
+                )
+
+    def __str__(self):
+        start = super().__str__()
+        return f"{start} and path: '{self.path}'"
+
+    @property
+    def path(self) -> str:
+        """Get full path of the folder as string."""
+        return self.location
+
+    @staticmethod
+    def traverse_folders(folders_list: 'list[Folder]', dfs: bool = False):
+        """Generate traversal for an explicitly provided list of folders.
+
+        Note:
+            This is a Generator method yielding folders one by one in an
+            efficient way, making REST requests along the way but allowing for
+            interactions with already gathered folders in the meantime.
+
+            Please see Example section below for instructions on how to use it.
+
+        Args:
+            folders_list (list of Folder): list of folders to traverse
+            dfs (bool): if `True`, depth-first search is used traversing as deep
+                in folder's children children as possible before going to next
+                child. If `False` (default), breadth-first search is used, going
+                through all direct children of a folder before going level
+                deeper.
+
+        Example:
+            >>> from mstrio.connection import Connection
+            >>> from mstrio.object_management import Folder, list_folders
+            >>>
+            >>> conn = Connection(...)
+            >>>
+            >>> folders = list_folders(conn, include_subfolders=False)
+            >>> for folder in Folder.traverse_folders(folders):
+            ...     print(folder.name)
+        """
+
+        if dfs:
+            yield from _folder_dfs_traversal(folders_list)
+        else:
+            yield from _folder_bfs_traversal(deque(folders_list))

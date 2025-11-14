@@ -39,6 +39,15 @@ project.resume(on_nodes=NODE_NAME)
 project.unload(on_nodes=NODE_NAME)
 project.load(on_nodes=NODE_NAME)
 
+# check if a project is loaded on any/all nodes or on any/all of the selected node(s)
+is_loaded_on_any_node = project.is_loaded()
+is_loaded_on_all_nodes = project.is_loaded(check_all_selected_nodes=True)
+is_loaded_on_selected_node = project.is_loaded(on_nodes=NODE_NAME)
+is_loaded_on_any_selected_node = project.is_loaded(on_nodes=[NODE_NAME])
+is_loaded_on_all_selected_nodes = project.is_loaded(
+    on_nodes=[NODE_NAME], check_all_selected_nodes=True
+)
+
 # lock/unlock a project and get information about the lock
 project.lock(lock_type=LockType.TEMPORAL_INDIVIDUAL)
 # fetch lock status of a project

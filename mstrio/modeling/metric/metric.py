@@ -24,7 +24,11 @@ from mstrio.utils.helper import (
     filter_params_for_func,
     find_object_with_name,
 )
-from mstrio.utils.resolvers import get_project_id_from_params_set
+from mstrio.utils.resolvers import (
+    get_folder_id_from_params_set,
+    get_project_id_from_params_set,
+    validate_owner_key_in_filters,
+)
 from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.version_helper import method_version_handler
 from mstrio.utils.vldb_mixin import ModelVldbMixin
@@ -55,6 +59,10 @@ def list_metrics(
     limit: int | None = None,
     search_pattern: SearchPattern | int = SearchPattern.CONTAINS,
     show_expression_as: ExpressionFormat | str = ExpressionFormat.TOKENS,
+    folder: 'Folder | tuple[str] | list[str] | str | None' = None,
+    folder_id: str | None = None,
+    folder_name: str | None = None,
+    folder_path: tuple[str] | list[str] | str | None = None,
     **filters,
 ) -> list["Metric"] | list[dict]:
     """Get list of Metric objects or dicts with them.
@@ -90,14 +98,24 @@ def list_metrics(
             Available values:
                 - `ExpressionFormat.TREE` or `tree`
                 - `ExpressionFormat.TOKENS or `tokens` (default)
+        folder (Folder | tuple | list | str, optional): Folder object or ID or
+            name or path specifying the folder. May be used instead of
+            `folder_id`, `folder_name` or `folder_path`.
+        folder_id (str, optional): ID of a folder.
+        folder_name (str, optional): Name of a folder.
+        folder_path (str, optional): Path of the folder.
+            The path has to be provided in the following format:
+                if it's inside of a project, start with a Project Name:
+                    /MicroStrategy Tutorial/Public Objects/Metrics
+                if it's a root folder, start with `CASTOR_SERVER_CONFIGURATION`:
+                    /CASTOR_SERVER_CONFIGURATION/Users
         **filters: Available filter parameters:
             id (str): Metric's ID
             name (str): Metric's name
             date_created (str): format: 2001-01-02T20:48:05.000+0000
             date_modified (str): format: 2001-01-02T20:48:05.000+0000
             version (str): Metric's version
-            owner dict: e.g. {'id': <user's id>, 'name': <user's name>},
-                with one or both of the keys: id, name
+            owner dict | str | User: Owner ID
             acg (str | int): access control group
 
     Returns:
@@ -110,6 +128,8 @@ def list_metrics(
         project_name,
     )
 
+    validate_owner_key_in_filters(filters)
+
     # For METRIC, exclude subtotal subtypes.
     # Did not set default value to allow explicitly passing METRIC
     if metric_type == ObjectTypes.METRIC:
@@ -121,6 +141,10 @@ def list_metrics(
         project=proj_id,
         name=name,
         pattern=search_pattern,
+        root=folder,
+        root_id=folder_id,
+        root_name=folder_name,
+        root_path=folder_path,
         limit=limit,
         **filters,
     )
@@ -629,8 +653,9 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin, ModelVldbMixin):  # noqa
         connection: 'Connection',
         name: str,
         sub_type: ObjectSubType | str,
-        destination_folder: Folder | str,
         expression: Expression,
+        destination_folder: 'Folder | tuple[str] | list[str] | str | None' = None,
+        destination_folder_path: tuple[str] | list[str] | str | None = None,
         description: str | None = None,
         is_embedded: bool = False,
         dimensionality: Dimensionality | None = None,
@@ -655,10 +680,12 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin, ModelVldbMixin):  # noqa
                 by `connection.Connection()`
             name: metric's name
             sub_type: metric's sub_type
-            destination_folder: A globally unique identifier used to
-                distinguish between metadata objects within the same project.
-                It is possible for two metadata objects in different projects
-                to have the same Object Id
+            destination_folder (Folder | tuple | list | str, optional): Folder
+                object or ID or name or path specifying the folder where to
+                create object.
+            destination_folder_path (str, optional): Path of the folder.
+                The path has to be provided in the following format:
+                    /MicroStrategy Tutorial/Public Objects/Metrics
             description: metric's description
             is_embedded: If true indicates that the target object of this
                 reference is embedded within this object. Alternatively if
@@ -693,17 +720,19 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin, ModelVldbMixin):  # noqa
         Returns:
             Metric class object.
         """
+        dest_id = get_folder_id_from_params_set(
+            connection,
+            connection.project_id,
+            folder=destination_folder,
+            folder_path=destination_folder_path,
+        )
         body = {
             'information': {
                 'name': name,
                 'subType': get_enum_val(sub_type, ObjectSubType),
                 'isEmbedded': is_embedded,
                 'description': description,
-                'destinationFolderId': (
-                    destination_folder.id
-                    if isinstance(destination_folder, Folder)
-                    else destination_folder
-                ),
+                'destinationFolderId': dest_id,
             },
             'expression': expression.to_dict() if expression else None,
             'dimty': dimensionality.to_dict() if dimensionality else None,
@@ -755,7 +784,6 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin, ModelVldbMixin):  # noqa
     def alter(
         self,
         name: str | None = None,
-        destination_folder_id: str | None = None,
         expression: Expression | None = None,
         description: str | None = None,
         dimensionality: Dimensionality | None = None,
@@ -779,10 +807,6 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin, ModelVldbMixin):  # noqa
 
         Args:
             name: metric's name
-            destination_folder_id: A globally unique identifier used to
-                distinguish between metadata objects within the same project.
-                It is possible for two metadata objects in different projects
-                to have the same Object Id.
             expression: the Expression representing the metric's formula
             description: metric's description
             dimensionality: the object that specifies the dimensionality

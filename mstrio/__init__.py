@@ -1,5 +1,5 @@
 __title__ = "mstrio-py"
-__version__ = "11.5.10.101"  # NOSONAR
+__version__ = "11.5.11.101"  # NOSONAR
 __license__ = "DUAL-TIER LICENSE AGREEMENT"
 __description__ = "Python interface for the Strategy One REST API"
 __author__ = "Strategy One"

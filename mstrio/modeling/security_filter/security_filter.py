@@ -27,7 +27,10 @@ from mstrio.utils.helper import (
     find_object_with_name,
     get_string_exp_body,
 )
-from mstrio.utils.resolvers import get_project_id_from_params_set
+from mstrio.utils.resolvers import (
+    get_folder_id_from_params_set,
+    get_project_id_from_params_set,
+)
 from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
@@ -372,8 +375,9 @@ class SecurityFilter(Entity, CopyMixin, DeleteMixin, MoveMixin):
         cls,
         connection: "Connection",
         name: str,
-        destination_folder: Folder | str,
         qualification: Expression | dict | str,
+        destination_folder: 'Folder | tuple[str] | list[str] | str | None' = None,
+        destination_folder_path: tuple[str] | list[str] | str | None = None,
         description: str | None = None,
         is_embedded: bool = False,
         primary_locale: str | None = None,
@@ -388,9 +392,12 @@ class SecurityFilter(Entity, CopyMixin, DeleteMixin, MoveMixin):
             connection: Strategy One connection object returned by
                 `connection.Connection()`
             name (str): name of a new security filter
-            destination_folder (str or object): a globally unique identifier or
-                unique folder name used to distinguish between metadata objects
-                within the same project
+            destination_folder (Folder | tuple | list | str, optional): Folder
+                object or ID or name or path specifying the folder where to
+                create object.
+            destination_folder_path (str, optional): Path of the folder.
+                The path has to be provided in the following format:
+                    /MicroStrategy Tutorial/Public Objects/Metrics
             qualification (Expression, dict or str): new filter qualification
                 definition. It can be provided as `Expression` object,
                 dictionary or string representing filter expression.
@@ -423,15 +430,17 @@ class SecurityFilter(Entity, CopyMixin, DeleteMixin, MoveMixin):
         Returns:
             Security Filter object
         """
+        dest_id = get_folder_id_from_params_set(
+            connection,
+            connection.project_id,
+            folder=destination_folder,
+            folder_path=destination_folder_path,
+        )
         body = {
             "information": {
                 "name": name,
                 "description": description,
-                "destinationFolderId": (
-                    destination_folder.id
-                    if isinstance(destination_folder, Folder)
-                    else destination_folder
-                ),
+                "destinationFolderId": dest_id,
                 "primaryLocale": primary_locale,
                 "isEmbedded": is_embedded,
             },
@@ -477,7 +486,6 @@ class SecurityFilter(Entity, CopyMixin, DeleteMixin, MoveMixin):
         self,
         name: str | None = None,
         description: str | None = None,
-        destination_folder_id: str | None = None,
         qualification: Expression | dict | str | None = None,
         is_embedded: bool | None = None,
         top_level: list[dict] | list[SchemaObjectReference] | None = None,
@@ -491,8 +499,6 @@ class SecurityFilter(Entity, CopyMixin, DeleteMixin, MoveMixin):
         Args:
             name (str, optional): name of a security filter
             description(str, optional): description of a security filter
-            destination_folder_id (str, optional): a globally unique identifier
-                used to distinguish between objects within the same project
             qualification (Expression, dict or str): new filter qualification
                 definition. It can be provided as `Expression` object,
                 dictionary or string representing filter expression.

@@ -12,7 +12,6 @@ from mstrio.object_management import (
     Folder,
     SearchPattern,
     full_search,
-    get_folder_id_from_path,
 )
 from mstrio.server import Project
 from mstrio.types import ObjectSubTypes, ObjectTypes
@@ -27,6 +26,7 @@ from mstrio.utils.helper import (
     is_valid_str_id,
 )
 from mstrio.utils.resolvers import (
+    get_folder_id_from_params_set,
     get_project_id_from_params_set,
     validate_owner_key_in_filters,
 )
@@ -90,6 +90,10 @@ def list_prompts(
     project_name: str | None = None,
     search_pattern: SearchPattern | int = SearchPattern.CONTAINS,
     show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
+    folder: 'Folder | tuple[str] | list[str] | str | None' = None,
+    folder_id: str | None = None,
+    folder_name: str | None = None,
+    folder_path: tuple[str] | list[str] | str | None = None,
     **filters,
 ) -> list['Prompt'] | list[dict]:
     """Get list of Prompt objects or dicts with them.
@@ -117,6 +121,17 @@ def list_prompts(
             Available values:
                 - `ExpressionFormat.TREE` or `tree` (default)
                 - `ExpressionFormat.TOKENS or `tokens`
+        folder (Folder | tuple | list | str, optional): Folder object or ID or
+            name or path specifying the folder. May be used instead of
+            `folder_id`, `folder_name` or `folder_path`.
+        folder_id (str, optional): ID of a folder.
+        folder_name (str, optional): Name of a folder.
+        folder_path (str, optional): Path of the folder.
+            The path has to be provided in the following format:
+                if it's inside of a project, start with a Project Name:
+                    /MicroStrategy Tutorial/Public Objects/Metrics
+                if it's a root folder, start with `CASTOR_SERVER_CONFIGURATION`:
+                    /CASTOR_SERVER_CONFIGURATION/Users
         **filters: Available filter parameters: ['id', 'subtype',
             'date_created', 'date_modified', 'version', 'acg', 'owner',
             'ext_type']
@@ -140,6 +155,10 @@ def list_prompts(
         project=proj_id,
         name=name,
         pattern=search_pattern,
+        root=folder,
+        root_id=folder_id,
+        root_name=folder_name,
+        root_path=folder_path,
         limit=limit,
         **filters,
     )
@@ -393,7 +412,8 @@ class Prompt(CopyMixin, DeleteMixin, Entity, MoveMixin):
         prompt_data: dict,
         name: str,
         sub_type: ObjectSubTypes | str,
-        destination_folder: Folder | str,
+        destination_folder: 'Folder | tuple[str] | list[str] | str | None' = None,
+        destination_folder_path: tuple[str] | list[str] | str | None = None,
         show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
     ) -> 'Prompt':
         """Create a new prompt object.
@@ -403,8 +423,12 @@ class Prompt(CopyMixin, DeleteMixin, Entity, MoveMixin):
             prompt_data (dict): Dictionary containing prompt configuration data.
             name (str): Name of the prompt.
             sub_type (ObjectSubType | str): Sub-type of the prompt.
-            destination_folder (Folder | str): Destination folder object or
-                folder ID/path.
+            destination_folder (Folder | tuple | list | str, optional): Folder
+                object or ID or name or path specifying the folder where to
+                create object.
+            destination_folder_path (str, optional): Path of the folder.
+                The path has to be provided in the following format:
+                    /MicroStrategy Tutorial/Public Objects/Metrics
             show_expression_as (ExpressionFormat | str, optional): How
                 expressions should be presented. Defaults to
                 ExpressionFormat.TREE.
@@ -412,21 +436,18 @@ class Prompt(CopyMixin, DeleteMixin, Entity, MoveMixin):
         Returns:
             Prompt: An instance of the Prompt class.
         """
-        if isinstance(destination_folder, Folder):
-            destination_folder_id = destination_folder.id
-        else:
-            if '/' in destination_folder:
-                destination_folder_id = get_folder_id_from_path(
-                    connection=connection, folder_path=destination_folder
-                )
-            else:
-                destination_folder_id = destination_folder
+        dest_id = get_folder_id_from_params_set(
+            connection,
+            connection.project_id,
+            folder=destination_folder,
+            folder_path=destination_folder_path,
+        )
 
         if 'information' not in prompt_data:
             prompt_data['information'] = {}
 
         prompt_data['information']['name'] = name
-        prompt_data['information']['destinationFolderId'] = destination_folder_id
+        prompt_data['information']['destinationFolderId'] = dest_id
         prompt_data['information']['subType'] = (
             sub_type.value if isinstance(sub_type, ObjectSubType) else sub_type
         )
@@ -547,6 +568,16 @@ class Prompt(CopyMixin, DeleteMixin, Entity, MoveMixin):
             name (str): Name of the prompt.
             destination_folder (Folder | str): Destination folder object or
                 folder ID/path.
+            attribute (Attribute | str): Attribute object or ID or name of the
+                attribute to be used in the prompt.
+            title (str, optional): Title of the prompt. If not provided, will be
+                auto-generated based on the attribute name.
+            instruction (str, optional): Instruction for the prompt. If not
+                provided, will be auto-generated.
+            restrictions (dict | PromptRestrictions, optional): Restrictions for
+                the prompt.
+            default_answer (dict | list, optional): Default answer value. Can
+                be a dictionary or a list of element dictionaries.
             show_expression_as (ExpressionFormat | str, optional): How
                 expressions should be presented. Defaults to
                 ExpressionFormat.TREE.

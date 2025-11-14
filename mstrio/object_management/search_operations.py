@@ -36,6 +36,7 @@ from mstrio.utils.helper import (
     snake_to_camel,
 )
 from mstrio.utils.resolvers import (
+    get_folder_id_from_params_set,
     get_project_id_from_params_set,
     validate_owner_key_in_filters,
 )
@@ -265,9 +266,10 @@ def list_search_objects(
     project_name: str | None = None,
     to_dictionary: bool = False,
     limit: int | None = None,
-    folder: 'Folder | None' = None,
+    folder: 'Folder | tuple[str] | list[str] | str | None' = None,
     folder_id: str | None = None,
-    folder_path: str | None = None,
+    folder_name: str | None = None,
+    folder_path: tuple[str] | list[str] | str | None = None,
     **filters,
 ) -> 'list[SearchObject] | list[dict]':
     """List Search Objects in the environment.
@@ -285,14 +287,21 @@ def list_search_objects(
         to_dictionary (bool): If True, returns a list of dictionaries instead of
             SearchObject instances.
         limit (int | None): Maximum number of results to return.
-        folder (Folder | None): Folder to search in.
-        folder_id (str | None): ID of the folder to search in.
-        folder_path (str | None): Path of the folder to search in.
+        folder (Folder | tuple | list | str, optional): Folder object or ID or
+            name or path specifying the folder. May be used instead of
+            `folder_id`, `folder_name` or `folder_path`.
+        folder_id (str, optional): ID of a folder.
+        folder_name (str, optional): Name of a folder.
+        folder_path (str, optional): Path of the folder.
+            The path has to be provided in the following format:
+                if it's inside of a project, start with a Project Name:
+                    /MicroStrategy Tutorial/Public Objects/Metrics
+                if it's a root folder, start with `CASTOR_SERVER_CONFIGURATION`:
+                    /CASTOR_SERVER_CONFIGURATION/Users
         **filters: Available filter parameters: ['id', 'name', 'description',
             'date_created', 'date_modified', 'acg']
 
     """
-    from mstrio.object_management.folder import get_folder_id_from_path
 
     proj_id = get_project_id_from_params_set(
         connection,
@@ -300,14 +309,6 @@ def list_search_objects(
         project_id,
         project_name,
     )
-    filters = filters or {}
-
-    if folder and not folder_id:
-        folder_id = folder.id
-    if folder_path and not folder_id:
-        folder_id = get_folder_id_from_path(connection=connection, path=folder_path)
-    if folder_id:
-        filters = filters | {'root': folder_id}
 
     objects = full_search(
         connection,
@@ -315,6 +316,10 @@ def list_search_objects(
         project=proj_id,
         name=name,
         pattern=search_pattern,
+        root=folder,
+        root_id=folder_id,
+        root_name=folder_name,
+        root_path=folder_path,
         limit=limit,
         **filters,
     )
@@ -511,13 +516,20 @@ class SearchObject(Entity, CopyMixin, MoveMixin, DeleteMixin):
         return t.to_rest_value()
 
     @staticmethod
-    def _filter_search_object_params(connection, **params):
+    def _filter_search_object_params(connection: 'Connection', **params):
         from mstrio.object_management import Folder
 
         destination_folder = params.pop('destination_folder', None)
-        if isinstance(destination_folder, Folder):
-            destination_folder = destination_folder.id
-        params['location'] = destination_folder
+        destination_folder_path = params.pop('destination_folder_path', None)
+        dest_id = get_folder_id_from_params_set(
+            connection,
+            connection.project_id,
+            folder=destination_folder,
+            folder_path=destination_folder_path,
+            assert_id_exists=False,
+        )
+        if dest_id:
+            params['location'] = dest_id
 
         root_folder_query = params.pop('root_folder_query', None)
         if isinstance(root_folder_query, Folder):
@@ -580,7 +592,8 @@ class SearchObject(Entity, CopyMixin, MoveMixin, DeleteMixin):
         cls,
         connection: Connection,
         name: str | None,
-        destination_folder: 'str | Folder',
+        destination_folder: 'Folder | tuple[str] | list[str] | str | None' = None,
+        destination_folder_path: tuple[str] | list[str] | str | None = None,
         project: 'Project | str | None' = None,
         project_id: str | None = None,
         project_name: str | None = None,
@@ -610,8 +623,12 @@ class SearchObject(Entity, CopyMixin, MoveMixin, DeleteMixin):
                 `connection.Connection()`.
             name (str or None): Name of the SearchObject. If None, a default
                 name will be generated.
-            destination_folder (str or Folder): Folder (ID or Folder object)
-                where the SearchObject will be created.
+            destination_folder (Folder | tuple | list | str, optional): Folder
+                object or ID or name or path specifying the folder where to
+                create object.
+            destination_folder_path (str, optional): Path of the folder.
+                The path has to be provided in the following format:
+                    /MicroStrategy Tutorial/Public Objects/Metrics
             project (Project | str, optional): Project object or ID or name
                 specifying the project. May be used instead of `project_id` or
                 `project_name`.
@@ -855,8 +872,10 @@ def quick_search(
     connection: Connection,
     project: 'Project | str | None' = None,
     name: str | None = None,
-    root: str | None = None,
-    root_path: str | None = None,
+    root: 'Folder | tuple[str] | list[str] | str | None' = None,
+    root_id: str | None = None,
+    root_name: str | None = None,
+    root_path: tuple[str] | list[str] | str | None = None,
     pattern: SearchPattern | int = SearchPattern.CONTAINS,
     object_types: Optional["TypeOrSubtype"] = None,
     get_ancestors: bool = False,
@@ -881,16 +900,17 @@ def quick_search(
             be applied to the names of object types being searched. For example,
             search for all report objects (type) whose name begins with
             (pattern) B (name).
-        root(string, optional): Folder ID of the root folder where the search
-            will be performed.
-        root_path (str, optional): Path of the root folder in which the search
-            will be performed. Can be provided as an alternative to
-            `root` parameter. If both are provided, `root` is used.
-                the path has to be provided in the following format:
-                    if it's inside of a project, example:
-                        /MicroStrategy Tutorial/Public Objects/Metrics
-                    if it's a root folder, example:
-                        /CASTOR_SERVER_CONFIGURATION/Users
+        root (Folder | tuple | list | str, optional): Folder object or ID or
+            name or path specifying the folder. May be used instead of
+            `root_id`, `root_name` or `root_path`.
+        root_id (str, optional): ID of a folder.
+        root_name (str, optional): Name of a folder.
+        root_path (str, optional): Path of the folder.
+            The path has to be provided in the following format:
+                if it's inside of a project, start with a Project Name:
+                    /MicroStrategy Tutorial/Public Objects/Metrics
+                if it's a root folder, start with `CASTOR_SERVER_CONFIGURATION`:
+                    /CASTOR_SERVER_CONFIGURATION/Users
         pattern(integer or enum class object): Pattern to search for,
             such as Begin With or Exactly. Possible values are available in
             ENUM mstrio.object_management.SearchPattern.
@@ -920,15 +940,24 @@ def quick_search(
     Returns:
          list of objects or list of dictionaries
     """
-    from mstrio.server.project import Project
     from mstrio.utils.object_mapping import map_objects_list
 
-    if root_path and not root:
-        from mstrio.object_management.folder import get_folder_id_from_path
+    project_id = get_project_id_from_params_set(
+        connection,
+        project=project,
+        assert_id_exists=False,
+        no_fallback_from_connection=True,
+    )
+    root_id = get_folder_id_from_params_set(
+        connection,
+        project_id,
+        root,
+        root_id,
+        root_name,
+        root_path,
+        assert_id_exists=False,
+    )
 
-        root = get_folder_id_from_path(connection=connection, path=root_path)
-
-    project_id = get_objects_id(project, Project)
     if object_types and not isinstance(object_types, list):
         object_types = [get_enum_val(object_types, (ObjectTypes, ObjectSubTypes))]
     elif object_types:
@@ -943,7 +972,7 @@ def quick_search(
         name=name,
         pattern=pattern,
         object_types=object_types,
-        root=root,
+        root=root_id,
         get_ancestors=get_ancestors,
         hidden=hidden,
         cross_cluster=cross_cluster,
@@ -1067,8 +1096,10 @@ def full_search(
     pattern: SearchPattern | int = SearchPattern.CONTAINS,
     description: str | None = None,
     domain: SearchDomain | int = SearchDomain.PROJECT,
-    root: str | None = None,
-    root_path: str | None = None,
+    root: 'Folder | tuple[str] | list[str] | str | None' = None,
+    root_id: str | None = None,
+    root_name: str | None = None,
+    root_path: tuple[str] | list[str] | str | None = None,
     object_types: Optional['TypeOrSubtype'] = None,
     uses_object_id: EntityBase | str | None = None,
     uses_object_type: ObjectTypes | int | None = None,
@@ -1119,16 +1150,17 @@ def full_search(
             will be performed, such as Local or Project. Possible values are
             available in ENUM mstrio.object_management.SearchDomain.
             Default value is PROJECT (2).
-        root(string, optional): Folder ID of the root folder where the search
-            will be performed.
-        root_path (str, optional): Path of the root folder in which the search
-            will be performed. Can be provided as an alternative to
-            `root` parameter. If both are provided, `root` is used.
-                the path has to be provided in the following format:
-                    if it's inside of a project, example:
-                        /MicroStrategy Tutorial/Public Objects/Metrics
-                    if it's a root folder, example:
-                        /CASTOR_SERVER_CONFIGURATION/Users
+        root (Folder | tuple | list | str, optional): Folder object or ID or
+            name or path specifying the folder. May be used instead of
+            `root_id`, `root_name` or `root_path`.
+        root_id (str, optional): ID of a folder.
+        root_name (str, optional): Name of a folder.
+        root_path (str, optional): Path of the folder.
+            The path has to be provided in the following format:
+                if it's inside of a project, start with a Project Name:
+                    /MicroStrategy Tutorial/Public Objects/Metrics
+                if it's a root folder, start with `CASTOR_SERVER_CONFIGURATION`:
+                    /CASTOR_SERVER_CONFIGURATION/Users
         object_types(enum class object or integer or list of enum class objects
             or integers): Type(s) of object(s) to be searched, such as
             Folder, Attribute or User. Possible values available in ENUMs
@@ -1197,13 +1229,7 @@ def full_search(
     Returns:
         list of objects or list of dictionaries
     """
-    if root_path and not root:
-        from mstrio.object_management.folder import get_folder_id_from_path
-
-        # NOSONAR - `root` is referenced as field in `locals()`
-        root = get_folder_id_from_path(connection=connection, path=root_path)  # NOSONAR
     passed_params = locals()
-    passed_params.pop('root_path', None)
     start_search_args = get_args_from_func(start_full_search)
     search_result_args = get_args_from_func(get_search_results)
     start_search_params = {
@@ -1228,8 +1254,10 @@ def start_full_search(
     description: str | None = None,
     pattern: SearchPattern | int = SearchPattern.CONTAINS,
     domain: SearchDomain | int = SearchDomain.PROJECT,
-    root: str | None = None,
-    root_path: str | None = None,
+    root: 'Folder | tuple[str] | list[str] | str | None' = None,
+    root_id: str | None = None,
+    root_name: str | None = None,
+    root_path: tuple[str] | list[str] | str | None = None,
     uses_object_id: EntityBase | str | None = None,
     uses_object_type: ObjectTypes | ObjectSubTypes | int | None = None,
     uses_recursive: bool = False,
@@ -1277,16 +1305,17 @@ def start_full_search(
             will be performed, such as Local or Project. Possible values are
             available in ENUM mstrio.object_management.SearchDomain.
             Default value is PROJECT (2).
-        root(string, optional): Folder ID of the root folder where the search
-            will be performed.
-        root_path (str, optional): Path of the root folder in which the search
-            will be performed. Can be provided as an alternative to
-            `root` parameter. If both are provided, `root` is used.
-                the path has to be provided in the following format:
-                    if it's inside of a project, example:
-                        /MicroStrategy Tutorial/Public Objects/Metrics
-                    if it's a root folder, example:
-                        /CASTOR_SERVER_CONFIGURATION/Users
+        root (Folder | tuple | list | str, optional): Folder object or ID or
+            name or path specifying the folder. May be used instead of
+            `root_id`, `root_name` or `root_path`.
+        root_id (str, optional): ID of a folder.
+        root_name (str, optional): Name of a folder.
+        root_path (str, optional): Path of the folder.
+            The path has to be provided in the following format:
+                if it's inside of a project, start with a Project Name:
+                    /MicroStrategy Tutorial/Public Objects/Metrics
+                if it's a root folder, start with `CASTOR_SERVER_CONFIGURATION`:
+                    /CASTOR_SERVER_CONFIGURATION/Users
         uses_object_id(string): Constrain the search to only return
             objects which use the given object.
         uses_object_type(int, ObjectTypes): Constrain the search to only return
@@ -1370,10 +1399,16 @@ def start_full_search(
                 "this parameter will be omitted."
             )
 
-    if root_path and not root:
-        from mstrio.object_management.folder import get_folder_id_from_path
-
-        root = get_folder_id_from_path(connection=connection, path=root_path)
+    root_id = get_folder_id_from_params_set(
+        connection,
+        project,
+        root,
+        root_id,
+        root_name,
+        root_path,
+        # if any folder was explicitly provided, ID is expected
+        assert_id_exists=root or root_id or root_name or root_path,
+    )
 
     if uses_object_id and used_by_object_id:
         exception_handler(
@@ -1447,7 +1482,7 @@ def start_full_search(
             pattern=pattern,
             domain=domain,
             scope=scope,
-            root=root,
+            root=root_id,
             object_types=object_types,
             uses_object=uses_object,
             uses_recursive=uses_recursive,
@@ -1466,7 +1501,7 @@ def start_full_search(
             name=name,
             pattern=pattern,
             domain=domain,
-            root=root,
+            root=root_id,
             object_types=object_types,
             uses_object=uses_object,
             uses_recursive=uses_recursive,
@@ -1601,44 +1636,76 @@ def find_objects_with_id(
     connection: Connection,
     object_id: str,
     projects: 'list[Project] | list[str] | None' = None,
-    to_dictionary=False,
+    config_level_only: bool = False,
+    to_dictionary: bool = False,
 ) -> list[dict[str, dict | type[Entity]]]:
-    """Find object by its ID only, without knowing project ID and object type.
-    The search is performed by iterating over projects and trying to retrieve
-    the objects with different type.
+    """Find objects by their ID, without knowing project ID or object type.
+    The search is performed first on configuration-level, then by iterating over
+    projects and trying to retrieve the objects with different types.
 
-    Limitation:
-        - Only object types supported by mstrio, i.g. present in
-            `mstrio.types.ObjecTypes` enum, are used.
-        - Configuration object are also not searched.
+    Note:
+        Only object types supported by mstrio-py, i.e. present in
+        `mstrio.types.ObjectTypes` enum, are used.
 
     Args:
         connection (Connection): Strategy One connection object returned by
             `connection.Connection()`.
         object_id (str): ID of an object.
         projects (list[Project] | list[str], optional): List of projects where
-            to perform the search. By default, if no project are provides, the
-            search is performed on all loaded projects.
-        to_dictionary (bool, optional): If True returns dicts, by default
-            (False) returns objects.
+            to perform the search. If provided, configuration-level search is
+            skipped. By default, if no projects are provided, the
+            search is performed on all loaded projects as well as on
+            configuration-level objects. Cannot be combined with
+            `config_level_only` parameter.
+        config_level_only (bool, optional): If `True` (default `False`), the
+            search is performed only on configuration-level objects. Cannot be
+            combined with `projects` parameter.
+        to_dictionary (bool, optional): If `True`, under `object_data` key,
+            returns dicts, by default (`False`) returns objects.
 
     Returns:
-        Returns list of dict with the following structure:
+        Returns list of dicts with the following structure:
         {
-            'project_id': <str>,
-            'object_data': <dict or object>
+            'project_id': <str | None>,  # None if config-level
+            'object_data': <dict | Entity-based-object>
         }
     """
-    from mstrio.server.project import Project
+    assert not (bool(config_level_only) and bool(projects)), (
+        "Either provide `projects`, set `config_level_only` flag or neither, "
+        "but not both"
+    )
+
+    if not projects:
+        res = full_search(
+            connection,
+            project=None,
+            domain=SearchDomain.CONFIGURATION,
+            id=object_id,
+            to_dictionary=to_dictionary,
+        )
+
+        if res:
+            return [
+                {
+                    'project_id': None,
+                    'object_data': item,
+                }
+                for item in res
+            ]
+
+    if config_level_only:
+        return []
 
     env = connection.environment
-    projects = projects if projects else env.list_loaded_projects()
+    projects = projects or env.list_loaded_projects()
 
     with FuturesSessionWithRenewal(connection=connection) as session:
         futures = []
 
         for project, obj_type in itertools.product(projects, ObjectTypes):
-            project_id = project.id if isinstance(project, Project) else project
+            project_id = get_project_id_from_params_set(
+                conn=session.connection, project=project
+            )
 
             future = objects.get_object_info_async(
                 future_session=session,

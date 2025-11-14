@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 from enum import Enum
 from typing import TYPE_CHECKING
 
@@ -6,8 +7,10 @@ from pandas import DataFrame
 
 from mstrio import config
 from mstrio.api import administration as admin_api
+from mstrio.api import change_journal as change_journal_api
 from mstrio.api import monitors as monitors_api
 from mstrio.helpers import IServerError
+from mstrio.server.change_journal import _format_timestamp_for_api_purge
 from mstrio.server.fence import Fence
 from mstrio.server.fence import list_fences as _list_fences
 from mstrio.server.project import Project, compare_project_settings
@@ -517,6 +520,75 @@ class Environment:
 
     def is_cluster(self):
         return len(self.nodes) > 1
+
+    @method_version_handler('11.4.0900')
+    def purge_all_change_journals(
+        self, comment: str | None = None, timestamp: str | datetime | None = None
+    ) -> None:
+        """Purge change journal entries for all projects on the environment
+            including configuration change journal entries.
+
+        Note:
+            Only change journal entries older than a week can be purged.
+
+        Args:
+            comment (str, optional): Comment for the purge action.
+            timestamp (str, datetime, optional): Timestamp for purging entries.
+                If string, must be in 'MM/DD/YYYY HH:MM:SS AM/PM' format.
+                If datetime object, will be converted to required format.
+                Entries before this timestamp will be purged. If not provided,
+                all entries will be purged.
+        """
+
+        if isinstance(timestamp, datetime):
+            timestamp = _format_timestamp_for_api_purge(timestamp)
+
+        res = change_journal_api.purge_change_journal_entries(
+            connection=self.connection,
+            timestamp=timestamp,
+            comment=comment,
+            all_projects=True,
+        )
+
+        if config.verbose and res.ok:
+            logger.info(
+                "Request to purge change journal entries for all projects on "
+                "this environment was successfully sent."
+            )
+
+    @method_version_handler('11.4.0900')
+    def purge_configuration_change_journals(
+        self, comment: str | None = None, timestamp: str | datetime | None = None
+    ) -> None:
+        """Purge configuration change journal entries.
+
+        Note:
+            Only change journal entries older than a week can be purged.
+
+        Args:
+            comment (str, optional): Comment for the purge action.
+            timestamp (str, datetime, optional): Timestamp for purging entries.
+                If string, must be in 'MM/DD/YYYY HH:MM:SS AM/PM' format.
+                If datetime object, will be converted to required format.
+                Entries before this timestamp will be purged. If not provided,
+                all entries will be purged.
+        """
+
+        if isinstance(timestamp, datetime):
+            timestamp = _format_timestamp_for_api_purge(timestamp)
+
+        res = change_journal_api.purge_change_journal_entries(
+            connection=self.connection,
+            timestamp=timestamp,
+            comment=comment,
+            all_projects=False,
+        )
+
+        if config.verbose and res.ok:
+            logger.info(
+                "Request to purge configuration change journal entries "
+                "was successfully sent."
+            )
 
     @property
     def nodes(self):

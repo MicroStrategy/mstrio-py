@@ -68,4 +68,19 @@ def get_contents_caches_loop(
         )
         caches = response.json()
         all_caches += caches.get('contentCaches')
+
+    # On input, each cache is a 1-element list containing a dict
+    # with cache data under a base64-encoded key
+    all_caches = [
+        {**cache_dict, 'combined_id': cache_id}
+        for cache in all_caches
+        for cache_id, cache_dict in cache.items()
+    ]
+
+    # `dbTablesUsed` field matches semantic originally intended for
+    # `warehouseTablesUsed`. Actual value in `warehouseTablesUsed` refers to
+    # cube instances and is exposed additionally in `cubeInstanceId`.
+    for cache in all_caches:
+        if 'dbTablesUsed' in cache:
+            cache['warehouseTablesUsed'] = cache.pop('dbTablesUsed')
     return all_caches

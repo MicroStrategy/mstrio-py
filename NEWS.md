@@ -1,5 +1,41 @@
 # Changelog
 
+## 11.5.11.101 - 2025/11/14
+
+### Minor changes
+
+- added a set of `folder`-related parameters to filtering in listing and creation methods in majority of existing modules. Please read mstrio-py documentation or class-specific code snippets for details regarding their use.
+- added `temporary_project_change` context-method to `Connection` class for ease of temporary project selection where keeping the old one long-term is important
+- added `get_subfolders`, `traversal` and `traverse_folders` methods and `path` attribute to `Folder` class
+- added option of initialization of `Folder` class by its name. Please read the documentation to learn about risks of this approach
+- added argument `on_nodes` in `Project.is_loaded()` method to check status on specific nodes
+- added argument `check_all_selected_nodes` in `Project.is_loaded()` method to use logic requiring all nodes to have the project loaded
+- added `change_journal` property to view objects change journal entries
+- added `list_change_journal_entries` function to list change journal entries across environment with specified filters
+- added `purge_change_journal_entries` function to purge change journal entries in specified projects
+- added `purge_change_journals` method to `Project` class to purge selected project change journal entries
+- added `purge_all_change_journals` method to `Environment` class to purge change journal entries for every project
+- added `purge_configuration_change_journals` method to `Environment` class to purge change journal entries for configuration objects
+- added code snippet for mstrio-py's configuration, named `config_mgmt.py`
+- added alias `disconnect` to method `close` on `Connection` object
+- added alias `open` to method `connect` on `Connection` object
+- added parameters `request_timeout` and `request_retry_on_timeout_count` on `Connection` object and methods `set_request_timeout` and `set_request_retry_on_timeout_count` as well as global config parameter `default_request_timeout` to be able to customize timeout and retry logic on mstrio-py's requests to REST API
+- added `get_valid_page_by_elements` method to `Report` class to get all possible elements combinations for page by attributes
+- added `valid_page_by_elements` property to `Report` class that stores valid page by elements combinations
+- added `get_selected_page_by_elements` method to `Report` class to get list of page by elements based on valid combination
+- enhanced `find_objects_with_id` method to be able to find any type of object by only ID, regardless whether it is configuration-level or project-level, in an efficient manner
+- extended `Delivery.DeliveryMode` enum with `SHAREPOINT`, `ONEDRIVE` and `S3` entries for support in listing existing subscriptions
+
+### Bug fixes
+
+- fixed error when generating dataframe from prompted reports with metric names in rows
+- fixed issue with field `ContentCache.warehouse_tables_used` storing incorrect data
+- fixed defect that `Report.page_by_elements` returned maximum first 50 elements
+
+### Breaking changes
+
+- performed holistic cleanup and standardization regarding `folder`-related parameters and in turn removed and renamed obsolete `destination_folder_id` parameter from many methods. Please read mstrio-py documentation regarding what and how to do if you were using this parameter in your script
+
 ## 11.5.10.101 - 2025/10/17
 
 ### New features

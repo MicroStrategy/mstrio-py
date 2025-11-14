@@ -13,7 +13,10 @@ from mstrio.utils.helper import (
     delete_none_values,
     snake_to_camel,
 )
-from mstrio.utils.resolvers import get_project_id_from_params_set
+from mstrio.utils.resolvers import (
+    get_project_id_from_params_set,
+    validate_owner_key_in_filters,
+)
 
 from .enums import DependenceType, DimtyType, ExpressionType, NodeType
 
@@ -253,8 +256,7 @@ def list_functions(
             date_created str: format: 2001-01-02T20:48:05.000+0000
             date_modified str: format: 2001-01-02T20:48:05.000+0000
             version str: function's version
-            owner dict: e.g. {'id': <user's id>, 'name': <user's name>},
-                with one or both of the keys: id, name
+            owner dict | str | User: Owner ID
             acg str | int: access control group
 
     Returns:
@@ -266,6 +268,8 @@ def list_functions(
         project_id,
         project_name,
     )
+
+    validate_owner_key_in_filters(filters)
 
     objects = search_operations.full_search(
         connection,

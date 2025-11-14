@@ -16,7 +16,6 @@ from mstrio.modeling import (
     SchemaObjectReference,
 )
 from mstrio.object_management import Folder, SearchPattern, full_search
-from mstrio.object_management.folder import get_folder_id_from_path
 from mstrio.project_objects import OlapCube
 from mstrio.project_objects.datasets.helpers import AdvancedProperties, Template
 from mstrio.server import Job
@@ -28,10 +27,12 @@ from mstrio.utils.helper import (
     delete_none_values,
     filter_params_for_func,
     find_object_with_name,
-    get_objects_id,
 )
 from mstrio.utils.parser import Parser
-from mstrio.utils.resolvers import get_project_id_from_params_set
+from mstrio.utils.resolvers import (
+    get_folder_id_from_params_set,
+    get_project_id_from_params_set,
+)
 from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 from mstrio.utils.vldb_mixin import ModelVldbMixin
@@ -52,8 +53,10 @@ def list_incremental_refresh_reports(
     project_name: str | None = None,
     to_dictionary: bool = False,
     limit: int | None = None,
+    folder: 'Folder | tuple[str] | list[str] | str | None' = None,
     folder_id: str | None = None,
-    folder_path: str | None = None,
+    folder_name: str | None = None,
+    folder_path: tuple[str] | list[str] | str | None = None,
     show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
     show_filter_tokens: bool = False,
     show_advanced_properties: bool = True,
@@ -87,15 +90,16 @@ def list_incremental_refresh_reports(
             returns Report objects
         limit (integer, optional): limit the number of elements returned. If
             None all object are returned.
-        folder_id (string, optional): ID of a folder where the search
-            will be performed. Defaults to None.
-        folder_path (str, optional): Path of the folder in which to look for
-            reports. Can be provided as an alternative to the `folder_id`
-            parameter. If both are provided, `folder_id` is used.
+        folder (Folder | tuple | list | str, optional): Folder object or ID or
+            name or path specifying the folder. May be used instead of
+            `folder_id`, `folder_name` or `folder_path`.
+        folder_id (str, optional): ID of a folder.
+        folder_name (str, optional): Name of a folder.
+        folder_path (str, optional): Path of the folder.
             The path has to be provided in the following format:
-                if it's inside of a project, example:
-                    /MicroStrategy Tutorial/Public Objects
-                if it's a root folder, example:
+                if it's inside of a project, start with a Project Name:
+                    /MicroStrategy Tutorial/Public Objects/Metrics
+                if it's a root folder, start with `CASTOR_SERVER_CONFIGURATION`:
                     /CASTOR_SERVER_CONFIGURATION/Users
         show_expression_as (ExpressionFormat or str, optional): specify how
             expressions should be presented
@@ -125,12 +129,6 @@ def list_incremental_refresh_reports(
         project_id,
         project_name,
     )
-    filters = filters or {}
-
-    if folder_path and not folder_id:
-        folder_id = get_folder_id_from_path(connection=connection, path=folder_path)
-    if folder_id:
-        filters = filters | {'root': folder_id}
 
     objects = full_search(
         connection,
@@ -138,6 +136,10 @@ def list_incremental_refresh_reports(
         project=proj_id,
         name=name,
         pattern=pattern,
+        root=folder,
+        root_id=folder_id,
+        root_name=folder_name,
+        root_path=folder_path,
         limit=limit,
         **filters,
     )
@@ -450,8 +452,8 @@ class IncrementalRefreshReport(
         cls,  # NOSONAR
         connection: Connection,
         name: str,
-        destination_folder: Folder | str | None = None,
-        destination_folder_path: str | None = None,
+        destination_folder: 'Folder | tuple[str] | list[str] | str | None' = None,
+        destination_folder_path: tuple[str] | list[str] | str | None = None,
         target_cube: OlapCube | SchemaObjectReference | dict | None = None,
         increment_type: IncrementType | str | None = None,
         refresh_type: RefreshType | str | None = None,
@@ -470,16 +472,12 @@ class IncrementalRefreshReport(
             connection: Strategy One connection object returned by
                 `connection.Connection()`
             name (str, optional): Name of the Incremental Refresh Report
-            destination_folder (Folder, str): Folder object or folder ID where
-                the new object will be saved
-            destination_folder_path (str, optional): Path of the folder in which
-                to create the report. If both folder and path parameters are
-                provided, `destination_folder` is used.
+            destination_folder (Folder | tuple | list | str, optional): Folder
+                object or ID or name or path specifying the folder where to
+                create object.
+            destination_folder_path (str, optional): Path of the folder.
                 The path has to be provided in the following format:
-                    if it's inside of a project, example:
-                        /MicroStrategy Tutorial/Public Objects
-                    if it's a root folder, example:
-                        /CASTOR_SERVER_CONFIGURATION/Users
+                    /MicroStrategy Tutorial/Public Objects/Metrics
             target_cube (OlapCube, SchemaObjectReference, dict, optional):
                 Reference to an Intelligent Cube
             increment_type (IncrementType, str, optional): Mode the report will
@@ -513,14 +511,16 @@ class IncrementalRefreshReport(
                 - If true, all `text`, "tree" and `tokens` formats are returned.
         """
 
-        if destination_folder_path and not destination_folder:
-            destination_folder = get_folder_id_from_path(
-                connection=connection, path=destination_folder_path
-            )
+        dest_id = get_folder_id_from_params_set(
+            connection,
+            connection.project_id,
+            folder=destination_folder,
+            folder_path=destination_folder_path,
+        )
         information = {
             'name': name,
             'description': description,
-            'destinationFolderId': get_objects_id(destination_folder, Folder),
+            'destinationFolderId': dest_id,
             'primaryLocale': primary_locale,
         }
 

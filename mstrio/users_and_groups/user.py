@@ -28,6 +28,7 @@ from mstrio.utils.helper import (
 )
 from mstrio.utils.related_subscription_mixin import RelatedSubscriptionMixin
 from mstrio.utils.resolvers import (
+    get_folder_id_from_params_set,
     get_project_id_from_params_set,
     validate_owner_key_in_filters,
 )
@@ -76,17 +77,23 @@ def list_users(
         e.g. name_begins = ?onny will return Sonny and Tonny
 
     Args:
-        connection: Strategy One connection object returned by
+        connection (Connection): Strategy One connection object returned by
             `connection.Connection()`
-        name_begins: characters that the user name must begin with.
-        abbreviation_begins: characters that the abbreviation must begin with.
-        to_dictionary: If True returns dict, by default (False) returns
-            User objects.
-        limit: limit the number of elements returned. If `None` (default), all
-            objects are returned.
+        name_begins (str, optional): characters that the user name must
+            begin with.
+        abbreviation_begins (str, optional): characters that the abbreviation
+            must begin with.
+        to_dictionary (bool, optional): If True returns dict, by default
+            (False) returns User objects.
+        limit (int, optional): limit the number of elements returned. If `None`
+            (default), all objects are returned.
         **filters: Available filter parameters: ['id', 'name', 'abbreviation',
             'description', 'type', 'subtype', 'date_created', 'date_modified',
             'version', 'acg', 'icon_path', 'owner', 'initials', 'enabled']
+
+    Note:
+        Filter `id` needs to be an ID as string or a list of strings.
+        Example: `id=["id1", "id2", ...]`.
 
     Examples:
         >>> list_users(connection, name_begins='user', initials='UR')
@@ -550,6 +557,12 @@ class User(Entity, TrusteeACLMixin, RelatedSubscriptionMixin):
     ) -> list["User"] | list[dict]:
         validate_owner_key_in_filters(filters)
 
+        if filters.get('initials') and to_dictionary:
+            logger.info(
+                "Filtering users by `initials` with `to_dictionary=True` may return "
+                "less information for each found user than other filtering options."
+            )
+
         msg = "Error getting information for a set of users."
         objects = users.get_all(
             connection=connection,
@@ -559,8 +572,10 @@ class User(Entity, TrusteeACLMixin, RelatedSubscriptionMixin):
             abbreviation_begins=abbreviation_begins,
             filters=filters,
         )
+
         if to_dictionary:
             return objects
+
         return [cls.from_dict(source=obj, connection=connection) for obj in objects]
 
     @classmethod
@@ -1344,7 +1359,8 @@ class User(Entity, TrusteeACLMixin, RelatedSubscriptionMixin):
     @method_version_handler('11.5.0300')
     def create_profile_folder(
         self,
-        destination_folder: 'Folder | str | None' = None,
+        destination_folder: 'Folder | tuple[str] | list[str] | str | None' = None,
+        destination_folder_path: tuple[str] | list[str] | str | None = None,
         project: 'Project | str | None' = None,
         project_id: str | None = None,
         project_name: str | None = None,
@@ -1352,8 +1368,12 @@ class User(Entity, TrusteeACLMixin, RelatedSubscriptionMixin):
         """Creates a profile folder for the user.
 
         Args:
-            destination_folder (Folder or str, optional): Destination folder
-                where the profile folder will be created.
+            destination_folder (Folder | tuple | list | str, optional): Folder
+                object or ID or name or path specifying the folder where to
+                create object.
+            destination_folder_path (str, optional): Path of the folder.
+                The path has to be provided in the following format:
+                    /MicroStrategy Tutorial/Public Objects/Metrics
             project (Project | str, optional): Project object or ID or name
                 specifying the project. May be used instead of `project_id` or
                 `project_name`.
@@ -1366,10 +1386,12 @@ class User(Entity, TrusteeACLMixin, RelatedSubscriptionMixin):
 
         from mstrio.object_management.folder import Folder
 
-        destination_folder_id = (
-            destination_folder.id
-            if isinstance(destination_folder, Folder)
-            else destination_folder
+        dest_id = get_folder_id_from_params_set(
+            self.connection,
+            self.connection.project_id,
+            folder=destination_folder,
+            folder_path=destination_folder_path,
+            assert_id_exists=False,
         )
 
         proj_id = get_project_id_from_params_set(
@@ -1380,7 +1402,7 @@ class User(Entity, TrusteeACLMixin, RelatedSubscriptionMixin):
         )
 
         body = {
-            'locationId': destination_folder_id,
+            'locationId': dest_id,
         }
 
         res = users_api.create_user_profile(

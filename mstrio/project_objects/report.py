@@ -29,6 +29,7 @@ from mstrio.utils.entity import (
 )
 from mstrio.utils.filter import Filter
 from mstrio.utils.helper import (
+    camel_to_snake,
     exception_handler,
     fallback_on_timeout,
     find_object_with_name,
@@ -50,6 +51,7 @@ from mstrio.utils.version_helper import meets_minimal_version
 from mstrio.utils.vldb_mixin import ModelVldbMixin
 
 if TYPE_CHECKING:
+    from mstrio.object_management.folder import Folder
     from mstrio.server.project import Project
 
 logger = logging.getLogger(__name__)
@@ -64,8 +66,10 @@ def list_reports(
     project_name: str | None = None,
     to_dictionary: bool = False,
     limit: int | None = None,
+    folder: 'Folder | tuple[str] | list[str] | str | None' = None,
     folder_id: str | None = None,
-    folder_path: str | None = None,
+    folder_name: str | None = None,
+    folder_path: tuple[str] | list[str] | str | None = None,
     **filters,
 ) -> list[type['Report']] | list[dict]:
     """Get list of Report objects or dicts with them.
@@ -96,16 +100,17 @@ def list_reports(
         project_name (str, optional): Project name
         limit (integer, optional): limit the number of elements returned. If
             None all object are returned.
-        folder_id (string, optional): ID of a folder where the search
-            will be performed. Defaults to None.
-        folder_path (str, optional): Path of the folder in which the search
-            will be performed. Can be provided as an alternative to `folder_id`
-            parameter. If both are provided, `folder_id` is used.
-                    the path has to be provided in the following format:
-                        if it's inside of a project, example:
-                            /MicroStrategy Tutorial/Public Objects/Metrics
-                        if it's a root folder, example:
-                            /CASTOR_SERVER_CONFIGURATION/Users
+        folder (Folder | tuple | list | str, optional): Folder object or ID or
+            name or path specifying the folder. May be used instead of
+            `folder_id`, `folder_name` or `folder_path`.
+        folder_id (str, optional): ID of a folder.
+        folder_name (str, optional): Name of a folder.
+        folder_path (str, optional): Path of the folder.
+            The path has to be provided in the following format:
+                if it's inside of a project, start with a Project Name:
+                    /MicroStrategy Tutorial/Public Objects/Metrics
+                if it's a root folder, start with `CASTOR_SERVER_CONFIGURATION`:
+                    /CASTOR_SERVER_CONFIGURATION/Users
         **filters: Available filter parameters: ['id', 'type', 'subtype',
             'date_created', 'date_modified', 'version', 'owner', 'ext_type',
             'view_media', 'certified_info']
@@ -119,7 +124,6 @@ def list_reports(
         project_id,
         project_name,
     )
-
     validate_owner_key_in_filters(filters)
 
     objects_ = full_search(
@@ -129,7 +133,9 @@ def list_reports(
         name=name,
         pattern=search_pattern,
         limit=limit,
-        root=folder_id,
+        root=folder,
+        root_id=folder_id,
+        root_name=folder_name,
         root_path=folder_path,
         **filters,
     )
@@ -329,6 +335,7 @@ class Report(
         self._page_by_elements = {}
         self._sql = None
         self._current_page_by = []
+        self._valid_page_by_elements = []
 
         self._attributes = []
         self._metrics = []
@@ -375,6 +382,11 @@ class Report(
         prompt_answers: list[Prompt] | None = None,
     ) -> pd.DataFrame:
         """Extract contents of a report instance into a Pandas `DataFrame`.
+
+        Note:
+            If the report has page-by attributes and `page_element_id` is not
+            provided, the first valid combination of page-by elements will be
+            used.
 
         Args:
             limit (None or int, optional): Used to control data extract
@@ -448,6 +460,12 @@ class Report(
                 offset=0,
                 limit=self._initial_limit,
             ).json()
+
+        if not self._current_page_by:
+            if self.valid_page_by_elements:
+                self._current_page_by = self.get_selected_page_by_elements(
+                    self.valid_page_by_elements[0]
+                )
 
         # Check status. At this point the instance should be ready w/ data.
         # If there are outstanding prompts, the status will be 2,
@@ -969,6 +987,77 @@ class Report(
             for schedule_id in schedules_list_response
         ]
 
+    def get_selected_page_by_elements(self, valid_combination: list[int]) -> list[str]:
+        """Get the selected page-by elements based on the valid combination.
+
+        Args:
+            valid_combination (list[int]): A list of valid element indexes. Can
+                be obtained as one element from the `valid_page_by_elements`
+                property.
+
+        Returns:
+            list[str]: A list of selected page-by element IDs.
+        """
+        selected_elements = []
+        if len(valid_combination) != len(self.page_by_attributes):
+            raise ValueError(
+                "The length of valid_combination does not match the number of "
+                "page-by attributes."
+            )
+        for index, attr in enumerate(self.page_by_attributes):
+            if valid_combination[index] < len(self.page_by_elements[attr['id']]):
+                selected_elements.append(
+                    self.page_by_elements[attr['id']][valid_combination[index]]
+                )
+            else:
+                raise IndexError(
+                    f"Index {valid_combination[index]} is out of range for "
+                    f"attribute {attr['name']} with "
+                    f"{len(self.page_by_elements[attr['id']])} elements."
+                )
+
+        return selected_elements
+
+    def get_valid_page_by_elements(self) -> dict:
+        """Get a list of valid page-by elements for the report. It contains all
+        elements of all attributes for page-by. Also includes possible
+        combinations of selections for page-by.
+
+        Returns:
+            dict: A dictionary containing:
+                - 'page_by_elements': All elements of all page-by attributes
+                - 'valid_page_by_elements': Valid combinations of page-by
+                    selections
+        """
+
+        if not self.instance_id:
+            res = self.__initialize_report(self._initial_limit)
+            _instance = res.json()
+            self._instance_id = _instance['instanceId']
+
+        # TODO: After solving this issue: CGPY-2482 to accept -1 as no limit
+        # for this endpoint, change limit to -1 to get all elements at once.
+        # Also consider adding results to `_page_by_elements` attribute to
+        # avoid other calls to get elements.
+
+        initial_response = reports_api.get_available_page_by_elements(
+            self.connection,
+            self.project_id,
+            self.id,
+            self._instance_id,
+        )
+
+        elements = camel_to_snake(initial_response.json())
+        page_by_elements = elements.get('page_by', {})
+        self._valid_page_by_elements = elements.get('valid_page_by_elements', {}).get(
+            'items', []
+        )
+
+        return {
+            'page_by_elements': page_by_elements,
+            'valid_page_by_elements': self._valid_page_by_elements,
+        }
+
     @property
     def attributes(self):
         if not self.__definition_retrieved:
@@ -1012,11 +1101,25 @@ class Report(
             attr_id = attr['id']
             if attr_id not in self._page_by_elements:
                 response = attributes_api.get_attribute_elements(
-                    connection=self._connection, id=attr['id']
+                    connection=self._connection, id=attr['id'], limit=-1
                 )
                 element_ids = [el['id'] for el in response.json()]
                 self._page_by_elements[attr_id] = element_ids
         return self._page_by_elements
+
+    @property
+    def valid_page_by_elements(self) -> list:
+        """Valid combinations of page by elements. It is a list of lists,
+        where each inner list represents a valid combination of element
+        selections for the page-by attributes. If there are N page-by
+        attributes, each inner list will contain N element indexes,
+        corresponding to the elements of each attribute."""
+        if not self._valid_page_by_elements:
+            valid_elements = self.get_valid_page_by_elements()
+            self._valid_page_by_elements = valid_elements.get(
+                'valid_page_by_elements', []
+            )
+        return self._valid_page_by_elements
 
     @property
     def current_page_by(self):

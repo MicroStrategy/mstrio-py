@@ -167,23 +167,35 @@ def update_attribute(
 def get_attribute_elements(
     connection: Connection,
     id: str,
+    offset: int | None = None,
+    limit: int | None = None,
     fields: str | None = None,
 ):
     """Get definition of a single attribute by ID.
 
     Args:
         connection: Strategy One REST API connection object
-        id: ID of an attribute
+        id: ID of an attribute.
+        offset: Block to begin with. Default is None. If None, the API will use
+            its default (1, the first block).
+        limit: Number of blocks to include (0-based). Default is None. If None,
+            the API will use its default (50). -1 means to include all blocks.
         fields: A whitelist of top-level fields separated by commas.
             Allow the client to selectively retrieve fields in the response.
 
     Return:
         HTTP response object. Expected status: 200
     """
+
+    params = {}
+    if offset is not None:
+        params['offset'] = offset
+    if limit is not None:
+        params['limit'] = limit
+    if fields is not None:
+        params['fields'] = fields
     connection._validate_project_selected()
     return connection.get(
         endpoint=f'/api/attributes/{id}/elements',
-        params={
-            'fields': fields,
-        },
+        params=params,
     )

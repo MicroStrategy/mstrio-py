@@ -3,22 +3,30 @@ import time
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum, IntEnum, auto
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable
 
 from pandas import DataFrame, Series
 from tqdm import tqdm
 
 from mstrio import config
+from mstrio.api import change_journal as change_journal_api
 from mstrio.api import datasources as datasources_api
 from mstrio.api import monitors, objects, projects
 from mstrio.connection import Connection
 from mstrio.helpers import IServerError, VersionException
+from mstrio.server.change_journal import _format_timestamp_for_api_purge
 from mstrio.server.project_languages import (
     DataLanguageSettings,
     MetadataLanguageSettings,
 )
 from mstrio.utils import helper, time_helper
-from mstrio.utils.entity import DeleteMixin, Entity, EntityBase, ObjectTypes
+from mstrio.utils.entity import (
+    ChangeJournalMixin,
+    DeleteMixin,
+    Entity,
+    EntityBase,
+    ObjectTypes,
+)
 from mstrio.utils.enum_helper import AutoName, AutoUpperName, get_enum_val
 from mstrio.utils.resolvers import validate_owner_key_in_filters
 from mstrio.utils.response_processors import datasources as datasources_processors
@@ -305,6 +313,11 @@ class Project(Entity, ModelVldbMixin, DeleteMixin):
         """Initialize Project object by passing `name` or `id`. When `id` is
         provided (not `None`), `name` is omitted.
 
+        Note:
+            You can initialize Project selected in `Connection` object by making
+            sure `connection` has project selected and providing connection
+            param as the only one: `Project(connection=conn)`.
+
         Args:
             connection: Strategy One connection object returned
                 by `connection.Connection()`
@@ -312,22 +325,31 @@ class Project(Entity, ModelVldbMixin, DeleteMixin):
             id: Project ID
         """
 
-        # initialize either by ID or Project Name
-        if id is None and name is None:
-            helper.exception_handler(
-                "Please specify either 'name' or 'id' parameter in the constructor.",
-                exception_type=ValueError,
-            )
-
         if id is None:
-            project_list = Project._list_project_ids(connection, name=name)
-            if project_list:
-                id = project_list[0]
+            if name is not None:
+                project_list = Project._list_project_ids(connection, name=name)
+                if project_list:
+                    id = project_list[0]
+                else:
+                    helper.exception_handler(
+                        f"There is no project with the given name: '{name}'",
+                        exception_type=ValueError,
+                    )
             else:
-                helper.exception_handler(
-                    f"There is no project with the given name: '{name}'",
-                    exception_type=ValueError,
-                )
+                if connection.project_id:
+                    if config.verbose:
+                        logger.info(
+                            "Initializing Project selected in `Connection` object."
+                        )
+                    id = connection.project_id
+                else:
+                    helper.exception_handler(
+                        (
+                            "Please specify either 'name' or 'id' parameter in "
+                            "the constructor or select a project in `Connection`."
+                        ),
+                        exception_type=ValueError,
+                    )
 
         try:
             super().__init__(connection=connection, object_id=id, name=name)
@@ -503,21 +525,13 @@ class Project(Entity, ModelVldbMixin, DeleteMixin):
         self._alter_properties(**properties)
 
     def __change_project_state(
-        self, func, on_nodes: str | list[str] | None = None, **mode
+        self,
+        func: Callable[[list[str], dict], None],
+        on_nodes: 'str | Node | list[str | Node] | None' = None,
+        **mode,
     ):
-        if isinstance(on_nodes, list):
-            for node in on_nodes:
-                func(node, **mode)
-        elif isinstance(on_nodes, str):
-            func(on_nodes, **mode)
-        elif on_nodes is None:
-            for node in self.nodes:
-                func(node.get('name'), **mode)  # type: ignore
-        else:
-            helper.exception_handler(
-                "'on_nodes' argument needs to be of type: [list[str], str, NoneType]",
-                exception_type=TypeError,
-            )
+        on_nodes: list[str] = self._normalize_nodes(on_nodes)
+        func(on_nodes, **mode)
 
     def _change_project_state_all_nodes(
         self, status: str, delete_sessions: bool | None = None
@@ -537,38 +551,44 @@ class Project(Entity, ModelVldbMixin, DeleteMixin):
     @method_version_handler('11.2.0000')
     def idle(
         self,
-        on_nodes: str | list[str] | None = None,
+        on_nodes: 'str | Node | list[str | Node] | None' = None,
         mode: IdleMode | str = IdleMode.REQUEST,
     ) -> None:
         """Request to idle a specific cluster node. Idle project with mode
         options.
 
         Args:
-            on_nodes: Name of node, if not passed, project will be idled on
-                all of the nodes.
+            on_nodes (str | Node | list[str | Node], optional):
+                One or more references to nodes. If not provided, project will
+                be idled on all of the nodes.
             mode: One of: `IdleMode` values.
         """
 
-        def idle_project(node: str, mode: IdleMode):
+        def idle_project(nodes: list[str], mode: IdleMode):
             body = {
                 "operationList": [
                     {"op": "replace", "path": self._STATUS_PATH, "value": mode.value}
                 ]
             }
-            response = monitors.update_node_properties(
-                self.connection, node, self.id, body
-            )
-            if response.status_code == 202:
-                tmp = helper.filter_list_of_dicts(self.nodes, name=node)
-                tmp[0]['projects'] = [response.json()['project']]
-                self._nodes = tmp
-                if tmp[0]['projects'][0]['status'] != mode.value:
-                    self.fetch('nodes')
-                if config.verbose:
-                    logger.info(
-                        f"Project '{self.id}' changed status to '{mode}' on node "
-                        f"'{node}'."
+            for node in nodes:
+                try:
+                    response = monitors.update_node_properties(
+                        self.connection, node, self.id, body
                     )
+                    if response.status_code == 202:
+                        tmp = helper.filter_list_of_dicts(self.nodes, name=node)
+                        tmp[0]['projects'] = [response.json()['project']]
+                        self._nodes = tmp
+                        if tmp[0]['projects'][0]['status'] != mode.value:
+                            self.fetch('nodes')
+                        if config.verbose:
+                            logger.info(
+                                f"Project '{self.id}' changed status to '{mode}' on "
+                                f"node '{node}'."
+                            )
+                except Exception as err:
+                    logger.error(err)
+                    continue
 
         if not isinstance(mode, IdleMode):
             # Previously `mode` was just a string with possible values
@@ -587,44 +607,63 @@ class Project(Entity, ModelVldbMixin, DeleteMixin):
         self.__change_project_state(func=idle_project, on_nodes=on_nodes, mode=mode)
 
     @method_version_handler('11.2.0000')
-    def resume(self, on_nodes: str | list[str] | None = None) -> None:
+    def resume(self, on_nodes: 'str | Node | list[str | Node] | None' = None) -> None:
         """Request to resume the project on the chosen cluster nodes. If
         nodes are not specified, the project will be loaded on all nodes.
 
         Args:
-            on_nodes: Name of node, if not passed, project will be resumed
-                on all of the nodes.
+            on_nodes (str | Node | list[str | Node], optional):
+                One or more references to nodes. If not provided, project will
+                be resumed on all of the nodes.
         """
 
-        def resume_project(node):
+        def resume_project(nodes: list[str]):
             body = {
                 "operationList": [
                     {"op": "replace", "path": self._STATUS_PATH, "value": "loaded"}
                 ]
             }
-            response = monitors.update_node_properties(
-                self.connection, node, self.id, body
-            )
-            if response.status_code == 202:
-                tmp = helper.filter_list_of_dicts(self.nodes, name=node)
-                tmp[0]['projects'] = [response.json()['project']]
-                self._nodes = tmp
-                if tmp[0]['projects'][0]['status'] != 'loaded':
-                    self.fetch('nodes')
-                if config.verbose:
-                    logger.info(f"Project '{self.id}' resumed on node '{node}'.")
+            for node in nodes:
+                try:
+                    response = monitors.update_node_properties(
+                        self.connection, node, self.id, body
+                    )
+                    if response.status_code == 202:
+                        tmp = helper.filter_list_of_dicts(self.nodes, name=node)
+                        tmp[0]['projects'] = [response.json()['project']]
+                        self._nodes = tmp
+                        if tmp[0]['projects'][0]['status'] != 'loaded':
+                            self.fetch('nodes')
+                        if config.verbose:
+                            logger.info(
+                                f"Project '{self.id}' resumed on node '{node}'."
+                            )
+                except Exception as err:
+                    logger.error(err)
+                    continue
 
         self.__change_project_state(func=resume_project, on_nodes=on_nodes)
 
-    @staticmethod
     def _normalize_nodes(
-        on_nodes: 'str | list[str] | Node | list[Node] | None',
-    ) -> str | list[str] | None:
+        self, on_nodes: 'str | list[str] | Node | list[Node] | None'
+    ) -> list[str]:
+        """Normalize `on_nodes` parameter to a list of node names. Select all
+            nodes as a default if `on_nodes` is None.
+        Args:
+            on_nodes (str | Node | list[str | Node], optional):
+                One or more references to nodes or None.
+        Returns:
+            (list[str]): List of node names.
+        """
+        if on_nodes is None:
+            return self._node_names
+
+        if not isinstance(on_nodes, list):
+            on_nodes = [on_nodes]
+
         from mstrio.server.node import Node
 
-        if isinstance(on_nodes, list):
-            return [node.name if isinstance(node, Node) else node for node in on_nodes]
-        return on_nodes.name if isinstance(on_nodes, Node) else on_nodes
+        return [node.name if isinstance(node, Node) else node for node in on_nodes]
 
     def _load_project(self, node):
         body = {
@@ -650,13 +689,12 @@ class Project(Entity, ModelVldbMixin, DeleteMixin):
         nodes are not specified, the project will be loaded on all nodes.
 
         Args:
-            on_nodes: Name of node, if not passed, project will be loaded
-                on all of the nodes.
+            on_nodes (str | Node | list[str | Node], optional):
+                One or more references to nodes. If not provided, project will
+                be loaded on all of the nodes.
         """
-        on_nodes = self._normalize_nodes(on_nodes)
-        all_nodes_are_selected = on_nodes is None or {
-            node['name'] for node in self.nodes
-        } == set(on_nodes)
+        on_nodes: list[str] = self._normalize_nodes(on_nodes)
+        all_nodes_are_selected = set(self._node_names) == set(on_nodes)
 
         if all_nodes_are_selected and meets_minimal_version(
             self.connection.iserver_version, '11.5.0500'
@@ -698,15 +736,14 @@ class Project(Entity, ModelVldbMixin, DeleteMixin):
         pending project will be automatically unloaded.
 
         Args:
-            on_nodes: Name of node, if not passed, project will be unloaded
-                on all of the nodes.
+            on_nodes (str | Node | list[str | Node], optional):
+                One or more references to nodes. If not provided, project will
+                be unloaded on all of the nodes.
             delete_sessions: If True, will delete all project sessions
                 immediately before unloading.
         """
-        on_nodes = self._normalize_nodes(on_nodes)
-        all_nodes_are_selected = on_nodes is None or {
-            node['name'] for node in self.nodes
-        } == set(on_nodes)
+        on_nodes: list[str] = self._normalize_nodes(on_nodes)
+        all_nodes_are_selected = set(self._node_names) == set(on_nodes)
 
         supports_server_wide_endpoint = meets_minimal_version(
             self.connection.iserver_version, '11.5.0500'
@@ -746,36 +783,48 @@ class Project(Entity, ModelVldbMixin, DeleteMixin):
         return super().delete(force=False)
 
     @method_version_handler('11.3.0000')
-    def register(self, on_nodes: str | list | None = None) -> None:
+    def register(
+        self,
+        on_nodes: 'str | Node | list[str | Node] | None' = None,
+    ) -> None:
         """Register project on nodes.
 
         A registered project will load on node (server) startup.
 
         Args:
-            on_nodes: Name of node, if not passed, project will be loaded
-                on all available nodes on startup.
+            on_nodes (str | Node | list[str | Node], optional):
+                One or more references to nodes. If not provided, project will
+                be set to load on all available nodes on startup.
         """
-        if on_nodes is None:
-            value = [node['name'] for node in self.nodes]
+        # a call to `_register` will overwrite with new list of nodes
+        register_all_nodes = on_nodes is None
+        if register_all_nodes:
+            value = self._node_names
         else:
-            on_nodes = on_nodes if isinstance(on_nodes, list) else [on_nodes]
+            on_nodes: list[str] = self._normalize_nodes(on_nodes)
             value = list(set(self.load_on_startup) | set(on_nodes))
         self._register(on_nodes=value)
 
     @method_version_handler('11.3.0000')
-    def unregister(self, on_nodes: str | list | None = None) -> None:
+    def unregister(
+        self,
+        on_nodes: 'str | Node | list[str | Node] | None' = None,
+    ) -> None:
         """Unregister project on nodes.
 
         An unregistered project will not load on node (server) startup.
 
         Args:
-            on_nodes (str or list, optional): Name of node, if not passed,
-                project will not be loaded on any nodes on startup.
+            on_nodes (str | Node | list[str | Node], optional):
+                One or more references to nodes. If not provided, project will
+                be set to not load on any nodes on startup.
         """
-        if on_nodes is None:
+        # a call to `_register` will overwrite with new list of nodes
+        unregister_all_nodes = on_nodes is None
+        if unregister_all_nodes:
             value = []
         else:
-            on_nodes = on_nodes if isinstance(on_nodes, list) else [on_nodes]
+            on_nodes: list[str] = self._normalize_nodes(on_nodes)
             value = list(set(self.load_on_startup) - set(on_nodes))
         self._register(on_nodes=value)
 
@@ -821,23 +870,44 @@ class Project(Entity, ModelVldbMixin, DeleteMixin):
         """
         return self.settings.list_caching_properties()
 
-    def is_loaded(self) -> bool:
-        """Check if the project is loaded on any node (server)."""
-        loaded = False
+    def is_loaded(
+        self,
+        on_nodes: 'str | Node | list[str | Node] | None' = None,
+        check_all_selected_nodes: bool = False,
+    ) -> bool:
+        """Check if the project is loaded on any node (server).
+
+        Args:
+            on_nodes (str | Node | list[str | Node], optional):
+                One or more references to nodes. If not provided, all nodes
+                in the cluster will be checked.
+            check_all_selected_nodes (bool, optional): If True, checks if the
+                project is loaded on all given nodes. If False, checks if the
+                project is loaded on at least one of the selected nodes.
+                Default is False.
+        """
+
+        # If `check_all_selected_nodes` is set, initialize result as True,
+        # then set to False and return as soon as a not loaded node is found.
+        # Converse applies for `check_all_selected_nodes` set to False.
+        result = check_all_selected_nodes
         self.fetch('nodes')
         if not isinstance(self.nodes, list):
             helper.exception_handler(
                 "Could not retrieve current project status.",
                 exception_type=ConnectionError,
             )
-        for node in self.nodes:
-            projects = node.get('projects')
+        nodes_dict = {node['name']: node for node in self.nodes}
+        nodes_applicable_keys = self._normalize_nodes(on_nodes)
+        for node in nodes_applicable_keys:
+            projects = nodes_dict[node].get('projects')
             if projects:
                 status = projects[0].get('status')
-                loaded = status == 'loaded'
-                if loaded:
+                result_per_node = status == 'loaded'
+                if result_per_node != result:
+                    result = result_per_node
                     break
-        return loaded
+        return result
 
     def get_data_engine_versions(self) -> dict:
         """Fetch the currently available data engine versions for project."""
@@ -873,7 +943,12 @@ class Project(Entity, ModelVldbMixin, DeleteMixin):
             self.connection, id=self.id, obj_type=self._OBJECT_TYPE.value, body=body
         )
 
-    def _register(self, on_nodes: list) -> None:
+    def _register(self, on_nodes: list[str]) -> None:
+        """Overwrite list of nodes on which project will load on startup.
+        Args:
+            on_nodes (list[str]): List of node names. Must be normalized to a
+                list of node names with _normalize_nodes.
+        """
         path = f"/projects/{self.id}/nodes"
         body = {"operationList": [{"op": "replace", "path": path, "value": on_nodes}]}
         projects.update_projects_on_startup(self.connection, body)
@@ -1280,6 +1355,40 @@ class Project(Entity, ModelVldbMixin, DeleteMixin):
             helper.get_response_json(resp), connection=self.connection
         )
 
+    @method_version_handler('11.4.0900')
+    def purge_change_journals(
+        self, comment: str | None = None, timestamp: str | datetime | None = None
+    ) -> None:
+        """Purge change journal entries for the project.
+
+        Note:
+            Only change journal entries older than a week can be purged.
+
+        Args:
+            comment (str, optional): Comment for the purge action.
+            timestamp (str, datetime, optional): Timestamp for purging entries.
+                If string, must be in 'MM/DD/YYYY HH:MM:SS AM/PM' format.
+                If datetime object, will be converted to required format.
+                Entries before this timestamp will be purged. If not provided,
+                all entries will be purged.
+        """
+
+        if isinstance(timestamp, datetime):
+            timestamp = _format_timestamp_for_api_purge(timestamp)
+
+        res = change_journal_api.purge_change_journal_entries(
+            connection=self.connection,
+            timestamp=timestamp,
+            comment=comment,
+            projects_ids=self.id,
+        )
+
+        if config.verbose and res.ok:
+            logger.info(
+                f"Request to purge change journal entries was successfully sent for "
+                f"{self.name} | {self.id} project."
+            )
+
     @property
     def load_on_startup(self):
         """View nodes (servers) to load project on startup."""
@@ -1316,6 +1425,10 @@ class Project(Entity, ModelVldbMixin, DeleteMixin):
     @property
     def nodes(self):
         return self._nodes
+
+    @property
+    def _node_names(self):
+        return [node['name'] for node in self._nodes]
 
     @property
     @method_version_handler(version='11.3.1200')
@@ -1678,7 +1791,7 @@ def list_projects_duplications(
     ]
 
 
-class ProjectDuplication(EntityBase):
+class ProjectDuplication(EntityBase, ChangeJournalMixin):
     """Object representation of a project duplication request.
 
     Attributes:
