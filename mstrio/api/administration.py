@@ -1,6 +1,7 @@
 from requests import Response
 
 from mstrio.connection import Connection
+from mstrio.utils.api_helpers import add_comment_to_dict
 from mstrio.utils.error_handlers import ErrorHandler
 
 
@@ -927,7 +928,10 @@ def get_fence(
 
 @ErrorHandler(err_msg="Error deleting fence with ID: {id}")
 def delete_fence(
-    connection: Connection, id: str, error_msg: str | None = None
+    connection: Connection,
+    id: str,
+    error_msg: str | None = None,
+    journal_comment: str | None = None,
 ) -> Response:
     """Delete a fence by ID.
 
@@ -935,11 +939,14 @@ def delete_fence(
         connection (Connection): Strategy One REST API connection object
         id (str): Fence ID
         error_msg (str, optional): Custom Error Message for Error Handling
+        journal_comment (str, optional): Comment that will be added to the
+            object's change journal entry.
 
     Returns:
         Complete HTTP response object.
     """
-    return connection.delete(endpoint=f'/api/v2/iserver/fences/{id}')
+    params = add_comment_to_dict(None, journal_comment)
+    return connection.delete(endpoint=f'/api/v2/iserver/fences/{id}', params=params)
 
 
 @ErrorHandler(err_msg="Error updating fence with ID: {id}")

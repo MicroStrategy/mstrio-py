@@ -53,7 +53,7 @@ def list_filters(
     **filters,
 ) -> list["Filter"] | list[dict]:
     """Get a list of Filter objects or dicts. Optionally filter the
-    objects by specifying filters parameter.
+    objects by specifying `filters` parameters.
 
     Args:
         connection (object): Strategy One connection object returned by
@@ -324,6 +324,7 @@ class Filter(Entity, CopyMixin, DeleteMixin, MoveMixin):
         primary_locale: str | None = None,
         show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
         show_filter_tokens: bool = False,
+        journal_comment: str | None = None,
     ) -> "Filter":
         """Create a new filter in a specific project.
 
@@ -363,6 +364,8 @@ class Filter(Entity, CopyMixin, DeleteMixin, MoveMixin):
                 - If true, all `text`, "tree" and `tokens` formats are returned.
             hidden (bool, optional): Specifies whether the object is hidden.
                 Default value: False.
+            journal_comment (optional, str): Comment that will be added to the
+                object's change journal entry
 
         Returns:
             Filter object
@@ -383,6 +386,9 @@ class Filter(Entity, CopyMixin, DeleteMixin, MoveMixin):
                 "isEmbedded": is_embedded,
             }
         }
+
+        if journal_comment:
+            body.update({'changeJournal': {'userComments': journal_comment}})
         body = delete_none_values(body, recursion=True)
         body['qualification'] = construct_expression_body(qualification)
 
@@ -415,6 +421,7 @@ class Filter(Entity, CopyMixin, DeleteMixin, MoveMixin):
         hidden: bool | None = None,
         comments: str | None = None,
         owner: str | User | None = None,
+        journal_comment: str | None = None,
     ):
         """Alter the filter properties.
 
@@ -430,6 +437,8 @@ class Filter(Entity, CopyMixin, DeleteMixin, MoveMixin):
                 Default value: False.
             comments (str, optional): long description of the filter
             owner: (str, User, optional): owner of the filter
+            journal_comment (optional, str): Comment that will be added to the
+                object's change journal entry
         """
         qualification = (
             {}

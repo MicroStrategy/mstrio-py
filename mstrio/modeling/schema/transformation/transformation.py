@@ -336,6 +336,7 @@ class Transformation(Entity, CopyMixin, MoveMixin, DeleteMixin):
         is_embedded: bool = False,
         description: str | None = None,
         show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
+        journal_comment: str | None = None,
     ) -> 'Transformation':
         """Create Transformation object.
 
@@ -362,6 +363,8 @@ class Transformation(Entity, CopyMixin, MoveMixin, DeleteMixin):
                 Available values:
                 - `ExpressionFormat.TREE` or `tree` (default)
                 - `ExpressionFormat.TOKENS or `tokens`
+            journal_comment (optional, str): Comment that will be added to the
+                object's change journal entry
 
         Returns:
             Transformation class object.
@@ -383,6 +386,8 @@ class Transformation(Entity, CopyMixin, MoveMixin, DeleteMixin):
             'attributes': [attribute.to_dict() for attribute in attributes],
             'mappingType': mapping_type,
         }
+        if journal_comment:
+            body.update({'changeJournal': {'userComments': journal_comment}})
         body = delete_none_values(body, recursion=True)
         response = transformations.create_transformation(
             connection=connection,
@@ -410,18 +415,21 @@ class Transformation(Entity, CopyMixin, MoveMixin, DeleteMixin):
         hidden: bool | None = None,
         comments: str | None = None,
         owner: str | User | None = None,
+        journal_comment: str | None = None,
     ):
         """Alter transformation properties.
 
         Args:
-            name: transformation's name
-            attributes: list of base transformation attributes
-            mapping_type: transformation's mapping type
-            description: transformation's description
+            name (str, optional): transformation's name
+            attributes (list, optional): list of base transformation attributes
+            mapping_type (MappingType, optional): transformation's mapping type
+            description (str, optional): transformation's description
             hidden (bool, optional): Specifies whether the object is hidden.
                 Default value: False.
-            comments: long description of the transformation
-           owner: (str, User, optional): owner of the transformation
+            comments (str, optional): long description of the transformation
+            owner (str, User, optional): owner of the transformation
+            journal_comment (optional, str): Comment that will be added to the
+                object's change journal entry
         """
 
         name = name or self.name

@@ -1,6 +1,7 @@
 import requests
 
 from mstrio.connection import Connection
+from mstrio.utils.api_helpers import add_comment_to_dict
 from mstrio.utils.error_handlers import ErrorHandler
 
 
@@ -364,6 +365,7 @@ def delete_migration(
     package_id,
     error_msg: str | None = None,
     whitelist=[('ERR006', 404)],  # noqa: B006
+    journal_comment: str | None = None,
 ) -> requests.Response:
     """Delete migration package specified by ID.
 
@@ -371,13 +373,17 @@ def delete_migration(
         connection (Connection): Strategy One REST API connection object
         package_id (str): The ID of the migration package to be deleted
         error_msg (str, optional): Custom Error Message for Error Handling
+        journal_comment (str, optional): Comment that will be added to the
+            object's change journal entry.
 
     Returns:
         Complete HTTP response object. Expected status is 204.
     """
+    params = {'packageId': package_id}
+    params = add_comment_to_dict(params, journal_comment)
     return connection.delete(
         endpoint='/api/migrations',
-        params={'packageId': package_id},
+        params=params,
     )
 
 

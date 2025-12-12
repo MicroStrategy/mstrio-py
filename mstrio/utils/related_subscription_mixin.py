@@ -1,15 +1,15 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypeAlias
 
 from mstrio.api import subscriptions
 from mstrio.utils.resolvers import get_project_id_from_params_set
 from mstrio.utils.version_helper import method_version_handler
 
 if TYPE_CHECKING:
-    from mstrio.distribution_services import Event, Schedule, Subscription  # noqa: F401
-    from mstrio.project_objects import Dashboard, Report  # noqa: F401
-    from mstrio.users_and_groups import User  # noqa: F401
+    from mstrio.distribution_services import Event, Schedule, Subscription
+    from mstrio.project_objects import Dashboard, Report
+    from mstrio.users_and_groups import User
 
-RelatedSubscriptionTypes = 'User | Dashboard | Report | Schedule | Event'
+RelatedSubscriptionTypes: TypeAlias = 'User | Dashboard | Report | Schedule | Event'
 
 
 class RelatedSubscriptionMixin:

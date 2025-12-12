@@ -117,6 +117,7 @@ class DatasourceMap(EntityBase, DeleteMixin):
     }
     _API_PATCH: list[Callable] = []
     _API_DELETE = staticmethod(datasources.delete_datasource_mapping)
+    _API_DEL_JOURNAL_MIN_VER = None
     _FROM_DICT_MAP = {
         'ds_connection': DatasourceConnection.from_dict,
         'datasource': DatasourceInstance.from_dict,

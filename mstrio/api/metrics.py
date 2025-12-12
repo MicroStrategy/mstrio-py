@@ -31,7 +31,7 @@ def create_metric(
     Return:
         HTTP response object. Expected status: 201
     """
-    with changeset_manager(connection) as changeset_id:
+    with changeset_manager(connection, body=body) as changeset_id:
         return connection.post(
             endpoint='/api/model/metrics',
             headers={'X-MSTR-MS-Changeset': changeset_id},
@@ -114,7 +114,7 @@ def update_metric(
     Return:
         HTTP response object. Expected status: 201
     """
-    with changeset_manager(connection) as changeset_id:
+    with changeset_manager(connection, body=body) as changeset_id:
         return connection.put(
             endpoint=f'/api/model/metrics/{id}',
             headers={'X-MSTR-MS-Changeset': changeset_id},

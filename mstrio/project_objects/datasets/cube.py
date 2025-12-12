@@ -609,7 +609,10 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
         """Fetch add'l rows from this object instance from the Intelligence
         Server."""
         with tqdm(
-            desc="Downloading", total=it_total + 1, disable=(not self._progress_bar)
+            desc="Downloading",
+            total=it_total + 1,
+            disable=(not self._progress_bar),
+            delay=3,
         ) as fetch_pbar:
             fetch_pbar.update()
             for _offset in range(self._initial_limit, pagination['total'], limit):

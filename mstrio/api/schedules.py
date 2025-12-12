@@ -3,6 +3,8 @@ import json
 from requests.adapters import Response
 
 from mstrio.connection import Connection
+from mstrio.utils.helper import check_version_for_change_journal_comment
+from mstrio.utils.api_helpers import extract_comment_from_body
 from mstrio.utils.error_handlers import ErrorHandler
 
 
@@ -120,7 +122,8 @@ def update_schedule(connection, id, body, fields=None, error_msg=None):
     # id to eventId conversion - API Problem
     if 'event' in body:
         body['event']['eventId'] = body['event'].pop('id')
-
+    comment = extract_comment_from_body(body)
+    check_version_for_change_journal_comment(connection, '11.5.1200', comment)
     response = connection.put(
         endpoint=f'/api/schedules/{id}',
         json=body,

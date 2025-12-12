@@ -57,7 +57,7 @@ def create_transformation(
     Return:
         HTTP response object. Expected status: 200
     """
-    with changeset_manager(connection) as changeset_id:
+    with changeset_manager(connection, body=body) as changeset_id:
         return connection.post(
             endpoint='/api/model/transformations',
             headers={'X-MSTR-MS-Changeset': changeset_id},
@@ -93,7 +93,7 @@ def update_transformation(
     Return:
         HTTP response object. Expected status: 200
     """
-    with changeset_manager(connection) as changeset_id:
+    with changeset_manager(connection, body=body) as changeset_id:
         return connection.patch(
             endpoint=f'/api/model/transformations/{id}',
             headers={'X-MSTR-MS-Changeset': changeset_id},

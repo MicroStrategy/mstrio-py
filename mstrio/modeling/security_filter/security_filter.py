@@ -59,7 +59,7 @@ def list_security_filters(
     **filters,
 ) -> list[type["SecurityFilter"]] | list[dict]:
     """Get a list of Security Filter objects or dicts. Optionally filter the
-    objects by specifying filters parameter.
+    objects by specifying `filters` parameters.
     It can also be filtered by user or user group.
 
     Note:

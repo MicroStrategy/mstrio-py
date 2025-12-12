@@ -208,6 +208,7 @@ class Contact(EntityBase, ChangeJournalMixin, DeleteMixin):
         ): contacts.get_contact
     }
     _API_DELETE = staticmethod(contacts.delete_contact)
+    _API_DEL_JOURNAL_MIN_VER = None
     _API_PATCH = {
         (
             'name',

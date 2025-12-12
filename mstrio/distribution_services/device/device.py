@@ -162,6 +162,7 @@ class Device(Entity, DeleteMixin):
         ): devices.get_device,
     }
     _API_DELETE = staticmethod(devices.delete_device)
+    _API_DEL_JOURNAL_MIN_VER = None
     _API_PATCH: dict = {
         ('name', 'description', 'device_properties'): (devices.update_device, 'put'),
         'comments': (objects_processors.update, 'partial_put'),

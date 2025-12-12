@@ -1,6 +1,26 @@
 # Changelog
 
+## 11.5.12.101 - 2025/12/12
+
+### New features
+
+- added `journal_comment` argument to `delete()` method
+- added `journal_comment` argument to `create()` and `alter()` methods for: `Fact`, `User`, `UserGroup`, `ContentGroup`, `Calendar`, `Attribute`, `Filter`, `Metric`, `Prompt`, `SecurityRole`, `Transformation`, `TimeZone`, `LogicalTable`
+
+### Bug fixes
+
+- fixed `list_logical_tables` treating imported Excel files as logical tables
+
 ## 11.5.11.101 - 2025/11/14
+
+### New features
+
+- added `change_journal` property to view objects change journal entries
+- added `list_change_journal_entries` function to list change journal entries across environment with specified filters
+- added `purge_change_journal_entries` function to purge change journal entries in specified projects
+- added `purge_change_journals` method to `Project` class to purge selected project change journal entries
+- added `purge_all_change_journals` method to `Environment` class to purge change journal entries for every project
+- added `purge_configuration_change_journals` method to `Environment` class to purge change journal entries for configuration objects
 
 ### Minor changes
 
@@ -10,12 +30,6 @@
 - added option of initialization of `Folder` class by its name. Please read the documentation to learn about risks of this approach
 - added argument `on_nodes` in `Project.is_loaded()` method to check status on specific nodes
 - added argument `check_all_selected_nodes` in `Project.is_loaded()` method to use logic requiring all nodes to have the project loaded
-- added `change_journal` property to view objects change journal entries
-- added `list_change_journal_entries` function to list change journal entries across environment with specified filters
-- added `purge_change_journal_entries` function to purge change journal entries in specified projects
-- added `purge_change_journals` method to `Project` class to purge selected project change journal entries
-- added `purge_all_change_journals` method to `Environment` class to purge change journal entries for every project
-- added `purge_configuration_change_journals` method to `Environment` class to purge change journal entries for configuration objects
 - added code snippet for mstrio-py's configuration, named `config_mgmt.py`
 - added alias `disconnect` to method `close` on `Connection` object
 - added alias `open` to method `connect` on `Connection` object

@@ -8,6 +8,7 @@ if t.TYPE_CHECKING:
     from mstrio.connection import Connection
     from mstrio.object_management.folder import Folder
     from mstrio.server.project import Project
+    from mstrio.object_management.object import Object
 
 
 T = t.TypeVar('T')
@@ -420,6 +421,42 @@ def get_folder_id_from_params_set(
         root_path=folder_path,
 """
 
+
+def get_drill_map_id_from_params_set(
+    conn: 'Connection',
+    drill_map: 'Object | str | None' = None,
+    drill_map_id: str | None = None,
+    drill_map_name: str | None = None,
+) -> str | None:
+    from mstrio.object_management.object import Object
+    from mstrio.modeling.schema.attribute.custom_group import CustomGroup
+
+    return _get_id_from_params_set(
+        drill_map,
+        drill_map_id,
+        drill_map_name,
+        Object,
+        lambda: CustomGroup._list_drill_maps(conn),
+    )
+
+
+# FYI: Copy-pastable parts for drill map-related parameters:
+"""
+[DOCSTRING for "Args" part]
+            drill_map (Object | str, optional): Object or ID specifying the
+                drill map. May be used instead of `drill_map_id` or
+                `drill_map_name`.
+            drill_map_id (str, optional): ID of a drill map.
+            drill_map_name (str, optional): Name of a drill map.
+
+[implementation of usual use]
+        drill_map_id = get_drill_map_id_from_params_set(
+            connection,
+            drill_map=drill_map,
+            drill_map_id=drill_map_id,
+            drill_map_name=drill_map_name,
+        )
+"""
 
 # --- END: PARAMETERS Resolvers ---
 

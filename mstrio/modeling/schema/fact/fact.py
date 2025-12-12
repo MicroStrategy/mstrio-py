@@ -335,6 +335,7 @@ class Fact(Entity, CopyMixin, DeleteMixin, MoveMixin):
         description: str | None = None,
         is_embedded: bool = False,
         show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
+        journal_comment: str | None = None,
     ) -> "Fact":
         """Create new fact object.
 
@@ -364,6 +365,8 @@ class Fact(Entity, CopyMixin, DeleteMixin, MoveMixin):
                 Available values:
                 - `ExpressionFormat.TREE` or `tree` (default)
                 - `ExpressionFormat.TOKENS` or `tokens`
+            journal_comment (optional, str): Comment that will be added to the
+                object's change journal entry
 
         Returns:
             `Fact` class object.
@@ -393,6 +396,8 @@ class Fact(Entity, CopyMixin, DeleteMixin, MoveMixin):
             ],
             "entryLevel": [],
         }
+        if journal_comment:
+            body.update({'changeJournal': {'userComments': journal_comment}})
         response = facts.create_fact(
             connection=connection,
             body=body,
@@ -417,6 +422,7 @@ class Fact(Entity, CopyMixin, DeleteMixin, MoveMixin):
         hidden: bool | None = None,
         comments: str | None = None,
         owner: str | User | None = None,
+        journal_comment: str | None = None,
     ):
         """Alter fact properties.
 
@@ -428,6 +434,8 @@ class Fact(Entity, CopyMixin, DeleteMixin, MoveMixin):
                 Default value: False.
             comments (optional, str): fact's long description
             owner (optional, str or User): owner of the fact object
+            journal_comment (optional, str): Comment that will be added to the
+                object's change journal entry
         """
         if isinstance(owner, User):
             owner = owner.id

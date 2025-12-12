@@ -412,6 +412,7 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
         sorts: AttributeSorts | None = None,
         show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
         hidden: bool | None = None,
+        journal_comment: str | None = None,
     ) -> 'Attribute':
         """Alter attribute properties.
 
@@ -448,6 +449,9 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
                 - `ExpressionFormat.TOKENS or `tokens`
             hidden (bool, optional): Specifies whether the object is hidden.
                 Default value: False.
+            journal_comment (optional, str): Comment that will be added to the
+                object's change journal entry
+
 
         Returns:
             Attribute class object.
@@ -479,6 +483,8 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
             'displays': displays.to_dict() if displays else None,
             'sorts': sorts.to_dict() if sorts else None,
         }
+        if journal_comment:
+            body.update({'changeJournal': {'userComments': journal_comment}})
         body = delete_none_values(body, recursion=True)
         response = attributes.create_attribute(
             connection,
@@ -615,6 +621,7 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
         hidden: bool | None = None,
         comments: str | None = None,
         owner: str | User | None = None,
+        journal_comment: str | None = None,
     ):
         """Alter attribute properties.
 
@@ -639,6 +646,8 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
             hidden: Specifies whether the attribute is hidden.
             comments: Long description of the attribute
             owner: Owner user for the attribute
+            journal_comment: Comment that will be added to the object's change
+                journal entry
         """
         hidden = hidden if self.hidden != hidden else None
         if any(

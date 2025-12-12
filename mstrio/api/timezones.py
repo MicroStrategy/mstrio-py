@@ -54,7 +54,7 @@ def create_tz(
         HTTP response object returned by the Strategy One REST server.
     """
     with changeset_manager(
-        connection, project_id='', schema_edit=False
+        connection, project_id='', schema_edit=False, body=body
     ) as changeset_id:
         return connection.post(
             endpoint='/api/model/timezones',
@@ -111,7 +111,7 @@ def update_tz(
         HTTP response object returned by the Strategy One REST server.
     """
     with changeset_manager(
-        connection, project_id='', schema_edit=False
+        connection, project_id='', schema_edit=False, body=body
     ) as changeset_id:
         # Note: This endpoint uses the PATCH method, but the request body has
         # the simple delta format, not the patch operation list format

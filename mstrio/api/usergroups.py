@@ -1,5 +1,7 @@
 from typing import TYPE_CHECKING
 
+from mstrio.utils.helper import check_version_for_change_journal_comment
+from mstrio.utils.api_helpers import extract_comment_from_body
 from mstrio.utils.error_handlers import ErrorHandler
 
 if TYPE_CHECKING:
@@ -141,6 +143,9 @@ def update_user_group_info(connection, id, body, error_msg=None):
     Returns:
         Complete HTTP response object
     """
+
+    comment = extract_comment_from_body(body)
+    check_version_for_change_journal_comment(connection, '11.5.1100', comment)
 
     return connection.patch(
         endpoint=f'/api/usergroups/{id}',

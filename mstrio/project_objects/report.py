@@ -461,11 +461,10 @@ class Report(
                 limit=self._initial_limit,
             ).json()
 
-        if not self._current_page_by:
-            if self.valid_page_by_elements:
-                self._current_page_by = self.get_selected_page_by_elements(
-                    self.valid_page_by_elements[0]
-                )
+        if not self._current_page_by and self.valid_page_by_elements:
+            self._current_page_by = self.get_selected_page_by_elements(
+                self.valid_page_by_elements[0]
+            )
 
         # Check status. At this point the instance should be ready w/ data.
         # If there are outstanding prompts, the status will be 2,
@@ -611,7 +610,10 @@ class Report(
         """Fetch added rows from this object instance from the Intelligence
         Server."""
         with tqdm(
-            desc="Downloading", total=it_total + 1, disable=(not self._progress_bar)
+            desc="Downloading",
+            total=it_total + 1,
+            disable=(not self._progress_bar),
+            delay=3,
         ) as fetch_pbar:
             fetch_pbar.update()
             for _offset in range(self._initial_limit, pagination['total'], limit):

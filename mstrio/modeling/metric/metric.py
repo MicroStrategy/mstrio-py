@@ -672,6 +672,7 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin, ModelVldbMixin):  # noqa
         thresholds: list[Threshold] | None = None,
         show_expression_as: ExpressionFormat | str = ExpressionFormat.TOKENS,
         hidden: bool | None = None,
+        journal_comment: str | None = None,
     ) -> 'Metric':
         """Create a new metric with specified properties.
 
@@ -716,6 +717,8 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin, ModelVldbMixin):  # noqa
                 - `ExpressionFormat.TOKENS or `tokens` (default)
             hidden (bool, optional): Specifies whether the object is hidden.
                 Default value: False.
+            journal_comment (optional, str): Comment that will be added to the
+                object's change journal entry
 
         Returns:
             Metric class object.
@@ -754,6 +757,8 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin, ModelVldbMixin):  # noqa
             ),
             'thresholds': [x.to_dict() for x in thresholds] if thresholds else None,
         }
+        if journal_comment:
+            body.update({'changeJournal': {'userComments': journal_comment}})
         body = delete_none_values(body, recursion=True)
         response = metrics.create_metric(
             connection,
@@ -802,6 +807,7 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin, ModelVldbMixin):  # noqa
         hidden: bool | None = None,
         comments: str | None = None,
         owner: User | str | None = None,
+        journal_comment: str | None = None,
     ):
         """Alter a metric's specified properties
 
@@ -833,6 +839,8 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin, ModelVldbMixin):  # noqa
                 - `ExpressionFormat.TOKENS or `tokens` (default)
             hidden: Specifies whether the metric is hidden
             owner: owner of the metric
+            journal_comment (optional, str): Comment that will be added to the
+                object's change journal entry
         """
         name = name or self.name
         if isinstance(owner, User):

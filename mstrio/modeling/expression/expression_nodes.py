@@ -1046,6 +1046,7 @@ class BandingSizePredicate(BandingPredicate):
         start: the start of the range
         stop: the end of the range
         size: the size of each band
+        has_residue: whether there is a band covering the remaining values
     """
 
     _TYPE = NodeType.PREDICATE_BANDING_SIZE
@@ -1059,6 +1060,7 @@ class BandingSizePredicate(BandingPredicate):
     start: Variant
     stop: Variant
     size: Variant
+    has_residue: bool | None = None
     band_names: list[str] | None = None
 
     def _get_node_data(self):
@@ -1068,6 +1070,7 @@ class BandingSizePredicate(BandingPredicate):
                 'start': self.start.to_dict(),
                 'stop': self.stop.to_dict(),
                 'size': self.size.to_dict(),
+                'has_residue': self.has_residue,
                 'band_names': self.band_names,
             }
         )
@@ -1087,6 +1090,7 @@ class BandingCountPredicate(BandingPredicate):
         start: the start of the range
         stop: the end of the range
         count: number of bands
+        has_residue: whether there is a band covering the remaining values
     """
 
     _TYPE = NodeType.PREDICATE_BANDING_COUNT
@@ -1100,6 +1104,7 @@ class BandingCountPredicate(BandingPredicate):
     start: Variant
     stop: Variant
     count: Variant
+    has_residue: bool | None = None
     band_names: list[str] | None = None
 
     def _get_node_data(self):
@@ -1109,6 +1114,7 @@ class BandingCountPredicate(BandingPredicate):
                 'start': self.start.to_dict(),
                 'stop': self.stop.to_dict(),
                 'count': self.count.to_dict(),
+                'has_residue': self.has_residue,
                 'band_names': self.band_names,
             }
         )

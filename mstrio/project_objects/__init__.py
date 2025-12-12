@@ -22,6 +22,7 @@ from .incremental_refresh_report import (
     list_incremental_refresh_reports,
 )
 from .library import Library
+from .palette import Palette, list_palettes
 from .report import Report, list_reports
 
 import warnings as _w

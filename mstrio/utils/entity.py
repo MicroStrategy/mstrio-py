@@ -21,7 +21,9 @@ from mstrio.utils import helper
 from mstrio.utils.acl import ACE, ACLMixin
 from mstrio.utils.dependence_mixin import DependenceMixin
 from mstrio.utils.helper import (
+    add_journal_comment_to_operation_list,
     get_response_json,
+    process_delete_change_journal_comment,
     rename_dict_keys,
 )
 from mstrio.utils.resolvers import (
@@ -123,7 +125,10 @@ class EntityBase(helper.Dictable):
         update. For example: {'id': str, 'enabled': bool}
     _API_DELETE(Callable): A function which is used to delete an object from the
         server. Defaults to staticmethod(objects.delete_object).
-
+    _API_DEL_JOURNAL_MIN_VER(str | None): A string representing minimum I-Server
+        version required to support change journal comment when deleting an
+        object. If None, change journal comment is not supported for delete
+        operation.
 
     Instance attributes:
         connection (Connection): A Strategy One connection object
@@ -194,6 +199,7 @@ class EntityBase(helper.Dictable):
     _API_PATCH: dict[tuple[str], tuple[Callable | str]] = {}
     _PATCH_PATH_TYPES: dict[str, type] = {}  # used in update_properties method
     _API_DELETE: Callable = staticmethod(objects.delete_object)
+    _API_DEL_JOURNAL_MIN_VER: str | None = '11.5.0300'
     _WITH_MISSING_VALUE: bool = False
 
     def __init__(
@@ -862,6 +868,20 @@ class EntityBase(helper.Dictable):
             if not body:
                 continue
 
+            if body and 'journal_comment' in properties:
+                if func_type == 'patch':
+                    add_journal_comment_to_operation_list(
+                        body=body, comment=properties.get('journal_comment')
+                    )
+                else:
+                    body.update(
+                        {
+                            'changeJournal': {
+                                'userComments': properties.get('journal_comment')
+                            }
+                        }
+                    )
+
             # send patch request from the specified update wrapper
             param_value_dict = auto_match_args_entity(func, self, exclude=["body"])
             param_value_dict['body'] = body
@@ -1459,12 +1479,16 @@ class DeleteMixin:
     _DELETE_SUCCESS_MSG: str | None = None
     _DELETE_PROMPT_ANSWER: str = 'Y'
 
-    def delete(self: Entity, force: bool = False) -> bool:
+    def delete(
+        self: Entity, force: bool = False, journal_comment: str | None = None
+    ) -> bool:
         """Delete object.
 
         Args:
             force: If True, then no additional prompt will be shown before
                 deleting object.
+            journal_comment: Comment to be added to the change journal for
+                this deletion. If None, no comment is added.
 
         Returns:
             True on success. False otherwise.
@@ -1481,6 +1505,11 @@ class DeleteMixin:
 
         if force or user_input == self._DELETE_PROMPT_ANSWER:
             param_value_dict = auto_match_args_entity(self._API_DELETE, self)
+            param_value_dict['journal_comment'] = process_delete_change_journal_comment(
+                self.connection,
+                self._API_DEL_JOURNAL_MIN_VER,
+                journal_comment,
+            )
 
             response = self._API_DELETE(**param_value_dict)
 
@@ -1532,18 +1561,23 @@ class CertifyMixin:
 
     def certify(self: Entity) -> bool:
         """Certify object.
+
         Args:
-           success_msg: Custom message displayed on success.
+            success_msg: Custom message displayed on success.
+
         Returns:
-                True on success, False otherwise."""
+            True on success, False otherwise.
+        """
         return self._toggle_certification(certify=True)
 
     def decertify(self: Entity) -> bool:
         """Decertify object.
+
         Args:
-           success_msg: Custom message displayed on success.
+            success_msg: Custom message displayed on success.
         Returns:
-                True on success, False otherwise."""
+            True on success, False otherwise.
+        """
         return self._toggle_certification(certify=False)
 
 

@@ -23,13 +23,18 @@ def create_changeset(
 
 @ErrorHandler(err_msg="Error committing changeset {id} changes to the metadata.")
 def commit_changeset_changes(
-    connection: 'Connection', id: str, error_msg: str = None, throw_error=True
+    connection: 'Connection',
+    id: str,
+    error_msg: str = None,
+    throw_error: bool = True,
+    body: dict | None = None,
 ):
     """Commit the changeset changes to metadata."""
     return connection.post(
         endpoint=f'/api/model/changesets/{id}/commit',
         headers={'X-MSTR-MSChanget': id},
         params={'changesetId': id},
+        json=body,
     )
 
 

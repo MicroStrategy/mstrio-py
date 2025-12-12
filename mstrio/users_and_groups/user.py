@@ -25,6 +25,8 @@ from mstrio.utils.helper import (
     Dictable,
     VersionException,
     filter_params_for_func,
+    process_change_journal_comment,
+    process_delete_change_journal_comment,
 )
 from mstrio.utils.related_subscription_mixin import RelatedSubscriptionMixin
 from mstrio.utils.resolvers import (
@@ -394,6 +396,7 @@ class User(Entity, TrusteeACLMixin, RelatedSubscriptionMixin):
         owner: 'User | str | None' = None,
         default_email_address: str | None = None,
         email_device: 'str | Device | None' = None,
+        journal_comment: str | None = None,
     ) -> "User":
         """Create a new user on the I-Server. Returns User object.
 
@@ -427,6 +430,8 @@ class User(Entity, TrusteeACLMixin, RelatedSubscriptionMixin):
             email_device: ID or Device object of the email device to which the
                 default email address will be assigned. If not provided, the
                 `Generic Email` will be used
+            journal_comment: Comment that will be added to the object's change
+                journal entry
         """
         password_expiration_date = time_helper.map_datetime_to_str(
             name='password_expiration_date',
@@ -459,6 +464,7 @@ class User(Entity, TrusteeACLMixin, RelatedSubscriptionMixin):
             body['passwordExpirationFrequency'] = password_expiration_frequency
 
         body = helper.delete_none_values(body, recursion=True)
+        process_change_journal_comment(connection, body, '11.5.0900', journal_comment)
         response = users.create(connection, body, username)
         if config.verbose:
             logger.info(
@@ -646,6 +652,7 @@ class User(Entity, TrusteeACLMixin, RelatedSubscriptionMixin):
         comments: str | None = None,
         default_email_address: str | None = None,
         email_device: 'str | Device | None' = None,
+        journal_comment: str | None = None,
     ) -> None:
         """Alter user properties.
 
@@ -676,6 +683,8 @@ class User(Entity, TrusteeACLMixin, RelatedSubscriptionMixin):
             default_email_address: default email address for user
             email_device: ID or Device object of the email device to which the
                 default email address will be assigned
+            journal_comment: Comment that will be added to the object's change
+                journal entry
         """
         if (
             password_auto_expire or password_expiration_frequency
@@ -707,6 +716,7 @@ class User(Entity, TrusteeACLMixin, RelatedSubscriptionMixin):
             self._alter_default_email_address(default_email_address, email_device_id)
 
         properties = filter_params_for_func(self.alter, locals(), exclude=['self'])
+
         self._alter_properties(**properties)
 
     def _create_address_v1(self, name, address, default):
@@ -1209,7 +1219,12 @@ class User(Entity, TrusteeACLMixin, RelatedSubscriptionMixin):
         temp_connections = UserConnections(self.connection)
         temp_connections.disconnect_users(users=self, nodes=nodes)
 
-    def delete(self, force: bool = False, delete_profile: bool = False) -> bool:
+    def delete(
+        self,
+        force: bool = False,
+        delete_profile: bool = False,
+        journal_comment: str | None = None,
+    ) -> bool:
         """Deletes the user.
 
         Args:
@@ -1217,6 +1232,8 @@ class User(Entity, TrusteeACLMixin, RelatedSubscriptionMixin):
                 before deleting User.
             delete_profile (bool, optional): If True, User's profile folder
                 will be deleted as well.
+            journal_comment (str, optional): Comment that will be added to the
+                object's change journal entry.
 
         Returns:
             True for success. False otherwise.
@@ -1239,7 +1256,10 @@ class User(Entity, TrusteeACLMixin, RelatedSubscriptionMixin):
             else:
                 self.delete_profile_folder(force=True)
 
-        response = users_api.delete_user(self.connection, self.id)
+        comment = process_delete_change_journal_comment(
+            self.connection, '11.5.0900', journal_comment
+        )
+        response = users_api.delete_user(self.connection, self.id, comment)
 
         if not response.ok:
             return False

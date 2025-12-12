@@ -215,8 +215,9 @@ class Document(
         'certified_info': CertifiedInfo.from_dict,
         'recipients': [User.from_dict],
     }
+    _DOCUMENT_INSTANCE_GETTER = staticmethod(documents.create_new_document_instance)
     _API_GET_PROMPTS = staticmethod(documents.get_prompts)
-    _API_PROMPT_GET_INSTANCE = staticmethod(documents.create_new_document_instance)
+    _API_PROMPT_GET_INSTANCE = _DOCUMENT_INSTANCE_GETTER
     _API_PROMPT_GET_OBJ_STATUS = staticmethod(documents.get_document_status)
     _API_PROMPT_GET_PROMPTED_INSTANCE = staticmethod(documents.get_prompts_for_instance)
     _API_PROMPT_ANSWER_PROMPTS = staticmethod(documents.answer_prompts)
@@ -401,8 +402,8 @@ class Document(
     def instance_id(self) -> str:
         if not self.get('_instance_id'):
             body = {"resolveOnly": True, "persistViewState": True}
-            response = documents.create_new_document_instance(
-                connection=self.connection, document_id=self.id, body=body
+            response = self._DOCUMENT_INSTANCE_GETTER(
+                self.connection, self.id, body
             ).json()
             self._instance_id = response.get('mid')
         return self._instance_id

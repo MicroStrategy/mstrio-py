@@ -13,6 +13,7 @@ from mstrio.api.changesets import (
 )
 from mstrio.utils.helper import (
     auto_match_args,
+    process_change_journal_comment,
     delete_none_values,
     get_parallel_number,
     get_response_json,
@@ -109,7 +110,13 @@ def unpack_records(response_json, field):
 
 
 @contextmanager
-def changeset_manager(connection: 'Connection', project_id=None, schema_edit=True):
+def changeset_manager(
+    connection: 'Connection',
+    project_id: str | None = None,
+    schema_edit: bool = True,
+    body: dict | None = None,
+    journal_comment: str | None = None,
+):
     if project_id is None:
         connection._validate_project_selected()
         project_id = connection.project_id
@@ -119,7 +126,15 @@ def changeset_manager(connection: 'Connection', project_id=None, schema_edit=Tru
     changeset_id = response.json()['id']
     try:
         yield changeset_id
-        commit_changeset_changes(connection=connection, id=changeset_id)
+        commit_body = {}
+        if journal_comment is None:
+            journal_comment = extract_comment_from_body(body)
+        process_change_journal_comment(
+            connection, commit_body, '11.5.0600', journal_comment
+        )
+        commit_changeset_changes(
+            connection=connection, id=changeset_id, body=commit_body
+        )
     finally:
         delete_changeset(connection=connection, id=changeset_id)
 
@@ -189,3 +204,42 @@ def is_response_like(response: Any) -> bool:
         and hasattr(response, 'json')
         and hasattr(response, 'headers')
     )
+
+
+def extract_comment_from_body(body: dict) -> str | None:
+    """Extract change journal comment from body.
+
+    Args:
+        body (dict): Body to extract the comment from.
+
+    Returns:
+        str | None: Extracted comment or None if not found.
+    """
+    if not body:
+        return None
+    if 'changeJournal' in body:
+        return body['changeJournal'].get('userComments')
+    if 'operationList' in body:
+        for operation in body.get('operationList', []):
+            if operation.get('path') == '/changeJournal/userComments':
+                return operation.get('value')
+
+
+def add_comment_to_dict(
+    body: dict | None = None,
+    journal_comment: str | None = None,
+) -> dict:
+    """Add change journal comment to body.
+
+    Args:
+        body (dict, optional): Dict to add the comment to.
+        journal_comment (str | None, optional): Comment to add.
+
+    Returns:
+        dict: Dict with added comment or {} if body was None.
+    """
+    if body is None:
+        body = {}
+    if journal_comment:
+        body.update({'userComments': journal_comment})
+    return body

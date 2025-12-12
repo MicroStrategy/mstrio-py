@@ -445,7 +445,9 @@ class WarehouseTable(Dictable):
 
         warehouse_tables: list[dict] = []
         with tqdm(
-            total=len(warehouse_tables_futures), desc="Retrieving warehouse tables..."
+            total=len(warehouse_tables_futures),
+            desc="Retrieving warehouse tables...",
+            delay=3,
         ) as pbar:
             for future in as_completed(warehouse_tables_futures):
                 namespace_tables = (
@@ -479,6 +481,7 @@ class WarehouseTable(Dictable):
         with tqdm(
             total=len(namespaces_futures),
             desc="Retrieving namespaces from available datasources...",
+            delay=3,
         ) as pbar:
             for future in as_completed(namespaces_futures):
                 namespaces[future.datasource_id] = (

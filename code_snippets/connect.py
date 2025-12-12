@@ -5,7 +5,14 @@ to present what can be done with this module and to ease its usage.
 """
 
 from mstrio.connection import (
-    get_connection, Connection, Timeout, ConnectTimeout, ReadTimeout
+    get_connection,
+    Connection,
+    Timeout,
+    ConnectTimeout,
+    ReadTimeout,
+    TimeoutError,
+    ConnectTimeoutError,
+    ReadTimeoutError,
 )
 from mstrio import config
 
@@ -128,19 +135,23 @@ conn.set_request_retry_on_timeout_count(3)
 # once set, if hit the timeout will raise `requests.Timeout` error.
 # this is a `requests` library's custom error that mstrio-py just reuses.
 # It can be either `Timeout` or specifically `ConnectTimeout` or `ReadTimeout`.
+#
+# There are also "Error" versions of them, representing errors raised from server,
+# not `requests` library directly: `TimeoutError`, `ConnectTimeoutError`, `ReadTimeoutError`.
+#
 # They can be than caught and handled, if needed:
 try:
     # some action that does a REST API request
     do_something(connection=conn)
-except ConnectTimeout as err:
+except (ConnectTimeout, ConnectTimeoutError) as err:
     # this will catch only connection timeouts, raised if no response was
     # received from server within timeout period
     ...
-except ReadTimeout as err:
+except (ReadTimeout, ReadTimeoutError) as err:
     # this will catch only read timeouts, raised if server did not send all data
     # within timeout period
     ...
-except Timeout as err:
+except (Timeout, TimeoutError) as err:
     # this will catch all of them: `Timeout`, `ConnectTimeout`, `ReadTimeout`
     ...
 

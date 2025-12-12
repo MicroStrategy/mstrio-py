@@ -9,7 +9,11 @@ from requests.adapters import Response
 
 from mstrio import config
 from mstrio.helpers import MstrException, PartialSuccess, Success
-from mstrio.utils.helper import get_default_args_from_func, response_handler
+from mstrio.utils.helper import (
+    can_expect_no_content,
+    get_default_args_from_func,
+    response_handler,
+)
 
 
 def get_args_and_bind_values(func: Callable[[Any], Any], *args, **kwargs):
@@ -62,10 +66,8 @@ class ErrorHandler:
                 # via `response_handler`
                 res_json = response.json()
             except JSONDecodeError:
-                if response.ok and (
-                    response.status_code == 204 or response.request.method == 'HEAD'
-                ):
-                    # 204 No Content or HEAD request: both are valid
+                if can_expect_no_content(response):
+                    # we can expect empty response body and it's fine
                     res_json = {}
 
             if not response.ok or res_json is None:

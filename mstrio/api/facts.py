@@ -1,5 +1,8 @@
 from mstrio.connection import Connection
-from mstrio.utils.api_helpers import changeset_manager, unpack_information
+from mstrio.utils.api_helpers import (
+    changeset_manager,
+    unpack_information,
+)
 from mstrio.utils.error_handlers import ErrorHandler
 
 
@@ -49,7 +52,7 @@ def create_fact(
         if show_potential_tables is not None
         else None
     )
-    with changeset_manager(connection) as changeset_id:
+    with changeset_manager(connection, body=body) as changeset_id:
         return connection.post(
             endpoint='/api/model/facts',
             headers={'X-MSTR-MS-Changeset': changeset_id},
@@ -75,7 +78,7 @@ def update_fact(
         if show_potential_tables is not None
         else None
     )
-    with changeset_manager(connection) as changeset_id:
+    with changeset_manager(connection, body=body) as changeset_id:
         return connection.put(
             endpoint=f'/api/model/facts/{id}',
             headers={'X-MSTR-MS-Changeset': changeset_id},

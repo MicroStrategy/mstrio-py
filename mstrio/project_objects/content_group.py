@@ -9,10 +9,12 @@ from mstrio.types import ObjectSubTypes, ObjectTypes
 from mstrio.users_and_groups import User, UserGroup, UserOrGroup
 from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity
 from mstrio.utils.helper import (
+    add_journal_comment_to_operation_list,
     delete_none_values,
     find_object_with_name,
     get_temp_connection,
     is_dashboard,
+    process_change_journal_comment,
 )
 from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
@@ -121,6 +123,7 @@ class ContentGroup(Entity, CopyMixin, DeleteMixin):
         opacity: int = 100,
         email_enabled: bool = False,
         recipients: list[UserOrGroup] | None = None,
+        journal_comment: str | None = None,
     ) -> 'ContentGroup':
         """Create a new content group.
 
@@ -137,6 +140,8 @@ class ContentGroup(Entity, CopyMixin, DeleteMixin):
             recipients (list, optional): list of recipients of the content group
                 represented as str containing ID or the User and UserGroup class
                 objects
+            journal_comment (str, optional): Comment that will be added to the
+                object's change journal entry
 
         Returns:
             ContentGroup object
@@ -157,6 +162,7 @@ class ContentGroup(Entity, CopyMixin, DeleteMixin):
             'emailEnabled': email_enabled,
             'recipients': recipients,
         }
+        process_change_journal_comment(connection, body, '11.4.1200', journal_comment)
         response = content_groups.create_content_group(
             connection=connection,
             body=body,
@@ -177,6 +183,7 @@ class ContentGroup(Entity, CopyMixin, DeleteMixin):
         opacity: int | None = None,
         email_enabled: bool | None = None,
         recipients: list[UserOrGroup] | None = None,
+        journal_comment: str | None = None,
     ) -> None:
         """Alter the content group.
 
@@ -193,6 +200,8 @@ class ContentGroup(Entity, CopyMixin, DeleteMixin):
                 objects
             comments (str, optional): long description of the content group
             owner: (str, User, optional): owner of the content group
+            journal_comment (str, optional): Comment that will be added to the
+                object's change journal entry
         """
         if isinstance(owner, User):
             owner = owner.id
@@ -227,10 +236,17 @@ class ContentGroup(Entity, CopyMixin, DeleteMixin):
             operation_list += self._prepare_recipients_for_alter(
                 recipients=recipients, index_offset=len(operation_list) + 1
             )
+        body = {'operationList': operation_list}
+        add_journal_comment_to_operation_list(
+            connection=self.connection,
+            body=body,
+            min_version='11.4.1200',
+            comment=journal_comment,
+        )
         content_groups.update_content_group(
             connection=self.connection,
             id=self.id,
-            body={'operationList': operation_list},
+            body=body,
         )
         self.fetch()
 
@@ -286,6 +302,7 @@ class ContentGroup(Entity, CopyMixin, DeleteMixin):
         self,
         content_to_add: list['Entity'] | None = None,
         content_to_remove: list['Entity'] | None = None,
+        journal_comment: str | None = None,
     ) -> None:
         """Update contents of the content group.
 
@@ -296,6 +313,8 @@ class ContentGroup(Entity, CopyMixin, DeleteMixin):
             content_to_remove (list. optional): list of content objects to
                 remove from the content group. Provided as a list of
                 Entity-based objects.
+            journal_comment (str, optional): Comment that will be added to the
+                object's change journal entry
         """
         if not content_to_add and not content_to_remove:
             raise ValueError(
@@ -312,10 +331,17 @@ class ContentGroup(Entity, CopyMixin, DeleteMixin):
             }
             for index, content in enumerate(content_to_add + content_to_remove)
         ]
+        body = {'operationList': operation_list}
+        add_journal_comment_to_operation_list(
+            connection=self.connection,
+            body=body,
+            min_version='11.4.1200',
+            comment=journal_comment,
+        )
         content_groups.update_content_group_contents(
             connection=self.connection,
             id=self.id,
-            body={'operationList': operation_list},
+            body=body,
         )
 
     def _prepare_recipients_for_alter(

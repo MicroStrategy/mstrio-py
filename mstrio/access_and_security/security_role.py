@@ -157,6 +157,7 @@ class SecurityRole(Entity, DeleteMixin):
         name: str,
         privileges: Union["Privilege", int, str] | list[Union["Privilege", int, str]],
         description: str = "",
+        journal_comment: str | None = None,
     ):
         """Create a new Security Role.
 
@@ -167,6 +168,8 @@ class SecurityRole(Entity, DeleteMixin):
             privileges: List of privileges which will be assigned to this
                 security role. Use privilege IDs or Privilege objects.
             description(string, optional): Description of the Security Role
+            journal_comment (optional, str): Comment that will be added to the
+                object's change journal entry
 
         Returns:
             Newly created Security Role if the HTTP server has successfully
@@ -188,6 +191,8 @@ class SecurityRole(Entity, DeleteMixin):
         privileges = helper.filter_list_of_dicts(privileges, id=project_level)
 
         body = {"name": name, "description": description, "privileges": privileges}
+        if journal_comment:
+            body.update({'changeJournal': {'userComments': journal_comment}})
 
         response = security.create_security_role(connection, body)
         if response.ok:
@@ -244,6 +249,7 @@ class SecurityRole(Entity, DeleteMixin):
         description: str | None = None,
         comments: str | None = None,
         owner: 'str | User | None' = None,
+        journal_comment: str | None = None,
     ):
         """Alter Security Role name or/and description.
 
@@ -252,6 +258,8 @@ class SecurityRole(Entity, DeleteMixin):
             description: new description of the Security Role
             comments: long description of the Security Role
             owner: new owner of the Security Role
+            journal_comment (optional, str): Comment that will be added to the
+                object's change journal entry
         """
         from mstrio.users_and_groups.user import User
 

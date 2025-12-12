@@ -79,6 +79,7 @@ class Event(Entity, CopyMixin, DeleteMixin, RelatedSubscriptionMixin):
         ): objects_processors.get_info,
     }
     _API_DELETE = staticmethod(events.delete_event)
+    _API_DEL_JOURNAL_MIN_VER = None
     _API_PATCH = {
         ('name', 'description'): (events.update_event, 'put'),
         ('comments', 'owner'): (objects_processors.update, 'partial_put'),
