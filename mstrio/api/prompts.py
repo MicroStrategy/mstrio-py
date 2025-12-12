@@ -72,7 +72,7 @@ def create_prompt(
     Returns:
         HTTP response object. Returns 201 on success.
     """
-    with changeset_manager(connection) as changeset_id:
+    with changeset_manager(connection, body=body) as changeset_id:
         return connection.post(
             endpoint='/api/model/prompts',
             headers={'X-MSTR-MS-Changeset': changeset_id},
@@ -107,7 +107,7 @@ def update_prompt(
     Returns:
         HTTP response object. Returns 200 on success.
     """
-    with changeset_manager(connection) as changeset_id:
+    with changeset_manager(connection, body=body) as changeset_id:
         return connection.put(
             endpoint=f'/api/model/prompts/{id}',
             headers={

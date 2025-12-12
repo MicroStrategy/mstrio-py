@@ -149,6 +149,7 @@ class DynamicRecipientList(EntityBase, ChangeJournalMixin, DeleteMixin):
         ): (subscriptions.update_dynamic_recipient_list, 'partial_put')
     }
     _API_DELETE = staticmethod(subscriptions.remove_dynamic_recipient_list)
+    _API_DEL_JOURNAL_MIN_VER = None
     _FROM_DICT_MAP = {
         **EntityBase._FROM_DICT_MAP,
         'physical_address': MappingField.from_dict,

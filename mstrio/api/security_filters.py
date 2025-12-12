@@ -71,7 +71,7 @@ def create_security_filter(
     Returns:
         Complete HTTP response object. Expected status is 201.
     """
-    with changeset_manager(connection) as changeset_id:
+    with changeset_manager(connection, body=body) as changeset_id:
         return connection.post(
             endpoint='/api/model/securityFilters',
             headers={'X-MSTR-MS-Changeset': changeset_id},
@@ -177,7 +177,7 @@ def update_security_filter(
     Returns:
         Complete HTTP response object. Expected status is 200.
     """
-    with changeset_manager(connection) as changeset_id:
+    with changeset_manager(connection, body=body) as changeset_id:
         return connection.put(
             endpoint=f'/api/model/securityFilters/{id}',
             headers={'X-MSTR-MS-Changeset': changeset_id},

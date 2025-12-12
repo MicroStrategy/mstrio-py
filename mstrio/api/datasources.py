@@ -4,6 +4,7 @@ from mstrio.connection import Connection
 from mstrio.helpers import IServerError
 from mstrio.utils.api_helpers import (
     FuturesSessionWithRenewal,
+    add_comment_to_dict,
     changeset_manager,
     unpack_information,
 )
@@ -532,7 +533,10 @@ def create_datasource_mapping(
 
 @ErrorHandler(err_msg="Error deleting connection mapping with ID {id}")
 def delete_datasource_mapping(
-    connection: Connection, id: str, error_msg: str | None = None
+    connection: Connection,
+    id: str,
+    error_msg: str | None = None,
+    journal_comment: str | None = None,
 ):
     """Delete a connection mapping based on id.
 
@@ -540,12 +544,15 @@ def delete_datasource_mapping(
         connection: Strategy One REST API connection object
         id (string): ID of the mapping meant to be deleted.
         error_msg (string, optional): Custom Error Message for Error Handling
+        journal_comment (str, optional): Comment that will be added to the
+            object's change journal entry.
 
     Returns:
         Complete HTTP response object. Expected status is 204.
     """
     endpoint = f'/api/datasources/mappings/{id}'
-    return connection.delete(endpoint=endpoint)
+    params = add_comment_to_dict(None, journal_comment)
+    return connection.delete(endpoint=endpoint, params=params)
 
 
 @ErrorHandler(err_msg="Error getting Datasource logins.")

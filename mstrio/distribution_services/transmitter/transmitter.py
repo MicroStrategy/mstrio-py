@@ -178,6 +178,7 @@ class Transmitter(Entity, DeleteMixin):
         ): transmitters.get_transmitter,
     }
     _API_DELETE = staticmethod(transmitters.delete_transmitter)
+    _API_DEL_JOURNAL_MIN_VER = None
     _API_PATCH: dict = {
         ("name", "description", "email_transmitter_properties"): (
             transmitters.update_transmitter,

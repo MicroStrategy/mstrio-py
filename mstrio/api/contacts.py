@@ -1,4 +1,5 @@
 from mstrio.connection import Connection
+from mstrio.utils.api_helpers import add_comment_to_dict
 from mstrio.utils.error_handlers import ErrorHandler
 
 
@@ -35,19 +36,27 @@ def get_contact(connection: Connection, id: str, error_msg: str | None = None):
 
 
 @ErrorHandler(err_msg="Error deleting Contact with ID {id}")
-def delete_contact(connection: Connection, id: str, error_msg: str | None = None):
+def delete_contact(
+    connection: Connection,
+    id: str,
+    error_msg: str | None = None,
+    journal_comment: str | None = None,
+):
     """Delete a contact.
 
     Args:
         connection: Strategy One REST API connection object
         id: ID of the contact
         error_msg (string, optional): Custom Error Message for Error Handling
+        journal_comment (str, optional): Comment that will be added to the
+            object's change journal entry.
 
     Returns:
         Complete HTTP response object. Expected status is 204.
     """
     endpoint = f'/api/contacts/{id}'
-    return connection.delete(endpoint=endpoint)
+    params = add_comment_to_dict(None, journal_comment)
+    return connection.delete(endpoint=endpoint, params=params)
 
 
 @ErrorHandler(err_msg="Error updating Contact with ID {id}")

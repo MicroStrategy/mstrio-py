@@ -212,6 +212,29 @@ def exception_handler(
         warnings.warn(message=msg, category=exception_type, stacklevel=stack_lvl)
 
 
+def can_expect_no_content(response: Response) -> bool:
+    """Returns bool whether the response from REST can have empty content.
+
+    Industry standards suggest that only Code 204 or Type HEAD should return no
+    content, but this is considered a "suggestion" more than "requirement" so we
+    need to cover also all other edge cases.
+
+    If there's a REST endpoint where it returns 204 with content, it should be
+    treated as REST defect.
+
+    Args:
+        response: Response object returned by HTTP request.
+
+    Returns:
+        bool: whether the response can have no content.
+    """
+    return (
+        response.ok
+        and response.text == ''
+        and (200 <= response.status_code < 300 or response.request.method == 'HEAD')
+    )
+
+
 def response_handler(
     response: 'Response',
     msg: str | None = None,
@@ -244,11 +267,7 @@ def response_handler(
         logger.debug(f"headers = {pformat(response.headers)}")
         logger.debug(f"content = {response.text}")
 
-        if (
-            response.ok
-            and response.text == ''
-            and (200 < response.status_code < 300 or response.request.method == 'HEAD')
-        ):
+        if can_expect_no_content(response):
             # we can expect empty response body and it's fine
             return
 
@@ -579,7 +598,8 @@ def fetch_objects(
     **kwargs,
 ) -> list:
     """Fetch and prepare objects. Optionally filter the objects by using the
-    filters parameter. This function only supports endpoints without pagination.
+    `kwargs` parameters. This function only supports endpoints without
+    pagination.
 
     Args:
         connection: Strategy One REST API connection object
@@ -1573,3 +1593,125 @@ def is_valid_str_id(str_id: Any) -> bool:
 
     HEX32 = re.compile(r"^[0-9A-F]{32}$")
     return HEX32.match(str_id) is not None
+
+
+def check_version_for_change_journal_comment(
+    connection: 'Connection',
+    min_version: str | None = None,
+    comment: str | None = None,
+) -> bool:
+    """Check if API version supports change journal comments.
+
+    Args:
+        connection (Connection): Strategy One connection object.
+        min_version (str, optional): Minimum API version required for change
+            journal comments. If None change journal comment is not supported.
+        comment (str, optional): Comment to check.
+
+    Raises:
+        VersionException: If API version is lower than the minimum required.
+
+    Returns:
+        bool: True if the API version supports change journal comments.
+    """
+
+    from mstrio.utils.version_helper import is_server_min_version
+
+    if comment:
+        if min_version is None:
+            raise VersionException(
+                "Change journal comments are not supported for this operation."
+            )
+
+        if not is_server_min_version(connection, min_version):
+            raise VersionException(
+                f"Change journal comments require at least version {min_version}."
+            )
+    return True
+
+
+def process_change_journal_comment(
+    connection: 'Connection',
+    body: dict,
+    min_version: str | None = None,
+    comment: str | None = None,
+) -> None:
+    """Process change journal comment based on API version.
+
+    Args:
+        connection (Connection): Strategy One connection object.
+        body (dict): Request body to which the comment will be added if the
+            API version supports it.
+        min_version (str, optional): Minimum API version required for change
+            journal comments. If None, change journal comments are not
+            supported.
+        comment (str, optional): Comment to process.
+    """
+
+    if check_version_for_change_journal_comment(connection, min_version, comment):
+        body.update({'changeJournal': {'userComments': comment}})
+
+
+def process_delete_change_journal_comment(
+    connection: 'Connection',
+    min_version: str | None = None,
+    comment: str | None = None,
+) -> str | None:
+    """Process change journal comment for delete operation based on API version.
+
+    Args:
+        connection (Connection): Strategy One connection object.
+        min_version (str, optional): Minimum API version required for change
+            journal comments. If None, change journal comments are not
+            supported.
+        comment (str, optional): Comment to process.
+
+    Returns:
+        str: Comment if the API version supports change journal comments,
+            None otherwise.
+    """
+
+    if check_version_for_change_journal_comment(connection, min_version, comment):
+        return comment
+    return None
+
+
+def add_journal_comment_to_operation_list(
+    connection: 'Connection | None' = None,
+    body: dict | None = None,
+    min_version: str | None = None,
+    comment: str | None = None,
+) -> None:
+    """Add change journal comment to operation list in request body.
+
+    Args:
+        connection (Connection, optional): Strategy One connection object.
+        body (dict | None): Request body to which the comment will be added.
+        min_version (str, optional): Minimum API version required for change
+            journal comments.
+        comment (str, optional): Comment to process.
+    """
+
+    if connection and min_version and comment:
+        check_version_for_change_journal_comment(connection, min_version, comment)
+    if body and comment:
+        if 'operationList' in body:
+            body['operationList'].append(
+                {
+                    'op': 'add',
+                    'path': '/changeJournal/userComments',
+                    'value': comment,
+                }
+            )
+        else:
+            body.update(
+                {
+                    'operationList': [
+                        {
+                            'op': 'add',
+                            'path': '/changeJournal/userComments',
+                            'value': comment,
+                        }
+                    ]
+                }
+            )

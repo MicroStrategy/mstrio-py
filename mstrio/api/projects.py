@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING
 
 from requests import Response
 
-from mstrio.utils.api_helpers import changeset_manager
+from mstrio.utils.api_helpers import add_comment_to_dict, changeset_manager
 from mstrio.utils.error_handlers import ErrorHandler
 
 if TYPE_CHECKING:
@@ -425,7 +425,10 @@ def get_applicable_vldb_settings(
 
 @ErrorHandler(err_msg="Error deleting project with ID {id}")
 def delete_project(
-    connection: 'Connection', id: str, error_msg: str | None = None
+    connection: 'Connection',
+    id: str,
+    error_msg: str | None = None,
+    journal_comment: str | None = None,
 ) -> Response:
     """Delete a project.
 
@@ -433,11 +436,14 @@ def delete_project(
         connection (Connection): Strategy One REST API connection object
         id (string): Project ID
         error_msg (string, optional): Custom Error Message for Error Handling
+        journal_comment (str, optional): Comment that will be added to the
+            project's change journal entry.
 
     Returns:
         Complete HTTP response object.
     """
-    return connection.delete(endpoint=f'/api/projects/{id}')
+    params = add_comment_to_dict(None, journal_comment)
+    return connection.delete(endpoint=f'/api/projects/{id}', params=params)
 
 
 @ErrorHandler(err_msg="Error getting languages for project with ID {id}")

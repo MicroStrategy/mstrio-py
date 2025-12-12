@@ -415,6 +415,7 @@ class Prompt(CopyMixin, DeleteMixin, Entity, MoveMixin):
         destination_folder: 'Folder | tuple[str] | list[str] | str | None' = None,
         destination_folder_path: tuple[str] | list[str] | str | None = None,
         show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
+        journal_comment: str | None = None,
     ) -> 'Prompt':
         """Create a new prompt object.
 
@@ -432,6 +433,8 @@ class Prompt(CopyMixin, DeleteMixin, Entity, MoveMixin):
             show_expression_as (ExpressionFormat | str, optional): How
                 expressions should be presented. Defaults to
                 ExpressionFormat.TREE.
+            journal_comment (optional, str): Comment that will be added to the
+                object's change journal entry
 
         Returns:
             Prompt: An instance of the Prompt class.
@@ -451,6 +454,8 @@ class Prompt(CopyMixin, DeleteMixin, Entity, MoveMixin):
         prompt_data['information']['subType'] = (
             sub_type.value if isinstance(sub_type, ObjectSubType) else sub_type
         )
+        if journal_comment:
+            prompt_data.update({'changeJournal': {'userComments': journal_comment}})
         response = prompts.create_prompt(
             connection,
             prompt_data,
@@ -471,6 +476,7 @@ class Prompt(CopyMixin, DeleteMixin, Entity, MoveMixin):
         restrictions: dict | PromptRestrictions | None = None,
         default_answer: dict | str | int | float | None = None,
         show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
+        journal_comment: str | None = None,
     ) -> 'Prompt':
         """Create a new value prompt object.
 
@@ -491,7 +497,10 @@ class Prompt(CopyMixin, DeleteMixin, Entity, MoveMixin):
                 value. Can be a dictionary, string, integer, or floating-point
                 number.
             show_expression_as (ExpressionFormat | str, optional): How
-            expressions should be presented. Defaults to ExpressionFormat.TREE.
+                expressions should be presented. Defaults to
+                ExpressionFormat.TREE.
+            journal_comment (optional, str): Comment that will be added to the
+                object's change journal entry
 
         Returns:
             Prompt: An instance of the Prompt class.
@@ -560,6 +569,7 @@ class Prompt(CopyMixin, DeleteMixin, Entity, MoveMixin):
         restrictions: dict | PromptRestrictions | None = None,
         default_answer: dict | list | None = None,
         show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
+        journal_comment: str | None = None,
     ) -> 'Prompt':
         """Create a new attribute element prompt.
 
@@ -581,6 +591,8 @@ class Prompt(CopyMixin, DeleteMixin, Entity, MoveMixin):
             show_expression_as (ExpressionFormat | str, optional): How
                 expressions should be presented. Defaults to
                 ExpressionFormat.TREE.
+            journal_comment (optional, str): Comment that will be added to the
+                object's change journal entry
 
         Returns:
             Prompt: An instance of the Prompt class.
@@ -658,6 +670,7 @@ class Prompt(CopyMixin, DeleteMixin, Entity, MoveMixin):
         owner_id: str | None = None,
         owner_username: str | None = None,
         show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
+        journal_comment: str | None = None,
     ) -> None:
         """Alter prompt properties.
 
@@ -675,6 +688,8 @@ class Prompt(CopyMixin, DeleteMixin, Entity, MoveMixin):
         owner_username (str, optional): Username of the new owner.
         show_expression_as (ExpressionFormat | str, optional): How expressions
         should be presented. Defaults to ExpressionFormat.TREE.
+        journal_comment (optional, str): Comment that will be added to the
+            object's change journal entry
         """
         if owner or owner_id or owner_username:
             owner = get_owner_id(self.connection, owner, owner_id, owner_username)

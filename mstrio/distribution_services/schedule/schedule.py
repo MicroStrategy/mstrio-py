@@ -346,6 +346,7 @@ class Schedule(Entity, DeleteMixin, RelatedSubscriptionMixin):
         days_of_month: list[str] | None = None,
         monthly_pattern: ScheduleEnums.MonthlyPattern | str | None = None,
         yearly_pattern: ScheduleEnums.YearlyPattern | str | None = None,
+        journal_comment: str | None = None,
     ) -> 'Schedule':
         """Create a Schedule using provided parameters as data.
 
@@ -405,6 +406,8 @@ class Schedule(Entity, DeleteMixin, RelatedSubscriptionMixin):
             yearly_pattern (ScheduleEnums.YearlyPattern, optional):
                 The yearly recurrence pattern of the schedule. Possible values
                 are DAY, DAY_OF_WEEK. Defaults to None.
+            journal_comment: Comment that will be added to the object's change
+                journal entry
         Returns:
             Schedule object with provided parameters.
         """
@@ -453,6 +456,9 @@ class Schedule(Entity, DeleteMixin, RelatedSubscriptionMixin):
             'stop_date': stop_date,
             execution_details['type']: execution_details['content'],
         }
+        helper.process_change_journal_comment(
+            connection, body, '11.5.1100', journal_comment
+        )
         body = helper.delete_none_values(body, recursion=True)
         body = helper.snake_to_camel(body)
         # Response is already unpacked in wrapper
@@ -490,6 +496,7 @@ class Schedule(Entity, DeleteMixin, RelatedSubscriptionMixin):
         yearly_pattern: ScheduleEnums.YearlyPattern | None = None,
         comments: str | None = None,
         owner: str | User | None = None,
+        journal_comment: str | None = None,
     ) -> None:
         """Alter Schedule properties.
 
@@ -553,6 +560,8 @@ class Schedule(Entity, DeleteMixin, RelatedSubscriptionMixin):
             comments: long description of the schedule. Defaults to None.
             owner: (str, User, optional): Owner of the schedule. Defaults
                 to None.
+            journal_comment (optional, str): Comment that will be added to the
+                object's change journal entry
         Returns:
             None
         """
@@ -608,6 +617,9 @@ class Schedule(Entity, DeleteMixin, RelatedSubscriptionMixin):
             properties['stop_date'] = map_str_to_datetime(
                 'stop_date', stop_date, self._FROM_DICT_MAP
             )
+
+        if journal_comment:
+            properties['journal_comment'] = journal_comment
 
         self._alter_properties(**properties)
 

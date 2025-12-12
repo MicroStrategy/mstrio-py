@@ -855,6 +855,7 @@ class Application(Entity, CopyMixin, DeleteMixin):
 
     _OBJECT_TYPE = ObjectTypes.APPLICATION
     _API_DELETE = staticmethod(applications.delete_application)
+    _API_DEL_JOURNAL_MIN_VER = '11.5.0700'
     _API_GETTERS = {
         **Entity._API_GETTERS,
         (

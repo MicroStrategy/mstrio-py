@@ -1,4 +1,5 @@
 from logging import getLogger
+from typing import TYPE_CHECKING
 
 from requests import Response
 
@@ -6,11 +7,13 @@ from mstrio import config
 from mstrio.api import timezones as tz_api
 from mstrio.connection import Connection
 from mstrio.types import ObjectTypes
-from mstrio.users_and_groups.user import User
 from mstrio.utils import helper
 from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity
 from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
+
+if TYPE_CHECKING:
+    from mstrio.users_and_groups.user import User
 
 logger = getLogger(__name__)
 
@@ -138,6 +141,7 @@ class TimeZone(Entity, CopyMixin, DeleteMixin):
         name: str,
         base_timezone: 'str | TimeZone',
         description: str | None = None,
+        journal_comment: str | None = None,
     ) -> 'TimeZone':
         """Create a new time zone object with the specified properties.
 
@@ -148,6 +152,9 @@ class TimeZone(Entity, CopyMixin, DeleteMixin):
             base_timezone (str | TimeZone): Existing time zone object to base
                 the new time zone on.
             description (str, optional): Description of the new time zone.
+            journal_comment (optional, str): Comment that will be added to the
+                object's change journal entry
+
         """
         if isinstance(base_timezone, cls):
             base_timezone = base_timezone.id
@@ -158,6 +165,8 @@ class TimeZone(Entity, CopyMixin, DeleteMixin):
                 "objectId": base_timezone,
             },
         }
+        if journal_comment:
+            body.update({'changeJournal': {'userComments': journal_comment}})
         body = helper.delete_none_values(source=body, recursion=True)
         res: Response = tz_api.create_tz(connection=connection, body=body)
         new_tz = cls.from_dict(
@@ -177,7 +186,8 @@ class TimeZone(Entity, CopyMixin, DeleteMixin):
         base_timezone: 'str | TimeZone | None' = None,
         description: str = None,
         comments: str | None = None,
-        owner: str | User | None = None,
+        owner: 'str | User | None' = None,
+        journal_comment: str | None = None,
     ) -> None:
         """Alter the time zone's properties.
         Args:
@@ -187,6 +197,8 @@ class TimeZone(Entity, CopyMixin, DeleteMixin):
             description (str, optional): Description of the time zone object
             comments (str, optional): long description of the time zone object
             owner: (str or User, optional): owner of the time zone object
+            journal_comment (optional, str): Comment that will be added to the
+                object's change journal entry
         """
         if isinstance(base_timezone, self.__class__):
             base_timezone = base_timezone.id

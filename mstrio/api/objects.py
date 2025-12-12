@@ -4,6 +4,8 @@ from typing import TYPE_CHECKING
 from mstrio import config
 from mstrio.connection import Connection
 from mstrio.types import ObjectTypes
+from mstrio.utils.helper import check_version_for_change_journal_comment
+from mstrio.utils.api_helpers import add_comment_to_dict, extract_comment_from_body
 from mstrio.utils.error_handlers import ErrorHandler
 
 if TYPE_CHECKING:
@@ -118,10 +120,11 @@ def get_object_info_async(
 @ErrorHandler(err_msg="Error deleting object with ID {id}")
 def delete_object(
     connection: Connection,
-    id,
-    object_type,
-    project_id=None,
-    error_msg=None,
+    id: str,
+    object_type: int,
+    project_id: str | None = None,
+    error_msg: str | None = None,
+    journal_comment: dict | None = None,
 ):
     """Delete a specific object in a specific project; if you do not specify a
     project ID, you delete information for the object in all projects.
@@ -139,16 +142,20 @@ def delete_object(
         I-Server configuration)
         project_id (str): ID of a project in which the object is located.
         error_msg (string, optional): Custom Error Message for Error Handling
+        journal_comment (str, optional): Comment that will be added to the
+            object's change journal entry.
 
     Returns:
         HTTP response object returned by the Strategy One REST server.
     """
     project_id = _validate_project_id(connection, object_type, project_id, False)
+    params = {'type': object_type}
+    params = add_comment_to_dict(params, journal_comment)
 
     return connection.delete(
         endpoint=f'/api/objects/{id}',
         headers={'X-MSTR-ProjectID': project_id},
-        params={'type': object_type},
+        params=params,
     )
 
 
@@ -233,7 +240,8 @@ def update_object(
         HTTP response object returned by the Strategy One REST server.
     """
     project_id = _validate_project_id(connection, object_type, project_id, False)
-
+    comment = extract_comment_from_body(body)
+    check_version_for_change_journal_comment(connection, '11.5.1200', comment)
     return connection.put(
         endpoint=f'/api/objects/{id}',
         headers={'X-MSTR-ProjectID': project_id},

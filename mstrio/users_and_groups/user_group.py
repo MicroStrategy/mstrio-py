@@ -16,6 +16,7 @@ from mstrio.utils.helper import (
     fetch_objects_async,
     filter_list_of_dicts,
     filter_params_for_func,
+    process_change_journal_comment,
 )
 from mstrio.utils.resolvers import validate_owner_key_in_filters
 from mstrio.utils.response_processors import objects as objects_processors
@@ -222,6 +223,7 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin):
         memberships: list[str] | None = None,
         members: list[str] | None = None,
         ldapdn: str | None = None,
+        journal_comment: str | None = None,
     ):
         """Create a new User Group on the I-Server. Returns `UserGroup` object.
 
@@ -235,6 +237,8 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin):
             members: Specify Users which will be members of newly created User
                 Group
             ldapdn: User group's LDAP distinguished name
+            journal_comment: Comment that will be added to the object's change
+                journal entry
         """
         memberships = memberships or []
         members = members or []
@@ -245,6 +249,7 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin):
             "members": members,
             "ldapdn": ldapdn,
         }
+        process_change_journal_comment(connection, body, '11.5.0900', journal_comment)
         response = usergroups.create_user_group(connection, body)
         if response.ok:
             response = response.json()
@@ -306,6 +311,7 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin):
         ldapdn: str = None,
         comments: str | None = None,
         owner: 'str | User | None' = None,
+        journal_comment: str | None = None,
     ):
         """Alter User Group name or/and description.
 
@@ -314,6 +320,8 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin):
             description: New description of the User Group
             comments: Long description of the User Group
             owner: owner of the User Group
+            journal_comment: Comment that will be added to the object's change
+                journal entry
         """
         from mstrio.users_and_groups.user import User
 

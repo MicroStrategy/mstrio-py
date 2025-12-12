@@ -1,6 +1,7 @@
 from requests import Response
 
 from mstrio.connection import Connection
+from mstrio.utils.api_helpers import add_comment_to_dict
 from mstrio.utils.error_handlers import ErrorHandler
 
 
@@ -113,6 +114,7 @@ def update_application(
 def delete_application(
     connection: Connection,
     id: str,
+    journal_comment: str | None = None,
 ) -> Response:
     """Delete an Application.
 
@@ -120,9 +122,14 @@ def delete_application(
         connection (Connection): Strategy One connection object returned by
             `connection.Connection()`
         id (str): ID of the application to delete
+        journal_comment (str, optional): Comment that will be added to the
+            object's change journal entry.
 
     Returns:
         HTTP response object returned by the Strategy One REST server."""
+
+    params = add_comment_to_dict(None, journal_comment)
     return connection.delete(
         endpoint=f'/api/v2/applications/{id}',
+        params=params,
     )

@@ -40,7 +40,7 @@ def create_attribute(
     Return:
         HTTP response object. Expected status: 201
     """
-    with changeset_manager(connection) as changeset_id:
+    with changeset_manager(connection, body=body) as changeset_id:
         return connection.post(
             endpoint='/api/model/attributes',
             headers={'X-MSTR-MS-Changeset': changeset_id},
@@ -148,7 +148,7 @@ def update_attribute(
     Return:
         HTTP response object. Expected status: 200
     """
-    with changeset_manager(connection) as changeset_id:
+    with changeset_manager(connection, body=body) as changeset_id:
         return connection.patch(
             endpoint=f'/api/model/attributes/{id}',
             headers={'X-MSTR-MS-Changeset': changeset_id},

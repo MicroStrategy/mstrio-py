@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING
 
+from mstrio.utils.api_helpers import add_comment_to_dict
 from mstrio.utils.error_handlers import ErrorHandler
 
 if TYPE_CHECKING:
@@ -115,7 +116,10 @@ def update_contact_group(
 
 @ErrorHandler(err_msg="Error deleting Contact Group with ID {id}")
 def delete_contact_group(
-    connection: 'Connection', id: str, error_msg: str | None = None
+    connection: 'Connection',
+    id: str,
+    error_msg: str | None = None,
+    journal_comment: str | None = None,
 ):
     """Delete a contact group.
 
@@ -123,9 +127,12 @@ def delete_contact_group(
         connection: Strategy One REST API connection object
         id: ID of the contact group
         error_msg (string, optional): Custom Error Message for Error Handling
+        journal_comment (str, optional): Comment that will be added to the
+            object's change journal entry.
 
     Returns:
         Complete HTTP response object. Expected status is 204.
     """
     endpoint = f'/api/contactGroups/{id}'
-    return connection.delete(endpoint=endpoint)
+    params = add_comment_to_dict(None, journal_comment)
+    return connection.delete(endpoint=endpoint, params=params)

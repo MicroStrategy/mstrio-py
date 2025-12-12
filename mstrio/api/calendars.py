@@ -68,7 +68,7 @@ def create_calendar(
         HTTP response object returned by the Strategy One REST server.
     """
     with changeset_manager(
-        connection, project_id='', schema_edit=False
+        connection, project_id='', schema_edit=False, body=body
     ) as changeset_id:
         return connection.post(
             endpoint='/api/model/calendars',
@@ -125,7 +125,7 @@ def update_calendar(
         HTTP response object returned by the Strategy One REST server.
     """
     with changeset_manager(
-        connection, project_id='', schema_edit=False
+        connection, project_id='', schema_edit=False, body=body
     ) as changeset_id:
         return connection.put(
             endpoint=f'/api/model/calendars/{id}',

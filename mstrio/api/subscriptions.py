@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING
 
 from requests import Response
 
+from mstrio.utils.api_helpers import add_comment_to_dict
 from mstrio.utils.error_handlers import ErrorHandler
 from mstrio.utils.helper import exception_handler, response_handler
 from mstrio.utils.version_helper import is_server_min_version
@@ -314,7 +315,11 @@ def remove_subscription(
 
 @ErrorHandler(err_msg="Error deleting Dynamic Recipient List ID: {id}.")
 def remove_dynamic_recipient_list(
-    connection: 'Connection', id: str, project_id: str, error_msg: str | None = None
+    connection: 'Connection',
+    id: str,
+    project_id: str,
+    error_msg: str | None = None,
+    journal_comment: str | None = None,
 ) -> 'Response':
     """Delete a Dynamic Recipient List.
 
@@ -324,13 +329,17 @@ def remove_dynamic_recipient_list(
         id (str): ID of the Dynamic Recipient List
         project_id (str): ID of the project
         error_msg (str, optional): Customized error message.
+        journal_comment (str, optional): Comment that will be added to the
+            object's change journal entry.
 
     Returns:
         HTTP response object returned by the Strategy One REST server.
     """
+    params = add_comment_to_dict(None, journal_comment)
     return connection.delete(
         endpoint=f'/api/dynamicRecipientLists/{id}',
         headers={'X-MSTR-ProjectID': project_id},
+        params=params,
     )
 
 

@@ -220,6 +220,7 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
         ): migrations.get,
     }
     _API_DELETE = staticmethod(migration_api.delete_migration)
+    _API_DEL_JOURNAL_MIN_VER = None
 
     _FROM_DICT_MAP = {
         'import_info': ImportInfo.from_dict,

@@ -24,12 +24,22 @@ from mstrio.utils.resolvers import get_project_id_from_params_set
 
 if TYPE_CHECKING:
     from urllib3 import disable_warnings
-    from urllib3.exceptions import InsecureRequestWarning
+    from urllib3.exceptions import (  # NOQA F401 (imports for ease of access)
+        ConnectTimeoutError,
+        InsecureRequestWarning,
+        ReadTimeoutError,
+        TimeoutError,
+    )
 
     from mstrio.project_objects.applications import Application
     from mstrio.server.project import Project
 else:
-    from requests.packages.urllib3.exceptions import InsecureRequestWarning
+    from requests.packages.urllib3.exceptions import (  # NOQA F401 (imports for ease of access)
+        ConnectTimeoutError,
+        InsecureRequestWarning,
+        ReadTimeoutError,
+        TimeoutError,
+    )
     from requests.packages.urllib3 import disable_warnings
 
 from mstrio import config
@@ -672,11 +682,11 @@ class Connection:
         while retries_left > 0:
             try:
                 return method(url, **kwargs)
-            except Timeout as err:
+            except (Timeout, TimeoutError) as err:
                 retries_left -= 1
                 if not retries_left:
                     if retry_count:
-                        raise err.__class__(
+                        raise Timeout(
                             f"Retrying request {retry_count} times failed. "
                             "See traceback for more details."
                         ) from err

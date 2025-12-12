@@ -161,6 +161,7 @@ class ContactGroup(EntityBase, ChangeJournalMixin, DeleteMixin):
         ): contact_groups.get_contact_group
     }
     _API_DELETE = staticmethod(contact_groups.delete_contact_group)
+    _API_DEL_JOURNAL_MIN_VER = None
     _API_PATCH = {
         ('name', 'description', 'enabled', 'linked_user', 'members'): (
             contact_groups.update_contact_group,

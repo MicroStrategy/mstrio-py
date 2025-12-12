@@ -115,7 +115,7 @@ def patch_table(
     Returns:
         Complete HTTP response object. Expected status is 200.
     """
-    with changeset_manager(connection) as changeset_id:
+    with changeset_manager(connection, body=body) as changeset_id:
         return connection.patch(
             endpoint=f'/api/model/tables/{id}',
             headers={'X-MSTR-MS-Changeset': changeset_id},
@@ -169,7 +169,7 @@ def post_table(
     Returns:
         Complete HTTP response object. Expected status is 201.
     """
-    with changeset_manager(connection) as changeset_id:
+    with changeset_manager(connection, body=data) as changeset_id:
         return connection.post(
             endpoint='/api/model/tables',
             headers={'X-MSTR-MS-Changeset': changeset_id},

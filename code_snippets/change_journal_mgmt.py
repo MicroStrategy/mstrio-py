@@ -11,6 +11,7 @@ from pprint import pprint
 from time import sleep
 
 from mstrio.connection import get_connection
+from mstrio.users_and_groups import UserGroup
 from mstrio.modeling import Metric
 from mstrio.server import (
     Environment,
@@ -126,3 +127,16 @@ conn.environment.purge_all_change_journals(
 sleep(10)  # wait for the purge to be processed
 entries_after = list_change_journal_entries(conn)
 print(f'All entries after purge: {len(entries_after)}')
+
+# Create new user group with change journal comment
+USER_GROUP_NAME = $user_group_name
+new_group = UserGroup.create(conn, name=USER_GROUP_NAME,
+                             description="New user group description",
+                             journal_comment="Creating new user group")
+
+# Alter user group with change journal comment
+new_group.alter(description="Updated user group description",
+                journal_comment="Updating user group description")
+
+# Delete user group with change journal comment
+new_group.delete(force=True, journal_comment="Deleting new user group")

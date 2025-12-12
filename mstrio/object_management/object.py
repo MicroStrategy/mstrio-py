@@ -231,6 +231,7 @@ class Object(Entity, ACLMixin, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin):
         owner: str | User | None = None,
         owner_id: str | None = None,
         owner_username: str | None = None,
+        journal_comment: str | None = None,
     ) -> None:
         """Alter the object properties.
 
@@ -248,6 +249,8 @@ class Object(Entity, ACLMixin, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin):
                 omitted and the owner is set to the user with the given ID
             owner_username (str, optional): username of the new owner of the
                 object
+            journal_comment (optional, str): Comment that will be added to the
+                object's change journal entry
         """
         if owner or owner_id or owner_username:
             owner = get_owner_id(self.connection, owner, owner_id, owner_username)

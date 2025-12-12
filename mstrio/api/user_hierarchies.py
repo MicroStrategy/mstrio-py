@@ -147,7 +147,10 @@ def update_user_hierarchy(
 
 @ErrorHandler(err_msg="Error deleting the user hierarchy with ID: {id}.")
 def delete_user_hierarchy(
-    connection: 'Connection', id: str, error_msg: str | None = None
+    connection: 'Connection',
+    id: str,
+    error_msg: str | None = None,
+    journal_comment: str | None = None,
 ):
     """Delete a specific user hierarchy
 
@@ -158,11 +161,13 @@ def delete_user_hierarchy(
             - the object ID used in the changeset, but not yet committed
             to metadata.
         error_msg (str, optional): Custom Error Message for Error Handling
+        journal_comment (str, optional): Comment that will be added to the
+            object's change journal entry.
 
     Returns:
         Complete HTTP response object. Expected status is 204.
     """
-    with changeset_manager(connection) as changeset_id:
+    with changeset_manager(connection, journal_comment=journal_comment) as changeset_id:
         return connection.delete(
             endpoint=f'/api/model/hierarchies/{id}',
             headers={'X-MSTR-MS-Changeset': changeset_id},

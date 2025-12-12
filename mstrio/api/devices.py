@@ -1,4 +1,5 @@
 from mstrio.connection import Connection
+from mstrio.utils.api_helpers import add_comment_to_dict
 from mstrio.utils.error_handlers import ErrorHandler
 from mstrio.utils.time_helper import DatetimeFormats, override_datetime_format
 
@@ -46,19 +47,27 @@ def get_device(connection: Connection, id: str, error_msg: str | None = None):
 
 
 @ErrorHandler(err_msg="Error deleting Device with ID {id}")
-def delete_device(connection: Connection, id: str, error_msg: str | None = None):
+def delete_device(
+    connection: Connection,
+    id: str,
+    error_msg: str | None = None,
+    journal_comment: str | None = None,
+):
     """Delete a device.
 
     Args:
         connection: Strategy One REST API connection object
         id: ID of the device
         error_msg (string, optional): Custom Error Message for Error Handling
+        journal_comment (str, optional): Comment that will be added to the
+            object's change journal entry.
 
     Returns:
         Complete HTTP response object. Expected status is 204.
     """
     endpoint = f'/api/v2/devices/{id}'
-    return connection.delete(endpoint=endpoint)
+    params = add_comment_to_dict(None, journal_comment)
+    return connection.delete(endpoint=endpoint, params=params)
 
 
 @override_datetime_format(

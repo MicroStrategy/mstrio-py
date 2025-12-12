@@ -183,6 +183,8 @@ class Dashboard(Document, RelatedSubscriptionMixin):
             ]
         ),
     }
+    _DOCUMENT_INSTANCE_GETTER = staticmethod(documents.create_dashboard_instance)
+    _API_PROMPT_GET_INSTANCE = _DOCUMENT_INSTANCE_GETTER
 
     def __init__(
         self,

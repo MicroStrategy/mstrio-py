@@ -22,6 +22,7 @@ from mstrio.modeling.schema import (  # noqa: F401
     UserHierarchy,
 )
 from mstrio.modeling.schema.attribute.attribute_form import AttributeForm  # noqa: F401
+from mstrio.modeling.schema.attribute.custom_group import CustomGroup  # noqa: F401
 from mstrio.modeling.schema.table.physical_table import PhysicalTable  # noqa: F401
 from mstrio.modeling.security_filter import SecurityFilter  # noqa: F401
 from mstrio.object_management.folder import Folder  # noqa: F401
@@ -34,6 +35,7 @@ from mstrio.project_objects.applications import Application  # noqa: F401
 from mstrio.project_objects.bots import Bot  # noqa: F401
 from mstrio.project_objects.content_group import ContentGroup  # noqa: F401
 from mstrio.project_objects.datasets import OlapCube, SuperCube  # noqa: F401
+from mstrio.project_objects.palette import Palette  # noqa: F401
 from mstrio.server import Project  # noqa: F401
 from mstrio.server.language import Language  # noqa: F401
 from mstrio.types import ObjectSubTypes, ObjectTypes
@@ -74,10 +76,12 @@ class TypeObjectMapping(Enum):
     ContentGroup = ObjectTypes.CONTENT_BUNDLE  # noqa: F811
     Application = ObjectTypes.APPLICATION  # noqa: F811
     Driver = ObjectTypes.DRIVER  # noqa: F811
+    Palette = ObjectTypes.PALETTE  # noqa: F811
 
 
 class SubTypeObjectMapping(Enum):
     Filter = ObjectSubTypes.FILTER  # noqa: F811
+    CustomGroup = ObjectSubTypes.CUSTOM_GROUP  # noqa: F811
     OlapCube = ObjectSubTypes.OLAP_CUBE  # noqa: F811
     SuperCube = ObjectSubTypes.SUPER_CUBE  # noqa: F811
     User = ObjectSubTypes.USER  # noqa: F811
@@ -106,11 +110,18 @@ def map_to_object(
             subtype = ObjectSubTypes.NOT_SUPPORTED
 
     if (
-        object_type == ObjectTypes.REPORT_DEFINITION
-        and subtype in (ObjectSubTypes.OLAP_CUBE, ObjectSubTypes.SUPER_CUBE)
-    ) or (
-        object_type == ObjectTypes.USER
-        and subtype in (ObjectSubTypes.USER, ObjectSubTypes.USER_GROUP)
+        (
+            object_type == ObjectTypes.REPORT_DEFINITION
+            and subtype in (ObjectSubTypes.OLAP_CUBE, ObjectSubTypes.SUPER_CUBE)
+        )
+        or (
+            object_type == ObjectTypes.USER
+            and subtype in (ObjectSubTypes.USER, ObjectSubTypes.USER_GROUP)
+        )
+        or (
+            object_type == ObjectTypes.FILTER
+            and subtype in (ObjectSubTypes.FILTER, ObjectSubTypes.CUSTOM_GROUP)
+        )
     ):
         return __str_to_class(SubTypeObjectMapping(subtype).name)
     elif object_type in [v.value for v in TypeObjectMapping]:
@@ -124,7 +135,7 @@ def map_object(connection: "Connection", obj: dict):
     mstrio class.
     """
 
-    return map_to_object(obj.get('type'), obj.get('subtype')).from_dict(
+    return map_to_object(obj.get("type"), obj.get("subtype")).from_dict(
         source=obj, connection=connection
     )
 

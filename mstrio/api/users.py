@@ -2,6 +2,8 @@ from typing import TYPE_CHECKING
 
 from requests import Response
 
+from mstrio.utils.helper import check_version_for_change_journal_comment
+from mstrio.utils.api_helpers import add_comment_to_dict, extract_comment_from_body
 from mstrio.utils.error_handlers import ErrorHandler
 
 if TYPE_CHECKING:
@@ -436,19 +438,22 @@ def get_user_info(connection, id, fields=None):
 
 
 @ErrorHandler(err_msg="Error deleting user with ID {id}")
-def delete_user(connection, id):
+def delete_user(connection: 'Connection', id: str, journal_comment: str | None = None):
     """Delete user for specific user id.
 
     Args:
         connection (object): Strategy One connection object returned by
             `connection.Connection()`.
         id (string): User ID.
+        journal_comment (str, optional): Comment that will be added to the
+            object's change journal entry.
 
     Returns:
         HTTP response object returned by the Strategy One REST server.
     """
 
-    return connection.delete(endpoint=f'/api/users/{id}')
+    params = add_comment_to_dict(None, journal_comment)
+    return connection.delete(endpoint=f'/api/users/{id}', params=params)
 
 
 @ErrorHandler(err_msg="Error updating information for a user with ID: {id}")
@@ -475,7 +480,8 @@ def update_user_info(connection, id, body, fields=None):
     Returns:
         HTTP response object returned by the Strategy One REST server.
     """
-
+    comment = extract_comment_from_body(body)
+    check_version_for_change_journal_comment(connection, '11.5.0900', comment)
     return connection.patch(
         endpoint=f'/api/users/{id}', params={'fields': fields}, json=body
     )

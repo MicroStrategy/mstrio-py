@@ -78,7 +78,7 @@ def _construct_message(
     if name is None:
         message = template.format("")
     else:
-        message = template.format(f"({name}) ")
+        message = template.format(f"({name})")
     if target_release is not None:
         message += release_info_template.format(target_release)
     return message

@@ -94,6 +94,7 @@ class Fence(EntityBase, ChangeJournalMixin, DeleteMixin):
     }
 
     _API_DELETE = staticmethod(administration.delete_fence)
+    _API_DEL_JOURNAL_MIN_VER = None
 
     @staticmethod
     def _parse_users(

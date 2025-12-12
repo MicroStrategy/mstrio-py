@@ -1,8 +1,15 @@
+from mstrio.connection import Connection
+from mstrio.utils.api_helpers import add_comment_to_dict
 from mstrio.utils.error_handlers import ErrorHandler
 
 
 @ErrorHandler(err_msg="Error triggering event {id}")
-def trigger_event(connection, id, fields=None, error_msg=None):
+def trigger_event(
+    connection: Connection,
+    id: str,
+    fields: str | None = None,
+    error_msg: str | None = None,
+):
     """Trigger an event.
 
     Args:
@@ -19,7 +26,9 @@ def trigger_event(connection, id, fields=None, error_msg=None):
 
 
 @ErrorHandler(err_msg="Error getting events list.")
-def list_events(connection, fields=None, error_msg=None):
+def list_events(
+    connection: Connection, fields: str | None = None, error_msg: str | None = None
+):
     """Get list of events.
 
     Args:
@@ -34,7 +43,12 @@ def list_events(connection, fields=None, error_msg=None):
 
 
 @ErrorHandler(err_msg="Error getting event {id} information.")
-def get_event(connection, id, fields=None, error_msg=None):
+def get_event(
+    connection: Connection,
+    id: str,
+    fields: str | None = None,
+    error_msg: str | None = None,
+):
     """Get information of a specific event
 
     Args:
@@ -55,7 +69,12 @@ def get_event(connection, id, fields=None, error_msg=None):
 
 
 @ErrorHandler(err_msg="Error creating event")
-def create_event(connection, body, fields=None, error_msg=None):
+def create_event(
+    connection: Connection,
+    body: dict,
+    fields: str | None = None,
+    error_msg: str | None = None,
+):
     """Create an event.
 
     Args:
@@ -74,7 +93,13 @@ def create_event(connection, body, fields=None, error_msg=None):
 
 
 @ErrorHandler(err_msg="Error updating event {id}")
-def update_event(connection, id, body, fields=None, error_msg=None):
+def update_event(
+    connection: Connection,
+    id: str,
+    body: dict,
+    fields: str | None = None,
+    error_msg: str | None = None,
+):
     """Update an event.
 
     Args:
@@ -93,7 +118,12 @@ def update_event(connection, id, body, fields=None, error_msg=None):
 
 
 @ErrorHandler(err_msg="Error deleting event {id}")
-def delete_event(connection, id, error_msg=None):
+def delete_event(
+    connection: Connection,
+    id: str,
+    error_msg: str | None = None,
+    journal_comment: str | None = None,
+):
     """Delete an event.
 
     Args:
@@ -101,9 +131,12 @@ def delete_event(connection, id, error_msg=None):
             `connection.Connection()`.
         id: ID of the event to be deleted
         error_msg (string, optional): Custom Error Message for Error Handling
+        journal_comment (str, optional): Comment that will be added to the
+            object's change journal entry.
 
     Returns:
         HTTP response object returned by the Strategy One REST server.
     """
     endpoint = f'/api/events/{id}'
-    return connection.delete(endpoint=endpoint)
+    params = add_comment_to_dict(None, journal_comment)
+    return connection.delete(endpoint=endpoint, params=params)

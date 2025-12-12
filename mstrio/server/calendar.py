@@ -220,6 +220,7 @@ class Calendar(Entity, CopyMixin, DeleteMixin):
         calendar_begin_offset: int | None = None,
         calendar_end_static: int | None = None,
         calendar_end_offset: int | None = None,
+        journal_comment: str | None = None,
     ) -> 'Calendar':
         """Create a new calendar with the specified properties.
 
@@ -244,6 +245,8 @@ class Calendar(Entity, CopyMixin, DeleteMixin):
             calendar_end_offset (int, optional): Ending year for the calendar
                 as an offset from the current year. Must be provided if and
                 only if `calendar_end_static` is not
+            journal_comment (optional, str): Comment that will be added to the
+                object's change journal entry
         """
 
         cls._validate_year_definitions(
@@ -272,7 +275,8 @@ class Calendar(Entity, CopyMixin, DeleteMixin):
             },
             "weekStartDay": week_start_day.value,
         }
-
+        if journal_comment:
+            body.update({'changeJournal': {'userComments': journal_comment}})
         body = helper.delete_none_values(source=body, recursion=True)
         new_cal = cls.from_dict(
             source=calendars_processors.create_calendar(
@@ -300,6 +304,7 @@ class Calendar(Entity, CopyMixin, DeleteMixin):
         calendar_begin_offset: int | None = None,
         calendar_end_static: int | None = None,
         calendar_end_offset: int | None = None,
+        journal_comment: str | None = None,
     ) -> None:
         """Alter the calendar's properties.
         Args:
@@ -323,6 +328,8 @@ class Calendar(Entity, CopyMixin, DeleteMixin):
             calendar_end_offset (int, optional): Ending year for the calendar
                 as an offset from the current year. Must be provided if and
                 only if `calendar_end_static` is not
+            journal_comment (optional, str): Comment that will be added to the
+                object's change journal entry
         """
         if isinstance(owner, User):
             owner = owner.id
@@ -367,6 +374,8 @@ class Calendar(Entity, CopyMixin, DeleteMixin):
             },
             "week_start_day": week_start_day.value,
         }
+        if journal_comment:
+            properties["journal_comment"] = journal_comment
 
         properties = helper.delete_none_values(properties, recursion=True)
         self._alter_properties(**properties)

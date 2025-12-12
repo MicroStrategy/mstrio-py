@@ -719,9 +719,7 @@ def create_dashboard_instance(
         Complete HTTP response object.
     """
     endpoint = f'/api/dossiers/{dashboard_id}/instances'
-    return connection.post(
-        endpoint=endpoint, headers={'X-MSTR-ProjectID': None}, json=body
-    )
+    return connection.post(endpoint=endpoint, json=body)
 
 
 @ErrorHandler(err_msg="Error getting hierarchy for dashboard {id}")

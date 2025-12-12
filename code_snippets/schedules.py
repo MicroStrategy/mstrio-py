@@ -11,11 +11,6 @@ from mstrio.distribution_services import (
 )
 from mstrio.distribution_services import Event, list_events
 from mstrio.connection import get_connection
-from mstrio.utils.wip import module_wip, WipLevels
-
-# Currently there is no way to delete schedules with a script in Workstation.
-# The functionality can be used in standalone Python runtime.
-module_wip(globals(), level=WipLevels.WARNING)
 
 # Define a variable which can be later used in a script
 PROJECT_NAME = $project_name  # Project to connect to
@@ -117,7 +112,7 @@ new_schedule = Schedule.create(
 
 # delete schedule
 # (Note: deleting schedule will also delete related subscriptions!)
-schedule.delete()
+schedule.delete(force_with_dependents=True)
 
 # get a list of subscriptions using schedule under the given project
 all_subscriptions = list_subscriptions(conn, project_name=PROJECT_NAME)

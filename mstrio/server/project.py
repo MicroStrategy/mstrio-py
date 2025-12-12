@@ -286,6 +286,7 @@ class Project(Entity, ModelVldbMixin, DeleteMixin):
         'alias': str,
     }
     _API_DELETE = staticmethod(projects.delete_project)
+    _API_DEL_JOURNAL_MIN_VER = None
     _FROM_DICT_MAP = {
         **Entity._FROM_DICT_MAP,
         'status': ProjectStatus,
@@ -396,6 +397,7 @@ class Project(Entity, ModelVldbMixin, DeleteMixin):
                 bar_format='{desc}',
                 leave=False,
                 disable=config.verbose,
+                delay=3,
             ):
                 projects.create_project(connection, name, description)
                 http_status, i_server_status = 500, 'ERR001'

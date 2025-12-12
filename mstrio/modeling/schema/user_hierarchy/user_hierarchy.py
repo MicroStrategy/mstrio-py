@@ -266,6 +266,7 @@ class UserHierarchy(Entity, CopyMixin, MoveMixin, DeleteMixin):
         ): (objects_processors.update, 'partial_put'),
     }
     _API_DELETE = staticmethod(user_hierarchies.delete_user_hierarchy)
+    _API_DEL_JOURNAL_MIN_VER = None
     _PATCH_PATH_TYPES = {
         **Entity._PATCH_PATH_TYPES,
         'sub_type': str,

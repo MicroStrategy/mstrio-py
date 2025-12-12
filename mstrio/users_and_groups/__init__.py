@@ -1,5 +1,5 @@
 # flake8: noqa
-from typing import Union
+from typing import TypeAlias, Union
 
 from .user import User, create_users_from_csv, list_users
 from .user_connections import UserConnections
@@ -16,4 +16,4 @@ from .contact_group import (
     list_contact_groups,
 )
 
-UserOrGroup = Union[str, User, UserGroup]
+UserOrGroup: TypeAlias = Union[str, User, UserGroup]

@@ -17,6 +17,7 @@ from mstrio.modeling.schema.helpers import (
 )
 from mstrio.modeling.schema.table.physical_table import PhysicalTable
 from mstrio.object_management import Folder
+from mstrio.object_management.search_enums import SearchScope
 from mstrio.object_management.search_operations import full_search
 from mstrio.types import ObjectTypes
 from mstrio.users_and_groups import User
@@ -233,6 +234,7 @@ def _full_search_logical_tables(
         name=name,
         project=proj_id,
         object_types=ObjectTypes.TABLE,
+        scope=SearchScope.NOT_MANAGED_ONLY,
         root=folder,
         root_id=folder_id,
         root_name=folder_name,
@@ -609,6 +611,7 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
             TableColumnMergeOption
         ) = TableColumnMergeOption.REUSE_ANY,
         table_prefix_option: TablePrefixOption | None = None,
+        journal_comment: str | None = None,
     ) -> "LogicalTable":
         """Create a new table in a specific project.
 
@@ -683,6 +686,8 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
                     prefix setting on warehouse catalog.
                 If 'TablePrefixOption.ADD_NAMESPACE', create a prefix same
                     with namespace.
+            journal_comment (optional, str): Comment that will be added to the
+                object's change journal entry
 
         Returns:
             LogicalTable object
@@ -787,6 +792,8 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
             "encloseSqlInParentheses": enclose_sql_in_parentheses,
             "physicalTable": physical_table,
         }
+        if journal_comment:
+            body.update({'changeJournal': {'userComments': journal_comment}})
         body = delete_none_values(body, recursion=True)
 
         response = tables_api.post_table(
@@ -863,6 +870,7 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
         hidden: bool | None = None,
         comments: str | None = None,
         owner: str | User | None = None,
+        journal_comment: str | None = None,
     ) -> None:  # NOSONAR
         """Alters properties specified by keyword arguments.
 
@@ -918,6 +926,8 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
                 None.
             owner: (str, User, optional): Owner of the logical table. Defaults
                 to None.
+            journal_comment (optional, str): Comment that will be added to the
+                object's change journal entry
 
             Throws:
                 TypeError if:
@@ -1102,7 +1112,9 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
         col_merge_option = get_enum(col_merge_option, TableColumnMergeOption)
         logical_tables = list_logical_tables(connection)
         with tqdm(
-            total=len(logical_tables), desc="Updating structures..."
+            total=len(logical_tables),
+            desc="Updating structures...",
+            delay=3,
         ) as progress_bar:
             for table in logical_tables:
                 table.update_physical_table_structure(
