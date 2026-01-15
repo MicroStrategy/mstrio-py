@@ -5,6 +5,7 @@ into your script, independently from what the code itself will log.
 import logging
 import sys
 
+from mstrio import config
 from mstrio.connection import get_connection
 from mstrio.datasources import list_datasource_instances
 
@@ -44,6 +45,13 @@ logger.info('This is INFO')
 logger.warning('This is WARN')
 logger.error('This is ERROR')
 logger.critical('This is CRIT')
+
+# If you wish to customize what and how mstrio-py is logging, you can override
+# mstrio-py's logger configuration
+#
+# Just update mstrio-py's logger instance to your liking. Examples:
+config.verbose = False  # <- lower the amount of logs provided by mstrio-py to essentials only
+config.logger.setLevel(logging.CRITICAL)  # <- make mstrio-py log only critical issues
 
 
 """

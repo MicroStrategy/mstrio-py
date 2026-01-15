@@ -3,9 +3,9 @@ import json
 from requests.adapters import Response
 
 from mstrio.connection import Connection
-from mstrio.utils.helper import check_version_for_change_journal_comment
 from mstrio.utils.api_helpers import extract_comment_from_body
 from mstrio.utils.error_handlers import ErrorHandler
+from mstrio.utils.helper import check_version_for_change_journal_comment
 
 
 @ErrorHandler(err_msg="Error getting schedules list.")

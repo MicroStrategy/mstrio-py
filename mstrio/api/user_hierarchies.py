@@ -172,3 +172,35 @@ def delete_user_hierarchy(
             endpoint=f'/api/model/hierarchies/{id}',
             headers={'X-MSTR-MS-Changeset': changeset_id},
         )
+
+
+@ErrorHandler(err_msg="Error getting the system hierarchy.")
+def get_system_hierarchy(
+    connection: 'Connection',
+    project_id: str | None = None,
+    changeset_id: str | None = None,
+    error_msg: str | None = None,
+):
+    """Get the definition of the system hierarchy.
+    The project ID is required to return the system hierarchy's definition
+    in metadata. The changeset ID is required to return the system hierarchy's
+    definition within a specific changeset. To execute the request, provide
+    either the project ID or changeset ID.
+
+    Args:
+        connection: Strategy One REST API connection object
+        project_id (str, optional): Project ID
+        changeset_id (str, optional): Changeset ID
+        error_msg (str, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object. Expected status is 200.
+    """
+    if project_id is None:
+        connection._validate_project_selected()
+        project_id = connection.project_id
+
+    return connection.get(
+        endpoint='/api/model/systemHierarchy',
+        headers={'X-MSTR-ProjectID': project_id, 'X-MSTR-MS-Changeset': changeset_id},
+    )

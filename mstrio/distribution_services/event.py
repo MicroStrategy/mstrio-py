@@ -101,6 +101,7 @@ class Event(Entity, CopyMixin, DeleteMixin, RelatedSubscriptionMixin):
             id: Event ID
             name: Event name
         """
+        self._API_GETTERS = self._API_GETTERS.copy()
         self._API_GETTERS[('id', 'name', 'description')] = (
             events.get_event
             if is_server_min_version(connection, '11.3.0200')

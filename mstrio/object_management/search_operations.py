@@ -3,7 +3,7 @@ import logging
 from concurrent.futures import as_completed
 from dataclasses import dataclass
 from datetime import date, datetime
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from requests import Response
 
@@ -476,6 +476,7 @@ class SearchObject(Entity, CopyMixin, MoveMixin, DeleteMixin):
         # Dynamically update getters based on version. This cannot be done
         # in __init__ because this step would be skipped e.g. in from_dict
         if meets_minimal_version(self.connection.iserver_version, '11.4.1200'):
+            self._API_GETTERS = self._API_GETTERS.copy()
             self._API_GETTERS.update(
                 {
                     (
@@ -877,7 +878,7 @@ def quick_search(
     root_name: str | None = None,
     root_path: tuple[str] | list[str] | str | None = None,
     pattern: SearchPattern | int = SearchPattern.CONTAINS,
-    object_types: Optional["TypeOrSubtype"] = None,
+    object_types: 'TypeOrSubtype | None' = None,
     get_ancestors: bool = False,
     cross_cluster: bool = False,
     hidden: bool | None = None,
@@ -1100,7 +1101,7 @@ def full_search(
     root_id: str | None = None,
     root_name: str | None = None,
     root_path: tuple[str] | list[str] | str | None = None,
-    object_types: Optional['TypeOrSubtype'] = None,
+    object_types: 'TypeOrSubtype | None' = None,
     uses_object_id: EntityBase | str | None = None,
     uses_object_type: ObjectTypes | int | None = None,
     uses_recursive: bool = False,
@@ -1250,7 +1251,7 @@ def start_full_search(
     connection: Connection,
     project: 'Project | str | None' = None,
     name: str | None = None,
-    object_types: Optional["TypeOrSubtype"] = None,
+    object_types: 'TypeOrSubtype | None' = None,
     description: str | None = None,
     pattern: SearchPattern | int = SearchPattern.CONTAINS,
     domain: SearchDomain | int = SearchDomain.PROJECT,

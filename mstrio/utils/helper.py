@@ -5,7 +5,6 @@ import os
 import re
 import time
 import warnings
-from base64 import b64encode
 from collections.abc import Callable
 from copy import deepcopy
 from datetime import datetime
@@ -17,7 +16,6 @@ from time import sleep
 from typing import TYPE_CHECKING, Any, TypeVar
 
 import humps
-from pypika import Query
 from requests import Response
 
 from mstrio import config
@@ -1075,7 +1073,12 @@ class Dictable:
 
         return val if key not in cls._FROM_DICT_MAP else constructor()
 
-    def to_dict(self, camel_case: bool = True) -> dict:
+    def to_dict(
+        self,
+        camel_case: bool = True,
+        whitelist_keys: list[str] | None = None,
+        skip_private_keys: bool = False,
+    ) -> dict:
         """Converts an object to a dictionary excluding object's private
         properties. When converting the object to a dictionary, the object's
         attributes become the dictionary's keys and are in camel case by default
@@ -1085,6 +1088,11 @@ class Dictable:
         Args:
             camel_case (bool, optional): Set to True if attribute names should
                 be converted from snake case to camel case. Defaults to True.
+            whitelist_keys (list[str], optional): List of keys to include in the
+                resulting dictionary. If None, all keys (except hidden ones) are
+                included. Defaults to None.
+            skip_private_keys (bool, optional): If True, skips private keys in
+                final dict representation.
 
         Returns:
             dict: A dictionary representation of object's attributes and values.
@@ -1098,25 +1106,38 @@ class Dictable:
             'connection',
             '_type',
             '_WITH_MISSING_VALUE',
+            '_API_GETTERS',
         ]
+        whitelist_keys = whitelist_keys or []
         cleaned_dict = self.__dict__.copy()
+        # TODO: add units for flag skip private keys
+        private_keys = [k for k in cleaned_dict if k.startswith('_')]
 
-        properties = get_object_properties(self)
+        keep_private: set[str] = getattr(self, "_API_GETTERS_KEEP_PRIVATE", set())
+        properties = get_object_properties(self) | keep_private
         for prop in properties:
             to_be_deleted = '_' + prop
             cleaned_dict[prop] = cleaned_dict.pop(to_be_deleted, None)
+
+        # TODO: add units for `whitelist_keys`
         result = {
             key: self._unpack_objects(key, val, camel_case)
             for key, val in cleaned_dict.items()
-            if key not in hidden_keys
+            if key not in hidden_keys and (not whitelist_keys or key in whitelist_keys)
         }
-
         result = delete_none_values(
             result, whitelist_attributes=self._ALLOW_NONE_ATTRIBUTES, recursion=False
         )
         result = {
             key: result[key]
-            for key in sorted(result, key=key_fn_for_sort_object_properties)
+            for key in sorted(
+                [
+                    r
+                    for r in result.keys()
+                    if not skip_private_keys or r not in private_keys
+                ],
+                key=key_fn_for_sort_object_properties,
+            )
         }
         return (
             snake_to_camel(result, whitelist=self._KEEP_CAMEL_CASE)
@@ -1126,7 +1147,7 @@ class Dictable:
 
     @classmethod
     def from_dict(
-        cls: T,
+        cls: type[T],
         source: dict[str, Any],
         connection: 'Connection | None' = None,
         to_snake_case: bool = True,
@@ -1167,12 +1188,11 @@ class Dictable:
             for key, val in object_source.items()
             if key in cls.__init__.__code__.co_varnames
         }
-        obj = cls(**args)  # type: ignore
-        return obj
+        return cls(**args)  # type: ignore
 
     @classmethod
     def bulk_from_dict(
-        cls: T,
+        cls: type[T],
         source_list: list[dict[str, Any]],
         connection: 'Connection | None' = None,
         to_snake_case: bool = True,
@@ -1385,17 +1405,6 @@ def get_object_properties(obj: object) -> set[str]:
     }
 
 
-def encode_as_b64(query: str | Query) -> str:
-    """Encodes a query as base64.
-
-    Args:
-        query (str | Query): query to be encoded
-
-    Returns:
-        Base64 format encoded query."""
-    return b64encode(str(query).encode('utf-8')).decode('utf-8')
-
-
 def get_string_exp_body(expression: str) -> dict:
     return {
         "tokens": [
@@ -1450,7 +1459,7 @@ def wait_for_stable_status(
     property: str,
     not_stable_val: list,
     timeout: int = 240,
-    interval: int = 1,
+    interval: int | None = None,
 ) -> bool:
     """Wait for a specific property of an object to reach a stable state.
 
@@ -1461,8 +1470,8 @@ def wait_for_stable_status(
             stable.
         timeout (int, optional): Maximum time to wait in seconds.
             Defaults to 240.
-        interval (int, optional): Time between checks in seconds.
-            Defaults to 1.
+        interval (int, optional): Time between checks in seconds. If not
+            provided, the value is taken from mstrio-py's `config`.
 
     Returns:
         bool: True if stable state is reached False otherwise.
@@ -1472,7 +1481,7 @@ def wait_for_stable_status(
         (datetime.now() - start_time).total_seconds() < timeout
     ):
         obj.fetch()
-        sleep(interval)
+        sleep(interval or config.delay_between_polling)
 
     return getattr(obj, property) not in not_stable_val
 
@@ -1614,7 +1623,6 @@ def check_version_for_change_journal_comment(
     Returns:
         bool: True if the API version supports change journal comments.
     """
-
     from mstrio.utils.version_helper import is_server_min_version
 
     if comment:
@@ -1647,8 +1655,19 @@ def process_change_journal_comment(
             supported.
         comment (str, optional): Comment to process.
     """
+    from mstrio.utils.version_helper import meets_minimal_version
 
-    if check_version_for_change_journal_comment(connection, min_version, comment):
+    if (
+        comment is not None
+        and min_version
+        and not meets_minimal_version(min_version, '11.6.0100')
+        and connection.deployment_type == 'mcg'
+    ):
+        min_version = '11.6.0100'
+
+    if comment is not None and check_version_for_change_journal_comment(
+        connection, min_version, comment
+    ):
         body.update({'changeJournal': {'userComments': comment}})
 
 
@@ -1670,8 +1689,19 @@ def process_delete_change_journal_comment(
         str: Comment if the API version supports change journal comments,
             None otherwise.
     """
+    from mstrio.utils.version_helper import meets_minimal_version
 
-    if check_version_for_change_journal_comment(connection, min_version, comment):
+    if (
+        comment is not None
+        and min_version
+        and not meets_minimal_version(min_version, '11.6.0100')
+        and connection.deployment_type == 'mcg'
+    ):
+        min_version = '11.6.0100'
+
+    if comment is not None and check_version_for_change_journal_comment(
+        connection, min_version, comment
+    ):
         return comment
     return None
 
@@ -1691,10 +1721,19 @@ def add_journal_comment_to_operation_list(
             journal comments.
         comment (str, optional): Comment to process.
     """
+    from mstrio.utils.version_helper import meets_minimal_version
 
-    if connection and min_version and comment:
+    if (
+        comment is not None
+        and min_version
+        and not meets_minimal_version(min_version, '11.6.0100')
+        and connection.deployment_type == 'mcg'
+    ):
+        min_version = '11.6.0100'
+
+    if connection and comment is not None:
         check_version_for_change_journal_comment(connection, min_version, comment)
-    if body and comment:
+    if body and comment is not None:
         if 'operationList' in body:
             body['operationList'].append(
                 {

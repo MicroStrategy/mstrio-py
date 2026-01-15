@@ -92,6 +92,8 @@ PROJECT_NEW_DESCRIPTION = $project_new_description
 
 # create a project and store it in variable to have immediate access to it
 new_project = env.create_project(name=PROJECT_NAME, description=PROJECT_DESCRIPTION)
+# or just request creation and do not wait for it to be done via `async_request` flag
+env.create_project(name=PROJECT_NAME, description=PROJECT_DESCRIPTION, async_request=True)
 
 # change description of a newly created project
 new_project.alter(description=PROJECT_DESCRIPTION)
@@ -100,9 +102,23 @@ new_project.alter(description=PROJECT_DESCRIPTION)
 
 # first, the project need to be unloaded
 new_project.unload()
+# you can request immediate connection sessions removal with proper flag
+new_project.unload(delete_sessions=True)
 # then delete the unloaded project,
 # confirmation prompt will appear asking for a project name
 new_project.delete()
+# to avoid confirmation prompt, provide `force` flag
+new_project.delete(force=True)
+
+# You can combine multiple steps above into one request by providing proper flags
+new_project.delete(
+    force=True,
+    unload_beforehand=True,  # include `unload` step before deletion
+    delete_immediately=True,  # make it so all active connection sessions are
+                              # immediately removed and project unloading is
+                              # not required. In combination with `unload_beforehand`
+                              # flag, unloading is still done, even if not necessary.
+)
 
 # if a project is already unloaded, to delete it, it has to be retrieved
 # via Environment object
@@ -115,6 +131,9 @@ projects = env.list_projects()
 project = projects['<index of a project to delete>']
 # delete a project, confirmation prompt will appear asking for a project name
 project.delete()
+# or delete a project without confirmation prompt by providing `force` flag
+project.delete(force=True)
+# in both cases, the project needs to be unloaded to be deleted
 
 
 # Define variables which can be later used in a script

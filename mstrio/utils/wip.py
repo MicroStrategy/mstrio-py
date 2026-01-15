@@ -4,6 +4,8 @@ import sys
 from enum import Enum, auto
 from itertools import filterfalse
 from textwrap import dedent
+from types import FunctionType
+from typing import Any
 
 from packaging.version import Version
 
@@ -90,8 +92,10 @@ def _emit(
     level: WipLevels = WipLevels.WARNING,
     message: str | None = None,
 ):
-    if level == WipLevels.SILENT or not config.wip_warnings_enabled:
-        return None
+    if level == WipLevels.SILENT or (
+        not config.wip_warnings_enabled and level != WipLevels.ERROR
+    ):
+        return
 
     if message is None:
         message = _construct_message(name, target_release, level)
@@ -120,6 +124,8 @@ def wip(
         actual decorator, so even when not providing arguments and letting it
         choose the defaults it should be used like `@wip()`, not plain `@wip`.
 
+    It supports decorating methods, functions and classes themselves.
+
     Args:
         target_release: The target release when the functionality is scheduled
             to be production-ready.
@@ -136,25 +142,46 @@ def wip(
         mark_attr: Marks the wrapped function via adding the `_wip` attribute,
             which is checked by `is_wip`.
     """
+
     if target_release is not None:
         if not isinstance(target_release, Version):
             target_release = Version(target_release)
+
         if target_release <= current_version:
             raise ValueError(
                 "WIP wrapper called with target_release equal to"
                 " or lower than current release."
             )
+
     if level not in WipLevels:
         _wiplevel_error(level)
 
     def wrap_func(f):
-        @functools.wraps(f)
-        def wrapped(*args, **kwargs):
-            _emit(wrapped.__name__, target_release, level, message)
-            return f(*args, **kwargs)
+        if isinstance(f, FunctionType):
+
+            @functools.wraps(f)
+            def wrapped(*args, **kwargs):
+                _emit(wrapped.__name__, target_release, level, message)
+                return f(*args, **kwargs)
+
+        elif isinstance(f, type):
+
+            class wrapped(f):
+                def __new__(self, *args, **kwargs):
+                    _emit(wrapped.__name__, target_release, level, message)
+                    return super().__new__(*args, **kwargs)
+
+        elif callable(f):
+            raise AttributeError(f"Callable {f} of type {type(f)} cannot be decorated.")
+
+        else:
+            raise AttributeError(
+                f"Cannot decorate non-callable {f} (type {type(f)}) with `wip` flag."
+            )
 
         if mark_attr:
             wrapped._wip = True  # This makes it trivial to programmatically check.
+
         if prefix_doc:
             if not wrapped.__doc__:
                 wrapped.__doc__ = ""
@@ -166,26 +193,38 @@ def wip(
                 else:
                     msg = _construct_message(target_release=target_release, level=level)
                     docstring_prefix = docstring_prefix_template.format(msg)
+
                 wrapped.__doc__ = docstring_prefix + wrapped.__doc__
+
         return wrapped
 
     return wrap_func
 
 
 def module_wip(
-    module_globals: dict,
+    module_globals: dict[str, Any],
     target_release: Version | str | None = None,
     level: WipLevels = WipLevels.WARNING,
     message: str | None = None,
     prefix_doc: bool | str = True,
     mark_attr: bool = True,
 ):
-    """Emit the WIP warning/error/info when the module is loaded."""
+    """Emit the WIP warning/error/info when the module is loaded.
+
+    Note:
+        This emits once, when first imported. Therefore, if you plan to mark a
+        module as wip, do not import it anywhere in production folder. If you
+        must, use `wip` decorator on each module component, instead of this
+        method.
+    """
+
     if mark_attr:
         module_globals["_wip"] = True
+
     if prefix_doc:
         if not module_globals["__doc__"]:
             module_globals["__doc__"] = ""
+
         if isinstance(prefix_doc, str):
             module_globals["__doc__"] = prefix_doc + module_globals["__doc__"]
         else:
@@ -194,7 +233,9 @@ def module_wip(
             else:
                 msg = _construct_message(target_release=target_release, level=level)
                 docstring_prefix = docstring_prefix_template.format(msg)
+
             module_globals["__doc__"] = docstring_prefix + module_globals["__doc__"]
+
     _emit(f"module {module_globals['__name__']}", target_release, level, message)
 
 

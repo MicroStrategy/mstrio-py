@@ -1,5 +1,6 @@
 import sys
 from enum import Enum
+from functools import partial
 from typing import TYPE_CHECKING
 
 from mstrio.access_and_security.security_role import SecurityRole  # noqa: F401
@@ -12,6 +13,7 @@ from mstrio.distribution_services.schedule import Schedule  # noqa: F401
 from mstrio.distribution_services.transmitter.transmitter import (  # noqa: F401
     Transmitter,
 )
+from mstrio.modeling.custom_group import CustomGroup  # noqa: F401
 from mstrio.modeling.filter import Filter  # noqa: F401
 from mstrio.modeling.metric import Metric  # noqa: F401
 from mstrio.modeling.schema import (  # noqa: F401
@@ -22,7 +24,6 @@ from mstrio.modeling.schema import (  # noqa: F401
     UserHierarchy,
 )
 from mstrio.modeling.schema.attribute.attribute_form import AttributeForm  # noqa: F401
-from mstrio.modeling.schema.attribute.custom_group import CustomGroup  # noqa: F401
 from mstrio.modeling.schema.table.physical_table import PhysicalTable  # noqa: F401
 from mstrio.modeling.security_filter import SecurityFilter  # noqa: F401
 from mstrio.object_management.folder import Folder  # noqa: F401
@@ -32,14 +33,19 @@ from mstrio.object_management.shortcut import Shortcut  # noqa: F401
 from mstrio.project_objects import Document, Report  # noqa: F401
 from mstrio.project_objects.agents import Agent  # noqa: F401
 from mstrio.project_objects.applications import Application  # noqa: F401
-from mstrio.project_objects.bots import Bot  # noqa: F401
 from mstrio.project_objects.content_group import ContentGroup  # noqa: F401
 from mstrio.project_objects.datasets import OlapCube, SuperCube  # noqa: F401
 from mstrio.project_objects.palette import Palette  # noqa: F401
 from mstrio.server import Project  # noqa: F401
+
+# TODO: correct when no longer `wip`  # NOSONAR # noqa
+# from mstrio.python_execution.script import Script  # NOSONAR # noqa
 from mstrio.server.language import Language  # noqa: F401
 from mstrio.types import ObjectSubTypes, ObjectTypes
 from mstrio.users_and_groups import User, UserGroup  # noqa: F401
+
+Script = partial(Object, type=ObjectTypes.SCRIPT)
+
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
@@ -77,6 +83,7 @@ class TypeObjectMapping(Enum):
     Application = ObjectTypes.APPLICATION  # noqa: F811
     Driver = ObjectTypes.DRIVER  # noqa: F811
     Palette = ObjectTypes.PALETTE  # noqa: F811
+    Script = ObjectTypes.SCRIPT  # noqa: F811
 
 
 class SubTypeObjectMapping(Enum):
@@ -86,7 +93,6 @@ class SubTypeObjectMapping(Enum):
     SuperCube = ObjectSubTypes.SUPER_CUBE  # noqa: F811
     User = ObjectSubTypes.USER  # noqa: F811
     UserGroup = ObjectSubTypes.USER_GROUP  # noqa: F811
-    Bot = ObjectSubTypes.DOCUMENT_BOT  # noqa: F811
     Agent = ObjectSubTypes.DOCUMENT_AGENT  # noqa: F811
     AgentUniversal = ObjectSubTypes.DOCUMENT_AGENT_UNIVERSAL  # noqa: F811
 

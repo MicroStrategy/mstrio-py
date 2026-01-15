@@ -715,7 +715,7 @@ def get_vldb_settings(connection: 'Connection', id: str, error_msg: str = None):
     """
 
     return connection.get(
-        endpoint=f'/api/model/datasources/{id}' '?showAdvancedProperties=true'
+        endpoint=f'/api/model/datasources/{id}?showAdvancedProperties=true'
     )
 
 
@@ -761,7 +761,7 @@ def get_applicable_vldb_settings(
     """
 
     return connection.get(
-        endpoint=f'/api/model/datasources/{id}' '/applicableAdvancedProperties'
+        endpoint=f'/api/model/datasources/{id}/applicableAdvancedProperties'
     )
 
 

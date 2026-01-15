@@ -40,6 +40,8 @@ AGGREGATED_RIGHTS_MAP = {
 T = TypeVar("T")
 
 
+# TODO: move somewhere so end-users will not need to import from `mstrio.utils`
+# keep backward compatibility + update code snippets
 class PropagationBehavior(AutoName):
     """Behavior of ACL propagation to children.
     Allowed values for Folders are:

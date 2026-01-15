@@ -7,8 +7,8 @@ from mstrio.helpers import IServerError
 if t.TYPE_CHECKING:
     from mstrio.connection import Connection
     from mstrio.object_management.folder import Folder
-    from mstrio.server.project import Project
     from mstrio.object_management.object import Object
+    from mstrio.server.project import Project
 
 
 T = t.TypeVar('T')
@@ -428,8 +428,8 @@ def get_drill_map_id_from_params_set(
     drill_map_id: str | None = None,
     drill_map_name: str | None = None,
 ) -> str | None:
+    from mstrio.modeling.custom_group import CustomGroup
     from mstrio.object_management.object import Object
-    from mstrio.modeling.schema.attribute.custom_group import CustomGroup
 
     return _get_id_from_params_set(
         drill_map,
@@ -443,8 +443,8 @@ def get_drill_map_id_from_params_set(
 # FYI: Copy-pastable parts for drill map-related parameters:
 """
 [DOCSTRING for "Args" part]
-            drill_map (Object | str, optional): Object or ID specifying the
-                drill map. May be used instead of `drill_map_id` or
+            drill_map (Object | str, optional): Object or ID or name specifying
+                the drill map. May be used instead of `drill_map_id` or
                 `drill_map_name`.
             drill_map_id (str, optional): ID of a drill map.
             drill_map_name (str, optional): Name of a drill map.

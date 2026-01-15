@@ -31,6 +31,7 @@ from .search_operations import (
     full_search,
     get_search_results,
     get_search_suggestions,
+    list_search_objects,
     quick_search,
     quick_search_by_id,
     quick_search_from_object,

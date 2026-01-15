@@ -1,3 +1,12 @@
+"""This is the demo script to show how to manage privileges and security roles for users and user groups.
+
+In the first part privilege retrieval is presented, and in the second security role operations.
+
+This script will not work without replacing parameters with real values.
+Its basic goal is to present what can be done with this module and to
+ease its usage.
+"""
+
 # Privileges
 from mstrio.access_and_security.privilege import Privilege
 from mstrio.users_and_groups import list_user_groups, list_users, User, UserGroup
@@ -26,10 +35,29 @@ for p in priv:
 priv[0].list_properties()
 
 # Define variables which can be later used in a script
+USER_NAME = $user_name
+USER_GROUP_NAME = $user_group_name
 SECURITY_ROLE_NAME = $security_role_name  # Insert name of newly created or accessed security role
 SECURITY_ROLE_DESCRIPTION = $security_role_description  # Insert description of newly created or accessed security role
+SECURITY_ROLE_ID = $security_role_id
+NEW_SECURITY_ROLE_NAME = $new_security_role_name
+NEW_SECURITY_ROLE_DESCRIPTION = $new_security_role_description
+NEW_SECURITY_ROLE_OWNER = $new_security_role_owner
 
 # SecurityRoles
+# List SecurityRoles and store the Objects
+all_roles = list_security_roles(conn)
+list_security_roles(conn, to_dataframe=True) # If True, return SecurityRoles as pandas DataFrame.
+# List SecurityRoles by User
+user = User(connection=conn, name=USER_NAME)
+print(user.security_roles)
+# List SecurityRoles by UserGroup
+user_group = UserGroup(connection=conn, name=USER_GROUP_NAME)
+print(UserGroup.security_roles)
+# Get SecurityRole by name
+security_role = SecurityRole(connection=conn, name=SECURITY_ROLE_NAME)
+# also you can get SecurityRole by ID
+security_role = SecurityRole(connection=conn, id=SECURITY_ROLE_ID)
 # Create new SecurityRole
 new_role = SecurityRole.create(
     conn,
@@ -37,20 +65,24 @@ new_role = SecurityRole.create(
     description=SECURITY_ROLE_DESCRIPTION,
     privileges=[PRIVILEGE_ID, PRIVILEGE_NAME]
 )
+# Initialize SecurityRole object by ID
+role = SecurityRole(conn, id=SECURITY_ROLE_ID)
+# Initialize SecurityRole by name
+role_by_name = SecurityRole(conn, name=SECURITY_ROLE_NAME)
 
-# List SecurityRoles and store the Objects
-all_roles = list_security_roles(conn)
-list_security_roles(conn, to_dataframe=True)
-
-# Create SecurityRole object by name or ID
-role = SecurityRole(conn, id=all_roles[0].id)
-SecurityRole(conn, id=all_roles[0].id)
-role = SecurityRole(conn, name=all_roles[0].name)
-SecurityRole(conn, name=all_roles[0].name)
-SecurityRole(connection=conn, name=SECURITY_ROLE_NAME)
+# Alter SecurityRole. Change security role's name, description, or owner
+role.alter(
+    conn,
+    name=NEW_SECURITY_ROLE_NAME,
+    description=NEW_SECURITY_ROLE_DESCRIPTION,
+    owner=NEW_SECURITY_ROLE_OWNER
+)
 
 # List SecurityRole members
 role.list_members(project_name=PROJECT_NAME)
+
+# Delete SecurityRole
+security_role.delete(force=True) # If True, then no additional prompt will be shown before deleting.
 
 # Define variables which can be later used in a script
 USERNAME = $username  # Insert name of user to be assigned or revoked security role

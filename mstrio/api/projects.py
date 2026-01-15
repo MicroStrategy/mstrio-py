@@ -64,6 +64,7 @@ def create_project(
     connection: 'Connection',
     name: str,
     description: str | None = None,
+    async_request: bool = False,
     error_msg: str | None = None,
 ) -> Response:
     """Create a new project, either synchronously or asynchronously.
@@ -72,15 +73,23 @@ def create_project(
         connection (Connection): Strategy One REST API connection object
         name (string): Name of the new project
         description (string, optional): Description of the new project
+        async_request (bool, optional): Whether to create the project
+            asynchronously (do not wait for creation, just request it).
+            Defaults to False.
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
         Complete HTTP response object.
     """
     body = {'name': name, 'description': description}
+    headers = {'X-MSTR-ProjectID': None}
+
+    if async_request:
+        headers['Prefer'] = 'respond-async'
+
     return connection.post(
         endpoint='/api/v2/projects',
-        headers={'X-MSTR-ProjectID': None},
+        headers=headers,
         json=body,
     )
 
@@ -427,6 +436,7 @@ def get_applicable_vldb_settings(
 def delete_project(
     connection: 'Connection',
     id: str,
+    delete_sessions: bool | None = None,
     error_msg: str | None = None,
     journal_comment: str | None = None,
 ) -> Response:
@@ -442,7 +452,12 @@ def delete_project(
     Returns:
         Complete HTTP response object.
     """
-    params = add_comment_to_dict(None, journal_comment)
+    params = None
+
+    if delete_sessions:
+        params = {"deleteSessions": True}
+
+    params = add_comment_to_dict(params, journal_comment)
     return connection.delete(endpoint=f'/api/projects/{id}', params=params)
 
 
@@ -691,3 +706,89 @@ def cancel_project_duplication(
         HTTP response object. 204 on success.
     """
     return connection.put(endpoint=f'/api/projectDuplications/{id}/status', json=body)
+
+
+@ErrorHandler(err_msg='Error getting project duplication compatibility info')
+def get_project_duplication_compatibility(
+    connection: 'Connection',
+    fields: str | None = None,
+    error_msg: str | None = None,
+) -> Response:
+    """Get project duplication compatibility versions.
+
+    Args:
+        connection (Connection): Strategy One REST API connection object
+        fields (string, optional): A whitelist of top-level fields separated by
+            commas. Allow the client to selectively retrieve fields in the
+            response.
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object. 200 on success.
+    """
+    return connection.get(
+        endpoint='/api/projectDuplications/versions',
+        params={'fields': fields},
+    )
+
+
+@ErrorHandler(err_msg='Error validating project duplication compatibility')
+def validate_project_duplication_compatibility(
+    connection: 'Connection',
+    body: dict,
+    fields: str | None = None,
+    error_msg: str | None = None,
+) -> Response:
+    """Validate project duplication compatibility versions between source and
+    target environments.
+
+    Args:
+        connection (Connection): Strategy One REST API connection object
+        body (dict): Dictionary containing the project duplication compatibility
+            info acquired from GET '/api/projectDuplications/validations'
+        fields (string, optional): A whitelist of top-level fields separated by
+            commas. Allow the client to selectively retrieve fields in the
+            response.
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object. 200 on success.
+    """
+    return connection.post(
+        endpoint='/api/projectDuplications/validations',
+        json=body,
+        params={'fields': fields},
+    )
+
+
+@ErrorHandler(err_msg='Error triggering project duplication from target environment')
+def trigger_project_duplication_from_target_env(
+    connection: 'Connection',
+    body: dict,
+    prefer: str = 'respond-async',
+    fields: str | None = None,
+    error_msg: str | None = None,
+) -> Response:
+    """Trigger a new project duplication from target environment.
+
+    Args:
+        connection (Connection): Strategy One REST API connection object
+        body (dict): Dictionary containing the project duplication settings.
+            It must contain binary file with duplication package and
+            metadata about duplication.
+        prefer (str, optional): The preferred response mode. Defaults to
+            'respond-async'
+        fields (string, optional): A whitelist of top-level fields separated by
+            commas. Allow the client to selectively retrieve fields in the
+            response.
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object. 201 on success.
+    """
+    return connection.post(
+        endpoint='/api/projectDuplications/restoration',
+        json=body,
+        headers={'Prefer': prefer},
+        params={'fields': fields},
+    )

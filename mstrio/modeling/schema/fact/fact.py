@@ -17,11 +17,7 @@ from mstrio.types import ObjectTypes
 from mstrio.users_and_groups import User
 from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, MoveMixin
 from mstrio.utils.enum_helper import get_enum_val
-from mstrio.utils.helper import (
-    Dictable,
-    filter_params_for_func,
-    find_object_with_name,
-)
+from mstrio.utils.helper import Dictable, filter_params_for_func, find_object_with_name
 from mstrio.utils.resolvers import (
     get_folder_id_from_params_set,
     get_project_id_from_params_set,

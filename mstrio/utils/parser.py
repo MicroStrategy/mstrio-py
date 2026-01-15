@@ -212,8 +212,13 @@ class Parser:
 
     def __extract_attribute_form_names(self, response):
         # extract attribute form names
+        # if forms are not provided, use attribute name as form name
         return [
-            [form["name"] for form in attribute["forms"]]
+            (
+                [form["name"] for form in attribute["forms"]]
+                if "forms" in attribute
+                else [attribute["name"]]
+            )
             for attribute in response["definition"]["grid"][self.attribute_axis]
         ]
 

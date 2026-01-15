@@ -621,7 +621,7 @@ class Application(Entity, CopyMixin, DeleteMixin):
                 share_dashboard (EmailDetails): settings for sharing a dashboard
                 share_bookmark (EmailDetails): settings for sharing a dossier
                     with bookmark
-                share_bot (EmailDetails): settings for sharing a bot
+                share_bot (EmailDetails): settings for sharing an agent
                 member_added (EmailDetails): settings for inviting a recipient
                     to a discussion
                 user_mention (EmailDetails): settings for mentioning a recipient

@@ -4,9 +4,9 @@ from typing import TYPE_CHECKING
 from mstrio import config
 from mstrio.connection import Connection
 from mstrio.types import ObjectTypes
-from mstrio.utils.helper import check_version_for_change_journal_comment
 from mstrio.utils.api_helpers import add_comment_to_dict, extract_comment_from_body
 from mstrio.utils.error_handlers import ErrorHandler
+from mstrio.utils.helper import check_version_for_change_journal_comment
 
 if TYPE_CHECKING:
     from mstrio.utils.sessions import FuturesSessionWithRenewal

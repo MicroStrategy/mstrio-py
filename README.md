@@ -12,7 +12,7 @@
 
 ### Prerequisites
 
-- Python 3.10+
+- Python in version 3.10.x, 3.11.x, 3.12.x or 3.13.x
 - MicroStrategy 2019 Update 4 (11.1.4)+
 
 ### Install `mstrio-py` Package
@@ -109,6 +109,7 @@ Since version **11.3.0.1**, **mstrio-py** includes also administration modules:
 - **Schema Management** module (see [code_snippets][code_snippet_schema_mgmt])
 - **User Hierarchy** module (see [code_snippets][code_snippet_user_hierarchy])
 - **Attribute** module (see [code_snippets][code_snippet_attribute])
+- **Custom Group** module (see [code_snippets][code_snippet_custom_group])
 - **Fact** module (see [code_snippets][code_snippet_fact])
 - **Table** module (see [code_snippets][code_snippet_table_mgmt])
 - **Filter** module (see [code_snippets][code_snippet_filter])
@@ -138,7 +139,7 @@ Since version **11.3.0.1**, **mstrio-py** includes also administration modules:
 
 ## Versioning & Changelog
 
-Current version: **11.5.12.101** (12 December 2025). Check out [CHANGELOG][release_notes] to see what's new.
+Current version: **11.6.1.101** (16 January 2026). Check out [CHANGELOG][release_notes] to see what's new.
 
 `mstrio-py` is constantly developed to support newest Strategy One REST APIs. Functionalities may be added to mstrio on monthly basis. It is **recommended** to always install the newest version of mstrio-py, as it will be most stable and still maintain backwards compatibility with various Strategy One installations, dating back to 11.1.4.
 
@@ -243,3 +244,4 @@ When features (modules, parameters, attributes, methods etc.) are marked for dep
 [code_snippet_prompt]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/prompt_mgmt.py
 [code_snippet_search_object]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/search_object.py
 [code_snippet_search_actions]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/search_actions.py
+[code_snippet_custom_group]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/custom_groups.py

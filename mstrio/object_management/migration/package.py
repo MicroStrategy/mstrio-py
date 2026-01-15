@@ -405,7 +405,6 @@ class MigratedObjectTypes(AutoName):
     CARD = auto()
     REPORT = auto()
     DATASET = auto()
-    BOT = auto()
     AGENT = "bot"
     ATTRIBUTE = auto()
     BASE_FORMULA = auto()
@@ -589,7 +588,6 @@ class PackageInfo(Dictable):
 
 
 OBJECT_MIGRATION_TYPES_MIN_VERSION = {
-    MigratedObjectTypes.BOT: '11.3.0760',
     MigratedObjectTypes.AGENT: '11.5.1000',
     MigratedObjectTypes.SMART_ATTRIBUTE: '11.3.0760',
     MigratedObjectTypes.SCRIPT: '11.3.0760',
@@ -632,10 +630,6 @@ CATALOG_ITEMS = {
             ObjectSubTypes.SUPER_CUBE,
         ],
     ),  # Dataset
-    MigratedObjectTypes.BOT: (
-        ObjectTypes.DOCUMENT_DEFINITION,
-        ObjectSubTypes.DOCUMENT_BOT,
-    ),  # Bot
     MigratedObjectTypes.AGENT: (
         ObjectTypes.DOCUMENT_DEFINITION,
         [
@@ -775,7 +769,6 @@ OBJECT_MIGRATION_TYPES_OBJECT = {
     MigratedObjectTypes.CARD,
     MigratedObjectTypes.REPORT,
     MigratedObjectTypes.DATASET,
-    MigratedObjectTypes.BOT,
     MigratedObjectTypes.AGENT,
     MigratedObjectTypes.ATTRIBUTE,
     MigratedObjectTypes.BASE_FORMULA,

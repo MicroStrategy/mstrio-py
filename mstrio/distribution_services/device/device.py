@@ -12,8 +12,8 @@ from mstrio.distribution_services.device.device_properties import (
     FtpDeviceProperties,
     IOSDeviceProperties,
     PrinterDeviceProperties,
-    SharePointDeviceProperties,
     S3DeviceProperties,
+    SharePointDeviceProperties,
 )
 from mstrio.distribution_services.transmitter import Transmitter
 from mstrio.types import ObjectTypes
