@@ -8,11 +8,7 @@ from mstrio.helpers import VersionException
 from mstrio.modeling import Attribute
 from mstrio.modeling.expression import ExpressionFormat
 from mstrio.modeling.schema.helpers import ObjectSubType
-from mstrio.object_management import (
-    Folder,
-    SearchPattern,
-    full_search,
-)
+from mstrio.object_management import Folder, SearchPattern, full_search
 from mstrio.server import Project
 from mstrio.types import ObjectSubTypes, ObjectTypes
 from mstrio.users_and_groups.user import User

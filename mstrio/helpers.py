@@ -1,3 +1,5 @@
+import typing as t
+from datetime import date, datetime
 from enum import Enum, IntFlag
 
 from mstrio.utils.dict_filter import filter_list_of_dicts
@@ -132,3 +134,25 @@ class AggregatedRights(IntFlag):
     VIEW = 0b11000101  # 197
     MODIFY = 0b11011101  # 221
     ALL = 0b11111111  # 255
+
+
+# TODO: add unit tests
+def is_valid_datetime(date_value: t.Any) -> bool:
+    """Checks if the provided value is a valid datetime or date.
+
+    Args:
+        date_value (str | datetime): The value to be checked.
+
+    Returns:
+        bool: True if the value is a valid datetime or date, False otherwise.
+    """
+
+    if isinstance(date_value, (datetime, date)):
+        return True
+
+    try:
+        date_value: str = str(date_value)
+        datetime.fromisoformat(date_value.replace('Z', '+00:00'))
+    except ValueError:
+        return False
+    return True

@@ -1,5 +1,31 @@
 # Changelog
 
+## 11.6.1.101 - 2026/01/16
+
+### New features
+
+- added support for Custom Groups
+  - added class `CustomGroup` and function `list_custom_groups` in new module `modeling.custom_group`
+  - added support for Reports containing Custom Groups
+- added class `SystemHierarchy` in the module `modeling.schema.user_hierarchy` to view system hierarchy of a schema
+
+### Minor changes
+
+- added some quality-of-life improvements to `Project` module methods
+  - added `force` flag to `Project.delete()` method to allow deleting project without prompt for confirmation
+  - added `unload_beforehand` and `delete_immediately` flags to `Project.delete()` method to simplify work with project deletion
+  - added `async_request` flag to `Environment.create_project` method to allow requesting project creation asynchronously, without the need to wait for its completion
+
+### Bug fixes
+
+- added lacking `journal_comment` parameter to `Project.delete()` method
+- fixed issue where dates read via `pandas.read_excel` would be missing in cubes
+- fixed `Project.is_loaded()` erroneously returning `True` at moments shortly after the project is created
+
+### Deprecations
+
+- removed deprecated module `bot`
+
 ## 11.5.12.101 - 2025/12/12
 
 ### New features

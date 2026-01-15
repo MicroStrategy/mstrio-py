@@ -4,10 +4,12 @@ from typing import TYPE_CHECKING
 
 from mstrio import config
 from mstrio.api import user_hierarchies
+from mstrio.helpers import IServerError
 from mstrio.modeling.schema.helpers import SchemaObjectReference
+from mstrio.object_management.search_operations import full_search
 from mstrio.types import ObjectTypes
 from mstrio.users_and_groups import User
-from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, MoveMixin
+from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, EntityBase, MoveMixin
 from mstrio.utils.enum_helper import AutoName
 from mstrio.utils.helper import (
     Dictable,
@@ -167,6 +169,116 @@ class HierarchyRelationship(Dictable):
         return self.parent == other.parent and self.child == other.child
 
 
+class SystemHierarchy(EntityBase):
+    """Read-only representation of the system hierarchy in a project's model.
+    There is only one system hierarchy per project.
+
+    Attributes:
+        name: name of the system hierarchy
+        id: system hierarchy ID
+        version: object version ID
+        ancestors: list of ancestor folders
+        type: object type, ObjectTypes enum
+        ext_type: object extended type, ExtendedType enum
+        date_created: creation time, DateTime object
+        date_modified: last modification time, DateTime object
+        owner: User object that is the owner
+        acg: access rights (See EnumDSSXMLAccessRightFlags for possible values)
+        acl: object access control list
+        hidden: Specifies whether the object is hidden
+        relationships: the list of attribute relationships stored in
+            the hierarchy
+        isolated_attributes: the list of attributes that are not part of
+            any relationship
+    """
+
+    _OBJECT_TYPE = ObjectTypes.DIMENSION
+    _FROM_DICT_MAP = {
+        **Entity._FROM_DICT_MAP,
+        'owner': User.from_dict,
+        'attributes': [HierarchyAttribute.from_dict],
+        'relationships': [HierarchyRelationship.from_dict],
+    }
+    _API_GETTERS = {
+        (
+            'id',
+            'name',
+            'type',
+            'subtype',
+            'ext_type',
+            'date_created',
+            'date_modified',
+            'version',
+            'owner',
+            'ancestors',
+            'acg',
+            'acl',
+            'hidden',
+            'comments',
+        ): objects_processors.get_info,
+        'relationships': user_hierarchies.get_system_hierarchy,
+    }
+
+    def __init__(
+        self,
+        connection: "Connection",
+    ):
+        """Initialize the system hierarchy object.
+
+        Args:
+            connection (Connection): Strategy One connection object returned by
+                `connection.Connection()`.
+        """
+        # The system hierarchy ID is not directly exposed. Here it is found
+        # based on that it is not listed in the user hierarchies list,
+        # and retrieving them will throw a relevant error
+        hierarchies_by_search = full_search(
+            connection,
+            object_types=[ObjectTypes.DIMENSION],
+            project=connection.project_id,
+            to_dictionary=True,
+        )
+        hierarchies_dict = {h['id']: h for h in hierarchies_by_search}
+        hierarchies_by_lister = list_user_hierarchies(connection, to_dictionary=True)
+        search_ids = {h['id'] for h in hierarchies_by_search}
+        lister_ids = {h['object_id'] for h in hierarchies_by_lister}
+        hidden_ids = search_ids - lister_ids
+        object_id = None
+
+        # Suppress error message for the expected IServerError
+        log_lvl = config.get_logging_level()
+        try:
+            config.logger.setLevel(logging.CRITICAL)
+            for hid in hidden_ids:
+                try:
+                    UserHierarchy(connection, id=hid)
+                except IServerError as e:
+                    if 'is a system hierarchy' in str(e):
+                        object_id = hid
+                        break
+                    else:
+                        raise e
+        finally:
+            config.logger.setLevel(log_lvl)
+
+        if object_id is None:
+            raise RuntimeError('No system hierarchy found in the project.')
+        object_info = hierarchies_dict[object_id]
+
+        self._init_variables(**object_info, connection=connection)
+
+    def _init_variables(self, **kwargs) -> None:
+        super()._init_variables(**kwargs)
+        self.relationships = (
+            [
+                HierarchyRelationship.from_dict(source=rel)
+                for rel in kwargs.get("relationships")
+            ]
+            if kwargs.get('relationships')
+            else None
+        )
+
+
 @class_version_handler('11.3.0200')
 class UserHierarchy(Entity, CopyMixin, MoveMixin, DeleteMixin):
     """A unique abstraction of hierarchies above the System Hierarchy,
@@ -293,7 +405,10 @@ class UserHierarchy(Entity, CopyMixin, MoveMixin, DeleteMixin):
             is provided, `id` will be found automatically if such object exists.
 
         Args:
-
+            connection (Connection): Strategy One connection object returned by
+                `connection.Connection()`.
+            id (str, optional): ID of the user hierarchy.
+            name (str, optional): Name of the user hierarchy.
         """
         if id is None:
             if name is None:

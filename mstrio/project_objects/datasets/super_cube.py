@@ -17,7 +17,7 @@ from mstrio.object_management import (
 )
 from mstrio.object_management.search_operations import SearchPattern, full_search
 from mstrio.utils import helper
-from mstrio.utils.encoder import Encoder
+from mstrio.utils.encoder import PandasDataframeEncoder
 from mstrio.utils.entity import CertifyMixin, ObjectSubTypes
 from mstrio.utils.model import Model
 from mstrio.utils.resolvers import (
@@ -540,14 +540,20 @@ class SuperCube(_Cube, CertifyMixin):
             # Count the number of iterations
             it_total = math.ceil(total / chunksize)
 
-            pbar = tqdm(chunks, total=it_total, disable=(not self._progress_bar))
+            pbar = tqdm(
+                chunks,
+                total=it_total,
+                disable=not self._progress_bar or not config.verbose,
+            )
             for index, chunk in enumerate(pbar):
                 pbar.set_description(f"Uploading {ix + 1}/{len(self._tables)}")
 
                 # if the chunk is empty we skip uploading it entirely
                 if not chunk.empty:
                     # base64 encode the data
-                    encoder = Encoder(data_frame=chunk, dataset_type='multi')
+                    encoder = PandasDataframeEncoder(
+                        data_frame=chunk, dataset_type='multi'
+                    )
                     b64_enc = encoder.b64_data
 
                     # form body of the request

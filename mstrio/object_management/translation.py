@@ -12,11 +12,7 @@ from mstrio.server.project import Project
 from mstrio.types import ObjectTypes
 from mstrio.utils.entity import Entity
 from mstrio.utils.enum_helper import get_enum_val
-from mstrio.utils.helper import (
-    Dictable,
-    IServerError,
-    VersionException,
-)
+from mstrio.utils.helper import Dictable, IServerError, VersionException
 from mstrio.utils.resolvers import get_project_id_from_params_set
 from mstrio.utils.response_processors import objects, projects
 from mstrio.utils.version_helper import is_server_min_version, method_version_handler

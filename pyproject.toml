@@ -84,49 +84,16 @@ strict = [
 
 # FYI: do not apply versioning to any dev-deps here - add them in `dev_constraints.txt`
 # subsets of deps: mainly for `tox` deps use
-config = [
-    "pipdeptree",
-]
-docs = [
-    "enum-tools[sphinx]",
-    "m2r2",
-    "mistune",
-    "recommonmark",
-    "Sphinx",
-]
-jupyter = [
-    "notebook",
-]
-lint = [
-    "black",
-    "flake8",
-    "flake8-black",
-    "yapf",
-]
-pre-commit = [
-    "codespell",
-    "isort",
-    "pre-commit",
-]
-test = [
-    "coverage",
-    "flaky",
-    "nose",
-    "pytest",
-    "pytest-cov",
-    "python-decouple",
-]
+config = ["pipdeptree"]
+docs = ["enum-tools[sphinx]", "m2r2", "mistune", "recommonmark", "Sphinx"]
+jupyter = ["jupyterlab", "jupyterlab-scenes"]
+lint = ["black", "flake8", "flake8-black", "yapf"]
+pre-commit = ["codespell", "isort", "mstrio-py[lint]", "pre-commit"]
+test = ["coverage", "flaky", "nose", "pytest", "pytest-cov", "python-decouple"]
 
 # templates of deps: mainly for actual development
-dev = [
-    "mypy",
-    "python-dotenv[cli]",
-    "tox",
-    "mstrio-py[lint,pre-commit,test]",
-]
-all = [
-    "mstrio-py[config,docs,jupyter,lint,pre-commit,test,dev]",
-]
+dev = ["mypy", "python-dotenv[cli]", "tox", "mstrio-py[lint,pre-commit,test]"]
+all = ["mstrio-py[config,docs,jupyter,lint,pre-commit,test,dev]"]
 
 [project.urls]
 "Bug Tracker" = "https://github.com/MicroStrategy/mstrio-py/issues"
@@ -143,6 +110,7 @@ color_output = true
 
 [tool.isort]
 profile = "black"
+extend_skip = ["__init__.py"]
 
 [tool.coverage.run]
 omit = ["mstrio/api/*"]

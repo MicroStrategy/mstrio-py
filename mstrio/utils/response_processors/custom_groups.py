@@ -12,12 +12,12 @@ def wrangle_incoming_body(response: dict) -> dict:
             el["display"] = el.pop("displayOption")
         if format := el.pop("format", None):
             el["elementFormat"] = {
-                "values": format.get("values"),
-                "header": format.get("header"),
+                "values": format.get("values", []),
+                "header": format.get("header", []),
             }
             el["itemsFormat"] = {
-                "values": format.get("itemsValues"),
-                "header": format.get("itemsHeaders"),
+                "values": format.get("itemsValues", []),
+                "header": format.get("itemsHeaders", []),
             }
     return response
 
@@ -68,6 +68,23 @@ def create_custom_group(
         connection=connection,
         body=wrangle_outgoing_body(body),
         project_id=project_id,
+        show_expression_as=show_expression_as,
+        error_msg=error_msg,
+    ).json()
+    return wrangle_incoming_body(response)
+
+
+def update_custom_group(
+    connection: "Connection",
+    id: str,
+    body: dict,
+    show_expression_as: str | None = None,
+    error_msg: str | None = None,
+):
+    response = cg_api.update_custom_group(
+        connection=connection,
+        id=id,
+        body=wrangle_outgoing_body(body),
         show_expression_as=show_expression_as,
         error_msg=error_msg,
     ).json()

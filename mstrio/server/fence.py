@@ -189,7 +189,7 @@ class Fence(EntityBase, ChangeJournalMixin, DeleteMixin):
         body = {
             'rank': rank,
             'name': name,
-            'type': get_enum_val(type, FenceType) if type else None,
+            'type': get_enum_val(type, FenceType),
             'nodes': nodes,
             'users': (
                 [{'id': user.id, 'name': user.name} for user in users]

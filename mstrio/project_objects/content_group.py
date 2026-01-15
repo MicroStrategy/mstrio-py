@@ -258,9 +258,9 @@ class ContentGroup(Entity, CopyMixin, DeleteMixin):
             return Report(connection=connection, id=content.get('id'))
         elif content.get('type') == 55:
             if content.get('subtype') == ObjectSubTypes.DOCUMENT_BOT.value:
-                from mstrio.project_objects.bots import Bot
-
-                return Bot(connection=connection, id=content.get('id'))
+                raise ValueError(
+                    f"Subtype {ObjectSubTypes.DOCUMENT_BOT} is not supported"
+                )
             elif content.get('subtype') in [
                 ObjectSubTypes.DOCUMENT_AGENT.value,
                 ObjectSubTypes.DOCUMENT_AGENT_UNIVERSAL.value,

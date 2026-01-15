@@ -11,10 +11,10 @@ from mstrio.datasources import DatasourceConnection, Dbms, list_datasource_conne
 from mstrio.server.project import Project
 from mstrio.users_and_groups.user import User
 from mstrio.utils import helper
+from mstrio.utils.encoder import Encoder
 from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, ObjectTypes
 from mstrio.utils.enum_helper import AutoName, get_enum_val
 from mstrio.utils.helper import (
-    encode_as_b64,
     get_args_from_func,
     get_default_args_from_func,
     get_objects_id,
@@ -588,7 +588,7 @@ class DatasourceInstance(Entity, CopyMixin, DeleteMixin, ModelVldbMixin):
         """
         execution_id = datasources_processors.execute_query(
             connection=connection,
-            body={'query': encode_as_b64(query)},
+            body={'query': Encoder(str(query)).encoded_text},
             id=datasource_id,
             project_id=project_id,
         ).get('id')

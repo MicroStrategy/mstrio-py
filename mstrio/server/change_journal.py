@@ -1,9 +1,8 @@
+import logging
 from dataclasses import dataclass
 from datetime import datetime
 from enum import auto
-import logging
 from typing import TYPE_CHECKING
-
 
 from mstrio import config
 from mstrio.api import change_journal
@@ -15,8 +14,8 @@ from mstrio.utils.response_processors.change_journal import get_change_journals_
 from mstrio.utils.version_helper import method_version_handler
 
 if TYPE_CHECKING:
-    from mstrio.utils.entity import Entity
     from mstrio.server import Project
+    from mstrio.utils.entity import Entity
 
 
 logger = logging.getLogger(__name__)

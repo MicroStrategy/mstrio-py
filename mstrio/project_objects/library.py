@@ -9,7 +9,6 @@ from mstrio.project_objects.agents import Agent, list_agents
 from mstrio.project_objects.dashboard import Dashboard, list_dashboards
 from mstrio.project_objects.document import Document, list_documents
 from mstrio.project_objects.report import Report, list_reports
-from mstrio.utils.helper import deprecation_warning
 from mstrio.utils.resolvers import get_project_id_from_params_set
 
 if TYPE_CHECKING:
@@ -155,13 +154,6 @@ class Library:
                 for sho in self._report_shortcuts_data
             ]
         return self._reports
-
-    @property
-    def bots(self):
-        deprecation_warning(
-            'Library.bots', 'Library.agents', '11.6.1.101', module=False  # NOSONAR
-        )
-        return self.agents
 
     @property
     def agents(self):

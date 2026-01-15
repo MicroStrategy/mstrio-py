@@ -1,13 +1,14 @@
 from typing import TYPE_CHECKING
 
 from mstrio.api import scripts as scripts_api
+from mstrio.utils.encoder import Encoder
 from mstrio.utils.helper import delete_none_values
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
 
 
-def get_info_data(connection: 'Connection', script_id: str) -> dict:
+def get_info_data(connection: 'Connection', id: str) -> dict:
     """Returns dict with data about a specific Script.
 
     Requires `connection` to have selected project.
@@ -15,7 +16,7 @@ def get_info_data(connection: 'Connection', script_id: str) -> dict:
     Args:
         connection (Connection): Strategy One connection object returned by
             `connection.Connection()`.
-        script_id (str): ID of the Script.
+        id (str): ID of the Script.
 
     Returns:
         dict: Dictionary with Script information.
@@ -23,7 +24,7 @@ def get_info_data(connection: 'Connection', script_id: str) -> dict:
     return scripts_api.get_info(
         connection=connection,
         project_id=connection.project_id,
-        id=script_id,
+        id=id,
     ).json()
 
 
@@ -58,9 +59,11 @@ def create_script(
             Defaults to None which means "no result" on I-Server.
 
     Returns:
-        str: ID of the created Script.
+        str: ID of the newly created Script.
     """
-    assert " " not in encoded_code, "Provided `encoded_code` is not b64-encoded."
+    assert Encoder.is_encoded(
+        encoded_code
+    ), "Provided `encoded_code` is not b64-encoded."
 
     body = {
         "name": name,
@@ -73,71 +76,46 @@ def create_script(
         "scriptResultType": script_result_type,
         "folderId": folder_id,
     }
-    body = delete_none_values(body, recursion=False)
+    body = delete_none_values(body, recursion=True)
 
     return scripts_api.create_script(
         connection,
         project_id=connection.project_id,
         body=body,
-    ).json()["id"]
+    ).json()['id']
 
 
 def update_script(
     connection: 'Connection',
-    script_id: str,
-    name: str | None = None,
-    description: str | None = None,
-    runtime_id: str | None = None,
-    encoded_code: str | None = None,
-    variables: list[dict] | None = None,
-    script_type: str | None = None,
-    script_usage_type: str | None = None,
-    script_result_type: str | None = None,
-    folder_id: str | None = None,
-) -> bool:
+    id: str,
+    body: dict,
+) -> dict:
     """Updates an existing Script.
 
     Args:
         connection (Connection): Strategy One connection object returned by
             `connection.Connection()`.
-        script_id (str): ID of the Script to be updated.
-        name (str, optional): New name of the Script.
-        description (str, optional): New description of the Script.
-        runtime_id (str, optional): New ID of the Script runtime.
-        encoded_code (str, optional): New base64 encoded content of the Script.
-        variables (list[dict], optional): New list of variables associated with
-            the Script.
-        script_type (str, optional): New type of the Script.
-        script_usage_type (str, optional): New usage type of the Script.
-        script_result_type (str, optional): New result type of the Script.
-        folder_id (str, optional): New ID of the folder where the Script is
-            located.
 
     Returns:
-        bool: True if the Script was successfully updated, False otherwise.
+        dict: Dictionary with updated Script information.
     """
-    body = {
-        "name": name,
-        "description": description,
-        "scriptRuntimeId": runtime_id,
-        "scriptContent": encoded_code,
-        "variables": variables,
-        "scriptType": script_type,
-        "scriptUsageType": script_usage_type,
-        "scriptResultType": script_result_type,
-        "folderId": folder_id,
-    }
-    body = delete_none_values(body, recursion=False)
 
     if not body:
         return False
 
-    return scripts_api.update_script(
+    # FYI: this request returns something strange... we need fresh data to
+    # return, requested independently
+    res = scripts_api.update_script(
         connection,
         project_id=connection.project_id,
-        id=script_id,
+        id=id,
         body=body,
-    ).ok
+    )
+
+    if not res.ok:
+        return res
+
+    return get_info_data(connection, id)
 
 
 def delete_script(
@@ -190,11 +168,11 @@ def start_run(
     """
 
     want_script: bool = script_id is not None
-    want_code: bool = encoded_code is not None and runtime_id is not None
+    want_code: bool = encoded_code is not None
 
     assert want_script ^ want_code, (
-        "Incorrect set of parameters. Either (`script_id`) or (`encoded_code` "
-        "and `runtime_id`) must be provided but not neither nor both."
+        "Incorrect set of parameters. Either `script_id` or `encoded_code` "
+        "must be provided but not neither nor both."
     )
 
     if want_script:
@@ -203,14 +181,14 @@ def start_run(
             project_id=connection.project_id,
             id=script_id,
             variables_data=variables_data,
-        ).json()["evaluationId"]
+        ).json()["id"]
 
     return scripts_api.run_python_code(
         connection,
         code=encoded_code,
         script_runtime_id=runtime_id,
         variables_data=variables_data,
-    ).json()["evaluationId"]
+    ).json()["id"]
 
 
 def get_run_result(
@@ -251,3 +229,29 @@ def stop_run(
         connection,
         evaluation_id=evaluation_id,
     ).ok
+
+
+def get_history(
+    connection: 'Connection',
+    script_id: str,
+) -> dict | None:
+    """Gets the history of Script's last run, if any.
+
+    Args:
+        connection (Connection): Strategy One connection object returned by
+            `connection.Connection()`.
+        script_id (str): ID of the Script.
+
+    Returns:
+        dict | None: Dictionary with data about the last run of the Script,
+            or None if there is no history.
+    """
+
+    # FYI: returns only last execution details
+    items = scripts_api.get_last_run_results_in_bulk(
+        connection,
+        project_id=connection.project_id,
+        script_ids=script_id,
+    ).json()['history']
+
+    return items[0] if items else None

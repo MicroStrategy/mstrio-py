@@ -89,7 +89,7 @@ class EntityBase(helper.Dictable):
         example, if a value of the `job_type` field should be stored in a 'type'
         attribute, one can specify this dictionary as: {"job_type" : "type"} and
         override `_init_variables` method to implement this mapping such as:
-         ```
+        ```
             kwargs = self._rest_to_python(kwargs)
             self._AVAILABLE_ATTRIBUTES.update({key: type(val) for key, val
                 in kwargs.items()})
@@ -101,6 +101,22 @@ class EntityBase(helper.Dictable):
         fetch related data from a server. For example:
         {'id': objects.get_object_info} or
         {('id', 'name', 'description): objects.get_object_info}
+        This logic fetches data by default as a public property (ex. 'id') but
+        will fetch as a private property (ex. '_id') if there is a `@property`
+        definition of the same name. Example:
+        ```
+        >>> _API_GETTERS = {"prop": fn}
+        >>>
+        >>> @property
+        >>> def prop(...): ...
+        >>>
+        >>> # this setup will make it so getter will save as `self._prop = ...`
+        ```
+        You can also set keys that should be kept as private in
+        _API_GETTERS_KEEP_PRIVATE. Read more below.
+    _API_GETTERS_KEEP_PRIVATE (set[str]): A set of properties from _API_GETTERS
+        that should be saved in private property (aka. prefixed with `_`) even
+        though they do not require their property getter set.
     _FROM_DICT_MAP (dict[str, Callable]): A dictionary whose keys are
         attribute's name and values are the attribute's type. This mapping is
         required to determine a proper composite form in which a value will be
@@ -192,6 +208,7 @@ class EntityBase(helper.Dictable):
     )
     _REST_ATTR_MAP: dict[str, str] = {}
     _API_GETTERS: dict[str | tuple, Callable] = {}
+    _API_GETTERS_KEEP_PRIVATE: set[str] = set()
     _FROM_DICT_MAP: dict[str, Callable] = {
         'type': ObjectTypes
     }  # map attributes to Enums and Composites
@@ -205,6 +222,7 @@ class EntityBase(helper.Dictable):
     def __init__(
         self, connection: Connection, object_id: str, default_value=None, **kwargs
     ) -> None:
+        self._folder_id: str | None = None
         self._init_variables(
             connection=connection, id=object_id, default_value=default_value, **kwargs
         )
@@ -223,7 +241,8 @@ class EntityBase(helper.Dictable):
         changes to the object. `_altered_properties` is later used to
         properly update object's properties on a server.
 
-        Note: attributes not accepted by any implementation of this function
+        Note:
+            Attributes not accepted by any implementation of this function
             in the inheritance chain will be disregarded.
         """
         kwargs = self._rest_to_python(kwargs)
@@ -384,9 +403,8 @@ class EntityBase(helper.Dictable):
             key = key[1:] if key.startswith("_") else key
             self._fetched_attributes.add(key)
 
-    @classmethod
-    def _find_func(cls, attr: str) -> Callable | None:
-        """Searches cls._API_GETTERS dictionary for a REST API wrapper function
+    def _find_func(self, attr: str) -> Callable | None:
+        """Searches _API_GETTERS dictionary for a REST API wrapper function
         used to fetch `attr` from a server.
 
         Args:
@@ -394,7 +412,7 @@ class EntityBase(helper.Dictable):
 
         Raises:
             TypeError: `attr` not passed as a string.
-            ValueError: cls._API_GETTERS dictionary was not specified
+            ValueError: _API_GETTERS dictionary was not specified
             properly.
 
         Returns:
@@ -404,7 +422,7 @@ class EntityBase(helper.Dictable):
         if not isinstance(attr, str):
             raise TypeError("`attr` parameter has to be of type str")
 
-        for attributes, func in cls._API_GETTERS.items():
+        for attributes, func in self._API_GETTERS.items():
             if isinstance(attributes, str):
                 if attr == attributes:
                     return func
@@ -494,7 +512,9 @@ class EntityBase(helper.Dictable):
         object_info = self._rest_to_python(object_info)
 
         # determine which attributes should be private
-        properties = helper.get_object_properties(self)
+        should_be_set_as_private = (
+            helper.get_object_properties(self) | self._API_GETTERS_KEEP_PRIVATE
+        )
 
         for key, val in object_info.items():  # type: ignore
             # update _AVAILABLE_ATTRIBUTES map
@@ -504,7 +524,7 @@ class EntityBase(helper.Dictable):
             val = self.__compose_val(key, val)
 
             # check if attr is read-only and if yes return '_' version of it
-            if key in properties:
+            if key in should_be_set_as_private:
                 key = "_" + key
 
             setattr(self, key, val)
@@ -581,17 +601,17 @@ class EntityBase(helper.Dictable):
 
     @classmethod
     def from_dict(
-        cls: T,
+        cls,
         source: dict[str, Any],
         connection: Connection,
         to_snake_case: bool = True,
         with_missing_value: bool = False,
-    ) -> T:
+    ):
         """Overrides `Dictable.from_dict()` to instantiate an object from
             a dictionary without calling any additional getters.
 
         Args:
-            cls (T): Class (type) of an object that should be created.
+            cls: Class (type) of an object that should be created.
             source (dict[str, Any]): a dictionary from which an object will be
                 constructed.
             connection (Connection): A Strategy One Connection object.
@@ -602,7 +622,7 @@ class EntityBase(helper.Dictable):
                 `MissingValue` objects.
 
         Returns:
-            T: An object of type T.
+            An instance of the `cls` class.
         """
 
         obj = cls.__new__(cls)  # Does not call __init__
@@ -1057,7 +1077,7 @@ class EntityBase(helper.Dictable):
         from the server. If not, it will return the value straight away."""
         val = super().__getattribute__(name)
 
-        if name in ["_fetched_attributes", "_find_func"]:
+        if name in ["_fetched_attributes", "_find_func", "_API_GETTERS"]:
             return val
         if not hasattr(self, "_fetched_attributes"):
             self._fetched_attributes = set()
@@ -1099,6 +1119,16 @@ class EntityBase(helper.Dictable):
     def type(self) -> ObjectTypes:
         """The object's type."""
         return self._type
+
+    @property
+    def folder_id(self) -> str | None:
+        if not self._folder_id:
+            self._folder_id = (
+                next(folder['id'] for folder in self.ancestors if folder['level'] == 1)
+                if self.ancestors
+                else None
+            )
+        return self._folder_id
 
 
 class Entity(
@@ -1185,6 +1215,7 @@ class Entity(
 
     def _init_variables(self, default_value=None, **kwargs) -> None:
         """Initialize variables given kwargs."""
+
         from mstrio.users_and_groups.user import User
         from mstrio.utils.certified_info import CertifiedInfo
 
@@ -1480,7 +1511,7 @@ class DeleteMixin:
     _DELETE_PROMPT_ANSWER: str = 'Y'
 
     def delete(
-        self: Entity, force: bool = False, journal_comment: str | None = None
+        self: Entity, force: bool = False, journal_comment: str | None = None, **kwargs
     ) -> bool:
         """Delete object.
 
@@ -1489,6 +1520,8 @@ class DeleteMixin:
                 deleting object.
             journal_comment: Comment to be added to the change journal for
                 this deletion. If None, no comment is added.
+            **kwargs: Any additional arguments within overridden versions of
+                this method in inheritance chain.
 
         Returns:
             True on success. False otherwise.
@@ -1504,12 +1537,15 @@ class DeleteMixin:
             user_input = input(message) or 'N'
 
         if force or user_input == self._DELETE_PROMPT_ANSWER:
-            param_value_dict = auto_match_args_entity(self._API_DELETE, self)
-            param_value_dict['journal_comment'] = process_delete_change_journal_comment(
-                self.connection,
-                self._API_DEL_JOURNAL_MIN_VER,
-                journal_comment,
-            )
+            param_value_dict = {
+                **auto_match_args_entity(self._API_DELETE, self),
+                **kwargs,
+                'journal_comment': process_delete_change_journal_comment(
+                    self.connection,
+                    self._API_DEL_JOURNAL_MIN_VER,
+                    journal_comment,
+                ),
+            }
 
             response = self._API_DELETE(**param_value_dict)
 

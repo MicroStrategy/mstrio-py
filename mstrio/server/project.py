@@ -1,9 +1,10 @@
 import logging
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum, IntEnum, auto
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING
 
 from pandas import DataFrame, Series
 from tqdm import tqdm
@@ -205,7 +206,7 @@ def list_projects(
     return Project._list_projects(conn, *args, **kwargs)
 
 
-class Project(Entity, ModelVldbMixin, DeleteMixin):
+class Project(Entity, DeleteMixin, ModelVldbMixin):
     """Object representation of Strategy One Project (Project) object.
 
     Attributes:
@@ -383,6 +384,7 @@ class Project(Entity, ModelVldbMixin, DeleteMixin):
         name: str,
         description: str | None = None,
         force: bool = False,
+        async_request: bool = False,
     ) -> 'Project | None':
         user_input = 'N'
         if not force:
@@ -396,19 +398,36 @@ class Project(Entity, ModelVldbMixin, DeleteMixin):
                 desc=f"Please wait while Project '{name}' is being created.",
                 bar_format='{desc}',
                 leave=False,
-                disable=config.verbose,
+                disable=not config.verbose or not config.progress_bar,
                 delay=3,
             ):
-                projects.create_project(connection, name, description)
+                res = projects.create_project(
+                    connection, name, description, async_request
+                )
+
+                if async_request:
+                    if not res.ok or res.status_code != 202:
+                        helper.response_handler(res)
+                        raise IServerError(  # for if helper above did not raise
+                            "Async Project creation request was not accepted.",
+                            res.status_code,
+                        )
+
+                    return None
+
                 http_status, i_server_status = 500, 'ERR001'
+
                 while http_status == 500 and i_server_status == 'ERR001':
                     time.sleep(1)
+
                     response = projects.get_project(
                         connection, name, whitelist=[('ERR001', 500)]
                     )
                     http_status = response.status_code
+
                     data = response.json()
                     i_server_status = data.get('code')
+
             if config.verbose:
                 logger.info(f"Project '{name}' successfully created.")
             return cls.from_dict(data, connection=connection)
@@ -765,14 +784,56 @@ class Project(Entity, ModelVldbMixin, DeleteMixin):
             self.__change_project_state(func=self._unload_project, on_nodes=on_nodes)
 
     @method_version_handler('11.3.0800')
-    def delete(self: Entity) -> bool:
+    def delete(
+        self,
+        force: bool = False,
+        unload_beforehand: bool = True,
+        delete_immediately: bool = False,
+        journal_comment: str | None = None,
+    ) -> bool:
         """Delete project.
+
+        Note:
+            All objects within a Project will be permanently deleted.
+            This cannot be undone.
+
+        Args:
+            force (bool, optional): If True, will not prompt for confirmation.
+                Default is False.
+            unload_beforehand (bool, optional): If True, will unload the project
+                from all nodes before deletion. Default is True.
+            delete_immediately (bool, optional): If True, will delete all
+                connection sessions from the Project before deletion and will
+                not require the project to be unloaded beforehand. Default is
+                False.
+            journal_comment (str, optional): Comment to be added to the change
+                journal for this deletion. If None, no comment is added.
 
         Returns:
             True if project was deleted, False otherwise.
         """
+
+        if unload_beforehand and self.is_loaded():
+            self.unload(delete_sessions=delete_immediately)
+
+        supports_session_delete = meets_minimal_version(
+            self.connection.iserver_version, '11.5.0500'
+        )
+        will_delete_immediately = (
+            not unload_beforehand
+            and delete_immediately
+            and supports_session_delete
+            and self.is_loaded()
+        )
+
+        msg_part = (
+            "delete project"
+            if not will_delete_immediately
+            else "delete (immediately, without unloading) project"
+        )
+
         self._DELETE_CONFIRM_MSG = (
-            f"Are you sure you want to delete project "
+            f"Are you sure you want to {msg_part} "
             f"'{self.name}' with ID: {self._id}?\n"
             "All objects will be permanently deleted. This cannot be undone.\n"
             "Please type the project name to confirm: "
@@ -782,7 +843,11 @@ class Project(Entity, ModelVldbMixin, DeleteMixin):
         )
         self._DELETE_PROMPT_ANSWER = self.name
 
-        return super().delete(force=False)
+        return super().delete(
+            force=force,
+            journal_comment=journal_comment,
+            delete_sessions=will_delete_immediately,
+        )
 
     @method_version_handler('11.3.0000')
     def register(
@@ -902,13 +967,19 @@ class Project(Entity, ModelVldbMixin, DeleteMixin):
         nodes_dict = {node['name']: node for node in self.nodes}
         nodes_applicable_keys = self._normalize_nodes(on_nodes)
         for node in nodes_applicable_keys:
+            # Iterate over nodes. Break when finding either:
+            # unloaded node (check_all_selected_nodes=True) or
+            # loaded node (check_all_selected_nodes=False).
             projects = nodes_dict[node].get('projects')
             if projects:
                 status = projects[0].get('status')
                 result_per_node = status == 'loaded'
-                if result_per_node != result:
-                    result = result_per_node
-                    break
+            else:
+                # Empty list in "projects" is treated as not loaded
+                result_per_node = False
+            if result_per_node != result:
+                result = result_per_node
+                break
         return result
 
     def get_data_engine_versions(self) -> dict:
@@ -1233,7 +1304,7 @@ class Project(Entity, ModelVldbMixin, DeleteMixin):
                 return False
 
         def perform_bulk_delete(checked: int, unused: int) -> None:
-            nonlocal problematic_items, final_items
+            nonlocal final_items
 
             if config.verbose:
                 logger.info(
@@ -1921,13 +1992,14 @@ class ProjectDuplication(EntityBase, ChangeJournalMixin):
         )
 
     def wait_for_stable_status(
-        self, timeout: int = 240, interval: int = 2
+        self, timeout: int = 240, interval: int | None = None
     ) -> 'ProjectDuplication':
         """Wait for the project duplication to reach a stable status.
 
         Args:
             timeout (int, optional): Maximum time to wait in seconds.
             interval (int, optional): Time between status checks in seconds.
+                If not provided, the value is taken from mstrio-py's `config`.
 
         Returns:
             ProjectDuplication: The project duplication object with updated

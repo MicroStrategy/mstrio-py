@@ -2,7 +2,6 @@ import contextlib
 import inspect
 import logging
 import os
-from base64 import b64encode
 from datetime import datetime
 from enum import IntEnum
 from functools import partial
@@ -19,6 +18,7 @@ from requests import (  # NOQA F401 (imports for ease of access)
 from requests.adapters import HTTPAdapter, Retry
 from requests.cookies import RequestsCookieJar
 
+from mstrio.utils.encoder import Encoder
 from mstrio.utils.enum_helper import get_enum_val
 from mstrio.utils.resolvers import get_project_id_from_params_set
 
@@ -227,6 +227,7 @@ class Connection:
             waiting for response and raises `requests.Timeout`. If not
             provided explicitly, defaults to
             `mstrio.config.default_request_timeout` parameter value.
+        deployment_type: Type of the connected Strategy One deployment
     """
 
     def __init__(
@@ -261,6 +262,11 @@ class Connection:
         all other authentication parameters are ignored.
 
         Note:
+            Selecting a project in mstrio-py's `Connection` is equivalent with
+            connecting to a Project: it will create a project-level I-Server
+            connection session.
+
+        Note:
             When project cannot be established or is not provided, it is reset
             to `None`.
 
@@ -270,6 +276,8 @@ class Connection:
                 "https://<mstr_env>.com/MicroStrategyLibrary/api"
             username (str, optional): Username
             password (str, optional): Password
+            project ('Project' | str, optional): Project object or ID or name
+                for the project to be selected.
             project_name (str, optional): Name of the project you intend
                 to connect to (case-sensitive). Provide either Project ID
                 or Project Name.
@@ -350,6 +358,7 @@ class Connection:
         self.set_request_timeout(request_timeout)
         self._request_retry_on_timeout_count = None
         self.set_request_retry_on_timeout_count(request_retry_on_timeout_count)
+        self._deployment_type = None
 
         # do not check application type if delegated
         self._application_type = (
@@ -541,7 +550,12 @@ class Connection:
         project_id: str | None = None,
         project_name: str | None = None,
     ) -> None:
-        """Select project for the given connection based.
+        """Select project for the given connection.
+
+        Note:
+            Selecting a project in mstrio-py's `Connection` is equivalent with
+            connecting to a Project: it will create a project-level I-Server
+            connection session.
 
         Args:
             project (Project | str, optional): Project object or ID or name
@@ -552,7 +566,7 @@ class Connection:
 
         Raises:
             ValueError: if project with given id or name does not exist or
-                cannot find a unique project with given name
+                cannot find a unique project with given name.
         """
 
         proj_id = get_project_id_from_params_set(
@@ -564,6 +578,12 @@ class Connection:
             no_fallback_from_connection=True,
         )
 
+        if (project or project_id or project_name) and not proj_id:
+            raise ValueError(
+                "Invalid parameters provided. Cannot uniquely identify a project. "
+                "Check provided parameters values and read privileges."
+            )
+
         if self.project_id == proj_id:
             return
 
@@ -574,7 +594,7 @@ class Connection:
             if config.verbose:
                 logger.info('No Project selected in Connection object.')
 
-            return None
+            return
 
         if config.verbose:
             from mstrio.server.project import Project
@@ -764,10 +784,8 @@ class Connection:
 
     def _get_authorization(self) -> str:
         self.__prompt_credentials()
-        credentials = f"{self.username}:{self.__password}".encode()
-        encoded_credential = b64encode(credentials)
-        auth = "Basic " + str(encoded_credential, 'utf-8')
-        return auth
+        credentials_str = f"{self.username}:{self.__password}"
+        return "Basic " + Encoder(credentials_str).encoded_text
 
     def _validate_project_selected(self) -> None:
         if self.project_id is None:
@@ -910,6 +928,13 @@ class Connection:
         self._user_full_name = response.get("fullName")
         self._user_initials = response.get("initials")
 
+    def _get_deployment_type(self) -> None:
+        try:
+            resp = misc.server_status(self).json()
+            self._deployment_type = resp.get("deploymentType")
+        except Exception:
+            self._deployment_type = None
+
     @classmethod
     def is_run_in_workstation(cls) -> bool | None:
         """Check if the script is run in Workstation.
@@ -990,3 +1015,9 @@ class Connection:
         from mstrio.server.environment import Environment
 
         return Environment(connection=self)
+
+    @property
+    def deployment_type(self) -> str | None:
+        if not self._deployment_type:
+            self._get_deployment_type()
+        return self._deployment_type

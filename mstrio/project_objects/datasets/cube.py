@@ -552,7 +552,7 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
                     fetch_pbar = tqdm(
                         desc="Downloading",
                         total=it_total + 1,
-                        disable=(not self._progress_bar),
+                        disable=not self._progress_bar or not config.verbose,
                     )
                     future = self.__fetch_chunks_future(
                         session, paging, self.instance_id, limit
@@ -611,7 +611,7 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
         with tqdm(
             desc="Downloading",
             total=it_total + 1,
-            disable=(not self._progress_bar),
+            disable=not self._progress_bar or not config.verbose,
             delay=3,
         ) as fetch_pbar:
             fetch_pbar.update()
@@ -635,7 +635,7 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
             bar_format='{desc}',
             leave=False,
             ncols=280,
-            disable=(not self._progress_bar),
+            disable=not self._progress_bar or not config.verbose,
         )
         # Request a new instance, set instance id
         response = cubes.cube_instance(
@@ -869,7 +869,7 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
                 self.attributes,
                 desc="Loading attribute elements",
                 leave=False,
-                disable=(not self._progress_bar),
+                disable=not self._progress_bar or not config.verbose,
             )
             attr_elements = [fetch_for_attribute(attribute) for attribute in pbar]
             pbar.close()
@@ -894,7 +894,7 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
                     futures,
                     desc="Loading attribute elements",
                     leave=False,
-                    disable=(not self._progress_bar),
+                    disable=not self._progress_bar or not config.verbose,
                 )
                 for i, future in enumerate(pbar):
                     attr = self.attributes[i]

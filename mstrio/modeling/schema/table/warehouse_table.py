@@ -5,6 +5,7 @@ from functools import cached_property
 from requests import HTTPError, ReadTimeout
 from tqdm import tqdm
 
+from mstrio import config
 from mstrio.api import datasources
 from mstrio.api import tables as tables_api
 from mstrio.connection import Connection
@@ -447,6 +448,7 @@ class WarehouseTable(Dictable):
         with tqdm(
             total=len(warehouse_tables_futures),
             desc="Retrieving warehouse tables...",
+            disable=not config.verbose or not config.progress_bar,
             delay=3,
         ) as pbar:
             for future in as_completed(warehouse_tables_futures):
@@ -481,6 +483,7 @@ class WarehouseTable(Dictable):
         with tqdm(
             total=len(namespaces_futures),
             desc="Retrieving namespaces from available datasources...",
+            disable=not config.verbose or not config.progress_bar,
             delay=3,
         ) as pbar:
             for future in as_completed(namespaces_futures):

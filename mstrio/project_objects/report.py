@@ -6,7 +6,6 @@ import requests
 from tqdm.auto import tqdm
 
 from mstrio import config
-from mstrio.api import attributes as attributes_api
 from mstrio.api import reports as reports_api
 from mstrio.api.schedules import get_contents_schedule
 from mstrio.connection import Connection
@@ -228,7 +227,7 @@ class Report(
         'owner': User.from_dict,
         'certified_info': CertifiedInfo.from_dict,
     }
-    _SIZE_LIMIT = 10000000  # this sets desired chunk size in bytes
+    _SIZE_LIMIT = 10_000_000  # this sets desired chunk size in bytes
 
     _API_PATCH: dict = {
         (
@@ -502,7 +501,7 @@ class Report(
                     fetch_pbar = tqdm(
                         desc="Downloading",
                         total=it_total + 1,
-                        disable=(not self._progress_bar),
+                        disable=not self._progress_bar or not config.verbose,
                     )
                     future = self.__fetch_chunks_future(
                         session, paging, self._instance_id, limit
@@ -612,7 +611,7 @@ class Report(
         with tqdm(
             desc="Downloading",
             total=it_total + 1,
-            disable=(not self._progress_bar),
+            disable=not self._progress_bar or not config.verbose,
             delay=3,
         ) as fetch_pbar:
             fetch_pbar.update()
@@ -632,7 +631,7 @@ class Report(
             bar_format='{desc}',
             leave=False,
             ncols=285,
-            disable=(not self._progress_bar),
+            disable=not self._progress_bar or not config.verbose,
         )
 
         # Switch off subtotals if I-Server version is higher than 11.2.1
@@ -755,12 +754,7 @@ class Report(
         self.name = response["name"]
         self._cross_tab = grid["crossTab"]
 
-        # Check if report have custom groups or consolidations
-        if available_objects['customGroups']:
-            exception_handler(
-                msg="Reports with custom groups are not supported.",
-                exception_type=ImportError,
-            )
+        # Check if report has consolidations
         if available_objects['consolidations']:
             exception_handler(
                 msg="Reports with consolidations are not supported.",
@@ -769,20 +763,26 @@ class Report(
 
         full_attributes = []
         full_page_by_attributes = []
-        for row in grid["rows"]:
-            if row["type"] == "attribute":
-                full_attributes.append(row)
-        for column in grid["columns"]:
-            if column["type"] == "attribute":
-                full_attributes.append(column)
-        for paging in grid["pageBy"]:
-            if paging["type"] == "attribute":
-                full_page_by_attributes.append(paging)
+        full_attributes.extend(
+            row for row in grid["rows"] if row["type"] in ["attribute", "customgroup"]
+        )
+        full_attributes.extend(
+            column
+            for column in grid["columns"]
+            if column["type"] in ["attribute", "customgroup"]
+        )
+        full_page_by_attributes.extend(
+            paging
+            for paging in grid["pageBy"]
+            if paging["type"] in ["attribute", "customgroup"]
+        )
         self._attributes = [
-            {'name': attr['name'], 'id': attr['id']} for attr in full_attributes
+            {'name': attr['name'], 'id': attr['id'], "type": attr["type"]}
+            for attr in full_attributes
         ]
         self._page_by_attributes = [
-            {'name': attr['name'], 'id': attr['id']} for attr in full_page_by_attributes
+            {'name': attr['name'], 'id': attr['id'], "type": attr["type"]}
+            for attr in full_page_by_attributes
         ]
 
         # Retrieve metrics from the report grid (only selected metrics)
@@ -798,6 +798,17 @@ class Report(
             ]
 
         self.__definition_retrieved = True
+
+    def _get_pure_attributes(self) -> list:
+        """Get attributes strictly of attribute type,
+        e.g. for element operations."""
+        attrs = []
+        if self.attributes:
+            attrs += self.attributes
+        if self.page_by_attributes:
+            attrs += self.page_by_attributes
+        attrs = [a for a in attrs if a["type"] == "attribute"]
+        return attrs
 
     def __get_attr_elements(self, limit: int = 50000) -> list:
         """Get elements of report attributes synchronously.
@@ -844,17 +855,13 @@ class Report(
 
             return fetch_for_attribute_given_limit(limit)[0]
 
-        attrs = []
+        attrs = self._get_pure_attributes()
         attr_elements = []
-        if self.attributes:
-            attrs += self.attributes
-        if self.page_by_attributes:
-            attrs += self.page_by_attributes
         pbar = tqdm(
             attrs,
             desc="Loading attribute elements",
             leave=False,
-            disable=(not self._progress_bar),
+            disable=not self._progress_bar or not config.verbose,
         )
         attr_elements = [fetch_for_attribute(attribute) for attribute in pbar]
 
@@ -866,12 +873,8 @@ class Report(
         Implements GET /reports/<report_id>/attributes/<attribute_id>/elements.
         """
 
-        attrs = []
+        attrs = self._get_pure_attributes()
         attr_elements = []
-        if self.attributes:
-            attrs += self.attributes
-        if self.page_by_attributes:
-            attrs += self.page_by_attributes
 
         if attrs:
             threads = get_parallel_number(len(attrs))
@@ -884,7 +887,7 @@ class Report(
                     futures,
                     desc="Loading attribute elements",
                     leave=False,
-                    disable=(not self._progress_bar),
+                    disable=not self._progress_bar or not config.verbose,
                 )
                 for i, future in enumerate(pbar):
                     attr = attrs[i]
@@ -915,7 +918,7 @@ class Report(
                     )
                 pbar.close()
 
-            return attr_elements
+        return attr_elements
 
     def __fetch_attribute_elements_chunks(self, future_session, limit: int) -> list:
         # Fetch add'l rows from this object instance
@@ -927,7 +930,7 @@ class Report(
                 offset=0,
                 limit=limit,
             )
-            for attribute in self.attributes + self.page_by_attributes
+            for attribute in self._get_pure_attributes()
         ]
 
     def list_properties(self):
@@ -1039,8 +1042,6 @@ class Report(
 
         # TODO: After solving this issue: CGPY-2482 to accept -1 as no limit
         # for this endpoint, change limit to -1 to get all elements at once.
-        # Also consider adding results to `_page_by_elements` attribute to
-        # avoid other calls to get elements.
 
         initial_response = reports_api.get_available_page_by_elements(
             self.connection,
@@ -1051,6 +1052,15 @@ class Report(
 
         elements = camel_to_snake(initial_response.json())
         page_by_elements = elements.get('page_by', {})
+        if self._page_by_elements is None:
+            self._page_by_elements = {}
+        self._page_by_elements.update(
+            # convert to terse format for compatibility with Attributes API
+            {
+                attr['id']: [el['id'] for el in attr['elements']]
+                for attr in elements.get('page_by', [])
+            }
+        )
         self._valid_page_by_elements = elements.get('valid_page_by_elements', {}).get(
             'items', []
         )
@@ -1080,6 +1090,8 @@ class Report(
 
     @property
     def attr_elements(self):
+        """Elements of attributes selected in the report. Custom Groups are
+        excluded."""
         if not self.__definition_retrieved:
             self._get_definition()
         if not self._attr_elements and self._id:
@@ -1099,14 +1111,10 @@ class Report(
         """Elements of attributes selected for Page By in the report.
         The IDs are in the terse format used for page selection.
         """
-        for attr in self.page_by_attributes:
-            attr_id = attr['id']
-            if attr_id not in self._page_by_elements:
-                response = attributes_api.get_attribute_elements(
-                    connection=self._connection, id=attr['id'], limit=-1
-                )
-                element_ids = [el['id'] for el in response.json()]
-                self._page_by_elements[attr_id] = element_ids
+        if any(
+            attr['id'] not in self._page_by_elements for attr in self.page_by_attributes
+        ):
+            self.get_valid_page_by_elements()
         return self._page_by_elements
 
     @property
@@ -1117,10 +1125,7 @@ class Report(
         attributes, each inner list will contain N element indexes,
         corresponding to the elements of each attribute."""
         if not self._valid_page_by_elements:
-            valid_elements = self.get_valid_page_by_elements()
-            self._valid_page_by_elements = valid_elements.get(
-                'valid_page_by_elements', []
-            )
+            self.get_valid_page_by_elements()
         return self._valid_page_by_elements
 
     @property

@@ -1,8 +1,5 @@
 from mstrio.connection import Connection
-from mstrio.utils.api_helpers import (
-    changeset_manager,
-    unpack_information,
-)
+from mstrio.utils.api_helpers import changeset_manager, unpack_information
 from mstrio.utils.error_handlers import ErrorHandler
 
 

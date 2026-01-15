@@ -4,12 +4,12 @@ from typing import TYPE_CHECKING
 from mstrio import config
 from mstrio.api import documents, library, objects
 from mstrio.api.schedules import get_contents_schedule
-from mstrio.helpers import IServerError
 from mstrio.distribution_services.schedule import Schedule
+from mstrio.helpers import IServerError
+from mstrio.object_management.library_shortcut import LibraryShortcut
 from mstrio.users_and_groups import User, UserGroup, UserOrGroup
 from mstrio.utils.helper import get_response_json
 from mstrio.utils.version_helper import method_version_handler
-from mstrio.object_management.library_shortcut import LibraryShortcut
 
 if TYPE_CHECKING:
     from mstrio.utils.entity import Entity

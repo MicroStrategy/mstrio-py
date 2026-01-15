@@ -17,10 +17,7 @@ from mstrio.server import Job
 from mstrio.types import ExtendedType, ObjectSubTypes, ObjectTypes
 from mstrio.users_and_groups.user import User
 from mstrio.utils.enum_helper import get_enum_val
-from mstrio.utils.helper import (
-    exception_handler,
-    filter_params_for_func,
-)
+from mstrio.utils.helper import exception_handler, filter_params_for_func
 from mstrio.utils.resolvers import (
     get_project_id_from_params_set,
     validate_owner_key_in_filters,

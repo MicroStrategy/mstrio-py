@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import TypeVar
 
 
 class AutoName(Enum):
@@ -23,13 +24,17 @@ class AutoCapitalizedName(Enum):
         return self.capitalize()
 
 
+TEnum = TypeVar("TEnum", bound=Enum)
+
+
 def __get_enum_helper(
-    obj,
-    enum: type[Enum] = Enum,
+    obj: str | int | TEnum | None,
+    enum: type[TEnum] = Enum,
     get_value: bool = False,
     throw_on_unknown: bool = True,
-) -> str | int | type[Enum] | None:
+) -> str | int | TEnum | None:
     """Helper function for `get_enum` and `get_enum_val`."""
+
     if obj is None:
         return obj
 
@@ -44,16 +49,26 @@ def __get_enum_helper(
 
 
 def get_enum(
-    obj, enum: type[Enum] = Enum, throw_on_unknown: bool = True
-) -> type[Enum] | None:
-    """Safely get enum from enum or str."""
+    obj: str | int | TEnum | None,
+    enum: type[TEnum] = Enum,
+    throw_on_unknown: bool = True,
+) -> TEnum | None:
+    """Safely get enum from enum or primitive value.
+
+    It returns None if `obj` is None.
+    """
     return __get_enum_helper(obj, enum, throw_on_unknown=throw_on_unknown)
 
 
 def get_enum_val(
-    obj, enum: type[Enum] = Enum, throw_on_unknown: bool = True
+    obj: str | int | TEnum | None,
+    enum: type[TEnum] = Enum,
+    throw_on_unknown: bool = True,
 ) -> str | int | None:
-    """Safely extract value from enum or str."""
+    """Safely extract value from enum or primitive value.
+
+    It returns None if `obj` is None.
+    """
     return __get_enum_helper(
         obj, enum, get_value=True, throw_on_unknown=throw_on_unknown
     )
@@ -61,7 +76,7 @@ def get_enum_val(
 
 def validate_enum_value(
     obj: str | int,
-    enum: type[Enum] | tuple[type[Enum]] | list[type[Enum]],
+    enum: type[TEnum] | tuple[type[TEnum]] | list[type[TEnum]],
     throw_on_unknown: bool = True,
 ) -> None:
     """Validate provided value. If not correct,

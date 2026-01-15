@@ -51,6 +51,7 @@ def get_custom_group(
         headers={"X-MSTR-ProjectID": project_id, "X-MSTR-MS-Changeset": changeset_id},
         params={
             "showExpressionAs": show_expression_as,
+            "showAdvancedProperties": True,
         },
     )
 
@@ -92,4 +93,68 @@ def create_custom_group(
                 "showExpressionAs": show_expression_as,
             },
             json=body,
+        )
+
+
+@unpack_information
+@ErrorHandler(err_msg="Error updating the custom group with ID: {id}.")
+def update_custom_group(
+    connection: "Connection",
+    id: str,
+    body: dict,
+    show_expression_as: str | None = None,
+    error_msg: str | None = None,
+):
+    """Updates a specific custom group in the changeset,
+    based on the definition provided in the request body.
+
+    Args:
+        connection: Strategy One REST API connection object
+        id (str): Custom Group ID. The ID can be:
+            - the object ID used in the metadata.
+            - the object ID used in the changeset, but not yet committed
+            to metadata.
+        body (dict): Custom Group update info
+        error_msg (str, optional): Custom Error Message for Error Handling
+        show_expression_as (str, optional): specify how expressions should be
+            presented
+            Available values:
+                - `tree` (default)
+                - `tokens`
+    Returns:
+        Complete HTTP response object. Expected status is 200.
+    """
+    with changeset_manager(connection, body=body) as changeset_id:
+        return connection.put(
+            endpoint=f"/api/model/customGroups/{id}",
+            headers={"X-MSTR-MS-Changeset": changeset_id},
+            json=body,
+            params={
+                "showExpressionAs": show_expression_as,
+                "showAdvancedProperties": True,
+            },
+        )
+
+
+@ErrorHandler(
+    err_msg="Error getting metadata of VLDB settings for custom group with ID {id}"
+)
+def get_applicable_vldb_settings(
+    connection: 'Connection', id: str, error_msg: str = None
+):
+    """Get metadata of advanced VLDB settings for a custom group.
+
+    Args:
+        connection (Connection): Strategy One REST API connection object
+        id (str): Custom Group ID
+        error_msg (str, optional): Custom error message for error handling
+
+    Returns:
+        Complete HTTP response object.
+    """
+
+    with changeset_manager(connection) as changeset_id:
+        return connection.get(
+            endpoint=f'/api/model/customGroups/{id}/applicableAdvancedProperties',
+            headers={'X-MSTR-MS-Changeset': changeset_id},
         )

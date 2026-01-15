@@ -299,16 +299,28 @@ class Environment:
         )
 
     def create_project(
-        self, name: str, description: str | None = None, force: bool = False
+        self,
+        name: str,
+        description: str | None = None,
+        force: bool = False,
+        async_request: bool = False,
     ) -> 'Project | None':
         """Create a new project on the environment.
 
         Args:
-            name: Name of Project.
-            description: Description of Application.
-            force: If `True`, overrides the prompt.
+            name (str): Name of the new project.
+            description (str, optional): Description of the new project.
+            force (bool, optional): Whether to skip confirmation prompt.
+                Defaults to False.
+            async_request (bool, optional): Whether to create the project
+                asynchronously (not wait for it before returning).
+                Defaults to False.
+
+        Returns:
+            Project: The created Project object (unless prompted to abort or
+            create asynchronously).
         """
-        return Project._create(self.connection, name, description, force)
+        return Project._create(self.connection, name, description, force, async_request)
 
     def list_projects(
         self, to_dictionary: bool = False, limit: int | None = None, **filters

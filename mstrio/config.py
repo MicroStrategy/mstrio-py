@@ -30,6 +30,8 @@ raising `requests.Timeout`. Default is 86400 seconds (24 hours).
 It uses `requests` library's `timeout` parameter under the hood. (read more:
 <https://requests.readthedocs.io/en/latest/user/quickstart/#timeouts>)
 """
+delay_between_polling: int | float = 5
+"""Amount of time (in seconds) to wait between polling requests."""
 
 # Sets number of rows displayed for pandas DataFrame
 options.display.max_rows = max(250, options.display.max_rows)

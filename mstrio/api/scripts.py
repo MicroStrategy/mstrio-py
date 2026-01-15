@@ -2,32 +2,10 @@ from typing import TYPE_CHECKING
 
 from requests import Response
 
-from mstrio.object_management.search_operations import full_search
 from mstrio.utils.error_handlers import ErrorHandler
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
-    from mstrio.object_management.object import Object
-
-
-def list_scripts(  # TODO: will be moved to dedicated module during dev
-    connection: 'Connection', project_id: str, to_dictionary=True
-) -> 'list[dict] | list[Object]':
-    """Get a list of scripts.
-
-    Args:
-        connection (Connection): Strategy One connection object returned by
-            `connection.Connection()`
-        project_id (str): ID of the project
-        to_dictionary (bool, optional): If True returns dict (default),
-            otherwise returns Object.
-
-    Returns:
-        List of scripts.
-    """
-    return full_search(
-        connection, project=project_id, object_types=76, to_dictionary=to_dictionary
-    )
 
 
 @ErrorHandler(err_msg="Error getting information for Script with id {id}.")

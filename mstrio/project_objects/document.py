@@ -409,16 +409,6 @@ class Document(
         return self._instance_id
 
     @property
-    def folder_id(self):
-        if not self._folder_id:
-            self._folder_id = (
-                next(folder['id'] for folder in self.ancestors if folder['level'] == 1)
-                if self.ancestors
-                else None
-            )
-        return self._folder_id
-
-    @property
     def recipients(self):
         return self._recipients
 

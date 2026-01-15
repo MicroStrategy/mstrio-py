@@ -7,10 +7,7 @@ from mstrio.types import ObjectSubTypes
 from mstrio.users_and_groups.user import User
 from mstrio.utils.entity import Entity, ObjectTypes
 from mstrio.utils.enum_helper import get_enum_val
-from mstrio.utils.helper import (
-    fetch_objects,
-    get_default_args_from_func,
-)
+from mstrio.utils.helper import fetch_objects, get_default_args_from_func
 from mstrio.utils.resolvers import get_project_id_from_params_set
 from mstrio.utils.response_processors import objects as objects_processors
 

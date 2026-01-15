@@ -528,10 +528,6 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
             else default_value
         )
 
-        ancestors = kwargs.get('ancestors')
-        self.folder_id = ancestors[-1].get('id') if ancestors else default_value
-        self.destination_folder_id = kwargs.get('destination_folder_id', default_value)
-
         facts = kwargs.get('facts')
         if facts:
             [f.update(f.pop('information')) for f in facts]
@@ -1045,11 +1041,7 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
             >>>     col_merge_option=TableColumnMergeOption.REUSE_ANY
             >>> )
         """
-        col_merge_option = (
-            get_enum_val(col_merge_option, TableColumnMergeOption)
-            if col_merge_option
-            else None
-        )
+        col_merge_option = get_enum_val(col_merge_option, TableColumnMergeOption)
 
         table_data = tables.update_structure(
             self.connection, self.id, col_merge_option, ignore_table_prefix
@@ -1114,6 +1106,7 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
         with tqdm(
             total=len(logical_tables),
             desc="Updating structures...",
+            disable=not config.verbose or not config.progress_bar,
             delay=3,
         ) as progress_bar:
             for table in logical_tables:

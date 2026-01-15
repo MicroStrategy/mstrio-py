@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import TypeAlias
 
 
 # A sentinel object to detect if an attribute has been returned by REST API
@@ -328,6 +329,11 @@ class ObjectSubTypes(Enum):
     JUPYTER_NOTEBOOK_SCRIPT = 19458
     DATASOURCE_SCRIPT = 19459
     TRANSACTION_SCRIPT = 19460
+    SIMPLE_FUNCTION_SCRIPT = 19461
+    AGGREGATION_FUNCTION_SCRIPT = 19462
+    AGGREGATION_FUNCTION_NO_SORT_SCRIPT = 19463
+    RELATIVE_FUNCTION_SCRIPT = 19464
+    RELATIVE_FUNCTION_NO_SORT_SCRIPT = 19465
     APPLICATION = 19968
     APPLICATION_POWERPOINT = 19969
     APPLICATION_EXCEL = 19970
@@ -444,6 +450,6 @@ class ExtendedType(Enum):
         return self.value
 
 
-TypeOrSubtype = (
+TypeOrSubtype: TypeAlias = (
     int | ObjectTypes | ObjectSubTypes | list[int | ObjectTypes | ObjectSubTypes]
 )
