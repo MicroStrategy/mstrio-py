@@ -335,8 +335,10 @@ def stop_script_or_code_execution(
     )
 
 
-@ErrorHandler(err_msg="Error getting Script variables answers for Script ID: {id}")
-def get_script_variables_answers(
+@ErrorHandler(
+    err_msg="Error getting Script variables personal answers for Script ID: {id}"
+)
+def get_script_variables_personal_answers(
     connection: 'Connection',
     project_id: str,
     id: str,
@@ -364,8 +366,10 @@ def get_script_variables_answers(
     )
 
 
-@ErrorHandler(err_msg="Error updating Script variables answers for Script ID: {id}")
-def update_script_variables_answers(
+@ErrorHandler(
+    err_msg="Error updating Script variables personal answers for Script ID: {id}"
+)
+def update_script_variables_personal_answers(
     connection: 'Connection',
     project_id: str,
     id: str,

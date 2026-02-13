@@ -1,23 +1,27 @@
 import ast
 import contextlib
+import json
 import logging
 import re
 import time
 from collections.abc import Callable
+from copy import deepcopy
 from dataclasses import dataclass
 from datetime import date, datetime
 from enum import Enum, auto
+from inspect import isfunction
 from operator import xor
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal, TypeAlias, TypeVar, overload
+from typing import TYPE_CHECKING, Any, Literal, TypeAlias, TypeVar, overload
 
 from mstrio import config
-from mstrio.helpers import is_valid_datetime
+from mstrio.helpers import is_valid_datetime, try_str_to_num
 from mstrio.object_management.folder import Folder
 from mstrio.object_management.search_enums import SearchDomain, SearchPattern
 from mstrio.object_management.search_operations import full_search
 from mstrio.types import ObjectSubTypes, ObjectTypes
 from mstrio.users_and_groups.user import User
+from mstrio.utils.certified_info import CertifiedInfo
 from mstrio.utils.encoder import Encoder
 from mstrio.utils.entity import (
     CertifyMixin,
@@ -35,14 +39,10 @@ from mstrio.utils.resolvers import (
     validate_owner_key_in_filters,
 )
 from mstrio.utils.response_processors import scripts as scripts_processor
-from mstrio.utils.wip import WipLevels, module_wip
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
     from mstrio.server.project import Project
-
-
-module_wip(globals(), "11.6.2.101", WipLevels.ERROR)
 
 
 logger = logging.getLogger(__name__)
@@ -51,13 +51,17 @@ logger = logging.getLogger(__name__)
 # Sync below with any `isinstance` checks done in this module
 _VariableValueRaw: TypeAlias = str | int | float | datetime | date
 VariableValue: TypeAlias = _VariableValueRaw | list[_VariableValueRaw]
+CodeResult: TypeAlias = str | int | float | datetime | None
 VariablesAnswers: TypeAlias = (
     list['VariableAnswer | FlagKeepDefaultAnswer | AnswerForCallback']
     # FYI: dict shape {"id-or-name-of-variable": "some-value", ...}
     | dict[str, 'VariableValue | FlagKeepDefaultAnswer']
 )
 AnswerForCallback: TypeAlias = Callable[[list['Variable']], None]
-FlagKeepDefaultAnswer: TypeAlias = type['VariableAnswer.KEEP_DEFAULT']
+FlagKeepDefaultAnswer: TypeAlias = (
+    type['VariableAnswer.KEEP_PERSONAL_DEFAULT']
+    | type['VariableAnswer.KEEP_GLOBAL_DEFAULT']
+)
 
 
 # --- Exceptions ---
@@ -71,6 +75,12 @@ class ScriptError(Exception):
 
 class ScriptExecutionError(ScriptError):
     """Exception raised when a script execution fails."""
+
+
+class ScriptEnvironmentError(ScriptExecutionError):
+    """Exception raised when there is an environment-related error during
+    script execution.
+    """
 
 
 class ScriptSetupError(ScriptError):
@@ -143,6 +153,17 @@ class VariableType(Enum):
 # --- END: Enums ---
 
 
+# --- Configs & Behavior Customization ---
+@dataclass
+class _VariableAnswerConfig:
+    INTERACTIVE_KEEP_PERSONAL_DEFAULT: str = '...'
+    INTERACTIVE_KEEP_GLOBAL_DEFAULT: str = '^'
+
+
+VariableAnswerConfig = _VariableAnswerConfig()
+# --- END: Configs & Behavior Customization ---
+
+
 def list_scripts(
     connection: 'Connection',
     name: str | None = None,
@@ -202,21 +223,22 @@ def list_scripts(
     )
     validate_owner_key_in_filters(filters)
 
-    return full_search(
-        connection=connection,
-        project=proj_id,
-        object_types=ObjectTypes.SCRIPT,
-        name=name,
-        pattern=search_pattern,
-        domain=SearchDomain.PROJECT,
-        to_dictionary=to_dictionary,
-        limit=limit,
-        root=folder,
-        root_id=folder_id,
-        root_name=folder_name,
-        root_path=folder_path,
-        **filters,
-    )
+    with connection.temporary_project_change(project=proj_id):
+        return full_search(
+            connection=connection,
+            project=proj_id,
+            object_types=ObjectTypes.SCRIPT,
+            name=name,
+            pattern=search_pattern,
+            domain=SearchDomain.PROJECT,
+            to_dictionary=to_dictionary,
+            limit=limit,
+            root=folder,
+            root_id=folder_id,
+            root_name=folder_name,
+            root_path=folder_path,
+            **filters,
+        )
 
 
 class Code:
@@ -224,11 +246,13 @@ class Code:
     engine of Strategy.
 
     Note:
-        To retrieve code-as-text from an instance of Code class, just stringify
-        the instance with `str`:
-
-    >>> code = Code(conn, "print('Hello World')")
-    >>> as_text = str(code)  # <- `as_text` == "print('Hello World')"
+        To retrieve code-as-text from an instance of Code class, just use
+        `.as_text` property or stringify the `Code` instance with `str`:
+        ```
+        >>> code = Code(conn, "print('Hello World')")
+        >>> txt = str(code)
+        >>> txt2 = code.as_text  # both equal "print('Hello World')"
+        ```
     """
 
     _evaluation_id: str | None = None
@@ -278,6 +302,72 @@ class Code:
                 f"Invalid Code: {str(self)}"
             ) from self.__validation_error
 
+    def _convert_variables_and_answers_to_lists(
+        self,
+        variables: 'list[Variable | dict] | None',
+        answers: VariablesAnswers | None,
+        variables_factory: type['Variable'] | None,
+    ) -> tuple[list['Variable'], list['VariableAnswer']]:
+        """Parses Variables versus their answers to return all variables and
+        their answers in common format -> as lists.
+
+        - Variables as a list of `Variable` instances
+        - Answers as a list of `VariableAnswer` instances
+
+        Returns:
+            `tuple(variables, answers)`
+        """
+
+        # FYI: Either explicitly provided factory...
+        # OR factory calculated from variables if it's unique for all...
+        # OR Standard Script one
+        Factory = variables_factory or (  # NOSONAR # (name format)
+            options.pop()
+            if variables
+            and len(
+                options := {type(var) for var in variables if isinstance(var, Variable)}
+            )
+            == 1
+            else VariableStandardScript
+        )
+
+        variables = variables or []
+        answers = answers or []
+
+        if not all(isinstance(var, (dict, Factory)) for var in variables):
+            raise ScriptSetupError(
+                "Variables have incorrect shape. All of them need to be either "
+                "a dictionary of data or an instance of provided factory class "
+                f"'{Factory.__name__}'."
+            )
+
+        # TODO: create helper method for this "Object | dict -> Object" logic
+        variables: list[Variable] = [
+            Factory.from_dict(v) if isinstance(v, dict) else v for v in variables
+        ]
+
+        if isinstance(answers, dict):
+            # convert complex dict to `VariableAnswer` class instances
+            try:
+                answers = [
+                    Factory.get_variable_by_identifier(variables, key).answer(answer)
+                    for key, answer in answers.items()
+                ]
+            except (KeyError, AttributeError):
+                raise ScriptSetupError(
+                    "Some provided answers refer to non-existent Variables."
+                )
+
+        variables = variables.copy()
+        answers = answers.copy()
+
+        # calculate answers if done via `VariableAnswer.For(...)...` callback
+        for i, answer in enumerate(answers):
+            if isfunction(answer) and getattr(answer, '_is_internal_mstrio', None):
+                answers[i] = answer(variables)
+
+        return (variables, answers)
+
     @overload
     def execute(
         self,
@@ -288,6 +378,7 @@ class Code:
         pipe_logs: bool = False,
         raise_on_execution_failure: bool = False,
         allow_interactive_answering: bool = False,
+        variables_factory: type['Variable'] = None,
     ) -> ExecutionStatus: ...
 
     @overload
@@ -298,6 +389,7 @@ class Code:
         answers: VariablesAnswers | None = None,
         block_until_done: Literal[False] = False,
         allow_interactive_answering: bool = False,
+        variables_factory: type['Variable'] = None,
     ) -> None: ...
 
     def execute(
@@ -310,6 +402,8 @@ class Code:
         pipe_logs: bool = False,
         raise_on_execution_failure: bool = False,
         allow_interactive_answering: bool = False,
+        # FYI: `None` represents `VariableStandardScript`
+        variables_factory: type['Variable'] = None,
     ) -> 'ExecutionStatus | None':
         """Start Code execution.
 
@@ -333,6 +427,9 @@ class Code:
             allow_interactive_answering (bool, optional): Whether to allow
                 interactive answering of Variables if not all are answered.
                 Defaults to False.
+            variables_factory (type[Variable], optional): Factory class to use
+                for creating Variable instances. Defaults to
+                `VariableStandardScript`.
 
         Returns:
             ExecutionStatus: if `block_until_done` is set to True.
@@ -346,47 +443,48 @@ class Code:
                 "instance of Script or Code class to run it independently."
             )
 
-        variables = variables or []
-        answers = answers or []
+        variables, answers = self._convert_variables_and_answers_to_lists(
+            variables=variables,
+            answers=answers,
+            variables_factory=variables_factory,
+        )
 
-        variables: list[VariableStandardScript] = [  # TODO: consider type to be param
-            VariableStandardScript.from_dict(v) if isinstance(v, dict) else v
-            for v in variables
-        ]
-
-        if isinstance(answers, dict):
-            # convert complex dict to `VariableAnswer` class instances
-            try:
-                answers = [
-                    VariableStandardScript.get_variable_by_identifier(
-                        variables, key
-                    ).answer(answer)
-                    for key, answer in answers.items()
-                ]
-            except (KeyError, AttributeError):
-                raise ScriptSetupError(
-                    "Some provided answers refer to non-existent Variables."
+        if allow_interactive_answering:
+            if self._connection.is_run_in_workstation():
+                raise ScriptEnvironmentError(
+                    "Cannot allow interactive Variables answering in a script "
+                    "run in Workstation."
                 )
 
-        # calculate answers if done via `VariableAnswer.For(...)...` callback
-        for i, answer in enumerate(answers):
-            if callable(answer) and getattr(answer, '_is_internal_mstrio', None):
-                answers[i] = answer(variables)
+            left_to_consider = tuple(v for v in variables if not v.is_answered())
 
-        if not allow_interactive_answering:
-            # FYI: raises at Variable that is not properly answered
-            # TODO: review logic for keeping default value even if prompt
-            [v.validate_whether_answered() for v in variables]
-        else:
-            for var_to_answer in (v for v in variables if not v.is_answered()):
+            if left_to_consider:
+                logger.info(
+                    f"(Write `{VariableAnswerConfig.INTERACTIVE_KEEP_PERSONAL_DEFAULT}`"
+                    " to keep personal default answer or "
+                    f"`{VariableAnswerConfig.INTERACTIVE_KEEP_GLOBAL_DEFAULT}` to "
+                    "keep global default answer)"
+                )
+
+            for var_to_answer in left_to_consider:
                 user_input = input(f"Answer to Variable '{var_to_answer.name}': ")
 
-                if var_to_answer.type == VariableType.NUMERICAL:
-                    with contextlib.suppress(ValueError):
-                        # keep as string if not a valid float
-                        user_input = float(user_input)
+                match user_input:
+                    case VariableAnswerConfig.INTERACTIVE_KEEP_GLOBAL_DEFAULT:
+                        user_input = VariableAnswer.KEEP_GLOBAL_DEFAULT
+                    case VariableAnswerConfig.INTERACTIVE_KEEP_PERSONAL_DEFAULT:
+                        user_input = VariableAnswer.KEEP_PERSONAL_DEFAULT
+                    case _:
+                        if var_to_answer.type == VariableType.NUMERICAL:
+                            with contextlib.suppress(ValueError):
+                                # keep as string if not a valid float,
+                                # `answer` will handle errors
+                                user_input = float(user_input)
 
                 var_to_answer.answer(user_input)
+
+        # FYI: raises at Variable that is not properly answered
+        [v.validate_whether_answered() for v in variables]
 
         if not block_until_done and (raise_on_execution_failure or pipe_logs):
             logger.warning(
@@ -412,7 +510,7 @@ class Code:
             )
 
         if not self._evaluation_id:
-            raise ScriptExecutionError("Evaluation ID was not received.")
+            raise ScriptEnvironmentError("Evaluation ID was not received.")
 
         if block_until_done:
             ret = self.wait_for_execution_finish(pipe_logs=pipe_logs)
@@ -428,8 +526,7 @@ class Code:
                 )
 
                 raise ScriptExecutionError(
-                    f"{msg_prefix} failed. "
-                    f"Details: {str(self.get_execution_details())}"
+                    f"{msg_prefix} failed. Details: {str(self._run_details)}"
                 )
 
             return ret
@@ -445,6 +542,20 @@ class Code:
         scripts_processor.stop_run(self._connection, self._evaluation_id)
         self.get_execution_details()
         self._evaluation_id = None
+
+    def get_current_execution_status(self) -> ExecutionStatus | None:
+        """Retrieve current status of the code execution.
+
+        Returns:
+            ExecutionStatus: Current status of the code execution, or None if
+                the code is not currently running.
+        """
+
+        if not self._evaluation_id:
+            return None
+
+        raw_status = self.get_execution_details().get('status')
+        return ExecutionStatus(raw_status) if raw_status is not None else None
 
     def wait_for_execution_finish(
         self, pipe_logs: bool = False, interval: int | None = None
@@ -463,10 +574,11 @@ class Code:
             ExecutionStatus: Final status of the code execution.
         """
 
+        if not self._evaluation_id:
+            self.get_execution_details()  # FYI: will throw
+
         try:
-            while not ExecutionStatus.is_done(
-                self.get_execution_details().get('status', 1)
-            ):
+            while not ExecutionStatus.is_done(self.get_current_execution_status()):
                 time.sleep(interval or config.delay_between_polling)
 
         except BaseException as err:
@@ -503,7 +615,7 @@ class Code:
         """
 
         if not self._evaluation_id:
-            raise ScriptExecutionError(
+            raise ScriptSetupError(
                 "Cannot retrieve execution information for non-running code."
             )
 
@@ -575,6 +687,30 @@ class Code:
         """STDERR from last made current execution status request."""
 
         return self._run_details.get('results', {}).get('stderr', '').strip()
+
+    @property
+    def executor_message(self) -> str | None:
+        """Message from Python Executor (if any) in last made current execution
+        status request.
+
+        Usually populated with error details when Code failed during runtime.
+        """
+
+        return self._run_details.get('message')
+
+    @property
+    def result(self) -> CodeResult:
+        """Returned Value from last made current execution status request."""
+
+        ret = json.loads(self._run_details.get('results', {}).get('output', 'null'))
+
+        if self._source_script and ret is not None:
+            if self._source_script.script_result_type == ScriptResultType.DATE:
+                ret = datetime.fromisoformat(ret)
+            elif self._source_script.script_result_type == ScriptResultType.NUMERICAL:
+                ret = try_str_to_num(ret)
+
+        return ret
 
     @property
     def as_text(self) -> str:
@@ -650,6 +786,7 @@ class Script(
     _FROM_DICT_MAP = {
         **Entity._FROM_DICT_MAP,
         "subtype": ObjectSubTypes,
+        'certified_info': CertifiedInfo.from_dict,
         "owner": User.from_dict,
         "script_content": lambda source, connection: Code(connection, code=source),
         "script_result_type": ScriptResultType,
@@ -671,6 +808,7 @@ class Script(
     }
 
     _history_last_entry: dict = {}
+    _variables_personal_answers: dict | None = None
 
     def __init__(
         self,
@@ -767,7 +905,7 @@ class Script(
         pipe_logs: bool = False,
         raise_on_execution_failure: bool = False,
         variables_answers: VariablesAnswers | None = None,
-        save_answers_as_personal: bool = False,  # TODO: implement # NOSONAR
+        save_answers_as_personal: bool = False,
         allow_interactive_answering: bool = False,
     ) -> ExecutionStatus | None:
         """Start Script execution.
@@ -792,6 +930,9 @@ class Script(
 
         variables = list(self.get_variables())
 
+        if save_answers_as_personal:
+            self.save_personal_variable_answers(variables_answers)
+
         return self._script_content.execute(
             variables=variables,
             answers=variables_answers,
@@ -805,6 +946,16 @@ class Script(
         """Stops the Script execution."""
 
         return self._script_content.stop_execution()
+
+    def get_execution_status(self) -> ExecutionStatus | None:
+        """Retrieve current status of the Script execution.
+
+        Returns:
+            ExecutionStatus: Current status of the Script execution, or None if
+                the Script is not currently running.
+        """
+
+        return self._script_content.get_current_execution_status()
 
     def wait_for_execution_finish(
         self, pipe_logs: bool = False, interval: int | None = None
@@ -840,7 +991,7 @@ class Script(
 
         return self._script_content.get_execution_details()
 
-    def get_last_run_details(self) -> dict | None:
+    def get_last_run_details(self) -> dict:
         """Gets the details about the last run of the Script, if any, including
         execution time, status and logs of the run.
 
@@ -849,8 +1000,8 @@ class Script(
             Script overall, not necessarily your last run of this Script.
 
         Returns:
-            dict | None: Dictionary with data about the last run of the Script,
-                or None if there is no history.
+            dict: Dictionary with data about the last run of the Script,
+                or empty dictionary if there is no history.
         """
 
         if self._script_content._evaluation_id:
@@ -874,8 +1025,30 @@ class Script(
             case ScriptUsageType.TRANSACTION.value:
                 return VariableTransactionScript
             # TODO: add metric type when its Feature is ready
-            case _:
+            case ScriptUsageType.STANDARD.value:
                 return VariableStandardScript
+            case _:
+                raise ScriptSetupError(
+                    "Unknown or unsupported Script Usage Type "
+                    f"'{self.script_usage_type}'."
+                )
+
+    def _get_variables_personal_answers(self) -> dict[str, 'VariableAnswer']:
+        if self._variables_personal_answers is None:
+            try:
+                self._variables_personal_answers = (
+                    scripts_processor.get_variables_personal_answers(
+                        self.connection, self.id
+                    )
+                )
+            except (KeyError, ValueError):
+                logger.warning(
+                    "Getting Personal Default Answers for Variables failed. "
+                    "Assuming none were set."
+                )
+                self._variables_personal_answers = {}
+
+        return self._variables_personal_answers
 
     def get_variables(self) -> tuple['Variable']:
         """Get Variables saved in metadata of the Script.
@@ -901,7 +1074,11 @@ class Script(
                     v
                     if isinstance(v, Factory)
                     else Factory.from_dict(
-                        source=v.to_dict() if isinstance(v, Variable) else v,
+                        source=(
+                            v.to_dict(skip_private_keys=True)
+                            if isinstance(v, Variable)
+                            else v
+                        ),
                         connection=self._connection,
                     )
                 )
@@ -913,15 +1090,67 @@ class Script(
 
         for v in variables:
             v._source_script = self
+            v._answer = None
 
         return variables
 
-    # TODO: deliver in dedicated Story
     def save_personal_variable_answers(
         self,
         answers: VariablesAnswers,
     ) -> None:
-        pass
+        """Save provided answers as personal default answers for Variables
+        on the Script.
+
+        Note:
+            If some prompted Variables are not answered, current global default
+            value for them will be used as your personal default. This is due to
+            the REST API call requiring all prompted Variables to be provided
+            at once.
+
+        Args:
+            answers (VariablesAnswers): Answers to be saved as personal
+                default answers for Variables on the Script.
+        """
+
+        if not answers:
+            raise ScriptSetupError("No answers were provided to be saved.")
+
+        variables, answers = (
+            self._script_content._convert_variables_and_answers_to_lists(
+                variables=self.get_variables(),
+                answers=answers,
+                variables_factory=self._get_variable_factory(),
+            )
+        )
+
+        if not all(
+            isinstance(a, VariableAnswer) and a.is_valid() and a.source_variable.id
+            for a in answers
+        ):
+            raise ScriptSetupError(
+                "Some Variables or Variable answers provided to be saved as personal "
+                "defaults are not valid. All provided answers need to be a valid "
+                "Variable value for existing Variables and cannot be a flag to keep "
+                "some default value."
+            )
+
+        answers = [a.to_dict() for a in answers]
+
+        # FYI: API requires for all prompted variables to be provided in
+        # payload. Below logic simulates not requiring that: by providing
+        # global defaults if a variable is not answered.
+        for var in (v for v in variables if v.prompt and not v.is_answered()):
+            var.answer(keep_global_default=True)
+            answers.append(var.get_answer_as_dict())
+
+        scripts_processor.save_variables_personal_answers(
+            self.connection,
+            script_id=self.id,
+            answers=answers,
+        )
+
+        # clear previous cache
+        self._variables_personal_answers = None
 
     def add_variables(
         self,
@@ -975,6 +1204,8 @@ class Script(
                     f"Variable with name '{v.name}' already exists on {self}. Use "
                     "`Script.alter_variables(...)` method to edit an existing Variable."
                 )
+
+            current_names.append(v.name)
 
         self.alter(variables=list(all_vars) + list(data))
 
@@ -1039,10 +1270,12 @@ class Script(
             new_name = Variable._get_attr_from_variable(new_data, 'name')
             if new_name and new_name != target_var.name and new_name in current_names:
                 raise ScriptSetupError(
-                    f"Variable with name '{new_data.name}' already exists on {self}. "
+                    f"Variable with name '{new_name}' already exists on {self}. "
                     "Cannot change to a name that is already in use by another "
                     "Variable."
                 )
+
+            current_names.append(new_name)
 
             idx = next(
                 i
@@ -1127,9 +1360,12 @@ class Script(
         variables: 'list[Variable | dict] | None' = None,
         script_type: ScriptType | str | None = None,
         script_result_type: ScriptResultType | str | None = None,
-        script_usage_type: ScriptUsageType | str | None = None,
     ) -> None:
         """Alter Script's properties.
+
+        Note:
+            Script Usage Type cannot be changed in an existing Script. One needs
+            to create a new Script to "change" the Usage type.
 
         Args:
             name (str, optional): New name of the Script.
@@ -1147,8 +1383,6 @@ class Script(
             script_type (ScriptType | str, optional): Type of the Script.
             script_result_type (ScriptResultType | str, optional): Result type
                 of the Script.
-            script_usage_type (ScriptUsageType | str, optional): Usage type of
-                the Script.
         """
 
         if code is not None:
@@ -1161,16 +1395,24 @@ class Script(
             'script_runtime_id': runtime_id,
             'variables': (
                 [v.to_dict() if isinstance(v, Variable) else v for v in variables]
-                if variables
+                if variables is not None
                 else None
             ),
             'script_type': get_enum_val(script_type, ScriptType),
             'script_result_type': get_enum_val(script_result_type, ScriptResultType),
-            'script_usage_type': get_enum_val(script_usage_type, ScriptUsageType),
         }
+        expects_empty_vars = params.get("variables") == []
         params = delete_none_values(params, recursion=False)
 
+        if expects_empty_vars:
+            params["variables"] = []
+            self._variables = None
+
         self._alter_properties(**params)
+
+        if variables is not None:
+            # remove cache if we are updating variables
+            self._variables_personal_answers = None
 
     def _alter_properties(self, **properties):
         if new_fid := properties.get('folder_id'):
@@ -1245,7 +1487,9 @@ class Script(
                     "Script of type Jupyter Notebook is not supported."
                 )
             case _:
-                raise ScriptSetupError(f'Unrecognized Script Subtype: {self.subtype}')
+                raise ScriptSetupError(
+                    f'Unrecognized or unsupported Script Subtype: {self.subtype}'
+                )
 
     @property
     def script_result_type(self) -> ScriptResultType:
@@ -1306,6 +1550,23 @@ class Script(
         """STDERR from last made current execution status request."""
 
         return self._script_content.stderr
+
+    @property
+    def execution_pod_executor_message(self) -> str | None:
+        """Message from Python Executor (if any) in last made current execution
+        status request.
+
+        Usually populated with error details when Code in Script failed during
+        runtime.
+        """
+
+        return self._script_content.executor_message
+
+    @property
+    def execution_result(self) -> CodeResult:
+        """Returned Value from last made current execution status request."""
+
+        return self._script_content.result
 
     @classmethod
     def create(
@@ -1392,7 +1653,7 @@ class Script(
 _SYSTEM_PROMPTS_FOLDER_ID = "19BD7AE596A740C19341A88803DB87C2"
 
 
-class _SystemPrompt(Entity):
+class SystemPrompt(Entity):
     """Simple representation of a System Prompt object."""
 
     _OBJECT_TYPE = ObjectTypes.PROMPT
@@ -1401,13 +1662,28 @@ class _SystemPrompt(Entity):
         super().__init__(connection, object_id=id)
 
     @staticmethod
-    def get_all(conn: 'Connection') -> list['_SystemPrompt']:
-        return [
-            _SystemPrompt.from_dict(x, conn)
-            for x in Folder(conn, id=_SYSTEM_PROMPTS_FOLDER_ID).get_contents(
-                to_dictionary=True
+    def get_all(conn: 'Connection') -> list['SystemPrompt']:
+        """Get all System Prompts available in the System Prompts Folder."""
+
+        with config.temp_verbose_disable():
+            return [
+                SystemPrompt.from_dict(x, conn)
+                for x in Folder(conn, id=_SYSTEM_PROMPTS_FOLDER_ID).get_contents(
+                    to_dictionary=True
+                )
+            ]
+
+    @staticmethod
+    def get_by_name(conn: 'Connection', name: str) -> 'SystemPrompt':
+        """Get System Prompt by its name."""
+
+        try:
+            return next(sp for sp in SystemPrompt.get_all(conn) if sp.name == name)
+        except StopIteration:
+            raise ScriptEnvironmentError(
+                f"System Prompt with name '{name}' does not exist or "
+                "cannot be accessed."
             )
-        ]
 
 
 class Variable(Dictable):
@@ -1418,7 +1694,7 @@ class Variable(Dictable):
 
     _FROM_DICT_MAP = {
         "type": VariableType,
-        "object_ref": _SystemPrompt.from_dict,
+        "object_ref": SystemPrompt.from_dict,
     }
 
     # descriptors
@@ -1435,7 +1711,7 @@ class Variable(Dictable):
     editable: bool | None = None
     # actual answering and value
     value: VariableValue | None = None
-    object_ref: '_SystemPrompt | dict | None' = None
+    object_ref: 'SystemPrompt | dict | None' = None
     secret_value_input: bool | None = None
 
     _answer: 'VariableAnswer | FlagKeepDefaultAnswer | None' = None
@@ -1452,6 +1728,10 @@ class Variable(Dictable):
         if self.transaction_column:
             if self.editable is None:
                 self.editable = True
+
+            # Falsy but not a list - reset to `None`
+            if not self.value and not isinstance(self.value, list):
+                self.value = None
         else:
             self.required = None
             self.nullable = None
@@ -1477,6 +1757,19 @@ class Variable(Dictable):
         assert not (is_multiple and is_non_multi_type), (
             "Variables of type Date, Datetime, Secret or System Prompt cannot "
             "be set to Multiple."
+        )
+
+        if self.value is not None:
+            assert VariableAnswer.is_of_valid_type(self, self.value), (
+                "Value of the Variable is invalid. It does not correspond to "
+                "the Variable's type properly."
+            )
+
+        assert self.type != VariableType.SYSTEM_PROMPT or (
+            self.object_ref and not self.prompt
+        ), (
+            "System Prompt variable requires declared System Prompt to refer to "
+            "and cannot be prompted."
         )
 
     def is_answered(self) -> bool:
@@ -1517,8 +1810,17 @@ class Variable(Dictable):
 
             return
 
-        if self._answer is VariableAnswer.KEEP_DEFAULT:
-            if not VariableAnswer.is_of_valid_type(self, self.value):
+        if VariableAnswer.is_keep_default_flag(self._answer):
+            value = (
+                self.value
+                if self._answer is VariableAnswer.KEEP_GLOBAL_DEFAULT
+                else self.personal_default_answer
+            )
+
+            if (
+                self.type != VariableType.SECRET
+                and not VariableAnswer.is_of_valid_type(self, value)
+            ):
                 raise ScriptSetupError(
                     f"Variable '{self.name}' do not have a valid default value to "
                     "keep. Either make it prompted or set a valid default value."
@@ -1540,7 +1842,8 @@ class Variable(Dictable):
     def answer(
         self,
         value: 'VariableValue | FlagKeepDefaultAnswer | None' = None,
-        keep_default: bool = False,
+        keep_personal_default: bool = False,
+        keep_global_default: bool = False,
     ) -> 'VariableAnswer | FlagKeepDefaultAnswer':
         """Answer the Variable with the provided value (or a
         `FlagKeepDefaultAnswer` flag).
@@ -1549,29 +1852,36 @@ class Variable(Dictable):
             value (VariableValue | FlagKeepDefaultAnswer): Value to answer the
                 Variable with or a flag to keep default value from a Variable.
                 Optional only if `keep_default` flag is provided.
-            keep_default (bool): Whether to keep the default value from Variable
-                as its answer. Defaults to False. If set to True, `value`
-                parameter cannot be provided.
+            keep_personal_default (bool): Whether to keep the personal default
+                value from Variable as its answer. Defaults to False. If set to
+                True, `value` parameter cannot be provided.
+            keep_global_default (bool): Whether to keep the global default
+                value from Variable as its answer. Defaults to False. If set to
+                True, `value` parameter cannot be provided.
 
         Returns:
             VariableAnswer: Created answer for the Variable or a
                 `FlagKeepDefaultAnswer` flag.
         """
 
-        if not xor(value is not None, keep_default):
+        if keep_personal_default and keep_global_default:
             raise ScriptSetupError(
-                "Variable can either be answered with `value` or marked as "
-                "`keep_default` but not both nor neither."
+                "Cannot keep both personal and global default answer at the same time."
             )
 
-        if keep_default:
-            return self.answer(VariableAnswer.KEEP_DEFAULT)
+        if not xor(value is not None, keep_personal_default or keep_global_default):
+            raise ScriptSetupError(
+                "Variable can either be answered with `value` or marked as "
+                "`keep_<...>_default` but not both nor neither."
+            )
 
-        self._answer = (
-            value
-            if value is VariableAnswer.KEEP_DEFAULT
-            else VariableAnswer(self, value)
-        )
+        if keep_personal_default or value is VariableAnswer.KEEP_PERSONAL_DEFAULT:
+            self._answer = VariableAnswer.KEEP_PERSONAL_DEFAULT
+        elif keep_global_default or value is VariableAnswer.KEEP_GLOBAL_DEFAULT:
+            self._answer = VariableAnswer.KEEP_GLOBAL_DEFAULT
+        else:
+            self._answer = VariableAnswer(self, value)
+
         self.validate_whether_answered()  # this will validate answer's structure
         return self._answer
 
@@ -1587,10 +1897,21 @@ class Variable(Dictable):
             dict: Dictionary representation of the Variable's Answer.
         """
 
-        if self._answer and self._answer is not VariableAnswer.KEEP_DEFAULT:
+        if self._answer and not VariableAnswer.is_keep_default_flag(self._answer):
             return self._answer.to_dict()
 
-        return VariableAnswer(self, self.value).to_dict()
+        if self.type == VariableType.SECRET:
+            # For SECRET we cannot gather true values from REST, so we need to
+            # send empty value with a payload representing "use what you have
+            # already in metadata"
+            return VariableAnswer(self, value='', secret_value_input=False).to_dict()
+
+        value = (
+            self.value
+            if self._answer is not VariableAnswer.KEEP_PERSONAL_DEFAULT
+            else self.personal_default_answer
+        )
+        return VariableAnswer(self, value).to_dict()
 
     def get_answer_as_dict_for_non_script_run(self) -> dict:
         """Generate `to_dict` representation for REST execution request for
@@ -1611,6 +1932,23 @@ class Variable(Dictable):
         ret['prompt'] = False
         ret['value'] = str(ret['value'])
         return ret
+
+    @property
+    def personal_default_answer(self) -> 'VariableValue':
+        script = self._source_script
+        vid = self.id
+
+        if not vid or not script:
+            raise ScriptSetupError(
+                "Cannot gather or save personal answer to a Variable that is not "
+                "saved in Script metadata on I-Server."
+            )
+
+        return script._get_variables_personal_answers().get(
+            vid,
+            # fall-back to global default if no personal answer was saved
+            self.value,
+        )
 
     @classmethod
     def from_dict(cls, *args, **kwargs):
@@ -1674,6 +2012,9 @@ class VariableStandardScript(Variable):
         multiple: Whether the variable is a list of values
         prompt: Whether the variable prompts the user for input to be answered
         value: Variable default value, if any
+        object_ref: For System Prompt variable, the System Prompt object
+            referenced
+
     """
 
     name: str
@@ -1683,15 +2024,13 @@ class VariableStandardScript(Variable):
     multiple: bool | None = False
     prompt: bool | None = True
     value: VariableValue | None = None
+    object_ref: 'SystemPrompt | dict | None' = None
 
     def __post_init__(self) -> None:
         super().__post_init__()
 
-        assert self.type not in [
-            VariableType.SYSTEM_PROMPT,
-            VariableType.TXN_ROW_PROVENANCE,
-        ], (
-            "For Standard Script, variable cannot be of type System Prompt or "
+        assert self.type != VariableType.TXN_ROW_PROVENANCE, (
+            "For Standard Script, variable cannot be of type "
             "Transaction Provenance Column"
         )
         assert (
@@ -1700,7 +2039,11 @@ class VariableStandardScript(Variable):
             # but it's by design
             or (self.id and self.type == VariableType.SECRET)
             or self.prompt
-        ), "For Standard Script, variable needs to either have a value or be prompted"
+            or (self.object_ref and self.type == VariableType.SYSTEM_PROMPT)
+        ), (
+            "For Standard Script, variable needs to either have a value, "
+            "be prompted or be a set System Prompt."
+        )
 
 
 @dataclass
@@ -1763,7 +2106,7 @@ class VariableTransactionScript(Variable):
     multiple: bool | None = False
     value: VariableValue | None = None
     prompt: bool | None = False
-    object_ref: '_SystemPrompt | dict | None' = None
+    object_ref: 'SystemPrompt | dict | None' = None
     transaction_column: bool | None = None
     nullable: bool | None = None
     required: bool | None = None
@@ -1801,14 +2144,11 @@ class VariableTransactionScript(Variable):
                 not self.prompt
             ), "For Transaction Script, non-transaction variables cannot be prompted"
 
-        assert (
-            self.type != VariableType.SYSTEM_PROMPT or self.object_ref
-        ), "System Prompt variable requires declared System Prompt to refer to"
 
-
-@dataclass
-class VariableMetricScript(Variable):
-    pass  # TODO: Finish and validate when the BHMO-105 Feature is released
+# TODO: Finish and validate when the BHMO-105 Feature is released
+# @dataclass
+# class VariableMetricScript(Variable):
+#     pass
 
 
 @dataclass
@@ -1818,7 +2158,7 @@ class VariableAnswer(Variable):
     secret_value_input: bool = True
 
     def __post_init__(self):
-        super().__post_init__()
+        # FYI: explicitly not doing `super().__post_init__()`
 
         assert self.source_variable, "Cannot answer non-existent Variable"
         self.source_variable._answer = self
@@ -1865,6 +2205,18 @@ class VariableAnswer(Variable):
                 source variable.
         """
 
+        if source_variable.multiple:
+            if not isinstance(answer_value, (list, tuple)):
+                return False
+
+            mocked_var = deepcopy(source_variable)
+            mocked_var.multiple = False
+
+            return all(
+                VariableAnswer.is_of_valid_type(mocked_var, value)
+                for value in answer_value
+            )
+
         is_number = source_variable.type == VariableType.NUMERICAL
         is_date = source_variable.type in [
             VariableType.DATE,
@@ -1878,11 +2230,36 @@ class VariableAnswer(Variable):
         return is_valid_number or is_valid_date or is_valid_other
 
     @staticmethod
+    def is_keep_default_flag(flag: Any) -> bool:
+        return flag in [
+            VariableAnswer.KEEP_GLOBAL_DEFAULT,
+            VariableAnswer.KEEP_PERSONAL_DEFAULT,
+        ]
+
+    @staticmethod
     @property
-    def KEEP_DEFAULT() -> object:
-        """Flag representing intention to keep default value of a Variable as
-        an answer to the prompt-for-answer, instead of explicitly providing the
-        answer.
+    def KEEP_PERSONAL_DEFAULT() -> object:
+        """Flag representing intention to keep personal-saved-default value of
+        a Variable as an answer to the prompt-for-answer, instead of explicitly
+        providing the answer.
+
+        If no personal answer was saved, uses `KEEP_GLOBAL_DEFAULT` flag
+        behavior instead.
+        """
+        # instance of singleton "nothing" to be compared via `is`
+        return object()
+
+    @staticmethod
+    @property
+    def KEEP_GLOBAL_DEFAULT() -> object:
+        """Flag representing intention to keep global default value of a
+        Variable as an answer to the prompt-for-answer, instead of explicitly
+        providing the answer (even ignoring personal-saved-answer if it was
+        set).
+
+        Note:
+            For `VariableType.SECRET` always defaults to `KEEP_PERSONAL_DEFAULT`
+            if one is set.
         """
         # instance of singleton "nothing" to be compared via `is`
         return object()
@@ -1891,14 +2268,15 @@ class VariableAnswer(Variable):
         """Helper method which exists solely to simplify answering prompted
         Variables in bulk.
 
-        This allows to be used within `answer` params in `execute` methods in
+        This allows to be used within `answers` params in `execute` methods in
         `Code` or `Script` to be provided as follows:
 
         ```
         >>> ...
         >>> answers=[
         >>>     VariableAnswer.For('var1').should_be('my-value'),
-        >>>     VariableAnswer.For('var2').should_be_kept_default,
+        >>>     VariableAnswer.For('var2').should_be_global_default,
+        >>>     VariableAnswer.For('var3').should_be_personal_default,
         >>>     ...
         >>> ]
         >>> ...
@@ -1928,8 +2306,21 @@ class VariableAnswer(Variable):
             return __callback
 
         @property
-        def should_be_kept_default(self) -> 'AnswerForCallback':
-            return self.should_be(VariableAnswer.KEEP_DEFAULT)
+        def should_be_personal_default(self) -> 'AnswerForCallback':
+            """Flag the Variable to keep personal default answer. If no such
+            answer was saved, falls back to global default.
+            """
+            return self.should_be(VariableAnswer.KEEP_PERSONAL_DEFAULT)
+
+        @property
+        def should_be_global_default(self) -> 'AnswerForCallback':
+            """Flag the Variable to keep global default answer.
+
+            Note:
+                For `VariableType.SECRET` always defaults to
+                `should_be_personal_default` if one is set.
+            """
+            return self.should_be(VariableAnswer.KEEP_GLOBAL_DEFAULT)
 
 
 # --- END: Variables ---

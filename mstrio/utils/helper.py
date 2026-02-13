@@ -1486,6 +1486,7 @@ def wait_for_stable_status(
     return getattr(obj, property) not in not_stable_val
 
 
+# TODO: consider moving to `resolvers.py`
 def get_owner_id(
     connection: 'Connection',
     owner: 'str | User | dict | None' = None,

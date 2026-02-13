@@ -317,7 +317,7 @@ def remove_subscription(
 def remove_dynamic_recipient_list(
     connection: 'Connection',
     id: str,
-    project_id: str,
+    project_id: str | None = None,
     error_msg: str | None = None,
     journal_comment: str | None = None,
 ) -> 'Response':

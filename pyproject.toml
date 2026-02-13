@@ -52,7 +52,7 @@ classifiers = [
 dependencies = [
     "packaging >= 24.2",
     # FYI: <https://github.com/pandas-dev/pandas/blob/fa5c2550e81c3e745eb7948b56adac45454853d5/pyproject.toml#L60>
-    "pandas[output-formatting,pyarrow] >= 1.1.5",
+    "pandas[output-formatting,pyarrow] >= 1.1.5, < 3",
     "pyhumps >= 3.8",
     "pypika >= 0.48.9",
     "requests >= 2.32.3",

@@ -22,6 +22,7 @@ from mstrio.utils.acl import ACE, ACLMixin
 from mstrio.utils.dependence_mixin import DependenceMixin
 from mstrio.utils.helper import (
     add_journal_comment_to_operation_list,
+    delete_none_values,
     get_response_json,
     process_delete_change_journal_comment,
     rename_dict_keys,
@@ -1546,7 +1547,7 @@ class DeleteMixin:
                     journal_comment,
                 ),
             }
-
+            param_value_dict = delete_none_values(param_value_dict, recursion=True)
             response = self._API_DELETE(**param_value_dict)
 
             if response.status_code == 204 and config.verbose:

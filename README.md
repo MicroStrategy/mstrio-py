@@ -131,6 +131,7 @@ Since version **11.3.0.1**, **mstrio-py** includes also administration modules:
 - **Fence** module (see [code_snippets][code_snippet_fences])
 - **Prompt** module (see [code_snippets][code_snippet_prompt])
 - **Search Object** module (see [code_snippets][code_snippet_search_object])
+- **Script** module (see [code_snippets][code_snippet_scripts])
 
 <!-- tox:docs:sort:end -->
 <!-- tox:docs: main features :end -->
@@ -139,7 +140,7 @@ Since version **11.3.0.1**, **mstrio-py** includes also administration modules:
 
 ## Versioning & Changelog
 
-Current version: **11.6.1.101** (16 January 2026). Check out [CHANGELOG][release_notes] to see what's new.
+Current version: **11.6.2.101** (13 February 2026). Check out [CHANGELOG][release_notes] to see what's new.
 
 `mstrio-py` is constantly developed to support newest Strategy One REST APIs. Functionalities may be added to mstrio on monthly basis. It is **recommended** to always install the newest version of mstrio-py, as it will be most stable and still maintain backwards compatibility with various Strategy One installations, dating back to 11.1.4.
 
@@ -178,8 +179,8 @@ When features (modules, parameters, attributes, methods etc.) are marked for dep
 
 ### More Resources
 
-- [Tutorials for mstrio][mstr_datasci_comm]
-- [Learn more about the Strategy One REST API][mstr_rest_docs]
+- [Learn more about mstrio-py][mstrio_py_doc]
+- [Learn more about Strategy One REST API][mstr_rest_docs]
 - [Strategy One REST API demo documentation][mstr_rest_demo]
 
 <!-- tox:docs: info & resources :end -->
@@ -187,7 +188,6 @@ When features (modules, parameters, attributes, methods etc.) are marked for dep
 <!-- tox:docs: references -->
 
 [pypi_archive]: https://pypi.org/project/mstrio-py/#history
-[mstr_datasci_comm]: https://community.microstrategy.com/s/topic/0TO44000000AJ2dGAG/python-r-u108
 [mstrio_py_doc]: http://www2.microstrategy.com/producthelp/Current/mstrio-py/
 [mstr_rest_demo]: https://demo.microstrategy.com/MicroStrategyLibrary/api-docs/index.html
 [mstr_rest_docs]: https://microstrategy.github.io/rest-api-docs/
@@ -245,3 +245,4 @@ When features (modules, parameters, attributes, methods etc.) are marked for dep
 [code_snippet_search_object]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/search_object.py
 [code_snippet_search_actions]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/search_actions.py
 [code_snippet_custom_group]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/custom_groups.py
+[code_snippet_scripts]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/scripts.py

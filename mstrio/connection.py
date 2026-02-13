@@ -336,29 +336,31 @@ class Connection:
         # set the verbosity globally
         config.verbose = bool(verbose and config.verbose)
 
-        self.base_url = helper.url_check(base_url)
-        self.username = username
-        self.login_mode = login_mode
-        self.certificate_path = certificate_path
-        self.identity_token = identity_token
-        self.api_token = api_token
-        self._session = self.__configure_session(ssl_verify, certificate_path, proxies)
-        self._web_version = None
-        self._iserver_version = None
-        self._user_id = None
-        self._user_full_name = None
-        self._user_initials = None
-        self.__password = password
-        self.last_active = None
-        self.timeout = None
-        self.working_set = working_set
-        self.max_search = max_search
+        self.base_url: str = helper.url_check(base_url)
+        self.username: str | None = username
+        self.login_mode: int = login_mode
+        self.certificate_path: str | None = certificate_path
+        self.identity_token: str | None = identity_token
+        self.api_token: str | None = api_token
+        self._session: Session = self.__configure_session(
+            ssl_verify, certificate_path, proxies
+        )
+        self._web_version: str | None = None
+        self._iserver_version: str | None = None
+        self._user_id: str | None = None
+        self._user_full_name: str | None = None
+        self._user_initials: str | None = None
+        self.__password: str | None = password
+        self.last_active: datetime | None = None
+        self.timeout: int | None = None
+        self.working_set: int | None = working_set
+        self.max_search: int | None = max_search
         self.__through_get_connection: bool = False
-        self._request_timeout = None
+        self._request_timeout: int | float | None = None
         self.set_request_timeout(request_timeout)
-        self._request_retry_on_timeout_count = None
+        self._request_retry_on_timeout_count: int | None = None
         self.set_request_retry_on_timeout_count(request_retry_on_timeout_count)
-        self._deployment_type = None
+        self._deployment_type: str | None = None
 
         # do not check application type if delegated
         self._application_type = (
@@ -800,9 +802,11 @@ class Connection:
             input("Login mode (1 - Standard, 16 - LDAP): ")
         )
 
-    def __check_version(self) -> bool:
-        """Checks version of I-Server and Strategy One Web and store these
-        variables."""
+    def __read_server_status(self) -> bool | None:
+        """Read Server Status data.
+
+        Returns `True` if it expects early return from method using this one.
+        """
 
         resp = misc.server_status(self)
         if not resp:
@@ -813,6 +817,11 @@ class Connection:
                 "Some functionalities may not work properly. "
                 "Please check configuration of Library and I-Server availability."
             )
+
+            self._iserver_version = None
+            self._web_version = None
+            self._deployment_type = None
+
             return True
 
         err_msg = (
@@ -823,7 +832,7 @@ class Connection:
         if not resp.ok:
             raise IServerException(err_msg)
 
-        json_response = resp.json()
+        json_response: dict = resp.json()
         if (
             not json_response
             or "iServerVersion" not in json_response
@@ -833,6 +842,14 @@ class Connection:
 
         self._iserver_version = json_response["iServerVersion"][:9]
         self._web_version = json_response["webVersion"][:9]
+        self._deployment_type = json_response.get("deploymentType")
+
+    def __check_version(self) -> bool:
+        """Checks version of I-Server and Strategy One Web and store these
+        variables."""
+
+        if self.__read_server_status():
+            return True
 
         from mstrio.utils.version_helper import meets_minimal_version
 
@@ -852,7 +869,7 @@ class Connection:
         existing_session=None,
         retries=2,
         backoff_factor=0.3,
-    ):
+    ) -> Session:
         """Creates a shared requests.Session() object with configuration from
         the initialization. Additional parameters change how the HTTPAdapter is
         configured.
@@ -927,13 +944,6 @@ class Connection:
         self._user_id = response.get("id")
         self._user_full_name = response.get("fullName")
         self._user_initials = response.get("initials")
-
-    def _get_deployment_type(self) -> None:
-        try:
-            resp = misc.server_status(self).json()
-            self._deployment_type = resp.get("deploymentType")
-        except Exception:
-            self._deployment_type = None
 
     @classmethod
     def is_run_in_workstation(cls) -> bool | None:
@@ -1019,5 +1029,5 @@ class Connection:
     @property
     def deployment_type(self) -> str | None:
         if not self._deployment_type:
-            self._get_deployment_type()
+            self.__read_server_status()
         return self._deployment_type
