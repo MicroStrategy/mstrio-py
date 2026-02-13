@@ -1,3 +1,4 @@
+import contextlib
 import typing as t
 from datetime import date, datetime
 from enum import Enum, IntFlag
@@ -136,7 +137,6 @@ class AggregatedRights(IntFlag):
     ALL = 0b11111111  # 255
 
 
-# TODO: add unit tests
 def is_valid_datetime(date_value: t.Any) -> bool:
     """Checks if the provided value is a valid datetime or date.
 
@@ -156,3 +156,25 @@ def is_valid_datetime(date_value: t.Any) -> bool:
     except ValueError:
         return False
     return True
+
+
+def try_str_to_num(value: str) -> float | int | str:
+    """Tries to convert a string value to a numerical value (int or float) but
+    returns the original string if conversion is not possible.
+
+    Useful to be used in place of unsafe `"...".isnumeric()` or similar.
+
+    Args:
+        value (str): The string value to be converted.
+
+    Returns:
+        float | int | str: The converted numerical value or the original string
+            if conversion is not possible.
+    """
+
+    with contextlib.suppress(ValueError):
+        value = float(value)
+        if value == int(value):
+            value = int(value)
+
+    return value

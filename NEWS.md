@@ -1,5 +1,22 @@
 # Changelog
 
+## 11.6.2.101 - 2026/02/13
+
+### New features
+
+- created new `script` module inside also new `mstrio.python_execution` subfolder exposing `Script` and `Code` classes, as well as some script Variable-based helper dataclasses and `list_scripts` method
+  - `Script` class represents Strategy Python Script metadata objects run on server-side execution Python engine
+  - `Code` class is a helper class which allows to run Python code on server-side execution Python engine without the need to create a `Script` metadata object
+  - all Variable-based dataclasses are helper classes to handle Variables easily in `Script` or `Code` classes
+
+### Minor changes
+
+- added argument `strict` to `Project.is_loaded()` method
+
+### Bug fixes
+
+- fixed `objectMaxMemoryConsumption` setting in `ServerSettings` to use megabytes instead of bytes
+
 ## 11.6.1.101 - 2026/01/16
 
 ### New features

@@ -1,3 +1,4 @@
+import json
 from typing import TYPE_CHECKING
 
 from requests import Response
@@ -761,21 +762,21 @@ def validate_project_duplication_compatibility(
     )
 
 
-@ErrorHandler(err_msg='Error triggering project duplication from target environment')
-def trigger_project_duplication_from_target_env(
+@ErrorHandler(err_msg='Error triggering project restoration on target environment')
+def trigger_project_restoration_on_target_env(
     connection: 'Connection',
-    body: dict,
+    package: bytes,
+    metadata: dict,
     prefer: str = 'respond-async',
     fields: str | None = None,
     error_msg: str | None = None,
 ) -> Response:
-    """Trigger a new project duplication from target environment.
+    """Trigger project restoration from backup package on target environment.
 
     Args:
         connection (Connection): Strategy One REST API connection object
-        body (dict): Dictionary containing the project duplication settings.
-            It must contain binary file with duplication package and
-            metadata about duplication.
+        package (bytes): Binary content of the project duplication package
+        metadata (dict): Dictionary containing the project duplication metadata
         prefer (str, optional): The preferred response mode. Defaults to
             'respond-async'
         fields (string, optional): A whitelist of top-level fields separated by
@@ -786,9 +787,92 @@ def trigger_project_duplication_from_target_env(
     Returns:
         Complete HTTP response object. 201 on success.
     """
+    files = {
+        'file': ('package.projdup', package, 'application/octet-stream'),
+    }
+    data = {'metadata': json.dumps(metadata)}
+
     return connection.post(
         endpoint='/api/projectDuplications/restoration',
+        files=files,
+        data=data,
+        headers={'Prefer': prefer},
+        params={'fields': fields},
+    )
+
+
+@ErrorHandler(err_msg='Error triggering project duplication on target environment')
+def trigger_project_duplication_on_target_env(
+    connection: 'Connection',
+    id: str,
+    body: dict,
+    prefer: str = 'respond-async',
+    fields: str | None = None,
+    error_msg: str | None = None,
+) -> Response:
+    """Trigger a new project duplication from target environment.
+
+    Args:
+        connection (Connection): Strategy One REST API connection object
+        id (string): Project duplication ID
+        body (dict): Dictionary containing the project duplication settings.
+        prefer (str, optional): The preferred response mode. Defaults to
+            'respond-async'
+        fields (string, optional): A whitelist of top-level fields separated by
+            commas. Allow the client to selectively retrieve fields in the
+            response.
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object. 201 on success.
+    """
+    return connection.put(
+        endpoint=f'/api/projectDuplications/{id}',
         json=body,
         headers={'Prefer': prefer},
         params={'fields': fields},
     )
+
+
+@ErrorHandler(err_msg='Error getting project duplication package with ID {id}')
+def get_project_duplication_package(
+    connection: 'Connection',
+    id: str,
+    fields: str | None = None,
+    error_msg: str | None = None,
+) -> Response:
+    """Get project duplication package binary file.
+
+    Args:
+        connection (Connection): Strategy One REST API connection object
+        id (string): Project duplication ID
+        fields (string, optional): A whitelist of top-level fields separated by
+            commas. Allow the client to selectively retrieve fields in the
+            response.
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object. 200 on success.
+    """
+    return connection.get(
+        endpoint=f'/api/projectDuplications/{id}/backup', params={'fields': fields}
+    )
+
+
+@ErrorHandler(err_msg='Error deleting project duplication with ID {id}')
+def delete_project_duplication(
+    connection: 'Connection',
+    id: str,
+    error_msg: str | None = None,
+) -> Response:
+    """Delete a specific project duplication.
+
+    Args:
+        connection (Connection): Strategy One REST API connection object
+        id (string): Project duplication ID
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        HTTP response object. 200 on success.
+    """
+    return connection.delete(endpoint=f'/api/projectDuplications/{id}')

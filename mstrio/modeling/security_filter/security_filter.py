@@ -263,7 +263,7 @@ class SecurityFilter(Entity, CopyMixin, DeleteMixin, MoveMixin):
             'is_embedded',
             'top_level',
             'bottom_level',
-        ): (security_filters.update_security_filter, "put"),
+        ): (security_filters.update_security_filter, 'partial_put'),
         (
             'folder_id',
             'hidden',
@@ -513,6 +513,8 @@ class SecurityFilter(Entity, CopyMixin, DeleteMixin, MoveMixin):
             comments (str, optional): Long description of the security filter.
             owner: (str, User, optional): Owner of the security filter.
         """
+        if name is None:
+            name = self.name  # REST requires name in body, even if not changing
         if isinstance(owner, User):
             owner = owner.id
         if qualification and isinstance(qualification, str):

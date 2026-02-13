@@ -1,6 +1,5 @@
 import sys
 from enum import Enum
-from functools import partial
 from typing import TYPE_CHECKING
 
 from mstrio.access_and_security.security_role import SecurityRole  # noqa: F401
@@ -36,16 +35,11 @@ from mstrio.project_objects.applications import Application  # noqa: F401
 from mstrio.project_objects.content_group import ContentGroup  # noqa: F401
 from mstrio.project_objects.datasets import OlapCube, SuperCube  # noqa: F401
 from mstrio.project_objects.palette import Palette  # noqa: F401
+from mstrio.python_execution import Script  # noqa F401
 from mstrio.server import Project  # noqa: F401
-
-# TODO: correct when no longer `wip`  # NOSONAR # noqa
-# from mstrio.python_execution.script import Script  # NOSONAR # noqa
 from mstrio.server.language import Language  # noqa: F401
 from mstrio.types import ObjectSubTypes, ObjectTypes
 from mstrio.users_and_groups import User, UserGroup  # noqa: F401
-
-Script = partial(Object, type=ObjectTypes.SCRIPT)
-
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection

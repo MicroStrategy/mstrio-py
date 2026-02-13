@@ -1,11 +1,21 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from mstrio.api import scripts as scripts_api
+from mstrio.helpers import try_str_to_num
 from mstrio.utils.encoder import Encoder
 from mstrio.utils.helper import delete_none_values
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
+
+
+def _parse_variables_data_before_return(variables_data: list[dict]) -> None:
+    # REST always returns value as string, even for `VariableType.NUMERICAL`
+    for var in variables_data:
+        if var.get('type') == 2 and isinstance(  # VariableType.NUMERICAL
+            v := var.get('value'), str
+        ):
+            var['value'] = try_str_to_num(v)
 
 
 def get_info_data(connection: 'Connection', id: str) -> dict:
@@ -21,11 +31,15 @@ def get_info_data(connection: 'Connection', id: str) -> dict:
     Returns:
         dict: Dictionary with Script information.
     """
-    return scripts_api.get_info(
+    data = scripts_api.get_info(
         connection=connection,
         project_id=connection.project_id,
         id=id,
     ).json()
+
+    _parse_variables_data_before_return(data.get('variables', []))
+
+    return data
 
 
 def create_script(
@@ -95,13 +109,15 @@ def update_script(
     Args:
         connection (Connection): Strategy One connection object returned by
             `connection.Connection()`.
+        id (str): ID of the Script to be updated.
+        body (dict): Dictionary with updated Script information.
 
     Returns:
-        dict: Dictionary with updated Script information.
+        dict: Dictionary with updated Script information after update.
     """
 
     if not body:
-        return False
+        return {}
 
     # FYI: this request returns something strange... we need fresh data to
     # return, requested independently
@@ -255,3 +271,53 @@ def get_history(
     ).json()['history']
 
     return items[0] if items else None
+
+
+def get_variables_personal_answers(
+    connection: 'Connection',
+    script_id: str,
+) -> dict[str, Any]:
+    """Gets personal answers for Script variables for the current user.
+
+    Args:
+        connection (Connection): Strategy One connection object returned by
+            `connection.Connection()`.
+        script_id (str): ID of the Script.
+
+    Returns:
+        dict[str, Any]: Dictionary mapping variable IDs to their personal
+            answers for current user.
+    """
+
+    data = scripts_api.get_script_variables_personal_answers(
+        connection,
+        project_id=connection.project_id,
+        id=script_id,
+    ).json()
+
+    _parse_variables_data_before_return(data.get('answers', []))
+
+    return {entry['id']: entry['value'] for entry in data['answers']}
+
+
+def save_variables_personal_answers(
+    connection: 'Connection',
+    script_id: str,
+    answers: list[dict],
+) -> None:
+    """Saves personal answers for Script variables for the current user.
+
+    Args:
+        connection (Connection): Strategy One connection object returned by
+            `connection.Connection()`.
+        script_id (str): ID of the Script.
+        answers (list[dict]): List of dictionaries representing personal answers
+            to be saved for current user.
+    """
+
+    scripts_api.update_script_variables_personal_answers(
+        connection,
+        project_id=connection.project_id,
+        id=script_id,
+        answers=answers,
+    )

@@ -1,15 +1,17 @@
 import logging
+import os
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum, IntEnum, auto
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 from pandas import DataFrame, Series
 from tqdm import tqdm
 
 from mstrio import config
+from mstrio.api import administration
 from mstrio.api import change_journal as change_journal_api
 from mstrio.api import datasources as datasources_api
 from mstrio.api import monitors, objects, projects
@@ -41,12 +43,13 @@ from mstrio.utils.version_helper import (
     method_version_handler,
 )
 from mstrio.utils.vldb_mixin import ModelVldbMixin
-from mstrio.utils.wip import wip
+from mstrio.utils.wip import WipLevels, wip
 
 if TYPE_CHECKING:
     from requests import Response
 
     from mstrio.datasources import DatasourceInstance
+    from mstrio.object_management.object import Object
     from mstrio.server.environment import Environment
     from mstrio.server.node import Node
     from mstrio.users_and_groups import User
@@ -941,6 +944,7 @@ class Project(Entity, DeleteMixin, ModelVldbMixin):
         self,
         on_nodes: 'str | Node | list[str | Node] | None' = None,
         check_all_selected_nodes: bool = False,
+        strict: bool = False,
     ) -> bool:
         """Check if the project is loaded on any node (server).
 
@@ -952,35 +956,49 @@ class Project(Entity, DeleteMixin, ModelVldbMixin):
                 project is loaded on all given nodes. If False, checks if the
                 project is loaded on at least one of the selected nodes.
                 Default is False.
+            strict (bool, optional): If True, performs additional checks that
+                the project is not only loaded on the server, but also reliably
+                accessible by Strategy One services that might not be
+                immediately synced after the project is loaded.
+                Default is False.
         """
 
-        # If `check_all_selected_nodes` is set, initialize result as True,
-        # then set to False and return as soon as a not loaded node is found.
-        # Converse applies for `check_all_selected_nodes` set to False.
-        result = check_all_selected_nodes
         self.fetch('nodes')
         if not isinstance(self.nodes, list):
             helper.exception_handler(
                 "Could not retrieve current project status.",
                 exception_type=ConnectionError,
             )
-        nodes_dict = {node['name']: node for node in self.nodes}
-        nodes_applicable_keys = self._normalize_nodes(on_nodes)
-        for node in nodes_applicable_keys:
-            # Iterate over nodes. Break when finding either:
-            # unloaded node (check_all_selected_nodes=True) or
-            # loaded node (check_all_selected_nodes=False).
-            projects = nodes_dict[node].get('projects')
-            if projects:
-                status = projects[0].get('status')
-                result_per_node = status == 'loaded'
-            else:
-                # Empty list in "projects" is treated as not loaded
-                result_per_node = False
-            if result_per_node != result:
-                result = result_per_node
-                break
-        return result
+
+        # Filter nodes list by whether project is loaded on the node.
+        nodes_loaded = {
+            node['name']
+            for node in self.nodes
+            if any(
+                prj['id'] == self.id and prj['status'] == 'loaded'
+                for prj in node.get('projects', [])
+            )
+        }
+        if strict:
+            libapi_nodes_res = administration.get_cluster_membership(
+                self.connection
+            ).json()
+            nodes_loaded_from_libapi = {
+                node['name']
+                for node in libapi_nodes_res
+                if any(
+                    prj['id'] == self.id and prj['status'] == 0
+                    for prj in node.get('projects', [])
+                )
+            }
+            nodes_loaded &= nodes_loaded_from_libapi
+
+        nodes_to_check = set(self._normalize_nodes(on_nodes))
+
+        if check_all_selected_nodes:
+            return nodes_to_check.issubset(nodes_loaded)
+        else:
+            return bool(nodes_to_check.intersection(nodes_loaded))
 
     def get_data_engine_versions(self) -> dict:
         """Fetch the currently available data engine versions for project."""
@@ -1381,6 +1399,62 @@ class Project(Entity, DeleteMixin, ModelVldbMixin):
             return problematic_items
         return len(problematic_items) == 0
 
+    def _build_duplication_body(
+        self,
+        target_name: str,
+        target_env: 'Connection | Environment | None' = None,
+        duplication_config: (
+            'dict | DuplicationConfig | CrossDuplicationConfig | None'
+        ) = None,
+    ) -> dict:
+        """Build common body part for project duplication methods.
+
+        Args:
+            target_name (str): New name for the duplicated project.
+            target_env (Connection, Environment, optional):
+                Target environment or connection to the target environment.
+                If not provided, current environment will be used.
+            duplication_config (dict, DuplicationConfig, CrossDuplicationConfig,
+                optional): Configuration for the duplication process. If not
+                provided `DuplicationConfig()` with default values will be used.
+
+        Returns:
+            dict: Body for duplication request.
+        """
+        from mstrio.server.environment import Environment
+
+        if not duplication_config:
+            duplication_config = DuplicationConfig()
+        if isinstance(duplication_config, DuplicationConfig):
+            duplication_config = duplication_config.to_dict(connection=self.connection)
+
+        if target_env is None:
+            target_env = self.connection
+        elif isinstance(target_env, Environment):
+            target_env = target_env.connection
+
+        body = {
+            'source': {
+                'environment': {
+                    'id': self.connection.base_url,
+                    'name': self.connection.base_url,
+                },
+                'project': {
+                    'id': self.id,
+                    'name': self.name,
+                },
+            },
+            'target': {
+                'environment': {
+                    'id': target_env.base_url,
+                    'name': target_env.base_url,
+                },
+                'project': {'name': target_name},
+            },
+            'settings': duplication_config,
+        }
+        return body
+
     @method_version_handler('11.5.0700')
     def duplicate(
         self,
@@ -1399,34 +1473,90 @@ class Project(Entity, DeleteMixin, ModelVldbMixin):
             ProjectDuplication object.
         """
 
-        if not duplication_config:
-            duplication_config = DuplicationConfig()
-        if isinstance(duplication_config, DuplicationConfig):
-            duplication_config = duplication_config.to_dict()
-        body = {
-            "source": {
-                "environment": {
-                    "id": self.connection.base_url,
-                    "name": self.connection.base_url,
-                },
-                "project": {
-                    "id": self.id,
-                    "name": self.name,
-                },
-            },
-            "target": {
-                "environment": {
-                    "id": self.connection.base_url,
-                    "name": self.connection.base_url,
-                },
-                "project": {"name": target_name},
-            },
-            "settings": duplication_config,
-        }
+        body = self._build_duplication_body(
+            target_name=target_name,
+            duplication_config=duplication_config,
+        )
         resp = projects.trigger_project_duplication(self.connection, self.id, body)
         return ProjectDuplication.from_dict(
             helper.get_response_json(resp), connection=self.connection
         )
+
+    @wip(level=WipLevels.PREVIEW)
+    @method_version_handler('11.5.1200')
+    def duplicate_to_other_environment(
+        self,
+        target_name: str,
+        target_env: 'Connection | Environment',
+        cross_duplication_config: 'dict | CrossDuplicationConfig | None' = None,
+        sync_with_target_env: bool | None = True,
+    ) -> 'ProjectDuplication':
+        """Duplicate the project with a new name to another environment. It can
+        work in two modes:
+        1) duplication by StorageService (default, when `sync_with_target_env`
+            is True) - in this mode, after triggering duplication on source
+            environment, the method will also trigger duplication on target
+            environment. This requires StorageService to be configured between
+            the two environments.
+        2) manual duplication (when `sync_with_target_env` is False) - in this
+            mode, the method will only trigger duplication on source
+            environment. Then the duplication file needs to be manually
+            transferred to the target environment and imported there.
+
+        Note:
+            Some duplication configuration properties require specific server
+            versions. See `DuplicationConfig` documentation for details.
+
+        Args:
+            target_name (str): New name for the duplicated project.
+            target_env (Connection, Environment): Target environment
+                or connection to the target environment.
+            cross_duplication_config (dict, CrossDuplicationConfig, optional):
+                Configuration for the cross-environment duplication process. If
+                not provided `CrossDuplicationConfig()` with default values will
+                be used.
+            sync_with_target_env (bool, optional): Whether to synchronize the
+                duplication with the target environment. If True, the method
+                will work in mode 1) described above. If False, the method will
+                work in mode 2). Default is True.
+
+        Returns:
+            ProjectDuplication object.
+
+        """
+
+        from mstrio.server.environment import Environment
+
+        if isinstance(target_env, Environment):
+            target_env = target_env.connection
+
+        if cross_duplication_config is None:
+            cross_duplication_config = CrossDuplicationConfig()
+
+        body = self._build_duplication_body(
+            target_name=target_name,
+            target_env=target_env,
+            duplication_config=cross_duplication_config,
+        )
+        resp = projects.trigger_project_duplication(self.connection, self.id, body)
+
+        if resp.ok:
+            logger.info(
+                f"Project '{self.name}' | {self.id} duplication from environment "
+                f"'{self.connection.base_url}' to '{target_env.base_url}' "
+                f"initiated successfully."
+            )
+
+        if sync_with_target_env and resp.ok:
+            res = projects.trigger_project_duplication_on_target_env(
+                target_env, resp.json()['id'], body
+            )
+            if res.ok:
+                logger.info(
+                    f"Project '{self.name}' | {self.id} duplication synchronized "
+                    f"successfully on target environment '{target_env.base_url}'."
+                )
+        return ProjectDuplication.from_dict(resp.json(), connection=self.connection)
 
     @method_version_handler('11.4.0900')
     def purge_change_journals(
@@ -1640,7 +1770,6 @@ class ProjectSettings(BaseSettings):
 
         super().__setattr__(key, value)
 
-    @wip()
     def enable_caching(self) -> None:
         """
         Enable caching settings for the current project on I-Server
@@ -1650,7 +1779,6 @@ class ProjectSettings(BaseSettings):
             if hasattr(self, setting):
                 self.__setattr__(setting, True)
 
-    @wip()
     def disable_caching(self) -> None:
         """
         Disable caching settings for the current project on I-Server
@@ -1694,7 +1822,6 @@ class ProjectSettings(BaseSettings):
                 "Please provide `connection` and `project_id` parameter"
             )
 
-    @wip()
     def list_caching_properties(self, show_description: bool = False) -> dict:
         """
         Fetch current project settings connected with caching from I-Server
@@ -1713,6 +1840,41 @@ class ProjectSettings(BaseSettings):
         }
 
 
+class ProjectDuplicationRule(Enum):
+    """Enum representing rules for handling conflicts for configuration
+    objects during cross-environment project duplication.
+
+    There are three possible rules:
+    - USE_EXISTING (1): Ignore the object in the source MD and retain the
+        object with the same ID in the target MD.
+    - REPLACE (2): Overwrite the object in the target MD with the object from
+        the source MD.
+    - MERGE (6): Merge the object in the source MD with the object in the
+        target MD. Applicable only to USER and SECURITY_ROLE objects. If the
+        merge rule is set for other types of objects, it will fall back to
+        USE_EXISTING.
+    """
+
+    USE_EXISTING = 1
+    REPLACE = 2
+    MERGE = 6
+
+
+@dataclass
+class AdminObjectRule(helper.Dictable):
+    """Rule for handling conflicts for a specific configuration object during
+    cross-environment project duplication.
+
+    Attributes:
+        type (ObjectTypes | int): Type of the configuration object.
+        rule (ProjectDuplicationRule | int): Rule for handling conflicts for
+            the configuration object.
+    """
+
+    type: ObjectTypes | int
+    rule: ProjectDuplicationRule | int
+
+
 @dataclass
 class DuplicationConfig(helper.Dictable):
     """Configuration for project duplication.
@@ -1722,10 +1884,15 @@ class DuplicationConfig(helper.Dictable):
             be duplicated.
         skip_empty_profile_folders (bool, optional): Whether to skip empty
             profile folders during duplication.
+        skip_all_profile_folders (bool, optional): Whether to skip all profile
+            folders during duplication. Available in Strategy One 11.5.0900+.
         include_user_subscriptions (bool, optional): Whether to include user
             subscriptions in the duplication.
         include_contact_subscriptions (bool, optional): Whether to include
             contact subscriptions in the duplication.
+        include_contacts_and_contact_groups (bool, optional): Whether to
+            include contacts and contact groups in the duplication. Available
+            in Strategy One 11.5.0900+.
         import_description (str, optional): Description for the import operation
             to be stored in ProjectDuplication class object.
         import_default_locale (int, optional): Locale used for
@@ -1733,12 +1900,20 @@ class DuplicationConfig(helper.Dictable):
             object 'lcid' attribute.
         import_locales (list[int], optional): List of locale ids for imported
             project. Please provide Language object 'lcid' attribute.
+
+    Note:
+        The properties `skip_all_profile_folders` and
+        `include_contacts_and_contact_groups` are only available in Strategy
+        One version 11.5.0900 or higher. Using these properties with older
+        server versions may result in unexpected behavior.
     """
 
     schema_objects_only: bool = True
     skip_empty_profile_folders: bool = True
+    skip_all_profile_folders: bool = False
     include_user_subscriptions: bool = True
     include_contact_subscriptions: bool = True
+    include_contacts_and_contact_groups: bool = False
     import_description: str | None = 'Project Duplication'
     import_default_locale: int | None = 0
     import_locales: list[int] | None = field(default_factory=lambda: [0])
@@ -1747,18 +1922,72 @@ class DuplicationConfig(helper.Dictable):
         if self.import_default_locale not in self.import_locales:
             raise ValueError("Default locale must be included in the import locales.")
 
-    def to_dict(self) -> dict:
+    def _validate_version_specific_properties(self, connection: Connection) -> None:
+        """Validate that version-specific properties are not used with
+        incompatible server versions.
+
+        Args:
+            connection: Strategy One connection object.
+
+        Raises:
+            VersionException: If version-specific properties are used with
+                incompatible server version.
+        """
+        incompatible_properties = []
+        if self.skip_all_profile_folders:
+            incompatible_properties.append('skip_all_profile_folders')
+        if self.include_contacts_and_contact_groups:
+            incompatible_properties.append('include_contacts_and_contact_groups')
+
+        if incompatible_properties and not is_server_min_version(
+            connection, '11.5.0900'
+        ):
+            if len(incompatible_properties) == 1:
+                msg = (
+                    f"The property '{incompatible_properties[0]}' requires "
+                    "Strategy One version 11.5.0900 or higher. Your environment "
+                    f"is running version {connection.iserver_version}. Please "
+                    "update your environment to version 11.5.0900 or higher, "
+                    "or omit this property from the duplication configuration."
+                )
+            else:
+                properties_str = "', '".join(incompatible_properties)
+                msg = (
+                    f"The properties '{properties_str}' require Strategy One "
+                    "version 11.5.0900 or higher. Your environment is running "
+                    f"version {connection.iserver_version}. Please update your "
+                    "environment to version 11.5.0900 or higher, or omit these "
+                    "properties from the duplication configuration."
+                )
+            raise VersionException(msg)
+
+    def to_dict(self, connection: Connection | None = None) -> dict:
         """Convert the duplication configuration to a dictionary accepted by
-        the API."""
+        the API.
+
+        Args:
+            connection (Connection, optional): Strategy One connection object
+                to validate version-specific properties.
+
+        Returns:
+            dict: Dictionary representation of the duplication configuration.
+        """
+        if connection:
+            self._validate_version_specific_properties(connection)
+
         settings = {
             "export": {
                 "projectObjectsPreference": {
                     "schemaObjectsOnly": self.schema_objects_only,
                     "skipEmptyProfileFolders": self.skip_empty_profile_folders,
+                    "skipAllProfileFolders": self.skip_all_profile_folders,
                 },
                 "subscriptionPreferences": {
                     "includeUserSubscriptions": self.include_user_subscriptions,
                     "includeContactSubscriptions": self.include_contact_subscriptions,
+                    "includeContactsAndContactGroups": (
+                        self.include_contacts_and_contact_groups
+                    ),
                 },
             },
             "import": {
@@ -1767,6 +1996,15 @@ class DuplicationConfig(helper.Dictable):
                 "locales": self.import_locales,
             },
         }
+
+        if connection and not is_server_min_version(connection, '11.5.0900'):
+            settings["export"]["projectObjectsPreference"].pop(
+                "skipAllProfileFolders", None
+            )
+            settings["export"]["subscriptionPreferences"].pop(
+                "includeContactsAndContactGroups", None
+            )
+
         return settings
 
     @classmethod
@@ -1782,12 +2020,18 @@ class DuplicationConfig(helper.Dictable):
             skip_empty_profile_folders=export_sets.get(
                 'project_objects_preference', {}
             ).get('skip_empty_profile_folders', True),
+            skip_all_profile_folders=export_sets.get(
+                'project_objects_preference', {}
+            ).get('skip_all_profile_folders', False),
             include_user_subscriptions=export_sets.get(
                 'subscription_preferences', {}
             ).get('include_user_subscriptions', True),
             include_contact_subscriptions=export_sets.get(
                 'subscription_preferences', {}
             ).get('include_contact_subscriptions', True),
+            include_contacts_and_contact_groups=export_sets.get(
+                'subscription_preferences', {}
+            ).get('include_contacts_and_contact_groups', False),
             import_description=import_sets.get('description'),
             import_default_locale=import_sets.get('default_locale', 0),
             import_locales=import_sets.get('locales', [0]),
@@ -1832,6 +2076,143 @@ class ProjectDuplicationStatus(AutoUpperName):
     IMPORT_SYNCING = auto()
 
 
+@dataclass
+class CrossDuplicationConfig(DuplicationConfig):
+    """Configuration for cross-environment project duplication.
+
+    Extends `DuplicationConfig` with additional settings for handling
+    configuration objects (users, user groups, security roles, etc.)
+    during cross-environment duplication.
+
+    Attributes:
+        admin_objects_rules (list[AdminObjectRule | dict], optional):
+            List of rules for handling conflicts for configuration objects
+            during duplication.
+        admin_objects (list[Object | str], optional): List of admin objects
+            or admin object IDs to be included in the duplication.
+        include_all_user_groups (bool, optional): Whether to include all
+            user groups in the duplication. Default is False.
+        match_by_name (list[ObjectTypes | int], optional): List of object
+            types to match by name during import. Currently supported:
+            DBLOGIN (30), DBCONNECTION (31), and SECURITY_ROLE (44).
+        match_users_by_login (bool, optional): Whether to match users by
+            login during import. Default is False.
+
+    Note:
+        This class inherits all attributes from `DuplicationConfig`.
+    """
+
+    admin_objects_rules: list['AdminObjectRule | dict'] | None = field(default=None)
+    admin_objects: list['Object | str'] | None = field(default=None)
+    include_all_user_groups: bool = False
+    match_by_name: list[ObjectTypes | int] | None = field(default=None)
+    match_users_by_login: bool = False
+
+    def to_dict(self, connection: Connection | None = None) -> dict:
+        """Convert the cross-duplication configuration to a dictionary
+        accepted by the API.
+
+        Args:
+            connection (Connection, optional): Strategy One connection object
+                to validate version-specific properties.
+
+        Returns:
+            dict: Dictionary representation of the duplication configuration.
+        """
+        body = super().to_dict(connection=connection)
+
+        body['export']['configurationObjects'] = {
+            'includeAllUserGroups': self.include_all_user_groups
+        }
+        body['import']['configurationObjects'] = {
+            'matchUsersByLogin': self.match_users_by_login
+        }
+
+        if self.match_by_name is not None:
+            body['import']['typesMatchByName'] = [
+                get_enum_val(item, ObjectTypes) for item in self.match_by_name
+            ]
+
+        if self.admin_objects_rules is not None:
+            admin_objects_rules = [
+                rule.to_dict() if isinstance(rule, AdminObjectRule) else rule
+                for rule in self.admin_objects_rules
+            ]
+            body['export']['configurationObjects'][
+                'conflictRules'
+            ] = admin_objects_rules
+            body['import']['configurationObjects'][
+                'conflictRules'
+            ] = admin_objects_rules
+
+        if self.admin_objects is not None:
+            admin_object_ids = [
+                obj.id if isinstance(obj, Object) else obj for obj in self.admin_objects
+            ]
+            body['export']['configurationObjects']['objects'] = admin_object_ids
+
+        return body
+
+    @classmethod
+    def from_dict(cls, source, **kwargs):
+        """Create CrossDuplicationConfig from a dictionary.
+
+        Args:
+            source (dict): Dictionary with duplication configuration settings.
+
+        Returns:
+            CrossDuplicationConfig: Initialized configuration object.
+        """
+        source = helper.camel_to_snake(source)
+
+        export_sets = source.get('export', {})
+        import_sets = source.get('import', {})
+
+        export_config_objs = export_sets.get('configuration_objects', {})
+        import_config_objs = import_sets.get('configuration_objects', {})
+
+        admin_objects_rules = None
+        raw_rules = export_config_objs.get('conflict_rules')
+        if raw_rules is not None:
+            admin_objects_rules = [
+                AdminObjectRule.from_dict(rule) if isinstance(rule, dict) else rule
+                for rule in raw_rules
+            ]
+
+        admin_objects = export_config_objs.get('objects')
+
+        return cls(
+            schema_objects_only=export_sets.get('project_objects_preference', {}).get(
+                'schema_objects_only', True
+            ),
+            skip_empty_profile_folders=export_sets.get(
+                'project_objects_preference', {}
+            ).get('skip_empty_profile_folders', True),
+            skip_all_profile_folders=export_sets.get(
+                'project_objects_preference', {}
+            ).get('skip_all_profile_folders', False),
+            include_user_subscriptions=export_sets.get(
+                'subscription_preferences', {}
+            ).get('include_user_subscriptions', True),
+            include_contact_subscriptions=export_sets.get(
+                'subscription_preferences', {}
+            ).get('include_contact_subscriptions', True),
+            include_contacts_and_contact_groups=export_sets.get(
+                'subscription_preferences', {}
+            ).get('include_contacts_and_contact_groups', False),
+            import_description=import_sets.get('description', 'Project Duplication'),
+            import_default_locale=import_sets.get('default_locale', 0),
+            import_locales=import_sets.get('locales', [0]),
+            admin_objects_rules=admin_objects_rules,
+            admin_objects=admin_objects,
+            include_all_user_groups=export_config_objs.get(
+                'include_all_user_groups', False
+            ),
+            match_by_name=import_sets.get('types_match_by_name'),
+            match_users_by_login=import_config_objs.get('match_users_by_login', False),
+        )
+
+
 @method_version_handler('11.5.0700')
 def list_projects_duplications(
     connection: Connection, limit: int | None = None, to_dictionary: bool = False
@@ -1864,7 +2245,7 @@ def list_projects_duplications(
     ]
 
 
-class ProjectDuplication(EntityBase, ChangeJournalMixin):
+class ProjectDuplication(EntityBase, ChangeJournalMixin, DeleteMixin):
     """Object representation of a project duplication request.
 
     Attributes:
@@ -1876,7 +2257,9 @@ class ProjectDuplication(EntityBase, ChangeJournalMixin):
         status (ProjectDuplicationStatus): Duplication status.
         progress (int): Duplication progress percentage.
         message (str): Status or error message.
-        settings (DuplicationConfig): Duplication settings.
+        settings (DuplicationConfig | CrossDuplicationConfig): Duplication
+            settings. Returns `CrossDuplicationConfig` for cross-environment
+            duplications, otherwise `DuplicationConfig`.
     """
 
     _API_GETTERS = {
@@ -1897,11 +2280,12 @@ class ProjectDuplication(EntityBase, ChangeJournalMixin):
         **EntityBase._FROM_DICT_MAP,
         'created_date': DatetimeFormats.FULLDATETIME,
         'last_updated_date': DatetimeFormats.FULLDATETIME,
-        'settings': DuplicationConfig.from_dict,
         'source': ProjectInfo.from_dict,
         'status': ProjectDuplicationStatus,
         'target': ProjectInfo.from_dict,
     }
+    _API_DELETE = staticmethod(projects.delete_project_duplication)
+    _API_DEL_JOURNAL_MIN_VER = None
 
     def __init__(
         self,
@@ -1920,15 +2304,13 @@ class ProjectDuplication(EntityBase, ChangeJournalMixin):
 
     def _init_variables(self, **kwargs) -> None:
         super()._init_variables(**kwargs)
+        source_dict = kwargs.get('source', {})
+        target_dict = kwargs.get('target', {})
         self.source = (
-            ProjectInfo.from_dict(kwargs.get('source', {}))
-            if kwargs.get('source')
-            else {}
+            ProjectInfo.from_dict(source_dict) if source_dict else ProjectInfo()
         )
         self.target = (
-            ProjectInfo.from_dict(kwargs.get('target', {}))
-            if kwargs.get('target')
-            else {}
+            ProjectInfo.from_dict(target_dict) if target_dict else ProjectInfo()
         )
         self.created_date = time_helper.map_str_to_datetime(
             "created_date", kwargs.get("created_date"), self._FROM_DICT_MAP
@@ -1943,11 +2325,38 @@ class ProjectDuplication(EntityBase, ChangeJournalMixin):
         )
         self.progress = kwargs.get('progress', 0)
         self.message = kwargs.get('message', '')
-        self.settings = (
-            DuplicationConfig.from_dict(kwargs.get('settings'))
-            if kwargs.get('settings')
-            else None
-        )
+        self.settings = self._parse_settings(kwargs)
+
+    def _set_object_attributes(self, **kwargs) -> None:
+        """Override to convert settings dict to config object."""
+        super()._set_object_attributes(**kwargs)
+        if isinstance(self.settings, dict):
+            self.settings = self._parse_settings(kwargs)
+
+    @staticmethod
+    def _parse_settings(
+        source: dict,
+    ) -> 'DuplicationConfig | CrossDuplicationConfig':
+        """Parse settings dictionary into appropriate config object.
+
+        Args:
+            source: Full API response dictionary containing source, target,
+                and settings keys.
+
+        Returns:
+            DuplicationConfig or CrossDuplicationConfig object.
+        """
+        settings = source.get('settings', {})
+        if not settings:
+            return DuplicationConfig()
+
+        source_env_id = source.get('source', {}).get('environment', {}).get('id')
+        target_env_id = source.get('target', {}).get('environment', {}).get('id')
+        is_cross_environment = source_env_id != target_env_id
+
+        if is_cross_environment:
+            return CrossDuplicationConfig.from_dict(settings)
+        return DuplicationConfig.from_dict(settings)
 
     @classmethod
     def from_dict(
@@ -1983,6 +2392,22 @@ class ProjectDuplication(EntityBase, ChangeJournalMixin):
                 )
             return False
 
+    @method_version_handler('11.5.1200')
+    def delete(
+        self,
+        force: bool = False,
+    ) -> bool:
+        """Deletes the project duplication record.
+
+        Args:
+            force (bool, optional): If True, no additional prompt will be shown
+                before deleting the project duplication record.
+
+        Returns:
+            True for success. False otherwise.
+        """
+        return super().delete(force=force)
+
     def __repr__(self) -> str:
         return (
             f"{self.__class__.__name__}(id='{self.id}', "
@@ -2015,3 +2440,99 @@ class ProjectDuplication(EntityBase, ChangeJournalMixin):
         return helper.wait_for_stable_status(
             self, 'status', not_stable_statuses, timeout=timeout, interval=interval
         )
+
+    @wip(level=WipLevels.PREVIEW)
+    @method_version_handler('11.5.1200')
+    def get_backup_package(
+        self, save_to_file: bool = True, save_path: str | None = None
+    ) -> dict[Literal['filepath', 'file_binary'], str | bytes] | bytes:
+        """Download the duplication package binary and optionally save it
+        to a file.
+
+        Note:
+            Backup package is available only for cross-environment
+            duplications on source environment after package is created.
+
+        Args:
+            save_to_file: If True, saves the package to a file. If False,
+                only returns the binary content. Defaults to True.
+            save_path: A directory path where the package binary will be saved.
+                If not provided, package will be saved to the current working
+                directory. Only used when save_to_file is True.
+
+        Returns:
+            If save_to_file is True: Dictionary with 'filepath' and
+            'file_binary' keys containing the path to saved file and
+            the binary content respectively.
+            If save_to_file is False: Binary content of the package.
+        """
+        response = projects.get_project_duplication_package(self.connection, id=self.id)
+
+        if not save_to_file:
+            return response.content
+
+        if not save_path:
+            save_path = os.getcwd()
+
+        content_disposition = response.headers.get('Content-Disposition', '')
+        if 'filename=' in content_disposition:
+            filename = content_disposition.split('filename=')[1].strip('"')
+        else:
+            filename = f"duplication_package_{self.id}.projdup"
+        filepath = os.path.join(save_path, filename)
+        with open(filepath, "wb") as f:
+            f.write(response.content)
+        if config.verbose:
+            logger.info(f"Duplication package saved to: {filepath}")
+
+        return {"filepath": filepath, "file_binary": response.content}
+
+    @wip(level=WipLevels.PREVIEW)
+    @method_version_handler('11.5.1200')
+    def restore_package_on_target_environment(
+        self,
+        target_env: 'Connection | Environment',
+    ) -> 'ProjectDuplication':
+        """Restore the backup package on the target environment.
+
+        Note:
+            This method should be called after the duplication package has been
+            created and exported on the source environment. The package will be
+            retrieved from the source environment and restored on the target
+            environment.
+
+        Args:
+            target_env (Connection | Environment): Target environment or
+                connection to the target environment.
+
+        Returns:
+            ProjectDuplication: Updated project duplication object from the
+                target environment.
+        """
+        from mstrio.server.environment import Environment
+
+        if isinstance(target_env, Environment):
+            target_env = target_env.connection
+
+        package = self.get_backup_package(save_to_file=False)
+
+        full_dict = self.to_dict()
+        settings = full_dict.get('settings', {})
+        target = full_dict.get('target', {})
+        target.pop('creator', None)
+
+        metadata_body = {
+            'settings': {'import': settings.get('import', {})},
+            'target': target,
+        }
+        resp = projects.trigger_project_restoration_on_target_env(
+            target_env, package, metadata_body
+        )
+
+        if resp.ok:
+            logger.info(
+                f"Project duplication package '{self.id}' restoration initiated "
+                f"successfully on target environment '{target_env.base_url}'."
+            )
+
+        return ProjectDuplication.from_dict(resp.json(), connection=target_env)

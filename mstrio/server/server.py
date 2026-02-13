@@ -33,11 +33,16 @@ class ServerSettings(BaseSettings):
 
     _TYPE = "allServerSettings"
     _READ_ONLY = ['historyListRunningStatus']
+
+    # Some settings are accepting/returning values in bytes/kilobytes, but
+    # their description and min/max values are in megabytes. This dict lists
+    # units used for respective settings for conversion to/from megabytes.
     _CONVERSION_MAP = {
         'pdfMaxMemoryConsumption': 'B',
         'xmlMaxMemoryConsumption': 'B',
         'excelMaxMemoryConsumption': 'B',
         'htmlMaxMemoryConsumption': 'B',
+        'objectMaxMemoryConsumption': 'B',
         'workSetMaxMemoryConsumption': 'KB',
         'catalogMaxMemoryConsumption': 'KB',
     }

@@ -1,10 +1,8 @@
 import json
 from collections.abc import Callable
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from functools import wraps
-
-import pytz
 
 
 class DatetimeFormats(Enum):
@@ -96,17 +94,18 @@ def _adapt_date_to_format(date: str, format_str: str) -> tuple | str:
 
 def str_to_datetime(date: str, format_str: str) -> datetime | None:
     """Change date format to datetime, based on `format_str` provided.
-    If `date` is already a datetime object, return it. Make the date aware."""
+    If `date` is already a datetime object, return it. Make the date timezone
+    aware."""
     if date is None or date == '':
         return date
 
     if not isinstance(date, datetime):
         date, format_str = _adapt_date_to_format(date, format_str)
         date = datetime.strptime(date, format_str)
-    try:  # Localize to utc if not yet localized
-        return pytz.utc.localize(date)
-    except ValueError:  # Already localized
-        return date
+
+    if date.tzinfo is None:  # Localize to utc if not yet localized
+        return date.replace(tzinfo=timezone.utc)
+    return date
 
 
 def _return_with_miliseconds(func):
@@ -127,15 +126,15 @@ def _return_with_miliseconds(func):
 @_return_with_miliseconds
 def datetime_to_str(date: datetime, format_str: str) -> str | None:
     """Get date string from datetime, based on `format_str` provided.
-    If `date` is already a string, return it. Make the date aware."""
+    If `date` is already a string, return it. Make the date timezone aware."""
     if isinstance(date, str):
         return date
     try:
         # We need the date to be aware, or the string won't be accepted by API
-        try:
-            return pytz.utc.localize(date).strftime(format_str)
-        except ValueError:  # Already localized
-            return date.strftime(format_str)
+        if date.tzinfo is None:  # Localize to utc if not yet localized
+            date = date.replace(tzinfo=timezone.utc)
+        return date.strftime(format_str)
+
     except (TypeError, AttributeError):
         return None
 
