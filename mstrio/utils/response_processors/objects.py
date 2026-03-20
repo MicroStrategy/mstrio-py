@@ -1,5 +1,6 @@
 from mstrio.api import objects as objects_api
 from mstrio.connection import Connection
+from mstrio.types import ObjectTypes
 from mstrio.utils.helper import rename_dict_keys
 
 
@@ -27,9 +28,20 @@ def get_info(
     Returns:
         dict
     """
-    obj_info = objects_api.get_object_info(
+    if object_type == ObjectTypes.PROJECT.value:
+        # On asymmetric clusters, if the configuration login session was created
+        # on a node where a project in question is non-existent or unloaded,
+        # this request would fail. Now, there is a server-level logic to handle
+        # load-balancing and this edge case: config login session can be moved
+        # to another node where this project is loaded. But to trigger it from
+        # client-side, project ID needs to be provided in header (for some
+        # reason for a project itself as well)
+        project_id = project_id or id
+
+    obj_info: dict = objects_api.get_object_info(
         connection, id, object_type, project_id
     ).json()
+
     obj_info['hidden'] = obj_info.get('hidden', False)
 
     return obj_info

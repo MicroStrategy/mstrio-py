@@ -21,7 +21,7 @@ class DependenceMixin:
     """
 
     def list_dependents(
-        self: 'Entity',
+        self,
         project: 'Project | str | None' = None,
         name: str | None = None,
         pattern: 'SearchPattern | int' = 4,
@@ -133,7 +133,7 @@ class DependenceMixin:
             **filters,
         )
 
-    def has_dependents(self: 'Entity') -> bool:
+    def has_dependents(self) -> bool:
         """Check if the object has any dependents.
 
         Returns:
@@ -152,7 +152,7 @@ class DependenceMixin:
         )
 
     def list_dependencies(
-        self: 'Entity',
+        self,
         project: 'Project | str | None' = None,
         name: str | None = None,
         pattern: 'SearchPattern | int' = 4,

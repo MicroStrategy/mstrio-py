@@ -193,7 +193,11 @@ def get_incremental_refresh_report_vldb_properties(
 
 @ErrorHandler(err_msg="Error executing an incremental refresh report")
 def execute_incremental_refresh_report(
-    connection: Connection, id: str, project_id: str, fields: str | None = None
+    connection: Connection,
+    id: str,
+    project_id: str,
+    fields: str | None = None,
+    execution_stage: str | None = None,
 ):
     """Execute an incremental refresh report.
 
@@ -201,8 +205,12 @@ def execute_incremental_refresh_report(
         connection: Strategy One REST API connection object
         id (str): Incremental Refresh Report's ID
         project_id (str): ID of a project
-        fields: A whitelist of top-level fields separated by commas.
-            Allow the client to selectively retrieve fields in the response.
+        fields (str, optional): A whitelist of top-level fields separated
+            by commas. Allows the client to selectively retrieve fields
+            in the response.
+        execution_stage (str, optional): The execution stage the report is
+            executed to. Available values: "resolve_prompts", "execute_data".
+            Default value: "execute_data".
 
     Return:
         HTTP response object. Expected status: 202
@@ -210,7 +218,7 @@ def execute_incremental_refresh_report(
     return connection.post(
         endpoint=f'/api/incrementalRefresh/{id}',
         headers={'X-MSTR-ProjectID': project_id},
-        params={'fields': fields},
+        params={'fields': fields, 'executionStage': execution_stage},
     )
 
 

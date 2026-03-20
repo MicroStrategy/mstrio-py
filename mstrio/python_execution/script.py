@@ -58,10 +58,7 @@ VariablesAnswers: TypeAlias = (
     | dict[str, 'VariableValue | FlagKeepDefaultAnswer']
 )
 AnswerForCallback: TypeAlias = Callable[[list['Variable']], None]
-FlagKeepDefaultAnswer: TypeAlias = (
-    type['VariableAnswer.KEEP_PERSONAL_DEFAULT']
-    | type['VariableAnswer.KEEP_GLOBAL_DEFAULT']
-)
+FlagKeepDefaultAnswer: TypeAlias = object
 
 
 # --- Exceptions ---
@@ -410,7 +407,7 @@ class Code:
         Args:
             runtime_id (str, optional): ID of the Script runtime. If nothing is
                 provided, defaults to Default Runtime.
-            variables (list[_Variable | dict], optional): List of Variables to
+            variables (list[Variable | dict], optional): List of Variables to
                 be used during Code execution.
             answers (VariablesAnswers, optional): Answers to prompted Variables.
                 Can be either a list of `VariableAnswer` class instances,
@@ -2238,7 +2235,7 @@ class VariableAnswer(Variable):
 
     @staticmethod
     @property
-    def KEEP_PERSONAL_DEFAULT() -> object:
+    def KEEP_PERSONAL_DEFAULT() -> FlagKeepDefaultAnswer:
         """Flag representing intention to keep personal-saved-default value of
         a Variable as an answer to the prompt-for-answer, instead of explicitly
         providing the answer.
@@ -2251,7 +2248,7 @@ class VariableAnswer(Variable):
 
     @staticmethod
     @property
-    def KEEP_GLOBAL_DEFAULT() -> object:
+    def KEEP_GLOBAL_DEFAULT() -> FlagKeepDefaultAnswer:
         """Flag representing intention to keep global default value of a
         Variable as an answer to the prompt-for-answer, instead of explicitly
         providing the answer (even ignoring personal-saved-answer if it was

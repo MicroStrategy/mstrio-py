@@ -132,6 +132,7 @@ Since version **11.3.0.1**, **mstrio-py** includes also administration modules:
 - **Prompt** module (see [code_snippets][code_snippet_prompt])
 - **Search Object** module (see [code_snippets][code_snippet_search_object])
 - **Script** module (see [code_snippets][code_snippet_scripts])
+- **PA Statistics** module (see [code_snippets][code_snippet_pa_stats])
 
 <!-- tox:docs:sort:end -->
 <!-- tox:docs: main features :end -->
@@ -140,7 +141,7 @@ Since version **11.3.0.1**, **mstrio-py** includes also administration modules:
 
 ## Versioning & Changelog
 
-Current version: **11.6.2.101** (13 February 2026). Check out [CHANGELOG][release_notes] to see what's new.
+Current version: **11.6.3.101** (20 March 2026). Check out [CHANGELOG][release_notes] to see what's new.
 
 `mstrio-py` is constantly developed to support newest Strategy One REST APIs. Functionalities may be added to mstrio on monthly basis. It is **recommended** to always install the newest version of mstrio-py, as it will be most stable and still maintain backwards compatibility with various Strategy One installations, dating back to 11.1.4.
 
@@ -246,3 +247,4 @@ When features (modules, parameters, attributes, methods etc.) are marked for dep
 [code_snippet_search_actions]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/search_actions.py
 [code_snippet_custom_group]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/custom_groups.py
 [code_snippet_scripts]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/scripts.py
+[code_snippet_pa_stats]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/pa_statistics_mgmt.py

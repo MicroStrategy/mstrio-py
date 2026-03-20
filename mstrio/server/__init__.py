@@ -22,10 +22,13 @@ from .license import (
 )
 from .node import Node
 from .project import (
+    AdminObjectRule,
+    CrossDuplicationConfig,
     DuplicationConfig,
     IdleMode,
     Project,
     ProjectDuplication,
+    ProjectDuplicationRule,
     ProjectDuplicationStatus,
     ProjectInfo,
     ProjectSettings,

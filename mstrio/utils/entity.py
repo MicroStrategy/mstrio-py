@@ -251,14 +251,14 @@ class EntityBase(helper.Dictable):
         self._AVAILABLE_ATTRIBUTES.update(
             {key: type(val) for key, val in kwargs.items()}
         )
-        self._connection = kwargs.get("connection")
-        self._id = kwargs.get("id", default_value)
+        self._connection: 'Connection | None' = kwargs.get("connection")
+        self._id: str | None = kwargs.get("id", default_value)
         self._type = (
             self._OBJECT_TYPE
             if 'type' in self._FROM_DICT_MAP
             else kwargs.get("type", self._OBJECT_TYPE)
         )
-        self.name = kwargs.get("name", default_value)
+        self.name: str | None = kwargs.get("name", default_value)
         self._altered_properties = {}
 
     def fetch(self, attr: str | None = None) -> None:  # NOSONAR
@@ -1427,7 +1427,7 @@ class CopyMixin:
     """
 
     def create_copy(
-        self: 'Entity[T]',
+        self,
         name: str | None = None,
         folder_id: str | None = None,
         project: 'Project | str | None' = None,
@@ -1469,7 +1469,7 @@ class MoveMixin:
     """
 
     def move(
-        self: Entity,
+        self,
         folder: 'Folder | tuple[str] | list[str] | str | None' = None,
         folder_id: str | None = None,
         folder_name: str | None = None,
@@ -1512,7 +1512,7 @@ class DeleteMixin:
     _DELETE_PROMPT_ANSWER: str = 'Y'
 
     def delete(
-        self: Entity, force: bool = False, journal_comment: str | None = None, **kwargs
+        self, force: bool = False, journal_comment: str | None = None, **kwargs
     ) -> bool:
         """Delete object.
 
@@ -1568,7 +1568,7 @@ class CertifyMixin:
     """
 
     def _toggle_certification(
-        self: Entity, certify: bool = True, success_msg: str = None
+        self, certify: bool = True, success_msg: str | None = None
     ) -> bool:
         object_name = self.__class__.__name__
         expected_result = 'certified' if certify else 'decertified'
@@ -1596,7 +1596,7 @@ class CertifyMixin:
             logger.info(msg)
         return response.ok
 
-    def certify(self: Entity) -> bool:
+    def certify(self, success_msg: str | None = None) -> bool:
         """Certify object.
 
         Args:
@@ -1605,17 +1605,18 @@ class CertifyMixin:
         Returns:
             True on success, False otherwise.
         """
-        return self._toggle_certification(certify=True)
+        return self._toggle_certification(certify=True, success_msg=success_msg)
 
-    def decertify(self: Entity) -> bool:
+    def decertify(self, success_msg: str | None = None) -> bool:
         """Decertify object.
 
         Args:
             success_msg: Custom message displayed on success.
+
         Returns:
             True on success, False otherwise.
         """
-        return self._toggle_certification(certify=False)
+        return self._toggle_certification(certify=False, success_msg=success_msg)
 
 
 class VldbMixin:
@@ -1628,7 +1629,7 @@ class VldbMixin:
     _parameter_error = "Please specify the project parameter."
     _vldb_settings: dict = {}
 
-    def list_vldb_settings(self: Entity, project: str | None = None) -> list:
+    def list_vldb_settings(self, project: str | None = None) -> list:
         """List VLDB settings."""
         connection = (
             self.connection if hasattr(self, 'connection') else self._connection
@@ -1642,7 +1643,7 @@ class VldbMixin:
         return response.json()
 
     def alter_vldb_settings(
-        self: Entity,
+        self,
         property_set_name: str,
         name: str,
         value: dict,
@@ -1669,7 +1670,7 @@ class VldbMixin:
         if config.verbose and response.ok:
             logger.info('VLDB settings altered.')
 
-    def reset_vldb_settings(self: Entity, project: str | None = None) -> None:
+    def reset_vldb_settings(self, project: str | None = None) -> None:
         """Reset VLDB settings to default values."""
 
         connection = (

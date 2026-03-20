@@ -18,7 +18,7 @@ class RelatedSubscriptionMixin:
 
     @method_version_handler('11.4.0600')
     def list_related_subscriptions(
-        self: RelatedSubscriptionTypes, to_dictionary: bool = False
+        self, to_dictionary: bool = False
     ) -> list['Subscription'] | list[dict]:
         """List all subscriptions that are dependent on the object.
 

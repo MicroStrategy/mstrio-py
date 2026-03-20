@@ -1,5 +1,4 @@
 import logging
-from typing import TYPE_CHECKING
 
 from mstrio import config
 from mstrio.api import documents, library, objects
@@ -10,10 +9,6 @@ from mstrio.object_management.library_shortcut import LibraryShortcut
 from mstrio.users_and_groups import User, UserGroup, UserOrGroup
 from mstrio.utils.helper import get_response_json
 from mstrio.utils.version_helper import method_version_handler
-
-if TYPE_CHECKING:
-    from mstrio.utils.entity import Entity
-
 
 REPORT_PROPERTIES_PROPERTY_SET_ID = "70A27C6E239911D5BF2200B0D02A21E0"
 ALLOW_HTML_EXECUTION_PROPERTY_INDEX = 12
@@ -30,7 +25,7 @@ class LibraryMixin:
 
     """
 
-    def _validate_user_or_group(self: "Entity", recipient_id: str) -> str | None:
+    def _validate_user_or_group(self, recipient_id: str) -> str | None:
         valid = False
         for cls in (User, UserGroup):
             try:
@@ -71,7 +66,7 @@ class LibraryMixin:
         return recipient_ids
 
     def publish(
-        self: "Entity",
+        self,
         recipients: UserOrGroup | str | list[UserOrGroup | str] | None = None,
     ):
         """Publish the document for authenticated user. If `recipients`
@@ -94,7 +89,7 @@ class LibraryMixin:
         self.fetch(attr='recipients')
 
     def unpublish(
-        self: "Entity",
+        self,
         recipients: UserOrGroup | str | list[UserOrGroup | str] | None = None,
     ):
         """Unpublish the document for all users it was previously published to.
@@ -123,7 +118,7 @@ class LibraryMixin:
 
     @method_version_handler('11.3.0600')
     def list_available_schedules(
-        self: "Entity",
+        self,
         to_dictionary: bool = False,
         name: str | None = None,
         limit: int | None = None,
@@ -167,7 +162,7 @@ class LibraryMixin:
                 for schedule_id in schedules_list
             ]
 
-    def share_to(self: "Entity", users: UserOrGroup | list[UserOrGroup]):
+    def share_to(self, users: UserOrGroup | list[UserOrGroup]):
         """Shares the document to the listed users' libraries.
 
         Args:
@@ -177,7 +172,7 @@ class LibraryMixin:
         """
         self.publish(users)
 
-    def is_html_js_execution_enabled(self: "Entity") -> bool | None:
+    def is_html_js_execution_enabled(self) -> bool | None:
         """Check whether HTML and JavaScript execution is enabled
         for the document.
 
@@ -205,7 +200,7 @@ class LibraryMixin:
 
         return prop
 
-    def set_html_js_execution_enabled(self: "Entity", enabled: bool) -> None:
+    def set_html_js_execution_enabled(self, enabled: bool) -> None:
         """Enable or disable HTML and JavaScript execution for the document.
 
         Args:
@@ -225,7 +220,7 @@ class LibraryMixin:
             self.connection, id=self.id, obj_type=self._OBJECT_TYPE.value, body=body
         )
 
-    def get_library_shortcut(self: "Entity") -> "LibraryShortcut":
+    def get_library_shortcut(self) -> "LibraryShortcut":
         response: dict = documents.get_document_shortcut(
             connection=self.connection,
             document_id=self.id,

@@ -273,7 +273,7 @@ class PrivilegeList:
         self.__privileges = Privilege.list_privileges(self.connection)
 
     @property
-    def privileges(self):
+    def privileges(self) -> list[Privilege]:
         """Returns privileges list."""
         return self.__privileges
 

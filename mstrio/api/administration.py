@@ -6,7 +6,7 @@ from mstrio.utils.error_handlers import ErrorHandler
 
 
 @ErrorHandler(err_msg="Error getting privileges.")
-def get_privileges(connection, error_msg=None):
+def get_privileges(connection: Connection, error_msg=None):
     """Get the set of available privileges for the platform.
 
     Args:
@@ -23,7 +23,7 @@ def get_privileges(connection, error_msg=None):
 
 
 @ErrorHandler(err_msg="Error getting privilege categories.")
-def get_privilege_categories(connection, error_msg=None):
+def get_privilege_categories(connection: Connection, error_msg=None):
     """Get the set of available privilege categories for the platform.
 
     Args:
@@ -40,7 +40,7 @@ def get_privilege_categories(connection, error_msg=None):
 
 
 @ErrorHandler(err_msg="Error getting LDAP information.")
-def get_ldap_info(connection, error_msg=None):
+def get_ldap_info(connection: Connection, error_msg=None):
     """Get the existing LDAP configuration and attributes which are stored in
     the Intelligence Server metadata. You may update and save it back later
     based on the existing configuration.
@@ -59,7 +59,7 @@ def get_ldap_info(connection, error_msg=None):
 
 
 @ErrorHandler(err_msg="Error creating LDAP configuration.")
-def create_ldap_config(connection, body, error_msg=None):
+def create_ldap_config(connection: Connection, body, error_msg=None):
     """Create a new LDAP configuration and save it to the Intelligence Server.
     There is only one LDAP configuration in Intelligence Server metadata, so
     this operation will replace the old configuration if exists. The request
@@ -82,7 +82,7 @@ def create_ldap_config(connection, body, error_msg=None):
 
 
 @ErrorHandler(err_msg="Error deleting LDAP configuration.")
-def delete_ldap_config(connection, error_msg=None):
+def delete_ldap_config(connection: Connection, error_msg=None):
     """Delete the existing LDAP configuration from Intelligence Server
     metadata.
 
@@ -100,7 +100,7 @@ def delete_ldap_config(connection, error_msg=None):
 
 
 @ErrorHandler(err_msg="Error updating LDAP configuration.")
-def update_ldap_config(connection, body, error_msg=None):
+def update_ldap_config(connection: Connection, body, error_msg=None):
     """Update the existing LDAP configuration and save it to the Intelligence
     Server. There is only one LDAP configuration in Intelligence Server
     metadata, so this operation will replace the old configuration. The request
@@ -123,7 +123,7 @@ def update_ldap_config(connection, body, error_msg=None):
 
 
 @ErrorHandler(err_msg="Error getting LDAP attributes.")
-def get_ldap_attributes(connection, error_msg=None):
+def get_ldap_attributes(connection: Connection, error_msg=None):
     """Get LDAP attributes list. You may want to import more attributes for
     users. The API will provides you the list of available LDAP attributes,
     from which you may choose some extra attributes to import.
@@ -142,7 +142,7 @@ def get_ldap_attributes(connection, error_msg=None):
 
 
 @ErrorHandler(err_msg="Error getting LDAP certificate information.")
-def get_ldap_certificate_info(connection, error_msg=None):
+def get_ldap_certificate_info(connection: Connection, error_msg=None):
     """Get LDAP server certificate info. The communication between the
     Intelligence Server and LDAP server can be encrypted by SSL (optional).
     This API will return basic information about the LDAP server certificate.
@@ -161,7 +161,7 @@ def get_ldap_certificate_info(connection, error_msg=None):
 
 
 @ErrorHandler(err_msg="Error updating LDAP certificate.")
-def upload_ldap_certificate(connection, body, error_msg=None):
+def upload_ldap_certificate(connection: Connection, body, error_msg=None):
     """Upload LDAP server certificate for encrypted communication. The
     communication between the Intelligence Server and the LDAP server can be
     encrypted by SSL (optional). The certificate uploaded in this API will be
@@ -185,7 +185,7 @@ def upload_ldap_certificate(connection, body, error_msg=None):
 
 
 @ErrorHandler(err_msg="Error verifying LDAP binding.")
-def verify_ldap_binding(connection, error_msg=None):
+def verify_ldap_binding(connection: Connection, error_msg=None):
     """Verify the LDAP username and password binding.
 
     Args:
@@ -202,7 +202,7 @@ def verify_ldap_binding(connection, error_msg=None):
 
 
 @ErrorHandler(err_msg="Error getting LDAP batch import status.")
-def get_ldap_batch_import_status(connection, error_msg=None):
+def get_ldap_batch_import_status(connection: Connection, error_msg=None):
     """Get LDAP batch import status. You can get the progress of LDAP batch
     import, including its status (e.g. failed, stopped, undergoing, and
     canceled). If there is LDAP batch import undergoing, you can also get the
@@ -222,7 +222,7 @@ def get_ldap_batch_import_status(connection, error_msg=None):
 
 
 @ErrorHandler(err_msg="Error stopping LDAP batch import.")
-def stop_ldap_batch_import(connection, error_msg=None):
+def stop_ldap_batch_import(connection: Connection, error_msg=None):
     """Stop the LDAP batch import if it exists. This operation will be ignored
     if there is no undergoing LDAP batch import.
 
@@ -242,7 +242,7 @@ def stop_ldap_batch_import(connection, error_msg=None):
 
 
 @ErrorHandler(err_msg="Error doing LDAP batch import.")
-def do_ldap_batch_import(connection, error_msg=None):
+def do_ldap_batch_import(connection: Connection, error_msg=None):
     """Do LDAP batch import now. This API starts the LDAP batch import, which
     will import both groups and users from the LDAP server. No request body is
     needed.
@@ -261,7 +261,7 @@ def do_ldap_batch_import(connection, error_msg=None):
 
 
 @ErrorHandler(err_msg="Error updating authentication configurations.")
-def update_authentication_configs(connection, body, error_msg=None):
+def update_authentication_configs(connection: Connection, body, error_msg=None):
     """Update the authentication configuration settings for the current REST
     server. In the body parameter of the request, you specify the default
     authentication mode and the authentication modes that will be available to
@@ -288,7 +288,7 @@ def update_authentication_configs(connection, body, error_msg=None):
 
 
 @ErrorHandler(err_msg="Error updating collaboration server configurations.")
-def update_collaboration_server_configs(connection, body, error_msg=None):
+def update_collaboration_server_configs(connection: Connection, body, error_msg=None):
     """Update the Collaboration Server configuration settings. In the body
     parameter of the request, you specify the base URL for the Collaboration
     Server, whether the collaboration service is enabled, and whether TLS
@@ -315,7 +315,7 @@ def update_collaboration_server_configs(connection, body, error_msg=None):
 
 
 @ErrorHandler(err_msg="Error updating web configurations.")
-def update_web_configs(connection, body, error_msg=None):
+def update_web_configs(connection: Connection, body, error_msg=None):
     """Update the Strategy One Web configuration settings. In the body
     parameter of the request, you specify the base URL for the Strategy One
     Web Server.
@@ -340,7 +340,7 @@ def update_web_configs(connection, body, error_msg=None):
 
 
 @ErrorHandler(err_msg="Error testing collaboration server connection.")
-def test_collaboration_connection(connection, body, error_msg=None):
+def test_collaboration_connection(connection: Connection, body, error_msg=None):
     """Test the connection between the REST Server and the Collaboration
     Server. In the body parameter of the request, you specify the base URL for
     the Collaboration Server and whether TLS (Transport Layer Security) secure
@@ -367,7 +367,7 @@ def test_collaboration_connection(connection, body, error_msg=None):
 
 
 @ErrorHandler(err_msg="Error updating intelligence server configurations.")
-def update_iserver_configs(connection, body, error_msg=None):
+def update_iserver_configs(connection: Connection, body, error_msg=None):
     """Update the Intelligence Server configuration settings. In the body
     parameter of the request, you specify the default port and hostname, the
     initial and max connection pool size, the request timeout, the number of
@@ -394,7 +394,7 @@ def update_iserver_configs(connection, body, error_msg=None):
 
 
 @ErrorHandler(err_msg="Error getting rest configurations.")
-def get_rest_configs(connection, error_msg=None):
+def get_rest_configs(connection: Connection, error_msg=None):
     """Get configuration settings for the current REST Server, including
     settings for authentication, the Collaboration Server, Google Analytics,
     and the Intelligence Server.
@@ -418,7 +418,7 @@ def get_rest_configs(connection, error_msg=None):
 @ErrorHandler(
     err_msg="Error checking intelligence server - web server trust relationship."
 )
-def check_iserver_web_trust(connection, error_msg=None):
+def check_iserver_web_trust(connection: Connection, error_msg=None):
     """Check to see if there is a trust relationship between the Web Server and
     the Intelligence Server.
 
@@ -441,7 +441,7 @@ def check_iserver_web_trust(connection, error_msg=None):
 @ErrorHandler(
     err_msg="Error setting intelligence server - web server trust relationship."
 )
-def set_iserver_web_trust(connection, body, error_msg=None):
+def set_iserver_web_trust(connection: Connection, body, error_msg=None):
     """Set up a trust relationship between the Web Server and the Intelligence
     Server. You obtain the authorization token needed to execute the request
     using POST /auth/login; you pass the authorization token in the request
@@ -470,7 +470,7 @@ def set_iserver_web_trust(connection, body, error_msg=None):
 @ErrorHandler(
     err_msg="Error deleting intelligence server - web server trust relationship."
 )
-def delete_iserver_web_trust(connection, error_msg=None):
+def delete_iserver_web_trust(connection: Connection, error_msg=None):
     """Delete a trust relationship between the Web Server and the Intelligence
     Server. You obtain the authorization token needed to execute the request
     using POST /auth/login; you pass the authorization token in the request
@@ -493,7 +493,7 @@ def delete_iserver_web_trust(connection, error_msg=None):
 
 
 @ErrorHandler(err_msg="Error testing intelligence server connection.")
-def test_iserver_connection(connection, error_msg=None):
+def test_iserver_connection(connection: Connection, error_msg=None):
     """Test the connection between the Intelligence Server and the REST Server.
     Currently, only socket connectivity is tested. In the body parameter of the
     request, you specify the port and hostname of the Intelligence Server.
@@ -515,7 +515,7 @@ def test_iserver_connection(connection, error_msg=None):
 
 
 @ErrorHandler(err_msg="Error getting security settings.")
-def get_security_settings(connection, error_msg=None):
+def get_security_settings(connection: Connection, error_msg=None):
     """Get relevant information about security settings, such as whether the
     secret key used for signing the identity token was set in the configuration
     file. If it was not set properly, an exception will be triggered.
@@ -537,7 +537,7 @@ def get_security_settings(connection, error_msg=None):
 
 
 @ErrorHandler(err_msg="Error updating security settings.")
-def update_security_settings(connection, body, error_msg=None):
+def update_security_settings(connection: Connection, body, error_msg=None):
     """Update the security settings. In the body of the request you can specify
     the secret key that will be used in identity token generation, whether to
     enable Cross Origin Resource Sharing (CORS), and whether to disable URL
@@ -563,7 +563,7 @@ def update_security_settings(connection, body, error_msg=None):
 
 
 @ErrorHandler(err_msg="Error fetching I-Server settings.")
-def get_iserver_settings_config(connection, error_msg=None):
+def get_iserver_settings_config(connection: Connection, error_msg=None):
     """For each setting, we provide different basic information to help client
     to render the settings.
 
@@ -581,7 +581,7 @@ def get_iserver_settings_config(connection, error_msg=None):
 
 
 @ErrorHandler(err_msg="Error fetching I-Server settings.")
-def get_iserver_settings(connection, error_msg=None):
+def get_iserver_settings(connection: Connection, error_msg=None):
     """This resource will retire resource 'GET iserver/settings' in the future
     version. Current version just cover Governing rule settings.
 
@@ -600,7 +600,7 @@ def get_iserver_settings(connection, error_msg=None):
 
 @ErrorHandler(err_msg="Error updating I-Server settings.")
 def create_iserver_settings(
-    connection, body, error_msg=None, whitelist=('ERR001', 400)
+    connection: Connection, body, error_msg=None, whitelist=('ERR001', 400)
 ):
     """Create some IServer governing settings.
 
@@ -626,7 +626,7 @@ def create_iserver_settings(
 
 @ErrorHandler(err_msg="Error updating I-Server settings.")
 def update_iserver_settings(
-    connection, body, error_msg=None, whitelist=('ERR001', 400)
+    connection: Connection, body, error_msg=None, whitelist=('ERR001', 400)
 ):
     """Update some IServer governing settings.
 
@@ -651,8 +651,8 @@ def update_iserver_settings(
 
 
 @ErrorHandler(err_msg="Error getting cluster membership information.")
-def get_cluster_membership(connection, error_msg=None):
-    """Get IServer cluster membership information.
+def get_cluster_membership_admin(connection: Connection, error_msg=None):
+    """Get IServer cluster membership information via legacy API.
 
     Args:
         connection: Strategy One REST API connection object
@@ -670,8 +670,25 @@ def get_cluster_membership(connection, error_msg=None):
     )
 
 
+@ErrorHandler(err_msg="Error getting cluster membership information.")
+def get_cluster_membership(connection: Connection, error_msg=None):
+    """Get IServer cluster membership information.
+
+    Args:
+        connection: Strategy One REST API connection object
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object.
+    """
+    return connection.get(
+        endpoint='/api/monitors/iServer/clusterMembership',
+        headers={'X-MSTR-ProjectID': None},
+    )
+
+
 @ErrorHandler(err_msg="Error getting I-Server node {node} settings.")
-def get_iserver_node_settings(connection, node, error_msg=None):
+def get_iserver_node_settings(connection: Connection, node, error_msg=None):
     """Get Intelligence Server configuration settings for a given server node
     within a cluster.
 
@@ -693,7 +710,7 @@ def get_iserver_node_settings(connection, node, error_msg=None):
 
 
 @ErrorHandler(err_msg="Error updating Intelligence Server configuration settings.")
-def update_iserver_configuration_settings(connection, body, error_msg=None):
+def update_iserver_configuration_settings(connection: Connection, body, error_msg=None):
     """Update Intelligence Server configuration settings.
 
     Args:
@@ -715,7 +732,7 @@ def update_iserver_configuration_settings(connection, body, error_msg=None):
 
 
 @ErrorHandler(err_msg="Error updating I-Server node {node} settings.")
-def update_iserver_node_settings(connection, body, node, error_msg=None):
+def update_iserver_node_settings(connection: Connection, body, node, error_msg=None):
     """Update Intelligence Server configuration settings for a given server
     node within a cluster.
 
@@ -741,7 +758,7 @@ def update_iserver_node_settings(connection, body, node, error_msg=None):
 
 
 @ErrorHandler(err_msg="Error deleting I-Server node {node} settings.")
-def delete_iserver_node_settings(connection, node, error_msg=None):
+def delete_iserver_node_settings(connection: Connection, node, error_msg=None):
     """Removes Intelligence Server configuration settings for a given server
     node within a cluster. This can be useful to clear out settings so that a
     default value is applied.
@@ -1021,4 +1038,215 @@ def update_cluster_startup_membership(
         endpoint='/api/iserver/clusterStartupMembership',
         json=body,
         params={'fields': fields},
+    )
+
+
+@ErrorHandler(err_msg="Error getting Telemetry Configuration.")
+def OLD_get_telemetry_configuration(  # NOSONAR
+    connection: Connection,
+    project_id: str | None = None,
+    is_live: bool = False,
+) -> Response:
+    """Get Telemetry Configuration.
+
+    The configuration indicates if the client telemetry and basic statistics
+    are enabled for each project (or a selected one if `project_id` is provided
+    or `connection` has it selected).
+
+    Args:
+        connection (Connection): Strategy One REST API connection object.
+        project_id (str, optional): Project ID to get the telemetry settings
+            for. If not provided, the project ID from the connection will be
+            used.
+        is_live (bool, optional): Whether to get live settings and refresh
+            cache. Default is False (get cached info).
+
+    Returns:
+        Complete HTTP response object.
+    """
+
+    project_id = project_id or connection.project_id
+    params = {}
+    headers = None
+
+    if project_id:
+        params['projectId'] = project_id
+        headers = {'X-MSTR-ProjectID': project_id}
+
+    if is_live:
+        params['isLive'] = is_live
+
+    return connection.get(
+        endpoint='/api/mstrServices/library/telemetryProducer/settings',
+        headers=headers,
+        params=params,
+    )
+
+
+@ErrorHandler(err_msg="Error getting Telemetry Configuration.")
+def get_telemetry_configuration(
+    connection: Connection,
+) -> Response:
+    """Get Telemetry Configuration for all projects (whole environment).
+
+    Args:
+        connection (Connection): Strategy One REST API connection object.
+
+    Returns:
+        Complete HTTP response object.
+    """
+
+    return connection.get(
+        endpoint='/api/iserver/telemetryProducer',
+        headers={'X-MSTR-ProjectID': None},
+    )
+
+
+@ErrorHandler(err_msg="Error getting Telemetry Configuration for project {project_id}.")
+def get_telemetry_configuration_for_project(
+    connection: Connection,
+    project_id: str,
+) -> Response:
+    """Get Telemetry Configuration for a project.
+
+    Args:
+        connection (Connection): Strategy One REST API connection object.
+        project_id (str): Project ID to get the telemetry settings for.
+
+    Returns:
+        Complete HTTP response object.
+    """
+
+    return connection.get(
+        endpoint=f'/api/iserver/telemetryProducer/{project_id}',
+        headers={'X-MSTR-ProjectID': project_id},
+    )
+
+
+@ErrorHandler(err_msg="Error updating Telemetry Basic Configuration.")
+def update_telemetry_basic_configuration(
+    connection: Connection,
+    body: dict,
+) -> Response:
+    """Update Telemetry Basic Configuration for all projects.
+
+    Note:
+        It applies only to "basic stats" and "client telemetry" properties.
+
+    Args:
+        connection (Connection): Strategy One REST API connection object.
+        body (dict): Telemetry configuration update data.
+
+    Returns:
+        Complete HTTP response object.
+    """
+
+    return connection.put(
+        endpoint='/api/mstrServices/library/telemetryProducer/settings',
+        headers={'X-MSTR-ProjectID': None},
+        json=body,
+    )
+
+
+@ErrorHandler(
+    err_msg="Error updating Telemetry Configuration for project {project_id}."
+)
+def update_telemetry_configuration_for_project(
+    connection: Connection,
+    project_id: str,
+    body: dict,
+) -> Response:
+    """Update Telemetry Configuration for a project.
+
+    Args:
+        connection (Connection): Strategy One REST API connection object
+        project_id (str): Project ID to update the telemetry settings for.
+        body (dict): Telemetry configuration update data.
+
+    Returns:
+        Complete HTTP response object.
+    """
+
+    return connection.patch(
+        endpoint=f'/api/iserver/telemetryProducer/{project_id}',
+        headers={'X-MSTR-ProjectID': project_id},
+        json=body,
+    )
+
+
+@ErrorHandler(err_msg="Error getting Telemetry Connections Info.")
+def get_telemetry_connections_info(connection: Connection) -> Response:
+    """Get the telemetry server connections from Library and I-Server.
+    If the connection in Library is the default localhost:9092, overwrites it
+    with the connection in I-Server.
+
+    Note:
+        Keys returned in response dict are:
+        ```
+        'kafkaProperties.bootstrap.servers': '127.0.0.1:9092,...',
+        'kafkaProperties.security.protocol': 'PLAINTEXT',
+        'iserver.bootstrap.servers': '127.0.0.1:9092,...',
+        ```
+        Multiple values in `.servers` keys are still a string but values are
+        separated by comma.
+
+    Args:
+        connection (Connection): Strategy One REST API connection object
+
+    Returns:
+        Complete HTTP response object.
+    """
+
+    return connection.get(
+        endpoint='/api/mstrServices/telemetryServer/settings',
+        headers={'X-MSTR-ProjectID': None},
+    )
+
+
+@ErrorHandler(err_msg="Error updating Telemetry Connections Info.")
+def update_telemetry_connections_info(
+    connection: Connection,
+    body: dict,
+) -> Response:
+    """Update the telemetry server connections in both Library and I-Server.
+
+    Args:
+        connection (Connection): Strategy One REST API connection object
+        body (dict): Telemetry connections update data
+
+    Returns:
+        Complete HTTP response object.
+    """
+
+    return connection.put(
+        endpoint='/api/mstrServices/telemetryServer/settings',
+        headers={'X-MSTR-ProjectID': None},
+        json=body,
+    )
+
+
+@ErrorHandler(err_msg="Error testing Telemetry Connections.")
+def validate_telemetry_connections(
+    connection: Connection,
+    body: dict,
+) -> Response:
+    """Verify connection between Library Server and Telemetry Server.
+
+    Check the exception in each node for the detailed failure message.
+
+    Note:
+        Use `get_telemetry_connections_info` to get data (`body`) to test.
+
+    Args:
+        connection (Connection): Strategy One REST API connection object
+        body (dict): Telemetry connections test data
+
+    Returns:
+        Complete HTTP response object.
+    """
+
+    return connection.post(
+        endpoint='/api/mstrServices/telemetryServer/connectionTest',
+        headers={'X-MSTR-ProjectID': None},
+        json=body,
     )

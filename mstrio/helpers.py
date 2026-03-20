@@ -178,3 +178,51 @@ def try_str_to_num(value: str) -> float | int | str:
             value = int(value)
 
     return value
+
+
+def int_dict_to_bool_dict(entry: dict[str, int]) -> dict[str, bool]:
+    """Converts a dictionary with integer values to a dictionary with boolean
+    values.
+
+    Args:
+        entry (dict[str, int]): The input dictionary with integer values.
+
+    Returns:
+        dict[str, bool]: A new dictionary with the same keys but boolean values.
+    """
+
+    if not all(v == 0 or v == 1 for v in entry.values()):
+        raise ValueError(
+            "To convert integer dictionary to boolean dictionary "
+            "all values need to be '0' or '1'."
+        )
+
+    return {k: bool(v) for k, v in entry.items()}
+
+
+def bool_dict_to_int_dict(entry: dict[str, bool]) -> dict[str, int]:
+    """Converts a dictionary with boolean values to a dictionary with integer
+    values.
+
+    Args:
+        entry (dict[str, bool]): The input dictionary with boolean values.
+
+    Returns:
+        dict[str, int]: A new dictionary with the same keys but integer values.
+    """
+
+    if not all(isinstance(v, bool) for v in entry.values()):
+        raise ValueError(
+            "To convert boolean dictionary to integer dictionary "
+            "all values need to be of type 'bool'."
+        )
+
+    return {k: int(v) for k, v in entry.items()}
+
+
+class classproperty:  # NOSONAR
+    def __init__(self, fget):
+        self._fget = fget
+
+    def __get__(self, _, owner):
+        return self._fget(owner)

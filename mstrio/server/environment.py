@@ -1,6 +1,7 @@
 import logging
+from dataclasses import dataclass
 from datetime import datetime
-from enum import Enum
+from enum import Enum, auto
 from typing import TYPE_CHECKING
 
 from pandas import DataFrame
@@ -17,7 +18,9 @@ from mstrio.server.project import Project, compare_project_settings
 from mstrio.server.server import ServerSettings
 from mstrio.server.storage import StorageService, StorageType
 from mstrio.utils import helper
+from mstrio.utils.enum_helper import AutoUpperName, get_enum_val
 from mstrio.utils.resolvers import get_project_id_from_params_set
+from mstrio.utils.response_processors import pa_statistics as pa_processors
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
 if TYPE_CHECKING:
@@ -26,11 +29,273 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class _LDAPBatchImport:
+class PAStatisticsEnvLevel:
+    """Class for handling PA Statistics operations at the Environment level.
+
+    Note:
+        It is not intended to be used directly.
+        Use `Environment.pa_statistics` instead.
+    """
+
+    @dataclass
+    class RepositoryInfo(helper.Dictable):
+        repository_id: str
+        pa_project_id: str
+
+    @dataclass
+    class TelemetryConfig(helper.Dictable):
+        # basic
+        basic_stats: bool | None = None
+        client_telemetry: bool | None = None
+        # advanced, also available from later release
+        detailed_rep_jobs: bool | None = None
+        detailed_doc_jobs: bool | None = None
+        job_sql: bool | None = None
+        columns_tables: bool | None = None
+        mobile_clients: bool | None = None
+        mobile_manipulation: bool | None = None
+        mobile_client_location: bool | None = None
+
+    @dataclass
+    class TelemetryConnections(helper.Dictable):
+        class Protocol(AutoUpperName):
+            PLAINTEXT = auto()
+            SASL_PLAINTEXT = auto()
+            SASL_SSL = auto()
+            SSL = auto()
+
+        _FROM_DICT_MAP = {"protocol": Protocol}
+
+        servers: list[str]
+        protocol: str | Protocol = Protocol.PLAINTEXT
+
+    #
+    def __init__(self, parent: 'Environment'):
+        self._parent = parent
+
+    def get_repository_info(self) -> RepositoryInfo:
+        """Retrieves repository information from the I-Server.
+
+        Returns:
+            RepositoryInfo: An object containing repository ID and
+                PA Project ID.
+        """
+
+        return self.RepositoryInfo.from_dict(
+            pa_processors.get_repository_info(self._connection)
+        )
+
+    def update_repository_info(self, new_info: RepositoryInfo | dict[str, str]) -> None:
+        """Updates the repository information on the I-Server.
+
+        Args:
+            new_info (RepositoryInfo | dict): New repository information. Both
+                `repository_id` and `pa_project_id` must be provided, either as
+                a `RepositoryInfo` object or as a dictionary with keys
+                `repository_id` and `pa_project_id`.
+        """
+
+        if isinstance(new_info, dict):
+            new_info = self.RepositoryInfo.from_dict(new_info)
+
+        result = pa_processors.update_repository_info(
+            self._connection,
+            repository_id=new_info.repository_id,
+            pa_project_id=new_info.pa_project_id,
+        )
+
+        if config.verbose:
+            if result:
+                logger.info("Repository information updated successfully.")
+            else:
+                logger.warning("Failed to update repository information.")
+
+    def get_telemetry_basic_configurations(self) -> dict[str, TelemetryConfig]:
+        """Retrieves the telemetry basic configurations for all projects from
+        the I-Server.
+
+        Returns:
+            dict[str, TelemetryConfig]: A dictionary containing telemetry
+                configuration details for each project.
+        """
+
+        with (
+            config.temp_verbose_disable(),
+            self._connection.temporary_project_change(None),
+        ):
+            data = pa_processors.get_basic_telemetry_configuration(self._connection)
+
+        for key, value in data.items():
+            data[key] = self.TelemetryConfig.from_dict(value)
+
+        return data
+
+    def enable_basic_telemetry_for_all_projects(self) -> None:
+        """Enables client telemetry and basic statistics for all projects on
+        the environment.
+        """
+
+        result = pa_processors.update_telemetry_basic_configuration_for_all_projects(
+            self._connection, to_enable=True
+        )
+
+        if config.verbose:
+            if result:
+                logger.info("Telemetry enabled for all projects successfully.")
+            else:
+                logger.warning("Failed to enable telemetry for all projects.")
+
+    def disable_basic_telemetry_for_all_projects(self) -> None:
+        """Disables client telemetry and basic statistics for all projects on
+        the environment.
+        """
+
+        result = pa_processors.update_telemetry_basic_configuration_for_all_projects(
+            self._connection, to_enable=False
+        )
+
+        if config.verbose:
+            if result:
+                logger.info("Telemetry disabled for all projects successfully.")
+            else:
+                logger.warning("Failed to disable telemetry for all projects.")
+
+    def get_telemetry_connections_info(self) -> TelemetryConnections:
+        """Retrieves the telemetry connections information from the I-Server.
+
+        Returns:
+            TelemetryConnections: An object containing telemetry connections
+                information.
+        """
+
+        return self.TelemetryConnections.from_dict(
+            pa_processors.get_telemetry_connections_info(self._connection)
+        )
+
+    def update_telemetry_connections_info(
+        self, new_data: TelemetryConnections | dict
+    ) -> None:
+        """Updates the telemetry connections information on the I-Server.
+
+        Args:
+            new_data (TelemetryConnections | dict): New telemetry connections
+                information. Must contain `servers` (list of server addresses)
+                and `protocol` (connection protocol, either as a string or as a
+                `Protocol` enum value. `protocol` is optional and defaults to
+                `Protocol.PLAINTEXT`).
+
+        Example:
+            ```
+            # Valid "servers" data -> <host:port>
+            servers = ["host.com:9092"]
+            ```
+        """
+
+        if isinstance(new_data, dict):
+            new_data = self.TelemetryConnections.from_dict(new_data)
+
+        result = pa_processors.update_telemetry_connections_info(
+            self._connection,
+            servers=new_data.servers,
+            protocol=get_enum_val(
+                new_data.protocol, self.TelemetryConnections.Protocol
+            ),
+        )
+
+        if config.verbose:
+            if result:
+                logger.info("Telemetry connections information updated successfully.")
+            else:
+                logger.warning("Failed to update telemetry connections information.")
+
+    def get_telemetry_connections_validation_info(
+        self, connections_data: TelemetryConnections | dict | None = None
+    ) -> dict[str, dict]:
+        """Retrieves the telemetry connections validation information from
+        the I-Server.
+
+        Args:
+            connections_data (TelemetryConnections | dict, optional): The
+                telemetry connections information to validate. If not provided,
+                the current telemetry connections information will be fetched
+                and validated. Must contain `servers` (list of server addresses)
+                and `protocol` (connection protocol, either as a string or as a
+                `Protocol` enum value).
+
+        Example:
+            ```
+            # Valid "servers" data -> <host:port>
+            servers = ["host.com:9092"]
+            ```
+
+        Returns:
+            dict[str, dict]: A dictionary containing validation results for the
+                telemetry connections information. It contains server as key and
+                validation result as value.
+        """
+
+        if connections_data is None:
+            connections_data = self.get_telemetry_connections_info()
+
+        if isinstance(connections_data, dict):
+            connections_data = self.TelemetryConnections.from_dict(connections_data)
+
+        return pa_processors.validate_telemetry_connections(
+            self._connection,
+            servers=connections_data.servers,
+            protocol=get_enum_val(
+                connections_data.protocol, self.TelemetryConnections.Protocol
+            ),
+        )
+
+    def validate_telemetry_connections(
+        self, connections_data: TelemetryConnections | dict | None = None
+    ) -> dict[str, bool]:
+        """Tests telemetry connections by sending the provided configuration
+        to the server and checking connectivity.
+
+        Args:
+            connections_data (TelemetryConnections | dict, optional): The
+                telemetry connections information to validate. If not provided,
+                the current telemetry connections information will be fetched
+                and validated. Must contain `servers` (list of server addresses)
+                and `protocol` (connection protocol, either as a string or as a
+                `Protocol` enum value).
+
+        Example:
+            ```
+            # Valid "servers" data -> <host:port>
+            servers = ["host.com:9092"]
+            ```
+
+        Returns:
+            dict[str, bool]: A dictionary containing server as key and a boolean
+                indicating whether the connection was successful as value.
+        """
+
+        validation_info = self.get_telemetry_connections_validation_info(
+            connections_data
+        )
+
+        return {
+            server: info.get('isConnectable', False)
+            for server, info in validation_info.items()
+        }
+
+    @property
+    def _connection(self) -> 'Connection':
+        return self._parent.connection
+
+
+class LDAPBatchImport:
     """Class for handling LDAP batch import operations.
 
     This class is used to perform batch import operations on LDAP
-    directories. It is not intended to be used directly by users.
+    directories.
+
+    Note:
+        It is not intended to be used directly.
+        Use `Environment.ldap_batch_import` instead.
     """
 
     class ImportStatus(Enum):
@@ -42,7 +307,7 @@ class _LDAPBatchImport:
         UNKNOWN = "Unknown"  # local, not REST
 
     def __init__(self, parent: 'Environment'):
-        """Initialize _LDAPBatchImport object.
+        """Initialize LDAPBatchImport object.
 
         Args:
             parent: Environment object to which this import belongs.
@@ -148,6 +413,9 @@ class Environment:
         node_names: List of I-Server node names.
     """
 
+    _ldap_batch_import_engine: LDAPBatchImport | None = None
+    _pa_stats_engine: PAStatisticsEnvLevel | None = None
+
     def __init__(self, connection: 'Connection'):
         """Initialize Environment object.
 
@@ -158,7 +426,8 @@ class Environment:
         self.connection = connection
         self._nodes = None
         self._storage_service: StorageService | None = None
-        self._ldap_batch_import_controller = _LDAPBatchImport(self)
+        self._ldap_batch_import_engine = LDAPBatchImport(self)
+        self._pa_stats_engine = PAStatisticsEnvLevel(self)
 
     @property
     def server_settings(self) -> ServerSettings:
@@ -287,6 +556,7 @@ class Environment:
             admin_api.storage_service_update_configs(
                 self.connection, storage_service_body
             )
+
         self.fetch_storage_service()
 
     def fetch_storage_service(self) -> None:
@@ -531,6 +801,8 @@ class Environment:
         return compare_project_settings(projects, show_diff_only)
 
     def is_cluster(self):
+        """Checks if the Environment is a cluster (aka has more than 1 node)."""
+
         return len(self.nodes) > 1
 
     @method_version_handler('11.4.0900')
@@ -603,16 +875,30 @@ class Environment:
             )
 
     @property
-    def nodes(self):
+    def nodes(self) -> list[dict]:
         if not self._nodes:
             self._nodes = self.list_nodes()
 
         return self._nodes
 
     @property
-    def node_names(self):
+    def node_names(self) -> list[str]:
         return [node['name'] for node in self.nodes]
 
     @property
-    def ldap_batch_import(self):
-        return self._ldap_batch_import_controller
+    def ldap_batch_import(self) -> LDAPBatchImport:
+        """Engine handling LDAP Batch Import for this Environment."""
+
+        if not self._ldap_batch_import_engine:
+            self._ldap_batch_import_engine = LDAPBatchImport(self)
+
+        return self._ldap_batch_import_engine
+
+    @property
+    def pa_statistics(self) -> PAStatisticsEnvLevel:
+        """Engine handling PA Statistics operations for this Environment."""
+
+        if not self._pa_stats_engine:
+            self._pa_stats_engine = PAStatisticsEnvLevel(self)
+
+        return self._pa_stats_engine
