@@ -85,14 +85,27 @@ strict = [
 # FYI: do not apply versioning to any dev-deps here - add them in `dev_constraints.txt`
 # subsets of deps: mainly for `tox` deps use
 config = ["pipdeptree"]
-docs = ["enum-tools[sphinx]", "m2r2", "mistune", "recommonmark", "Sphinx"]
+docs = [
+    "enum-tools[sphinx]",
+    "m2r2",
+    "mistune",
+    "recommonmark",
+    "Sphinx",
+    "sphinx-autodoc-typehints",
+]
 jupyter = ["jupyterlab", "jupyterlab-scenes"]
 lint = ["black", "flake8", "flake8-black", "yapf"]
 pre-commit = ["codespell", "isort", "mstrio-py[lint]", "pre-commit"]
 test = ["coverage", "flaky", "nose", "pytest", "pytest-cov", "python-decouple"]
 
 # templates of deps: mainly for actual development
-dev = ["mypy", "python-dotenv[cli]", "tox", "mstrio-py[lint,pre-commit,test]"]
+dev = [
+    "mypy",
+    "python-dotenv[cli]",
+    "tox",
+    "mstrio-py[lint,pre-commit,test]",
+    "virtualenv",
+]
 all = ["mstrio-py[config,docs,jupyter,lint,pre-commit,test,dev]"]
 
 [project.urls]

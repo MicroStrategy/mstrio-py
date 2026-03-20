@@ -37,7 +37,6 @@ validation_scripts
 tox.ini
 container/
 scripts/
-script-templates/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -123,3 +122,4 @@ venv.bak/
 # other
 code_snippets/*.json
 workflows/*.json
+script-templates/*.json

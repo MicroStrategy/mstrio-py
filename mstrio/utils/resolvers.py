@@ -118,7 +118,7 @@ def _get_id_from_params_set(
             assert all(isinstance(obj, (object_class, dict)) for obj in items), (
                 f"Expected all objects to be of type {object_class.__name__} "
                 "or pure dicts, but found types are: "
-                f"{{type(obj).__name__ for obj in items}}"
+                f"{({type(obj).__name__ for obj in items})}"
             )
 
             valid_objects = [obj for obj in items if get_prop_val(obj) == object_prop]

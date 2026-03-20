@@ -1,5 +1,7 @@
 import logging
+from contextlib import suppress
 from enum import auto
+from time import sleep
 from typing import TYPE_CHECKING
 
 import pandas as pd
@@ -8,6 +10,7 @@ from mstrio import config
 from mstrio.api import incremental_refresh_reports as refresh_api
 from mstrio.api import reports as reports_api
 from mstrio.connection import Connection
+from mstrio.helpers import IServerError, NotSupportedError
 from mstrio.modeling import (
     Expression,
     ExpressionFormat,
@@ -19,9 +22,10 @@ from mstrio.object_management import Folder, SearchPattern, full_search
 from mstrio.project_objects import OlapCube
 from mstrio.project_objects.datasets.helpers import AdvancedProperties, Template
 from mstrio.server import Job
+from mstrio.server.job_monitor import JobStatus
 from mstrio.types import ObjectSubTypes, ObjectTypes
 from mstrio.users_and_groups.user import User
-from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, MoveMixin
+from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, MoveMixin, PromptMixin
 from mstrio.utils.enum_helper import AutoName, get_enum_val
 from mstrio.utils.helper import (
     delete_none_values,
@@ -33,8 +37,14 @@ from mstrio.utils.resolvers import (
     get_folder_id_from_params_set,
     get_project_id_from_params_set,
 )
+from mstrio.utils.response_processors import irr as irr_processors
 from mstrio.utils.response_processors import objects as objects_processors
-from mstrio.utils.version_helper import class_version_handler, method_version_handler
+from mstrio.utils.response_processors import reports as reports_processors
+from mstrio.utils.version_helper import (
+    class_version_handler,
+    meets_minimal_version,
+    method_version_handler,
+)
 from mstrio.utils.vldb_mixin import ModelVldbMixin
 
 if TYPE_CHECKING:
@@ -167,7 +177,7 @@ def list_incremental_refresh_reports(
 
 @class_version_handler('11.3.0600')
 class IncrementalRefreshReport(
-    Entity, CopyMixin, MoveMixin, DeleteMixin, ModelVldbMixin
+    Entity, CopyMixin, MoveMixin, DeleteMixin, ModelVldbMixin, PromptMixin
 ):
     """Python representation of Strategy One Incremental Refresh Report object.
 
@@ -278,6 +288,12 @@ class IncrementalRefreshReport(
 
     _ALLOW_NONE_ATTRIBUTES = ['filter', 'template']
     _KEEP_CAMEL_CASE = ['vldbProperties', 'metricJoinTypes', 'attributeJoinTypes']
+
+    _API_GET_PROMPTS = staticmethod(reports_api.get_report_prompts)
+    _API_PROMPT_GET_INSTANCE = staticmethod(reports_api.report_instance)
+    _API_PROMPT_GET_OBJ_STATUS = staticmethod(reports_processors.get_report_status)
+    _API_PROMPT_GET_PROMPTED_INSTANCE = staticmethod(reports_api.get_prompted_instance)
+    _API_PROMPT_ANSWER_PROMPTS = staticmethod(reports_api.answer_report_prompts)
 
     def __init__(
         self,
@@ -404,12 +420,67 @@ class IncrementalRefreshReport(
         self._show_advanced_properties = kwargs.get('show_advanced_properties', False)
         self._prompts = None
 
+    def answer_prompts(self, *args, **kwargs):
+        raise NotSupportedError(
+            "Answering prompts separately from executing the report "
+            "is not supported for Incremental Refresh Reports. "
+            "Please provide prompt answers in the `execute` method."
+        )
+
+    def _safely_answer_instance_prompts(
+        self,
+        instance_id: str,
+        execute_job: Job,
+        prompt_answers: list[Prompt] | None,
+    ):
+        try:
+            if execute_job.status != JobStatus.WAITING_FOR_AUTOPROMPT:
+                return
+        except IServerError:
+            # job finished and removed before `status` could be populated
+            return
+
+        # Answer prompts. We want to require all answers to be provided via
+        # `prompt_answers` parameter, so that the executing job is not stuck
+        if prompt_answers is None:
+            prompt_answers = []
+
+        prompt_fallbacks = [
+            report_prompt
+            for report_prompt in self.prompts
+            if not any(
+                user_prompt.key == report_prompt.key for user_prompt in prompt_answers
+            )
+        ]
+
+        try:
+            super(IncrementalRefreshReport, self).answer_prompts(
+                prompt_answers=prompt_answers + prompt_fallbacks,
+                instance_id=instance_id,
+                force=True,
+            )
+
+            # may raise, because finished jobs are immediately removed
+            with suppress(IServerError):
+                execute_job.refresh_status()
+                if execute_job.status == JobStatus.WAITING_FOR_AUTOPROMPT:
+                    execute_job.kill()
+                    raise ValueError(
+                        f"Cannot execute Incremental Refresh Report \"{self.name}\". "
+                        "There are unanswered prompts."
+                    )
+        finally:
+            # next execution attempt should create a new instance, instead of
+            # trying to answer prompts for the existing one
+            self._instance_id = None
+
     def execute(
         self,
         fields: str | None = None,
         project: 'Project | str | None' = None,
         project_id: str | None = None,
         project_name: str | None = None,
+        prompt_answers: list[Prompt] | None = None,
     ) -> Job:
         """Execute (run) the report.
 
@@ -419,8 +490,10 @@ class IncrementalRefreshReport(
             project (Project | str, optional): Project object or ID or name
                 specifying the project. May be used instead of `project_id` or
                 `project_name`.
-            project_id (str, optional): Project ID
-            project_name (str, optional): Project name
+            project_id (str, optional): Project ID.
+            project_name (str, optional): Project name.
+            prompt_answers (list[Prompt], optional): A list of prompt answers to
+                be used for the report execution.
 
         Returns:
             Job instance.
@@ -432,20 +505,22 @@ class IncrementalRefreshReport(
             project_name,
         )
 
-        response = refresh_api.execute_incremental_refresh_report(
+        job_data = irr_processors.execute_incremental_refresh_report(
             self.connection,
             id=self.id,
             project_id=proj_id,
             fields=fields,
         )
 
-        job_data = response.json()
+        instance_id = job_data.get('instanceId')
+        execute_job = Job.from_dict(job_data, self.connection)
+        self._safely_answer_instance_prompts(instance_id, execute_job, prompt_answers)
         if config.verbose:
             logger.info(
                 f"Execution of Incremental Refresh Report: '{self.name}' has been "
                 f"successfully scheduled under job: {job_data}."
             )
-        return Job.from_dict(job_data, self.connection)
+        return execute_job
 
     @classmethod
     def create(
@@ -681,6 +756,8 @@ class IncrementalRefreshReport(
                 name=target_cube.name,
                 sub_type=ObjectSubType.REPORT_CUBE,
             )
+        if filter:
+            self._prompts = None
         filter = {} if self.filter is None and filter is None else filter  # NOSONAR
         arguments = filter_params_for_func(self.alter, locals(), exclude=['self'])
 
@@ -705,6 +782,7 @@ class IncrementalRefreshReport(
         offset: int | None = None,
         limit: int | None = None,
         fields: str | None = None,
+        prompt_answers: list[Prompt] | None = None,
     ) -> pd.DataFrame:
         """Get preview data for the Incremental Refresh Report.
 
@@ -715,18 +793,54 @@ class IncrementalRefreshReport(
                 If `None` (default), all objects are returned.
             fields (str, optional): A whitelist of top-level fields separated by
                 commas.
+            prompt_answers (list[Prompt], optional): A list of prompt answers to
+                be used for the report instance.
+
+        Returns:
+            pd.DataFrame: The preview data.
         """
-        response = refresh_api.create_incremental_refresh_report_instance(
-            self.connection, self.id
-        )
-        instance_id = response.headers['X-MSTR-MS-Instance']
-        refresh_api.request_incremental_refresh_report_preview_data(
-            connection=self.connection,
-            id=self.id,
-            instance_id=instance_id,
-            project_id=self.connection.project_id,
-            fields=fields,
-        )
+        if meets_minimal_version(self.connection.iserver_version, '11.6.0100'):
+            job_data = irr_processors.execute_incremental_refresh_report(
+                self.connection,
+                id=self.id,
+                project_id=self.connection.project_id,
+                fields=fields,
+                preview_only=True,
+            )
+            instance_id = job_data.get('instanceId')
+            execute_job = Job.from_dict(job_data, self.connection)
+            self._safely_answer_instance_prompts(
+                instance_id, execute_job, prompt_answers
+            )
+        else:
+            response = refresh_api.create_incremental_refresh_report_instance(
+                self.connection, self.id
+            )
+            instance_id = response.headers['X-MSTR-MS-Instance']
+
+        RETRY_LIMIT = 3
+        RETRY_REQUIRED_MSG = "received status 2"
+        retry_count = 0
+        while retry_count < RETRY_LIMIT:
+            try:
+                refresh_api.request_incremental_refresh_report_preview_data(
+                    connection=self.connection,
+                    id=self.id,
+                    instance_id=instance_id,
+                    project_id=self.connection.project_id,
+                    fields=fields,
+                )
+                break
+            except IServerError as e:
+                # The error here may occur due to a race condition, where
+                # I-Server reports that the instance has status 2 (waiting for
+                # prompt), but the job has been confirmed to change status.
+                # "received status 2"
+                if RETRY_REQUIRED_MSG in str(e):
+                    sleep(0.5)
+                else:
+                    raise
+            retry_count += 1
         json = refresh_api.get_incremental_refresh_report_preview_data(
             connection=self.connection,
             id=self.id,
@@ -747,16 +861,3 @@ class IncrementalRefreshReport(
         parser.parse(response=json)
 
         return parser.dataframe
-
-    @property
-    def prompts(self) -> dict:
-        """Prompts of the report."""
-        if self._prompts is None:
-            prompts = reports_api.get_report_prompts(
-                connection=self.connection, report_id=self.id
-            ).json()
-            self._prompts = [
-                Prompt.from_dict(source=prompt, connection=self.connection)
-                for prompt in prompts
-            ]
-        return self._prompts

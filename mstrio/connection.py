@@ -607,6 +607,11 @@ class Connection:
         self.project_id = proj_id
         self._session.headers['X-MSTR-ProjectID'] = self.project_id
 
+    def has_project_selected(self) -> bool:
+        """Check if a project is currently selected in the connection."""
+
+        return self.project_id is not None
+
     @contextlib.contextmanager
     def temporary_project_change(
         self,

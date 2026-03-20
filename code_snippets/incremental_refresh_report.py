@@ -1,4 +1,8 @@
 from mstrio.connection import get_connection
+from mstrio.modeling.expression.expression import Expression
+from mstrio.modeling.expression.expression_nodes import ElementListPredicate
+from mstrio.modeling.prompt import Prompt
+from mstrio.modeling.schema.helpers import ObjectSubType, SchemaObjectReference
 from mstrio.project_objects.incremental_refresh_report import ( 
     IncrementalRefreshReport,
     list_incremental_refresh_reports,
@@ -91,6 +95,32 @@ new_report.alter(
 publish_id = $publish_id  # ID of report to publish
 report_to_publish = IncrementalRefreshReport(conn, id=publish_id)
 report_to_publish.execute()
+
+# Preview data for an incremental refresh report by ID
+preview_data = new_report.get_preview_data()
+
+# Define variables which can be later used in a script
+PROMPT_ID = $prompt_id
+PROMPT_KEY = $prompt_key
+PROMPT_ANSWERS = $prompt_answers
+
+# Add element prompts to an incremental refresh report and execute with prompt answers
+filter_expression = Expression(
+    tree=ElementListPredicate(
+        elements_prompt=SchemaObjectReference(
+            sub_type=ObjectSubType.PROMPT_ELEMENTS,
+            object_id=PROMPT_ID,
+        ),
+    ),
+)
+new_report.alter(filter=filter_expression)
+
+# Prepare answers for a prompt
+answer = Prompt(key=PROMPT_KEY, answers=PROMPT_ANSWERS)
+
+# Answer prompts when publishing or previewing an incremental refresh report
+new_report.execute(prompt_answers=[answer])
+preview_data = new_report.get_preview_data(prompt_answers=[answer])
 
 # Delete an incremental refresh report by ID
 delete_id = $delete_id  # ID of report to delete

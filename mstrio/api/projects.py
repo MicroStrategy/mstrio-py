@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 from requests import Response
 
 from mstrio.utils.api_helpers import add_comment_to_dict, changeset_manager
-from mstrio.utils.error_handlers import ErrorHandler
+from mstrio.utils.error_handlers import ErrorHandler, response_handler
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
@@ -834,7 +834,6 @@ def trigger_project_duplication_on_target_env(
     )
 
 
-@ErrorHandler(err_msg='Error getting project duplication package with ID {id}')
 def get_project_duplication_package(
     connection: 'Connection',
     id: str,
@@ -854,9 +853,12 @@ def get_project_duplication_package(
     Returns:
         Complete HTTP response object. 200 on success.
     """
-    return connection.get(
+    res = connection.get(
         endpoint=f'/api/projectDuplications/{id}/backup', params={'fields': fields}
     )
+    if not res.ok:
+        response_handler(res, f'Failed to get project duplication package with ID {id}')
+    return res
 
 
 @ErrorHandler(err_msg='Error deleting project duplication with ID {id}')

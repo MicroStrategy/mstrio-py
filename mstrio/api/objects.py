@@ -16,26 +16,17 @@ logger = logging.getLogger(__name__)
 
 def _validate_project_id(
     source: 'Connection | FuturesSessionWithRenewal',
-    object_type: int,
     project_id: str | None,
     log_info_on_scope: bool = True,
 ) -> str | None:
-    is_asking_for_project = object_type == ObjectTypes.PROJECT.value
-    if is_asking_for_project:
-        project_id = None
-    elif project_id is None:  # do NOT fall through if we want PROJECT
+    if project_id is None:
         project_id = (
             source.project_id
             if isinstance(source, Connection)
             else source.connection.project_id
         )
 
-    if (
-        log_info_on_scope
-        and not is_asking_for_project
-        and not project_id
-        and config.verbose
-    ):
+    if log_info_on_scope and not project_id and config.verbose:
         logger.info(
             'Project was not selected. Action is performed for the non-project area'
         )
@@ -76,7 +67,7 @@ def get_object_info(
     Returns:
         HTTP response object returned by the Strategy One REST server.
     """
-    project_id = _validate_project_id(connection, object_type, project_id)
+    project_id = _validate_project_id(connection, project_id)
 
     return connection.get(
         endpoint=f'/api/objects/{id}',
@@ -108,7 +99,7 @@ def get_object_info_async(
     Returns:
         HTTP response object returned by the Strategy One REST server.
     """
-    project_id = _validate_project_id(future_session, object_type, project_id)
+    project_id = _validate_project_id(future_session, project_id)
 
     return future_session.get(
         endpoint=f'/api/objects/{id}',
@@ -148,7 +139,7 @@ def delete_object(
     Returns:
         HTTP response object returned by the Strategy One REST server.
     """
-    project_id = _validate_project_id(connection, object_type, project_id, False)
+    project_id = _validate_project_id(connection, project_id, False)
     params = {'type': object_type}
     params = add_comment_to_dict(params, journal_comment)
 
@@ -239,7 +230,7 @@ def update_object(
     Returns:
         HTTP response object returned by the Strategy One REST server.
     """
-    project_id = _validate_project_id(connection, object_type, project_id, False)
+    project_id = _validate_project_id(connection, project_id, False)
     comment = extract_comment_from_body(body)
     check_version_for_change_journal_comment(connection, '11.5.1200', comment)
     return connection.put(
@@ -286,7 +277,7 @@ def copy_object(
     Returns:
         HTTP response object returned by the Strategy One REST server.
     """
-    project_id = _validate_project_id(connection, object_type, project_id, False)
+    project_id = _validate_project_id(connection, project_id, False)
 
     if not project_id:
         raise ValueError("Project needs to be specified.")

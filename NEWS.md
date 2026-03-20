@@ -1,5 +1,24 @@
 # Changelog
 
+## 11.6.3.101 - 2026/03/20
+
+### New features
+
+- added `duplicate_to_other_environment()` and `restore_project_from_backup()` methods to `Project` class to allow cross-environment project duplication
+- added `get_backup_package()` and `restore_package_on_target_environment()` methods to `ProjectDuplication` class
+- added `CrossDuplicationConfig` class that extends `DuplicationConfig` to support cross-environment duplication settings
+- added Platform Analytics Statistics configuration methods to `Environment` and `Project` classes in `mstrio.server` subfolder, both under `Environment.pa_statistics` and `Project.pa_statistics` properties respectively. Please see `code_snippets` for detailed methods list
+- added `prompt_answers` argument to `execute()` and `get_preview_data()` methods of the class `IncrementalRefreshReport`
+
+### Minor changes
+
+- extended `DuplicationConfig` class with `skip_all_profile_folders` and `include_contacts_and_contact_groups` properties
+
+### Bug fixes
+
+- fixed initializing `Project` class on asymmetric cluster sometimes failing due to login session being on node without a project in question loaded
+- fixed `Project.is_loaded` returning with errors with `strict=True` when Library source Servlet configuration do not match user's data
+
 ## 11.6.2.101 - 2026/02/13
 
 ### New features

@@ -2,7 +2,7 @@ import logging
 import os
 import time
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 from datetime import datetime
 from enum import Enum, IntEnum, auto
 from typing import TYPE_CHECKING, Literal
@@ -16,7 +16,7 @@ from mstrio.api import change_journal as change_journal_api
 from mstrio.api import datasources as datasources_api
 from mstrio.api import monitors, objects, projects
 from mstrio.connection import Connection
-from mstrio.helpers import IServerError, VersionException
+from mstrio.helpers import IServerError, VersionException, classproperty
 from mstrio.server.change_journal import _format_timestamp_for_api_purge
 from mstrio.server.project_languages import (
     DataLanguageSettings,
@@ -34,6 +34,7 @@ from mstrio.utils.enum_helper import AutoName, AutoUpperName, get_enum_val
 from mstrio.utils.resolvers import validate_owner_key_in_filters
 from mstrio.utils.response_processors import datasources as datasources_processors
 from mstrio.utils.response_processors import objects as objects_processors
+from mstrio.utils.response_processors import pa_statistics as pa_processors
 from mstrio.utils.response_processors import projects as projects_processors
 from mstrio.utils.settings.base_settings import BaseSettings
 from mstrio.utils.time_helper import DatetimeFormats
@@ -43,7 +44,6 @@ from mstrio.utils.version_helper import (
     method_version_handler,
 )
 from mstrio.utils.vldb_mixin import ModelVldbMixin
-from mstrio.utils.wip import WipLevels, wip
 
 if TYPE_CHECKING:
     from requests import Response
@@ -54,10 +54,180 @@ if TYPE_CHECKING:
     from mstrio.server.node import Node
     from mstrio.users_and_groups import User
 
+
 logger = logging.getLogger(__name__)
 
 SYSTEM_OBJECTS_VERSION_PROPERTY_SET_ID = "C02146A211D46D60C0001786395B684F"
 AE_VERSION_PROPERTY_INDEX = 8
+
+
+class PAStatisticsProjectLevel:
+    """Class for handling PA Statistics operations at the Project level.
+
+    Note:
+        It is not intended to be used directly.
+        Use `Project.pa_statistics` instead.
+    """
+
+    def __init__(self, parent: 'Project'):
+        self._parent = parent
+
+    def get_telemetry_configuration(self) -> 'TelemetryConfig':
+        """Retrieves the telemetry configuration from the I-Server for
+        this Project.
+
+        Note:
+            Requires I-Server version 11.6.3 or newer to retrieve both basic and
+            advanced telemetry configuration details. On older versions, only
+            basic telemetry configuration details will be retrieved.
+
+        Returns:
+            TelemetryConfig: Class containing project's telemetry
+                configuration details.
+        """
+
+        if is_server_min_version(self._connection, "11.6.0300"):
+            # both basic and advanced, via new endpoints
+            return self.TelemetryConfig.from_dict(
+                pa_processors.get_telemetry_configuration_for_project(
+                    self._connection, project_id=self._parent.id
+                )
+            )
+
+        # only basic via old endpoints
+        logger.warning(
+            "Advanced configuration is available from I-Server version 11.6.3. "
+            f"This environment is in version {self._connection.iserver_version}. "
+            "Getting only basic configuration."
+        )
+
+        with (
+            config.temp_verbose_disable(),
+            self._connection.temporary_project_change(self._parent),
+        ):
+            try:
+                return self.TelemetryConfig.from_dict(
+                    pa_processors.get_basic_telemetry_configuration(self._connection)[
+                        self._parent.id
+                    ]
+                )
+            except KeyError as err:
+                raise ValueError(
+                    "Could not obtain or parse telemetry configuration details for "
+                    f"project with ID '{self._parent.id}'."
+                ) from err
+
+    @method_version_handler("11.6.0300")
+    def update_telemetry_configuration(
+        self, new_config: 'TelemetryConfig | dict'
+    ) -> None:
+        """Updates the telemetry configuration for this Project on the I-Server
+        with provided set of properties.
+
+        Note:
+            Requires I-Server version 11.6.3 or newer to update telemetry
+            configuration details.
+
+        Args:
+            new_config (TelemetryConfig | dict): The new telemetry configuration
+                to be applied to the project. Can be provided as a
+                `TelemetryConfig` object or as a dictionary with the same keys
+                as the attributes of `TelemetryConfig`. Can contain a subset of
+                available keys only.
+        """
+
+        data = (
+            new_config.to_dict()
+            if isinstance(new_config, self.TelemetryConfig)
+            else helper.snake_to_camel(new_config)
+        )
+
+        result: bool = pa_processors.update_telemetry_configuration_for_project(
+            self._connection, project_id=self._parent.id, **data
+        )
+
+        if config.verbose:
+            if result:
+                logger.info(
+                    f"Telemetry configuration for project '{self._parent.name}' "
+                    "successfully updated."
+                )
+            else:
+                logger.warning(
+                    f"Failed to update telemetry configuration for project "
+                    f"'{self._parent.name}'."
+                )
+
+    def _change_telemetry_basic_config(self, to_enable: bool) -> None:
+        data = self.TelemetryConfig()
+        data.basic_stats = to_enable
+        data.client_telemetry = to_enable
+
+        self.update_telemetry_configuration(data)
+
+    @method_version_handler("11.6.0300")
+    def enable_telemetry_basic_configuration(self) -> None:
+        """Enables telemetry basic configuration for this Project on the
+        I-Server.
+        """
+
+        self._change_telemetry_basic_config(True)
+
+    @method_version_handler("11.6.0300")
+    def disable_telemetry_basic_configuration(self) -> None:
+        """Disables telemetry basic configuration for this Project on the
+        I-Server.
+
+        Note:
+            Does not apply when advanced configuration is enabled.
+        """
+
+        self._change_telemetry_basic_config(False)
+
+    def _change_telemetry_advanced_configuration(self, to_enable: bool) -> None:
+        data = self.TelemetryConfig()
+        for key in [f.name for f in fields(self.TelemetryConfig)]:
+            setattr(data, key, to_enable)
+
+        if not to_enable:  # do not force disable basic if disabling advanced
+            data.basic_stats = None
+            data.client_telemetry = None
+
+        self.update_telemetry_configuration(data)
+
+    @method_version_handler("11.6.0300")
+    def enable_telemetry_advanced_configuration(self) -> None:
+        """Enables all telemetry advanced configuration for this Project on the
+        I-Server.
+
+        Note:
+            Enables all telemetry configuration properties, including basic.
+        """
+
+        self._change_telemetry_advanced_configuration(True)
+
+    @method_version_handler("11.6.0300")
+    def disable_telemetry_advanced_configuration(self) -> None:
+        """Disables all telemetry advanced configuration for this Project on the
+        I-Server.
+
+        Note:
+            Does not disable basic configuration. Use
+            `disable_telemetry_basic_configuration()` to disable basic
+            configuration.
+        """
+
+        self._change_telemetry_advanced_configuration(False)
+
+    @property
+    def _connection(self) -> 'Connection':
+        return self._parent.connection
+
+    @classproperty
+    def TelemetryConfig(_):  # NOSONAR # shortcut to refer to definition
+        from mstrio.server.environment import PAStatisticsEnvLevel
+
+        return PAStatisticsEnvLevel.TelemetryConfig
 
 
 class ProjectStatus(IntEnum):
@@ -266,6 +436,7 @@ class Project(Entity, DeleteMixin, ModelVldbMixin):
         machine_name: str | None = None
         owner: 'User | None' = None
 
+    #
     _OBJECT_TYPE = ObjectTypes.PROJECT
     _API_GETTERS = {
         **Entity._API_GETTERS,
@@ -308,6 +479,8 @@ class Project(Entity, DeleteMixin, ModelVldbMixin):
         'data': 'data_language_settings',
         'metadata': 'metadata_language_settings',
     }
+
+    _pa_stats_engine: PAStatisticsProjectLevel | None = None
 
     def __init__(
         self,
@@ -370,6 +543,8 @@ class Project(Entity, DeleteMixin, ModelVldbMixin):
                 )
             else:
                 raise e
+
+        self._pa_stats_engine = PAStatisticsProjectLevel(self)
 
     def _init_variables(self, **kwargs) -> None:
         super()._init_variables(**kwargs)
@@ -1482,7 +1657,6 @@ class Project(Entity, DeleteMixin, ModelVldbMixin):
             helper.get_response_json(resp), connection=self.connection
         )
 
-    @wip(level=WipLevels.PREVIEW)
     @method_version_handler('11.5.1200')
     def duplicate_to_other_environment(
         self,
@@ -1530,6 +1704,10 @@ class Project(Entity, DeleteMixin, ModelVldbMixin):
         if isinstance(target_env, Environment):
             target_env = target_env.connection
 
+        self._check_source_and_target_compatibility(
+            source_env=self.connection, target_env=target_env
+        )
+
         if cross_duplication_config is None:
             cross_duplication_config = CrossDuplicationConfig()
 
@@ -1557,6 +1735,133 @@ class Project(Entity, DeleteMixin, ModelVldbMixin):
                     f"successfully on target environment '{target_env.base_url}'."
                 )
         return ProjectDuplication.from_dict(resp.json(), connection=self.connection)
+
+    @staticmethod
+    def _check_source_and_target_compatibility(
+        source_env: 'Connection | Environment',
+        target_env: 'Connection | Environment',
+    ) -> None:
+        """Check compatibility between source and target environments for
+        project duplication.
+
+        This method retrieves the duplication compatibility info from the
+        source environment and validates it against the target environment.
+
+        Args:
+            source_env (Connection | Environment): Connection to the source
+                environment or Environment object.
+            target_env (Connection | Environment): Connection to the target
+                environment or Environment object.
+
+        Raises:
+            IServerError: If environments are not compatible for project
+                duplication (e.g., API version mismatch).
+        """
+        from mstrio.server.environment import Environment
+
+        if isinstance(source_env, Environment):
+            source_env = source_env.connection
+        if isinstance(target_env, Environment):
+            target_env = target_env.connection
+
+        source_compatibility = projects.get_project_duplication_compatibility(
+            source_env
+        ).json()
+
+        # HTTP 200 means compatible, otherwise exception will be raised
+        try:
+            projects.validate_project_duplication_compatibility(
+                target_env, body=source_compatibility
+            )
+        except IServerError as e:
+            logger.error(
+                f"Source environment '{source_env.base_url}' with iserver_version "
+                f"'{source_env.iserver_version}' and target environment "
+                f"'{target_env.base_url}' with iserver_version "
+                f"'{target_env.iserver_version}' are not compatible for project "
+                "duplication."
+            )
+            raise e
+
+        if config.verbose:
+            logger.info(
+                f"Source environment '{source_env.base_url}' and target "
+                f"environment '{target_env.base_url}' are compatible for "
+                "project duplication."
+            )
+
+    @staticmethod
+    @method_version_handler('11.5.1200')
+    def restore_project_from_backup(
+        connection: 'Connection',
+        backup_file: 'str | bytes',
+        target_name: str,
+        cross_duplication_config: 'dict | CrossDuplicationConfig | None' = None,
+    ) -> 'ProjectDuplication':
+        """Restore a project from a backup file to a target environment.
+
+        This method reads a backup package file (.projdup) and triggers
+        the project restoration on the target environment.
+
+        Note:
+            This method requires IServer version 11.5.1200 or higher.
+
+        Args:
+            connection (Connection): Connection to the target environment.
+            backup_file (str | bytes): Path to the backup file (.projdup) or
+                the binary content of the package.
+            target_name (str): New name for the restored project.
+            cross_duplication_config (dict, CrossDuplicationConfig, optional):
+                Configuration for the cross-environment duplication process. If
+                not provided `CrossDuplicationConfig()` with default values will
+                be used. It will use only settings relevant for import process.
+
+        Returns:
+            ProjectDuplication object representing the restoration process.
+        """
+
+        if isinstance(backup_file, str):
+            with open(backup_file, 'rb') as f:
+                package = f.read()
+        else:
+            package = backup_file
+
+        if cross_duplication_config is None:
+            cross_duplication_config = CrossDuplicationConfig()
+        if isinstance(cross_duplication_config, CrossDuplicationConfig):
+            cross_duplication_config = cross_duplication_config.to_dict(
+                connection=connection
+            )
+
+        metadata_body = {
+            'settings': {'import': cross_duplication_config.get('import', {})},
+            'target': {
+                'environment': {
+                    'id': connection.base_url,
+                    'name': connection.base_url,
+                },
+                'project': {'name': target_name},
+            },
+        }
+
+        res = projects.trigger_project_restoration_on_target_env(
+            connection, package, metadata_body
+        )
+        if res.ok and config.verbose:
+            logger.info(
+                f"Project restoration to environment '{connection.base_url}' "
+                "initiated successfully."
+            )
+        return ProjectDuplication.from_dict(res.json(), connection=connection)
+
+    def is_pa_project(self) -> bool:
+        """Checks whether this Project is a Platform Analytics Project.
+
+        Returns:
+            bool: True if the Project is a PA Project, False otherwise.
+        """
+        env = self.connection.environment
+        return env.pa_statistics.get_repository_info().pa_project_id == self.id
 
     @method_version_handler('11.4.0900')
     def purge_change_journals(
@@ -1655,6 +1960,15 @@ class Project(Entity, DeleteMixin, ModelVldbMixin):
     @method_version_handler('11.3.0600')
     def lock_status(self) -> LockStatus:
         return self._lock_status
+
+    @property
+    def pa_statistics(self) -> PAStatisticsProjectLevel:
+        """Engine handling PA Statistics Configuration for this Project."""
+
+        if not self._pa_stats_engine:
+            self._pa_stats_engine = PAStatisticsProjectLevel(self)
+
+        return self._pa_stats_engine
 
 
 class ProjectSettings(BaseSettings):
@@ -1961,7 +2275,7 @@ class DuplicationConfig(helper.Dictable):
                 )
             raise VersionException(msg)
 
-    def to_dict(self, connection: Connection | None = None) -> dict:
+    def to_dict(self, connection: 'Connection | None' = None, **kwargs) -> dict:
         """Convert the duplication configuration to a dictionary accepted by
         the API.
 
@@ -1972,6 +2286,7 @@ class DuplicationConfig(helper.Dictable):
         Returns:
             dict: Dictionary representation of the duplication configuration.
         """
+
         if connection:
             self._validate_version_specific_properties(connection)
 
@@ -1997,7 +2312,9 @@ class DuplicationConfig(helper.Dictable):
             },
         }
 
-        if connection and not is_server_min_version(connection, '11.5.0900'):
+        if isinstance(connection, Connection) and not is_server_min_version(
+            connection, '11.5.0900'
+        ):
             settings["export"]["projectObjectsPreference"].pop(
                 "skipAllProfileFolders", None
             )
@@ -2108,7 +2425,7 @@ class CrossDuplicationConfig(DuplicationConfig):
     match_by_name: list[ObjectTypes | int] | None = field(default=None)
     match_users_by_login: bool = False
 
-    def to_dict(self, connection: Connection | None = None) -> dict:
+    def to_dict(self, connection: 'Connection| None' = None, **kwargs) -> dict:
         """Convert the cross-duplication configuration to a dictionary
         accepted by the API.
 
@@ -2119,6 +2436,8 @@ class CrossDuplicationConfig(DuplicationConfig):
         Returns:
             dict: Dictionary representation of the duplication configuration.
         """
+        from mstrio.object_management.object import Object
+
         body = super().to_dict(connection=connection)
 
         body['export']['configurationObjects'] = {
@@ -2441,7 +2760,6 @@ class ProjectDuplication(EntityBase, ChangeJournalMixin, DeleteMixin):
             self, 'status', not_stable_statuses, timeout=timeout, interval=interval
         )
 
-    @wip(level=WipLevels.PREVIEW)
     @method_version_handler('11.5.1200')
     def get_backup_package(
         self, save_to_file: bool = True, save_path: str | None = None
@@ -2487,7 +2805,6 @@ class ProjectDuplication(EntityBase, ChangeJournalMixin, DeleteMixin):
 
         return {"filepath": filepath, "file_binary": response.content}
 
-    @wip(level=WipLevels.PREVIEW)
     @method_version_handler('11.5.1200')
     def restore_package_on_target_environment(
         self,

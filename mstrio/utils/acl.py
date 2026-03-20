@@ -23,7 +23,6 @@ from mstrio.utils.version_helper import is_server_min_version
 if TYPE_CHECKING:
     from mstrio.server import Project
     from mstrio.users_and_groups import UserOrGroup
-    from mstrio.utils.entity import Entity
 
 logger = logging.getLogger(__name__)
 
@@ -184,7 +183,7 @@ class ACLMixin:
             return acl
 
     def acl_add(
-        self: "Entity",
+        self,
         rights: int | Rights | AggregatedRights,
         trustees: "list[UserOrGroup] | UserOrGroup",
         denied: bool = False,
@@ -232,7 +231,7 @@ class ACLMixin:
         )
 
     def acl_remove(
-        self: "Entity",
+        self,
         rights: int | Rights | AggregatedRights,
         trustees: "list[UserOrGroup] | UserOrGroup",
         denied: bool = False,
@@ -280,7 +279,7 @@ class ACLMixin:
         )
 
     def acl_alter(
-        self: "Entity",
+        self,
         rights: int | Rights | AggregatedRights,
         trustees: "list[UserOrGroup] | UserOrGroup",
         denied: bool = False,
@@ -328,7 +327,7 @@ class ACLMixin:
         )
 
     def _update_acl(
-        self: "Entity",
+        self,
         op: str,
         rights: int | Rights | AggregatedRights,
         trustees: "list[UserOrGroup] | UserOrGroup",
@@ -381,7 +380,7 @@ class TrusteeACLMixin:
     """
 
     def set_permission(
-        self: 'UserOrGroup',
+        self,
         permission: Permissions | str,
         to_objects: str | list[str],
         object_type: 'ObjectTypes | int',
@@ -470,7 +469,7 @@ class TrusteeACLMixin:
                 pass
 
     def set_custom_permissions(
-        self: 'UserOrGroup',
+        self,
         to_objects: str | list[str],
         object_type: 'ObjectTypes | int',
         project: 'Project | str | None' = None,
