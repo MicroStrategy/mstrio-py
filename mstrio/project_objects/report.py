@@ -40,6 +40,7 @@ from mstrio.utils.helper import (
 from mstrio.utils.parser import Parser
 from mstrio.utils.related_subscription_mixin import RelatedSubscriptionMixin
 from mstrio.utils.resolvers import (
+    FolderPathType,
     get_project_id_from_params_set,
     validate_owner_key_in_filters,
 )
@@ -65,10 +66,10 @@ def list_reports(
     project_name: str | None = None,
     to_dictionary: bool = False,
     limit: int | None = None,
-    folder: 'Folder | tuple[str] | list[str] | str | None' = None,
+    folder: 'Folder | str | FolderPathType | None' = None,
     folder_id: str | None = None,
     folder_name: str | None = None,
-    folder_path: tuple[str] | list[str] | str | None = None,
+    folder_path: FolderPathType | None = None,
     **filters,
 ) -> list[type['Report']] | list[dict]:
     """Get list of Report objects or dicts with them.
@@ -99,17 +100,21 @@ def list_reports(
         project_name (str, optional): Project name
         limit (integer, optional): limit the number of elements returned. If
             None all object are returned.
-        folder (Folder | tuple | list | str, optional): Folder object or ID or
-            name or path specifying the folder. May be used instead of
-            `folder_id`, `folder_name` or `folder_path`.
-        folder_id (str, optional): ID of a folder.
-        folder_name (str, optional): Name of a folder.
-        folder_path (str, optional): Path of the folder.
+        folder (Folder | str | FolderPathType, optional): Folder object or ID or
+            name or path specifying the folder. See `folder_id`, `folder_name`
+            or `folder_path` for more info.
+        folder_id (str, optional): ID of a folder as string.
+        folder_name (str, optional): Name of a folder as string.
+        folder_path (FolderPathType, optional): Path of the folder. It can
+            be a string with "/" as path separator
+            (e.g. "folder/subfolder1/subfolder2") or a tuple or list of path
+            parts (e.g. `("folder", "subfolder1", "subfolder2")`).
+
             The path has to be provided in the following format:
                 if it's inside of a project, start with a Project Name:
-                    /MicroStrategy Tutorial/Public Objects/Metrics
+                    `/MicroStrategy Tutorial/Public Objects/Metrics`
                 if it's a root folder, start with `CASTOR_SERVER_CONFIGURATION`:
-                    /CASTOR_SERVER_CONFIGURATION/Users
+                    `/CASTOR_SERVER_CONFIGURATION/Users`
         **filters: Available filter parameters: ['id', 'type', 'subtype',
             'date_created', 'date_modified', 'version', 'owner', 'ext_type',
             'view_media', 'certified_info']
@@ -307,9 +312,13 @@ class Report(
                 progress_bar=progress_bar,
             )
 
-        # Report exposes VLDB property methods through both VldbMixin and
-        # ModelVldbMixin. Due to name confusion, the Modeling Service methods
-        # are prefixed with 'model_'.
+    def _init_model_vldb_mixin(self):
+        """Initialize ModelVldbMixin capabilities for the `Report` object.
+        `Report` exposes VLDB property methods through both `VldbMixin` and
+        `ModelVldbMixin`. The two sources of VLDB properties expose different
+        sets of settings, which makes exposition of both necessary. Due to name
+        collision, the Modeling Service methods are prefixed with 'model_'.
+        """
         self._model_vldb = ModelVldbMixin()
         self._model_vldb._MODEL_VLDB_API = {
             'GET_ADVANCED': reports_api.get_vldb_settings,
@@ -319,6 +328,8 @@ class Report(
         self._model_vldb.id = self.id
 
         self.model_list_vldb_settings = self._model_vldb.list_vldb_settings
+        self.model_alter_vldb_settings = self._model_vldb.alter_vldb_settings
+        self.model_reset_vldb_settings = self._model_vldb.reset_vldb_settings
 
     def _init_variables(self, default_value, **kwargs):
         super()._init_variables(default_value=default_value, **kwargs)
@@ -341,6 +352,8 @@ class Report(
         self._page_by_attributes = []
         self.__definition_retrieved = False
         self.__filter = None
+
+        self._init_model_vldb_mixin()
 
     def alter(
         self,

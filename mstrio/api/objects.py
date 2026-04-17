@@ -6,7 +6,10 @@ from mstrio.connection import Connection
 from mstrio.types import ObjectTypes
 from mstrio.utils.api_helpers import add_comment_to_dict, extract_comment_from_body
 from mstrio.utils.error_handlers import ErrorHandler
-from mstrio.utils.helper import check_version_for_change_journal_comment
+from mstrio.utils.helper import (
+    check_version_for_change_journal_comment,
+    delete_none_values,
+)
 
 if TYPE_CHECKING:
     from mstrio.utils.sessions import FuturesSessionWithRenewal
@@ -52,13 +55,13 @@ def get_object_info(
     provided in EnumDSSXMLObjectTypes.
 
     Args:
-        connection(object): Strategy One connection object returned by
+        connection (object): Strategy One connection object returned by
             `connection.Connection()`.
         id (str): Object ID
         object_type (int): One of EnumDSSXMLObjectTypes. Ex. 34 (User or
         UserGroup), 44 (Security Role), 32 (Project), 8 (Folder), 36 (type of
         I-Server configuration), 58 (Security Filter)
-        project_id(str): ID of a project in which the object is located.
+        project_id (str): ID of a project in which the object is located.
         error_msg (string, optional): Custom Error Message for Error Handling
         whitelist (list, optional): List of tuples containing error codes and
             status codes that should be ignored by the error handler.
@@ -94,7 +97,7 @@ def get_object_info_async(
         object_type (int): One of EnumDSSXMLObjectTypes. Ex. 34 (User or
         UserGroup), 44 (Security Role), 32 (Project), 8 (Folder), 36 (type of
         I-Server configuration), 58 (Security Filter)
-        project_id(str): ID of a project in which the object is located.
+        project_id (str): ID of a project in which the object is located.
 
     Returns:
         HTTP response object returned by the Strategy One REST server.
@@ -125,7 +128,7 @@ def delete_object(
     provided in EnumDSSXMLObjectTypes.
 
     Args:
-        connection(object): Strategy One connection object returned by
+        connection (object): Strategy One connection object returned by
             `connection.Connection()`.
         id (str): Object ID
         object_type (int): One of EnumDSSXMLObjectTypes. Ex. 34 (User or
@@ -150,8 +153,46 @@ def delete_object(
     )
 
 
-@ErrorHandler(err_msg="Error bulk deleting objects with IDs {ids}")
+@ErrorHandler(err_msg="Error bulk deleting objects.")
 def bulk_delete_objects(
+    connection: Connection,
+    body: list[dict],
+    project_id: str | None = None,
+    journal_comment: str | None = None,
+    error_msg: str | None = None,
+):
+    """Delete specific objects. Identify the objects in an array of object types
+    and IDs, which you specify in the body parameter of the request. Possible
+    values for object type are provided in EnumDSSXMLObjectTypes.
+
+    Args:
+        connection (object): Strategy One connection object returned by
+            `connection.Connection()`.
+        body (list): List of dictionaries containing object IDs and types, e.g.
+            [{"id": "object_id_1", "type": 3}, {"id": "object_id_2", "type": 8}]
+        project_id (str, optional): ID of a project in which the project objects
+            are located.
+        journal_comment (str, optional): Comment that will be added to the
+            objects' change journal entries
+        error_msg (string, optional): Custom Error Message for Error Handling
+    """
+    if project_id is None:
+        connection._validate_project_selected()
+        project_id = connection.project_id
+
+    check_version_for_change_journal_comment(connection, '11.5.1200', journal_comment)
+    params = delete_none_values({'userComment': journal_comment}, recursion=False)
+
+    return connection.delete(
+        endpoint='/api/objects',
+        headers={'X-MSTR-ProjectID': project_id},
+        params=params,
+        json=body,
+    )
+
+
+@ErrorHandler(err_msg="Error bulk deleting objects with IDs {ids}")
+def bulk_delete_project_objects(
     connection: Connection,
     ids,
     object_types,
@@ -168,28 +209,25 @@ def bulk_delete_objects(
         `ids` and `object_types` must have the same `len` to be zipped together.
 
     Args:
-        connection(object): Strategy One connection object returned by
+        connection (object): Strategy One connection object returned by
             `connection.Connection()`.
-        ids (list): List of Object IDs
-        object_types (list): List of Object Types
+        ids (list): List of object IDs
+        object_types (list): List of object types
         project_id (str): ID of a project in which the objects are located.
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
         HTTP response object returned by the Strategy One REST server.
     """
-    if (
-        not ids
-        or not object_types
-        or not (zipped := zip(ids, object_types, strict=True))
-    ):
+    if not ids or not object_types:
         raise ValueError("Both ids and object_types must be provided.")
 
     if project_id is None:
         connection._validate_project_selected()
         project_id = connection.project_id
 
-    body = [{"did": did, "tp": tp, "pip": project_id} for did, tp in zipped]
+    zipped = zip(ids, object_types, strict=True)
+    body = [{"did": did, "tp": tp, "pid": project_id} for did, tp in zipped]
     body = {"delete": body}
     return connection.post(
         endpoint='/api/objects/deleteObjects',
@@ -217,14 +255,14 @@ def update_object(
     provided in EnumDSSXMLObjectTypes.
 
     Args:
-        connection(object): Strategy One connection object returned by
+        connection (object): Strategy One connection object returned by
             `connection.Connection()`.
         id (str): Object ID
         body: (object): body of the response
         object_type (int): One of EnumDSSXMLObjectTypes. Ex. 34 (User or
         UserGroup), 44 (Security Role), 32 (Project), 8 (Folder), 36 (type of
         I-Server configuration)
-        project_id(str): ID of a project in which the object is located.
+        project_id (str): ID of a project in which the object is located.
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
@@ -265,13 +303,13 @@ def copy_object(
     the same folder as the source object.
 
     Args:
-        connection(object): Strategy One connection object returned by
+        connection (object): Strategy One connection object returned by
             `connection.Connection()`.
         id (str): Object ID
         object_type (int): One of EnumDSSXMLObjectTypes. Ex. 34 (User or
         UserGroup), 44 (Security Role), 32 (Project), 8 (Folder), 36 (type of
         I-Server configuration)
-        project_id(str): ID of a project in which the object is located.
+        project_id (str): ID of a project in which the object is located.
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
@@ -349,12 +387,12 @@ def get_vldb_settings(
     """Get vldb settings for an object.
 
     Args:
-        connection(object): Strategy One connection object returned by
+        connection (object): Strategy One connection object returned by
             `connection.Connection()`.
         id (str): Object ID
         object_type (int): DssXmlTypeReportDefinition(3) for Dataset and
             DssXmlTypeDocumentDefinition(55) for dashboard/document
-        project_id(str): ID of a project in which the object is located.
+        project_id (str): ID of a project in which the object is located.
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
@@ -384,12 +422,12 @@ def delete_vldb_settings(
     reset all vldb settings to default.
 
     Args:
-        connection(object): Strategy One connection object returned by
+        connection (object): Strategy One connection object returned by
             `connection.Connection()`.
         id (str): Object ID
         object_type (int): DssXmlTypeReportDefinition(3) for Dataset and
             DssXmlTypeDocumentDefinition(55) for dashboard/document
-        project_id(str): ID of a project in which the object is located.
+        project_id (str): ID of a project in which the object is located.
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
@@ -418,7 +456,7 @@ def set_vldb_settings(
     """Set vldb settings for one property set in one object.
 
     Args:
-        connection(object): Strategy One connection object returned by
+        connection (object): Strategy One connection object returned by
             `connection.Connection()`.
         id (str): Object ID
         object_type (int): DssXmlTypeReportDefinition(3) for Dataset and
@@ -426,7 +464,7 @@ def set_vldb_settings(
         name: property set name
         body: [{"name": "string",
                 "value": {}}]
-        project_id(str): ID of a project in which the object is located.
+        project_id (str): ID of a project in which the object is located.
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
@@ -445,129 +483,6 @@ def set_vldb_settings(
         headers=headers,
         json=body,
     )
-
-
-@ErrorHandler(err_msg="Error getting objects.")
-def create_search_objects_instance(
-    connection: Connection,
-    name=None,
-    pattern=4,
-    domain=2,
-    root=None,
-    object_type=None,
-    error_msg=None,
-):
-    """Create a search instance.
-
-    Args:
-        connection(object): Strategy One connection object returned by
-            `connection.Connection()`.
-        name: expression used with the pattern to do the search
-        pattern: specifies the nature of the search. Possible values are defined
-            in the EnumDSSXMLSearchTypes javadoc
-        domain: search domain. specifies the domain/scope of the search.
-            Possible values are defined in the EnumDSSXMLSearchDomain javadoc
-        root: folder ID of the root in which the search is done
-        object_type: specifies the type of objects to be searched. Possible
-            values are defined in the EnumDSSObjectType javadoc
-        error_msg (string, optional): Custom Error Message for Error Handling
-
-    Returns:
-        HTTP response returned by the Strategy One REST server
-    """
-    connection._validate_project_selected()
-    return connection.post(
-        endpoint='/api/objects',
-        headers={'X-MSTR-ProjectID': connection.project_id},
-        params={
-            'name': name,
-            'pattern': pattern,
-            'domain': domain,
-            'root': root,
-            'type': object_type,
-        },
-    )
-
-
-@ErrorHandler(err_msg="Error getting objects using search with ID {search_id}")
-def get_objects(
-    connection: Connection,
-    search_id,
-    offset=0,
-    limit=-1,
-    get_tree=False,
-    error_msg=None,
-):
-    """Get list of objects from metadata.
-
-    Args:
-        connection(object): Strategy One connection object returned by
-            `connection.Connection()`.
-        search_id: ID for the results of a previous search stored in I-Server
-            memory
-        offset: starting point within the collection of returned results. Used
-            to control paging behavior.
-        limit: maximum number of items returned for a single request. Used to
-            control paging behavior
-        get_tree: specifies that the search results should be displayed in
-            a tree structure instead of a list. The ancestors of the searched
-            objects are the nodes and the searched objects are the leaves of
-            the tree.
-        error_msg (string, optional): Custom Error Message for Error Handling
-
-    Returns:
-        HTTP response returned by the Strategy One REST server
-    """
-    connection._validate_project_selected
-    return connection.get(
-        endpoint='/api/objects',
-        headers={'X-MSTR-ProjectID': connection.project_id},
-        params={
-            'searchId': search_id,
-            'offset': offset,
-            'limit': limit,
-            'getTree': get_tree,
-        },
-    )
-
-
-def get_objects_async(
-    future_session: 'FuturesSessionWithRenewal',
-    search_id,
-    offset=0,
-    limit=-1,
-    get_tree=False,
-):
-    """Get list of objects from metadata asynchronously.
-
-    Args:
-        future_session(object): Future Session object to call Strategy One REST
-            Server asynchronously
-        search_id: ID for the results of a previous search stored in I-Server
-            memory
-        offset: starting point within the collection of returned results. Used
-            to control paging behavior.
-        limit: maximum number of items returned for a single request. Used to
-            control paging behavior.
-        get_tree: specifies that the search results should be displayed in
-            a tree structure instead of a list. The ancestors of the searched
-            objects are the nodes and the searched objects are the leaves of
-            the tree.
-
-    Returns:
-        HTTP response returned by the Strategy One REST server
-    """
-    future_session.connection._validate_project_selected()
-    endpoint = '/api/objects'
-    headers = {'X-MSTR-ProjectID': future_session.connection.project_id}
-    params = {
-        'searchId': search_id,
-        'offset': offset,
-        'limit': limit,
-        'getTree': get_tree,
-    }
-    future = future_session.get(endpoint=endpoint, headers=headers, params=params)
-    return future
 
 
 @ErrorHandler(err_msg="Error certifying object with ID {id}")

@@ -19,7 +19,7 @@ from mstrio.server.project import Project
 from mstrio.users_and_groups.user_connections import UserConnections
 from mstrio.utils import helper, time_helper
 from mstrio.utils.acl import TrusteeACLMixin
-from mstrio.utils.entity import Entity, ObjectTypes
+from mstrio.utils.entity import Entity, ObjectTypes, TenantMixin
 from mstrio.utils.enum_helper import get_enum
 from mstrio.utils.helper import (
     Dictable,
@@ -30,6 +30,7 @@ from mstrio.utils.helper import (
 )
 from mstrio.utils.related_subscription_mixin import RelatedSubscriptionMixin
 from mstrio.utils.resolvers import (
+    FolderPathType,
     get_folder_id_from_params_set,
     get_project_id_from_params_set,
     validate_owner_key_in_filters,
@@ -113,7 +114,7 @@ def list_users(
 _DEL_PROF_MIN_VER = '11.5.0300'
 
 
-class User(Entity, TrusteeACLMixin, RelatedSubscriptionMixin):
+class User(Entity, TrusteeACLMixin, RelatedSubscriptionMixin, TenantMixin):
     """Object representation of Strategy One User object.
 
     Attributes:
@@ -201,8 +202,10 @@ class User(Entity, TrusteeACLMixin, RelatedSubscriptionMixin):
             'default_timezone',
             'ldapdn',
             'default_email_address',
+            'tenant_id',
+            'tenant_name',
         ): users.get,
-        'comments': objects_processors.get_info,
+        ('comments'): objects_processors.get_info,
         'addresses': users.get_addresses,
         'security_roles': users.get_security_roles,
         'privileges': users.get_privileges,
@@ -1254,7 +1257,7 @@ class User(Entity, TrusteeACLMixin, RelatedSubscriptionMixin):
                     'Ignoring profile folder deletion during User deletion.'
                 )
             else:
-                self.delete_profile_folder(force=True)
+                self.delete_profile_folder(force=True, delete_from_all_projects=True)
 
         comment = process_delete_change_journal_comment(
             self.connection, '11.5.0900', journal_comment
@@ -1285,7 +1288,7 @@ class User(Entity, TrusteeACLMixin, RelatedSubscriptionMixin):
 
         Returns: dataframe
         """
-        excluded_keys = ['connection']
+        excluded_keys = ['connection', 'tenant']
         selected_keys = properties or (self.list_properties().keys() - excluded_keys)
 
         def convert(obj, inside=False):
@@ -1374,13 +1377,13 @@ class User(Entity, TrusteeACLMixin, RelatedSubscriptionMixin):
              of type User
         """
         dataframe = cls.to_datafame_from_list(objects, properties)
-        return dataframe.to_csv(index=False, path_or_buf=path)
+        return dataframe.to_csv(index=False, path_or_buf=path, lineterminator='\n')
 
     @method_version_handler('11.5.0300')
     def create_profile_folder(
         self,
-        destination_folder: 'Folder | tuple[str] | list[str] | str | None' = None,
-        destination_folder_path: tuple[str] | list[str] | str | None = None,
+        destination_folder: 'Folder | str | FolderPathType | None' = None,
+        destination_folder_path: FolderPathType | None = None,
         project: 'Project | str | None' = None,
         project_id: str | None = None,
         project_name: str | None = None,
@@ -1388,12 +1391,17 @@ class User(Entity, TrusteeACLMixin, RelatedSubscriptionMixin):
         """Creates a profile folder for the user.
 
         Args:
-            destination_folder (Folder | tuple | list | str, optional): Folder
+            destination_folder (Folder | str | FolderPathType, optional): Folder
                 object or ID or name or path specifying the folder where to
-                create object.
-            destination_folder_path (str, optional): Path of the folder.
+                create object. See `destination_folder_path` for more info about
+                path type.
+            destination_folder_path (FolderPathType, optional): Path of the
+                folder. It can be a string with "/" as path separator
+                (e.g. "folder/subfolder1/subfolder2") or a tuple or list of path
+                parts (e.g. `("folder", "subfolder1", "subfolder2")`).
+
                 The path has to be provided in the following format:
-                    /MicroStrategy Tutorial/Public Objects/Metrics
+                    `/MicroStrategy Tutorial/Public Objects/Metrics`
             project (Project | str, optional): Project object or ID or name
                 specifying the project. May be used instead of `project_id` or
                 `project_name`.
@@ -1446,6 +1454,7 @@ class User(Entity, TrusteeACLMixin, RelatedSubscriptionMixin):
         project: 'Project | str | None' = None,
         project_id: str | None = None,
         project_name: str | None = None,
+        delete_from_all_projects: bool = False,
         force: bool = False,
     ) -> bool:
         """Deletes the user's profile folder.
@@ -1456,6 +1465,8 @@ class User(Entity, TrusteeACLMixin, RelatedSubscriptionMixin):
                 `project_name`.
             project_id (str, optional): Project ID
             project_name (str, optional): Project name
+            delete_from_all_projects (bool, optional): If True, profile folders
+                will be deleted from all projects. Default is False.
             force (bool, optional): If True, no additional prompt will be shown
                 before deleting User's profile folder
 
@@ -1469,11 +1480,15 @@ class User(Entity, TrusteeACLMixin, RelatedSubscriptionMixin):
         if not force and input(message) != 'Y':
             return False
 
-        proj_id = get_project_id_from_params_set(
-            self.connection,
-            project,
-            project_id,
-            project_name,
+        proj_id = (
+            None
+            if delete_from_all_projects
+            else get_project_id_from_params_set(
+                self.connection,
+                project,
+                project_id,
+                project_name,
+            )
         )
 
         whitelist = [('ERR001', 500, 'user profile does not exist')]

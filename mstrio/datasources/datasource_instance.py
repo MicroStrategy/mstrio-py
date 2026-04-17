@@ -12,7 +12,7 @@ from mstrio.server.project import Project
 from mstrio.users_and_groups.user import User
 from mstrio.utils import helper
 from mstrio.utils.encoder import Encoder
-from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, ObjectTypes
+from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, ObjectTypes, TenantMixin
 from mstrio.utils.enum_helper import AutoName, get_enum_val
 from mstrio.utils.helper import (
     get_args_from_func,
@@ -147,7 +147,7 @@ class DatasourceType(AutoName):
 
 
 @class_version_handler('11.3.0000')
-class DatasourceInstance(Entity, CopyMixin, DeleteMixin, ModelVldbMixin):
+class DatasourceInstance(Entity, CopyMixin, DeleteMixin, ModelVldbMixin, TenantMixin):
     """Object representation of Strategy One DataSource Instance object.
 
     Attributes:
@@ -213,6 +213,8 @@ class DatasourceInstance(Entity, CopyMixin, DeleteMixin, ModelVldbMixin):
             'intermediate_store_table_space_name',
             'dbms',
             'acg',
+            'tenant_id',
+            'tenant_name',
         ): datasources.get_datasource_instance,
     }
     _API_PATCH: dict = {

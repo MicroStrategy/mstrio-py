@@ -18,6 +18,7 @@ from mstrio.api import monitors, objects, projects
 from mstrio.connection import Connection
 from mstrio.helpers import IServerError, VersionException, classproperty
 from mstrio.server.change_journal import _format_timestamp_for_api_purge
+from mstrio.server.lock import BaseLock, LockStatus, LockType
 from mstrio.server.project_languages import (
     DataLanguageSettings,
     MetadataLanguageSettings,
@@ -29,9 +30,13 @@ from mstrio.utils.entity import (
     Entity,
     EntityBase,
     ObjectTypes,
+    TenantMixin,
 )
 from mstrio.utils.enum_helper import AutoName, AutoUpperName, get_enum_val
-from mstrio.utils.resolvers import validate_owner_key_in_filters
+from mstrio.utils.resolvers import (
+    get_conn_and_env_from_mixed_param,
+    validate_owner_key_in_filters,
+)
 from mstrio.utils.response_processors import datasources as datasources_processors
 from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.response_processors import pa_statistics as pa_processors
@@ -230,6 +235,29 @@ class PAStatisticsProjectLevel:
         return PAStatisticsEnvLevel.TelemetryConfig
 
 
+class ProjectLock(BaseLock):
+    _API_GET_LOCK = staticmethod(projects.get_project_lock)
+    _API_UPDATE_LOCK = staticmethod(projects.update_project_lock)
+    _API_DELETE_LOCK = staticmethod(projects.delete_project_lock)
+
+    def __init__(self, project: 'Project'):
+        if not meets_minimal_version(project.connection.iserver_version, "11.3.0600"):
+            raise VersionException(
+                "Project Lock requires I-Server version 11.3.0600 or higher."
+            )
+
+        self._TARGET_STR = f"Project '{project.name}'"
+        self._id = project.id
+        self._source_project = project
+
+        super().__init__(connection=project.connection)
+
+    def fetch(self):
+        """Fetch the lock status of the project."""
+        super().fetch()
+        self._source_project.lock_status = self.status
+
+
 class ProjectStatus(IntEnum):
     ACTIVE = 0
     ERRORSTATE = -3
@@ -275,34 +303,6 @@ class IdleMode(AutoName):
     LOADED_PENDING = auto()
     PENDING = auto()
     UNKNOWN = auto()
-
-
-class LockType(AutoName):
-    """Enum representing the type of lock applied to a project.
-
-    `TEMPORAL_INDIVIDUAL`: A temporary lock that restricts all other sessions
-        except the current user's session from editing the project.
-        This lock disappears when the user's session expires.
-    `TEMPORAL_CONSTITUENT`: A temporary lock that restricts all other sessions
-        except the current user's session from editing the project and all
-        objects in the project. This lock disappears when the user's session
-        expires.
-    `PERMANENT_INDIVIDUAL`: A permanent lock that prevents all users from
-        editing the project. This lock does not expire and must be removed
-        before the project can be edited again.
-    `PERMANENT_CONSTITUENT`: A permanent lock that prevents all users from
-        editing the project and all objects in the project. This lock does not
-        expire and must be removed before the project and its objects can be
-        edited again.
-    `NOT_LOCKED`: Represents the state where the project is not locked
-        and can be edited by users.
-    """
-
-    TEMPORAL_INDIVIDUAL = auto()
-    TEMPORAL_CONSTITUENT = auto()
-    PERMANENT_INDIVIDUAL = auto()
-    PERMANENT_CONSTITUENT = auto()
-    NOT_LOCKED = auto()
 
 
 def compare_project_settings(
@@ -368,10 +368,8 @@ def list_projects(
     if conn is None and env is None:
         raise ValueError("Either connection or environment must be provided.")
 
-    from mstrio.server.environment import Environment
-
-    if not env and isinstance(conn, Environment):
-        env = conn
+    if not env:
+        _, env = get_conn_and_env_from_mixed_param(conn)
 
     if env:
         return env.list_projects(*args, **kwargs)
@@ -379,7 +377,7 @@ def list_projects(
     return Project._list_projects(conn, *args, **kwargs)
 
 
-class Project(Entity, DeleteMixin, ModelVldbMixin):
+class Project(Entity, DeleteMixin, ModelVldbMixin, TenantMixin):
     """Object representation of Strategy One Project (Project) object.
 
     Attributes:
@@ -405,38 +403,6 @@ class Project(Entity, DeleteMixin, ModelVldbMixin):
         metadata_language_settings: Project metadata language settings
     """
 
-    @dataclass
-    class LockStatus(helper.Dictable):
-        """Object representation of Project Lock Status.
-
-        Attributes:
-            lock_type: Lock type
-            lock_time: Lock time
-            comment: Lock comment
-            machine_name: Machine name
-            owner: User object
-        """
-
-        @staticmethod
-        def _parse_owner(source, connection):
-            """Parses owner from the API response."""
-            from mstrio.users_and_groups import User
-
-            return User.from_dict(source, connection)
-
-        _FROM_DICT_MAP = {
-            'lock_type': LockType,
-            'lock_time': DatetimeFormats.FULLDATETIME,
-            'owner': _parse_owner,
-        }
-
-        lock_type: LockType
-        lock_time: datetime | None = None
-        comment: str | None = None
-        machine_name: str | None = None
-        owner: 'User | None' = None
-
-    #
     _OBJECT_TYPE = ObjectTypes.PROJECT
     _API_GETTERS = {
         **Entity._API_GETTERS,
@@ -446,7 +412,6 @@ class Project(Entity, DeleteMixin, ModelVldbMixin):
             'data_language_settings',
             'metadata_language_settings',
         ): projects_processors.get_project_internalization,
-        'lock_status': projects_processors.get_project_lock,
     }
     _API_PATCH = {
         **Entity._API_PATCH,
@@ -481,6 +446,7 @@ class Project(Entity, DeleteMixin, ModelVldbMixin):
     }
 
     _pa_stats_engine: PAStatisticsProjectLevel | None = None
+    LockStatus = LockStatus
 
     def __init__(
         self,
@@ -553,7 +519,13 @@ class Project(Entity, DeleteMixin, ModelVldbMixin):
         self._nodes = kwargs.get("nodes")
         self._data_language_settings = kwargs.get("data_language_settings")
         self._metadata_language_settings = kwargs.get("metadata_language_settings")
-        self._lock_status = kwargs.get("lock_status")
+
+        # project_lock property is version gated
+        if meets_minimal_version(self.connection.iserver_version, "11.3.0600"):
+            self._project_lock = None
+            self.lock_status = None
+            self._API_GETTERS = self._API_GETTERS.copy()
+            self._API_GETTERS['lock_status'] = self._fetch_lock_status
 
     @classmethod
     def _create(
@@ -1324,32 +1296,26 @@ class Project(Entity, DeleteMixin, ModelVldbMixin):
                 f"Datasources were successfully removed from the project {self.id}."
             )
 
+    def _fetch_lock_status(self) -> dict:
+        """Fetch the current lock status of the project.
+        To be used as a simulated API getter.
+
+        Returns:
+            dict: Dictionary containing lock status information.
+        """
+        status_dict = self.project_lock._get()
+        self._project_lock._status = LockStatus.from_dict(status_dict, self.connection)
+        return {"lock_status": status_dict}
+
     @method_version_handler('11.3.0600')
     def lock(self, lock_type: str | LockType, lock_id: str | None = None) -> None:
         """Lock the project.
 
         Args:
             lock_type (str, LockType): Lock type.
-            lock_id (str, optional): Lock ID.
+            lock_id (str, optional): Lock ID. Will be generated if not provided.
         """
-        self.fetch('lock_status')
-
-        if self.lock_status.lock_type != LockType.NOT_LOCKED:
-            msg = (
-                f"Project '{self.id}' is already locked with the lock type "
-                f"`{self.lock_status.lock_type}`. "
-                f"Please unlock it before applying a new lock."
-            )
-            raise ValueError(msg)
-
-        lock_type = get_enum_val(lock_type, LockType)
-
-        projects.update_project_lock(
-            self.connection, self.id, {'lockType': lock_type, 'lockId': lock_id}
-        )
-
-        if config.verbose:
-            logger.info(f"Project '{self.id}' locked.")
+        self.project_lock.lock(lock_type=lock_type, lock_id=lock_id)
 
     @method_version_handler('11.3.0600')
     def unlock(
@@ -1366,34 +1332,7 @@ class Project(Entity, DeleteMixin, ModelVldbMixin):
             lock_id (str, optional): Lock ID.
             force (bool, optional): Whether to force unlock the project.
         """
-        self.fetch('lock_status')
-
-        if self.lock_status.lock_type == LockType.NOT_LOCKED:
-            msg = f"Project '{self.id}' is not locked."
-            raise ValueError(msg)
-
-        if not force and not (lock_id and lock_type):
-            msg = (
-                "`lock_id` and `lock_type` must be provided to unlock the project "
-                "when `force` is False."
-            )
-            raise ValueError(msg)
-
-        if force and not lock_type:
-            lock_type = self.lock_status.lock_type
-
-        lock_type = get_enum_val(lock_type, LockType)
-
-        projects.delete_project_lock(
-            self.connection,
-            self.id,
-            lock_type=lock_type,
-            lock_id=lock_id,
-            force=force,
-        )
-
-        if config.verbose:
-            logger.info(f"Project '{self.id}' unlocked.")
+        self.project_lock.unlock(lock_type=lock_type, lock_id=lock_id, force=force)
 
     def get_status_on_node(self, node: 'str | Node') -> IdleMode:
         """Get status of the project of specific node in the connected
@@ -1473,11 +1412,15 @@ class Project(Entity, DeleteMixin, ModelVldbMixin):
         final_items: list["Object"] = []
         final_len = 0  # cumulative final items length
 
-        def bulk_delete(objs: list["Object"]) -> bool:
-            FAIL_MSG = "Deleting some of the unused managed objects failed."
+        SUCCESS_MSG = (
+            "Successfully deleted a batch of unused managed objects "
+            f"in project '{self.id}'."
+        )
+        FAIL_MSG = "Deleting some of the unused managed objects failed."
 
+        def bulk_delete(objs: list["Object"]) -> bool:
             try:
-                res: Response = objects.bulk_delete_objects(
+                res: Response = objects.bulk_delete_project_objects(
                     self.connection,
                     [obj.id for obj in objs],
                     [obj.type.value for obj in objs],
@@ -1486,10 +1429,7 @@ class Project(Entity, DeleteMixin, ModelVldbMixin):
                 )
 
                 if config.verbose and res.ok:
-                    logger.info(
-                        "Successfully deleted a batch of unused managed "
-                        f"objects in project '{self.id}'."
-                    )
+                    logger.info(SUCCESS_MSG)
 
                 return res.ok
             except Exception:
@@ -1596,17 +1536,17 @@ class Project(Entity, DeleteMixin, ModelVldbMixin):
         Returns:
             dict: Body for duplication request.
         """
-        from mstrio.server.environment import Environment
 
         if not duplication_config:
             duplication_config = DuplicationConfig()
+
         if isinstance(duplication_config, DuplicationConfig):
             duplication_config = duplication_config.to_dict(connection=self.connection)
 
         if target_env is None:
             target_env = self.connection
-        elif isinstance(target_env, Environment):
-            target_env = target_env.connection
+
+        t_conn, _ = get_conn_and_env_from_mixed_param(target_env)
 
         body = {
             'source': {
@@ -1621,8 +1561,8 @@ class Project(Entity, DeleteMixin, ModelVldbMixin):
             },
             'target': {
                 'environment': {
-                    'id': target_env.base_url,
-                    'name': target_env.base_url,
+                    'id': t_conn.base_url,
+                    'name': t_conn.base_url,
                 },
                 'project': {'name': target_name},
             },
@@ -1699,13 +1639,10 @@ class Project(Entity, DeleteMixin, ModelVldbMixin):
 
         """
 
-        from mstrio.server.environment import Environment
-
-        if isinstance(target_env, Environment):
-            target_env = target_env.connection
+        t_conn, _ = get_conn_and_env_from_mixed_param(target_env)
 
         self._check_source_and_target_compatibility(
-            source_env=self.connection, target_env=target_env
+            source_env=self.connection, target_env=t_conn
         )
 
         if cross_duplication_config is None:
@@ -1713,7 +1650,7 @@ class Project(Entity, DeleteMixin, ModelVldbMixin):
 
         body = self._build_duplication_body(
             target_name=target_name,
-            target_env=target_env,
+            target_env=t_conn,
             duplication_config=cross_duplication_config,
         )
         resp = projects.trigger_project_duplication(self.connection, self.id, body)
@@ -1721,18 +1658,18 @@ class Project(Entity, DeleteMixin, ModelVldbMixin):
         if resp.ok:
             logger.info(
                 f"Project '{self.name}' | {self.id} duplication from environment "
-                f"'{self.connection.base_url}' to '{target_env.base_url}' "
+                f"'{self.connection.base_url}' to '{t_conn.base_url}' "
                 f"initiated successfully."
             )
 
         if sync_with_target_env and resp.ok:
             res = projects.trigger_project_duplication_on_target_env(
-                target_env, resp.json()['id'], body
+                t_conn, resp.json()['id'], body
             )
             if res.ok:
                 logger.info(
                     f"Project '{self.name}' | {self.id} duplication synchronized "
-                    f"successfully on target environment '{target_env.base_url}'."
+                    f"successfully on target environment '{t_conn.base_url}'."
                 )
         return ProjectDuplication.from_dict(resp.json(), connection=self.connection)
 
@@ -1757,36 +1694,33 @@ class Project(Entity, DeleteMixin, ModelVldbMixin):
             IServerError: If environments are not compatible for project
                 duplication (e.g., API version mismatch).
         """
-        from mstrio.server.environment import Environment
 
-        if isinstance(source_env, Environment):
-            source_env = source_env.connection
-        if isinstance(target_env, Environment):
-            target_env = target_env.connection
+        s_conn, _ = get_conn_and_env_from_mixed_param(source_env)
+        t_conn, _ = get_conn_and_env_from_mixed_param(target_env)
 
         source_compatibility = projects.get_project_duplication_compatibility(
-            source_env
+            s_conn
         ).json()
 
         # HTTP 200 means compatible, otherwise exception will be raised
         try:
             projects.validate_project_duplication_compatibility(
-                target_env, body=source_compatibility
+                t_conn, body=source_compatibility
             )
         except IServerError as e:
             logger.error(
-                f"Source environment '{source_env.base_url}' with iserver_version "
-                f"'{source_env.iserver_version}' and target environment "
-                f"'{target_env.base_url}' with iserver_version "
-                f"'{target_env.iserver_version}' are not compatible for project "
+                f"Source environment '{s_conn.base_url}' with iserver_version "
+                f"'{s_conn.iserver_version}' and target environment "
+                f"'{t_conn.base_url}' with iserver_version "
+                f"'{t_conn.iserver_version}' are not compatible for project "
                 "duplication."
             )
             raise e
 
         if config.verbose:
             logger.info(
-                f"Source environment '{source_env.base_url}' and target "
-                f"environment '{target_env.base_url}' are compatible for "
+                f"Source environment '{s_conn.base_url}' and target "
+                f"environment '{t_conn.base_url}' are compatible for "
                 "project duplication."
             )
 
@@ -1958,8 +1892,10 @@ class Project(Entity, DeleteMixin, ModelVldbMixin):
 
     @property
     @method_version_handler('11.3.0600')
-    def lock_status(self) -> LockStatus:
-        return self._lock_status
+    def project_lock(self):
+        if not self._project_lock:
+            self._project_lock = ProjectLock(self)
+        return self._project_lock
 
     @property
     def pa_statistics(self) -> PAStatisticsProjectLevel:
@@ -2826,11 +2762,8 @@ class ProjectDuplication(EntityBase, ChangeJournalMixin, DeleteMixin):
             ProjectDuplication: Updated project duplication object from the
                 target environment.
         """
-        from mstrio.server.environment import Environment
 
-        if isinstance(target_env, Environment):
-            target_env = target_env.connection
-
+        t_conn, _ = get_conn_and_env_from_mixed_param(target_env)
         package = self.get_backup_package(save_to_file=False)
 
         full_dict = self.to_dict()
@@ -2843,13 +2776,13 @@ class ProjectDuplication(EntityBase, ChangeJournalMixin, DeleteMixin):
             'target': target,
         }
         resp = projects.trigger_project_restoration_on_target_env(
-            target_env, package, metadata_body
+            t_conn, package, metadata_body
         )
 
         if resp.ok:
             logger.info(
                 f"Project duplication package '{self.id}' restoration initiated "
-                f"successfully on target environment '{target_env.base_url}'."
+                f"successfully on target environment '{t_conn.base_url}'."
             )
 
-        return ProjectDuplication.from_dict(resp.json(), connection=target_env)
+        return ProjectDuplication.from_dict(resp.json(), connection=t_conn)

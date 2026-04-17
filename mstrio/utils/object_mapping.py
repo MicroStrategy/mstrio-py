@@ -1,5 +1,6 @@
 import sys
 from enum import Enum
+from functools import partial
 from typing import TYPE_CHECKING
 
 from mstrio.access_and_security.security_role import SecurityRole  # noqa: F401
@@ -40,6 +41,10 @@ from mstrio.server import Project  # noqa: F401
 from mstrio.server.language import Language  # noqa: F401
 from mstrio.types import ObjectSubTypes, ObjectTypes
 from mstrio.users_and_groups import User, UserGroup  # noqa: F401
+
+# TODO: correct when no longer `wip`  # NOSONAR # noqa
+# from mstrio.server.tenant import Tenant  # NOSONAR # noqa
+Tenant = partial(Object, type=ObjectSubTypes.TENANT)
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
@@ -89,6 +94,7 @@ class SubTypeObjectMapping(Enum):
     UserGroup = ObjectSubTypes.USER_GROUP  # noqa: F811
     Agent = ObjectSubTypes.DOCUMENT_AGENT  # noqa: F811
     AgentUniversal = ObjectSubTypes.DOCUMENT_AGENT_UNIVERSAL  # noqa: F811
+    Tenant = ObjectSubTypes.TENANT  # noqa: F811
 
 
 def __str_to_class(classname):
@@ -116,7 +122,8 @@ def map_to_object(
         )
         or (
             object_type == ObjectTypes.USER
-            and subtype in (ObjectSubTypes.USER, ObjectSubTypes.USER_GROUP)
+            and subtype
+            in (ObjectSubTypes.USER, ObjectSubTypes.USER_GROUP, ObjectSubTypes.TENANT)
         )
         or (
             object_type == ObjectTypes.FILTER

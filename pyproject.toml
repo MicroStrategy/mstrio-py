@@ -24,7 +24,7 @@ packages = ["mstrio"]
 name = "mstrio-py"
 description = "Python interface for the Strategy One REST API"
 authors = [{ name = "Strategy One", email = "bkaczynski@strategy.com" }]
-requires-python = ">=3.10,<3.14"
+requires-python = ">=3.10,<3.15"
 license = "LicenseRef-Proprietary"
 license-files = ["LICENSE"]
 readme = "README.md"
@@ -39,6 +39,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Programming Language :: Python :: 3 :: Only",
     "Intended Audience :: System Administrators",
     "Intended Audience :: End Users/Desktop",
@@ -52,37 +53,19 @@ classifiers = [
 dependencies = [
     "packaging >= 24.2",
     # FYI: <https://github.com/pandas-dev/pandas/blob/fa5c2550e81c3e745eb7948b56adac45454853d5/pyproject.toml#L60>
-    "pandas[output-formatting,pyarrow] >= 1.1.5, < 3",
+    "pandas[output-formatting,pyarrow] >= 2; python_version < '3.14'",
+    "pandas[output-formatting,pyarrow] >= 2.3.3; python_version >= '3.14'",
     "pyhumps >= 3.8",
     "pypika >= 0.48.9",
     "requests >= 2.32.3",
     "requests-futures >= 1",
     "stringcase >= 1.2",
     "tqdm >= 4.66.4",
-]
-
-[project.optional-dependencies]
-# if there's setup issues, install mstrio-py with `pip install mstrio-py[strict]`
-# and check if the issues are gone.
-# essentially this installs all the deps and peer deps
-# without "dependencies optimizations"
-strict = [
-    "jinja2 >= 3.1.5",
-    "numpy >= 2",
-    "packaging >= 24.2",
-    "pandas[output-formatting,pyarrow] >= 2",
-    "pyarrow >= 19",
-    "pyhumps >= 3.8",
-    "pypika >= 0.48.9",
-    "requests >= 2.32.3",
-    "requests-futures >= 1",
-    "stringcase >= 1.2",
-    "tox >= 4.23.2",
-    "tqdm >= 4.66.4",
-    "urllib3 >= 2",
+    "typing-extensions >= 4.15",
 ]
 
 # FYI: do not apply versioning to any dev-deps here - add them in `dev_constraints.txt`
+[project.optional-dependencies]
 # subsets of deps: mainly for `tox` deps use
 config = ["pipdeptree"]
 docs = [
@@ -113,13 +96,6 @@ all = ["mstrio-py[config,docs,jupyter,lint,pre-commit,test,dev]"]
 "Documentation" = "https://www2.microstrategy.com/producthelp/Current/mstrio-py/"
 "Source Code" = "https://github.com/MicroStrategy/mstrio-py"
 "Quick Manual" = "https://www2.microstrategy.com/producthelp/Current/Workstation/en-us/Content/intro_scripts.htm"
-
-[tool.mypy]
-python_version = "3.10"
-warn_unused_configs = true
-strict_optional = false
-show_error_codes = true
-color_output = true
 
 [tool.isort]
 profile = "black"

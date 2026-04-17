@@ -38,7 +38,10 @@ from mstrio.utils.entity import DeleteMixin, EntityBase
 from mstrio.utils.enum_helper import get_enum_val
 from mstrio.utils.helper import camel_to_snake
 from mstrio.utils.progress_bar_mixin import ProgressBarMixin
-from mstrio.utils.resolvers import get_project_id_from_params_set
+from mstrio.utils.resolvers import (
+    get_conn_and_env_from_mixed_param,
+    get_project_id_from_params_set,
+)
 from mstrio.utils.response_processors import migrations
 from mstrio.utils.time_helper import datetime_to_str
 from mstrio.utils.version_helper import (
@@ -368,11 +371,13 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
         """
         if isinstance(toc_view, PackageConfig):
             toc_view = toc_view.to_dict()
+
         tree_view = tree_view or {}
         base_body = Migration._get_body_for_create(
             connection, toc_view, tree_view, name
         )
         base_body['packageInfo']['type'] = PackageType.OBJECT.value
+
         return cls.create(connection, base_body, project, project_id, project_name)
 
     @classmethod
@@ -468,7 +473,7 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
 
         Args:
             target_env (Connection, Environment): Target environment to migrate
-                reused package to.
+                reused package to or a Connection to it.
             target_project (Project | str, optional): Project object or ID or
                 name specifying the project. May be used instead of
                 `target_project_id` or `target_project_name`.
@@ -478,19 +483,21 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
         Returns:
             A new Migration object based on the reused package.
         """
-        target_id = Migration._get_env_id(target_env)
+
+        t_conn, _ = get_conn_and_env_from_mixed_param(target_env)
+        target_id = Migration._parse_base_url(t_conn.base_url)
         body = {"importInfo": {"environment": {'id': target_id, 'name': target_id}}}
 
         if self._package_info.type == PackageType.OBJECT:
-            if isinstance(target_env, Environment):
-                target_env = target_env.connection
             target_proj_id = get_project_id_from_params_set(
-                target_env,
+                t_conn,
                 target_project,
                 target_project_id,
                 target_project_name,
             )
-            target_proj_name = Project(target_env, id=target_proj_id).name
+
+            target_proj_name = Project(t_conn, id=target_proj_id).name
+
             body['importInfo']['project'] = {
                 'id': target_proj_id,
                 'name': target_proj_name,
@@ -502,15 +509,18 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
         mig_dict = migration_api.get_migration(
             self.connection, response_data['id'], show_content='all'
         ).json()
+
         mig_dict['packageInfo']['replicated'] = True
+
         migration_api.start_migration(
-            target_env,
+            t_conn,
             prefer='respond-async',
             migration_id=response_data['id'],
             body=mig_dict,
             generate_undo=True,
             project_id=target_project_id,
         ).json()
+
         if config.verbose:
             logger.info(
                 "Successfully reused existing migration object and created new "
@@ -518,6 +528,7 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
                 f" '{response_data.get('id')}'"
                 " that was already migrated."
             )
+
         return Migration(connection=self.connection, id=response_data.get('id'))
 
     @classmethod
@@ -614,7 +625,7 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
             file=file_content,
         )
         file_id = resp.json()["id"]
-        env_id = Migration._check_slash_in_id(connection.base_url)
+        env_id = Migration._parse_base_url(connection.base_url)
         body = {
             "packageInfo": {
                 "storage": {
@@ -685,7 +696,7 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
 
         Args:
             target_env (Connection, Environment): Destination environment
-                to validate the package.
+                to validate the package or a Connection to it.
             target_project (Project | str, optional): Project object or ID or
                 name specifying the project. May be used instead of
                 `target_project_id` or `target_project_name`.
@@ -694,11 +705,10 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
 
         """
 
-        if isinstance(target_env, Environment):
-            target_env = target_env.connection
+        t_conn, _ = get_conn_and_env_from_mixed_param(target_env)
 
         target_proj_id = get_project_id_from_params_set(
-            target_env,
+            t_conn,
             target_project,
             target_project_id,
             target_project_name,
@@ -706,7 +716,7 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
             no_fallback_from_connection=True,
         )
 
-        target_id = Migration._get_env_id(target_env)
+        target_id = Migration._parse_base_url(t_conn.base_url)
         body = {
             'id': self.id,
             'packageInfo': self._package_info.to_dict(),
@@ -722,17 +732,19 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
         if target_proj_id:
             body['importInfo']['project'] = {
                 'id': target_proj_id,
-                'name': Project(target_env, id=target_proj_id).name,
+                'name': Project(t_conn, id=target_proj_id).name,
             }
 
         migration_api.update_migration(
             connection=self.connection, migration_id=self.id, body=body
         )
+
         fetched_body = migration_api.get_migration(
             connection=self.connection, migration_id=self.id, show_content='all'
         ).json()
+
         migration_api.trigger_migration_package_validation(
-            connection=target_env,
+            connection=t_conn,
             id=self.id,
             body=fetched_body,
             project_id=target_proj_id,
@@ -877,7 +889,7 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
 
     def reverse(
         self,
-        target_env: Environment | Connection,
+        target_env: Connection | Environment,
         target_project: 'Project | str | None' = None,
         target_project_id: str | None = None,
         target_project_name: str | None = None,
@@ -890,18 +902,18 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
 
         Args:
             target_env (Environment, Connection): Destination environment to
-                reverse the migration.
+                reverse the migration or a Connection to it.
             target_project (Project | str, optional): Project object or ID or
                 name specifying the project. May be used instead of
                 `target_project_id` or `target_project_name`.
             target_project_id (str, optional): Project ID
             target_project_name (str, optional): Project name
         """
-        if isinstance(target_env, Environment):
-            target_env = target_env.connection
+
+        t_conn, _ = get_conn_and_env_from_mixed_param(target_env)
 
         target_proj_id = get_project_id_from_params_set(
-            target_env,
+            t_conn,
             target_project,
             target_project_id,
             target_project_name,
@@ -910,19 +922,20 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
         )
 
         migration_api.update_migration(
-            connection=target_env,
+            connection=t_conn,
             migration_id=self.id,
             body={'importInfo': {'undoRequestStatus': 'requested'}},
             prefer='respond-async',
             project_id=target_proj_id,
         )
         migration_api.update_migration(
-            connection=target_env,
+            connection=t_conn,
             migration_id=self.id,
             body={'importInfo': {'undoRequestStatus': 'approved'}},
             prefer='respond-async',
             project_id=target_proj_id,
         )
+
         if config.verbose:
             logger.info(f"Successfully reversed migration with ID: '{self.id}'")
 
@@ -939,7 +952,7 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
 
         Args:
             target_env (Connection, Environment): Destination environment
-                to migrate the package.
+                to migrate the package or a Connection to it.
             target_project (Project | str, optional): Project object or ID or
                 name specifying the project. May be used instead of
                 `target_project_id` or `target_project_name`.
@@ -949,11 +962,10 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
                 package or not. True by default.
         """
 
-        if isinstance(target_env, Environment):
-            target_env = target_env.connection
+        t_conn, _ = get_conn_and_env_from_mixed_param(target_env)
 
         target_proj_id = get_project_id_from_params_set(
-            target_env,
+            t_conn,
             target_project,
             target_project_id,
             target_project_name,
@@ -961,32 +973,37 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
             no_fallback_from_connection=True,
         )
 
-        target_id = Migration._get_env_id(target_env)
+        target_id = Migration._parse_base_url(t_conn.base_url)
         body = {
             "importInfo": {
                 "environment": {'id': target_id, 'name': target_id},
                 "importRequestStatus": RequestStatus.REQUESTED.value,
             },
         }
+
         if target_proj_id:
             body['importInfo']['project'] = {
                 'id': target_proj_id,
-                'name': Project(target_env, id=target_proj_id).name,
+                'name': Project(t_conn, id=target_proj_id).name,
             }
 
         migration_api.update_migration(
             connection=self.connection, migration_id=self.id, body=body
         )
+
         body['importInfo']['importRequestStatus'] = RequestStatus.APPROVED.value
+
         migration_api.update_migration(
             connection=self.connection, migration_id=self.id, body=body
         )
+
         fetched_body = migration_api.get_migration(
             connection=self.connection, migration_id=self.id, show_content='all'
         ).json()
         fetched_body['packageInfo']['replicated'] = True
+
         response = migration_api.start_migration(
-            connection=target_env,
+            connection=t_conn,
             migration_id=self.id,
             prefer='respond-async',
             generate_undo=generate_undo,
@@ -1020,11 +1037,12 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
                 the project ID.
 
         """
-        if isinstance(target_env, Environment):
-            target_env = target_env.connection
+
+        data = get_conn_and_env_from_mixed_param(target_env, allow_miss=True)
+        t_conn, _ = data or (None, None)
 
         target_proj_id = get_project_id_from_params_set(
-            target_env if isinstance(target_env, Connection) else None,
+            t_conn,
             target_project,
             target_project_id,
             target_project_name,
@@ -1032,8 +1050,8 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
             no_fallback_from_connection=True,
         )
 
-        if target_proj_id and isinstance(target_env, Connection):
-            target_proj_id = Project(target_env, id=target_proj_id)
+        if target_proj_id and t_conn:
+            target_proj_id = Project(t_conn, id=target_proj_id)
 
         request_body = self._build_body_to_alter_migration_info(
             name=name, target_env=target_env, target_project=target_proj_id
@@ -1041,8 +1059,13 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
         response = migration_api.update_migration(
             connection=self.connection, migration_id=self.id, body=request_body
         )
+
         if response.ok and config.verbose:
             logger.info(f"Successfully altered migration object with ID: '{self.id}'")
+
+    @staticmethod
+    def _parse_base_url(url: str) -> str:
+        return url if url.endswith('/') else f"{url}/"
 
     @staticmethod
     def _build_body_to_alter_migration_info(
@@ -1051,13 +1074,18 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
         target_project: 'Project | str | None' = None,
     ) -> dict:
         request_body = {}
+
         if name:
             request_body['packageInfo'] = {"name": name}
+
         if target_env:
-            target_id = Migration._get_env_id(target_env)
+            data = get_conn_and_env_from_mixed_param(target_env, allow_miss=True)
+            url = data[0].base_url if data else target_env
+            target_id = Migration._parse_base_url(url)
             request_body['importInfo'] = {
                 "environment": {'id': target_id, 'name': target_id}
             }
+
         if target_project:
             if isinstance(target_project, Project):
                 target_project_id = target_project.id
@@ -1077,21 +1105,6 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
         return request_body
 
     @staticmethod
-    def _check_slash_in_id(env_id: str) -> str:
-        return env_id if env_id.endswith('/') else f"{env_id}/"
-
-    @staticmethod
-    def _get_env_id(env: Connection | Environment | str) -> str:
-        if isinstance(env, Connection):
-            base_url = env.base_url
-        elif isinstance(env, Environment):
-            base_url = env.connection.base_url
-        else:
-            base_url = env
-
-        return Migration._check_slash_in_id(base_url)
-
-    @staticmethod
     def _get_body_for_create(
         connection: 'Connection',
         toc_view: dict,
@@ -1100,7 +1113,8 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
     ) -> dict:
         if not name:
             name = Migration._get_new_migration_name()
-        env_id = Migration._check_slash_in_id(connection.base_url)
+
+        env_id = Migration._parse_base_url(connection.base_url)
         body = {
             "packageInfo": {
                 "name": name,
@@ -1113,6 +1127,7 @@ class Migration(EntityBase, ProgressBarMixin, DeleteMixin):
             },
             "importInfo": {},
         }
+
         return body
 
     @staticmethod

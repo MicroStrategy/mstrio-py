@@ -8,7 +8,9 @@ if t.TYPE_CHECKING:
     from mstrio.connection import Connection
     from mstrio.object_management.folder import Folder
     from mstrio.object_management.object import Object
+    from mstrio.server.environment import Environment
     from mstrio.server.project import Project
+    from mstrio.server.tenant import Tenant
 
 
 T = t.TypeVar('T')
@@ -233,13 +235,16 @@ def get_project_id_from_params_set(
 """
 
 
+FolderPathType: t.TypeAlias = tuple[str, ...] | list[str] | str
+
+
 def get_folder_id_from_params_set(
     conn: 'Connection',
     project: 'Project | str | None' = None,
-    folder: 'Folder | tuple[str] | list[str] | str | None' = None,
+    folder: 'Folder | str | FolderPathType | None' = None,
     folder_id: str | None = None,
     folder_name: str | None = None,
-    folder_path: tuple[str] | list[str] | str | None = None,
+    folder_path: FolderPathType | None = None,
     assert_id_exists: bool = True,
 ) -> str | None:
     """
@@ -358,43 +363,44 @@ def get_folder_id_from_params_set(
 # FYI: Copy-pastable parts for folder-related parameters:
 """
 [params to the method]
-    folder: 'Folder | tuple[str] | list[str] | str | None' = None,
+    folder: 'Folder | str | FolderPathType | None' = None,
     folder_id: str | None = None,
     folder_name: str | None = None,
-    folder_path: tuple[str] | list[str] | str | None = None,
+    folder_path: FolderPathType | None = None,
 
-    destination_folder: 'Folder | tuple[str] | list[str] | str | None' = None,
-    destination_folder_path: tuple[str] | list[str] | str | None = None,
+    destination_folder: 'Folder | str | FolderPathType | None' = None,
+    destination_folder_path: FolderPathType | None = None,
 
 [DOCSTRING for "Args" part]
-        folder (Folder | tuple | list | str, optional): Folder object or ID or
-            name or path specifying the folder. May be used instead of
-            `folder_id`, `folder_name` or `folder_path`.
-        folder_id (str, optional): ID of a folder.
-        folder_name (str, optional): Name of a folder.
-        folder_path (str, optional): Path of the folder.
+        folder (Folder | str | FolderPathType, optional): Folder object or ID or
+            name or path specifying the folder. See `folder_id`, `folder_name`
+            or `folder_path` for more info.
+        folder_id (str, optional): ID of a folder as string.
+        folder_name (str, optional): Name of a folder as string.
+        folder_path (FolderPathType, optional): Path of the folder. It can
+            be a string with "/" as path separator
+            (e.g. "folder/subfolder1/subfolder2") or a tuple or list of path
+            parts (e.g. `("folder", "subfolder1", "subfolder2")`).
+
             The path has to be provided in the following format:
                 if it's inside of a project, start with a Project Name:
-                    /MicroStrategy Tutorial/Public Objects/Metrics
+                    `/MicroStrategy Tutorial/Public Objects/Metrics`
                 if it's a root folder, start with `CASTOR_SERVER_CONFIGURATION`:
-                    /CASTOR_SERVER_CONFIGURATION/Users
+                    `/CASTOR_SERVER_CONFIGURATION/Users`
 
 
-            destination_folder (Folder | tuple | list | str, optional): Folder
+            destination_folder (Folder | str | FolderPathType, optional): Folder
                 object or ID or name or path specifying the folder where to
-                create object.
-            destination_folder_path (str, optional): Path of the folder.
-                The path has to be provided in the following format:
-                    /MicroStrategy Tutorial/Public Objects/Metrics
+                create object. See `destination_folder_path` for more info about
+                path type.
+            destination_folder_path (FolderPathType, optional): Path of the
+                folder. It can be a string with "/" as path separator
+                (e.g. "folder/subfolder1/subfolder2") or a tuple or list of path
+                parts (e.g. `("folder", "subfolder1", "subfolder2")`).
 
-    [OR if only `folder`]
-        folder (Folder | tuple | list | str, optional): Folder object or ID or
-            name or path specifying the folder.
-            The path has to be provided in the following format:
-                if it's inside of a project, start with a Project Name:
-                    /MicroStrategy Tutorial/Public Objects/Metrics
-                if it's a root folder, start with `CASTOR_SERVER_CONFIGURATION`:
-                    /CASTOR_SERVER_CONFIGURATION/Users
+                The path has to be provided in the following format:
+                    `/MicroStrategy Tutorial/Public Objects/Metrics`
+
 
 [implementation of usual use]
     fold_id = get_folder_id_from_params_set(
@@ -457,6 +463,118 @@ def get_drill_map_id_from_params_set(
             drill_map_name=drill_map_name,
         )
 """
+
+
+def get_tenant_id_from_params_set(
+    conn: 'Connection',
+    tenant: 'Tenant | str | None' = None,
+    tenant_id: str | None = None,
+    tenant_name: str | None = None,
+    assert_id_exists: bool = True,
+) -> str | None:
+    """Utility function to get a tenant's ID from a set of parameters.
+
+    Should be used inside a method that has a set of parameters that can hold
+    the tenant's ID, but only one of those is required to be passed.
+
+    Args:
+        conn: A Strategy connection object.
+        tenant: An instance of the `Tenant` class or its ID or name.
+        tenant_id: ID of the tenant.
+        tenant_name: Name of the tenant.
+        assert_id_exists: If `False`, return `None` if no tenant is found.
+            If `True`, raises a `ValueError` if no tenant is found.
+
+    Returns:
+        The ID of the tenant if found, otherwise None.
+    """
+    from mstrio.server.tenant import Tenant, list_tenants
+
+    try:
+        ret = _get_id_from_params_set(
+            tenant,
+            tenant_id,
+            tenant_name,
+            Tenant,
+            lambda: list_tenants(conn, to_dictionary=True),
+            fallback_value=None,
+        )
+    except AssertionError as err:
+        raise ValueError(err) from err
+
+    if assert_id_exists and not ret:
+        from mstrio.utils.helper import exception_handler
+
+        msg = (
+            "Could not determine the tenant ID. Please provide a Tenant "
+            "class instance or tenant ID. "
+            "If this persists, it may mean that the tenant does not exist "
+            "or has been deleted."
+        )
+        exception_handler(msg, exception_type=ValueError)
+
+    return ret
+
+
+# FYI: Copy-pastable parts for tenant-related parameters:
+"""
+[implementation of usual use]
+    final_tenant_id = get_tenant_id_from_params_set(
+        connection,
+        tenant,
+        tenant_id,
+        tenant_name,
+    )
+"""
+
+
+def get_conn_and_env_from_mixed_param(
+    param: 'Connection | Environment',
+    allow_miss: bool = False,
+) -> 'tuple[Connection, Environment] | None':
+    """Utility function to get a connection and environment from a mixed
+    parameter.
+
+    Should be used inside a method that has a parameter that can be either a
+    connection or an environment.
+
+    Args:
+        param: A parameter that can be either a `Connection` or an `Environment`
+            class instance.
+        allow_miss: If `True`, the function will return `None` if the parameter
+            is neither a `Connection` nor an `Environment` class instance.
+
+    Returns:
+        A tuple of (`Connection`, `Environment`) if the parameter is valid.
+
+    Raises:
+        ValueError: If the parameter is neither a `Connection` nor an
+            `Environment` class instance.
+    """
+
+    from mstrio.connection import Connection
+    from mstrio.server.environment import Environment
+
+    if isinstance(param, Connection):
+        return param, param.environment
+
+    if isinstance(param, Environment):
+        return param.connection, param
+
+    if not allow_miss:
+        raise ValueError(
+            "Parameter is neither a Connection nor Environment class instance."
+        )
+
+    return None
+
+
+# FYI: Copy-pastable parts for mixed connection/environment parameter:
+"""
+[implementation of usual use]
+        t_conn, t_env = get_conn_and_env_from_mixed_param(target_env)
+"""
+
 
 # --- END: PARAMETERS Resolvers ---
 

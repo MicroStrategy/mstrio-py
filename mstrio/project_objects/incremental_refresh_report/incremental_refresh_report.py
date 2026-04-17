@@ -34,6 +34,7 @@ from mstrio.utils.helper import (
 )
 from mstrio.utils.parser import Parser
 from mstrio.utils.resolvers import (
+    FolderPathType,
     get_folder_id_from_params_set,
     get_project_id_from_params_set,
 )
@@ -63,10 +64,10 @@ def list_incremental_refresh_reports(
     project_name: str | None = None,
     to_dictionary: bool = False,
     limit: int | None = None,
-    folder: 'Folder | tuple[str] | list[str] | str | None' = None,
+    folder: 'Folder | str | FolderPathType | None' = None,
     folder_id: str | None = None,
     folder_name: str | None = None,
-    folder_path: tuple[str] | list[str] | str | None = None,
+    folder_path: FolderPathType | None = None,
     show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
     show_filter_tokens: bool = False,
     show_advanced_properties: bool = True,
@@ -100,17 +101,21 @@ def list_incremental_refresh_reports(
             returns Report objects
         limit (integer, optional): limit the number of elements returned. If
             None all object are returned.
-        folder (Folder | tuple | list | str, optional): Folder object or ID or
-            name or path specifying the folder. May be used instead of
-            `folder_id`, `folder_name` or `folder_path`.
-        folder_id (str, optional): ID of a folder.
-        folder_name (str, optional): Name of a folder.
-        folder_path (str, optional): Path of the folder.
+        folder (Folder | str | FolderPathType, optional): Folder object or ID or
+            name or path specifying the folder. See `folder_id`, `folder_name`
+            or `folder_path` for more info.
+        folder_id (str, optional): ID of a folder as string.
+        folder_name (str, optional): Name of a folder as string.
+        folder_path (FolderPathType, optional): Path of the folder. It can
+            be a string with "/" as path separator
+            (e.g. "folder/subfolder1/subfolder2") or a tuple or list of path
+            parts (e.g. `("folder", "subfolder1", "subfolder2")`).
+
             The path has to be provided in the following format:
                 if it's inside of a project, start with a Project Name:
-                    /MicroStrategy Tutorial/Public Objects/Metrics
+                    `/MicroStrategy Tutorial/Public Objects/Metrics`
                 if it's a root folder, start with `CASTOR_SERVER_CONFIGURATION`:
-                    /CASTOR_SERVER_CONFIGURATION/Users
+                    `/CASTOR_SERVER_CONFIGURATION/Users`
         show_expression_as (ExpressionFormat or str, optional): specify how
             expressions should be presented
             Available values:
@@ -454,7 +459,7 @@ class IncrementalRefreshReport(
         ]
 
         try:
-            super(IncrementalRefreshReport, self).answer_prompts(
+            super().answer_prompts(
                 prompt_answers=prompt_answers + prompt_fallbacks,
                 instance_id=instance_id,
                 force=True,
@@ -527,8 +532,8 @@ class IncrementalRefreshReport(
         cls,  # NOSONAR
         connection: Connection,
         name: str,
-        destination_folder: 'Folder | tuple[str] | list[str] | str | None' = None,
-        destination_folder_path: tuple[str] | list[str] | str | None = None,
+        destination_folder: 'Folder | str | FolderPathType | None' = None,
+        destination_folder_path: FolderPathType | None = None,
         target_cube: OlapCube | SchemaObjectReference | dict | None = None,
         increment_type: IncrementType | str | None = None,
         refresh_type: RefreshType | str | None = None,
@@ -547,12 +552,17 @@ class IncrementalRefreshReport(
             connection: Strategy One connection object returned by
                 `connection.Connection()`
             name (str, optional): Name of the Incremental Refresh Report
-            destination_folder (Folder | tuple | list | str, optional): Folder
+            destination_folder (Folder | str | FolderPathType, optional): Folder
                 object or ID or name or path specifying the folder where to
-                create object.
-            destination_folder_path (str, optional): Path of the folder.
+                create object. See `destination_folder_path` for more info about
+                path type.
+            destination_folder_path (FolderPathType, optional): Path of the
+                folder. It can be a string with "/" as path separator
+                (e.g. "folder/subfolder1/subfolder2") or a tuple or list of path
+                parts (e.g. `("folder", "subfolder1", "subfolder2")`).
+
                 The path has to be provided in the following format:
-                    /MicroStrategy Tutorial/Public Objects/Metrics
+                    `/MicroStrategy Tutorial/Public Objects/Metrics`
             target_cube (OlapCube, SchemaObjectReference, dict, optional):
                 Reference to an Intelligent Cube
             increment_type (IncrementType, str, optional): Mode the report will

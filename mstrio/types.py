@@ -141,7 +141,7 @@ class ObjectTypes(Enum):
     def contains(item):
         if isinstance(item, ObjectTypes):
             return True
-        return item in [v.value for v in ObjectTypes.__members__.values()]
+        return any(v.value == item for v in ObjectTypes.__members__.values())
 
     def get_subtypes(self):
         # This takes advantage of how subtypes are defined in DSS.
@@ -255,6 +255,8 @@ class ObjectSubTypes(Enum):
     USER = 8704
     USER_GROUP = 8705
     TRANSMITTER = 8705
+    TENANT = 8706
+    TENANT_GROUP = 8707
     CONFIGURATION = 9216
     REQUEST = 9472
     SEARCH = 9984

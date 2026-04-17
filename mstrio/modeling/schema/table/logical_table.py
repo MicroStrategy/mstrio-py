@@ -31,6 +31,7 @@ from mstrio.utils.helper import (
     get_default_args_from_func,
 )
 from mstrio.utils.resolvers import (
+    FolderPathType,
     get_folder_id_from_params_set,
     get_project_id_from_params_set,
 )
@@ -52,10 +53,10 @@ def list_logical_tables(
     to_dictionary: bool = False,
     table_type: PhysicalTableType | None = None,
     name: str | None = None,
-    folder: 'Folder | tuple[str] | list[str] | str | None' = None,
+    folder: 'Folder | str | FolderPathType | None' = None,
     folder_id: str | None = None,
     folder_name: str | None = None,
-    folder_path: tuple[str] | list[str] | str | None = None,
+    folder_path: FolderPathType | None = None,
     project: 'Project | str | None' = None,
     project_id: str | None = None,
     project_name: str | None = None,
@@ -73,17 +74,21 @@ def list_logical_tables(
             `project_name`.
         project_id (str, optional): Project ID
         project_name (str, optional): Project name
-        folder (Folder | tuple | list | str, optional): Folder object or ID or
-            name or path specifying the folder. May be used instead of
-            `folder_id`, `folder_name` or `folder_path`.
-        folder_id (str, optional): ID of a folder.
-        folder_name (str, optional): Name of a folder.
-        folder_path (str, optional): Path of the folder.
+        folder (Folder | str | FolderPathType, optional): Folder object or ID or
+            name or path specifying the folder. See `folder_id`, `folder_name`
+            or `folder_path` for more info.
+        folder_id (str, optional): ID of a folder as string.
+        folder_name (str, optional): Name of a folder as string.
+        folder_path (FolderPathType, optional): Path of the folder. It can
+            be a string with "/" as path separator
+            (e.g. "folder/subfolder1/subfolder2") or a tuple or list of path
+            parts (e.g. `("folder", "subfolder1", "subfolder2")`).
+
             The path has to be provided in the following format:
                 if it's inside of a project, start with a Project Name:
-                    /MicroStrategy Tutorial/Public Objects/Metrics
+                    `/MicroStrategy Tutorial/Public Objects/Metrics`
                 if it's a root folder, start with `CASTOR_SERVER_CONFIGURATION`:
-                    /CASTOR_SERVER_CONFIGURATION/Users
+                    `/CASTOR_SERVER_CONFIGURATION/Users`
         to_dictionary (bool, optional): If True returns a list of dictionaries.
             Defaults to False.
         table_type(PhysicalTableType, optional): If specified, returns a list
@@ -169,10 +174,10 @@ def list_logical_tables(
 def _full_search_logical_tables(
     connection: Connection,
     name: str | None = None,
-    folder: 'Folder | tuple[str] | list[str] | str | None' = None,
+    folder: 'Folder | str | FolderPathType | None' = None,
     folder_id: str | None = None,
     folder_name: str | None = None,
-    folder_path: tuple[str] | list[str] | str | None = None,
+    folder_path: FolderPathType | None = None,
     project: 'Project | str | None' = None,
     project_id: str | None = None,
     project_name: str | None = None,
@@ -190,17 +195,21 @@ def _full_search_logical_tables(
             `project_name`.
         project_id (str, optional): Project ID
         project_name (str, optional): Project name
-        folder (Folder | tuple | list | str, optional): Folder object or ID or
-            name or path specifying the folder. May be used instead of
-            `folder_id`, `folder_name` or `folder_path`.
-        folder_id (str, optional): ID of a folder.
-        folder_name (str, optional): Name of a folder.
-        folder_path (str, optional): Path of the folder.
+        folder (Folder | str | FolderPathType, optional): Folder object or ID or
+            name or path specifying the folder. See `folder_id`, `folder_name`
+            or `folder_path` for more info.
+        folder_id (str, optional): ID of a folder as string.
+        folder_name (str, optional): Name of a folder as string.
+        folder_path (FolderPathType, optional): Path of the folder. It can
+            be a string with "/" as path separator
+            (e.g. "folder/subfolder1/subfolder2") or a tuple or list of path
+            parts (e.g. `("folder", "subfolder1", "subfolder2")`).
+
             The path has to be provided in the following format:
                 if it's inside of a project, start with a Project Name:
-                    /MicroStrategy Tutorial/Public Objects/Metrics
+                    `/MicroStrategy Tutorial/Public Objects/Metrics`
                 if it's a root folder, start with `CASTOR_SERVER_CONFIGURATION`:
-                    /CASTOR_SERVER_CONFIGURATION/Users
+                    `/CASTOR_SERVER_CONFIGURATION/Users`
         to_dictionary (bool, optional): If True, the function will return list
             of dictionaries. Otherwise, list of LogicalTable objects.
             Defaults to False.
@@ -588,8 +597,8 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
         table_name: str | None = None,
         table_description: str | None = None,
         sub_type: ObjectSubType | str | None = ObjectSubType.LOGICAL_TABLE,
-        destination_folder: 'Folder | tuple[str] | list[str] | str | None' = None,
-        destination_folder_path: tuple[str] | list[str] | str | None = None,
+        destination_folder: 'Folder | str | FolderPathType | None' = None,
+        destination_folder_path: FolderPathType | None = None,
         is_embedded: bool | None = None,
         physical_table: PhysicalTable | dict | None = None,
         physical_table_name: str | None = None,
@@ -622,12 +631,17 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
             table_description (str, optional): Logical table description
             sub_type (enum, str, optional): String literal used to identify the
                 type of a metadata object.
-            destination_folder (Folder | tuple | list | str, optional): Folder
+            destination_folder (Folder | str | FolderPathType, optional): Folder
                 object or ID or name or path specifying the folder where to
-                create object.
-            destination_folder_path (str, optional): Path of the folder.
+                create object. See `destination_folder_path` for more info about
+                path type.
+            destination_folder_path (FolderPathType, optional): Path of the
+                folder. It can be a string with "/" as path separator
+                (e.g. "folder/subfolder1/subfolder2") or a tuple or list of path
+                parts (e.g. `("folder", "subfolder1", "subfolder2")`).
+
                 The path has to be provided in the following format:
-                    /MicroStrategy Tutorial/Public Objects/Metrics
+                    `/MicroStrategy Tutorial/Public Objects/Metrics`
             is_embedded (bool, optional): if true indicates that the target
                 object of this reference is embedded within this object
             physical_table (object, dict, optional): Physical table

@@ -13,6 +13,7 @@ from mstrio.connection import (
     TimeoutError,
     ConnectTimeoutError,
     ReadTimeoutError,
+    Locale,
 )
 from mstrio import config
 
@@ -105,6 +106,47 @@ conn = Connection(
     project_id=PROJECT_ID,
     certificate_path=CERTIFICATE_PATH
 )
+
+# Locale and Timezone
+# It is possible to pass locale-based parameters to Connection class for login
+# It can be done by any of the below snippets:
+LOCALE_STRING = $locale_string  # example "en_us" or "de_de"
+TIMEZONE = $timezone  # example "UTC", "EST", etc.
+
+conn = Connection(
+    ...,
+    # provided as string, making all locale params the same, but no change to default timezone
+    locale=LOCALE_STRING,
+)
+conn = Connection(
+    ...,
+    # provided as `Locale` class instance, customizing which locale params should be set
+    locale=Locale(metadata_locale=LOCALE_STRING, messages_locale=LOCALE_STRING),
+)
+conn = Connection(
+    ...,
+    # provided as `Locale` class instance, customizing locale params and timezone
+    locale=Locale(metadata_locale=LOCALE_STRING, time_zone=TIMEZONE),
+)
+conn = Connection(
+    ...,
+    # provided via `Locale.all` helper method making all locale params the same
+    locale=Locale.all(LOCALE_STRING),
+)
+conn = Connection(
+    ...,
+    # provided via `Locale.all` helper method making all locale params the same and setting timezone
+    locale=Locale.all(LOCALE_STRING, time_zone=TIMEZONE),
+)
+
+# You can always change the locale after login, but you will need to reconnect
+conn = Connection(...)  # no locale set at this point
+# change locale:
+conn.locale = LOCALE_STRING
+conn.locale = Locale.all(LOCALE_STRING, time_zone=TIMEZONE)
+conn.locale = Locale(metadata_locale=LOCALE_STRING)
+# relog:
+conn.renew()  # new locale applied
 
 # Retries and Request Timeout
 # You may want to set some retry logic or timeout for requests done in your

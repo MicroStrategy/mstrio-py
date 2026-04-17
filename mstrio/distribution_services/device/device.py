@@ -18,7 +18,7 @@ from mstrio.distribution_services.device.device_properties import (
 from mstrio.distribution_services.transmitter import Transmitter
 from mstrio.types import ObjectTypes
 from mstrio.users_and_groups import User
-from mstrio.utils.entity import DeleteMixin, Entity
+from mstrio.utils.entity import DeleteMixin, Entity, TenantMixin
 from mstrio.utils.enum_helper import AutoName, get_enum_val
 from mstrio.utils.helper import (
     Dictable,
@@ -48,6 +48,7 @@ class DeviceType(AutoName):
     ONEDRIVE = auto()
     SHAREPOINT = auto()
     S3 = auto()
+    GOOGLEDRIVE = auto()
     ALL = auto()
     UNSUPPORTED = auto()
 
@@ -78,7 +79,7 @@ def list_devices(
 
 
 @class_version_handler('11.3.0100')
-class Device(Entity, DeleteMixin):
+class Device(Entity, DeleteMixin, TenantMixin):
     """Devices are Distribution Services components that specify the format
      and transmission process of subscribed reports and documents.
      They are instances of transmitters that contain specific settings
@@ -116,6 +117,7 @@ class Device(Entity, DeleteMixin):
         'onedrive': SharePointDeviceProperties,
         'sharepoint': SharePointDeviceProperties,
         's3': S3DeviceProperties,
+        'googledrive': SharePointDeviceProperties,
     }
 
     @staticmethod
@@ -151,6 +153,8 @@ class Device(Entity, DeleteMixin):
             'acg',
             'acl',
             'comments',
+            'tenant_id',
+            'tenant_name',
         ): objects_processors.get_info,
         (
             'id',

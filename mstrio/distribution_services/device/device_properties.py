@@ -308,23 +308,46 @@ class FtpServerSettings(Dictable):
         self.password = password
 
 
+class EncryptionSettings(Dictable):
+    """Encryption settings for devices.
+
+    Attributes:
+        enable_pgp_encryption (bool): Whether to enable PGP encryption
+        has_pgp_encryption_key (bool):  Whether the PGP encryption key
+            has been set
+    """
+
+    def __init__(
+        self,
+        enable_pgp_encryption: bool = False,
+        has_pgp_encryption_key: bool = True,
+    ):
+        self.enable_pgp_encryption = enable_pgp_encryption
+        self.has_pgp_encryption_key = has_pgp_encryption_key
+
+
 class FtpDeviceProperties(Dictable):
     """Device properties for ftp device type.
 
     Attributes:
         server_settings: FTP Server Settings, FtpServerSettings class
         file_system: File System Options, FileSystem class
+        encryption_settings: Encryption Settings, EncryptionSettings class
     """
 
     _FROM_DICT_MAP = {
         "server_settings": FtpServerSettings.from_dict,
         "file_system": FileSystem.from_dict,
+        "encryption_settings": EncryptionSettings.from_dict,
+        "connection_parameters": ConnectionParameters.from_dict,
     }
 
     def __init__(
         self,
         server_settings: FtpServerSettings | dict,
         file_system: FileSystem | dict,
+        encryption_settings: EncryptionSettings | dict | None = None,
+        connection_parameters: ConnectionParameters | dict | None = None,
     ):
         self.server_settings = (
             FtpServerSettings.from_dict(server_settings)
@@ -335,6 +358,16 @@ class FtpDeviceProperties(Dictable):
             FileSystem.from_dict(file_system)
             if isinstance(file_system, dict)
             else file_system
+        )
+        self.encryption_settings = (
+            EncryptionSettings.from_dict(encryption_settings)
+            if isinstance(encryption_settings, dict)
+            else encryption_settings
+        )
+        self.connection_parameters = (
+            ConnectionParameters.from_dict(connection_parameters)
+            if isinstance(connection_parameters, dict)
+            else connection_parameters
         )
 
 
@@ -353,7 +386,7 @@ class IOSDeviceProperties(Dictable):
 
     def __init__(
         self,
-        app_id: str = '',
+        app_id: str = "",
         server: str | None = None,
         port: int | None = None,
         provider_certificate: str | None = None,
@@ -503,6 +536,7 @@ class FileDeviceProperties(Dictable):
         file_properties: File related properties, FileProperties class
         unix_windows_sharity: Unix to Windows Sharity settings,
             UnixWindowsSharity class
+        encryption_settings: Encryption settings, EncryptionSettings class
     """
 
     _FROM_DICT_MAP = {
@@ -511,6 +545,7 @@ class FileDeviceProperties(Dictable):
         "connection_parameters": ConnectionParameters.from_dict,
         "file_properties": FileProperties.from_dict,
         "unix_windows_sharity": UnixWindowsSharity.from_dict,
+        "encryption_settings": EncryptionSettings.from_dict,
     }
 
     def __init__(
@@ -520,6 +555,7 @@ class FileDeviceProperties(Dictable):
         connection_parameters: ConnectionParameters | dict,
         file_properties: FileProperties | dict,
         unix_windows_sharity: UnixWindowsSharity | dict,
+        encryption_settings: EncryptionSettings | dict | None = None,
     ):
         self.file_location = (
             FileLocation.from_dict(file_location)
@@ -545,6 +581,11 @@ class FileDeviceProperties(Dictable):
             UnixWindowsSharity.from_dict(unix_windows_sharity)
             if isinstance(unix_windows_sharity, dict)
             else unix_windows_sharity
+        )
+        self.encryption_settings = (
+            EncryptionSettings.from_dict(encryption_settings)
+            if isinstance(encryption_settings, dict)
+            else encryption_settings
         )
 
 
@@ -593,7 +634,7 @@ class PrinterPdfSettings(Dictable):
             post_script_level
             if 0 <= post_script_level <= 9
             else exception_handler(
-                'Please provide appropriate value for post_script_level (from 0 to 9)',
+                "Please provide appropriate value for post_script_level (from 0 to 9)",
                 ValueError,
             )
         )
@@ -741,12 +782,14 @@ class SharePointDeviceProperties(Dictable):
     Attributes:
         file_location (FileLocation): File location options
         file_system (FileSystem): File system options
-        iam_id (str, optional): IAM service ID\
+        iam_id (str, optional): IAM service ID
+        encryption_settings (EncryptionSettings, optional): Encryption settings
     """
 
     _FROM_DICT_MAP = {
         "file_location": FileLocation.from_dict,
         "file_system": FileSystem.from_dict,
+        "encryption_settings": EncryptionSettings.from_dict,
     }
 
     def __init__(
@@ -754,6 +797,7 @@ class SharePointDeviceProperties(Dictable):
         file_location: FileLocation | dict,
         file_system: FileSystem | dict,
         iam_id: str | None = None,
+        encryption_settings: EncryptionSettings | dict | None = None,
     ):
         self.file_location = (
             FileLocation.from_dict(file_location)
@@ -766,6 +810,11 @@ class SharePointDeviceProperties(Dictable):
             else file_system
         )
         self.iam_id = iam_id
+        self.encryption_settings = (
+            EncryptionSettings.from_dict(encryption_settings)
+            if isinstance(encryption_settings, dict)
+            else encryption_settings
+        )
 
 
 class S3Credentials(Dictable):

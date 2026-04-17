@@ -7,7 +7,7 @@ from mstrio.api import usergroups as usergroups_api
 from mstrio.api import users as users_api
 from mstrio.connection import Connection
 from mstrio.helpers import IServerError
-from mstrio.utils.helper import fetch_objects
+from mstrio.utils.helper import fetch_objects, fetch_objects_async
 from mstrio.utils.version_helper import method_version_handler
 
 TIMEOUT = 60
@@ -156,14 +156,19 @@ def get_all(
             filters.get('abbreviation') or abbreviation_begins_filter
         )
 
-    # Getting information from members of 'Everyone' user group
-    return fetch_objects(
+    UG_EVERYONE = "C82C6B1011D2894CC0009D9F29718E4F"
+    CHUNK_SIZE = 1000
+
+    # Getting information from members of 'Everyone' user group.
+    return fetch_objects_async(
         connection=connection,
         api=usergroups_api.get_members,
+        async_api=usergroups_api.get_members_async,
         limit=limit,
-        error_msg=msg,
+        chunk_size=CHUNK_SIZE,
         filters=filters,
-        id='C82C6B1011D2894CC0009D9F29718E4F',
+        error_msg=msg,
+        id=UG_EVERYONE,
     )
 
 

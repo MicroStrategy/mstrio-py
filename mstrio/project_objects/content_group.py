@@ -7,7 +7,7 @@ from mstrio.modeling.metric.metric_format import FormatProperty
 from mstrio.server.project import Project
 from mstrio.types import ObjectSubTypes, ObjectTypes
 from mstrio.users_and_groups import User, UserGroup, UserOrGroup
-from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity
+from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, TenantMixin
 from mstrio.utils.helper import (
     add_journal_comment_to_operation_list,
     delete_none_values,
@@ -60,7 +60,7 @@ def list_content_groups(
 
 
 @class_version_handler('11.3.1200')
-class ContentGroup(Entity, CopyMixin, DeleteMixin):
+class ContentGroup(Entity, CopyMixin, DeleteMixin, TenantMixin):
     """Python representation of a Strategy One Content Group object"""
 
     _OBJECT_TYPE = ObjectTypes.CONTENT_BUNDLE
@@ -71,6 +71,8 @@ class ContentGroup(Entity, CopyMixin, DeleteMixin):
             'opacity',
             'email_enabled',
             'recipients',
+            'tenant_id',
+            'tenant_name',
         ): content_groups.get_content_group,
     }
     _API_PATCH: dict = {

@@ -249,9 +249,7 @@ class PhysicalTable(Entity):
             pass
 
     def _init_variables(self, default_value, **kwargs) -> None:
-        if kwargs.get("id"):
-            super()._init_variables(default_value=default_value, **kwargs)
-        elif kwargs.get("information"):
+        if not kwargs.get("id"):
             # available when fetched as a part of a logical table
             information = kwargs.pop("information")
             kwargs.update(
@@ -261,27 +259,24 @@ class PhysicalTable(Entity):
                     **information,
                 }
             )
-            super()._init_variables(default_value=default_value, **kwargs)
+        super()._init_variables(default_value=default_value, **kwargs)
+        columns = kwargs.get("columns")
+        self.columns = (
+            TableColumn.bulk_from_dict(source_list=columns, connection=self.connection)
+            if columns
+            else default_value
+        )
+        self.namespace = kwargs.get("namespace", default_value)
+        self.primary_locale = kwargs.get("primary_locale", default_value)
 
-            columns = kwargs.get("columns")
-            self.columns = (
-                TableColumn.bulk_from_dict(
-                    source_list=columns, connection=self.connection
-                )
-                if columns
-                else None
-            )
-            self.namespace = kwargs.get("namespace")
-            self.primary_locale = kwargs.get("primary_locale")
+        sub_type = kwargs.get("sub_type")
+        self._sub_type = ObjectSubType(sub_type) if sub_type else default_value
+        self.table_name = kwargs.get("table_name", default_value)
+        self.table_prefix = kwargs.get("table_prefix", default_value)
 
-            sub_type = kwargs.get("sub_type")
-            self._sub_type = ObjectSubType(sub_type) if sub_type else None
-            self.table_name = kwargs.get("table_name")
-            self.table_prefix = kwargs.get("table_prefix")
-
-            table_type = kwargs.get("table_type")
-            self.table_type = PhysicalTableType(table_type) if table_type else None
-            self._version = kwargs.get("version_id")
+        table_type = kwargs.get("table_type")
+        self.table_type = PhysicalTableType(table_type) if table_type else default_value
+        self._version = kwargs.get("version_id", default_value)
 
     def list_dependent_logical_tables(self) -> list["LogicalTable"]:
         """Searches and filters a list of logical tables based on provided

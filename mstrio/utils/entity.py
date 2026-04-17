@@ -28,6 +28,7 @@ from mstrio.utils.helper import (
     rename_dict_keys,
 )
 from mstrio.utils.resolvers import (
+    FolderPathType,
     get_folder_id_from_params_set,
     get_project_id_from_params_set,
 )
@@ -39,11 +40,13 @@ from mstrio.utils.time_helper import (
 )
 from mstrio.utils.translation_mixin import TranslationMixin
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
+from mstrio.utils.wip import WipLevels, wip
 
 if TYPE_CHECKING:
     from mstrio.modeling import Prompt
     from mstrio.object_management import Folder, Shortcut
     from mstrio.server import ChangeJournalEntry, Project
+    from mstrio.server.tenant import Tenant
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +76,24 @@ class ChangeJournalMixin:
         )
 
 
+class _ApiPatchInstruction:
+    info: str
+    nullable: bool = False
+
+    def __init__(self, info: 'str | _ApiPatchInstruction', nullable: bool = False):
+        if isinstance(info, _ApiPatchInstruction):
+            self.info = info.info
+            self.nullable = info.nullable
+        else:
+            self.info = info
+            self.nullable = nullable
+
+        if self.info not in ['partial_put', 'put', 'patch']:
+            raise NotSupportedError(
+                f"'{self.info}' function is not supported by `ApiPatchInstruction`."
+            )
+
+
 class EntityBase(helper.Dictable):
     """This class is for objects that do not have a specified Strategy One type.
 
@@ -95,6 +116,22 @@ class EntityBase(helper.Dictable):
             self._AVAILABLE_ATTRIBUTES.update({key: type(val) for key, val
                 in kwargs.items()})
             # init logic follows
+        ```
+    _UNWRAP_ATTR (dict[str, dict[str, str]]): A dictionary used to promote
+        nested attributes from a REST response to the top level. Outer
+        keys are the names of wrapper objects in the response; inner
+        dictionaries map each wrapped attribute name to its target
+        top-level attribute name. Unwrapping is applied after
+        `camel_to_snake` and `_rest_to_python` conversions on the
+        wrapped object. If a target key already exists at the top level
+        it is not overwritten. For example:
+        ```
+            _UNWRAP_ATTR = {
+                'tenant': {
+                    'tenant_id': 'tenant_id',
+                    'tenant_name': 'tenant_name',
+                }
+            }
         ```
     _API_GETTERS (dict[str | tuple, Callable]): A dictionary whose keys
         are either a name of an attribute (as a string) or names of attributes
@@ -128,14 +165,25 @@ class EntityBase(helper.Dictable):
         attributes value. It is used for validating attribute's type during the
         process of properties update. This dictionary is created from keyword
         arguments passed to an object's constructor.
-    _API_PATCH (dict[tuple[str], tuple[Callable | str]]): A dictionary
-        whose keys are tuples with an object's attribute names as strings, and
-        values are tuples with two elements: first element is a REST API wrapper
-        function used to update the object's properties, and the second element
-        is a definition (as a string) how this update should be performed. For
-        example:
+    _API_PATCH (dict[tuple[str], tuple[Callable, str, bool | EMPTY]]): A
+        dictionary whose keys are tuples with an object's attribute names as
+        strings, and values are tuples with two/three elements: first element
+        is a REST API wrapper function used to update the object's properties,
+        and the second+third elements are a definition (as a string/bool) how
+        this update should be performed.
+        For example:
+        ```
         {('name', 'description', 'abbreviation'):
             (objects.update_object, 'partial_put')}
+        ```
+        Or:
+        ```
+        {('suffix',):
+            (objects.update_object, 'put', True)}
+        ```
+        Third argument is a boolean representing whether empty request body
+        (`{}`) is expected (True) or to skip sending a request when this case
+        happens (False or null).
     _PATCH_PATH_TYPES (dict[str, type]): A dictionary whose keys are names of
         object's attributes and values are attribute types. Used to
         validate correctness of a new value during the process of properties
@@ -208,13 +256,16 @@ class EntityBase(helper.Dictable):
         None  # None means subtype won't be verified.
     )
     _REST_ATTR_MAP: dict[str, str] = {}
+    _UNWRAP_ATTR: dict[str, dict[str, str]] = {}
     _API_GETTERS: dict[str | tuple, Callable] = {}
     _API_GETTERS_KEEP_PRIVATE: set[str] = set()
     _FROM_DICT_MAP: dict[str, Callable] = {
         'type': ObjectTypes
     }  # map attributes to Enums and Composites
     _AVAILABLE_ATTRIBUTES: dict[str, type] = {}  # fetched on runtime from all Getters
-    _API_PATCH: dict[tuple[str], tuple[Callable | str]] = {}
+    # TODO: change to `dict[tuple[str], tuple[Callable, str, bool | Never]]`
+    # with Python 3.11
+    _API_PATCH: dict[tuple[str], tuple[Callable, str, bool] | tuple[Callable, str]] = {}
     _PATCH_PATH_TYPES: dict[str, type] = {}  # used in update_properties method
     _API_DELETE: Callable = staticmethod(objects.delete_object)
     _API_DEL_JOURNAL_MIN_VER: str | None = '11.5.0300'
@@ -260,6 +311,8 @@ class EntityBase(helper.Dictable):
         )
         self.name: str | None = kwargs.get("name", default_value)
         self._altered_properties = {}
+        if hasattr(super(), '_init_variables'):
+            super()._init_variables(default_value=default_value, **kwargs)
 
     def fetch(self, attr: str | None = None) -> None:  # NOSONAR
         """Fetch the latest object's state from the I-Server.
@@ -468,6 +521,37 @@ class EntityBase(helper.Dictable):
             body = helper.snake_to_camel(body, whitelist=cls._KEEP_CAMEL_CASE)
         return body
 
+    @classmethod
+    def _unwrap_attr(cls, response: dict) -> dict:
+        """Unwrap nested REST attributes according to `cls._UNWRAP_ATTR`.
+
+        Args:
+            response (dict): A dictionary representing an HTTP response.
+
+        Returns:
+            dict: A dictionary with selected nested attributes promoted to
+                top-level attributes.
+        """
+        if not cls._UNWRAP_ATTR:
+            return response
+
+        result = response.copy()
+        for wrapper_key, wrapped_keys_map in cls._UNWRAP_ATTR.items():
+            wrapped_obj = result.get(wrapper_key)
+            if not isinstance(wrapped_obj, dict):
+                continue
+
+            wrapped_obj = helper.camel_to_snake(
+                wrapped_obj, whitelist=cls._KEEP_CAMEL_CASE
+            )
+            wrapped_obj = cls._rest_to_python(wrapped_obj)
+
+            for wrapped_key, target_key in wrapped_keys_map.items():
+                if target_key not in result:
+                    result[target_key] = wrapped_obj.get(wrapped_key)
+
+        return result
+
     def __compose_val(self, key: str, val: Any) -> Any:
         """Converts a value to a correct composite form such as Datetime, Enum,
         list of Enums etc. Information about the correct form of the value is
@@ -511,6 +595,7 @@ class EntityBase(helper.Dictable):
 
         object_info = helper.camel_to_snake(kwargs, whitelist=self._KEEP_CAMEL_CASE)
         object_info = self._rest_to_python(object_info)
+        object_info = self._unwrap_attr(object_info)
 
         # determine which attributes should be private
         should_be_set_as_private = (
@@ -543,6 +628,12 @@ class EntityBase(helper.Dictable):
             dict: A dictionary which keys are object's attribute names, and
                 which values are object's attribute values.
         """
+        # TODO remove it after tenant is out of wip
+        hardcoded_excluded_properties = ['tenant_id', 'tenant_name', 'tenant']
+        excluded_properties = list(
+            set((excluded_properties or []) + hardcoded_excluded_properties)
+        )
+
         if hasattr(self, "_API_GETTERS"):  # fetch attributes not loaded on init
             attr = [attr for attr in self._API_GETTERS.keys() if isinstance(attr, str)]
             for key in self._API_GETTERS.keys():
@@ -554,7 +645,6 @@ class EntityBase(helper.Dictable):
                     self.__class__, lambda x: isinstance(x, property)
                 )
             ]
-            excluded_properties = excluded_properties or []
             attr = [a for a in attr if a not in excluded_properties]
             attr = list(set(attr))
             for a in attr:
@@ -746,7 +836,9 @@ class EntityBase(helper.Dictable):
             else:
                 list_of_objects.append(obj.list_properties())
 
-        with open(file_, 'w') as f:
+        # opening with newline='' to fix double newlines issue on Windows
+        # https://docs.python.org/3/library/csv.html#examples
+        with open(file_, 'w', newline='', encoding='utf-8') as f:
             fieldnames = list_of_objects[0].keys()
             w = csv.DictWriter(f, fieldnames=fieldnames)
             w.writeheader()
@@ -870,27 +962,29 @@ class EntityBase(helper.Dictable):
                 'patch').
         """
         changed = []
-        for attrs, (func, func_type) in self._API_PATCH.items():
-            if func_type == 'partial_put':
-                translated_properties = self._python_to_rest(properties, to_camel=True)
-                body = self.__partial_put_body(attrs, translated_properties)
-            elif func_type == 'put':  # Update using the generic update_object()
-                body = self.__put_body(attrs, properties)
-                body = self._python_to_rest(body)
-            elif func_type == 'patch':
-                translated_properties = self._python_to_rest(properties, to_camel=True)
-                body = self.__patch_body(attrs, translated_properties, op)
-            else:
-                msg = (
-                    f"{func} function is not supported by `_send_proper_patch_request`"
-                )
-                raise NotSupportedError(msg)
+        for attrs, (func, *func_params) in self._API_PATCH.items():
+            func_data = _ApiPatchInstruction(*func_params)
 
-            if not body:
+            match func_data.info:
+                case 'partial_put':
+                    translated_properties = self._python_to_rest(
+                        properties, to_camel=True
+                    )
+                    body = self.__partial_put_body(attrs, translated_properties)
+                case 'put':
+                    body = self.__put_body(attrs, properties)
+                    body = self._python_to_rest(body)
+                case 'patch':
+                    translated_properties = self._python_to_rest(
+                        properties, to_camel=True
+                    )
+                    body = self.__patch_body(attrs, translated_properties, op)
+
+            if not body and not func_data.nullable:
                 continue
 
             if body and 'journal_comment' in properties:
-                if func_type == 'patch':
+                if func_data.info == 'patch':
                     add_journal_comment_to_operation_list(
                         body=body, comment=properties.get('journal_comment')
                     )
@@ -1188,6 +1282,8 @@ class Entity(
             'project_id',
             'hidden',
             'target_info',
+            'tenant_id',
+            'tenant_name',
         ): objects_processors.get_info,
     }
     _API_PATCH: dict = {
@@ -1213,6 +1309,7 @@ class Entity(
         'acg': Rights,
         'location': str,
     }
+    _API_GETTERS_KEEP_PRIVATE = {'tenant_id', 'tenant_name'}
 
     def _init_variables(self, default_value=None, **kwargs) -> None:
         """Initialize variables given kwargs."""
@@ -1271,10 +1368,10 @@ class Entity(
     @method_version_handler(version="11.3.0200")
     def create_shortcut(
         self,
-        target_folder: 'Folder | tuple[str] | list[str] | str | None' = None,
+        target_folder: 'Folder | str | FolderPathType | None' = None,
         target_folder_id: str | None = None,
         target_folder_name: str | None = None,
-        target_folder_path: tuple[str] | list[str] | str | None = None,
+        target_folder_path: FolderPathType | None = None,
         project: 'Project | str | None' = None,
         project_id: str | None = None,
         project_name: str | None = None,
@@ -1470,10 +1567,10 @@ class MoveMixin:
 
     def move(
         self,
-        folder: 'Folder | tuple[str] | list[str] | str | None' = None,
+        folder: 'Folder | str | FolderPathType | None' = None,
         folder_id: str | None = None,
         folder_name: str | None = None,
-        folder_path: tuple[str] | list[str] | str | None = None,
+        folder_path: FolderPathType | None = None,
     ) -> None:
         """Move the object to a folder on the I-Server.
 
@@ -1850,6 +1947,177 @@ class PromptMixin:
         return True
 
 
+class TenantMixin:
+    """Mixin class for adding tenant functionality to entities.
+
+    This mixin injects `_REST_ATTR_MAP` mappings automatically
+    into child classes, so subclasses do not have to redefine
+    them in `_REST_ATTR_MAP`.
+    """
+
+    _TENANT_REST_ATTR_MAP = {
+        'md_tenant_id': 'tenant_id',
+        'md_tenant_name': 'tenant_name',
+    }
+    _TENANT_UNWRAP_ATTR_MAP = {
+        'tenant': {
+            'tenant_id': 'tenant_id',
+            'tenant_name': 'tenant_name',
+        }
+    }
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        rest_attr_map = dict(getattr(cls, '_REST_ATTR_MAP', {}))
+        unwrap_attr_map = dict(getattr(cls, '_UNWRAP_ATTR', {}))
+        cls._REST_ATTR_MAP = {
+            **rest_attr_map,
+            **TenantMixin._TENANT_REST_ATTR_MAP,
+        }
+        cls._UNWRAP_ATTR = {
+            **unwrap_attr_map,
+            **TenantMixin._TENANT_UNWRAP_ATTR_MAP,
+        }
+
+    def _init_variables(self, default_value=None, **kwargs) -> None:
+        """Initialize tenant-related attributes."""
+        if hasattr(super(), '_init_variables'):
+            super()._init_variables(default_value=default_value, **kwargs)
+
+        tenant_obj = kwargs.get('tenant') or {}
+        self._tenant_id: str | None = kwargs.get(
+            'tenant_id', tenant_obj.get('tenant_id', default_value)
+        )
+        self._tenant_name: str | None = kwargs.get(
+            'tenant_name', tenant_obj.get('tenant_name', default_value)
+        )
+
+    @property
+    def tenant_id(self) -> str | None:
+        """Get the ID of the tenant to which this object belongs."""
+        return self._tenant_id
+
+    @property
+    def tenant_name(self) -> str | None:
+        """Get the name of the tenant to which this object belongs."""
+        if self._tenant_name is None and isinstance(self._tenant_id, str):
+            try:
+                tenant = self.tenant
+                self._tenant_name = tenant.name if tenant is not None else None
+            except NotSupportedError:
+                # TODO this should prevent edge cases when there is tenant_id
+                # but no tenant_name before wip flag on tenant is taken off
+                logger.warning(
+                    "Could not fetch tenant name for tenant ID '%s'.",
+                    self._tenant_id,
+                    exc_info=True,
+                )
+        return self._tenant_name
+
+    @property
+    def tenant(self) -> 'Tenant | None':
+        """Get the Tenant object instance for the tenant this object belongs to.
+
+        Returns:
+            Tenant | None: Tenant instance if object is assigned to a tenant,
+                None otherwise.
+        """
+        if not isinstance(self._tenant_id, str):
+            return None
+
+        from mstrio.server.tenant import Tenant
+
+        return Tenant(self.connection, id=self._tenant_id)
+
+    @wip(target_release='11.6.5.101', level=WipLevels.ERROR)  # NOSONAR
+    @method_version_handler('11.6.0100')
+    def change_tenant(
+        self,
+        tenant: 'Tenant | str | None' = None,
+        tenant_id: str | None = None,
+        tenant_name: str | None = None,
+    ) -> None:
+        """Change the tenant of the object by moving it to a new tenant.
+
+        Args:
+            tenant (Tenant | str | None, optional): Tenant object or ID or name
+                specifying the tenant. May be used instead of `tenant_id`
+                or `tenant_name`.
+            tenant_id (str | None, optional): Tenant ID
+            tenant_name (str | None, optional): Tenant name
+        Raises:
+            ValueError: If tenant cannot be determined from the provided
+                parameters.
+        """
+
+        from mstrio.utils.resolvers import get_tenant_id_from_params_set
+
+        new_tenant_id = get_tenant_id_from_params_set(
+            self.connection,
+            tenant=tenant,
+            tenant_id=tenant_id,
+            tenant_name=tenant_name,
+        )
+
+        from mstrio.server.tenant import Tenant
+
+        new_tenant = Tenant(self.connection, id=new_tenant_id)
+
+        # Deleted tenants have empty string as ID as of 11.6.0400
+        if new_tenant.id == '':
+            raise ValueError(
+                f"Tenant with ID {new_tenant_id} no longer exists. "
+                f"Cannot change tenant assignment to it."
+            )
+
+        new_tenant.assign_to_tenant(
+            {
+                'id': self.id,
+                'type': self._OBJECT_TYPE.value,
+            }
+        )
+
+        self._tenant_id = new_tenant_id
+        self._tenant_name = new_tenant.name
+
+        if config.verbose:
+            logger.info(f"Object '{self.name}' moved to tenant '{new_tenant_id}'.")
+
+    @wip(target_release='11.6.5.101', level=WipLevels.ERROR)  # NOSONAR
+    @method_version_handler('11.6.0100')
+    def remove_from_tenant(self) -> None:
+        """Remove the object from its current tenant.
+
+        If the object is not assigned to any tenant, this method does nothing.
+        """
+
+        if not self._tenant_id:
+            if config.verbose:
+                logger.info(f"Object '{self.name}' is not assigned to any tenant.")
+            # Do not return early. We still call `unassign_from_tenant()` to
+            # handle stale tenant assignments (for example, Event objects that
+            # can expose tenant info only through quicksearch).
+            self._tenant_id = "UNKNOWN"
+
+        from mstrio.server.tenant import Tenant
+
+        tenant = Tenant(self.connection, id=self._tenant_id)
+
+        tenant.unassign_from_tenant(
+            {
+                'id': self.id,
+                'type': self._OBJECT_TYPE.value,
+            }
+        )
+
+        old_tenant_id = self._tenant_id
+        self._tenant_id = None
+        self._tenant_name = None
+
+        if config.verbose:
+            logger.info(f"Object '{self.name}' removed from tenant '{old_tenant_id}'.")
+
+
 def auto_match_args_entity(
     func: Callable,
     obj: EntityBase,
@@ -1868,6 +2136,8 @@ def auto_match_args_entity(
         exclude: set `exclude` parameter to exclude specific param-value pairs
         include_defaults: if `False` then values which have the same value as
             default will not be included in the result
+        id_weak_match: if `True`, the function will try to match IDs even if
+            they are not exact (e.g. by ignoring certain prefixes)
     Raises:
         KeyError: could not match all required arguments
     """

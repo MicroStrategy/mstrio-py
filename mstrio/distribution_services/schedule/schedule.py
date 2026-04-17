@@ -9,7 +9,7 @@ from mstrio.distribution_services.event import Event
 from mstrio.distribution_services.schedule import ScheduleEnums, ScheduleTime
 from mstrio.users_and_groups.user import User
 from mstrio.utils import helper
-from mstrio.utils.entity import DeleteMixin, Entity, ObjectTypes
+from mstrio.utils.entity import DeleteMixin, Entity, ObjectTypes, TenantMixin
 from mstrio.utils.enum_helper import AutoName, get_enum_val
 from mstrio.utils.related_subscription_mixin import RelatedSubscriptionMixin
 from mstrio.utils.response_processors import objects as objects_processors
@@ -55,7 +55,7 @@ def list_schedules(
     return [Schedule.from_dict(source=obj, connection=connection) for obj in objects]
 
 
-class Schedule(Entity, DeleteMixin, RelatedSubscriptionMixin):
+class Schedule(Entity, DeleteMixin, RelatedSubscriptionMixin, TenantMixin):
     """Class representation of Strategy One Schedule object.
 
     Attributes:
@@ -90,6 +90,8 @@ class Schedule(Entity, DeleteMixin, RelatedSubscriptionMixin):
             'stop_date',
             'time',
             'event',
+            'tenant_id',
+            'tenant_name',
         ): schedules.get_schedule,
         (
             'abbreviation',
@@ -310,6 +312,10 @@ class Schedule(Entity, DeleteMixin, RelatedSubscriptionMixin):
             'certified_info': self.certified_info,
             'acg': self.acg,
             'acl': self.acl,
+            # TODO uncomment when tenant module is out of wip
+            # 'tenant_id': self.tenant_id,
+            # 'tenant_name': self.tenant_name,
+            # 'tenant': self.tenant,
         }
 
         return {

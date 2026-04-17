@@ -42,6 +42,10 @@ class ContactDeliveryType(AutoName):
     MOBILE_ANDROID = auto()
     MOBILE_IPHONE = auto()
     MOBILE_IPAD = auto()
+    ONEDRIVE = auto()
+    SHAREPOINT = auto()
+    S3 = auto()
+    GOOGLEDRIVE = auto()
     UNSUPPORTED = auto()
 
 

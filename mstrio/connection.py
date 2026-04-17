@@ -2,6 +2,7 @@ import contextlib
 import inspect
 import logging
 import os
+from dataclasses import dataclass
 from datetime import datetime
 from enum import IntEnum
 from functools import partial
@@ -74,6 +75,46 @@ class LoginMode(IntEnum):
     ANONYMOUS = 8
     LDAP = 16
     API_TOKEN = 4096
+
+
+@dataclass
+class Locale(helper.Dictable):
+    """Locale settings for the connection.
+
+    Submitted as parameters during logging in. If attribute is not provided or
+    set as `None`, defaults to "en_us" with timezone "UTC".
+
+    Use `Locale.all("<locale-string>")` to set all locale attributes to the same
+    value.
+    """
+
+    metadata_locale: str | None = None
+    warehouse_data_locale: str | None = None
+    display_locale: str | None = None
+    messages_locale: str | None = None
+    number_locale: str | None = None
+    time_zone: str | None = None
+
+    @classmethod
+    def all(cls, locale_string: str | None, /, time_zone: str | None = None):
+        """Helper method to set all locale attributes to the same value.
+
+        Args:
+            locale_string (str | None): String to set all locale attributes to.
+            time_zone (str | None, optional): Time zone to set for the
+                connection. If not provided or set as `None`, defaults to "UTC".
+
+        Returns:
+            Locale object with all locale attributes set to the same value.
+        """
+        return cls(
+            metadata_locale=locale_string,
+            warehouse_data_locale=locale_string,
+            display_locale=locale_string,
+            messages_locale=locale_string,
+            number_locale=locale_string,
+            time_zone=time_zone,
+        )
 
 
 def get_connection(
@@ -250,6 +291,7 @@ class Connection:
         verbose: bool = True,
         request_timeout: int | float | None = None,
         request_retry_on_timeout_count: int | None = None,
+        locale: Locale | dict | str | None = None,
     ):
         """Establish a connection with Strategy One REST API.
 
@@ -321,6 +363,13 @@ class Connection:
             request_retry_on_timeout_count (int, optional): Number of times
                 to retry a request in case of a timeout. If `None` or less
                 than 1, no retries will be attempted.
+            locale (Locale | dict | str, optional): Locale settings for the
+                connection. It can be provided as a `Locale` object, a
+                dictionary with locale parameters or a string with locale name
+                (ex. "en_us"). In the last case, the provided locale will be
+                applied to all locale parameters with default timezone. If not
+                provided, defaults to keeping timezone as UTC and all locale
+                parameters as "en_us".
         """
 
         if login_mode is None:
@@ -361,6 +410,8 @@ class Connection:
         self._request_retry_on_timeout_count: int | None = None
         self.set_request_retry_on_timeout_count(request_retry_on_timeout_count)
         self._deployment_type: str | None = None
+        self._locale: Locale = None  # NOSONAR # (next line will assign it)
+        self._set_locale(locale)
 
         # do not check application type if delegated
         self._application_type = (
@@ -419,6 +470,17 @@ class Connection:
 
         self.project_id = None
         self.select_project(project, project_id, project_name)
+
+    def _set_locale(self, value: Locale | dict | str | None) -> None:
+        match value:
+            case l if isinstance(l, dict):
+                self._locale = Locale.from_dict(l)
+            case l if isinstance(l, str) or l is None:
+                self._locale = Locale.all(l)
+            case l if isinstance(l, Locale):
+                self._locale = l
+            case _:
+                raise ValueError(f"Invalid locale argument: {value}.")
 
     @property
     def _through_get_connection(self) -> bool:
@@ -890,8 +952,7 @@ class Connection:
                 for: {backoff factor} * (2 ^ ({number of total retries} - 1))
                 seconds. If the backoff_factor is 0.1, then sleep() will sleep
                 for [0.0s, 0.2s, 0.4s, ...] between retries. It will never be
-                longer than Retry. BACKOFF_MAX. By default, backoff is disabled
-                (set to 0).
+                longer than Retry.BACKOFF_MAX. By default, backoff is 0.3.
         """
         session = existing_session or Session()
         session.proxies = proxies or {}
@@ -1011,6 +1072,25 @@ class Connection:
     @property
     def request_retry_on_timeout_count(self) -> int | None:
         return self._request_retry_on_timeout_count
+
+    @property
+    def locale(self) -> Locale:
+        return self._locale
+
+    @locale.setter
+    def locale(self, value: Locale | dict | str | None) -> Locale:
+        """Set locale for the connection.
+
+        It can be provided as a `Locale` object, a dictionary with locale
+        parameters or a string with locale name (ex. "en_us"). In the last case,
+        the provided locale will be applied to all locale parameters with
+        default timezone.
+
+        Relogging is required to apply changes to this parameter into a login
+        session.
+        """
+        self._set_locale(value)
+        return self._locale
 
     @property
     def token(self) -> str:

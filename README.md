@@ -12,7 +12,7 @@
 
 ### Prerequisites
 
-- Python in version 3.10.x, 3.11.x, 3.12.x or 3.13.x
+- Python in version 3.10.x, 3.11.x, 3.12.x, 3.13.x or 3.14.x
 - MicroStrategy 2019 Update 4 (11.1.4)+
 
 ### Install `mstrio-py` Package
@@ -141,7 +141,7 @@ Since version **11.3.0.1**, **mstrio-py** includes also administration modules:
 
 ## Versioning & Changelog
 
-Current version: **11.6.3.101** (20 March 2026). Check out [CHANGELOG][release_notes] to see what's new.
+Current version: **11.6.4.101** (17 April 2026). Check out [CHANGELOG][release_notes] to see what's new.
 
 `mstrio-py` is constantly developed to support newest Strategy One REST APIs. Functionalities may be added to mstrio on monthly basis. It is **recommended** to always install the newest version of mstrio-py, as it will be most stable and still maintain backwards compatibility with various Strategy One installations, dating back to 11.1.4.
 

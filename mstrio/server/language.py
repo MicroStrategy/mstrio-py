@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
@@ -24,7 +22,7 @@ def list_languages(
     to_dictionary: bool = False,
     limit: int | None = None,
     **filters,
-) -> list[Language] | list[dict]:
+) -> 'list[Language] | list[dict]':
     """Get all languages as a list of Language objects or dictionaries.
     Optionally filter the languages by specifying filters.
 
@@ -46,7 +44,7 @@ def list_languages(
 @method_version_handler(version='11.3.1060')
 def list_interface_languages(
     connection: Connection, to_dictionary: bool = False
-) -> list[Language.InterfaceLanguage] | list[dict]:
+) -> 'list[Language.InterfaceLanguage] | list[dict]':
     """List all available interface languages.
 
     Args:
@@ -247,10 +245,10 @@ class Language(Entity, DeleteMixin):
         cls,
         connection: Connection,
         name: str,
-        base_language: Language | str | int,
+        base_language: 'Language | str | int',
         interface_language_id: str | None = None,
         formatting_settings: TimeInterval | None = None,
-    ) -> Language:
+    ) -> 'Language':
         """Create a new language with specified properties.
 
         Args:
@@ -311,7 +309,7 @@ class Language(Entity, DeleteMixin):
         self,
         name: str | None = None,
         comments: str | None = None,
-        owner: str | User | None = None,
+        owner: 'str | User | None' = None,
         formatting_settings: TimeInterval | None = None,
     ) -> None:
         """Alter the language's specified properties.
@@ -429,7 +427,7 @@ class Language(Entity, DeleteMixin):
         to_dictionary: bool = False,
         limit: int | None = None,
         **filters,
-    ) -> list[Language] | list[dict]:
+    ) -> 'list[Language] | list[dict]':
         objects = languages.get_all(connection=connection, limit=limit, filters=filters)
         if to_dictionary:
             return objects

@@ -341,6 +341,7 @@ def get_quick_search_result(
     hidden: bool | None = None,
     get_ancestors: bool | None = None,
     cross_cluster: bool | None = None,
+    tenant_ids: list[str] | None = None,
     error_msg: str | None = None,
 ):
     return connection.get(
@@ -357,6 +358,7 @@ def get_quick_search_result(
             'certifiedStatus': certified_status,
             'result.hidden': hidden,
             'isCrossCluster': cross_cluster,
+            'tenantIds': tenant_ids,
         },
     )
 

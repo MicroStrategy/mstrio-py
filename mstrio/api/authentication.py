@@ -46,8 +46,12 @@ def login(connection: 'Connection') -> 'Response':
     if app_id := connection.application_id:
         auth_data['applicationId'] = app_id
 
+    if connection.locale and (locale := connection.locale.to_dict()):
+        auth_data.update(locale)
+
     if connection.login_mode == 4096:
         auth_data['username'] = connection.api_token
+
         return connection.post(
             skip_expiration_check=True, endpoint=ENDPOINT, json=auth_data
         )

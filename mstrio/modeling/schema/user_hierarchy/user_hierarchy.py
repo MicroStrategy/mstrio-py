@@ -20,7 +20,7 @@ from mstrio.utils.helper import (
     get_default_args_from_func,
     get_enum_val,
 )
-from mstrio.utils.resolvers import get_folder_id_from_params_set
+from mstrio.utils.resolvers import FolderPathType, get_folder_id_from_params_set
 from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
@@ -467,8 +467,8 @@ class UserHierarchy(Entity, CopyMixin, MoveMixin, DeleteMixin):
         name: str,
         sub_type: str | UserHierarchySubType,
         attributes: list[HierarchyAttribute] | list[dict],
-        destination_folder: 'Folder | tuple[str] | list[str] | str | None' = None,
-        destination_folder_path: tuple[str] | list[str] | str | None = None,
+        destination_folder: 'Folder | str | FolderPathType | None' = None,
+        destination_folder_path: FolderPathType | None = None,
         use_as_drill_hierarchy: bool = True,
         description: str = None,
         is_embedded: bool = False,
@@ -485,12 +485,17 @@ class UserHierarchy(Entity, CopyMixin, MoveMixin, DeleteMixin):
                 a metadata object, UserHierarchySubType enum
             attributes (list): the list of attributes that
                 do have any relationships currently
-            destination_folder (Folder | tuple | list | str, optional): Folder
+            destination_folder (Folder | str | FolderPathType, optional): Folder
                 object or ID or name or path specifying the folder where to
-                create object.
-            destination_folder_path (str, optional): Path of the folder.
+                create object. See `destination_folder_path` for more info about
+                path type.
+            destination_folder_path (FolderPathType, optional): Path of the
+                folder. It can be a string with "/" as path separator
+                (e.g. "folder/subfolder1/subfolder2") or a tuple or list of path
+                parts (e.g. `("folder", "subfolder1", "subfolder2")`).
+
                 The path has to be provided in the following format:
-                    /MicroStrategy Tutorial/Public Objects/Metrics
+                    `/MicroStrategy Tutorial/Public Objects/Metrics`
             use_as_drill_hierarchy (bool, optional): whether this user hierarchy
                 is used as drill hierarchy
             description (str, optional): optional description of a new

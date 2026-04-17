@@ -600,7 +600,7 @@ OBJECT_MIGRATION_TYPES_MIN_VERSION = {
     MigratedObjectTypes.TRANSMITTER: '11.3.0760',
     MigratedObjectTypes.SCRIPT_RUNTIME_ENV: '11.3.0760',
 }
-CATALOG_ITEMS = {
+CATALOG_ITEMS: dict[MigratedObjectTypes, tuple[ObjectTypes, ObjectSubTypes | None]] = {
     MigratedObjectTypes.DASHBOARD: (ObjectTypes.DOCUMENT_DEFINITION, None),
     MigratedObjectTypes.DOCUMENT: (ObjectTypes.DOCUMENT_DEFINITION, None),
     MigratedObjectTypes.CARD: (

@@ -165,7 +165,9 @@ class Cluster:
         metadata = registrations.get_services_metadata(
             connection=self.connection
         ).json()
-        service_type = pd.DataFrame(metadata["serviceTypes"])[['displayName', 'name']]
+        service_type: 'pd.DataFrame' = pd.DataFrame(metadata["serviceTypes"])[
+            ['displayName', 'name']
+        ]
 
         for node in nodes:
             node_name = node['node'].name
@@ -192,7 +194,7 @@ class Cluster:
         service_type = service_type.rename(columns={'name': 'id'}, inplace=False)
 
         if styled:
-            return service_type.style.applymap(Cluster._show_color)
+            return service_type.style.map(Cluster._show_color)
         return service_type
 
     def services_topology(self, styled: bool = False) -> "pd.DataFrame | Styler":
@@ -226,14 +228,14 @@ class Cluster:
             for n in s['nodes']
         ]
 
-        tmp_df = pd.DataFrame(tmp)[['service', 'node', 'status']]
+        tmp_df: 'pd.DataFrame' = pd.DataFrame(tmp)[['service', 'node', 'status']]
         tmp_df['status'] = tmp_df['status'].map(
             lambda x: 'Running' if x == "PASSING" else 'Stopped'
         )
         tmp_df = tmp_df.set_index('service', append=True).swaplevel(0, 1)
 
         if styled:
-            return tmp_df.style.applymap(Cluster._show_color, subset='status')
+            return tmp_df.style.map(Cluster._show_color, subset='status')
         return tmp_df
 
     @method_version_handler('11.2.0000')
