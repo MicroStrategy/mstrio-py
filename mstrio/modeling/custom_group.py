@@ -22,6 +22,7 @@ from mstrio.utils.helper import (
     find_object_with_name,
 )
 from mstrio.utils.resolvers import (
+    FolderPathType,
     get_drill_map_id_from_params_set,
     get_folder_id_from_params_set,
     get_project_id_from_params_set,
@@ -134,10 +135,10 @@ def list_custom_groups(
     project_name: str | None = None,
     search_pattern: SearchPattern | int = SearchPattern.CONTAINS,
     show_expression_as: ExpressionFormat | str = ExpressionFormat.TREE,
-    folder: "Folder | tuple[str] | list[str] | str | None" = None,
+    folder: "Folder | str | FolderPathType | None" = None,
     folder_id: str | None = None,
     folder_name: str | None = None,
-    folder_path: tuple[str] | list[str] | str | None = None,
+    folder_path: FolderPathType | None = None,
     **filters,
 ) -> list["CustomGroup"] | list[dict]:
     """Get a list of CustomGroup objects or dicts. Optionally filter the
@@ -170,17 +171,21 @@ def list_custom_groups(
             (expression is returned in `text` and `tree` formats)
             - `ExpressionFormat.TOKENS` or `tokens`
             (expression is returned in `text` and `tokens` formats)
-        folder (Folder | tuple | list | str, optional): Folder object or ID or
-            name or path specifying the folder. May be used instead of
-            `folder_id`, `folder_name` or `folder_path`.
-        folder_id (str, optional): ID of a folder.
-        folder_name (str, optional): Name of a folder.
-        folder_path (str, optional): Path of the folder.
+        folder (Folder | str | FolderPathType, optional): Folder object or ID or
+            name or path specifying the folder. See `folder_id`, `folder_name`
+            or `folder_path` for more info.
+        folder_id (str, optional): ID of a folder as string.
+        folder_name (str, optional): Name of a folder as string.
+        folder_path (FolderPathType, optional): Path of the folder. It can
+            be a string with "/" as path separator
+            (e.g. "folder/subfolder1/subfolder2") or a tuple or list of path
+            parts (e.g. `("folder", "subfolder1", "subfolder2")`).
+
             The path has to be provided in the following format:
                 if it's inside of a project, start with a Project Name:
-                    /MicroStrategy Tutorial/Public Objects/Metrics
+                    `/MicroStrategy Tutorial/Public Objects/Metrics`
                 if it's a root folder, start with `CASTOR_SERVER_CONFIGURATION`:
-                    /CASTOR_SERVER_CONFIGURATION/Users
+                    `/CASTOR_SERVER_CONFIGURATION/Users`
         **filters: Available filter parameters: ['id', 'name',
             'type', 'subtype', 'date_created', 'date_modified', 'version',
             'acg', 'owner', 'ext_type']
@@ -426,8 +431,8 @@ class CustomGroup(Entity, CopyMixin, MoveMixin, DeleteMixin, ModelVldbMixin):
         connection: "Connection",
         name: str,
         elements: list[CustomGroupElement],
-        destination_folder: "Folder | tuple[str] | list[str] | str | None" = None,
-        destination_folder_path: tuple[str] | list[str] | str | None = None,
+        destination_folder: "Folder | str | FolderPathType | None" = None,
+        destination_folder_path: FolderPathType | None = None,
         description: str | None = None,
         primary_locale: str | None = None,
         options: CustomGroupOptions | None = None,
@@ -445,12 +450,17 @@ class CustomGroup(Entity, CopyMixin, MoveMixin, DeleteMixin, ModelVldbMixin):
             name (str): Name of the custom group.
             elements (list[CustomGroupElement]): List of elements to include in
                 the custom group.
-            destination_folder (Folder | tuple | list | str, optional): Folder
+            destination_folder (Folder | str | FolderPathType, optional): Folder
                 object or ID or name or path specifying the folder where to
-                create object.
-            destination_folder_path (str, optional): Path of the folder.
+                create object. See `destination_folder_path` for more info about
+                path type.
+            destination_folder_path (FolderPathType, optional): Path of the
+                folder. It can be a string with "/" as path separator
+                (e.g. "folder/subfolder1/subfolder2") or a tuple or list of path
+                parts (e.g. `("folder", "subfolder1", "subfolder2")`).
+
                 The path has to be provided in the following format:
-                    /MicroStrategy Tutorial/Public Objects/Metrics
+                    `/MicroStrategy Tutorial/Public Objects/Metrics`
             description (str, optional): Description of the custom group.
             primary_locale (str, optional): the primary locale of the object,
                 in the IETF BCP 47 language tag format, such as "en-US"
@@ -730,7 +740,7 @@ class CustomGroup(Entity, CopyMixin, MoveMixin, DeleteMixin, ModelVldbMixin):
             altered_element.items_format = items_format
         if qualification is not None:
             altered_element.qualification = qualification
-        new_elements = [el for el in self.elements if not el.id == id]
+        new_elements = [el for el in self.elements if el.id != id]
         new_elements.append(altered_element)
         self.alter(elements=new_elements, journal_comment=journal_comment)
 
@@ -746,7 +756,7 @@ class CustomGroup(Entity, CopyMixin, MoveMixin, DeleteMixin, ModelVldbMixin):
             journal_comment (str, optional): Comment that will be added to the
                 object's change journal entry.
         """
-        new_elements = [el for el in self.elements if not el.id == id]
+        new_elements = [el for el in self.elements if el.id != id]
         if len(new_elements) == len(self.elements):
             if config.verbose:
                 logger.warning(f"No element found with ID: {id}")

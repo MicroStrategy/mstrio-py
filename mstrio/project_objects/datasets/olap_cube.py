@@ -19,6 +19,7 @@ from mstrio.users_and_groups.user import User
 from mstrio.utils.enum_helper import get_enum_val
 from mstrio.utils.helper import exception_handler, filter_params_for_func
 from mstrio.utils.resolvers import (
+    FolderPathType,
     get_project_id_from_params_set,
     validate_owner_key_in_filters,
 )
@@ -54,10 +55,10 @@ def list_olap_cubes(
     project: 'Project | str | None' = None,
     project_id: str | None = None,
     project_name: str | None = None,
-    folder: 'Folder | tuple[str] | list[str] | str | None' = None,
+    folder: 'Folder | str | FolderPathType | None' = None,
     folder_id: str | None = None,
     folder_name: str | None = None,
-    folder_path: tuple[str] | list[str] | str | None = None,
+    folder_path: FolderPathType | None = None,
     to_dictionary: bool = False,
     limit: int | None = None,
     **filters,
@@ -86,17 +87,21 @@ def list_olap_cubes(
             `project_name`.
         project_id (str, optional): Project ID
         project_name (str, optional): Project name
-        folder (Folder | tuple | list | str, optional): Folder object or ID or
-            name or path specifying the folder. May be used instead of
-            `folder_id`, `folder_name` or `folder_path`.
-        folder_id (str, optional): ID of a folder.
-        folder_name (str, optional): Name of a folder.
-        folder_path (str, optional): Path of the folder.
+        folder (Folder | str | FolderPathType, optional): Folder object or ID or
+            name or path specifying the folder. See `folder_id`, `folder_name`
+            or `folder_path` for more info.
+        folder_id (str, optional): ID of a folder as string.
+        folder_name (str, optional): Name of a folder as string.
+        folder_path (FolderPathType, optional): Path of the folder. It can
+            be a string with "/" as path separator
+            (e.g. "folder/subfolder1/subfolder2") or a tuple or list of path
+            parts (e.g. `("folder", "subfolder1", "subfolder2")`).
+
             The path has to be provided in the following format:
                 if it's inside of a project, start with a Project Name:
-                    /MicroStrategy Tutorial/Public Objects/Metrics
+                    `/MicroStrategy Tutorial/Public Objects/Metrics`
                 if it's a root folder, start with `CASTOR_SERVER_CONFIGURATION`:
-                    /CASTOR_SERVER_CONFIGURATION/Users
+                    `/CASTOR_SERVER_CONFIGURATION/Users`
         to_dictionary (bool, optional): If True returns dict, by default (False)
             returns OlapCube objects
         limit (integer, optional): limit the number of elements returned. If

@@ -25,6 +25,7 @@ from mstrio.utils.helper import (
     find_object_with_name,
 )
 from mstrio.utils.resolvers import (
+    FolderPathType,
     get_folder_id_from_params_set,
     get_project_id_from_params_set,
     validate_owner_key_in_filters,
@@ -59,10 +60,10 @@ def list_metrics(
     limit: int | None = None,
     search_pattern: SearchPattern | int = SearchPattern.CONTAINS,
     show_expression_as: ExpressionFormat | str = ExpressionFormat.TOKENS,
-    folder: 'Folder | tuple[str] | list[str] | str | None' = None,
+    folder: 'Folder | str | FolderPathType | None' = None,
     folder_id: str | None = None,
     folder_name: str | None = None,
-    folder_path: tuple[str] | list[str] | str | None = None,
+    folder_path: FolderPathType | None = None,
     **filters,
 ) -> list["Metric"] | list[dict]:
     """Get list of Metric objects or dicts with them.
@@ -98,17 +99,21 @@ def list_metrics(
             Available values:
                 - `ExpressionFormat.TREE` or `tree`
                 - `ExpressionFormat.TOKENS or `tokens` (default)
-        folder (Folder | tuple | list | str, optional): Folder object or ID or
-            name or path specifying the folder. May be used instead of
-            `folder_id`, `folder_name` or `folder_path`.
-        folder_id (str, optional): ID of a folder.
-        folder_name (str, optional): Name of a folder.
-        folder_path (str, optional): Path of the folder.
+        folder (Folder | str | FolderPathType, optional): Folder object or ID or
+            name or path specifying the folder. See `folder_id`, `folder_name`
+            or `folder_path` for more info.
+        folder_id (str, optional): ID of a folder as string.
+        folder_name (str, optional): Name of a folder as string.
+        folder_path (FolderPathType, optional): Path of the folder. It can
+            be a string with "/" as path separator
+            (e.g. "folder/subfolder1/subfolder2") or a tuple or list of path
+            parts (e.g. `("folder", "subfolder1", "subfolder2")`).
+
             The path has to be provided in the following format:
                 if it's inside of a project, start with a Project Name:
-                    /MicroStrategy Tutorial/Public Objects/Metrics
+                    `/MicroStrategy Tutorial/Public Objects/Metrics`
                 if it's a root folder, start with `CASTOR_SERVER_CONFIGURATION`:
-                    /CASTOR_SERVER_CONFIGURATION/Users
+                    `/CASTOR_SERVER_CONFIGURATION/Users`
         **filters: Available filter parameters:
             id (str): Metric's ID
             name (str): Metric's name
@@ -654,8 +659,8 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin, ModelVldbMixin):  # noqa
         name: str,
         sub_type: ObjectSubType | str,
         expression: Expression,
-        destination_folder: 'Folder | tuple[str] | list[str] | str | None' = None,
-        destination_folder_path: tuple[str] | list[str] | str | None = None,
+        destination_folder: 'Folder | str | FolderPathType | None' = None,
+        destination_folder_path: FolderPathType | None = None,
         description: str | None = None,
         is_embedded: bool = False,
         dimensionality: Dimensionality | None = None,
@@ -681,12 +686,17 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin, ModelVldbMixin):  # noqa
                 by `connection.Connection()`
             name: metric's name
             sub_type: metric's sub_type
-            destination_folder (Folder | tuple | list | str, optional): Folder
+            destination_folder (Folder | str | FolderPathType, optional): Folder
                 object or ID or name or path specifying the folder where to
-                create object.
-            destination_folder_path (str, optional): Path of the folder.
+                create object. See `destination_folder_path` for more info about
+                path type.
+            destination_folder_path (FolderPathType, optional): Path of the
+                folder. It can be a string with "/" as path separator
+                (e.g. "folder/subfolder1/subfolder2") or a tuple or list of path
+                parts (e.g. `("folder", "subfolder1", "subfolder2")`).
+
                 The path has to be provided in the following format:
-                    /MicroStrategy Tutorial/Public Objects/Metrics
+                    `/MicroStrategy Tutorial/Public Objects/Metrics`
             description: metric's description
             is_embedded: If true indicates that the target object of this
                 reference is embedded within this object. Alternatively if

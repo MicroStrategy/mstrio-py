@@ -1,5 +1,5 @@
 # flake8: noqa
-from .object import Object, list_objects
+from .object import Object, bulk_delete_objects, list_objects
 from .predefined_folders import PredefinedFolders
 
 # isort: off

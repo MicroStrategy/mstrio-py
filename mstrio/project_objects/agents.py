@@ -11,6 +11,7 @@ from mstrio.utils.entity import CertifyMixin, CopyMixin, DeleteMixin, Entity, Mo
 from mstrio.utils.helper import filter_params_for_func, find_object_with_name
 from mstrio.utils.library import LibraryMixin
 from mstrio.utils.resolvers import (
+    FolderPathType,
     get_project_id_from_params_set,
     validate_owner_key_in_filters,
 )
@@ -32,10 +33,10 @@ def _list_implementation(
     project: 'Project | str | None' = None,
     project_id: str | None = None,
     project_name: str | None = None,
-    folder: 'Folder | tuple[str] | list[str] | str | None' = None,
+    folder: 'Folder | str | FolderPathType | None' = None,
     folder_id: str | None = None,
     folder_name: str | None = None,
-    folder_path: tuple[str] | list[str] | str | None = None,
+    folder_path: FolderPathType | None = None,
     **filters,
 ):
     from mstrio.object_management.search_enums import SearchPattern
@@ -80,10 +81,10 @@ def list_agents(
     project: 'Project | str | None' = None,
     project_id: str | None = None,
     project_name: str | None = None,
-    folder: 'Folder | tuple[str] | list[str] | str | None' = None,
+    folder: 'Folder | str | FolderPathType | None' = None,
     folder_id: str | None = None,
     folder_name: str | None = None,
-    folder_path: tuple[str] | list[str] | str | None = None,
+    folder_path: FolderPathType | None = None,
     **filters,
 ) -> list['Agent'] | list[dict]:
     """Get a list of Agents.
@@ -101,17 +102,21 @@ def list_agents(
             `project_name`.
         project_id (str, optional): Project ID
         project_name (str, optional): Project name
-        folder (Folder | tuple | list | str, optional): Folder object or ID or
-            name or path specifying the folder. May be used instead of
-            `folder_id`, `folder_name` or `folder_path`.
-        folder_id (str, optional): ID of a folder.
-        folder_name (str, optional): Name of a folder.
-        folder_path (str, optional): Path of the folder.
+        folder (Folder | str | FolderPathType, optional): Folder object or ID or
+            name or path specifying the folder. See `folder_id`, `folder_name`
+            or `folder_path` for more info.
+        folder_id (str, optional): ID of a folder as string.
+        folder_name (str, optional): Name of a folder as string.
+        folder_path (FolderPathType, optional): Path of the folder. It can
+            be a string with "/" as path separator
+            (e.g. "folder/subfolder1/subfolder2") or a tuple or list of path
+            parts (e.g. `("folder", "subfolder1", "subfolder2")`).
+
             The path has to be provided in the following format:
                 if it's inside of a project, start with a Project Name:
-                    /MicroStrategy Tutorial/Public Objects/Metrics
+                    `/MicroStrategy Tutorial/Public Objects/Metrics`
                 if it's a root folder, start with `CASTOR_SERVER_CONFIGURATION`:
-                    /CASTOR_SERVER_CONFIGURATION/Users
+                    `/CASTOR_SERVER_CONFIGURATION/Users`
         **filters: Available filter parameters: ['name', 'id', 'type',
             'subtype', 'date_created', 'date_modified', 'version',
             'owner', 'ext_type', 'view_media', 'certified_info']
@@ -226,7 +231,7 @@ class Agent(Entity, CertifyMixin, CopyMixin, DeleteMixin, MoveMixin, LibraryMixi
             owner = owner.id
         description = description or self.description
         if folder_path and not folder_id:
-            folder_id = get_folder_id_from_path(
+            folder_id = get_folder_id_from_path(  # NOSONAR
                 connection=self.connection, path=folder_path
             )
         properties = filter_params_for_func(

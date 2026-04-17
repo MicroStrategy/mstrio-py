@@ -84,6 +84,32 @@ def get_members(
     )
 
 
+def get_members_async(future_session, id, include_access=False, offset=0, limit=-1):
+    """Get member information for a specific user group.
+
+    Args:
+        future_session(object): `FuturesSessionWithRenewal` object to call
+            Strategy One REST Server asynchronously
+        id (string): ID of user group containing your required privileges
+        include_access (bool, optional): Specifies whether to return access for
+            members
+        offset (integer, optional): Starting point within the collection of
+            returned search results. Used to control paging behavior.
+        limit (integer, optional): Maximum number of items returned for a single
+            search request. Used to control paging behavior. Use -1 for no limit
+            (subject to governing settings).
+
+    Returns:
+        Complete HTTP response object.
+    """
+
+    return future_session.get(
+        endpoint=f'/api/usergroups/{id}/members',
+        headers={'X-MSTR-ProjectID': None},
+        params={'includeAccess': include_access, 'offset': offset, 'limit': limit},
+    )
+
+
 @ErrorHandler(err_msg="Error getting user group settings for a group with ID {id}")
 def get_settings(
     connection, id, include_access=False, offset=0, limit=-1, error_msg=None
@@ -313,7 +339,8 @@ def get_user_group_info(connection, id, error_msg=None):
         },
         params={
             'fields': 'id,name,type,subtype,ext_type,abbreviation,dateCreated,'
-            'dateModified,version,owner,ancestors,acg,acl,ldapdn',
+            'dateModified,version,owner,ancestors,acg,acl,ldapdn,'
+            'mdTenantId,mdTenantName',
         },
         # we do not want to get information about members from
         # this endpoint as this is not enough to differentiate between users

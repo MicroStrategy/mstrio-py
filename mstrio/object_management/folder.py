@@ -16,6 +16,7 @@ from mstrio.utils.helper import (
     get_temp_connection,
 )
 from mstrio.utils.resolvers import (
+    FolderPathType,
     get_folder_id_from_params_set,
     get_project_id_from_params_set,
     validate_owner_key_in_filters,
@@ -41,7 +42,7 @@ def list_folders(
     to_dictionary: bool = False,
     limit: int | None = None,
     include_subfolders: bool = False,
-    parent_folder: 'Folder | tuple[str] | list[str] | str | None' = None,
+    parent_folder: 'Folder | str | FolderPathType | None' = None,
     **filters,
 ) -> list["Folder"] | list[dict]:
     """Get a list of folders - either all folders in a specific project or all
@@ -249,7 +250,7 @@ def get_predefined_folder_contents(
 
 def get_folder_id_from_path(
     connection: "Connection",
-    path: str | tuple[str] | list[str],
+    path: FolderPathType,
 ) -> str:
     """Get folder id from folder path.
 
@@ -402,7 +403,7 @@ class Folder(Entity, CopyMixin, MoveMixin, DeleteMixin):
         connection: "Connection",
         id: str | None = None,
         name: str | None = None,
-        path: tuple[str] | list[str] | str | None = None,
+        path: FolderPathType | None = None,
     ):
         """Initialize folder object by its identifier.
 
@@ -445,10 +446,10 @@ class Folder(Entity, CopyMixin, MoveMixin, DeleteMixin):
         cls,
         connection: "Connection",
         name: str,
-        parent: 'Folder | tuple[str] | list[str] | str | None' = None,
+        parent: 'Folder | str | FolderPathType | None' = None,
         parent_id: str | None = None,
         parent_name: str | None = None,
-        parent_path: tuple[str] | list[str] | str | None = None,
+        parent_path: FolderPathType | None = None,
         description: str | None = None,
     ) -> "Folder":
         """Create a new folder in a folder selected within connection object

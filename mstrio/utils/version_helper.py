@@ -5,6 +5,7 @@ from inspect import getattr_static, getmembers
 
 from packaging.version import Version as PackageVersion
 from packaging.version import parse as ver_parser
+from typing_extensions import Format, get_annotations
 
 from mstrio.connection import Connection
 from mstrio.helpers import VersionException
@@ -73,14 +74,18 @@ def method_version_handler(version):
                 connection_obj = conn[0]
             elif cls:
                 raise TypeError(
-                    f"{function.__name__}() " "missing required argument: 'connection'"
+                    f"{function.__name__}() missing required argument: 'connection'"
                 )
             else:
                 connection_obj = getattr(args[0], 'connection', None) or getattr(
                     args[0], '_connection', None
                 )
 
-            if not meets_minimal_version(connection_obj.iserver_version, version):
+            # `connection_obj` may be empty during lazy typehint evaluation
+            # in python 3.14
+            if connection_obj and not meets_minimal_version(
+                connection_obj.iserver_version, version
+            ):
                 raise VersionException(
                     f"Environments must run IServer version {version} or newer. "
                     "Please update your environments to use this feature."
@@ -114,7 +119,8 @@ def class_version_handler(version):
                     setattr(cls, name, decorator(obj))
                 elif (
                     isinstance(attr, staticmethod)
-                    and Connection in obj.__annotations__.values()
+                    and Connection
+                    in get_annotations(obj, format=Format.FORWARDREF).values()
                 ):
                     # if static method with Connection in params
                     setattr(
@@ -124,7 +130,8 @@ def class_version_handler(version):
                     )
                 elif (
                     isinstance(attr, classmethod)
-                    and Connection in obj.__annotations__.values()
+                    and Connection
+                    in get_annotations(obj, format=Format.FORWARDREF).values()
                 ):
                     # if class method with Connection in params
                     setattr(

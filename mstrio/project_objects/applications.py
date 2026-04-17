@@ -8,7 +8,7 @@ from mstrio.helpers import IServerError
 from mstrio.project_objects.palette import Palette
 from mstrio.types import ObjectTypes
 from mstrio.users_and_groups.user import User
-from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity
+from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, TenantMixin
 from mstrio.utils.helper import Dictable, delete_none_values, find_object_with_name
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
@@ -53,7 +53,7 @@ def list_applications(
 
 
 @class_version_handler('11.3.1200')
-class Application(Entity, CopyMixin, DeleteMixin):
+class Application(Entity, CopyMixin, DeleteMixin, TenantMixin):
     """Python representation of a Strategy One Application object"""
 
     @dataclass
@@ -878,6 +878,8 @@ class Application(Entity, CopyMixin, DeleteMixin):
             'object_names',
             'object_acl',
             'access_granted',
+            'tenant_id',
+            'tenant_name',
         ): applications.get_application,
     }
 

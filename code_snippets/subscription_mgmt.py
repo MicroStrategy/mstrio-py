@@ -18,6 +18,7 @@ from mstrio.distribution_services import (
     SubscriptionManager
 )
 from mstrio.modeling import Prompt
+from mstrio.project_objects import Report
 from mstrio.users_and_groups.user import User
 from mstrio.connection import get_connection
 
@@ -181,19 +182,72 @@ sub_mngr.delete([EMAIL_SUB, FTP_SUB, FILE_SUB, CACHE_UPDATE_SUB], force=True)
 # delivery type is an email)
 sub_mngr.available_recipients(content_id=CONTENT_ID, content_type=CONTENT_TYPE)
 
+# Define variables for listing related subscriptions for a report
+REPORT_ID = $report_id
+
+# List all subscriptions related to a specific object, for example a report
+# This shows all subscriptions that use the report as content
+report = Report(connection=CONN, id=REPORT_ID)
+related_subs = report.list_related_subscriptions()
+
+# You can also get the results as dictionaries instead of objects
+related_subs_dict = report.list_related_subscriptions(to_dictionary=True)
+
 # Get a single subscription
-sub = Subscription(connection=CONN, subscription_id=HL_SUB.id, project_name=PROJECT_NAME)
+sub = Subscription(connection=CONN, subscription_id=HL_SUB.id)
 # List all recipients of the given subscription and all available for this
 # subscription
 sub.recipients
 sub.available_recipients()
+# List all properties of the subscription as a dictionary
+sub_properties = sub.list_properties()
 
 # Define variables which can be later used in a script
+USER_GROUP_ID = $user_group_id
+CONTACT_ID = $contact_id
+CONTACT_GROUP_ID = $contact_group_id
+PERSONAL_ADDRESS_ID = $personal_address_id
 RECIPIENT_ID_4 = $recipient_id_4
 
 # Add/remove recipient(s) with given id(s)
 sub.add_recipient(recipients=[RECIPIENT_ID_4])
 sub.remove_recipient(recipients=[RECIPIENT_ID_4])
+
+# Add recipients with specific recipient types and include types
+# Add a single user as main recipient (TO)
+sub.add_recipient(
+    recipient_id=RECIPIENT_ID_4,
+    recipient_type="USER",
+    recipient_include_type="TO"
+)
+
+# Add a user group as CC recipient
+sub.add_recipient(
+    recipient_id=USER_GROUP_ID,
+    recipient_type="USER_GROUP",
+    recipient_include_type="CC"
+)
+
+# Add a contact as BCC recipient
+sub.add_recipient(
+    recipient_id=CONTACT_ID,
+    recipient_type="CONTACT",
+    recipient_include_type="BCC"
+)
+
+# Add multiple recipients with different types using dictionary format
+sub.add_recipient(recipients=[
+    {
+        "id": CONTACT_GROUP_ID,
+        "type": "CONTACT_GROUP",
+        "includeType": "TO"
+    },
+    {
+        "id": PERSONAL_ADDRESS_ID,
+        "type": "PERSONAL_ADDRESS",
+        "includeType": "CC"
+    }
+])
 
 # As an alternate to subscription manager you can execute or delete a subscription
 # directly from the subscription itself

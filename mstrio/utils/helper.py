@@ -1188,7 +1188,7 @@ class Dictable:
             for key, val in object_source.items()
             if key in cls.__init__.__code__.co_varnames
         }
-        return cls(**args)  # type: ignore
+        return cls(**args)
 
     @classmethod
     def bulk_from_dict(
@@ -1425,8 +1425,8 @@ def construct_expression_body(expression: 'str | Expression | dict') -> dict:
 
 
 def deduplicated_name(name: str, existing_names: list[str]) -> str:
-    """
-    Deduplicate a name by adding a number in parentheses if it already exists.
+    """Deduplicate a name by adding a number in parentheses
+    if it already exists.
 
     Args:
         name: The user-provided name to deduplicate.

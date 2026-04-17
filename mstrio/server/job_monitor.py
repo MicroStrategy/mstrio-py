@@ -122,11 +122,13 @@ class PUName(AutoName):
     DATA_FORMATTING = auto()
     NCS = auto()
     REST_ASYNCHRONOUS = auto()
+    UNKNOWN_PU = auto()
 
 
 class SubscriptionType(AutoName):
     RESERVED = auto()
     EMAIL = auto()
+    FILE = auto()
     PRINTER = auto()
     CUSTOM = auto()
     INBOX = auto()
@@ -140,6 +142,11 @@ class SubscriptionType(AutoName):
     SNAPSHOT = auto()
     FTP = auto()
     MOBILE_ANDROID = auto()
+    KPI = auto()
+    ONEDRIVE = auto()
+    SHAREPOINT = auto()
+    S3 = auto()
+    GOOGLEDRIVE = auto()
     LAST_ONE = auto()
     COUNT = auto()
     ALL = auto()

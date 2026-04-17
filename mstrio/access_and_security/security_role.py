@@ -8,7 +8,7 @@ from mstrio.api import security
 from mstrio.connection import Connection
 from mstrio.utils import helper
 from mstrio.utils.collections import remove_duplicate_objects
-from mstrio.utils.entity import DeleteMixin, Entity, ObjectTypes
+from mstrio.utils.entity import DeleteMixin, Entity, ObjectTypes, TenantMixin
 from mstrio.utils.resolvers import validate_owner_key_in_filters
 from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
@@ -58,7 +58,7 @@ def list_security_roles(
 
 
 @class_version_handler('11.2.0000')
-class SecurityRole(Entity, DeleteMixin):
+class SecurityRole(Entity, DeleteMixin, TenantMixin):
     """A security role is a set of privileges that can be assigned to users and
     reused from project to project. Security roles enable you to assign a
     unique set of privileges to users on a per project basis. They are created

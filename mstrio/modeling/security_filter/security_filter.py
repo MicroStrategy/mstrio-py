@@ -28,6 +28,7 @@ from mstrio.utils.helper import (
     get_string_exp_body,
 )
 from mstrio.utils.resolvers import (
+    FolderPathType,
     get_folder_id_from_params_set,
     get_project_id_from_params_set,
 )
@@ -376,8 +377,8 @@ class SecurityFilter(Entity, CopyMixin, DeleteMixin, MoveMixin):
         connection: "Connection",
         name: str,
         qualification: Expression | dict | str,
-        destination_folder: 'Folder | tuple[str] | list[str] | str | None' = None,
-        destination_folder_path: tuple[str] | list[str] | str | None = None,
+        destination_folder: 'Folder | str | FolderPathType | None' = None,
+        destination_folder_path: FolderPathType | None = None,
         description: str | None = None,
         is_embedded: bool = False,
         primary_locale: str | None = None,
@@ -392,12 +393,17 @@ class SecurityFilter(Entity, CopyMixin, DeleteMixin, MoveMixin):
             connection: Strategy One connection object returned by
                 `connection.Connection()`
             name (str): name of a new security filter
-            destination_folder (Folder | tuple | list | str, optional): Folder
+            destination_folder (Folder | str | FolderPathType, optional): Folder
                 object or ID or name or path specifying the folder where to
-                create object.
-            destination_folder_path (str, optional): Path of the folder.
+                create object. See `destination_folder_path` for more info about
+                path type.
+            destination_folder_path (FolderPathType, optional): Path of the
+                folder. It can be a string with "/" as path separator
+                (e.g. "folder/subfolder1/subfolder2") or a tuple or list of path
+                parts (e.g. `("folder", "subfolder1", "subfolder2")`).
+
                 The path has to be provided in the following format:
-                    /MicroStrategy Tutorial/Public Objects/Metrics
+                    `/MicroStrategy Tutorial/Public Objects/Metrics`
             qualification (Expression, dict or str): new filter qualification
                 definition. It can be provided as `Expression` object,
                 dictionary or string representing filter expression.

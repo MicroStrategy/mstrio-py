@@ -428,7 +428,7 @@ class DataLanguageSettings(Dictable):
                 f"for the project with ID: {self._project_id}"
             )
 
-    def to_dict(self, camel_case: bool = True) -> dict:
+    def to_dict(self, camel_case: bool = True) -> dict:  # NOSONAR
         obj_dict = super().to_dict(camel_case=camel_case)
         if hasattr(obj_dict, '_project_id'):
             obj_dict.pop('_projectId')
@@ -501,7 +501,7 @@ class MetadataLanguageSettings(Dictable):
                 f"{self._project_id}"
             )
 
-    def to_dict(self, camel_case: bool = True) -> dict:
+    def to_dict(self, camel_case: bool = True) -> dict:  # NOSONAR
         obj_dict = super().to_dict(camel_case=camel_case)
         if hasattr(obj_dict, '_project_id'):
             obj_dict.pop('_projectId')

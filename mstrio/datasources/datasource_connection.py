@@ -13,7 +13,7 @@ from mstrio.datasources.helpers import (
 )
 from mstrio.users_and_groups.user import User
 from mstrio.utils import helper
-from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, ObjectTypes
+from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, ObjectTypes, TenantMixin
 from mstrio.utils.enum_helper import get_enum_val
 from mstrio.utils.helper import (
     get_args_from_func,
@@ -68,7 +68,7 @@ def list_datasource_connections(
 
 
 @class_version_handler('11.3.0000')
-class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
+class DatasourceConnection(Entity, CopyMixin, DeleteMixin, TenantMixin):
     """Datasource connection configuration object that represents a connection
     to the datasource.
 
@@ -176,6 +176,8 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin):
             'resource',
             'scope',
             'enable_sso',
+            'tenant_id',
+            'tenant_name',
         ): datasources.get_datasource_connection,
     }
     _API_PATCH: dict = {

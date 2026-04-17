@@ -34,6 +34,7 @@ from mstrio.utils.entity import (
 from mstrio.utils.enum_helper import AutoName, get_enum_val
 from mstrio.utils.helper import Dictable, delete_none_values
 from mstrio.utils.resolvers import (
+    FolderPathType,
     get_folder_id_from_params_set,
     get_project_id_from_params_set,
     validate_owner_key_in_filters,
@@ -170,10 +171,10 @@ def list_scripts(
     project_name: str | None = None,
     to_dictionary: bool = False,
     limit: int | None = None,
-    folder: 'Folder | tuple[str] | list[str] | str | None' = None,
+    folder: 'Folder | str | FolderPathType | None' = None,
     folder_id: str | None = None,
     folder_name: str | None = None,
-    folder_path: tuple[str] | list[str] | str | None = None,
+    folder_path: FolderPathType | None = None,
     **filters,
 ) -> 'list[dict] | list[Script]':
     """Get a list of scripts.
@@ -194,17 +195,21 @@ def list_scripts(
             (False) returns Script objects
         limit (integer, optional): limit the number of elements returned. If
             None all object are returned.
-        folder (Folder | tuple | list | str, optional): Folder object or ID or
-            name or path specifying the folder. May be used instead of
-            `folder_id`, `folder_name` or `folder_path`.
-        folder_id (str, optional): ID of a folder.
-        folder_name (str, optional): Name of a folder.
-        folder_path (str, optional): Path of the folder.
+        folder (Folder | str | FolderPathType, optional): Folder object or ID or
+            name or path specifying the folder. See `folder_id`, `folder_name`
+            or `folder_path` for more info.
+        folder_id (str, optional): ID of a folder as string.
+        folder_name (str, optional): Name of a folder as string.
+        folder_path (FolderPathType, optional): Path of the folder. It can
+            be a string with "/" as path separator
+            (e.g. "folder/subfolder1/subfolder2") or a tuple or list of path
+            parts (e.g. `("folder", "subfolder1", "subfolder2")`).
+
             The path has to be provided in the following format:
                 if it's inside of a project, start with a Project Name:
-                    /MicroStrategy Tutorial/Public Objects/Metrics
+                    `/MicroStrategy Tutorial/Public Objects/Metrics`
                 if it's a root folder, start with `CASTOR_SERVER_CONFIGURATION`:
-                    /CASTOR_SERVER_CONFIGURATION/Users
+                    `/CASTOR_SERVER_CONFIGURATION/Users`
         **filters: Available filter parameters: ['id', 'description, 'owner',
             'date_created', 'date_modified', 'version', 'acg']
 
@@ -297,7 +302,7 @@ class Code:
         if not self.is_valid():
             raise ScriptSetupError(
                 f"Invalid Code: {str(self)}"
-            ) from self.__validation_error
+            ) from self.__validation_error  # NOSONAR
 
     def _convert_variables_and_answers_to_lists(
         self,
@@ -779,7 +784,11 @@ class Script(
             "variables",
         ): scripts_processor.get_info_data,
     }
-    _API_GETTERS_KEEP_PRIVATE = {"variables", "script_content"}
+    _API_GETTERS_KEEP_PRIVATE = {
+        *Entity._API_GETTERS_KEEP_PRIVATE,
+        "variables",
+        "script_content",
+    }
     _FROM_DICT_MAP = {
         **Entity._FROM_DICT_MAP,
         "subtype": ObjectSubTypes,
@@ -1573,8 +1582,8 @@ class Script(
         # TODO: improve with resolver during Module for Runtimes dev
         runtime_id: str,
         code: Code | str,
-        destination_folder: 'Folder | tuple[str] | list[str] | str | None' = None,
-        destination_folder_path: tuple[str] | list[str] | str | None = None,
+        destination_folder: 'Folder | str | FolderPathType | None' = None,
+        destination_folder_path: FolderPathType | None = None,
         description: str | None = None,
         variables: 'list[Variable | dict] | None' = None,
         script_type: ScriptType | str = ScriptType.PYTHON,

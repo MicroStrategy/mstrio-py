@@ -4,6 +4,8 @@ from mstrio.connection import Connection
 from mstrio.utils.api_helpers import add_comment_to_dict
 from mstrio.utils.error_handlers import ErrorHandler
 
+# region privileges
+
 
 @ErrorHandler(err_msg="Error getting privileges.")
 def get_privileges(connection: Connection, error_msg=None):
@@ -37,6 +39,11 @@ def get_privilege_categories(connection: Connection, error_msg=None):
         endpoint='/api/iserver/privileges/categories',
         headers={'X-MSTR-ProjectID': None},
     )
+
+
+# endregion
+
+# region ldap
 
 
 @ErrorHandler(err_msg="Error getting LDAP information.")
@@ -260,6 +267,11 @@ def do_ldap_batch_import(connection: Connection, error_msg=None):
     )
 
 
+# endregion
+
+# region rest settings
+
+
 @ErrorHandler(err_msg="Error updating authentication configurations.")
 def update_authentication_configs(connection: Connection, body, error_msg=None):
     """Update the authentication configuration settings for the current REST
@@ -281,6 +293,7 @@ def update_authentication_configs(connection: Connection, body, error_msg=None):
         endpoint='/api/admin/restServerSettings/auth',
         headers={
             'X-MSTR-ProjectID': None,
+            # TODO: this method requires rework (CGPY-3568)
             'Authorization': connection._get_authorization(),
         },
         json=body,
@@ -308,6 +321,7 @@ def update_collaboration_server_configs(connection: Connection, body, error_msg=
         endpoint='/api/admin/restServerSettings/collaboration',
         headers={
             'X-MSTR-ProjectID': None,
+            # TODO: this method requires rework (CGPY-3568)
             'Authorization': connection._get_authorization(),
         },
         json=body,
@@ -333,6 +347,7 @@ def update_web_configs(connection: Connection, body, error_msg=None):
         endpoint='/api/admin/restServerSettings/microStrategyWeb',
         headers={
             'X-MSTR-ProjectID': None,
+            # TODO: this method requires rework (CGPY-3568)
             'Authorization': connection._get_authorization(),
         },
         json=body,
@@ -360,6 +375,7 @@ def test_collaboration_connection(connection: Connection, body, error_msg=None):
         endpoint='/api/admin/restServerSettings/collaboration/connectionTest',
         headers={
             'X-MSTR-ProjectID': None,
+            # TODO: this method requires rework (CGPY-3568)
             'Authorization': connection._get_authorization(),
         },
         json=body,
@@ -387,6 +403,7 @@ def update_iserver_configs(connection: Connection, body, error_msg=None):
         endpoint='/api/admin/restServerSettings/iServer',
         headers={
             'X-MSTR-ProjectID': None,
+            # TODO: this method requires rework (CGPY-3568)
             'Authorization': connection._get_authorization(),
         },
         json=body,
@@ -410,6 +427,7 @@ def get_rest_configs(connection: Connection, error_msg=None):
         endpoint='/api/admin/restServerSettings',
         headers={
             'X-MSTR-ProjectID': None,
+            # TODO: this method requires rework (CGPY-3568)
             'Authorization': connection._get_authorization(),
         },
     )
@@ -433,6 +451,7 @@ def check_iserver_web_trust(connection: Connection, error_msg=None):
         endpoint='/api/admin/restServerSettings/iServer/trustRelationship',
         headers={
             'X-MSTR-ProjectID': None,
+            # TODO: this method requires rework (CGPY-3568)
             'Authorization': connection._get_authorization(),
         },
     )
@@ -461,6 +480,7 @@ def set_iserver_web_trust(connection: Connection, body, error_msg=None):
         endpoint='/api/admin/restServerSettings/iServer/trustRelationship',
         headers={
             'X-MSTR-ProjectID': None,
+            # TODO: this method requires rework (CGPY-3568)
             'Authorization': connection._get_authorization(),
         },
         json=body,
@@ -487,6 +507,7 @@ def delete_iserver_web_trust(connection: Connection, error_msg=None):
         endpoint='/api/admin/restServerSettings/iServer/trustRelationship',
         headers={
             'X-MSTR-ProjectID': None,
+            # TODO: this method requires rework (CGPY-3568)
             'Authorization': connection._get_authorization(),
         },
     )
@@ -509,6 +530,7 @@ def test_iserver_connection(connection: Connection, error_msg=None):
         endpoint='/api/admin/restServerSettings/iServer/connectionTest',
         headers={
             'X-MSTR-ProjectID': None,
+            # TODO: this method requires rework (CGPY-3568)
             'Authorization': connection._get_authorization(),
         },
     )
@@ -531,6 +553,7 @@ def get_security_settings(connection: Connection, error_msg=None):
         endpoint='/api/admin/restServerSettings/security',
         headers={
             'X-MSTR-ProjectID': None,
+            # TODO: this method requires rework (CGPY-3568)
             'Authorization': connection._get_authorization(),
         },
     )
@@ -556,10 +579,16 @@ def update_security_settings(connection: Connection, body, error_msg=None):
         endpoint='/api/admin/restServerSettings/security',
         headers={
             'X-MSTR-ProjectID': None,
+            # TODO: this method requires rework (CGPY-3568)
             'Authorization': connection._get_authorization(),
         },
         json=body,
     )
+
+
+# endregion
+
+# region isrv settings
 
 
 @ErrorHandler(err_msg="Error fetching I-Server settings.")
@@ -650,43 +679,6 @@ def update_iserver_settings(
     )
 
 
-@ErrorHandler(err_msg="Error getting cluster membership information.")
-def get_cluster_membership_admin(connection: Connection, error_msg=None):
-    """Get IServer cluster membership information via legacy API.
-
-    Args:
-        connection: Strategy One REST API connection object
-        error_msg (string, optional): Custom Error Message for Error Handling
-
-    Returns:
-        Complete HTTP response object.
-    """
-    return connection.get(
-        endpoint='/api/admin/iServer/clusterMembership',
-        headers={
-            'X-MSTR-ProjectID': None,
-            'Authorization': connection._get_authorization(),
-        },
-    )
-
-
-@ErrorHandler(err_msg="Error getting cluster membership information.")
-def get_cluster_membership(connection: Connection, error_msg=None):
-    """Get IServer cluster membership information.
-
-    Args:
-        connection: Strategy One REST API connection object
-        error_msg (string, optional): Custom Error Message for Error Handling
-
-    Returns:
-        Complete HTTP response object.
-    """
-    return connection.get(
-        endpoint='/api/monitors/iServer/clusterMembership',
-        headers={'X-MSTR-ProjectID': None},
-    )
-
-
 @ErrorHandler(err_msg="Error getting I-Server node {node} settings.")
 def get_iserver_node_settings(connection: Connection, node, error_msg=None):
     """Get Intelligence Server configuration settings for a given server node
@@ -704,6 +696,7 @@ def get_iserver_node_settings(connection: Connection, node, error_msg=None):
         endpoint=f'/api/admin/restServerSettings/iServer/{node}',
         headers={
             'X-MSTR-ProjectID': None,
+            # TODO: this method requires rework (CGPY-3568)
             'Authorization': connection._get_authorization(),
         },
     )
@@ -725,6 +718,7 @@ def update_iserver_configuration_settings(connection: Connection, body, error_ms
         endpoint='/api/admin/restServerSettings/iServer',
         headers={
             'X-MSTR-ProjectID': None,
+            # TODO: this method requires rework (CGPY-3568)
             'Authorization': connection._get_authorization(),
         },
         json=body,
@@ -751,6 +745,7 @@ def update_iserver_node_settings(connection: Connection, body, node, error_msg=N
         endpoint=f'/api/admin/restServerSettings/iServer/{node}',
         headers={
             'X-MSTR-ProjectID': None,
+            # TODO: this method requires rework (CGPY-3568)
             'Authorization': connection._get_authorization(),
         },
         json=body,
@@ -772,9 +767,15 @@ def delete_iserver_node_settings(connection: Connection, node, error_msg=None):
         endpoint=f'/api/admin/restServerSettings/iServer/{node}',
         headers={
             'X-MSTR-ProjectID': None,
+            # TODO: this method requires rework (CGPY-3568)
             'Authorization': connection._get_authorization(),
         },
     )
+
+
+# endregion
+
+# region storage svc
 
 
 @ErrorHandler(err_msg="Error getting Library storage configuration.")
@@ -871,6 +872,11 @@ def storage_service_update_configs(
         endpoint='/api/mstrServices/library/storage',
         json=body,
     )
+
+
+# endregion
+
+# region fences
 
 
 @ErrorHandler(err_msg="Error getting fences list.")
@@ -994,6 +1000,11 @@ def update_fence(
     )
 
 
+# endregion
+
+# region clusters
+
+
 @ErrorHandler(err_msg="Error getting cluster startup membership information.")
 def get_cluster_startup_membership(
     connection: Connection, fields: str | None = None, error_msg: str | None = None
@@ -1039,6 +1050,49 @@ def update_cluster_startup_membership(
         json=body,
         params={'fields': fields},
     )
+
+
+@ErrorHandler(err_msg="Error getting cluster membership information.")
+def get_cluster_membership_admin(connection: Connection, error_msg=None):
+    """Get IServer cluster membership information via legacy API.
+
+    Args:
+        connection: Strategy One REST API connection object
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object.
+    """
+    return connection.get(
+        endpoint='/api/admin/iServer/clusterMembership',
+        headers={
+            'X-MSTR-ProjectID': None,
+            # TODO: this method requires rework (CGPY-3568)
+            'Authorization': connection._get_authorization(),
+        },
+    )
+
+
+@ErrorHandler(err_msg="Error getting cluster membership information.")
+def get_cluster_membership(connection: Connection, error_msg=None):
+    """Get IServer cluster membership information.
+
+    Args:
+        connection: Strategy One REST API connection object
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object.
+    """
+    return connection.get(
+        endpoint='/api/monitors/iServer/clusterMembership',
+        headers={'X-MSTR-ProjectID': None},
+    )
+
+
+# endregion
+
+# region telemetry
 
 
 @ErrorHandler(err_msg="Error getting Telemetry Configuration.")
@@ -1250,3 +1304,71 @@ def validate_telemetry_connections(
         headers={'X-MSTR-ProjectID': None},
         json=body,
     )
+
+
+# endregion
+
+# region cfg lock
+
+
+@ErrorHandler(err_msg="Error getting configuration lock information.")
+def get_configuration_lock(connection: Connection, error_msg=None) -> Response:
+    """Query the lock information of the configuration of the environment.
+
+    Args:
+        connection: Strategy One REST API connection object
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object.
+    """
+
+    return connection.get(endpoint='/api/iserver/lock')
+
+
+@ErrorHandler(err_msg="Error updating configuration lock.")
+def update_configuration_lock(
+    connection: Connection, body: dict, error_msg=None
+) -> Response:
+    """Update the lock information of the configuration of the environment.
+
+    Args:
+        connection: Strategy One REST API connection object
+        body (dict): Configuration lock update data
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object. 204 on success.
+    """
+
+    return connection.put(endpoint='/api/iserver/lock', json=body)
+
+
+@ErrorHandler(err_msg="Error deleting configuration lock.")
+def delete_configuration_lock(
+    connection: Connection,
+    lock_type: str,
+    force: bool | None = None,
+    lock_id: str | None = None,
+    error_msg=None,
+) -> Response:
+    """Unlock the configuration of the environment.
+
+    Args:
+        connection: Strategy One REST API connection object
+        lock_type (str): Type of the lock to unlock
+        force (bool, optional): Whether to force unlock the lock
+        lock_id (str, optional): ID of the lock
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object. 204 on success.
+    """
+
+    return connection.delete(
+        endpoint='/api/iserver/lock',
+        params={'lockType': lock_type, 'force': force, 'lockId': lock_id},
+    )
+
+
+# endregion

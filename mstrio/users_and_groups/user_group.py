@@ -10,7 +10,7 @@ from mstrio.api import usergroups
 from mstrio.connection import Connection
 from mstrio.types import ObjectSubTypes
 from mstrio.utils.acl import TrusteeACLMixin
-from mstrio.utils.entity import DeleteMixin, Entity, ObjectTypes
+from mstrio.utils.entity import DeleteMixin, Entity, ObjectTypes, TenantMixin
 from mstrio.utils.helper import (
     exception_handler,
     fetch_objects_async,
@@ -76,7 +76,7 @@ def list_user_groups(
     )
 
 
-class UserGroup(Entity, DeleteMixin, TrusteeACLMixin):
+class UserGroup(Entity, DeleteMixin, TrusteeACLMixin, TenantMixin):
     """Object representation of Strategy One User Group object.
 
     Attributes:
@@ -145,8 +145,10 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin):
             'acg',
             'acl',
             'ldapdn',
+            'tenant_id',
+            'tenant_name',
         ): usergroups.get_user_group_info,
-        'comments': objects_processors.get_info,
+        ('comments'): objects_processors.get_info,
         'memberships': usergroups.get_memberships,
         'members': usergroups.get_members,
         'security_roles': usergroups.get_security_roles,

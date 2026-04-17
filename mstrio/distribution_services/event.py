@@ -5,7 +5,7 @@ from mstrio.api import events
 from mstrio.connection import Connection
 from mstrio.users_and_groups.user import User
 from mstrio.utils import helper
-from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, ObjectTypes
+from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, ObjectTypes, TenantMixin
 from mstrio.utils.helper import filter_params_for_func
 from mstrio.utils.related_subscription_mixin import RelatedSubscriptionMixin
 from mstrio.utils.response_processors import objects as objects_processors
@@ -47,7 +47,7 @@ def list_events(
 
 
 @class_version_handler('11.3.0100')
-class Event(Entity, CopyMixin, DeleteMixin, RelatedSubscriptionMixin):
+class Event(Entity, CopyMixin, DeleteMixin, RelatedSubscriptionMixin, TenantMixin):
     """Class representation of Strategy One Event object.
 
     Attributes:
@@ -102,7 +102,15 @@ class Event(Entity, CopyMixin, DeleteMixin, RelatedSubscriptionMixin):
             name: Event name
         """
         self._API_GETTERS = self._API_GETTERS.copy()
-        self._API_GETTERS[('id', 'name', 'description')] = (
+        self._API_GETTERS[
+            (
+                'id',
+                'name',
+                'description',
+                'tenant_id',
+                'tenant_name',
+            )
+        ] = (
             events.get_event
             if is_server_min_version(connection, '11.3.0200')
             else objects_processors.get_info

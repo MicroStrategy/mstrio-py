@@ -1,5 +1,25 @@
 # Changelog
 
+## 11.6.4.101 - 2026/04/17
+
+### New features
+
+- added function `bulk_delete_objects` in the `object` module
+- added support for Python 3.14
+- added `ConfigurationLock` class in `server.lock` module
+
+### Minor changes
+
+- enhanced `Connection` object with `locale` parameter, setting all possible locale and timezone settings during logging in, provided via `Locale` dataclass
+- added `project_lock` property to `Project`, grouping lock-related capabilities; added new `lock_id` property in `project_lock`
+- added `delete_from_all_projects` argument to `delete_profile_folder` method of the class `User`
+
+### Bug fixes
+
+- `Report.model_list_vldb_settings` is no longer missing when initializing the `Report` object via `from_dict`
+- fixed `Migration` methods' parameter `target_env` sometimes resolving into `Environment` class instead of expected `Connection` class
+- fixed fields missing from `PhysicalTable` objects returned by `list_physical_tables` and `from_dict`
+
 ## 11.6.3.101 - 2026/03/20
 
 ### New features

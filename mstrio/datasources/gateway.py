@@ -24,6 +24,7 @@ def list_gateways(
     return Gateway.list(connection, to_dictionary, **filters)
 
 
+# TODO - should support tenant but API lack tenant_id (CGPY-3825)
 @class_version_handler('11.3.0960')
 class Gateway(EntityBase, ChangeJournalMixin):
     """Object representation of Strategy One Gateway

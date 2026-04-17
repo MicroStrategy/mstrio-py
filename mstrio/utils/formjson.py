@@ -1,17 +1,41 @@
-def _map_data_type(datatype):
-    if datatype == 'object':
-        return "STRING"
-    elif datatype in ['int64', 'int32']:
-        return "INTEGER"
-    elif datatype in ['float64', 'float32']:
-        return "DOUBLE"
-    elif datatype == 'bool':
-        return "BOOL"
-    elif datatype == 'datetime64[ns]':
-        return 'DATETIME'
+from typing import TYPE_CHECKING
+
+from mstrio.helpers import NotSupportedError
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 
-def formjson(df, table_name, as_metrics=None, as_attributes=None):
+def map_data_type(datatype):
+    """Converts `pandas dtype` into REST type expectation."""
+
+    ret = {
+        'object': 'STRING',
+        'str': 'STRING',
+        'string': 'STRING',
+        'string[python]': 'STRING',
+        'int64': 'INTEGER',
+        'int32': 'INTEGER',
+        'float64': 'DOUBLE',
+        'float32': 'DOUBLE',
+        'bool': 'BOOL',
+        'datetime64[ns]': 'DATETIME',
+        'date': 'DATE',
+        'time': 'TIME',
+    }.get(str(datatype))
+
+    if not ret:
+        raise NotSupportedError(f"'{datatype}' is an unsupported datatype.")
+
+    return ret
+
+
+def formjson(
+    df: 'pd.DataFrame',
+    table_name: str,
+    as_metrics: list[str] | None = None,
+    as_attributes: list[str] | None = None,
+):
     def _form_column_headers(_col_names, _col_types):
         return [{'name': n, 'dataType': t} for n, t in zip(_col_names, _col_types)]
 
@@ -40,7 +64,7 @@ def formjson(df, table_name, as_metrics=None, as_attributes=None):
         ]
 
     col_names = list(df.columns)
-    col_types = list(map(_map_data_type, list(df.dtypes.values)))
+    col_types = list(map(map_data_type, list(df.dtypes.values)))
 
     # Adjust attributes/metrics mapping if new mappings were provided in
     # as_metrics and as_attributes

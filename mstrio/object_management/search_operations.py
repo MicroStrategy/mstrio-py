@@ -36,8 +36,10 @@ from mstrio.utils.helper import (
     snake_to_camel,
 )
 from mstrio.utils.resolvers import (
+    FolderPathType,
     get_folder_id_from_params_set,
     get_project_id_from_params_set,
+    get_tenant_id_from_params_set,
     validate_owner_key_in_filters,
 )
 from mstrio.utils.response_processors import browsing as browsing_processors
@@ -53,6 +55,7 @@ from mstrio.utils.version_helper import (
 if TYPE_CHECKING:
     from mstrio.object_management.folder import Folder
     from mstrio.server.project import Project
+    from mstrio.server.tenant import Tenant
     from mstrio.types import TypeOrSubtype
 
 logger = logging.getLogger(__name__)
@@ -138,7 +141,7 @@ class DateQuery(Dictable):
             return str_to_datetime(t, DatetimeFormats.FULLDATETIME.value)
         return t
 
-    def to_dict(self, camel_case=True) -> dict:
+    def to_dict(self, camel_case=True) -> dict:  # NOSONAR
         """Convert DateQuery object to a dictionary.
 
         Args:
@@ -266,10 +269,10 @@ def list_search_objects(
     project_name: str | None = None,
     to_dictionary: bool = False,
     limit: int | None = None,
-    folder: 'Folder | tuple[str] | list[str] | str | None' = None,
+    folder: 'Folder | str | FolderPathType | None' = None,
     folder_id: str | None = None,
     folder_name: str | None = None,
-    folder_path: tuple[str] | list[str] | str | None = None,
+    folder_path: FolderPathType | None = None,
     **filters,
 ) -> 'list[SearchObject] | list[dict]':
     """List Search Objects in the environment.
@@ -287,17 +290,21 @@ def list_search_objects(
         to_dictionary (bool): If True, returns a list of dictionaries instead of
             SearchObject instances.
         limit (int | None): Maximum number of results to return.
-        folder (Folder | tuple | list | str, optional): Folder object or ID or
-            name or path specifying the folder. May be used instead of
-            `folder_id`, `folder_name` or `folder_path`.
-        folder_id (str, optional): ID of a folder.
-        folder_name (str, optional): Name of a folder.
-        folder_path (str, optional): Path of the folder.
+        folder (Folder | str | FolderPathType, optional): Folder object or ID or
+            name or path specifying the folder. See `folder_id`, `folder_name`
+            or `folder_path` for more info.
+        folder_id (str, optional): ID of a folder as string.
+        folder_name (str, optional): Name of a folder as string.
+        folder_path (FolderPathType, optional): Path of the folder. It can
+            be a string with "/" as path separator
+            (e.g. "folder/subfolder1/subfolder2") or a tuple or list of path
+            parts (e.g. `("folder", "subfolder1", "subfolder2")`).
+
             The path has to be provided in the following format:
                 if it's inside of a project, start with a Project Name:
-                    /MicroStrategy Tutorial/Public Objects/Metrics
+                    `/MicroStrategy Tutorial/Public Objects/Metrics`
                 if it's a root folder, start with `CASTOR_SERVER_CONFIGURATION`:
-                    /CASTOR_SERVER_CONFIGURATION/Users
+                    `/CASTOR_SERVER_CONFIGURATION/Users`
         **filters: Available filter parameters: ['id', 'name', 'description',
             'date_created', 'date_modified', 'acg']
 
@@ -593,8 +600,8 @@ class SearchObject(Entity, CopyMixin, MoveMixin, DeleteMixin):
         cls,
         connection: Connection,
         name: str | None,
-        destination_folder: 'Folder | tuple[str] | list[str] | str | None' = None,
-        destination_folder_path: tuple[str] | list[str] | str | None = None,
+        destination_folder: 'Folder | str | FolderPathType | None' = None,
+        destination_folder_path: FolderPathType | None = None,
         project: 'Project | str | None' = None,
         project_id: str | None = None,
         project_name: str | None = None,
@@ -624,12 +631,17 @@ class SearchObject(Entity, CopyMixin, MoveMixin, DeleteMixin):
                 `connection.Connection()`.
             name (str or None): Name of the SearchObject. If None, a default
                 name will be generated.
-            destination_folder (Folder | tuple | list | str, optional): Folder
+            destination_folder (Folder | str | FolderPathType, optional): Folder
                 object or ID or name or path specifying the folder where to
-                create object.
-            destination_folder_path (str, optional): Path of the folder.
+                create object. See `destination_folder_path` for more info about
+                path type.
+            destination_folder_path (FolderPathType, optional): Path of the
+                folder. It can be a string with "/" as path separator
+                (e.g. "folder/subfolder1/subfolder2") or a tuple or list of path
+                parts (e.g. `("folder", "subfolder1", "subfolder2")`).
+
                 The path has to be provided in the following format:
-                    /MicroStrategy Tutorial/Public Objects/Metrics
+                    `/MicroStrategy Tutorial/Public Objects/Metrics`
             project (Project | str, optional): Project object or ID or name
                 specifying the project. May be used instead of `project_id` or
                 `project_name`.
@@ -873,16 +885,17 @@ def quick_search(
     connection: Connection,
     project: 'Project | str | None' = None,
     name: str | None = None,
-    root: 'Folder | tuple[str] | list[str] | str | None' = None,
+    root: 'Folder | str | FolderPathType | None' = None,
     root_id: str | None = None,
     root_name: str | None = None,
-    root_path: tuple[str] | list[str] | str | None = None,
+    root_path: FolderPathType | None = None,
     pattern: SearchPattern | int = SearchPattern.CONTAINS,
     object_types: 'TypeOrSubtype | None' = None,
     get_ancestors: bool = False,
     cross_cluster: bool = False,
     hidden: bool | None = None,
     certified_status: CertifiedStatus = CertifiedStatus.ALL,
+    tenants: 'str | Tenant | list[str | Tenant] | None' = None,
     limit: int | None = None,
     offset: int | None = None,
     to_dictionary: bool = True,
@@ -931,6 +944,9 @@ def quick_search(
             cluster nodes.
         hidden(bool): Filter the result based on the 'hidden' field of objects.
             If not passed, no filtering is applied.
+        tenants (str | Tenant | list[str | Tenant], optional): Tenant filter
+            applied to search results. Can be a Tenant ID, `Tenant` object,
+            or a list of either.
         limit (int): limit the number of elements returned. If `None` (default),
             all objects are returned.
         offset (int): Starting point within the collection of returned
@@ -965,6 +981,16 @@ def quick_search(
         object_types = [
             get_enum_val(t, (ObjectTypes, ObjectSubTypes)) for t in object_types
         ]
+
+    if tenants is None:
+        tenant_ids = None
+    else:
+        tenants_list = tenants if isinstance(tenants, list) else [tenants]
+        tenant_ids = [
+            get_tenant_id_from_params_set(connection, tenant=tenant)
+            for tenant in tenants_list
+        ]
+
     pattern = get_enum_val(pattern, SearchPattern)
     certified_status = get_enum_val(certified_status, CertifiedStatus)
     resp = browsing.get_quick_search_result(
@@ -977,6 +1003,7 @@ def quick_search(
         get_ancestors=get_ancestors,
         hidden=hidden,
         cross_cluster=cross_cluster,
+        tenant_ids=tenant_ids,
         limit=limit,
         certified_status=certified_status,
         offset=offset,
@@ -1097,10 +1124,10 @@ def full_search(
     pattern: SearchPattern | int = SearchPattern.CONTAINS,
     description: str | None = None,
     domain: SearchDomain | int = SearchDomain.PROJECT,
-    root: 'Folder | tuple[str] | list[str] | str | None' = None,
+    root: 'Folder | str | FolderPathType | None' = None,
     root_id: str | None = None,
     root_name: str | None = None,
-    root_path: tuple[str] | list[str] | str | None = None,
+    root_path: FolderPathType | None = None,
     object_types: 'TypeOrSubtype | None' = None,
     uses_object_id: EntityBase | str | None = None,
     uses_object_type: ObjectTypes | int | None = None,
@@ -1255,10 +1282,10 @@ def start_full_search(
     description: str | None = None,
     pattern: SearchPattern | int = SearchPattern.CONTAINS,
     domain: SearchDomain | int = SearchDomain.PROJECT,
-    root: 'Folder | tuple[str] | list[str] | str | None' = None,
+    root: 'Folder | str | FolderPathType | None' = None,
     root_id: str | None = None,
     root_name: str | None = None,
-    root_path: tuple[str] | list[str] | str | None = None,
+    root_path: FolderPathType | None = None,
     uses_object_id: EntityBase | str | None = None,
     uses_object_type: ObjectTypes | ObjectSubTypes | int | None = None,
     uses_recursive: bool = False,

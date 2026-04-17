@@ -3,6 +3,8 @@ from collections import defaultdict
 
 import pandas as pd
 
+from mstrio.utils.formjson import map_data_type
+
 
 class Model:
     """Internal utility for generating the definition of multi-table and
@@ -182,7 +184,7 @@ class Model:
                 if isinstance(column_element, dt.date):
                     list_dtypes_values[i] = 'date'
 
-        return [self._map_data_type(datatype) for datatype in list_dtypes_values]
+        return [map_data_type(datatype) for datatype in list_dtypes_values]
 
     def _add_metric(self, name, table_name):
         """Add a metric to a metric list instance."""
@@ -271,21 +273,6 @@ class Model:
     def _get_col_names(table):
         """Returns column names from a table as a list."""
         return list(table.columns)
-
-    @staticmethod
-    def _map_data_type(datatype):
-        """Maps a Python data type to a Strategy One data type."""
-        return {
-            'object': 'STRING',
-            'int32': 'INTEGER',
-            'int64': 'BIGINTEGER',
-            'float32': 'DOUBLE',
-            'float64': 'DOUBLE',
-            'bool': 'BOOLEAN',
-            'datetime64[ns]': 'DATETIME',
-            'date': 'DATE',
-            'time': 'TIME',
-        }.get(str(datatype))
 
     @staticmethod
     def _check_param_len(param, msg, max_length):

@@ -7,7 +7,7 @@ from mstrio import config
 from mstrio.api import transmitters
 from mstrio.types import ObjectTypes
 from mstrio.users_and_groups import User
-from mstrio.utils.entity import DeleteMixin, Entity
+from mstrio.utils.entity import DeleteMixin, Entity, TenantMixin
 from mstrio.utils.enum_helper import AutoName, get_enum_val
 from mstrio.utils.helper import (
     Dictable,
@@ -41,6 +41,7 @@ class TransmitterDeliveryType(AutoName):
     ONEDRIVE = auto()
     SHAREPOINT = auto()
     S3 = auto()
+    GOOGLEDRIVE = auto()
     UNSUPPORTED = auto()
 
 
@@ -132,7 +133,7 @@ def list_transmitters(
 
 
 @class_version_handler('11.3.0100')
-class Transmitter(Entity, DeleteMixin):
+class Transmitter(Entity, DeleteMixin, TenantMixin):
     """Object representation of Strategy One Transmitter object
 
     Attributes:
@@ -175,6 +176,8 @@ class Transmitter(Entity, DeleteMixin):
             'description',
             'delivery_type',
             'email_transmitter_properties',
+            'tenant_id',
+            'tenant_name',
         ): transmitters.get_transmitter,
     }
     _API_DELETE = staticmethod(transmitters.delete_transmitter)

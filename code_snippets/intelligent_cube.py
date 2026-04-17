@@ -188,6 +188,13 @@ new_olap_cube.remove_partition_attribute()
 # Listing attribute forms for OLAP Cube
 attribute_forms = new_olap_cube.list_attribute_forms()
 
+# List all properties of the OLAP Cube - returns a dictionary with cube metadata
+# such as id, name, size, status, attributes, metrics, owner, dates, etc.
+cube_properties = new_olap_cube.list_properties()
+
+# You can also list properties of any existing cube
+existing_cube_properties = olap_cube.list_properties()
+
 # Publish newly created and updated OLAP Cube
 new_olap_cube_from_attributes_and_metrics.publish()
 new_olap_cube.publish()
