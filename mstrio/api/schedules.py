@@ -22,7 +22,7 @@ def list_schedules(connection, fields=None, error_msg=None):
         HTTP response object returned by the Strategy One REST server
     """
 
-    response = connection.get(endpoint='/api/schedules', params={'fields': fields})
+    response = connection.get(endpoint='/api/v2/schedules', params={'fields': fields})
     if response.ok:
         # Fix for incorrect 'eventId' (expecting 'id')
         event_based_in_list = False

@@ -370,7 +370,7 @@ def update_subscription(
     return connection.put(
         endpoint=f'/api/subscriptions/{subscription_id}',
         params={'fields': fields},
-        headers={'X-MSTR-ProjectID': project_id},
+        headers={'X-MSTR-ProjectID': project_id, 'X-MSTR-ClientVersion': '25.06'},
         json=body,
     )
 

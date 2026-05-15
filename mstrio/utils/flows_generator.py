@@ -1,0 +1,602 @@
+"""
+FYI: Functionalities created, edited and used in this file should be documented
+in SE Design: "https://<domain>/wiki/spaces/AS/pages/6066602590"
+"""
+
+import re
+from abc import ABC, abstractmethod
+from collections.abc import Callable
+from functools import partial
+from itertools import count
+from textwrap import indent as _indent_orig
+from typing import Any, Literal, TypeAlias
+
+import yaml
+
+from mstrio.connection import Connection
+from mstrio.python_execution.script import ReadOnlyCode
+from mstrio.utils.helper import get_args_from_func
+
+# region CONSTs
+
+GENERATOR_VERSION = 1
+REGEX_PATTERN = r"^[a-zA-Z0-9_]+$"
+INDENTATION = " " * 4
+GLOBALS = """
+import datetime as dt
+import json
+import time
+import threading as t
+
+from mstrio import config
+from mstrio.connection import Connection, get_connection
+from mstrio.python_execution import (
+    Script, Code, VariableAnswer, ExecutionStatus
+)
+
+config.verbose = False
+config.delay_between_polling = 10
+glob = {}
+log_lock = t.Lock()
+
+def log(key, unique_id, data=None):
+    with log_lock:
+        if isinstance(data, dict):
+            data = json.dumps(data).replace(r"\\n", r"\\\\n")
+        txt = f"{key} | {unique_id} | {data or '-'}"
+        print(txt)
+
+class PropagatingThread(t.Thread):
+    def run(self):
+        self._propagated_exception = None
+        try:
+            self._target(*self._args, **self._kwargs)
+        except BaseException as err:
+            self._propagated_exception = err
+
+    def join(self) -> BaseException | None:
+        super().join()
+
+        return self._propagated_exception
+"""
+# TODO: add integration test in final release to check log-sync explicitly
+
+
+# FYI: make fn an instance of generator instead of definition of generator
+@(lambda fn: fn())
+def UNIQUE_ID():  # NOSONAR
+    """Call `next(UNIQUE_ID)` to get a per-runtime-unique ID value."""
+    yield from map(str, count())
+
+
+indent_once: Callable[[str], str] = partial(
+    _indent_orig, prefix=INDENTATION, predicate=None
+)
+indent_twice: Callable[[str], str] = partial(
+    _indent_orig, prefix=INDENTATION * 2, predicate=None
+)
+indent_thrice: Callable[[str], str] = partial(
+    _indent_orig, prefix=INDENTATION * 3, predicate=None
+)
+
+
+AnyEntry: TypeAlias = dict[str, Any]
+EntrySteps: TypeAlias = list[AnyEntry]
+
+# endregion
+
+# region Validation
+
+
+class InvalidInput(ValueError):
+    """Exception raised for invalid input in the flow generator."""
+
+
+def all_keys_present(entry: AnyEntry, keys: list[str]) -> bool:
+    return all(key in entry for key in keys)
+
+
+_found_objects = []
+
+
+def validate_object_entry(entry: AnyEntry) -> bool:
+    try:
+        ret = isinstance(entry, dict) and bool(
+            re.match(REGEX_PATTERN, entry.get("id", ""))
+            and re.match(REGEX_PATTERN, entry.get("project_id", ""))
+        )
+    except TypeError:
+        return False
+    else:
+        if ret:
+            _found_objects.append(
+                {"id": entry.get("id"), "project_id": entry.get("project_id")}
+            )
+
+    return ret
+
+
+def validate_script_step_entry(entry: AnyEntry) -> None:
+    if not all_keys_present(entry, ["object"]) or not validate_object_entry(
+        entry["object"]
+    ):
+        raise InvalidInput(f"Script Entry has invalid format: {entry}.")
+
+    if "step_id" in entry and (
+        entry["step_id"] == "flow_var" or not re.match(REGEX_PATTERN, entry["step_id"])
+    ):
+        raise InvalidInput(
+            f"If provided, `step_id` should match pattern `{REGEX_PATTERN}` and "
+            "not be equal to \"flow_var\", "
+            f"is: {entry['step_id']}."
+        )
+
+    if "variables" in entry:
+        if not isinstance(vars := entry["variables"], dict):
+            raise InvalidInput(
+                f"`variables` key should contain a dictionary if provided, is: {vars}."
+            )
+
+        for var_source in vars.values():
+            if not isinstance(var_source, str):
+                raise InvalidInput(
+                    f"Variable source should be a string, is: {var_source}."
+                )
+
+            if var_source == "default":
+                continue
+
+            try:
+                key, ref = var_source.split(".", 1)
+            except ValueError:
+                raise InvalidInput(
+                    "Variable source should be in format 'key.ref' if not "
+                    f"'default', is: {var_source}."
+                )
+
+            is_flow_var = key == "flow_var" and re.match(REGEX_PATTERN, ref)
+            is_step_ref = re.match(REGEX_PATTERN, key) and ref in ("stdout", "return")
+
+            if not is_flow_var and not is_step_ref:
+                raise InvalidInput(
+                    f"Variable source should be either 'default', reference to "
+                    f"Flow variable in format 'flow_var.var_name' or reference "
+                    f"to previous step output in format 'step_id.stdout' or "
+                    f"'step_id.return', is: {var_source}."
+                )
+
+    for key in ["on_fail", "on_success"]:  # noqa
+        if key in entry:
+            if not isinstance(steps := entry[key], list):
+                raise InvalidInput(
+                    f"Conditional branch '{key}' should be a list of valid steps "
+                    "when provided."
+                )
+
+            [validate_any_step_entry(step) for step in steps]
+
+
+def validate_sleep_step_entry(entry: AnyEntry) -> None:
+    try:
+        if not all_keys_present(entry, ["duration"]) or int(entry["duration"]) <= 0:
+            raise ValueError()
+    except (ValueError, KeyError):
+        raise InvalidInput(f"Sleep Entry has invalid format: {entry}.")
+
+
+def validate_parallel_step_entry(entry: AnyEntry) -> None:
+    if not all_keys_present(entry, ["branches"]) or not isinstance(
+        branches := entry["branches"], list
+    ):
+        raise InvalidInput(f"Parallel Entry has invalid format: {entry}.")
+
+    for branch in branches:  # noqa
+        if not all_keys_present(branch, ["steps"]) or not isinstance(
+            steps := branch["steps"], list
+        ):
+            raise InvalidInput(
+                f"Branch in Parallel Entry has invalid format: {branch}."
+            )
+
+        [validate_any_step_entry(step) for step in steps]
+
+
+def validate_any_step_entry(entry: AnyEntry) -> None:
+    if not all_keys_present(entry, ["type", "unique_id"]):
+        raise InvalidInput("Step entry does not contain `type` or `unique_id` keys.")
+
+    if not isinstance(entry["unique_id"], str):
+        raise InvalidInput("`unique_id` should be a string.")
+
+    match entry["type"]:
+        case "script":
+            return validate_script_step_entry(entry)
+        case "sleep":
+            return validate_sleep_step_entry(entry)
+        case "parallel":
+            return validate_parallel_step_entry(entry)
+        case "noop":
+            return
+        case other:
+            raise InvalidInput(f"Unknown type of step: '{other}'.")
+
+
+def validate_input_yaml_structure(parsed_input_yaml: AnyEntry) -> None:
+    """Validate if the structure of the input yaml is correct and contains all
+    required data.
+
+    Raises:
+        InvalidInput: when the structure of the input yaml is invalid or some
+            required data is missing. Otherwise passes through without errors.
+    """
+
+    _found_objects.clear()
+
+    # general shape
+    if not isinstance(parsed_input_yaml, dict) or not all_keys_present(
+        parsed_input_yaml, ["version", "dependencies", "connection", "steps"]
+    ):
+        raise InvalidInput(
+            "Input yaml should be a dictionary with required keys: "
+            "version, dependencies, connection and steps."
+        )
+
+    # setup data
+    ver = parsed_input_yaml["version"]
+    if not isinstance(ver, int):
+        raise InvalidInput(f"Version should be an integer, is {type(ver)}.")
+
+    if ver > GENERATOR_VERSION:
+        raise InvalidInput(
+            f"Input data comes from plugin with later version ({ver}) "
+            f"than the generator ({GENERATOR_VERSION}). "
+            "The generator cannot handle this input."
+        )
+
+    deps = parsed_input_yaml["dependencies"]
+    if not isinstance(deps, list) or not all(validate_object_entry(d) for d in deps):
+        raise InvalidInput("Some dependency entries are not in the required format.")
+
+    conn = parsed_input_yaml["connection"]
+    if conn != "get_connection":
+        conn_params = get_args_from_func(Connection)
+
+        if not isinstance(conn, dict) or not all(
+            # TODO: better validate the value reference
+            key in conn_params and isinstance(val, str) and val.startswith("flow_var.")
+            for key, val in conn.items()
+        ):
+            raise InvalidInput(
+                "Connection data is not in the required format. Either some "
+                "keys are not valid `Connection` initialization keys or some "
+                "values are not in proper format `flow_var.<var_name>`."
+            )
+
+    # steps data
+    steps = parsed_input_yaml["steps"]
+    if not isinstance(steps, list):
+        raise InvalidInput(f"Steps should be a list of valid steps, is {steps}")
+
+    [validate_any_step_entry(step) for step in steps]
+
+    deps_objs = {(v["id"], v["project_id"]) for v in deps}
+    found_objs = {(v["id"], v["project_id"]) for v in _found_objects}
+    if not all(found in deps_objs for found in found_objs):
+        raise InvalidInput(
+            "Not all used scripts added to dependencies. "
+            "Scripts not in dependencies (<script-id>, <project-id>): "
+            f"{(found_objs - deps_objs)}"
+        )
+
+
+# endregion
+
+# region Generation
+
+
+def merge_code_sections(sections: list[str]) -> str:
+    return "\n".join(sections).strip()
+
+
+def generate_code_for_connection(
+    connection_entry: AnyEntry | Literal["get_connection"],
+) -> str:
+    ret: str = ""
+
+    if connection_entry == "get_connection":
+        ret += "conn = get_connection(workstationData)\n"
+    else:
+        ret += "conn = Connection(\n"
+        for key, var_name in connection_entry.items():
+            var_name = var_name.removeprefix("flow_var.")
+            ret += indent_once(f"{key}=${var_name},\n")
+        ret += ")\n"
+
+    ret += "conn_lock = t.Lock()\n"
+
+    return ret
+
+
+class BaseCodeBuilder(ABC):
+    """Base class for all code builders to synchronize APIs for code generation
+    and logging in Flows.
+    """
+
+    def __init__(self, step: AnyEntry):
+        self._unique_id = repr(step["unique_id"])
+
+    @abstractmethod
+    def get_content(self) -> str:
+        pass
+
+    # FYI: Do NOT override this method in child classes
+    def __str__(self) -> str:
+        return self.get_content()
+
+
+class SleepCodeBuilder(BaseCodeBuilder):
+    _core_template = """
+log("SLEEP_PRE", {unique_id}, str(dt.datetime.now(dt.timezone.utc)))
+time.sleep({duration})
+log("SLEEP_POST", {unique_id}, str(dt.datetime.now(dt.timezone.utc)))
+"""
+
+    def __init__(self, sleep_step: AnyEntry) -> None:
+        super().__init__(sleep_step)
+        self._duration = sleep_step["duration"]
+
+    def get_content(self) -> str:
+        return self._core_template.format(
+            unique_id=self._unique_id,
+            duration=self._duration,
+        )
+
+
+class ScriptCodeBuilder(BaseCodeBuilder):
+    _exec_template = """
+with (conn_lock, conn.temporary_project_change("{project_id}")):
+    log("SCRIPT_PRE", {unique_id}, str(dt.datetime.now(dt.timezone.utc)))
+    glob['_{step_id}'] = Script(conn, id="{id}")
+    glob['_{step_id}'].execute(
+        block_until_done=False,
+        variables_answers={answers},
+    )
+"""
+
+    _result_template = """
+glob['_{step_id}_res'] = glob['_{step_id}'].wait_for_execution_finish(
+    pipe_logs=False,
+)
+log(
+    "SCRIPT_POST",
+    {unique_id},
+    {{
+        "status": glob['_{step_id}'].execution_status.value,
+        "stdout": glob['_{step_id}'].execution_stdout,
+        "stderr": glob['_{step_id}'].execution_stderr,
+        "output": glob['_{step_id}'].execution_result,
+        "timestamp": str(dt.datetime.now(dt.timezone.utc)),
+    }},
+)
+"""
+
+    _condition_template = """
+if not ExecutionStatus.is_error(glob['_{step_id}_res']):
+    log("SCRIPT_COND_S", {unique_id}, str(dt.datetime.now(dt.timezone.utc)))
+{success_code}
+else:
+    log("SCRIPT_COND_F", {unique_id}, str(dt.datetime.now(dt.timezone.utc)))
+{fail_code}
+"""
+
+    def __init__(self, script_step: AnyEntry):
+        super().__init__(script_step)
+        self._id: str = script_step["object"]["id"]
+        self._project_id: str = script_step["object"]["project_id"]
+        self._step_id: str = script_step.get("step_id", next(UNIQUE_ID))
+        self._variables_data: dict[str, str] = script_step.get("variables", {})
+        self._onsuccess_data: EntrySteps | None = script_step.get("on_success")
+        self._onfail_data: EntrySteps | None = script_step.get("on_fail")
+
+    @property
+    def has_conditionals(self) -> bool:
+        return self._onsuccess_data is not None or self._onfail_data is not None
+
+    def build_variables_answers_dict(self) -> str:
+        if not self._variables_data:
+            return "None"
+
+        ret = "{\n"
+
+        for var_name, var_source in self._variables_data.items():
+            # keep default answer
+            if var_source == "default":
+                ret += indent_thrice(
+                    f"'{var_name}': VariableAnswer.KEEP_GLOBAL_DEFAULT,\n"
+                )
+                continue
+
+            ref, key = var_source.split(".", 1)
+
+            # take answer from Flow's Variable
+            if ref == "flow_var":
+                ret += indent_thrice(f"'{var_name}': ${key},\n")
+                continue
+
+            # take answer from some previous script output:
+            # either return value or stdout
+            prop = "execution_stdout" if key == "stdout" else "execution_result"
+            ret += indent_thrice(f"'{var_name}': glob['_{ref}'].{prop},\n")
+
+        ret += indent_twice("}")
+
+        return ret
+
+    def get_exec_code(self) -> str:
+        return self._exec_template.format(
+            unique_id=self._unique_id,
+            id=self._id,
+            project_id=self._project_id,
+            step_id=self._step_id,
+            answers=self.build_variables_answers_dict(),
+        )
+
+    def get_result_code(self) -> str:
+        return self._result_template.format(
+            unique_id=self._unique_id,
+            step_id=self._step_id,
+        )
+
+    def get_condition_code(self) -> str:
+        if not self.has_conditionals:
+            return ""
+
+        return self._condition_template.format(
+            unique_id=self._unique_id,
+            step_id=self._step_id,
+            success_code=(
+                indent_once(str(CodeGenerator(self._onsuccess_data)))
+                if self._onsuccess_data
+                else indent_once("pass")
+            ),
+            fail_code=(
+                indent_once(str(CodeGenerator(self._onfail_data)))
+                if self._onfail_data
+                else indent_once("pass")
+            ),
+        )
+
+    def get_content(self) -> str:
+        return self.get_exec_code() + self.get_result_code() + self.get_condition_code()
+
+
+class ParallelCodeBuilder(BaseCodeBuilder):
+    _pre_branches_template = """
+log("PARALLEL_PRE", {unique_id}, str(dt.datetime.now(dt.timezone.utc)))
+"""
+
+    _branch_template = """
+def _branch_{suffix}():
+{code}
+"""
+
+    _run_single_template = "PropagatingThread(target=_branch_{suffix})"
+
+    _run_all_template = """
+_par_br_{suffix} = [{list_content}]
+[th.start() for th in _par_br_{suffix}]
+if any(res := [th.join() for th in _par_br_{suffix}]):
+    raise RuntimeError(
+        "Error in at least one of the parallel branches.",
+        [err for err in res if err],
+    )
+
+log("PARALLEL_POST", {unique_id}, str(dt.datetime.now(dt.timezone.utc)))
+"""
+
+    def __init__(self, parallel_step: AnyEntry):
+        super().__init__(parallel_step)
+        self._branches = parallel_step["branches"]
+        self._step_suffix = next(UNIQUE_ID)
+        self._suffixes = [next(UNIQUE_ID) for _ in self._branches]
+
+    def get_pre_branches_code(self) -> str:
+        return self._pre_branches_template.format(unique_id=self._unique_id)
+
+    def get_branches_declaration_code(self) -> str:
+        ret = ""
+
+        for data, suffix in zip(self._branches, self._suffixes):
+            ret += self._branch_template.format(
+                suffix=suffix,
+                code=indent_once(str(CodeGenerator(data["steps"]))),
+            )
+
+        return ret
+
+    def _get_list_content(self) -> str:
+        return ", ".join(
+            [
+                self._run_single_template.format(suffix=suffix)
+                for suffix in self._suffixes
+            ]
+        )
+
+    def get_run_code(self) -> str:
+        return self._run_all_template.format(
+            unique_id=self._unique_id,
+            suffix=self._step_suffix,
+            list_content=self._get_list_content(),
+        )
+
+    def get_content(self) -> str:
+        return (
+            self.get_pre_branches_code()
+            + self.get_branches_declaration_code()
+            + self.get_run_code()
+        )
+
+
+class CodeGenerator:
+    """Generates code for the main body of the Flow Script from provided steps.
+
+    May be used to generate only subset of code from nested "steps" key,
+    recursively.
+    """
+
+    def __init__(self, input_steps: EntrySteps) -> None:
+        self._ready_code_sections: list[str] = []
+        self._handle_steps(input_steps)
+
+    def _handle_steps(self, steps: EntrySteps) -> None:
+        for step in steps:
+            match step["type"]:
+                case "sleep":
+                    self._generate_and_add_code_section(step, SleepCodeBuilder)
+                case "script":
+                    self._generate_and_add_code_section(step, ScriptCodeBuilder)
+                case "parallel":
+                    self._generate_and_add_code_section(step, ParallelCodeBuilder)
+
+    def _generate_and_add_code_section(
+        self, step: AnyEntry, code_factory: type[BaseCodeBuilder]
+    ) -> None:
+        builder = code_factory(step)
+        self._add_code_sections(str(builder))
+
+    def _add_code_sections(self, *sections: str) -> None:
+        self._ready_code_sections.extend(sections)
+
+    def __str__(self) -> str:
+        return merge_code_sections(self._ready_code_sections)
+
+
+# endregion
+
+# region Entrypoint
+
+
+def generate_flow_content(input_yaml_string: str) -> str:
+    """Generates code content for a Script of type Flow based on the yaml input
+    being a required structure generated by Flows UI Plugin.
+    """
+
+    parsed_yaml: AnyEntry = yaml.load(input_yaml_string.strip(), yaml.SafeLoader)
+    validate_input_yaml_structure(parsed_yaml)  # would raise if invalid
+
+    components: list[str] = [
+        GLOBALS,
+        generate_code_for_connection(parsed_yaml["connection"]),
+        str(CodeGenerator(parsed_yaml["steps"])),
+    ]
+
+    code = merge_code_sections(components)
+    if not ReadOnlyCode(code).is_valid():
+        raise SyntaxError(
+            f"[INTERNAL ERROR]: Generator creates invalid code!\n\n{code}"
+        )
+
+    return code
+
+
+# endregion

@@ -312,10 +312,9 @@ class Schedule(Entity, DeleteMixin, RelatedSubscriptionMixin, TenantMixin):
             'certified_info': self.certified_info,
             'acg': self.acg,
             'acl': self.acl,
-            # TODO uncomment when tenant module is out of wip
-            # 'tenant_id': self.tenant_id,
-            # 'tenant_name': self.tenant_name,
-            # 'tenant': self.tenant,
+            'tenant_id': self.tenant_id,
+            'tenant_name': self.tenant_name,
+            'tenant': self.tenant,
         }
 
         return {

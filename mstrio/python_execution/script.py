@@ -764,6 +764,19 @@ class Code:
             )
 
 
+# TODO: add unit test
+class ReadOnlyCode(Code):
+    """Class representing read-only Python code, which is used mainly for
+    validation and storage of Code class without the need of executing it.
+    """
+
+    def __init__(self, code, validate_code=False, **_kwargs):
+        super().__init__(None, code, validate_code)
+
+    def execute(self, *_args, **_kwargs):
+        raise ScriptExecutionError("Cannot execute read-only Code.")
+
+
 class Script(
     Entity, DeleteMixin, MoveMixin, CopyMixin, CertifyMixin, ChangeJournalMixin
 ):
@@ -1512,7 +1525,9 @@ class Script(
         """
 
         value = self._history_last_entry.get('executionTime')
-        return datetime.fromisoformat(value) if value else None
+        if not value:
+            return None
+        return datetime.fromisoformat(value.replace('Z', '+00:00'))
 
     @property
     def last_run_status(self) -> str | None:

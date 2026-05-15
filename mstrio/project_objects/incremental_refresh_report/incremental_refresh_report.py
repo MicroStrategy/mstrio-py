@@ -861,11 +861,17 @@ class IncrementalRefreshReport(
             fields=fields,
         ).json()
 
-        refresh_api.delete_incremental_refresh_report_instance(
-            connection=self.connection,
-            id=self.id,
-            instance_id=instance_id,
-        )
+        # An instance run with `preview_only` will be deleted after retrieval
+        # of preview data. Trying to manually delete for compatibility
+        try:
+            refresh_api.delete_incremental_refresh_report_instance(
+                connection=self.connection,
+                id=self.id,
+                instance_id=instance_id,
+            )
+        except IServerError as e:
+            if "it may have be deleted" not in str(e):  # actual wording
+                raise
 
         parser = Parser(response=json, parse_cube=False)
         parser.parse(response=json)

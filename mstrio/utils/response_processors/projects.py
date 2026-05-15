@@ -1,5 +1,13 @@
+import json
+
+from mstrio.api import objects as objects_api
 from mstrio.api import projects as projects_api
 from mstrio.connection import Connection
+from mstrio.utils import helper
+from mstrio.utils.entity import ObjectTypes
+
+PA_CONFIGURATION_PROJECT_ID = '38A062302D4411D28E71006008960167'
+PA_CONFIGURATION_PROPERTIES_SET_ID = '03EC6B029B7D4fc260A147C8110965A3'
 
 
 def _prepare_rest_output_for_project_languages(response: dict, path: str) -> dict:
@@ -95,6 +103,92 @@ def get_project_lock(connection: Connection, id: str):
             connection=connection, id=id
         ).json()
     }
+
+
+def _parse_pa_projects_properties(properties: list[dict]) -> list[dict]:
+    """Parse Platform Analytics project metadata from property-set data."""
+
+    global_pa_project_id: str | None = None
+    tenant_pa_project_ids: set[str] = set()
+
+    for prop in properties:
+        if not isinstance(prop, dict):
+            continue
+
+        prop_id = prop.get('id')
+        value = prop.get('value')
+
+        if prop_id == 2 and isinstance(value, str) and not global_pa_project_id:
+            global_pa_project_id = value
+
+        if prop_id != 3:
+            continue
+
+        if not isinstance(value, str):
+            continue
+
+        try:
+            payload = json.loads(value)
+        except (json.JSONDecodeError, TypeError):
+            continue
+
+        if not isinstance(payload, dict):
+            continue
+
+        # If global PA project ID have not been set from prop_id = 2,
+        # try to get it from the payload
+        project_id = payload.get('projectID')
+        if not global_pa_project_id and isinstance(project_id, str) and project_id:
+            global_pa_project_id = project_id
+
+        tenant_project_ids = payload.get('tenantProjectID')
+        if isinstance(tenant_project_ids, list):
+            tenant_pa_project_ids.update(
+                tenant_project_id
+                for tenant_project_id in tenant_project_ids
+                if isinstance(tenant_project_id, str) and tenant_project_id
+            )
+
+    pa_projects: list[dict] = []
+    if global_pa_project_id:
+        pa_projects.append(
+            {
+                'id': global_pa_project_id,
+                'platform_analytics': True,
+            }
+        )
+
+    pa_projects.extend(
+        {
+            'id': tenant_project_id,
+            'tenant_platform_analytics': True,
+        }
+        for tenant_project_id in tenant_pa_project_ids
+        if tenant_project_id != global_pa_project_id
+    )
+
+    return pa_projects
+
+
+def get_pa_projects(connection: Connection) -> list[dict]:
+    """Retrieve and parse Platform Analytics projects metadata."""
+
+    response = objects_api.get_property_set(
+        connection=connection,
+        id=PA_CONFIGURATION_PROJECT_ID,
+        obj_type=ObjectTypes.CONFIGURATION.value,
+        property_set_id=PA_CONFIGURATION_PROPERTIES_SET_ID,
+    )
+
+    pa_projects_data = response.json()
+    if not isinstance(pa_projects_data, list):
+        helper.exception_handler(
+            "Could not retrieve Platform Analytics project metadata.",
+            exception_type=ConnectionError,
+        )
+        return []
+
+    return _parse_pa_projects_properties(pa_projects_data)
 
 
 def get_project_duplications(connection: Connection, limit: int | None) -> list:

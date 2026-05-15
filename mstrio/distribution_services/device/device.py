@@ -49,6 +49,7 @@ class DeviceType(AutoName):
     SHAREPOINT = auto()
     S3 = auto()
     GOOGLEDRIVE = auto()
+    GCS = auto()
     ALL = auto()
     UNSUPPORTED = auto()
 
@@ -118,6 +119,7 @@ class Device(Entity, DeleteMixin, TenantMixin):
         'sharepoint': SharePointDeviceProperties,
         's3': S3DeviceProperties,
         'googledrive': SharePointDeviceProperties,
+        'gcs': SharePointDeviceProperties,
     }
 
     @staticmethod

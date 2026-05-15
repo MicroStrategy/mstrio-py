@@ -1,10 +1,10 @@
 from typing import TYPE_CHECKING
 
-from requests import Response
-
 from mstrio.utils.error_handlers import ErrorHandler
 
 if TYPE_CHECKING:
+    from requests import Response
+
     from mstrio.connection import Connection
 
 
@@ -13,7 +13,7 @@ def remove_tenant_members(
     connection: "Connection",
     body: dict,
     error_msg: str | None = None,
-) -> Response:
+) -> 'Response':
     """Remove members from a tenant.
 
     Args:
@@ -47,7 +47,7 @@ def add_tenant_members(
     tenant_id: str,
     body: dict,
     error_msg: str | None = None,
-) -> Response:
+) -> 'Response':
     """Add members to a specific tenant.
 
     Args:
@@ -82,7 +82,7 @@ def update_tenant_status(
     tenant_id: str,
     enabled: bool,
     error_msg: str | None = None,
-) -> Response:
+) -> 'Response':
     """Update the enabled/disabled status of a tenant.
 
     Args:
@@ -107,7 +107,7 @@ def update_tenant_suffix(
     tenant_id: str,
     tenant_suffix: str,
     error_msg: str | None = None,
-) -> Response:
+) -> 'Response':
     """Update the tenant suffix for a specific tenant.
 
     Args:
@@ -132,7 +132,7 @@ def delete_tenant(
     connection: "Connection",
     id: str,
     error_msg: str | None = None,
-) -> Response:
+) -> 'Response':
     """Delete a specific tenant.
 
     Args:
@@ -155,7 +155,7 @@ def get_tenant_data(
     tenant_id: str,
     fields: str | None = None,
     error_msg: str | None = None,
-) -> Response:
+) -> 'Response':
     """Get data for a specific tenant.
 
     Args:
@@ -180,7 +180,7 @@ def create_tenant(
     body: dict,
     fields: str | None = None,
     error_msg: str | None = None,
-) -> Response:
+) -> 'Response':
     """Create a new tenant.
 
     Args:

@@ -133,6 +133,7 @@ class Delivery(DeliveryDictable):
         sharepoint: SharePoint delivery properties
         s3: S3 delivery properties
         googledrive: Google Drive delivery properties
+        gcs: Google Cloud Storage delivery properties
     """
 
     class DeliveryMode(AutoUpperName):
@@ -150,6 +151,7 @@ class Delivery(DeliveryDictable):
         SHAREPOINT = auto()
         S3 = auto()
         GOOGLEDRIVE = auto()
+        GCS = auto()
         UNSUPPORTED = auto()
 
     class Email(DeliveryDictable):
@@ -452,6 +454,16 @@ class Delivery(DeliveryDictable):
             zip: Optional compression settings object
         """
 
+    class GCS(_REST):
+        """Delivery properties for Google Cloud Services subscriptions
+
+        Attributes:
+            filename: The filename that will be delivered when the subscription
+                is executed
+            space_delimiter: The space delimiter
+            zip: Optional compression settings object
+        """
+
     VALIDATION_DICT = {
         "mode": [str, True],
         "expiration": [str, False],
@@ -468,6 +480,7 @@ class Delivery(DeliveryDictable):
         "sharepoint": [SharePoint, False],
         "s3": [S3, False],
         "googledrive": [GoogleDrive, False],
+        "gcs": [GCS, False],
     }
 
     def __init__(
@@ -572,6 +585,8 @@ class Delivery(DeliveryDictable):
             self.s3 = self.S3(space_delimiter, filename, temp_zip)
         elif self.DeliveryMode(mode) == self.DeliveryMode.GOOGLEDRIVE:
             self.googledrive = self.GoogleDrive(space_delimiter, filename, temp_zip)
+        elif self.DeliveryMode(mode) == self.DeliveryMode.GCS:
+            self.gcs = self.GCS(space_delimiter, filename, temp_zip)
 
         if notification_enabled:
             self.notification_enabled = notification_enabled
@@ -616,6 +631,8 @@ class Delivery(DeliveryDictable):
             self.__setattr__(mode_name, self.S3.from_dict(mode_value))
         elif mode_name == 'googledrive':
             self.__setattr__(mode_name, self.GoogleDrive.from_dict(mode_value))
+        elif mode_name == 'gcs':
+            self.__setattr__(mode_name, self.GCS.from_dict(mode_value))
         else:
             return False
         return True

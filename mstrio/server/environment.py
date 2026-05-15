@@ -25,6 +25,7 @@ from mstrio.utils.version_helper import class_version_handler, method_version_ha
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
+    from mstrio.server.tenant import Tenant
 
 logger = logging.getLogger(__name__)
 
@@ -574,6 +575,8 @@ class Environment:
         description: str | None = None,
         force: bool = False,
         async_request: bool = False,
+        platform_analytics: bool = False,
+        pa_tenant: 'Tenant | str | None' = None,
     ) -> 'Project | None':
         """Create a new project on the environment.
 
@@ -585,12 +588,27 @@ class Environment:
             async_request (bool, optional): Whether to create the project
                 asynchronously (not wait for it before returning).
                 Defaults to False.
+            platform_analytics (bool, optional): Set to True to create a
+                global PA Project. Platform Analytics projects are created
+                synchronously, but setting `async_request=True` is
+                recommended as it will prevent potential timeout errors.
+            pa_tenant (Tenant | str, optional): Tenant object, ID, or name
+                used to assign the newly created tenant PA project. Requires
+                `platform_analytics=True`.
 
         Returns:
             Project: The created Project object (unless prompted to abort or
             create asynchronously).
         """
-        return Project._create(self.connection, name, description, force, async_request)
+        return Project._create(
+            self.connection,
+            name,
+            description,
+            force,
+            async_request,
+            platform_analytics,
+            pa_tenant,
+        )
 
     def list_projects(
         self, to_dictionary: bool = False, limit: int | None = None, **filters
@@ -630,6 +648,28 @@ class Environment:
             connection=self.connection,
             to_dictionary=to_dictionary,
             **filters,
+        )
+
+    def list_pa_projects(
+        self,
+        to_dictionary: bool = False,
+        platform_analytics: bool | None = None,
+        tenant_platform_analytics: bool | None = None,
+    ) -> list["Project"] | list[dict]:
+        """Return list of PA projects (global and/or tenant).
+
+        Args:
+            to_dictionary: If True, returns list of project dicts.
+            platform_analytics (bool, optional): If provided, filter by
+                global PA Project flag.
+            tenant_platform_analytics (bool, optional): If provided, filter by
+                tenant PA Project flag.
+        """
+        return Project._list_pa_projects(
+            connection=self.connection,
+            to_dictionary=to_dictionary,
+            platform_analytics=platform_analytics,
+            tenant_platform_analytics=tenant_platform_analytics,
         )
 
     @method_version_handler('11.3.0800')

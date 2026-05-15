@@ -20,6 +20,12 @@ env = Environment(connection=conn)
 # get list of all projects or those just loaded
 all_projects = env.list_projects()
 loaded_projects = env.list_loaded_projects()
+# get list of all Platform Analytics projects (global and tenant)
+all_pa_projects = env.list_pa_projects()
+# get only global Platform Analytics projects
+global_pa_projects = env.list_pa_projects(platform_analytics=True)
+# get only tenant Platform Analytics projects
+tenant_pa_projects = env.list_pa_projects(tenant_platform_analytics=True)
 
 # get project with a given name
 project = Project(connection=conn, name=PROJECT_NAME)
@@ -70,6 +76,22 @@ PROJECT_NEW_DESCRIPTION = $project_new_description
 new_project = env.create_project(name=PROJECT_NAME, description=PROJECT_DESCRIPTION)
 # or just request creation and do not wait for it to be done via `async_request` flag
 env.create_project(name=PROJECT_NAME, description=PROJECT_DESCRIPTION, async_request=True)
+# create a global Platform Analytics project
+# Platform Analytics projects are created synchronously.
+env.create_project(
+    name=PROJECT_NAME,
+    description=PROJECT_DESCRIPTION,
+    platform_analytics=True,
+)
+# create a tenant Platform Analytics project;
+# Define a variable for tenant object, tenant ID or name
+TENANT_ID = $tenant_id 
+env.create_project(
+    name=PROJECT_NAME,
+    description=PROJECT_DESCRIPTION,
+    platform_analytics=True,
+    pa_tenant=TENANT_ID,
+)
 
 # change description of a newly created project
 new_project.alter(description=PROJECT_DESCRIPTION)
