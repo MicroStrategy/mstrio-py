@@ -42,6 +42,7 @@ from mstrio.utils.version_helper import is_server_min_version, method_version_ha
 
 if TYPE_CHECKING:
     from mstrio.server.project import Project
+    from mstrio.server.tenant import Tenant
 
 
 logger = logging.getLogger(__name__)
@@ -78,8 +79,6 @@ class Subscription(EntityBase, ChangeJournalMixin, TenantMixin):
             "contents",
             "recipients",
             "delivery",
-            "tenantId",
-            "tenantName",
         ): subscriptions.get_subscription,
         "status": subscriptions_processors.get_subscription_status,
         "last_run": subscriptions_processors.get_subscription_last_run,
@@ -203,6 +202,32 @@ class Subscription(EntityBase, ChangeJournalMixin, TenantMixin):
         self.project_id = project_id
         self._status = kwargs.get('status')
         self._prompts = None
+
+    def _ensure_owner_tenant_loaded(self) -> None:
+        """Ensure owner's tenant attributes are loaded if owner exists."""
+        if self.owner is None:
+            return
+
+        if self.owner.tenant_id is None:
+            self.owner.fetch('tenant_id')
+
+    @property
+    def tenant_id(self) -> str | None:
+        """Tenant ID resolved from subscription owner."""
+        self._ensure_owner_tenant_loaded()
+        return self.owner.tenant_id if self.owner else None
+
+    @property
+    def tenant_name(self) -> str | None:
+        """Tenant name resolved from subscription owner."""
+        self._ensure_owner_tenant_loaded()
+        return self.owner.tenant_name if self.owner else None
+
+    @property
+    def tenant(self) -> "Tenant | None":
+        """Tenant object resolved from subscription owner."""
+        self._ensure_owner_tenant_loaded()
+        return self.owner.tenant if self.owner else None
 
     @method_version_handler('11.3.0000')
     def alter(

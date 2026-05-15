@@ -16,7 +16,12 @@ from mstrio.api import change_journal as change_journal_api
 from mstrio.api import datasources as datasources_api
 from mstrio.api import monitors, objects, projects
 from mstrio.connection import Connection
-from mstrio.helpers import IServerError, VersionException, classproperty
+from mstrio.helpers import (
+    IServerError,
+    MstrTimeoutError,
+    VersionException,
+    classproperty,
+)
 from mstrio.server.change_journal import _format_timestamp_for_api_purge
 from mstrio.server.lock import BaseLock, LockStatus, LockType
 from mstrio.server.project_languages import (
@@ -35,6 +40,7 @@ from mstrio.utils.entity import (
 from mstrio.utils.enum_helper import AutoName, AutoUpperName, get_enum_val
 from mstrio.utils.resolvers import (
     get_conn_and_env_from_mixed_param,
+    get_tenant_id_from_params_set,
     validate_owner_key_in_filters,
 )
 from mstrio.utils.response_processors import datasources as datasources_processors
@@ -57,6 +63,7 @@ if TYPE_CHECKING:
     from mstrio.object_management.object import Object
     from mstrio.server.environment import Environment
     from mstrio.server.node import Node
+    from mstrio.server.tenant import Tenant
     from mstrio.users_and_groups import User
 
 
@@ -519,6 +526,10 @@ class Project(Entity, DeleteMixin, ModelVldbMixin, TenantMixin):
         self._nodes = kwargs.get("nodes")
         self._data_language_settings = kwargs.get("data_language_settings")
         self._metadata_language_settings = kwargs.get("metadata_language_settings")
+        if kwargs.get('platform_analytics') is not None:
+            self._platform_analytics = kwargs.get('platform_analytics')
+        if kwargs.get('tenant_platform_analytics') is not None:
+            self._tenant_platform_analytics = kwargs.get('tenant_platform_analytics')
 
         # project_lock property is version gated
         if meets_minimal_version(self.connection.iserver_version, "11.3.0600"):
@@ -528,6 +539,95 @@ class Project(Entity, DeleteMixin, ModelVldbMixin, TenantMixin):
             self._API_GETTERS['lock_status'] = self._fetch_lock_status
 
     @classmethod
+    def _assign_project_to_tenant(cls, project: 'Project', tenant_id: str) -> None:
+        from mstrio.server.tenant import Tenant
+
+        with config.temp_verbose_disable():
+            tenant = Tenant(connection=project.connection, id=tenant_id)
+
+        tenant.assign_to_tenant(project)
+
+    @classmethod
+    def _create_project_common(
+        cls,
+        connection: Connection,
+        name: str,
+        description: str | None = None,
+        force: bool = False,
+        async_request: bool = False,
+        platform_analytics_type: Literal['global', 'tenant'] | None = None,
+    ) -> dict | None:
+        project_type = 'project'
+        if platform_analytics_type == 'tenant':
+            project_type = 'tenant Platform Analytics project'
+        elif platform_analytics_type == 'global':
+            project_type = 'global Platform Analytics project'
+
+        user_input = (
+            'Y'
+            if force
+            else input(
+                f"Are you sure you want to create new {project_type} "
+                f"'{name}'? [Y/N]: "
+            )
+        )
+
+        if user_input != 'Y':
+            return None
+
+        with tqdm(
+            desc=f"Please wait while Project '{name}' is being created.",
+            bar_format='{desc}',
+            leave=False,
+            disable=not config.verbose or not config.progress_bar,
+            delay=3,
+        ):
+            res = None
+            try:
+                res = projects.create_project(
+                    connection=connection,
+                    name=name,
+                    description=description,
+                    async_request=async_request,
+                )
+            except MstrTimeoutError:
+                # Suppress timeout errors only for PA project creation.
+                if platform_analytics_type is None:
+                    raise
+
+            if (
+                async_request
+                and res is not None
+                and (not res.ok or res.status_code != 202)
+            ):
+                helper.response_handler(res)
+                raise IServerError(  # for if helper above did not raise
+                    "Async Project creation request was not accepted.",
+                    res.status_code,
+                )
+
+            # PA setup requires waiting for the project to exist,
+            # so we must continue to the polling loop below.
+            if async_request and not platform_analytics_type:
+                return None
+
+            http_status, i_server_status = 500, 'ERR001'
+            data: dict = {}
+
+            while http_status == 500 and i_server_status == 'ERR001':
+                time.sleep(config.delay_between_polling)
+
+                response = projects.get_project(
+                    connection, name, whitelist=[('ERR001', 500)]
+                )
+                http_status = response.status_code
+
+                data = response.json()
+                i_server_status = data.get('code')
+
+        return data
+
+    @classmethod
     def _create(
         cls,
         connection: Connection,
@@ -535,54 +635,52 @@ class Project(Entity, DeleteMixin, ModelVldbMixin, TenantMixin):
         description: str | None = None,
         force: bool = False,
         async_request: bool = False,
+        platform_analytics: bool = False,
+        pa_tenant: 'Tenant | str | None' = None,
     ) -> 'Project | None':
-        user_input = 'N'
-        if not force:
-            user_input = input(
-                f"Are you sure you want to create new project '{name}'? [Y/N]: "
+        if pa_tenant is not None and not platform_analytics:
+            helper.exception_handler(
+                "`pa_tenant` requires `platform_analytics=True`.",
+                exception_type=ValueError,
             )
 
-        if force or user_input == 'Y':
-            # Create new project
-            with tqdm(
-                desc=f"Please wait while Project '{name}' is being created.",
-                bar_format='{desc}',
-                leave=False,
-                disable=not config.verbose or not config.progress_bar,
-                delay=3,
-            ):
-                res = projects.create_project(
-                    connection, name, description, async_request
-                )
+        tenant_id = (
+            get_tenant_id_from_params_set(connection, tenant=pa_tenant)
+            if pa_tenant is not None
+            else None
+        )
+        platform_analytics_type = (
+            'tenant'
+            if tenant_id is not None
+            else 'global' if platform_analytics else None
+        )
 
-                if async_request:
-                    if not res.ok or res.status_code != 202:
-                        helper.response_handler(res)
-                        raise IServerError(  # for if helper above did not raise
-                            "Async Project creation request was not accepted.",
-                            res.status_code,
-                        )
+        data = cls._create_project_common(
+            connection=connection,
+            name=name,
+            description=description,
+            force=force,
+            async_request=async_request,
+            platform_analytics_type=platform_analytics_type,
+        )
 
-                    return None
-
-                http_status, i_server_status = 500, 'ERR001'
-
-                while http_status == 500 and i_server_status == 'ERR001':
-                    time.sleep(1)
-
-                    response = projects.get_project(
-                        connection, name, whitelist=[('ERR001', 500)]
-                    )
-                    http_status = response.status_code
-
-                    data = response.json()
-                    i_server_status = data.get('code')
-
-            if config.verbose:
-                logger.info(f"Project '{name}' successfully created.")
-            return cls.from_dict(data, connection=connection)
-        else:
+        if data is None:
             return None
+
+        project = cls.from_dict(data, connection=connection)
+
+        if platform_analytics_type is not None:
+            project.set_platform_analytics(
+                platform_analytics_type=platform_analytics_type,
+            )
+
+        if tenant_id:
+            cls._assign_project_to_tenant(project=project, tenant_id=tenant_id)
+
+        if config.verbose:
+            logger.info(f"Project '{name}' successfully created.")
+
+        return project
 
     @classmethod
     @method_version_handler('11.2.0000')
@@ -660,6 +758,37 @@ class Project(Entity, DeleteMixin, ModelVldbMixin, TenantMixin):
             return [
                 cls.from_dict(source=obj, connection=connection) for obj in raw_project
             ]
+
+    @classmethod
+    def _list_pa_projects(
+        cls,
+        connection: Connection,
+        to_dictionary: bool = False,
+        platform_analytics: bool | None = None,
+        tenant_platform_analytics: bool | None = None,
+    ) -> list["Project"] | list[dict]:
+        pa_projects = projects_processors.get_pa_projects(connection=connection)
+
+        # Filter by platform_analytics and tenant_platform_analytics flags
+        if platform_analytics is not None or tenant_platform_analytics is not None:
+            pa_projects = [
+                project
+                for project in pa_projects
+                if (
+                    platform_analytics is None
+                    or project.get('platform_analytics') is platform_analytics
+                )
+                and (
+                    tenant_platform_analytics is None
+                    or project.get('tenant_platform_analytics')
+                    is tenant_platform_analytics
+                )
+            ]
+
+        if to_dictionary:
+            return pa_projects
+
+        return [cls.from_dict(source=obj, connection=connection) for obj in pa_projects]
 
     def alter(
         self,
@@ -1867,6 +1996,84 @@ class Project(Entity, DeleteMixin, ModelVldbMixin, TenantMixin):
     @property
     def nodes(self):
         return self._nodes
+
+    def _get_pa_project_metadata(self) -> dict | None:
+        pa_projects = self._list_pa_projects(
+            connection=self.connection,
+            to_dictionary=True,
+        )
+
+        pa_project = next(
+            (project for project in pa_projects if project.get('id') == self.id),
+            None,
+        )
+        if pa_project:
+            if pa_project.get('platform_analytics') is not None:
+                self._platform_analytics = pa_project.get('platform_analytics')
+            if pa_project.get('tenant_platform_analytics') is not None:
+                self._tenant_platform_analytics = pa_project.get(
+                    'tenant_platform_analytics'
+                )
+            return pa_project
+
+        return {} if self.is_loaded() else None
+
+    def is_platform_analytics(self) -> bool | None:
+        """Return whether the project is a global PA Project.
+
+        This information is available only through PA project listing
+        metadata. Returns `None` when the project is not loaded and the
+        metadata cannot be resolved.
+        """
+
+        if hasattr(self, '_platform_analytics'):
+            return self._platform_analytics
+
+        pa_project = self._get_pa_project_metadata()
+        if pa_project is None:
+            return None
+
+        self._platform_analytics = pa_project.get('platform_analytics', False)
+        return self._platform_analytics
+
+    def is_tenant_platform_analytics(self) -> bool | None:
+        """Return whether the project is a tenant PA Project.
+
+        This information is available only through PA project listing
+        metadata. Returns `None` when the project is not loaded and the
+        metadata cannot be resolved.
+        """
+
+        if hasattr(self, '_tenant_platform_analytics'):
+            return self._tenant_platform_analytics
+
+        pa_project = self._get_pa_project_metadata()
+        if pa_project is None:
+            return None
+
+        self._tenant_platform_analytics = pa_project.get(
+            'tenant_platform_analytics',
+            False,
+        )
+        return self._tenant_platform_analytics
+
+    def set_platform_analytics(
+        self,
+        platform_analytics_type: Literal['global', 'tenant'],
+    ) -> None:
+        """Set Platform Analytics type for the project.
+
+        Args:
+            platform_analytics_type (str): Type of Platform Analytics
+                to set. Must be either ``'global'`` or ``'tenant'``.
+        """
+        projects.set_project_platform_analytics(
+            connection=self.connection,
+            project_id=self.id,
+            platform_analytics_type=platform_analytics_type,
+        )
+        self._platform_analytics = platform_analytics_type == 'global'
+        self._tenant_platform_analytics = platform_analytics_type == 'tenant'
 
     @property
     def _node_names(self):

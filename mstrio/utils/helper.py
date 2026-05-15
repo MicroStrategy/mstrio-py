@@ -601,7 +601,8 @@ def fetch_objects(
 
     Args:
         connection: Strategy One REST API connection object
-        api: GET API wrapper function that will return list of objects in bulk
+        api: GET API wrapper function (or response processor) that will return
+            the list of objects in bulk
         dict_unpack_value: if the response needs to be unpacked to get into
             the values specify the keyword
         limit: value to be provided in REST request to limit count of
@@ -622,20 +623,25 @@ def fetch_objects(
     param_value_dict = auto_match_args(api, dic, exclude=['connection', 'error_msg'])
     response = api(connection=connection, error_msg=error_msg, **param_value_dict)
 
-    if response.ok:
-        project_id = kwargs.get('project_id') or kwargs.get('project')
-        objects = _prepare_objects(
-            response.json(), filters, dict_unpack_value, project_id
-        )
-        if limit is not None:
-            # If response returned more than `limit` objects -> cut-off.
-            # This can happen if limiting is done ex. per node.
-            # Some endpoints return `limit` objects PER NODE.
-            # We don't validate: just get first `limit` amount of them.
-            objects = objects[:limit]
-        return objects
+    # Unify output between direct wrappers and response processors
+    if hasattr(response, 'ok'):
+        if not response.ok:
+            return []
+        response_contents = response.json()
     else:
-        return []
+        response_contents = response
+
+    project_id = kwargs.get('project_id') or kwargs.get('project')
+    objects = _prepare_objects(
+        response_contents, filters, dict_unpack_value, project_id
+    )
+    if limit is not None:
+        # If response returned more than `limit` objects -> cut-off.
+        # This can happen if limiting is done ex. per node.
+        # Some endpoints return `limit` objects PER NODE.
+        # We don't validate: just get first `limit` amount of them.
+        objects = objects[:limit]
+    return objects
 
 
 def key_fn_for_sort_object_properties(source: Any) -> int:

@@ -57,6 +57,7 @@ dependencies = [
     "pandas[output-formatting,pyarrow] >= 2.3.3; python_version >= '3.14'",
     "pyhumps >= 3.8",
     "pypika >= 0.48.9",
+    "pyyaml ~= 6.0",
     "requests >= 2.32.3",
     "requests-futures >= 1",
     "stringcase >= 1.2",

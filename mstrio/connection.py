@@ -168,7 +168,9 @@ def get_connection(
         disable_warnings(category=InsecureRequestWarning)
 
     try:
-        logger.info('Creating connection from Workstation Data object...')
+        if config.verbose:
+            logger.info('Creating connection from Workstation Data object...')
+
         # get base url from Workstation Data object
         base_url = helper.url_check(workstation_data['defaultEnvironment']['url'])
         # get headers from Workstation Data object

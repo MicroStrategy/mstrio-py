@@ -24,7 +24,7 @@ def save_response(
 
     if response.status_code != 204:
         # Generate file name
-        base_path = Path(__file__).parents[2] / 'tests/resources/auto-api-responses/'
+        base_path = Path(__file__).parents[3] / 'tests/resources/auto-api-responses/'
         url = response.url.rsplit('api/', 1)[1]
         temp_path = url.split('/')
         file_name = '-'.join(temp_path[1:]) if len(temp_path) > 1 else temp_path[0]
@@ -44,7 +44,7 @@ def save_response(
         #     pickle.dump(response, f)
         with open(path + '.json', 'w') as f:
             try:
-                json.dump(response.json(), f)
+                json.dump(response.json(), f, indent=2)
             except JSONDecodeError:
                 exception_handler(
                     "Could not decode response. Skipping creating JSON file.", Warning

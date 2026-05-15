@@ -9,21 +9,17 @@ from mstrio.object_management.search_enums import SearchDomain
 from mstrio.object_management.search_operations import full_search, quick_search
 from mstrio.server.project import Project
 from mstrio.types import ObjectSubTypes, ObjectTypes
-from mstrio.utils.entity import DeleteMixin, Entity, TenantMixin
+from mstrio.utils.entity import DeleteMixin, Entity
 from mstrio.utils.enum_helper import get_enum_val
 from mstrio.utils.helper import get_args_from_func, get_default_args_from_func
 from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.response_processors import tenant as tenant_processors
 from mstrio.utils.version_helper import class_version_handler
-from mstrio.utils.wip import WipLevels, module_wip
 
 if TYPE_CHECKING:
     from mstrio.connection import Connection
     from mstrio.types import TypeOrSubtype
     from mstrio.users_and_groups import User, UserGroup
-
-
-module_wip(globals(), "11.6.5.101", WipLevels.ERROR)  # NOSONAR
 
 
 logger = logging.getLogger(__name__)
@@ -74,7 +70,7 @@ def list_tenants(
 
 
 @class_version_handler("11.6.0100")
-class Tenant(Entity, DeleteMixin, TenantMixin):
+class Tenant(Entity, DeleteMixin):
     """Object representation of Strategy One Tenant.
 
     Attributes:
@@ -188,7 +184,7 @@ class Tenant(Entity, DeleteMixin, TenantMixin):
         self,
         members: 'User | UserGroup | dict | str | list[User | UserGroup | dict | str]',
     ) -> list[dict]:
-        """Build normalized member entries for tenant member operations.
+        """Build member payload entries for tenant member operations.
 
         Args:
             members (User | UserGroup | dict | str | list): Member or list
@@ -204,20 +200,40 @@ class Tenant(Entity, DeleteMixin, TenantMixin):
         Raises:
             ValueError: If a dict member has unsupported type.
         """
-        from mstrio.users_and_groups.user import User
-        from mstrio.users_and_groups.user_group import UserGroup
+        members_list = self._normalize_members_for_member_ops(members)
 
-        members_list = members if isinstance(members, list) else [members]
+        return self._build_member_entries(members_list)
+
+    def _normalize_members_for_member_ops(
+        self,
+        members: 'User | UserGroup | dict | str | list[User | UserGroup | dict | str]',
+    ) -> list:
+        """Normalize members for member operations.
+
+        Converts string IDs to dicts with `id` and `type` so the result can
+        be reused for both validation and payload building.
+        """
+        members_list = self._members_as_list(members)
 
         string_ids = [member for member in members_list if isinstance(member, str)]
+        if not string_ids:
+            return members_list
+
         fetched_info = self._fetch_members_info(string_ids)
+
+        return [
+            (fetched_info[member] if isinstance(member, str) else member)
+            for member in members_list
+        ]
+
+    def _build_member_entries(self, members_list: list) -> list[dict]:
+        """Build API payload entries from normalized members."""
+        from mstrio.users_and_groups import User, UserGroup
 
         supported_types = {obj_type.value for obj_type in self._MEMBER_TYPES}
         member_list = []
         for member in members_list:
-            if isinstance(member, str):
-                member_list.append(fetched_info[member])
-            elif isinstance(member, (User, UserGroup)):
+            if isinstance(member, (User, UserGroup)):
                 member_list.append(
                     self._make_member_entry(member.id, member._OBJECT_TYPE.value)
                 )
@@ -247,8 +263,8 @@ class Tenant(Entity, DeleteMixin, TenantMixin):
     def _fetch_members_info(self, object_ids: list[str]) -> dict[str, dict]:
         """Fetch object info for multiple IDs to retrieve their types.
 
-        Performs a single full_search restricted to User, UserGroup,
-        and Tenant types at the configuration domain level, resolving
+        Performs a single full_search restricted to User and UserGroup
+        at the configuration domain level, resolving
         all requested IDs in one call.
 
         Args:
@@ -256,7 +272,7 @@ class Tenant(Entity, DeleteMixin, TenantMixin):
 
         Returns:
             dict[str, dict]: Mapping of object ID to member info dict
-                with `memberId` and `memberTypeValue` keys.
+                with `id`, `type`, and `tenant_id` keys.
 
         Raises:
             ValueError: If any object is not found or its type cannot
@@ -309,7 +325,11 @@ class Tenant(Entity, DeleteMixin, TenantMixin):
                     "Resolved object ID '%s' to type '%s'.", object_id, obj_type
                 )
 
-            member_info[object_id] = self._make_member_entry(object_id, obj_type)
+            member_info[object_id] = {
+                'id': object_id,
+                'type': obj_type,
+                'tenant_id': hits[0].get('mdTenantId'),
+            }
 
         return member_info
 
@@ -394,12 +414,14 @@ class Tenant(Entity, DeleteMixin, TenantMixin):
                 - A string (object ID) - resolves type automatically
                 - A list of any combination of the above
         """
-        member_list = self._build_member_list(members)
+        normalized_members = self._normalize_members_for_member_ops(members)
+        member_list = self._build_member_entries(normalized_members)
         tenant_processors.add_tenant_members(
             self.connection,
             self.id,
             members=member_list,
         )
+        self._update_members_tenant_state(normalized_members, self.id)
 
         if config.verbose:
             logger.info(f"{len(member_list)} member(s) added to tenant '{self.id}'.")
@@ -414,16 +436,24 @@ class Tenant(Entity, DeleteMixin, TenantMixin):
             members (User | UserGroup | dict | str | list): Member or list
                 of members to remove. Each member can be:
                 - A User or UserGroup object
-                - A dict with 'id' and 'type' keys (User or UserGroup
+                - A dict with 'id', 'type' and 'subtype' keys (User or UserGroup
                     types only)
                 - A string (object ID) - resolves type automatically
                 - A list of any combination of the above
+
+        Raises:
+            ValueError: If provided object member(s) do not belong
+                to this tenant.
         """
-        member_list = self._build_member_list(members)
+        normalized_members = self._normalize_members_for_member_ops(members)
+        self._validate_members_belong_to_tenant(normalized_members)
+
+        member_list = self._build_member_entries(normalized_members)
         tenant_processors.remove_tenant_members(
             self.connection,
             members=member_list,
         )
+        self._update_members_tenant_state(normalized_members, None)
 
         if config.verbose:
             logger.info(
@@ -454,6 +484,7 @@ class Tenant(Entity, DeleteMixin, TenantMixin):
             self.id,
             members=member_list,
         )
+        self._update_members_tenant_state(members, self.id)
 
         if config.verbose:
             logger.info(f"{len(member_list)} object(s) assigned to tenant '{self.id}'.")
@@ -472,15 +503,23 @@ class Tenant(Entity, DeleteMixin, TenantMixin):
                 from the tenant. Each member can be:
                 - An Entity object
                     (Application, Project, Schedule, Content Group, etc.)
-                - A dict with 'id' and 'type' keys
+                - A dict with 'id', 'type', and 'tenant_id' keys;
+                    the `tenant_id` value must match this tenant's ID
                 - A list of any combination of the above
+
+        Raises:
+            ValueError: If an Entity member does not expose `tenant_id`,
+                if a dict member is missing the `tenant_id` key, or if
+                any member's `tenant_id` does not match this tenant.
         """
+        self._validate_objects_belong_to_tenant(members)
         member_list = self._build_object_list(members)
 
         tenant_processors.remove_tenant_members(
             self.connection,
             members=member_list,
         )
+        self._update_members_tenant_state(members, None)
 
         if config.verbose:
             logger.info(
@@ -503,7 +542,7 @@ class Tenant(Entity, DeleteMixin, TenantMixin):
             list[dict]: List of entries with `memberId` and
                 `memberTypeValue` keys.
         """
-        members_list = members if isinstance(members, list) else [members]
+        members_list = self._members_as_list(members)
 
         member_list = []
         for member in members_list:
@@ -517,6 +556,141 @@ class Tenant(Entity, DeleteMixin, TenantMixin):
                 )
 
         return member_list
+
+    @staticmethod
+    def _members_as_list(members) -> list:
+        """Return members argument normalized to a list."""
+        return members if isinstance(members, list) else [members]
+
+    def _validate_members_belong_to_tenant(self, members) -> None:
+        """Validate member ownership for remove_members().
+
+        - Object inputs: validates via in-memory `tenant_id`.
+        - Dict inputs for User/UserGroup: validates using `tenant_id`
+            when provided, otherwise via fetched object.
+        """
+        members_list = self._members_as_list(members)
+
+        object_members = [
+            member for member in members_list if isinstance(member, Entity)
+        ]
+        for member in object_members:
+            if getattr(member, 'tenant_id', None) != self.id:
+                raise ValueError(
+                    f"Cannot remove member '{member.id}' from tenant "
+                    f"'{self.id}': member belongs to tenant "
+                    f"'{getattr(member, 'tenant_id', None)}'."
+                )
+
+        from mstrio.users_and_groups.user import User
+        from mstrio.users_and_groups.user_group import UserGroup
+
+        dict_members = [member for member in members_list if isinstance(member, dict)]
+        for member in dict_members:
+            member_id = member.get('id')
+
+            try:
+                member_type = get_enum_val(member.get('type'), ObjectTypes)
+            except (TypeError, ValueError):
+                continue
+
+            if member_type != ObjectTypes.USER.value:
+                continue
+
+            try:
+                member_subtype = get_enum_val(member.get('subtype'), ObjectSubTypes)
+            except (TypeError, ValueError):
+                member_subtype = None
+
+            member_tenant_id = member.get('tenant_id')
+            if member_tenant_id is None:
+                if member_subtype == ObjectSubTypes.USER_GROUP.value:
+                    resolved_member = UserGroup(self.connection, id=member_id)
+                else:
+                    resolved_member = User(self.connection, id=member_id)
+                member_tenant_id = getattr(resolved_member, 'tenant_id', None)
+
+            if member_tenant_id != self.id:
+                raise ValueError(
+                    f"Cannot remove member '{member_id}' from tenant "
+                    f"'{self.id}': member belongs to tenant "
+                    f"'{member_tenant_id}'."
+                )
+
+    def _validate_objects_belong_to_tenant(self, members) -> None:
+        """Validate that objects belong to this tenant before unassigning.
+
+        Entity objects must expose a `tenant_id` attribute (via
+        `TenantMixin`) and its value must match this tenant's ID.
+        Dict members must contain a `tenant_id` key with a matching
+        value.
+
+        Args:
+            members: Object(s) to validate. Can be an Entity,
+                a dict, or a list of those.
+
+        Raises:
+            ValueError: If an Entity does not expose `tenant_id`, if a
+                dict member is missing the `tenant_id` key, or if any
+                member's `tenant_id` does not match this tenant.
+        """
+        members_list = self._members_as_list(members)
+        missing_tenant_id_msg = (
+            "Cannot unassign object '{member_id}': dict member must include "
+            "a 'tenant_id' key to verify tenant ownership."
+        )
+        wrong_tenant_msg = (
+            "Cannot unassign object '{member_id}' from tenant "
+            "'{tenant_id}': object belongs to tenant '{member_tenant_id}'."
+        )
+
+        for member in members_list:
+            if isinstance(member, Entity):
+                if not hasattr(member, 'tenant_id'):
+                    raise ValueError(
+                        f"Cannot unassign object '{member.id}': its type "
+                        f"does not expose a 'tenant_id' attribute required "
+                        f"to verify tenant ownership."
+                    )
+                if member.tenant_id != self.id:
+                    raise ValueError(
+                        wrong_tenant_msg.format(
+                            member_id=member.id,
+                            tenant_id=self.id,
+                            member_tenant_id=member.tenant_id,
+                        )
+                    )
+            elif isinstance(member, dict):
+                member_tenant_id = member.get('tenant_id')
+                if member_tenant_id is None:
+                    raise ValueError(
+                        missing_tenant_id_msg.format(
+                            member_id=member.get('id'),
+                        )
+                    )
+                if member_tenant_id != self.id:
+                    raise ValueError(
+                        wrong_tenant_msg.format(
+                            member_id=member.get('id'),
+                            tenant_id=self.id,
+                            member_tenant_id=member_tenant_id,
+                        )
+                    )
+
+    def _update_members_tenant_state(self, members, tenant_id: str | None) -> None:
+        """Update tenant-related local state on passed object members.
+
+        Updates only members that are Entity objects and expose tenant
+        attributes. Dict and string members are ignored.
+        """
+        tenant_name = self.name if tenant_id else None
+        for member in self._members_as_list(members):
+            if not isinstance(member, Entity):
+                continue
+            if hasattr(member, '_tenant_id'):
+                member._tenant_id = tenant_id
+            if hasattr(member, '_tenant_name'):
+                member._tenant_name = tenant_name
 
     def list_members(
         self,

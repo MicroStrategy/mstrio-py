@@ -46,6 +46,7 @@ class ContactDeliveryType(AutoName):
     SHAREPOINT = auto()
     S3 = auto()
     GOOGLEDRIVE = auto()
+    GCS = auto()
     UNSUPPORTED = auto()
 
 
@@ -126,7 +127,7 @@ class ContactAddress(Dictable):
 
         return f'ContactAddress({formatted_params})'
 
-    def to_dict(self, camel_case=True) -> dict:
+    def to_dict(self, camel_case=True, **_) -> dict:
         result = {
             'name': self.name,
             'id': self.id,

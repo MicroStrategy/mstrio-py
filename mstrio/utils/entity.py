@@ -40,7 +40,6 @@ from mstrio.utils.time_helper import (
 )
 from mstrio.utils.translation_mixin import TranslationMixin
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
-from mstrio.utils.wip import WipLevels, wip
 
 if TYPE_CHECKING:
     from mstrio.modeling import Prompt
@@ -522,7 +521,7 @@ class EntityBase(helper.Dictable):
         return body
 
     @classmethod
-    def _unwrap_attr(cls, response: dict) -> dict:
+    def _unwrap_attr(cls, response: dict) -> dict:  # NOSONAR
         """Unwrap nested REST attributes according to `cls._UNWRAP_ATTR`.
 
         Args:
@@ -628,12 +627,6 @@ class EntityBase(helper.Dictable):
             dict: A dictionary which keys are object's attribute names, and
                 which values are object's attribute values.
         """
-        # TODO remove it after tenant is out of wip
-        hardcoded_excluded_properties = ['tenant_id', 'tenant_name', 'tenant']
-        excluded_properties = list(
-            set((excluded_properties or []) + hardcoded_excluded_properties)
-        )
-
         if hasattr(self, "_API_GETTERS"):  # fetch attributes not loaded on init
             attr = [attr for attr in self._API_GETTERS.keys() if isinstance(attr, str)]
             for key in self._API_GETTERS.keys():
@@ -645,6 +638,7 @@ class EntityBase(helper.Dictable):
                     self.__class__, lambda x: isinstance(x, property)
                 )
             ]
+            excluded_properties = excluded_properties or []
             attr = [a for a in attr if a not in excluded_properties]
             attr = list(set(attr))
             for a in attr:
@@ -1355,7 +1349,7 @@ class Entity(
             else default_value
         )
         self._hidden = kwargs.get("hidden", default_value)
-        self._project_id = kwargs.get("project_id")
+        self._project_id = kwargs.get("project_id", default_value)
         self._comments = kwargs.get("comments", default_value)
         self._target_info = kwargs.get("target_info", default_value)
         self._acg = Rights(kwargs.get("acg")) if kwargs.get("acg") else default_value
@@ -1985,12 +1979,20 @@ class TenantMixin:
             super()._init_variables(default_value=default_value, **kwargs)
 
         tenant_obj = kwargs.get('tenant') or {}
-        self._tenant_id: str | None = kwargs.get(
-            'tenant_id', tenant_obj.get('tenant_id', default_value)
-        )
-        self._tenant_name: str | None = kwargs.get(
-            'tenant_name', tenant_obj.get('tenant_name', default_value)
-        )
+        tenant_id = kwargs.get('tenant_id')
+        if tenant_id is None:
+            tenant_id = tenant_obj.get('tenant_id')
+        if tenant_id is None:
+            tenant_id = tenant_obj.get('id', default_value)
+
+        tenant_name = kwargs.get('tenant_name')
+        if tenant_name is None:
+            tenant_name = tenant_obj.get('tenant_name')
+        if tenant_name is None:
+            tenant_name = tenant_obj.get('name', default_value)
+
+        self._tenant_id: str | None = tenant_id
+        self._tenant_name: str | None = tenant_name
 
     @property
     def tenant_id(self) -> str | None:
@@ -2001,17 +2003,8 @@ class TenantMixin:
     def tenant_name(self) -> str | None:
         """Get the name of the tenant to which this object belongs."""
         if self._tenant_name is None and isinstance(self._tenant_id, str):
-            try:
-                tenant = self.tenant
-                self._tenant_name = tenant.name if tenant is not None else None
-            except NotSupportedError:
-                # TODO this should prevent edge cases when there is tenant_id
-                # but no tenant_name before wip flag on tenant is taken off
-                logger.warning(
-                    "Could not fetch tenant name for tenant ID '%s'.",
-                    self._tenant_id,
-                    exc_info=True,
-                )
+            tenant = self.tenant
+            self._tenant_name = tenant.name if tenant is not None else None
         return self._tenant_name
 
     @property
@@ -2022,14 +2015,19 @@ class TenantMixin:
             Tenant | None: Tenant instance if object is assigned to a tenant,
                 None otherwise.
         """
-        if not isinstance(self._tenant_id, str):
+        if not isinstance(self._tenant_id, str) or self._tenant_id == '':
             return None
 
-        from mstrio.server.tenant import Tenant
+        try:
+            from mstrio.server.tenant import Tenant
 
-        return Tenant(self.connection, id=self._tenant_id)
+            with config.temp_verbose_disable():
+                return Tenant(self.connection, id=self._tenant_id)
+        except VersionException:
+            # Tenants were introduced on envs with version >= 11.6.0100
+            # We need to return None for backward compatibility
+            return None
 
-    @wip(target_release='11.6.5.101', level=WipLevels.ERROR)  # NOSONAR
     @method_version_handler('11.6.0100')
     def change_tenant(
         self,
@@ -2083,21 +2081,29 @@ class TenantMixin:
         if config.verbose:
             logger.info(f"Object '{self.name}' moved to tenant '{new_tenant_id}'.")
 
-    @wip(target_release='11.6.5.101', level=WipLevels.ERROR)  # NOSONAR
     @method_version_handler('11.6.0100')
     def remove_from_tenant(self) -> None:
         """Remove the object from its current tenant.
 
         If the object is not assigned to any tenant, this method does nothing.
+
+        Note:
+            If the object's tenant_id attribute is not populated (e.g., due to
+            construction from a partial dict or config.fetch_on_init being
+            disabled), this method will fetch the object's basic information
+            from the server to determine tenant assignment.
         """
 
+        # If tenant_id is not populated, try to fetch it
         if not self._tenant_id:
-            if config.verbose:
-                logger.info(f"Object '{self.name}' is not assigned to any tenant.")
-            # Do not return early. We still call `unassign_from_tenant()` to
-            # handle stale tenant assignments (for example, Event objects that
-            # can expose tenant info only through quicksearch).
-            self._tenant_id = "UNKNOWN"
+            if 'tenant_id' not in self._fetched_attributes:
+                self.fetch('tenant_id')
+            # After fetching, check again if object is assigned to tenant
+            if not self._tenant_id:
+                if config.verbose:
+                    msg = f"Object '{self.name}' is not assigned to any tenant."
+                    logger.info(msg)
+                return
 
         from mstrio.server.tenant import Tenant
 
@@ -2107,6 +2113,7 @@ class TenantMixin:
             {
                 'id': self.id,
                 'type': self._OBJECT_TYPE.value,
+                'tenant_id': self._tenant_id,
             }
         )
 

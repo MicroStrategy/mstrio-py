@@ -42,6 +42,7 @@ class TransmitterDeliveryType(AutoName):
     SHAREPOINT = auto()
     S3 = auto()
     GOOGLEDRIVE = auto()
+    GCS = auto()
     UNSUPPORTED = auto()
 
 

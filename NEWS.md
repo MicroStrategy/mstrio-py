@@ -1,5 +1,22 @@
 # Changelog
 
+## 11.6.5.101 - 2026/05/15
+
+### New features
+
+- added new `server.tenant` module with `Tenant` class and tenant management support; configuration-level objects (for example `User`, `Project` and `ContentGroup`) now expose tenant-related properties and operations
+- added classes: `BaselineTest` and `ComparisonTest` for Test Center test definitions, `Baseline` and `ComparisonTestResult` for respective test results and listing functions, and `TestCenterSettings` for settings, in new module `server.test_center`
+- extended `Environment.create_project()` to support creating both global PA projects (`platform_analytics=True`) and tenant PA projects (`platform_analytics=True` with `pa_tenant`), and added `Environment.list_pa_projects()` for listing PA projects with optional filters for global or tenant PA types
+- added `list_history_list_messages` and `delete_all_history_list_messages` methods in `mstrio.server.history_list` module as Functionality Preview
+
+### Minor changes
+
+- added support for `GCS` (_Google Cloud Service_) Device Type and Transmitter Delivery Type
+
+### Bug fixes
+
+- fixed issue with altering `Subscription` failing due to client version not supporting rich text
+
 ## 11.6.4.101 - 2026/04/17
 
 ### New features

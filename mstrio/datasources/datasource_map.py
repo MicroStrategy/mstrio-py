@@ -377,7 +377,7 @@ class DatasourceMap(EntityBase, DeleteMixin):
         data = {cls.__translate_names(key): val for key, val in source.items()}
         return super().from_dict(data, connection, to_snake_case)
 
-    def to_dict(self, camel_case=True):
+    def to_dict(self, camel_case=True):  # NOSONAR
         data = super().to_dict(camel_case=camel_case)
         return {self.__translate_names(key): val for key, val in data.items()}
 
@@ -433,7 +433,7 @@ class DatasourceMap(EntityBase, DeleteMixin):
 
     @staticmethod
     def _get_locale(connection: Connection, query: str):
-        locales_list = list_languages(connection=connection, base_language_lcid=0)
+        locales_list = list_languages(connection=connection, base_lang_lcid=0)
         for locale in locales_list:
             if query in [locale.id, locale.name, locale.abbreviation]:
                 return locale

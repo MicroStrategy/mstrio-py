@@ -1,5 +1,5 @@
 import json
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 from requests import Response
 
@@ -83,6 +83,7 @@ def create_project(
         Complete HTTP response object.
     """
     body = {'name': name, 'description': description}
+
     headers = {'X-MSTR-ProjectID': None}
 
     if async_request:
@@ -92,6 +93,35 @@ def create_project(
         endpoint='/api/v2/projects',
         headers=headers,
         json=body,
+    )
+
+
+@ErrorHandler(err_msg='Error setting project as Platform Analytics project.')
+def set_project_platform_analytics(
+    connection: 'Connection',
+    project_id: str,
+    platform_analytics_type: Literal['global', 'tenant'],
+    error_msg: str | None = None,
+) -> Response:
+    """Set an existing project as a Platform Analytics project.
+
+    Args:
+        connection (Connection): Strategy One REST API connection object
+        project_id (string): Project ID
+        platform_analytics_type (Literal['global', 'tenant']): Type of the
+            Platform Analytics project.
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object.
+    """
+    return connection.patch(
+        endpoint='/api/v2/projects/setPlatformAnalytics',
+        params={
+            'projectId': project_id,
+            'platformAnalyticsType': platform_analytics_type,
+        },
+        headers={'X-MSTR-ProjectID': None},
     )
 
 

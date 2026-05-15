@@ -147,6 +147,7 @@ class SubscriptionType(AutoName):
     SHAREPOINT = auto()
     S3 = auto()
     GOOGLEDRIVE = auto()
+    GCS = auto()
     LAST_ONE = auto()
     COUNT = auto()
     ALL = auto()
