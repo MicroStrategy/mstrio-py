@@ -30,7 +30,7 @@ PROJECT_NAME = $project_name  # Insert name of project here
 FOLDER_ID = $folder_id  # Insert folder ID here
 HIDDEN = $hidden == 'True' # Insert value for hidden attribute here
 
-conn = get_connection(workstationData, PROJECT_NAME)
+conn = get_connection(connectionData, PROJECT_NAME)
 
 # Example metric data.
 # Parts of this dictionary will be used in the later parts of this demo script
@@ -198,7 +198,9 @@ new_format = MetricFormat(
     ],
 )
 
-# Setting every formatting available in Workstation is possible through Python.
+# Setting every formatting available in Workstation is possible
+# through Python.
+#
 # Below you can see a snippet on how to change the currency symbol to Euro and
 # the currency symbol position to behind the number (10€).
 currency_symbol_format = FormatProperty(

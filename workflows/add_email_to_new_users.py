@@ -2,7 +2,7 @@
 which is enabled but doesn't have an email address. For each successfully added
 email address a message will be printed.
 
-1. Connect to the environment using data from workstation
+1. Connect to the environment using data from Workstation
 2. Get a list of all users that are enabled
 3. Add email address to every user which doesn't have one (it is created with username
    of the user and the domain provided in the function)
@@ -43,8 +43,8 @@ def add_email_to_new_users(
 
 
 # connect to environment without providing user credentials
-# variable `workstationData` is stored within Workstation
-conn = get_connection(workstationData, 'MicroStrategy Tutorial')
+# variable `connectionData` is stored within Workstation
+conn = get_connection(connectionData, 'MicroStrategy Tutorial')
 
 # execute adding email to new users
 # optionally, specify a domain - the default is 'domain.com'

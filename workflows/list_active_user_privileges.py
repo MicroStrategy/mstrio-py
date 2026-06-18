@@ -1,6 +1,6 @@
 """List user privileges for all active users.
 
-1. Connect to the environment using data from workstation
+1. Connect to the environment using data from Workstation
 2. Get all active users
 3. For each of retrieved users prepare dictionary with user's id, name,
    username and list of privileges and save it to table
@@ -48,8 +48,8 @@ def list_active_user_privileges(connection: "Connection") -> List[dict]:
 
 
 # connect to environment without providing user credentials
-# variable `workstationData` is stored within Workstation
-conn = get_connection(workstationData, 'MicroStrategy Tutorial')
+# variable `connectionData` is stored within Workstation
+conn = get_connection(connectionData, 'MicroStrategy Tutorial')
 
 # list privileges for all enabled users
 list_active_user_privileges(conn)

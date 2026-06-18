@@ -27,7 +27,7 @@ PROJECT_NAME = $project_name  # Insert project name here
 # Connection object automatically renews the connection or reconnects,
 # if session becomes inactive. Reconnection doesn't work if authenticated with
 # identity token.
-conn = get_connection(workstationData, project_name=PROJECT_NAME)
+conn = get_connection(connectionData, project_name=PROJECT_NAME)
 # The URL for the REST API server typically follows this format:
 # https://your-microstrategy-server.com/MicroStrategyLibrary/api
 

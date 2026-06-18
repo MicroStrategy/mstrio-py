@@ -25,7 +25,7 @@ FOLDER_QUERY_2 = $folder_query_2  # Root folder to search in (after update)
 
 
 # Connect to the Strategy One environment
-conn = get_connection(workstationData, project_name=PROJECT_NAME)
+conn = get_connection(connectionData, project_name=PROJECT_NAME)
 
 # List all Search Objects
 search_objects = list_search_objects(conn)

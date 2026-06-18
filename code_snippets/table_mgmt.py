@@ -23,7 +23,7 @@ from mstrio.modeling.schema.table import (
 PROJECT_ID = $project_id  # Project ID to connect to
 PROJECT_NAME = $project_name  # Project to connect to
 
-conn = get_connection(workstationData, project_name=PROJECT_NAME)
+conn = get_connection(connectionData, project_name=PROJECT_NAME)
 
 # Get a list of table prefixes
 table_prefixes = list_tables_prefixes(connection=conn)

@@ -13,7 +13,7 @@ SEARCH_PROJECT_ID1 = $search_project_id1
 SEARCH_PROJECT_ID2 = $search_project_id2
 
 # Connect to the Strategy One environment
-conn = get_connection(workstationData)
+conn = get_connection(connectionData)
 
 # There might be many cases where you have access to an ID of an object but not
 # to its type, project or projects (if any) where it is.

@@ -2,7 +2,7 @@
 Facilitate user management operations such as changing owner,
 Distinguished Name (DN) manipulation.
 
-1. Connect to the environment using data from the workstation
+1. Connect to the environment using data from the Workstation
 2. Get first user group object based on provided name ('Second Factor Exempt')
 3. Get second user group object based on provided name ('TransactionServer')
 4. Move users from the first user group to the second user group
@@ -16,8 +16,8 @@ from mstrio.users_and_groups.user import User, list_users
 from mstrio.users_and_groups.user_group import UserGroup
 
 # connect to environment without providing user credentials
-# variable `workstationData` is stored within Workstation
-conn = get_connection(workstationData, project_name='MicroStrategy Tutorial')
+# variable `connectionData` is stored within Workstation
+conn = get_connection(connectionData, project_name='MicroStrategy Tutorial')
 
 # Move users from one user group to another
 user_group_1 = UserGroup(conn, name='Second Factor Exempt')

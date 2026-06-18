@@ -41,7 +41,7 @@ from mstrio.modeling.schema.table import list_logical_tables, LogicalTable
 # Define a variable which can be later used in a script
 PROJECT_NAME = $project_name  # Insert project name here
 
-conn = get_connection(workstationData, PROJECT_NAME)
+conn = get_connection(connectionData, PROJECT_NAME)
 
 # Function list_logical_tables() might be useful to get table information
 # needed to create/alter an Attribute.

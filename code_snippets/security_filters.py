@@ -26,7 +26,7 @@ from mstrio.users_and_groups import list_user_groups, list_users
 # Define a variable which can be later used in a script
 PROJECT_NAME = $project_name  # Project to connect to
 
-conn = get_connection(workstationData, project_name=PROJECT_NAME)
+conn = get_connection(connectionData, project_name=PROJECT_NAME)
 
 # List all security filters
 security_filters = list_security_filters(conn)

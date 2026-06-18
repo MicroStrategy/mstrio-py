@@ -12,7 +12,7 @@ from mstrio.server import Project
 PROJECT_NAME = $project_name  # Insert name of project to interact with
 
 # get project with a given name and a connection
-conn = get_connection(workstationData)
+conn = get_connection(connectionData)
 project = Project(connection=conn, name=PROJECT_NAME)
 conn.select_project(project=project)
 

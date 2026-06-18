@@ -1,6 +1,6 @@
 """List names and IDs of empty user groups.
 
-1. Connect to the environment using data from workstation
+1. Connect to the environment using data from Workstation
 2. Get all user groups
 3. Filter out user groups that have no members
 4. Print names and ids of filtered user groups
@@ -26,8 +26,8 @@ def list_empty_user_groups(connection: "Connection") -> List["UserGroup"]:
 
 
 # connect to environment without providing user credentials
-# variable `workstationData` is stored within Workstation
-conn = get_connection(workstationData, 'MicroStrategy Tutorial')
+# variable `connectionData` is stored within Workstation
+conn = get_connection(connectionData, 'MicroStrategy Tutorial')
 
 # get empty user groups
 empty_user_groups = list_empty_user_groups(conn)

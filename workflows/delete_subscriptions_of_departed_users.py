@@ -1,7 +1,7 @@
 """Delete all subscription in all projects which owners are departed users.
 For which project message about successful (or not) deletion will be printed.
 
-1. Connect to the environment using data from workstation
+1. Connect to the environment using data from Workstation
 2. Get all projects that the authenticated user has access to
 3. Get all disabled users
 4. For each project for each user get the list of subscriptions and delete them
@@ -49,8 +49,8 @@ def delete_subscriptions_of_departed_users(connection: "Connection") -> None:
 
 
 # connect to environment without providing user credentials
-# variable `workstationData` is stored within Workstation
-conn = get_connection(workstationData, 'MicroStrategy Tutorial')
+# variable `connectionData` is stored within Workstation
+conn = get_connection(connectionData, 'MicroStrategy Tutorial')
 
 # execute deletion of addresses from departed users
 delete_subscriptions_of_departed_users(conn)

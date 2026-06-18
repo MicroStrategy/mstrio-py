@@ -17,7 +17,7 @@ from mstrio.connection import get_connection
 # Define a variable which can be later used in a script
 PROJECT_NAME = $project_name  # Insert project name here
 
-conn = get_connection(workstationData, project_name=PROJECT_NAME)
+conn = get_connection(connectionData, project_name=PROJECT_NAME)
 
 # Define variables which can be later used in a script
 CUBE_ID = $cube_id

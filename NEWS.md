@@ -1,5 +1,28 @@
 # Changelog
 
+## 11.6.6.101 - 2026/06/18
+
+### New features
+
+- added `documentation` module with support for project documentation:
+  - `DocumentationDefinition` class with `create`, `alter`, `execute`, and `delete` operations and listing via   `list_documentation_definitions`
+  - `Documentation` class with support for monitoring execution (`get_status`, `wait_for_execution_finish`), listing documentation jobs (`list_documentations`), deleting jobs, and exporting results to files (`export_to_file`) in `CSV`, `JSON` or `EXCEL` formats
+  - `get_documentations_statuses` helper for bulk status retrieval
+  - support for listing documented objects and resources (`Documentation.list_objects`, `Documentation.get_resource`) with dedicated enums for object and property selection (for example `DocObjectType`, `DocFolderType`, `DocApplicationType`, `DocSchemaType`, `DocMdxCubeType`, `DocBasicProperty`) and definition sorting (`DocDefinitionSortBy`)
+- added methods `create` and `alter` to `BaselineTest` and `ComparisonTest` classes
+- added property `object_results` to `Baseline` and `ComparisonTestResult` classes
+- added method `bulk_delete` to `BaselineTest`, `Baseline`, `ComparisonTest` and `ComparisonTestResult` classes
+- added support for running Comparison Tests against target on separate environments
+
+### Minor changes
+
+- added argument `keep_id` to `Project.duplicate_to_other_environment` method
+
+### Bug fixes
+
+- fixed logic for gathering `Licence` compliance: previously it raised an unexpected error on multi-type licence, now it works and shows a proper warning instead
+- fixed attribute form removal via `Attribute.remove_form` failing due to unset `Attribute.sorts`
+
 ## 11.6.5.101 - 2026/05/15
 
 ### New features

@@ -2,7 +2,7 @@
 Export selected information about users and user groups to a CSV file.
 
 1. Provide name of the project to connect to.
-2. Connect to the environment using data from workstation.
+2. Connect to the environment using data from Workstation.
 3. Define filename where exported data will be saved.
 4. Open the file and write the header row.
 5. List all user groups and write their information to the file.
@@ -19,7 +19,7 @@ import csv
 # Define project to connect with
 PROJECT_NAME = 'MicroStrategy Tutorial'  # Insert name of project here
 
-conn = get_connection(workstationData, PROJECT_NAME)
+conn = get_connection(connectionData, PROJECT_NAME)
 
 # Define filename where exported data will be saved. In Workstation you need to
 # provide absolute path to the file remembering about double backslashes on WIN

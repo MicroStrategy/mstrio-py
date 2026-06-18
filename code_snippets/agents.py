@@ -9,7 +9,7 @@ from mstrio.project_objects.agents import Agent, list_agents
 PROJECT_NAME = $project_name  # Insert name of project here
 
 # Get connection to the environment
-conn = get_connection(workstationData, project_name=PROJECT_NAME)
+conn = get_connection(connectionData, project_name=PROJECT_NAME)
 
 # List all agents
 agents = list_agents(connection=conn)

@@ -3,7 +3,7 @@ Import user or user group from csv.
 Automate administrative tasks such as resetting password, assigning security
 filters.
 
-1. Connect to the environment using data from workstation
+1. Connect to the environment using data from Workstation
 2. Create users from CSV file
 3. Get first user group from the list of user groups
 4. Set view access to the user group for all users created from CSV file
@@ -22,8 +22,8 @@ from mstrio.users_and_groups.user import User, create_users_from_csv
 from mstrio.users_and_groups.user_group import UserGroup, list_user_groups
 
 # connect to environment without providing user credentials
-# variable `workstationData` is stored within Workstation
-conn = get_connection(workstationData, project_name='MicroStrategy Tutorial')
+# variable `connectionData` is stored within Workstation
+conn = get_connection(connectionData, project_name='MicroStrategy Tutorial')
 
 # set correct user group access in tree view for user groups
 # assumptions about CSV - csv is created from User.to_csv_from_list with at least

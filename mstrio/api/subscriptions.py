@@ -53,7 +53,7 @@ def list_subscriptions(
     response = connection.get(
         endpoint='/api/subscriptions',
         params=params,
-        headers={'X-MSTR-ProjectID': project_id},
+        headers={'X-MSTR-ProjectID': project_id, 'X-MSTR-ClientVersion': '25.06'},
     )
 
     return response
@@ -91,7 +91,7 @@ def list_subscriptions_async(
         params['lastRun'] = last_run
 
     endpoint = '/api/subscriptions'
-    headers = {'X-MSTR-ProjectID': project_id}
+    headers = {'X-MSTR-ProjectID': project_id, 'X-MSTR-ClientVersion': '25.06'}
 
     return future_session.get(endpoint=endpoint, headers=headers, params=params)
 
@@ -186,7 +186,7 @@ def get_subscription(
     return connection.get(
         endpoint=f'/api/subscriptions/{subscription_id}',
         params={'fields': fields},
-        headers={'X-MSTR-ProjectID': project_id},
+        headers={'X-MSTR-ProjectID': project_id, 'X-MSTR-ClientVersion': '25.06'},
     )
 
 

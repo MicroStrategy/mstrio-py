@@ -14,7 +14,7 @@ from mstrio.server.setting_types import FailedEmailDelivery
 # Define a variable which can be later used in a script
 PROJECT_NAME = $project_name  # Insert name of project to interact with
 
-conn = get_connection(workstationData, project_name=PROJECT_NAME)
+conn = get_connection(connectionData, project_name=PROJECT_NAME)
 env = Environment(connection=conn)
 
 # get list of all projects or those just loaded
@@ -85,7 +85,7 @@ env.create_project(
 )
 # create a tenant Platform Analytics project;
 # Define a variable for tenant object, tenant ID or name
-TENANT_ID = $tenant_id 
+TENANT_ID = $tenant_id
 env.create_project(
     name=PROJECT_NAME,
     description=PROJECT_DESCRIPTION,

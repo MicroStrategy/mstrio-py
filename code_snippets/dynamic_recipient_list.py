@@ -1,4 +1,4 @@
-"""This is the demo script to show how to manage dynamic recipient lists. 
+"""This is the demo script to show how to manage dynamic recipient lists.
 This script will not work without replacing parameters with real values.
 Its basic goal is to present what can be done with this module and to ease
 its usage.
@@ -10,7 +10,7 @@ from mstrio.distribution_services.subscription import DynamicRecipientList, list
 # Define a variable which can be later used in a script
 PROJECT_NAME = $project_name  # Insert name of project here
 
-conn = get_connection(workstationData, PROJECT_NAME)
+conn = get_connection(connectionData, PROJECT_NAME)
 
 # Define variables which can be later used in a script
 # DRL stands for Dynamic Recipient List
@@ -20,14 +20,14 @@ ATTRIBUTE_ID = $attribute_id
 ATTRIBUTE_FORM_ID = $attribute_form_id
 DESCRIPTION = $description
 EXAMPLE_MAPPING_FIELD = DynamicRecipientList.MappingField(
-    attribute_id=ATTRIBUTE_ID, 
+    attribute_id=ATTRIBUTE_ID,
     attribute_form_id=ATTRIBUTE_FORM_ID)
 
 # Create a DRL
 drl3 = DynamicRecipientList.create(connection=conn, name = DRL_NAME, description=DESCRIPTION,
     source_report_id=SOURCE_REPORT_ID,
-    physical_address=EXAMPLE_MAPPING_FIELD, 
-    linked_user=EXAMPLE_MAPPING_FIELD, 
+    physical_address=EXAMPLE_MAPPING_FIELD,
+    linked_user=EXAMPLE_MAPPING_FIELD,
     device=EXAMPLE_MAPPING_FIELD)
 
 # List dynamic recipient lists with different conditions
@@ -52,7 +52,7 @@ print(drl.list_properties())
 drl2.alter(name = DRL_NAME, description=DESCRIPTION,
     source_report_id=SOURCE_REPORT_ID,
     physical_address=EXAMPLE_MAPPING_FIELD,
-    linked_user=EXAMPLE_MAPPING_FIELD, 
+    linked_user=EXAMPLE_MAPPING_FIELD,
     device=EXAMPLE_MAPPING_FIELD)
 
 # Delete a DRL without prompt

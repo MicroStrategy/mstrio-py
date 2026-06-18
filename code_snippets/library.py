@@ -11,9 +11,9 @@ from mstrio.project_objects.dashboard import Dashboard
 from mstrio.project_objects.library import Library
 
 
-# Create connection based on workstation data
+# Create connection based on connection data
 PROJECT_NAME = $project_name  # Project to connect to
-conn = get_connection(workstationData, project_name=PROJECT_NAME)
+conn = get_connection(connectionData, project_name=PROJECT_NAME)
 
 DASHBOARD_ID = $dashboard_id  # Insert ID of Dashboard on which you want to perform actions
 

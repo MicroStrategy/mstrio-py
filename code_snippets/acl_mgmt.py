@@ -30,8 +30,8 @@ SCHEDULE_ID = $schedule_id
 SCHEDULE_NAME = $schedule_name
 
 
-# Create connection based on workstation data
-conn = get_connection(workstationData, project_name=PROJECT_NAME)
+# Create connection based on connection data
+conn = get_connection(connectionData, project_name=PROJECT_NAME)
 
 # First example - attribute
 # Get specific object attribute by id

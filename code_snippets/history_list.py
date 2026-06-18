@@ -15,7 +15,7 @@ from mstrio.server.history_list import (
 )
 
 # Create connection to the environment
-conn = get_connection(workstationData)
+conn = get_connection(connectionData)
 
 # list all history list messages for all users as dictionaries of data
 messages = list_history_list_messages(conn)

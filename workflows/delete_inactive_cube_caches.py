@@ -1,7 +1,7 @@
 """Delete inactive caches which were not used for 30 days. IDs of deleted caches
 will be printed.
 
-1. Connect to the environment using data from workstation
+1. Connect to the environment using data from Workstation
 2. Validate if the project is selected
 3. List all cube caches for the provided nodes (if nodes are not specified, then
    all nodes' names are loaded from the cluster)
@@ -58,8 +58,8 @@ def delete_inactive_caches(
 
 
 # connect to environment without providing user credentials
-# variable `workstationData` is stored within Workstation
-conn = get_connection(workstationData, 'MicroStrategy Tutorial')
+# variable `connectionData` is stored within Workstation
+conn = get_connection(connectionData, 'MicroStrategy Tutorial')
 
 # execute deletion of inactive cube caches
 deleted_caches = delete_inactive_caches(conn)

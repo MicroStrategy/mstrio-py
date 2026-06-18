@@ -642,39 +642,45 @@ class License(Dictable):
         resp = camel_to_snake(
             license_api.get_compliance_check(connection=self._connection).json()
         )
+
         self._compliance_time = resp.get('compliance_time')
         self._compliance_type = resp.get('compliance_type')
         self._in_compliance = resp.get('in_compliance')
+
         if self._compliance_time:
             self._compliance_time = datetime.strptime(
                 self._compliance_time, '%Y-%m-%dT%H:%M:%S.%fZ'
             ).strftime(WS_TIME_FORMAT)
-        for elem in resp.get('compliance_result', []):
-            product = list(
-                filter(
-                    lambda x, current_elem=elem: x.id == current_elem.get('type'),
-                    self.products,
-                )
-            )
-            for found_product in product:
+
+        for elem in resp.get('compliance_result') or []:
+            if not isinstance(elem, dict) or elem.get('type') is None:
+                continue
+
+            products = [p for p in self.products if p.id == elem.get('type')]
+
+            for found_product in products:
                 found_product.in_compliance = elem.get('inCompliance')
                 found_product.license_in_use = elem.get('currentUsage')
+
         if (
             self._compliance_type == 0
             and self._compliance_time is None
-            and self._in_compliance is False
+            and self._in_compliance is not True
         ):
             logger.warning(
                 'Compliance check is unavailable when license key contains '
                 'mixed license types for several products.'
             )
+
         if config.verbose:
             logger.info("Compliance check results fetched successfully.")
 
     def get_compliance_check_status(self) -> None:
         """Get the compliance check status."""
         resp = license_api.get_compliance_check_status(connection=self._connection)
-        self._compliance_running = resp.json().get('jobRunning')
+        self._compliance_running = (
+            jsn.get('jobRunning') if isinstance(jsn := resp.json(), dict) else None
+        )
 
     def run_and_get_compliance_check(
         self, timeout: int = 30, retry_interval: int = 1

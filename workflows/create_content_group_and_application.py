@@ -4,7 +4,7 @@ from mstrio.project_objects.applications import Application
 from mstrio.project_objects.dashboard import Dashboard
 from mstrio.users_and_groups import User, UserGroup
 
-conn = get_connection(workstationData, 'MicroStrategy Tutorial')
+conn = get_connection(connectionData, 'MicroStrategy Tutorial')
 
 # Create a Content Group
 cg = ContentGroup.create(

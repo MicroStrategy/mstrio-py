@@ -1,6 +1,6 @@
 """List all the columns for all available tables
 
-1. Connect to the environment using data from workstation
+1. Connect to the environment using data from Workstation
 2a. This path is executed when the table is specified in argument of function
 3a. Get whole representation of table based on its id
 4a. Unpack the response and for the given table get all columns in a specified
@@ -11,6 +11,7 @@
 5b. Unpack the response and for each table return all columns in a specified
     format with subtype, object id and name
 """
+
 from typing import Optional, Union
 
 from mstrio.api import tables
@@ -72,8 +73,8 @@ def list_table_columns(
 
 
 # connect to environment without providing user credentials
-# variable `workstationData` is stored within Workstation
-conn = get_connection(workstationData, 'MicroStrategy Tutorial')
+# variable `connectionData` is stored within Workstation
+conn = get_connection(connectionData, 'MicroStrategy Tutorial')
 
 # list all the columns for all available tables
 list_table_columns(conn)

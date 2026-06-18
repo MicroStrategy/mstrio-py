@@ -13,8 +13,8 @@ from mstrio.server import Language
 # Define a variable which can be later used in a script
 PROJECT_NAME = $project_name  # Project to connect to
 
-# Create connection based on workstation data
-CONN = get_connection(workstationData, project_name=PROJECT_NAME)
+# Create connection based on connection data
+CONN = get_connection(connectionData, project_name=PROJECT_NAME)
 
 # Define variables which can be later used in a script
 METRIC_ID = $metric_id

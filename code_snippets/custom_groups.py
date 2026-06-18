@@ -31,7 +31,7 @@ QUALIFICATION_EXPRESSION_STRING = $qualification_expr_string  # Qualification ex
 ELEMENT_NAME_TO_DELETE = $element_name_to_delete  # Name of the element to delete from the Custom Group
 
 # Connect to the Strategy One environment
-conn = get_connection(workstationData, project_name="MicroStrategy Tutorial")
+conn = get_connection(connectionData, project_name="MicroStrategy Tutorial")
 
 # List Custom Groups
 listed = list_custom_groups(connection=conn)

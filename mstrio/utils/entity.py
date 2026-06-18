@@ -1600,7 +1600,7 @@ class DeleteMixin:
 
     _DELETE_CONFIRM_MSG: str | None = None
     _DELETE_SUCCESS_MSG: str | None = None
-    _DELETE_PROMPT_ANSWER: str = 'Y'
+    _DELETE_PROMPT_ANSWER: str = "Y"
 
     def delete(
         self, force: bool = False, journal_comment: str | None = None, **kwargs
@@ -1618,39 +1618,37 @@ class DeleteMixin:
         Returns:
             True on success. False otherwise.
         """
-        object_name = self.__class__.__name__
 
-        user_input = 'N'
+        object_name = self.__class__.__name__
         if not force:
             message = self._DELETE_CONFIRM_MSG or (
                 f"Are you sure you want to delete {object_name} "
                 f"'{self.name}' with ID: {self._id}? [Y/N]: "
             )
-            user_input = input(message) or 'N'
+            user_input = input(message)
+            if user_input != self._DELETE_PROMPT_ANSWER:
+                return False
 
-        if force or user_input == self._DELETE_PROMPT_ANSWER:
-            param_value_dict = {
-                **auto_match_args_entity(self._API_DELETE, self),
-                **kwargs,
-                'journal_comment': process_delete_change_journal_comment(
-                    self.connection,
-                    self._API_DEL_JOURNAL_MIN_VER,
-                    journal_comment,
-                ),
-            }
-            param_value_dict = delete_none_values(param_value_dict, recursion=True)
-            response = self._API_DELETE(**param_value_dict)
+        param_value_dict = {
+            **auto_match_args_entity(self._API_DELETE, self),
+            **kwargs,
+            "journal_comment": process_delete_change_journal_comment(
+                self.connection,
+                self._API_DEL_JOURNAL_MIN_VER,
+                journal_comment,
+            ),
+        }
+        param_value_dict = delete_none_values(param_value_dict, recursion=True)
+        response = self._API_DELETE(**param_value_dict)
 
-            if response.status_code == 204 and config.verbose:
-                msg = (
-                    self._DELETE_SUCCESS_MSG
-                    or f"Successfully deleted {object_name} with ID: '{self._id}'."
-                )
-                logger.info(msg)
+        if response.status_code == 204 and config.verbose:
+            msg = (
+                self._DELETE_SUCCESS_MSG
+                or f"Successfully deleted {object_name} with ID: '{self._id}'."
+            )
+            logger.info(msg)
 
-            return response.ok
-
-        return False
+        return response.ok
 
 
 class CertifyMixin:
@@ -1959,6 +1957,7 @@ class TenantMixin:
             'tenant_name': 'tenant_name',
         }
     }
+    _TENANT_ASSIGNMENT_READ_ONLY = False
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
@@ -2046,7 +2045,14 @@ class TenantMixin:
         Raises:
             ValueError: If tenant cannot be determined from the provided
                 parameters.
+            NotSupportedError: If object has read-only tenant assignment.
         """
+        if self._TENANT_ASSIGNMENT_READ_ONLY:
+            msg = (
+                f"Changing tenant assignment for {self.__class__.__name__} "
+                "is not supported."
+            )
+            raise NotSupportedError(msg)
 
         from mstrio.utils.resolvers import get_tenant_id_from_params_set
 
@@ -2092,7 +2098,13 @@ class TenantMixin:
             construction from a partial dict or config.fetch_on_init being
             disabled), this method will fetch the object's basic information
             from the server to determine tenant assignment.
+
+        Raises:
+            NotSupportedError: If object has read-only tenant assignment.
         """
+        if self._TENANT_ASSIGNMENT_READ_ONLY:
+            msg = f"Removing {self.__class__.__name__} from tenant is not supported."
+            raise NotSupportedError(msg)
 
         # If tenant_id is not populated, try to fetch it
         if not self._tenant_id:

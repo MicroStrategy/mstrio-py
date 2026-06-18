@@ -2,7 +2,7 @@
 either name or id of user group. Without any changes this script will be
 executed for user group 'System Administrators'.
 
-1. Connect to the environment using data from workstation
+1. Connect to the environment using data from Workstation
 2. Get user group object based on provided name or id (in this case name of user
    group is 'System Administrators')
 3. Get list of all members of user group
@@ -75,8 +75,8 @@ def list_security_roles_per_user(
 
 
 # connect to environment without providing user credentials
-# variable `workstationData` is stored within Workstation
-conn = get_connection(workstationData, 'MicroStrategy Tutorial')
+# variable `connectionData` is stored within Workstation
+conn = get_connection(connectionData, 'MicroStrategy Tutorial')
 
 # list security roles per all users in user group 'System Administrators'
 # change name of user group if needed

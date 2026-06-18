@@ -9,7 +9,7 @@ from mstrio.project_objects.applications import Application, list_applications
 # Define a variable which can be later used in a script
 PROJECT_ID = $project_id  # Insert name of project here
 
-conn = get_connection(workstationData, project_id=PROJECT_ID)
+conn = get_connection(connectionData, project_id=PROJECT_ID)
 
 
 # Define variables which can be later used in a script

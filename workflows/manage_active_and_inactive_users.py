@@ -3,7 +3,7 @@ Manage active and inactive users.
 Perform administrative tasks such as setting default language, listing
 subscriptions.
 
-1. Connect to environment using data from workstation
+1. Connect to environment using data from Workstation
 2. Get language object based on provided id
 3. For each active user set up language which was retrieved in step 2
    as the default one
@@ -21,8 +21,8 @@ from mstrio.users_and_groups.user import list_users
 from mstrio.connection import get_connection
 
 # connect to environment without providing user credentials
-# variable `workstationData` is stored within Workstation
-conn = get_connection(workstationData, project_name='MicroStrategy Tutorial')
+# variable `connectionData` is stored within Workstation
+conn = get_connection(connectionData, project_name='MicroStrategy Tutorial')
 
 ALTERED_LANGUAGE = Language(conn, id='000004124F95EF3956E52781700C1E7A')
 

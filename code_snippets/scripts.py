@@ -35,8 +35,8 @@ SCRIPT_ID = $script_id  # Insert ID of Script here
 RUNTIME_ID = $runtime_id  # Insert ID of runtime here
 FOLDER_ID = $folder_id  # Insert folder ID here
 
-# Create connection based on workstation data
-conn = get_connection(workstationData, project_name=PROJECT_NAME)
+# Create connection based on connection data
+conn = get_connection(connectionData, project_name=PROJECT_NAME)
 
 # --- Code Execution ---
 # Create a Code instance from a string

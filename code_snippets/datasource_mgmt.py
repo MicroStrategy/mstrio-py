@@ -30,7 +30,7 @@ from mstrio.server import list_languages, Language
 PROJECT_ID = $project_id  # Project ID to connect to
 PROJECT_NAME = $project_name  # Insert project name to connect to
 
-conn = get_connection(workstationData, project_name=PROJECT_NAME)
+conn = get_connection(connectionData, project_name=PROJECT_NAME)
 
 # Manage datasource logins
 # Get a list of datasource logins

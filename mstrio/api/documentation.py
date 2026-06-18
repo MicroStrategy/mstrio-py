@@ -20,6 +20,7 @@ def get_documentation_list(
     status: str | None = None,
     date_created: str | None = None,
     size: str | None = None,
+    fields: str | None = None,
     offset: int | None = None,
     limit: int | None = None,
     error_msg: str | None = None,
@@ -50,6 +51,7 @@ def get_documentation_list(
             operators: 'be:' (between), 'gt:' (greater than),
             'lt:' (less than), 'eq:' (equal). Example: "lt:2000" or
             "be:1000,3333"
+        fields (str, optional): Comma-separated list of fields to return.
         offset (int, optional): Pagination offset
         limit (int, optional): Pagination limit
         error_msg (str, optional): Custom Error Message for Error Handling
@@ -69,6 +71,7 @@ def get_documentation_list(
             'status': status,
             'dateCreated': date_created,
             'size': size,
+            'fields': fields,
             'offset': offset,
             'limit': limit,
         },
@@ -100,31 +103,31 @@ def create_documentation(
     )
 
 
-@ErrorHandler(err_msg="Error deleting documentation with ID: {documentation_id}.")
+@ErrorHandler(err_msg="Error deleting documentation with ID: {id}.")
 def delete_documentation(
     connection: "Connection",
-    documentation_id: str,
+    id: str,
     error_msg: str | None = None,
 ) -> 'Response':
     """Delete documentation by documentation ID.
 
     Args:
         connection: Strategy One REST API connection object
-        documentation_id (str): Documentation ID
+        id (str): Documentation ID
         error_msg (str, optional): Custom Error Message for Error Handling
 
     Returns:
         Complete HTTP response object. Expected status is 204.
     """
     return connection.delete(
-        endpoint=f"/api/documentation/{documentation_id}",
+        endpoint=f"/api/documentation/{id}",
     )
 
 
-@ErrorHandler(err_msg="Error updating documentation with ID: {documentation_id}.")
+@ErrorHandler(err_msg="Error updating documentation with ID: {id}.")
 def update_documentation(
     connection: "Connection",
-    documentation_id: str,
+    id: str,
     body: dict,
     error_msg: str | None = None,
 ) -> 'Response':
@@ -132,7 +135,7 @@ def update_documentation(
 
     Args:
         connection: Strategy One REST API connection object
-        documentation_id (str): Documentation ID
+        id (str): Documentation ID
         body (dict): Dictionary containing documentation updates.
         error_msg (str, optional): Custom Error Message for Error Handling
 
@@ -140,7 +143,7 @@ def update_documentation(
         Complete HTTP response object. Expected status is 200.
     """
     return connection.patch(
-        endpoint=f"/api/documentation/{documentation_id}",
+        endpoint=f"/api/documentation/{id}",
         json=body,
     )
 
@@ -148,30 +151,33 @@ def update_documentation(
 @ErrorHandler(err_msg="Error getting resource from documentation.")
 def get_documentation_resource(
     connection: "Connection",
-    documentation_id: str,
+    id: str,
     resource_id: str,
+    fields: str | None = None,
     error_msg: str | None = None,
 ) -> 'Response':
     """Get resource file in documentation by resource ID.
 
     Args:
         connection: Strategy One REST API connection object
-        documentation_id (str): Documentation ID
+        id (str): Documentation ID
         resource_id (str): Resource ID
+        fields (str, optional): Comma-separated list of fields to return
         error_msg (str, optional): Custom Error Message for Error Handling
 
     Returns:
         Complete HTTP response object. Expected status is 200.
     """
     return connection.get(
-        endpoint=f"/api/documentation/{documentation_id}/{resource_id}",
+        endpoint=f"/api/documentation/{id}/{resource_id}",
+        params={'fields': fields},
     )
 
 
 @ErrorHandler(err_msg="Error exporting documentation.")
 def export_documentation(
     connection: "Connection",
-    documentation_id: str,
+    id: str,
     export_format: str | None = None,
     error_msg: str | None = None,
 ) -> 'Response':
@@ -181,35 +187,37 @@ def export_documentation(
 
     Args:
         connection: Strategy One REST API connection object
-        documentation_id (str): Documentation ID
-        export_format (str, optional): Export format for the documentation file
+        id (str): Documentation ID
+        export_format (str, optional): Export format for the
+            documentation file. Supported values: csv, json, excel
         error_msg (str, optional): Custom Error Message for Error Handling
 
     Returns:
         Complete HTTP response object. Expected status is 200.
     """
     return connection.get(
-        endpoint=f"/api/documentation/{documentation_id}/export",
-        params={"format": export_format},
+        endpoint=f"/api/documentation/{id}/export",
+        params={"exportType": export_format},
     )
 
 
 @ErrorHandler(err_msg="Error getting documentation objects.")
 def get_documentation_objects(
     connection: "Connection",
-    documentation_id: str,
+    id: str,
     documentation_object_name: str | None = None,
     object_type: str | None = None,
     sort_by: str | None = None,
     offset: int | None = None,
     limit: int | None = None,
+    fields: str | None = None,
     error_msg: str | None = None,
 ) -> 'Response':
     """Get documentation objects.
 
     Args:
         connection: Strategy One REST API connection object
-        documentation_id (str): Documentation ID
+        id (str): Documentation ID
         documentation_object_name (str, optional): Documentation object
             name filter
         object_type (str, optional): Object type filter. Available values:
@@ -226,19 +234,21 @@ def get_documentation_objects(
             Example: "+name,-size"
         offset (int, optional): Pagination offset
         limit (int, optional): Pagination limit
+        fields (str, optional): Comma-separated list of fields to return
         error_msg (str, optional): Custom Error Message for Error Handling
 
     Returns:
         Complete HTTP response object. Expected status is 200.
     """
     return connection.get(
-        endpoint=f"/api/documentation/{documentation_id}/objects",
+        endpoint=f"/api/documentation/{id}/objects",
         params={
             'documentationObjectName': documentation_object_name,
             'objectType': object_type,
             'sortBy': sort_by,
             'offset': offset,
             'limit': limit,
+            'fields': fields,
         },
     )
 

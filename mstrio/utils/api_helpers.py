@@ -243,3 +243,40 @@ def add_comment_to_dict(
     if journal_comment:
         body.update({'userComments': journal_comment})
     return body
+
+
+def add_property_to_patch_operations(
+    body: dict | None,
+    property_name: str,
+    property_value: Any,
+    overwrite: bool = True,
+) -> dict:
+    """Add a property to each PATCH operation in request body.
+
+    Args:
+        body (dict | None): PATCH request body with optional
+            `operationList` key.
+        property_name (str): Name of the property to set for every
+            operation in `operationList`.
+        property_value (Any): Value assigned to `property_name`.
+        overwrite (bool, optional): If `True`, replace existing values.
+            If `False`, keep existing values. Defaults to True.
+
+    Returns:
+        dict: Updated body. Returns empty dict when `body` is None.
+    """
+    if body is None:
+        return {}
+
+    operation_list = body.get('operationList')
+    if not isinstance(operation_list, list):
+        return body
+
+    for operation in operation_list:
+        if not isinstance(operation, dict):
+            continue
+
+        if overwrite or property_name not in operation:
+            operation[property_name] = property_value
+
+    return body

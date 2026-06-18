@@ -110,7 +110,7 @@ def get_documentation_definition_list(
     name: str | None = None,
     sort_by: str | None = None,
     include_embedded: bool | None = None,
-    connected_project_id: list[str] | None = None,
+    tenant_id: str | None = None,
     owner_id: str | None = None,
     project_id: str | None = None,
     date_created: str | None = None,
@@ -127,8 +127,7 @@ def get_documentation_definition_list(
         name (str, optional): Documentation definition name
         sort_by (str, optional): Sort by field with direction
         include_embedded (bool, optional): Include embedded details in response
-        connected_project_id (list[str], optional): List of connected
-            project IDs
+        tenant_id (str, optional): Tenant ID
         owner_id (str, optional): Comma-separated list of owner IDs
         project_id (str, optional): Comma-separated list of project IDs
         date_created (str, optional): Date of creation filter expression
@@ -159,7 +158,7 @@ def get_documentation_definition_list(
             'documentationDefinitionName': name,
             'sortBy': sort_by,
             'includeEmbedded': include_embedded,
-            'connectedProjectId': connected_project_id,
+            'tenantId': tenant_id,
             'ownerId': owner_id,
             'projectId': project_id,
             'dateCreated': date_created,

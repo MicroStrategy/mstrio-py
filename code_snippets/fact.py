@@ -20,7 +20,7 @@ from mstrio.modeling.schema import SchemaManagement, SchemaObjectReference, Sche
 # Define a variable which can be later used in a script
 PROJECT_NAME = $project_name  # Insert name of project here
 
-conn: Connection = get_connection(workstationData, PROJECT_NAME)
+conn: Connection = get_connection(connectionData, PROJECT_NAME)
 
 # Define a variable which can be later used in a script
 FOLDER_ID = $folder_id  # Insert folder ID here

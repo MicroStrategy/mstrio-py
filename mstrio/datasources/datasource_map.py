@@ -100,8 +100,8 @@ class DatasourceMap(EntityBase, DeleteMixin):
         user: The mapped User or UserGroup
         login: The mapped Datasource Login
         locale: The mapping's locale. When empty, it's equivalent to 'default'
-            in Workstation and means that default locale for the environment
-            will be used.
+            in Workstation and means that default locale for the
+            environment will be used.
     """
 
     _API_GETTERS: dict[str | tuple, Callable] = {

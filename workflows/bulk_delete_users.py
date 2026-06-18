@@ -10,10 +10,9 @@ from mstrio.object_management.object import bulk_delete_objects
 from mstrio.types import ObjectTypes
 from mstrio.users_and_groups.user import list_users
 
-
 PROJECT_NAME = 'MicroStrategy Tutorial'  # Insert name of project here
 
-conn = get_connection(workstationData, PROJECT_NAME)
+conn = get_connection(connectionData, PROJECT_NAME)
 
 # These files should reside on the machine local to Python runtime, that is:
 # - if run with PyExec - on the machine with Workstation,

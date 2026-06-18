@@ -1,5 +1,5 @@
 """Create a bursting subscription.
-1. Connect to the environment using data from workstation
+1. Connect to the environment using data from Workstation
 2. Create a bursting configuration
    - 2.1 using objects
    - 2.2 using IDs
@@ -10,7 +10,7 @@ from mstrio.connection import get_connection
 from mstrio.distribution_services import Content, Device, EmailSubscription, Schedule
 from mstrio.modeling import Attribute, AttributeForm
 
-conn = get_connection(workstationData, project_name='MicroStrategy Tutorial')
+conn = get_connection(connectionData, project_name='MicroStrategy Tutorial')
 
 
 # Create bursting configuration, using objects

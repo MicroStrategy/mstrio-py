@@ -12,7 +12,7 @@ from mstrio.object_management.migration.package import (
 )
 from mstrio.users_and_groups.user import list_users
 
-conn = get_connection(workstationData, project_name='Project Analytics')
+conn = get_connection(connectionData, project_name='Project Analytics')
 
 all_users = list_users(connection=conn)
 active_users = [u for u in all_users if u.enabled]

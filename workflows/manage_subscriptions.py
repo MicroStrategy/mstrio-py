@@ -3,7 +3,7 @@ Manage subscriptions.
 Create, modify and execute various types of subscriptions such as
 Email Subscription, File Subscription etc.
 
-1. Connect to the environment using data from the workstation
+1. Connect to the environment using data from the Workstation
 2. Get 2 schedules based on provided IDs
 3. Create and execute an email subscription for a document
 4. Modify a file subscription for a document with bursting option ON
@@ -33,8 +33,7 @@ from mstrio.distribution_services.subscription.subscription_manager import (
 )
 from mstrio.project_objects.dashboard import Dashboard
 
-
-conn = get_connection(workstationData, 'MicroStrategy Tutorial')
+conn = get_connection(connectionData, 'MicroStrategy Tutorial')
 
 example_schedule1 = Schedule(conn, id="987DF6464625F087CCC67FA9DB53097D")
 example_schedule2 = Schedule(conn, id="FF7BB3B311D501F0C00051916B98494F")

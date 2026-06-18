@@ -8,6 +8,7 @@ if t.TYPE_CHECKING:
     from mstrio.connection import Connection
     from mstrio.object_management.folder import Folder
     from mstrio.object_management.object import Object
+    from mstrio.server.documentation import Documentation, DocumentationDefinition
     from mstrio.server.environment import Environment
     from mstrio.server.project import Project
     from mstrio.server.tenant import Tenant
@@ -525,6 +526,130 @@ def get_tenant_id_from_params_set(
         tenant_id,
         tenant_name,
     )
+"""
+
+
+def get_documentation_id_from_params_set(
+    conn: 'Connection',
+    documentation: 'Documentation | str | None' = None,
+    documentation_id: str | None = None,
+    documentation_name: str | None = None,
+) -> str | None:
+    """Utility function to get a Documentation job ID from a set of parameters.
+
+    Should be used inside a method that has a set of parameters that can hold
+    the documentation ID, but only one of those is required to be passed.
+
+    Args:
+        conn: A Strategy One connection object.
+        documentation: An instance of the `Documentation` class or its ID or
+            name.
+        documentation_id: ID of the documentation job.
+        documentation_name: Name of the documentation job.
+
+    Returns:
+        The ID of the documentation job if found, otherwise None.
+    """
+    from mstrio.server.documentation import Documentation, list_documentations
+
+    try:
+        return _get_id_from_params_set(
+            documentation,
+            documentation_id,
+            documentation_name,
+            Documentation,
+            lambda: list_documentations(conn, to_dictionary=True),
+            fallback_value=None,
+        )
+    except AssertionError as err:
+        raise ValueError(err) from err
+
+
+# FYI: Copy-pastable parts for documentation-related parameters:
+"""
+[params to the method]
+        documentation: 'Documentation | str | None' = None,
+        documentation_id: str | None = None,
+        documentation_name: str | None = None,
+
+[DOCSTRING for "Args" part]
+        documentation (Documentation | str, optional): Documentation object or
+            ID or name. May be used instead of `documentation_id` or
+            `documentation_name`.
+        documentation_id (str, optional): ID of the documentation job.
+        documentation_name (str, optional): Name of the documentation job.
+
+[implementation of usual use]
+        documentation_id = get_documentation_id_from_params_set(
+            connection,
+            documentation=documentation,
+            documentation_id=documentation_id,
+            documentation_name=documentation_name,
+        )
+"""
+
+
+def get_documentation_definition_id_from_params_set(
+    conn: 'Connection',
+    definition: 'DocumentationDefinition | str | None' = None,
+    definition_id: str | None = None,
+    definition_name: str | None = None,
+) -> str | None:
+    """Utility function to get a DocumentationDefinition ID from a set of
+    parameters.
+
+    Should be used inside a method that has a set of parameters that can hold
+    the definition ID, but only one of those is required to be passed.
+
+    Args:
+        conn: A Strategy One connection object.
+        definition: An instance of the `DocumentationDefinition` class or its
+            ID or name.
+        definition_id: ID of the documentation definition.
+        definition_name: Name of the documentation definition.
+
+    Returns:
+        The ID of the documentation definition if found, otherwise None.
+    """
+    from mstrio.server.documentation import (
+        DocumentationDefinition,
+        list_documentation_definitions,
+    )
+
+    try:
+        return _get_id_from_params_set(
+            definition,
+            definition_id,
+            definition_name,
+            DocumentationDefinition,
+            lambda: list_documentation_definitions(conn, to_dictionary=True),
+            fallback_value=None,
+        )
+    except AssertionError as err:
+        raise ValueError(err) from err
+
+
+# FYI: Copy-pastable parts for documentation definition-related parameters:
+"""
+[params to the method]
+        definition: 'DocumentationDefinition | str | None' = None,
+        definition_id: str | None = None,
+        definition_name: str | None = None,
+
+[DOCSTRING for "Args" part]
+        definition (DocumentationDefinition | str, optional): Documentation
+            definition object or ID or name. May be used instead of
+            `definition_id` or `definition_name`.
+        definition_id (str, optional): ID of the documentation definition.
+        definition_name (str, optional): Name of the documentation definition.
+
+[implementation of usual use]
+        definition_id = get_documentation_definition_id_from_params_set(
+            connection,
+            definition=definition,
+            definition_id=definition_id,
+            definition_name=definition_name,
+        )
 """
 
 

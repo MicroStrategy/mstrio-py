@@ -13,7 +13,7 @@ from mstrio.connection import get_connection
 # Define a variable which can be later used in a script
 PROJECT_NAME = $project_name  # Insert name of project to interact with
 
-conn = get_connection(workstationData, project_name=PROJECT_NAME)
+conn = get_connection(connectionData, project_name=PROJECT_NAME)
 
 # Project VLDB settings management
 # Get project with a given name

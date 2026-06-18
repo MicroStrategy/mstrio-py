@@ -1,4 +1,4 @@
-"""This is the demo script to show how to manage applications. 
+"""This is the demo script to show how to manage applications.
 Its basic goal is to present what can be done with this module and to ease
 its usage.
 """
@@ -6,7 +6,7 @@ its usage.
 from mstrio.connection import get_connection
 from mstrio.project_objects.applications import Application, list_applications
 
-conn = get_connection(workstationData, 'MicroStrategy Tutorial')
+conn = get_connection(connectionData, 'MicroStrategy Tutorial')
 
 # list applications with different conditions
 # Note: No Applications exist in a default environment

@@ -7,7 +7,7 @@ from mstrio.connection import get_connection
 from mstrio.server.lock import ConfigurationLock, LockType
 from mstrio.server.project import Project, ProjectLock
 
-conn = get_connection(workstationData)
+conn = get_connection(connectionData)
 
 # Define a variable which can be later used in a script
 PROJECT_NAME = $project_name  # Insert name of project to interact with

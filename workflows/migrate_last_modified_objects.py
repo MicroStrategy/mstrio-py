@@ -17,7 +17,7 @@ from mstrio.object_management.migration.package import (
 from mstrio.object_management.search_operations import full_search
 from mstrio.types import ObjectTypes
 
-conn = get_connection(workstationData, project_name='Project Analytics')
+conn = get_connection(connectionData, project_name='Project Analytics')
 
 DATE_CUTOFF = datetime.now(tz=UTC) - timedelta(days=30)
 # format to str; example output: 2023-04-04T06:33:32Z

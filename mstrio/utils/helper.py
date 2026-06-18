@@ -130,6 +130,19 @@ def get_default_args_from_func(func: Callable[[Any], Any]):
     }
 
 
+def normalize_enum_list(
+    values: list[Enum | str] | Enum | str | None,
+    enum_type: type[Enum],
+    return_list: bool = False,
+) -> list[str] | None:
+    """Normalize enum or list of enums to list of enum values."""
+    if values is None:
+        return [] if return_list else None
+
+    value_list = values if isinstance(values, list) else [values]
+    return [get_enum_val(value, enum_type) for value in value_list]
+
+
 def camel_to_snake(
     response: dict | list,
     whitelist: list[str] = None,
@@ -1536,6 +1549,33 @@ def get_owner_id(
         return user.id
 
     return None
+
+
+def normalize_owner_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    """Ensure payload contains nested owner object.
+
+    If `owner` is already present as a dictionary, payload is returned
+    unchanged. Otherwise, owner is derived from flat owner fields.
+
+    Args:
+        payload (dict[str, Any]): Response payload to normalize.
+
+    Returns:
+        dict[str, Any]: Normalized payload.
+    """
+    if isinstance(payload.get('owner'), dict):
+        return payload
+
+    owner_id = payload.get('owner_id') or payload.get('ownerId')
+    owner_name = payload.get('owner_name') or payload.get('ownerName')
+
+    if owner_id or owner_name:
+        payload['owner'] = {
+            'id': owner_id,
+            'name': owner_name,
+        }
+
+    return payload
 
 
 def get_user_based_on_id_or_username(
