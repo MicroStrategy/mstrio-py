@@ -3,8 +3,9 @@ from typing import TypeVar
 
 
 class AutoName(Enum):
-    def _generate_next_value_(self, start, count, last_values):
-        return self.lower()
+    @staticmethod
+    def _generate_next_value_(name, start, count, last_values):
+        return name.lower()
 
     @classmethod
     def has_value(cls, value):
@@ -15,13 +16,36 @@ class AutoName(Enum):
 
 
 class AutoUpperName(Enum):
-    def _generate_next_value_(self, start, count, last_values):
-        return self
+    @staticmethod
+    def _generate_next_value_(name, start, count, last_values):
+        return name.upper()
 
 
 class AutoCapitalizedName(Enum):
-    def _generate_next_value_(self, start, count, last_values):
-        return self.capitalize()
+    @staticmethod
+    def _generate_next_value_(name, start, count, last_values):
+        return name.capitalize()
+
+
+class AutoPascalName(Enum):
+    @staticmethod
+    def _generate_next_value_(name, start, count, last_values):
+        _KEEP_UPPER = {
+            'ACL',
+            'CSV',
+            'HTML',
+            'ID',
+            'JSON',
+            'MDX',
+            'MTDI',
+            'SQL',
+        }
+
+        parts = name.split('_')
+        converted_parts = []
+        for part in parts:
+            converted_parts.append(part if part in _KEEP_UPPER else part.capitalize())
+        return ''.join(converted_parts)
 
 
 TEnum = TypeVar("TEnum", bound=Enum)

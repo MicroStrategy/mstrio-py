@@ -113,7 +113,7 @@ class Rights(IntFlag):
 
 class Permissions(Enum):
     """Enumeration constants used to specify combination of Rights values
-    similar to workstation Security Access.
+    similar to Workstation Security Access.
 
     This has to be string-based to discern between 'Denied All'
     and 'Full Control', which have the same mask.

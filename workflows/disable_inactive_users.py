@@ -1,7 +1,7 @@
 """
 Disable users who have been inactive for a certain period of time
 
-1. Connect to the environment using data from workstation
+1. Connect to the environment using data from Workstation
 2a. Get users who have been inactive for 90 days
 2b. Get users who have been inactive for 90 days using data
     from 'Platform Analytics'
@@ -121,8 +121,8 @@ def send_notification_to_inactive_users(
 PROJECT_NAME = 'MicroStrategy Tutorial'
 
 # Connect to environment without providing user credentials
-# Variable `workstationData` is stored within Workstation
-conn = get_connection(workstationData, project_name=PROJECT_NAME)
+# Variable `connectionData` is stored within Workstation
+conn = get_connection(connectionData, project_name=PROJECT_NAME)
 
 # `User.last_login` property is only available on containerized environments
 # with the telemetry service enabled

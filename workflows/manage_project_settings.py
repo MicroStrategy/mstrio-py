@@ -3,7 +3,7 @@ Manage project settings.
 Change project settings, copy settings from one project to another.
 Export project settings to CSV.
 
-1. Connect to the environment using data from the workstation
+1. Connect to the environment using data from the Workstation
 2. Get project object based on provided id
 3. Get another project object based on provided id
 4. Change single setting for a project
@@ -15,7 +15,7 @@ Export project settings to CSV.
 from mstrio.connection import get_connection
 from mstrio.server import Project
 
-conn = get_connection(workstationData, 'MicroStrategy Tutorial')
+conn = get_connection(connectionData, 'MicroStrategy Tutorial')
 
 project = Project(connection=conn, id='B3FEE61A11E696C8BD0F0080EFC58F44')
 test_project = Project(connection=conn, id='B7CA92F04B9FAE8D941C3E9B7E0CD754')

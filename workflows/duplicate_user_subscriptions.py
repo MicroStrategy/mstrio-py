@@ -1,7 +1,7 @@
 """
 Duplicate user subscriptions across all projects.
 
-1. Connect to the environment using data from workstation
+1. Connect to the environment using data from Workstation
 2. Get user with the given id
 2. Get all projects that the authenticated user has access to
 4. For each project get all subscriptions of the user which was earlier
@@ -52,8 +52,8 @@ def duplicate_user_subscriptions(connection: Connection, owner: str | User) -> N
 
 
 # connect to environment without providing user credentials
-# variable `workstationData` is stored within Workstation
-conn = get_connection(workstationData, 'MicroStrategy Tutorial')
+# variable `connectionData` is stored within Workstation
+conn = get_connection(connectionData, 'MicroStrategy Tutorial')
 
 user = User(connection=conn, id='7FC05A65473CE2FD845CE6A1D3F13233')
 duplicate_user_subscriptions(conn, user)

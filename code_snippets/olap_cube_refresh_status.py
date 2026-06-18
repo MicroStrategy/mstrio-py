@@ -32,7 +32,7 @@ def inform_when_job_done(job: Job, interval: int = 10):
 # Define a variable which can be later used in a script
 PROJECT_NAME = $project_name  # Insert name of project here
 
-conn = get_connection(workstationData, project_name=PROJECT_NAME)
+conn = get_connection(connectionData, project_name=PROJECT_NAME)
 
 
 # List available OLAP cubes

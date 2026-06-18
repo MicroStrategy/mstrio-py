@@ -14,7 +14,7 @@ from mstrio.modeling.schema.helpers import ObjectSubType
 
 
 PROJECT_NAME = "MicroStrategy Tutorial"
-conn = get_connection(workstationData, project_name=PROJECT_NAME)
+conn = get_connection(connectionData, project_name=PROJECT_NAME)
 
 # Try different filtering options in list_prompts function
 all_prompts = list_prompts(conn)

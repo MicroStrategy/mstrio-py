@@ -11,9 +11,9 @@ from mstrio.connection import get_connection
 from mstrio.server.environment import Environment
 
 
-# Create connection based on workstation data
+# Create connection based on connection data
 # Project selection is obsolete for working with LDAP batch import
-conn = get_connection(workstationData)
+conn = get_connection(connectionData)
 
 # Environment object is already available to us via connection object,
 # and LDAP controller is a property of Environment object

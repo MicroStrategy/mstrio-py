@@ -1,5 +1,5 @@
 """Create a mobile subscription for a selected dashboard and schedule.
-1. Connect to the environment using data from workstation
+1. Connect to the environment using data from Workstation
 2. List Dashboards and select one that will be used as Content for the subscription
 3. List Schedules and select one that will be used for the subscription
 4. Define the user that will receive the subscription
@@ -15,7 +15,7 @@ from mstrio.users_and_groups import list_users
 
 PROJECT_NAME = 'MicroStrategy Tutorial'  # Insert name of project here
 
-conn = get_connection(workstationData, PROJECT_NAME)
+conn = get_connection(connectionData, PROJECT_NAME)
 
 # List Dashboards and select one that will be used as Content for the subscription
 dashboards = list_dashboards(conn)

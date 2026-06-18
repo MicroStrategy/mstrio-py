@@ -133,7 +133,7 @@ class ScriptResultType(AutoName):
     NUMERICAL = auto()
     TEXT = auto()
     DATE = auto()
-    RESERVED = auto()
+    RESERVED = auto()  # default, aka "no return value"
     UNKNOWN = auto()
 
 
@@ -452,7 +452,7 @@ class Code:
         )
 
         if allow_interactive_answering:
-            if self._connection.is_run_in_workstation():
+            if self._connection.is_run_in_our_app():
                 raise ScriptEnvironmentError(
                     "Cannot allow interactive Variables answering in a script "
                     "run in Workstation."
@@ -1505,6 +1505,8 @@ class Script(
                 raise ScriptSetupError(
                     "Script of type Jupyter Notebook is not supported."
                 )
+            case ObjectSubTypes.FLOW_SCRIPT:
+                raise NotImplementedError("Script of type Flow is not supported yet.")
             case _:
                 raise ScriptSetupError(
                     f'Unrecognized or unsupported Script Subtype: {self.subtype}'

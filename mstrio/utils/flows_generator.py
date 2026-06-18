@@ -54,12 +54,11 @@ class PropagatingThread(t.Thread):
         except BaseException as err:
             self._propagated_exception = err
 
-    def join(self) -> BaseException | None:
+    def join(self):
         super().join()
 
         return self._propagated_exception
 """
-# TODO: add integration test in final release to check log-sync explicitly
 
 
 # FYI: make fn an instance of generator instead of definition of generator
@@ -364,9 +363,9 @@ with (conn_lock, conn.temporary_project_change("{project_id}")):
 """
 
     _result_template = """
-glob['_{step_id}_res'] = glob['_{step_id}'].wait_for_execution_finish(
-    pipe_logs=False,
-)
+    glob['_{step_id}_res'] = glob['_{step_id}'].wait_for_execution_finish(
+        pipe_logs=False,
+    )
 log(
     "SCRIPT_POST",
     {unique_id},

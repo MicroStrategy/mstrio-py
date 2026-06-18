@@ -50,7 +50,9 @@ logger.critical('This is CRIT')
 # mstrio-py's logger configuration
 #
 # Just update mstrio-py's logger instance to your liking. Examples:
-config.verbose = False  # <- lower the amount of logs provided by mstrio-py to essentials only
+config.verbose = (
+    False  # <- lower the amount of logs provided by mstrio-py to essentials only
+)
 config.logger.setLevel(logging.CRITICAL)  # <- make mstrio-py log only critical issues
 
 
@@ -79,7 +81,7 @@ console_handler.setLevel(logging.DEBUG)
 console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 
-conn = get_connection(workstationData)
+conn = get_connection(connectionData)
 
 try:
     datasource_instances = list_datasource_instances(connection=conn)

@@ -28,8 +28,8 @@ USER_ID_1 = $user_id_1
 USER_ID_2 = $user_id_2
 OWNER_1 = $owner_name
 
-# Create connection based on workstation data
-conn = get_connection(workstationData, project_name=PROJECT_NAME)
+# Create connection based on connection data
+conn = get_connection(connectionData, project_name=PROJECT_NAME)
 
 # List users
 list_users(

@@ -1,5 +1,5 @@
 """Create an email subscription with prompts.
-1. Connect to the environment using data from workstation
+1. Connect to the environment using data from Workstation
 2. Create a list of prompts for the report
 3. Answer the prompts
 4. Create an email subscription with the answered prompts
@@ -12,7 +12,7 @@ from mstrio.project_objects import Prompt, Report
 
 PROJECT_NAME = 'MicroStrategy Tutorial'  # Insert name of project here
 
-conn = get_connection(workstationData, PROJECT_NAME)
+conn = get_connection(connectionData, PROJECT_NAME)
 
 # Prepare a list of answers for the prompts in the report
 prompts = [

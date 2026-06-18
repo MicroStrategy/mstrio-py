@@ -1,7 +1,7 @@
 """
 Change password for one or more users.
 
-1. Connect to the environment using data from workstation
+1. Connect to the environment using data from Workstation
 2. Change password for all users which name begins with 'User_S'
 3. Change password for only first user which name begins with 'User_S'
 4. Change password for only first user which name begins with 'User_S' and
@@ -14,8 +14,8 @@ from mstrio.connection import get_connection
 from mstrio.users_and_groups.user import list_users
 
 # connect to environment without providing user credentials
-# variable `workstationData` is stored within Workstation
-conn = get_connection(workstationData, project_name='MicroStrategy Tutorial')
+# variable `connectionData` is stored within Workstation
+conn = get_connection(connectionData, project_name='MicroStrategy Tutorial')
 
 # change password for all users
 for user in list_users(conn, name_begins='User_S'):

@@ -55,16 +55,17 @@ APPLICATION_TYPE_WEB = 35
 
 try:
     # assigned right away instead of being calculated in a method so that
-    # if a user creates their own `workstationData` variable, this will still
+    # if a user creates their own `connectionData` variable, this will still
     # show false as this is run before the script is executed in most cases
-    _is_in_workstation: bool | None = any(
-        'workstationData' in dict(inspect.getmembers(frame[0]))['f_globals']
+    _is_in_our_app: bool | None = any(
+        'workstationData' in (_d := dict(inspect.getmembers(frame[0]))['f_globals'])
+        or 'connectionData' in _d
         for frame in inspect.stack()
     )
 except Exception:
     # This is not essential enough info to try to handle it
     # in a more sophisticated way
-    _is_in_workstation = None
+    _is_in_our_app = None
 
 
 _validate_or_none = partial(helper.validate_param_value, special_values=[None])
@@ -118,7 +119,7 @@ class Locale(helper.Dictable):
 
 
 def get_connection(
-    workstation_data: dict,
+    connection_data: dict | None = None,
     project: 'Project | str | None' = None,
     project_id: str | None = None,
     project_name: str | None = None,
@@ -126,6 +127,8 @@ def get_connection(
     verbose: bool = True,
     request_timeout: int | float | None = None,
     request_retry_on_timeout_count: int | None = None,
+    # deprecated:
+    workstation_data: dict | None = None,
 ) -> 'Connection | None':
     """Connect to environment without providing user's credentials.
 
@@ -141,7 +144,7 @@ def get_connection(
         verification (InsecureRequestWarning) is disabled.
 
     Args:
-        workstation_data (object): object which is stored in a 'workstationData'
+        connection_data (dict): object which is stored in a 'connectionData'
             variable within Workstation
         project (Project, str, optional): Project object or ID or name
             of the project to be selected
@@ -167,16 +170,18 @@ def get_connection(
     if not ssl_verify:
         disable_warnings(category=InsecureRequestWarning)
 
+    data = connection_data or workstation_data
+
     try:
         if config.verbose:
-            logger.info('Creating connection from Workstation Data object...')
+            logger.info('Creating connection from Connection-Data object...')
 
-        # get base url from Workstation Data object
-        base_url = helper.url_check(workstation_data['defaultEnvironment']['url'])
-        # get headers from Workstation Data object
-        headers = workstation_data['defaultEnvironment']['headers']
-        # get cookies from Workstation Data object
-        cookies = workstation_data['defaultEnvironment']['cookies']
+        # get base url from Connection-Data object
+        base_url = helper.url_check(data['defaultEnvironment']['url'])
+        # get headers from Connection-Data object
+        headers = data['defaultEnvironment']['headers']
+        # get cookies from Connection-Data object
+        cookies = data['defaultEnvironment']['cookies']
 
         # prepare cookies for request
         jar = RequestsCookieJar()
@@ -191,7 +196,7 @@ def get_connection(
             )
     except Exception as e:
         logger.error(
-            f'Some error occurred while preparing data to get identity token: \n{e}'
+            f'Some error occurred while preparing data to get identity token:\n{e}'
         )
         return None
 
@@ -491,7 +496,7 @@ class Connection:
 
     @_through_get_connection.setter
     def _through_get_connection(self, value: bool) -> None:
-        if value is True and not self.is_run_in_workstation():
+        if value is True and not self.is_run_in_our_app():
             raise SyntaxError(
                 "Connection established via `get_connection` can only be used "
                 "inside Workstation."
@@ -1014,24 +1019,32 @@ class Connection:
         self._user_initials = response.get("initials")
 
     @classmethod
-    def is_run_in_workstation(cls) -> bool | None:
+    def is_run_in_our_app(cls) -> bool | None:
         """Check if the script is run in Workstation.
 
         Returns:
-            bool: True if the script is run in Workstation, False otherwise.
-                It may return None when gathering this info failed.
+            bool: True if the script is run in Workstation,
+                False otherwise. It may return None when gathering this info
+                failed.
         """
-        return _is_in_workstation
+        return _is_in_our_app
 
     @property
     def project_name(self) -> str | None:
         if self.project_id is None:
             return None
 
+        return self.project.name
+
+    @property
+    def project(self) -> 'Project | None':
+        if self.project_id is None:
+            return None
+
         from mstrio.server.project import Project
 
         with config.temp_verbose_disable():
-            return Project(self, id=self.project_id).name
+            return Project(self)
 
     @property
     def user_id(self) -> str:

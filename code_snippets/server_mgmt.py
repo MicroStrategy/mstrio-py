@@ -12,7 +12,7 @@ from mstrio.server import Cluster, Environment, Project
 # Define a variable which can be later used in a script
 PROJECT_NAME = $project_name  # Project to connect to
 
-conn = get_connection(workstationData, project_name=PROJECT_NAME)
+conn = get_connection(connectionData, project_name=PROJECT_NAME)
 
 # get the cluster for given connection
 clstr = Cluster(connection=conn)

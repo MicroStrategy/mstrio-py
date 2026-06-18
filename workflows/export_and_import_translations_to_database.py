@@ -3,7 +3,7 @@ and import them back. This script will not work without replacing parameters
 with real values. Its basic goal is to present what can be done with this
 module and to ease its usage.
 
-1. Connect to the environment using data from workstation
+1. Connect to the environment using data from Workstation
 2. Search for first ten metrics with "Revenue" in their name
 3. Define export destination datasource (in this case "Tutorial Postgres")
 4. Export translations to database without extra parameters
@@ -26,8 +26,8 @@ from mstrio.types import ObjectTypes
 PROJECT_NAME = 'MicroStrategy Tutorial'  # Project to connect to
 
 
-# Create connection based on workstation data
-CONN = get_connection(workstationData, project_name=PROJECT_NAME)
+# Create connection based on Workstation data
+CONN = get_connection(connectionData, project_name=PROJECT_NAME)
 
 # Define variables which can be later used in a script
 LANG_ID = '000004104F95EF3956E52781700C1E7A'

@@ -37,7 +37,7 @@ from mstrio.connection import get_connection
 PROJECT_NAME = $project_name
 PROJECT_ID = $project_id
 
-conn = get_connection(workstationData, project_name=PROJECT_NAME)
+conn = get_connection(connectionData, project_name=PROJECT_NAME)
 
 # list folders from a particular project
 list_folders(conn, project_id=PROJECT_ID)

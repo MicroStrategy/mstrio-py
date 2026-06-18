@@ -384,7 +384,8 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
             forms: list of AttributeForm objects of the Attribute
 
         Returns:
-            Validated sorts or nothing if the provided sorts were empty."""
+            Validated sorts or nothing if the provided sorts were empty.
+        """
         if sorts is None or (sorts.browse_sorts is None and sorts.report_sorts is None):
             return None
 
@@ -1300,7 +1301,14 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
         return self._displays
 
     @property
-    def sorts(self):
+    def sorts(self) -> 'AttributeSorts':
+        if self._sorts is None:
+            self.fetch('sorts')
+            if self._sorts is None:
+                self._sorts = AttributeSorts([], [])
+                #                              \/
+                #                            ( :: )
+
         return self._sorts
 
     @property

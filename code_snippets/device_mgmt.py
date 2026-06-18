@@ -30,7 +30,7 @@ from mstrio.connection import get_connection
 # Define a variable which will be later used in a script
 PROJECT_NAME = $project_name  # Project to connect to
 
-conn = get_connection(workstationData, project_name=PROJECT_NAME)
+conn = get_connection(connectionData, project_name=PROJECT_NAME)
 
 # Define variables which will be later used in a script
 SMART_HOST_SERVER = $smart_host_server  # server name for smart host

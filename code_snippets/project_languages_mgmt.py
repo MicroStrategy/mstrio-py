@@ -17,7 +17,7 @@ from mstrio.server.project_languages import (
 # Define a variable which can be later used in a script
 PROJECT_NAME = $project_name
 
-conn = get_connection(workstationData, project_name=PROJECT_NAME)
+conn = get_connection(connectionData, project_name=PROJECT_NAME)
 
 # Get project with a given name
 project = Project(connection=conn, name=PROJECT_NAME)

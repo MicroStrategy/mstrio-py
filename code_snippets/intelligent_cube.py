@@ -18,7 +18,7 @@ from mstrio.project_objects.datasets.helpers import (
 # Define a variable which can be later used in a script
 PROJECT_NAME = $project_name  # Insert project to connect to here
 
-conn = get_connection(workstationData, project_name=PROJECT_NAME)
+conn = get_connection(connectionData, project_name=PROJECT_NAME)
 
 # Define a variable which can be later used in a script
 CUBE_ID = $cube_id  # ID for OLAP Cube object lookup here

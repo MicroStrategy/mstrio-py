@@ -2,7 +2,7 @@
 Manage project languages.
 List languages, convert them to objects. Add or remove language from project.
 
-1. Connect to the environment using data from the workstation
+1. Connect to the environment using data from the Workstation
 2. Get project object based on provided name ('MicroStrategy Tutorial')
 3. Get list of all available datasource connections
 4. Get a datasource connection with a given name ('XQuery(1)') to use it for
@@ -23,8 +23,8 @@ from mstrio.server.project_languages import DataLocalizationLanguage, SimpleLang
 
 PROJECT_NAME = 'MicroStrategy Tutorial'  # Project to connect to
 
-# Create connection based on workstation data
-conn = get_connection(workstationData, project_name=PROJECT_NAME)
+# Create connection based on Workstation data
+conn = get_connection(connectionData, project_name=PROJECT_NAME)
 
 # Get project with a given name
 project = Project(connection=conn, name=PROJECT_NAME)

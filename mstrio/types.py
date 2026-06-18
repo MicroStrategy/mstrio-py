@@ -92,6 +92,10 @@ class ObjectTypes(Enum):
     DRIVER = 84
     INTERFACE_LANGUAGE = 85
     WORKFLOW = 86
+    CHATS = 89
+    NUGGETS = 90
+    STREAM_SOURCE = 91
+    STREAM_CHANNEL = 92
     TEST_SUITE = 93
     NOT_SUPPORTED = None
 
@@ -131,11 +135,10 @@ class ObjectTypes(Enum):
         aliases_to_enum_items = {aliases[enum_item]: enum_item for enum_item in aliases}
         if value in aliases_to_enum_items:
             return aliases_to_enum_items[value]
-        else:
-            member = object.__new__(cls)
-            member._value_ = value
-            member._name_ = f'UNDEFINED_TYPE:{value}'
-            return member
+        member = object.__new__(cls)
+        member._value_ = value
+        member._name_ = f'UNDEFINED_TYPE:{value}'
+        return member
 
     @staticmethod
     def contains(item):
@@ -173,6 +176,7 @@ class ObjectSubTypes(Enum):
     # https://www2.microstrategy.com/producthelp/Current/ReferenceFiles/reference/com/microstrategy/webapi/EnumDSSXMLObjectSubTypes.html
     FILTER = 256
     CUSTOM_GROUP = 257
+    GLOBAL_FILTER = 260
     TEMPLATE = 512
     REPORT_GRID = 768
     REPORT_GRAPH = 769
@@ -188,6 +192,11 @@ class ObjectSubTypes(Enum):
     SUPER_CUBE = 779
     SUPER_CUBE_IRR = 780
     REPORT_HYPER_CARD = 781
+    QUICK_SEARCH_SQL_REPORT = 782
+    QUICK_SEARCH_PYTHON_REPORT = 783
+    QUICK_SEARCH_SQL_CUBE = 784
+    QUICK_SEARCH_PYTHON_CUBE = 785
+    QUICK_SEARCH_MOSAIC = 786
     METRIC = 1024
     SUBTOTAL_DEFINITION = 1025
     SYSTEM_SUBTOTAL = 1026
@@ -282,6 +291,7 @@ class ObjectSubTypes(Enum):
     REPORT_WRITING_DOCUMENT = 14081
     DOCUMENT_THEME = 14082
     DOCUMENT_BOT = 14084
+    PROJECT_DOCUMENTATION = 14085
     DOCUMENT_BOT_2_0 = 14087
     DOCUMENT_BOT_UNIVERSAL = 14091
     DOCUMENT_AGENT = 14087
@@ -336,12 +346,14 @@ class ObjectSubTypes(Enum):
     AGGREGATION_FUNCTION_NO_SORT_SCRIPT = 19463
     RELATIVE_FUNCTION_SCRIPT = 19464
     RELATIVE_FUNCTION_NO_SORT_SCRIPT = 19465
+    FLOW_SCRIPT = 19466
     APPLICATION = 19968
     APPLICATION_POWERPOINT = 19969
     APPLICATION_EXCEL = 19970
     APPLICATION_TEAMS = 19971
     APPLICATION_TABLEAU = 19972
     APPLICATION_GOOGLE_SHEETS = 19973
+    APPLICATION_GOOGLE_SLIDES = 19974
     TIMEZONE_SYSTEM = 20224
     TIMEZONE_CUSTOM = 20225
     CALENDAR_SYSTEM = 20736
@@ -351,6 +363,7 @@ class ObjectSubTypes(Enum):
     WORKFLOW = 22016
     IAM_SECRET_VAULT = 21002
     NUGGETS_FILE = 23040
+    UNSTRUCTURED_DATA = 23042
     STREAM_CHANNEL = 23552
     BASELINE_TEST = 23808
     COMPARISON_TEST = 23809
@@ -452,6 +465,13 @@ class ExtendedType(Enum):
 
     def __int__(self):
         return self.value
+
+    @classmethod
+    def _missing_(cls, value):
+        member = object.__new__(cls)
+        member._value_ = value
+        member._name_ = f'UNDEFINED_TYPE:{value}'
+        return member
 
 
 TypeOrSubtype: TypeAlias = (

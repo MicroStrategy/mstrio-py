@@ -24,7 +24,7 @@ from mstrio.server import (
 # Define a variable which will be later used in a script
 PROJECT_NAME = $project_name  # Project to connect to
 
-conn = get_connection(workstationData, project_name=PROJECT_NAME)
+conn = get_connection(connectionData, project_name=PROJECT_NAME)
 
 SELECTED_PROJECT_ID = $selected_project_id
 

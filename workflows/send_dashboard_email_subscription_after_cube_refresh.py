@@ -2,7 +2,7 @@
 Manage email subscriptions after cube refresh.
 Select a cube, refresh, find its subscriptions and run them.
 
-1. Connect to the environment using data from the workstation
+1. Connect to the environment using data from the Workstation
 2. Get the intelligent cube object based on provided id
 3. Publish retrieved cube and wait for its refresh to complete successfully
 4. Get the list of dashboards dependent on the cube
@@ -20,8 +20,7 @@ from mstrio.distribution_services.subscription.subscription_manager import (
     list_subscriptions,
 )
 
-
-conn = get_connection(workstationData, 'MicroStrategy Tutorial')
+conn = get_connection(connectionData, 'MicroStrategy Tutorial')
 
 
 # Select an intelligent cube and refresh it

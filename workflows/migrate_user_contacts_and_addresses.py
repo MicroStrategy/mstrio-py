@@ -2,7 +2,7 @@
 Facilitate the migration of user data from one user to another such as
 addresses or contacts.
 
-1. Connect to the environment using data from the workstation
+1. Connect to the environment using data from the Workstation
 2. Get first user object based on provided name ('User Korean')
 3. Get second user object based on provided name ('Tilda Austin')
 4. Add addresses of the first user to the second user and remove them from
@@ -16,8 +16,8 @@ from mstrio.users_and_groups.contact import list_contacts
 from mstrio.users_and_groups.user import User
 
 # connect to environment without providing user credentials
-# variable `workstationData` is stored within Workstation
-conn = get_connection(workstationData, project_name='MicroStrategy Tutorial')
+# variable `connectionData` is stored within Workstation
+conn = get_connection(connectionData, project_name='MicroStrategy Tutorial')
 
 # migrate addresses from one User to another
 user_1 = User(conn, name='User Korean')

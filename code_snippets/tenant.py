@@ -27,8 +27,8 @@ USER_ID = $user_id
 USER_GROUP_ID = $user_group_id
 CONTENT_GROUP_ID = $content_group_id
 
-# Create connection based on workstation data
-conn = get_connection(workstationData, project_id=PROJECT_ID)
+# Create connection based on connection data
+conn = get_connection(connectionData, project_id=PROJECT_ID)
 
 # List tenants
 all_tenants = list_tenants(connection=conn)

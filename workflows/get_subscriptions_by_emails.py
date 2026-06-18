@@ -1,7 +1,7 @@
 """
 Get subscriptions by user emails.
 
-1. Connect to the environment using data from workstation
+1. Connect to the environment using data from Workstation
 2. Specify emails to search for in subscriptions
 3. Get all subscriptions and iterate over them
 4. Iteration over all user's recipients of the subscription
@@ -49,8 +49,8 @@ def get_subscriptions_by_emails(connection: 'Connection', emails: list[str]) -> 
                 )
 
 
-# variable `workstationData` is stored within Workstation
-conn = get_connection(workstationData, 'MicroStrategy Tutorial')
+# variable `connectionData` is stored within Workstation
+conn = get_connection(connectionData, 'MicroStrategy Tutorial')
 
 emails_to_find = ['user_1@email.com', 'user_2@email.com']
 

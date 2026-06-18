@@ -1650,6 +1650,7 @@ class Project(Entity, DeleteMixin, ModelVldbMixin, TenantMixin):
         duplication_config: (
             'dict | DuplicationConfig | CrossDuplicationConfig | None'
         ) = None,
+        target_id: str | None = None,
     ) -> dict:
         """Build common body part for project duplication methods.
 
@@ -1661,6 +1662,9 @@ class Project(Entity, DeleteMixin, ModelVldbMixin, TenantMixin):
             duplication_config (dict, DuplicationConfig, CrossDuplicationConfig,
                 optional): Configuration for the duplication process. If not
                 provided `DuplicationConfig()` with default values will be used.
+            target_id (str, optional): ID for the duplicated project on the
+                target environment. If not provided, ID will be generated
+                by the server.
 
         Returns:
             dict: Body for duplication request.
@@ -1697,6 +1701,9 @@ class Project(Entity, DeleteMixin, ModelVldbMixin, TenantMixin):
             },
             'settings': duplication_config,
         }
+        if target_id is not None:
+            body['target']['project']['id'] = target_id
+
         return body
 
     @method_version_handler('11.5.0700')
@@ -1733,6 +1740,7 @@ class Project(Entity, DeleteMixin, ModelVldbMixin, TenantMixin):
         target_env: 'Connection | Environment',
         cross_duplication_config: 'dict | CrossDuplicationConfig | None' = None,
         sync_with_target_env: bool | None = True,
+        keep_id: bool = False,
     ) -> 'ProjectDuplication':
         """Duplicate the project with a new name to another environment. It can
         work in two modes:
@@ -1762,6 +1770,10 @@ class Project(Entity, DeleteMixin, ModelVldbMixin, TenantMixin):
                 duplication with the target environment. If True, the method
                 will work in mode 1) described above. If False, the method will
                 work in mode 2). Default is True.
+            keep_id (bool, optional): Whether to keep the same project ID on the
+                target environment. Default is False, which means a new ID will
+                be generated for the duplicated project on the target
+                environment.
 
         Returns:
             ProjectDuplication object.
@@ -1781,6 +1793,7 @@ class Project(Entity, DeleteMixin, ModelVldbMixin, TenantMixin):
             target_name=target_name,
             target_env=t_conn,
             duplication_config=cross_duplication_config,
+            target_id=self.id if keep_id else None,
         )
         resp = projects.trigger_project_duplication(self.connection, self.id, body)
 

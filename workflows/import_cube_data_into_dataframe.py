@@ -3,7 +3,7 @@ Create a dataframe from a Cube.
 List available cubes, retrieve their attributes and metrics. Operate with given
 cube.
 
-1. Connect to the environment using data from workstation
+1. Connect to the environment using data from Workstation
 2. List available cubes (with limit of 10)
 3. Get cube with given id and check its available attributes and metrics
 4. Choose attributes and metrics for filtering
@@ -18,8 +18,8 @@ from mstrio.connection import get_connection
 from mstrio.project_objects.datasets import list_all_cubes, OlapCube
 
 # connect to environment without providing user credentials
-# variable `workstationData` is stored within Workstation
-connection = get_connection(workstationData, project_name='MicroStrategy Tutorial')
+# variable `connectionData` is stored within Workstation
+connection = get_connection(connectionData, project_name='MicroStrategy Tutorial')
 
 # List available Cubes (limited to 10)
 cubes = list_all_cubes(connection, limit=10)

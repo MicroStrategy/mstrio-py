@@ -13,7 +13,7 @@ from mstrio.modeling import (
 # Define a variable which can be later used in a script
 PROJECT_NAME = $project_name  # Insert name of project here
 
-conn: Connection = get_connection(workstationData, PROJECT_NAME)
+conn: Connection = get_connection(connectionData, PROJECT_NAME)
 
 # Example filter qualification data with expression specified as tree
 FILTER_QUALIFICATION_AS_TREE = {

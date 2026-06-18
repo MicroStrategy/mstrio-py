@@ -7,7 +7,7 @@ from time import sleep
 from mstrio.connection import get_connection
 from mstrio.server import ContactInformation, InstallationUse, License
 
-conn = get_connection(workstationData)
+conn = get_connection(connectionData)
 
 # Get license object
 license = License(connection=conn)

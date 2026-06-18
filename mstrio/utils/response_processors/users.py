@@ -280,6 +280,7 @@ def get_user_last_login(connection: Connection, id: str):
 
     no_login_date_msg = 'No login found for the given user'
     no_user_msg = 'User not found'
+    no_metadata_msg = 'Metadata not found for object with'
 
     end_time = time() + TIMEOUT
 
@@ -297,7 +298,7 @@ def get_user_last_login(connection: Connection, id: str):
             if no_user_msg in response.text:
                 sleep(TIMEOUT_INCREMENT)
                 continue
-            elif no_login_date_msg in response.text:
+            elif no_login_date_msg in response.text or no_metadata_msg in response.text:
                 return None
             raise response.raise_for_status()
 

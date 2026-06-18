@@ -3,12 +3,12 @@ Manage Pre-/Post-execution SQL statements with Subscription execution.
 Check the ETL flag in the database, run Subscription,
 and send an email to the Administrator.
 
-1. Connect to environment using data from workstation
+1. Connect to environment using data from Workstation
 2. Get datasource instance base on provided name ('Tutorial Postgres')
 3. Get project object based on provided name ('MicroStrategy Tutorial')
 4. Steps below describe the process of managing email subscription for the given
    project and datasource instance
-5. Prepare query to select the ETL flag 
+5. Prepare query to select the ETL flag
 6. Execute the query and store the result
 7. If the ETL flag is present, get the email subscription object by an id
    and execute it
@@ -175,6 +175,6 @@ def manage_execution(connection: 'Connection'):
     manage_mobile_subscription(connection, datasource_instance, project)
 
 
-# Create connection based on workstation data
-conn = get_connection(workstationData, 'MicroStrategy Tutorial')
+# Create connection based on Workstation data
+conn = get_connection(connectionData, 'MicroStrategy Tutorial')
 manage_execution(conn)

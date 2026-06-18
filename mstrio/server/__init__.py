@@ -7,6 +7,22 @@ from .change_journal import (
     purge_change_journal_entries,
 )
 from .cluster import Cluster, GroupBy, ServiceAction
+from .documentation import (
+    DocApplicationType,
+    DocBasicProperty,
+    EnumDocumentationStatus,
+    DocFolderType,
+    DocMdxCubeType,
+    DocSchemaType,
+    Documentation,
+    DocumentationDefinition,
+    DocumentationObject,
+    DocumentationStatus,
+    ResourceFolder,
+    list_documentation_definitions,
+    list_documentations,
+    get_documentations_statuses,
+)
 from .environment import Environment
 from .language import Language, list_interface_languages, list_languages
 from .license import (

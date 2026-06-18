@@ -21,7 +21,7 @@ from mstrio.connection import get_connection
 # Define a variable which can be later used in a script
 PROJECT_NAME = $project_name  # Project to connect to
 
-conn = get_connection(workstationData, project_name=PROJECT_NAME)
+conn = get_connection(connectionData, project_name=PROJECT_NAME)
 
 # get project by name
 project = Project(connection=conn, name=PROJECT_NAME)

@@ -13,7 +13,7 @@ from mstrio.server import Environment, Project
 # Define a variable which can be later used in a script
 PROJECT_NAME = $project_name  # Insert name of project to interact with
 
-conn = get_connection(workstationData)
+conn = get_connection(connectionData)
 env = Environment(connection=conn)
 project = Project(connection=conn, name=PROJECT_NAME)
 

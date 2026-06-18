@@ -2,7 +2,7 @@
 Manage access control lists (ACLs).
 Assign ACLs to user groups and its children for folders.
 
-1. Connect to the environment using data from workstation
+1. Connect to the environment using data from Workstation
 2. Assign ACL with View aggregated rights to user group with name 'Mobile' for
    user 'Administrator'
 3. Assign ACL with View aggregated rights to user group with name 'Mobile' for
@@ -20,8 +20,8 @@ from mstrio.users_and_groups.user import User
 from mstrio.users_and_groups.user_group import list_user_groups
 
 # connect to environment without providing user credentials
-# variable `workstationData` is stored within Workstation
-conn = get_connection(workstationData, project_name='MicroStrategy Tutorial')
+# variable `connectionData` is stored within Workstation
+conn = get_connection(connectionData, project_name='MicroStrategy Tutorial')
 
 # assign ACL AggregatedRights.VIEW to UserGroup
 user_group = list_user_groups(conn, name='Mobile')[0]

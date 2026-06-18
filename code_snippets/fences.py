@@ -11,7 +11,7 @@ from mstrio.users_and_groups import User, UserGroup
 # Define a variable which can be later used in a script
 PROJECT_ID = $project_id
 
-conn = get_connection(workstationData, project_id=PROJECT_ID)
+conn = get_connection(connectionData, project_id=PROJECT_ID)
 
 # List fences
 # Note: No Fences exist in a default environment

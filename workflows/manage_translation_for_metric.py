@@ -2,7 +2,7 @@
 not work without replacing parameters with real values. Its basic goal is to
 present what can be done with this module and to ease its usage.
 
-1. Connect to the environment using data from the workstation
+1. Connect to the environment using data from the Workstation
 2. Define variables which can be later used in a script
 3. Add, alter and remove translations to/from an object by using Translation
    class
@@ -31,8 +31,8 @@ from mstrio.server import Language
 # Define a variable which can be later used in a script
 PROJECT_NAME = 'MicroStrategy Tutorial'  # Project to connect to
 
-# Create connection based on workstation data
-CONN = get_connection(workstationData, project_name=PROJECT_NAME)
+# Create connection based on Workstation data
+CONN = get_connection(connectionData, project_name=PROJECT_NAME)
 
 # Define variables which can be later used in a script
 METRIC_ID = 'F03528954D22B1C3454BC68978712F94'

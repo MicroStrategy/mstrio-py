@@ -3,7 +3,7 @@ from mstrio.modeling.expression.expression import Expression
 from mstrio.modeling.expression.expression_nodes import ElementListPredicate
 from mstrio.modeling.prompt import Prompt
 from mstrio.modeling.schema.helpers import ObjectSubType, SchemaObjectReference
-from mstrio.project_objects.incremental_refresh_report import ( 
+from mstrio.project_objects.incremental_refresh_report import (
     IncrementalRefreshReport,
     list_incremental_refresh_reports,
 )
@@ -37,7 +37,7 @@ template = Template(
     page_by=[],  # page_by is optional if empty
 )
 
-conn = get_connection(workstationData, PROJECT_NAME)
+conn = get_connection(connectionData, PROJECT_NAME)
 
 # List all incremental refresh reports in a project
 list_incremental_refresh_reports(conn, project_name=PROJECT_NAME)

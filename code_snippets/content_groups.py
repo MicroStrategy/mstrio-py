@@ -14,7 +14,7 @@ from mstrio.users_and_groups import User, UserGroup
 # Define a variable which can be later used in a script
 PROJECT_ID = $project_id  # Insert name of project here
 
-conn = get_connection(workstationData, project_id=PROJECT_ID)
+conn = get_connection(connectionData, project_id=PROJECT_ID)
 
 # List content groups with different conditions
 # Note: No Content Groups exist in a default environment

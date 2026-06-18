@@ -193,7 +193,7 @@ class CSVSettingsIO(SettingsIO):
         # does its own (universal) newline handling.
         # https://docs.python.org/3/library/csv.html#examples
         with open(file, 'w', newline='') as f:
-            # Add lines for workstation compatibility
+            # Add lines for Workstation compatibility
             version = cls.get_version(settings_obj)
             fieldnames = [
                 'Name',

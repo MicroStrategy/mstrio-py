@@ -144,6 +144,8 @@ class DatasourceType(AutoName):
     NORMAL = auto()
     DATA_IMPORT = auto()
     DATA_IMPORT_PRIMARY = auto()
+    SCRIPT = auto()
+    GIT_INTEGRATION = auto()
 
 
 @class_version_handler('11.3.0000')
@@ -158,7 +160,7 @@ class DatasourceInstance(Entity, CopyMixin, DeleteMixin, ModelVldbMixin, TenantM
         dbms: The database management system (DBMS) object
         database: `Database` object
         datasource_type: DatasourceType Enum (reserved, normal, data_import,
-            data_import_primary)
+            data_import_primary, script, git_integration)
         table_prefix: Table prefix
         odbc_version: Odbc version ENUM
         intermediate_store_db_name: Intermediate store DBName
@@ -363,7 +365,7 @@ class DatasourceInstance(Entity, CopyMixin, DeleteMixin, ModelVldbMixin, TenantM
             dbms: The database management system (DBMS) object or id
             description: Datasource description
             datasource_type: DatasourceType Enum (reserved, normal, data_import,
-                data_import_primary)
+                data_import_primary, script, git_integration)
             table_prefix: Table prefix
             odbc_version: Odbc version ENUM (version3x, version2x)
             intermediate_store_db_name: Intermediate store DBName
@@ -433,7 +435,7 @@ class DatasourceInstance(Entity, CopyMixin, DeleteMixin, ModelVldbMixin, TenantM
             name: Datasource name
             description: Datasource description
             datasource_type: DatasourceType Enum (reserved, normal, data_import,
-                data_import_primary)
+                data_import_primary, script, git_integration)
             table_prefix: Table prefix
             odbc_version: Odbc version ENUM (version3x, version2x)
             intermediate_store_db_name: Intermediate store DBName

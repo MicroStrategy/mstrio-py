@@ -209,8 +209,8 @@ def compare_obj_vldbs(
 
 PROJECT_NAME = 'MicroStrategy Tutorial'  # Project to connect to
 # Connect to environment without providing user credentials
-# Variable `workstationData` is stored within Workstation
-conn = get_connection(workstationData, project_name=PROJECT_NAME)
+# Variable `connectionData` is stored within Workstation
+conn = get_connection(connectionData, project_name=PROJECT_NAME)
 
 # Create an environment object
 env = Environment(conn)

@@ -9,8 +9,8 @@ from mstrio.server.language import list_interface_languages, list_languages, Lan
 # Define a variable which can be later used in a script
 PROJECT_NAME = $project_name  # Project to connect to
 
-# Create connection based on workstation data
-CONN = get_connection(workstationData, project_name=PROJECT_NAME)
+# Create connection based on connection data
+CONN = get_connection(connectionData, project_name=PROJECT_NAME)
 
 # List languages
 language_list = list_languages(connection=CONN)

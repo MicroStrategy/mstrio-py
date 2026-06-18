@@ -1,7 +1,7 @@
 """Remove each address from every departed user (those which are disabled).
 For each successfully removed address a message will be printed.
 
-1. Connect to the environment using data from workstation
+1. Connect to the environment using data from Workstation
 2. Get all users that are disabled
 3. For every retrieved user remove all its email addresses
 4. Return list which contains information about removed addresses such as user's id,
@@ -44,8 +44,8 @@ def delete_addresses_from_departed_users(connection: "Connection") -> List[dict]
 
 
 # connect to environment without providing user credentials
-# variable `workstationData` is stored within Workstation
-conn = get_connection(workstationData, 'MicroStrategy Tutorial')
+# variable `connectionData` is stored within Workstation
+conn = get_connection(connectionData, 'MicroStrategy Tutorial')
 
 # execute deletion of addresses from departed users
 delete_addresses_from_departed_users(conn)

@@ -10,9 +10,9 @@ from mstrio.modeling.metric import Metric
 from mstrio.object_management.shortcut import list_shortcuts
 
 
-# Create connection based on workstation data
+# Create connection based on connection data
 PROJECT_NAME = $project_name  # Project to connect to
-conn = get_connection(workstationData, project_name=PROJECT_NAME)
+conn = get_connection(connectionData, project_name=PROJECT_NAME)
 
 # Create a shortcut for an existing object, e.g. a metric
 METRIC_ID = $metric_id

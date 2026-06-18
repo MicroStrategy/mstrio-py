@@ -8,7 +8,7 @@ from mstrio.project_objects.content_cache import ContentCache
 # Define a variable which can be later used in a script
 PROJECT_NAME = $project_name  # Insert name of project here
 
-conn = get_connection(workstationData, PROJECT_NAME)
+conn = get_connection(connectionData, PROJECT_NAME)
 
 # Content cache management
 # Listing caches with different conditions
