@@ -84,6 +84,10 @@ Since version **11.3.0.1**, **mstrio-py** includes also administration modules:
 
 <!-- tox:docs:sort:start -->
 
+- **Data Model** management module for Mosaic data models (see [code_snippets][code_snippet_data_models])
+- **Workspace** and **Pipeline** management modules for Mosaic data preparation (see [code_snippets][code_snippet_workspaces])
+- **Smart Attributes** management module (see [code_snippets][code_snippet_smart_attributes])
+- **Mosaic settings** management module (see [code_snippets][code_snippet_mosaic_admin])
 - **Project** management module (see [code_snippets][code_snippet_project]) with **VLDB settings** management (see [code_snippets][code_snippet_vldb])
 - **Project languages** management module (see [code_snippets][code_snippet_project_languages])
 - **Server** management module (see [code_snippets][code_snippet_server])
@@ -202,6 +206,7 @@ When features (modules, parameters, attributes, methods etc.) are marked for dep
 [code_snippet_conn]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/connect.py
 [code_snippet_contact]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/contacts.py
 [code_snippet_contact_group]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/contact_group_mgmt.py
+[code_snippet_data_models]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/data_models.py
 [code_snippet_device]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/device_mgmt.py
 [code_snippet_import]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/cube_report.py
 [code_snippet_export]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/create_super_cube.py
@@ -250,3 +255,6 @@ When features (modules, parameters, attributes, methods etc.) are marked for dep
 [code_snippet_scripts]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/scripts.py
 [code_snippet_pa_stats]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/pa_statistics_mgmt.py
 [code_snippet_hl]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/history_list.py
+[code_snippet_workspaces]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/workspaces.py
+[code_snippet_smart_attributes]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/smart_attributes.py
+[code_snippet_mosaic_admin]: https://github.com/MicroStrategy/mstrio-py/blob/master/code_snippets/mosaic_admin.py

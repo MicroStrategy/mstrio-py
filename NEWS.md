@@ -1,5 +1,22 @@
 # Changelog
 
+## Unreleased
+
+### New features
+
+- added `modeling.data_model` module with `DataModel` class and component classes
+  (`DataModelTable`, `DataModelAttribute`, `DataModelMetric`, `DataModelFactMetric`,
+  `DataModelSecurityFilter`) supporting full Mosaic data model lifecycle: create, alter,
+  save as, YAML export/restore, publish with status polling, folders, links, external
+  data models, object ACLs and translations, and listing via `list_data_models`
+- added `Workspace`, `Pipeline` and `PipelineTable` classes in `project_objects.workspace`
+  module for Mosaic data-server workspaces
+- added smart attributes support: `SmartAttribute` class with `list_smart_attributes`,
+  `list_smart_attribute_templates` and `update_smart_attributes` functions, plus
+  data-model-scoped variants on `DataModelAttribute`
+- added Mosaic settings management in `server.mosaic` module: `get_mosaic_settings`,
+  `stage_mosaic_settings`, `commit_mosaic_settings` and `upload_mosaic_keytab`
+
 ## 11.6.6.101 - 2026/06/18
 
 ### New features

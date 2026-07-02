@@ -7,5 +7,6 @@ from .expression import *
 from .metric import *
 from .prompt import *
 from .security_filter import *
+from .data_model import *
 
 # isort: on

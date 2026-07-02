@@ -23,6 +23,7 @@ from .incremental_refresh_report import (
 from .library import Library
 from .palette import Palette, list_palettes
 from .report import Report, list_reports
+from .workspace import Pipeline, PipelineTable, Workspace
 
 import warnings as _w
 with _w.catch_warnings():  # FYI: simpler setup was added in 3.11
