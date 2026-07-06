@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from mstrio import config
 from mstrio.api import data_models
 from mstrio.connection import Connection
-from mstrio.helpers import MstrException
+from mstrio.helpers import MstrException, MstrTimeoutError
 from mstrio.modeling.data_model.data_model_attribute import (
     DataModelAttribute,
     list_data_model_attributes,
@@ -616,6 +616,14 @@ class DataModel(Entity, CopyMixin, MoveMixin, DeleteMixin):
             - Publish silently no-ops when physical-table columns carry
               warehouse-catalog sentinel dataTypes (precision -1 / scale
               -MIN_INT).
+            - The per-instance status can remain `1` (queued/running) even
+              after the cube has finished loading — notably when a second
+              publish is triggered while one is already running. On a
+              timeout (`MstrTimeoutError`), cross-check the authoritative
+              cube state via `mstrio.api.cubes.status` (the
+              'X-MSTR-CubeStatus' response header) before re-publishing.
+            - `connect_live` data models have no publish workflow — the
+              server rejects the publish trigger with ERR006.
 
         Args:
             refresh_policy (RefreshPolicy | str, optional): refresh policy
@@ -676,13 +684,23 @@ class DataModel(Entity, CopyMixin, MoveMixin, DeleteMixin):
             ]
             if (status.status is not None and status.status < 0) or failed_tables:
                 raise MstrException(
-                    f"Error publishing data model with ID: '{self.id}'. "
-                    f"Status: {status.to_dict()}"
+                    {
+                        'code': status.status,
+                        'message': (
+                            f"Error publishing data model with ID: '{self.id}'. "
+                            f"Status: {status.to_dict()}"
+                        ),
+                    }
                 )
             if time.time() - start > timeout:
-                raise MstrException(
-                    f"Timeout ({timeout}s) while publishing data model with "
-                    f"ID: '{self.id}'. Last status: {status.to_dict()}"
+                raise MstrTimeoutError(
+                    {
+                        'message': (
+                            f"Timeout ({timeout}s) while publishing data model "
+                            f"with ID: '{self.id}'. "
+                            f"Last status: {status.to_dict()}"
+                        )
+                    }
                 )
             time.sleep(polling_interval)
 
