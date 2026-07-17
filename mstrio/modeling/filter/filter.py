@@ -57,7 +57,7 @@ def list_filters(
     objects by specifying `filters` parameters.
 
     Args:
-        connection (object): Strategy One connection object returned by
+        connection (object): Strategy connection object returned by
             `connection.Connection()`
         name (str, optional): value the search pattern is set to, which
             will be applied to the names of filters being searched
@@ -153,7 +153,7 @@ def list_filters(
 
 @class_version_handler('11.3.0000')
 class Filter(Entity, CopyMixin, DeleteMixin, MoveMixin):
-    """Python representation of Strategy One Filter object.
+    """Python representation of Strategy Filter object.
 
     Attributes:
         name: name of the filter
@@ -256,7 +256,7 @@ class Filter(Entity, CopyMixin, DeleteMixin, MoveMixin):
         """Initialize filter object by its identifier.
 
         Args:
-            connection: Strategy One connection object returned
+            connection: Strategy connection object returned
                 by `connection.Connection()`
             id (str, optional): identifier of a pre-existing filter containing
                 the required data. Defaults to None.
@@ -334,7 +334,7 @@ class Filter(Entity, CopyMixin, DeleteMixin, MoveMixin):
         """Create a new filter in a specific project.
 
         Args:
-            connection: Strategy One connection object returned by
+            connection: Strategy connection object returned by
                 `connection.Connection()`
             name (str): name of a new filter
             destination_folder (Folder | str | FolderPathType, optional): Folder

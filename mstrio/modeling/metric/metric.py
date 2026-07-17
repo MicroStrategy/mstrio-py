@@ -76,7 +76,7 @@ def list_metrics(
         e.g. name_begins = ?onny will return Sonny and Tonny
 
     Args:
-        connection: Strategy One connection object returned by
+        connection: Strategy connection object returned by
             `connection.Connection()`
         name (str, optional): characters that the metric name must
             begin with
@@ -282,7 +282,7 @@ class Threshold(Dictable):
 
 
 class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin, ModelVldbMixin):  # noqa: F811
-    """Python representation of Strategy One Metric object.
+    """Python representation of Strategy Metric object.
 
     Attributes:
         id: metric's ID
@@ -539,7 +539,7 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin, ModelVldbMixin):  # noqa
         """Initializes a new instance of Metric class
 
         Args:
-            connection (Connection): Strategy One connection object returned
+            connection (Connection): Strategy connection object returned
                 by `connection.Connection()`
             id (str, optional): Metric's ID. Defaults to None.
             name (str, optional): Metric's name. Defaults to None.
@@ -682,7 +682,7 @@ class Metric(Entity, CopyMixin, MoveMixin, DeleteMixin, ModelVldbMixin):  # noqa
         """Create a new metric with specified properties.
 
         Args:
-            connection: Strategy One connection object returned
+            connection: Strategy connection object returned
                 by `connection.Connection()`
             name: metric's name
             sub_type: metric's sub_type

@@ -107,9 +107,11 @@ print(all_migs)
 
 # Create an Object migration
 
-# The PackageConfig object stores information on which objects should be
+# The `PackageConfig` object stores information on which objects should be
 # migrated and how to resolve conflicts.
 # The options are of type Enum with all possible values listed.
+#
+# First, initialize `PackageSettings`
 package_settings = PackageSettings(
     Action.USE_EXISTING,
     PackageSettings.UpdateSchema.RECAL_TABLE_LOGICAL_SIZE,
@@ -152,7 +154,7 @@ print(package_config.to_dict())
 
 # Also we can build PackageConfig from search results
 # Specifying object_action_map and object_dependents_map
-object_action_map=[(ObjectTypes.METRIC,Action.USE_OLDER), (ObjectTypes.ATTRIBUTE, Action.USE_NEWER)]
+object_action_map=[(ObjectTypes.METRIC, Action.USE_OLDER), (ObjectTypes.ATTRIBUTE, Action.USE_NEWER)]
 object_dependents_map=[(ObjectTypes.METRIC, True), (ObjectTypes.ATTRIBUTE, True)]
 package_config_search_results = Migration.build_package_config(
     conn_source,

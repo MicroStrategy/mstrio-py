@@ -25,7 +25,7 @@ def list_events(
     """List event objects or event dictionaries. Optionally filter list.
 
     Args:
-        connection(object): Strategy One connection object returned
+        connection(object): Strategy connection object returned
             by 'connection.Connection()'
         to_dictionary(bool, optional): if True, return event as
             list of dicts
@@ -48,10 +48,10 @@ def list_events(
 
 @class_version_handler('11.3.0100')
 class Event(Entity, CopyMixin, DeleteMixin, RelatedSubscriptionMixin, TenantMixin):
-    """Class representation of Strategy One Event object.
+    """Class representation of Strategy Event object.
 
     Attributes:
-        connection: A Strategy One connection object
+        connection: A Strategy connection object
         name: Event name
         id: Event ID
         description: Event descriptions
@@ -96,7 +96,7 @@ class Event(Entity, CopyMixin, DeleteMixin, RelatedSubscriptionMixin, TenantMixi
         `name` is omitted.
 
         Args:
-            connection: Strategy One connection object returned
+            connection: Strategy connection object returned
                 by `connection.Connection()`.
             id: Event ID
             name: Event name
@@ -146,7 +146,7 @@ class Event(Entity, CopyMixin, DeleteMixin, RelatedSubscriptionMixin, TenantMixi
         """Create an Event
 
         Args:
-            connection: Strategy One connection object returned
+            connection: Strategy connection object returned
                 by `connection.Connection()`.
             name: Name of the new Event
             description: Description of the new Event

@@ -25,7 +25,7 @@ class Content(Dictable):
         DOCUMENT = auto()
         CUBE = auto()
         UNSUPPORTED = auto()
-        DASHBOARD = 'dossier'
+        DASHBOARD = "dossier"
 
     class Properties(Dictable):
         """Class representation of personalization properties
@@ -75,6 +75,7 @@ class Content(Dictable):
             TABLET = auto()
             JSON = auto()
             MSTR = auto()
+            IMAGE = auto()
 
         class ExportToPdfSettings(Dictable):
             """Export to PDF Settings
@@ -201,7 +202,7 @@ class Content(Dictable):
                 address_attribute: Attribute | None = None,
             ) -> list[str]:
                 slicing_attributes = [
-                    f'{sa.id}~{sa.name}' if isinstance(sa, Attribute) else sa
+                    f"{sa.id}~{sa.name}" if isinstance(sa, Attribute) else sa
                     for sa in (
                         slicing_attributes
                         if isinstance(slicing_attributes, list)
@@ -212,11 +213,11 @@ class Content(Dictable):
                 if not slicing_attributes:
                     if address_attribute:
                         slicing_attributes = [
-                            f'{address_attribute.id}~{address_attribute.name}'
+                            f"{address_attribute.id}~{address_attribute.name}"
                         ]
                     elif address_attribute_id and address_attribute_name:
                         slicing_attributes = [
-                            f'{address_attribute_id}~{address_attribute_name}'
+                            f"{address_attribute_id}~{address_attribute_name}"
                         ]
                     else:
                         msg = (

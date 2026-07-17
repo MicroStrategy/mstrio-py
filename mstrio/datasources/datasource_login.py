@@ -24,7 +24,7 @@ def list_datasource_logins(
     logins by specifying filters.
 
     Args:
-        connection: Strategy One connection object returned by
+        connection: Strategy connection object returned by
             `connection.Connection()`
         to_dictionary: If True returns dict, by default (False) returns
             User objects.
@@ -179,7 +179,7 @@ class DatasourceLogin(Entity, CopyMixin, DeleteMixin, TenantMixin):
         """Create a new datasource login.
 
         Args:
-            connection: Strategy One connection object returned by
+            connection: Strategy connection object returned by
                 `connection.Connection()`
             name: login object name
             username: username

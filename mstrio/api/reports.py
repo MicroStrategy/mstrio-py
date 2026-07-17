@@ -20,7 +20,7 @@ def report_sql(
     the data warehouse to retrieve the data for the report.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         report_id (str): Unique ID of the report
         instance_id (str): Unique ID of the in-memory instance of a published
             report.
@@ -43,7 +43,7 @@ def report_definition(connection: 'Connection', report_id: str) -> 'Response':
     retrieve values dynamically, helping with performance and scalability.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         report_id (str): Unique ID of the report
 
     Returns:
@@ -67,7 +67,7 @@ def report_instance(
     report instance can be used by other requests.
 
     Args:
-        connection: Strategy One REST API connection object.
+        connection: Strategy REST API connection object.
         report_id (str): Unique ID of the report you wish to extract information
             from.
         offset (int, optional): Starting point within the collection of returned
@@ -115,7 +115,7 @@ def report_instance_id(
     request.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         report_id (str): Unique ID of the report you wish to extract information
             from.
         instance_id (str): Unique ID of the in-memory instance of a published
@@ -175,7 +175,7 @@ def report_single_attribute_elements(
     """Get elements of a specific attribute of a specific report.
 
     Args:
-        connection: Strategy One REST API connection object.
+        connection: Strategy REST API connection object.
         report_id (str): Unique ID of the report you wish to extract information
             from.
         attribute_id (str): Unique ID of the attribute in the report.
@@ -204,7 +204,7 @@ def report_single_attribute_elements_coroutine(
     """Get elements of a specific attribute of a specific report.
 
     Args:
-        future_session(object): Future Session object to call Strategy One REST
+        future_session(object): Future Session object to call Strategy REST
             Server asynchronously
         report_id (str): Unique ID of the report you wish to extract information
             from.
@@ -238,7 +238,7 @@ def get_report_prompts(
     report.
 
     Args:
-        connection: Strategy One REST API connection object.
+        connection: Strategy REST API connection object.
         report_id (str): Unique ID of the report you wish
             to extract information from.
         closed: Prompt status, true means get closed prompt,
@@ -265,7 +265,7 @@ def answer_report_prompts(
     """Provide answers to the prompts in a report instance.
 
     Args:
-        connection (Connection): Strategy One REST API connection object.
+        connection (Connection): Strategy REST API connection object.
         report_id (str): Unique ID of the report
         instance_id (str): Unique ID of the in-memory instance of a published
             report
@@ -290,7 +290,7 @@ def answer_report_prompts(
         project_id (str, optional): Project ID.
 
     Returns:
-        HTTP response object returned by the Strategy One REST server.
+        HTTP response object returned by the Strategy REST server.
     """
     if not project_id:
         project_id = connection.project_id
@@ -314,7 +314,7 @@ def get_prompted_instance(
     instance has prompt which need to be answered.
 
     Args:
-        connection: Strategy One REST API connection object.
+        connection: Strategy REST API connection object.
         report_id (str): Unique ID of the report you wish
             to extract information from.
         instance_id (str): Unique ID of the in-memory instance of a published
@@ -376,7 +376,7 @@ def get_report_status(
     """Get the status of a report instance.
 
     Args:
-        connection (Connection): Strategy One REST API connection object.
+        connection (Connection): Strategy REST API connection object.
         report_id (str): Report ID
         instance_id (str): Report Instance ID
         project_id (str, optional): Project ID
@@ -408,7 +408,7 @@ def get_vldb_settings(
     """Get advanced VLDB settings for a report.
 
     Args:
-        connection (Connection): Strategy One REST API connection object
+        connection (Connection): Strategy REST API connection object
         id (string): Datasource ID
         instance_id (string, optional): Report Instance ID
         error_msg (string, optional): Custom Error Message for Error Handling
@@ -435,7 +435,7 @@ def update_vldb_settings(
     """Update metadata of advanced VLDB settings for a report.
 
     Args:
-        connection (Connection): Strategy One REST API connection object
+        connection (Connection): Strategy REST API connection object
         id (string): Report ID
         instance_id (string): Report Instance ID
         body (dict): JSON-formatted data used to update VLDB settings
@@ -462,7 +462,7 @@ def get_applicable_vldb_settings(
     """Get metadata of advanced VLDB settings for a report.
 
     Args:
-        connection (Connection): Strategy One REST API connection object
+        connection (Connection): Strategy REST API connection object
         id (string): Report ID
         instance_id (string, optional): Report Instance ID
         error_msg (string, optional): Custom Error Message for Error Handling
@@ -492,7 +492,7 @@ def execute_report(
     execute this API asynchronously.
 
     Args:
-        connection (Connection): Strategy One REST API connection object.
+        connection (Connection): Strategy REST API connection object.
         report_id (str): Unique ID of the report you wish to execute.
         prefer (str, optional): Response preference. Default is 'respond-async'.
         instance_id (str, optional): Unique ID of an existing in-memory instance
@@ -537,7 +537,7 @@ def get_available_page_by_elements(
     """Get available page-by elements for a specific report.
 
     Args:
-        connection: Strategy One REST API connection object.
+        connection: Strategy REST API connection object.
         project_id (str): Unique ID of the project containing the report.
         report_id (str): Unique ID of the report you wish to extract information
             from.

@@ -12,7 +12,7 @@ def get(connection: Connection, id: str) -> dict:
     """Get migration by a specific ID.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         id: ID of the Migration
 
     Returns:

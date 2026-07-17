@@ -1,5 +1,5 @@
 """This is the demo script to show how to work with Scripts and execute
-Python code server-side in Strategy One.
+Python code server-side in Strategy.
 
 This script showcases basic Code and Script management, execution, and
 variable handling. It will not work without replacing parameters with
@@ -40,8 +40,8 @@ conn = get_connection(connectionData, project_name=PROJECT_NAME)
 
 # --- Code Execution ---
 # Create a Code instance from a string
-code = Code(conn, code="print('Hello from Strategy One')")  # will not validate the code
-code = Code(conn, code="print('Hello from Strategy One')", validate_code=True)
+code = Code(conn, code="print('Hello from Strategy')")  # will not validate the code
+code = Code(conn, code="print('Hello from Strategy')", validate_code=True)
 
 # Load code from a file (with or without validation)
 code = Code.get_from_file(conn, Path('./my_script.py'))  # will not validate the code

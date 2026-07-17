@@ -21,7 +21,7 @@ class Library:
     that have been shared to the user's Library.
 
     Attributes:
-        connection (Connection): Strategy One connection object returned
+        connection (Connection): Strategy connection object returned
             by `connection.Connection()`.
         project_id (str): ID of the project that the Library is in.
         user_id (str): ID of the authenticated user.
@@ -41,7 +41,7 @@ class Library:
         """Initialize the Library object.
 
         Args:
-            connection (Connection): Strategy One connection object returned
+            connection (Connection): Strategy connection object returned
                 by `connection.Connection()`.
             project (Project | str, optional): Project object or ID or name
                 specifying the project. May be used instead of `project_id` or

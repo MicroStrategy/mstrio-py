@@ -1,10 +1,10 @@
-![Strategy One Logo][logo]
+![Strategy Logo][logo]
 
 [![image](https://img.shields.io/pypi/v/mstrio-py.svg)](https://pypi.org/project/mstrio-py)
 [![image](https://img.shields.io/pypi/l/mstrio-py.svg)](https://pypi.org/project/mstrio-py)
 [![image](https://img.shields.io/pypi/dm/mstrio-py.svg)](https://pypi.org/project/mstrio-py)
 
-# mstrio-py: Simple and Secure Access to Strategy One Data
+# mstrio-py: Simple and Secure Access to Strategy Data
 
 <!-- tox:docs:2: installation :start -->
 
@@ -71,14 +71,14 @@ Detailed information about **mstrio-py** package can be found in [**official doc
 
 ## Main Features
 
-Main features of **mstrio-py** allows to access Strategy One data:
+Main features of **mstrio-py** allows to access Strategy data:
 
-- Connect to your Strategy One environment using **Connection** class (see [code_snippets][code_snippet_conn])
+- Connect to your Strategy environment using **Connection** class (see [code_snippets][code_snippet_conn])
 
   **Note**: to log into Library and use mstrio-py user needs to have _UseLibrary_ privilege.
 
 - Import and filter data from a **OlapCube**, **SuperCube** or **Report** into a Pandas DataFrame (see [code_snippets][code_snippet_import])
-- Export data into Strategy One by creating or updating **SuperCube** (see [code_snippets][code_snippet_export])
+- Export data into Strategy by creating or updating **SuperCube** (see [code_snippets][code_snippet_export])
 
 Since version **11.3.0.1**, **mstrio-py** includes also administration modules:
 
@@ -142,9 +142,9 @@ Since version **11.3.0.1**, **mstrio-py** includes also administration modules:
 
 ## Versioning & Changelog
 
-Current version: **11.6.6.101** (18 June 2026). Check out [CHANGELOG][release_notes] to see what's new.
+Current version: **11.6.7.101** (17 July 2026). Check out [CHANGELOG][release_notes] to see what's new.
 
-`mstrio-py` is constantly developed to support newest Strategy One REST APIs. Functionalities may be added to mstrio on monthly basis. It is **recommended** to always install the newest version of mstrio-py, as it will be most stable and still maintain backwards compatibility with various Strategy One installations, dating back to 11.1.4.
+`mstrio-py` is constantly developed to support newest Strategy REST APIs. Functionalities may be added to mstrio on monthly basis. It is **recommended** to always install the newest version of mstrio-py, as it will be most stable and still maintain backwards compatibility with various Strategy installations, dating back to 11.1.4.
 
 Features that will be added to the package but require APIs not supported by your environment (I-Server), will raise `VersionException`.
 
@@ -182,8 +182,8 @@ When features (modules, parameters, attributes, methods etc.) are marked for dep
 ### More Resources
 
 - [Learn more about mstrio-py][mstrio_py_doc]
-- [Learn more about Strategy One REST API][mstr_rest_docs]
-- [Strategy One REST API demo documentation][mstr_rest_demo]
+- [Learn more about Strategy REST API][mstr_rest_docs]
+- [Strategy REST API demo documentation][mstr_rest_demo]
 
 <!-- tox:docs: info & resources :end -->
 

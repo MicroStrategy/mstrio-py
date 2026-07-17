@@ -38,7 +38,7 @@ def send_email_to_administrator(connection: Connection, subject: str, content: s
     """Send an email to the Administrator.
 
     Args:
-        connection: Strategy One connection object.
+        connection: Strategy connection object.
         subject: Email subject.
         content: Email content.
     """
@@ -60,7 +60,7 @@ def manage_email_subscription(
     """Manage the Email Subscription.
 
     Args:
-        connection: Strategy One connection object.
+        connection: Strategy connection object.
         datasource_instance: Datasource instance object.
         project: Project object.
     """
@@ -98,7 +98,7 @@ def manage_mobile_subscription(
     """Manage the Mobile Subscription.
 
     Args:
-        connection: Strategy One connection object.
+        connection: Strategy connection object.
         datasource_instance: Datasource instance object.
         project: Project object.
     """
@@ -165,7 +165,7 @@ def manage_execution(connection: 'Connection'):
     """Manage Pre-/Post-execution SQL statements with Subscription execution.
 
     Args:
-        connection: Strategy One connection object.
+        connection: Strategy connection object.
     """
     datasource_instance = DatasourceInstance(
         connection=connection, name='Tutorial Postgres'

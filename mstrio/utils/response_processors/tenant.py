@@ -25,7 +25,7 @@ def get_tenant_data(
     """Get tenant data and map REST response keys to Tenant attributes.
 
     Args:
-        connection: Strategy One REST API connection object.
+        connection: Strategy REST API connection object.
         id: Tenant ID.
         fields: Comma-separated list of fields to retrieve.
 
@@ -50,7 +50,7 @@ def create_tenant(
     """Create a new tenant.
 
     Args:
-        connection: Strategy One REST API connection object.
+        connection: Strategy REST API connection object.
         name: Name of the tenant to create.
         suffix: Tenant suffix. If None, the suffix is not sent.
         fields: Comma-separated list of fields to retrieve in the response.
@@ -79,7 +79,7 @@ def add_tenant_members(
     """Add members to a specific tenant.
 
     Args:
-        connection: Strategy One REST API connection object.
+        connection: Strategy REST API connection object.
         tenant_id: Tenant ID.
         members: List of members to add. Expected shape for each item:
             {
@@ -101,7 +101,7 @@ def remove_tenant_members(
     """Remove members from a tenant.
 
     Args:
-        connection: Strategy One REST API connection object.
+        connection: Strategy REST API connection object.
         members: List of members to remove. Expected shape for each item:
             {
                 "memberId": "string",

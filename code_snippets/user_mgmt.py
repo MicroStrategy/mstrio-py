@@ -271,7 +271,7 @@ ADDRESS = $address
 user_john = User(connection=conn, name=FULLNAME_6)
 # The user's addresses list is lazily loaded upon first accessing the property
 johns_addresses = user_john.addresses
-# Strategy One allows having multiple addresses marked as default
+# Strategy allows having multiple addresses marked as default
 # as long as they are assigned to different device.
 # The 'default' argument is automatically set to True.
 # Let's add new default address to John.

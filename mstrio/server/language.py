@@ -27,7 +27,7 @@ def list_languages(
     Optionally filter the languages by specifying filters.
 
     Args:
-        connection: Strategy One connection object
+        connection: Strategy connection object
         to_dictionary: if True returns a list of Language dicts,
             otherwise returns a list of Language objects
         limit: limit the number of elements returned. If `None` (default), all
@@ -48,7 +48,7 @@ def list_interface_languages(
     """List all available interface languages.
 
     Args:
-        connection (Connection): Strategy One connection object returned
+        connection (Connection): Strategy connection object returned
             by `connection.Connection()`
         to_dictionary: if True returns a list of InterfaceLanguage dicts,
             otherwise returns a list of InterfaceLanguage objects
@@ -67,7 +67,7 @@ def list_interface_languages(
 
 @class_version_handler(version='11.3.1060')
 class Language(Entity, DeleteMixin):
-    """Python representation of a Strategy One Language object.
+    """Python representation of a Strategy Language object.
 
     Attributes:
         id (str): language's ID
@@ -202,7 +202,7 @@ class Language(Entity, DeleteMixin):
         """Initializes a new instance of a Language class
 
         Args:
-            connection (Connection): Strategy One connection object returned
+            connection (Connection): Strategy connection object returned
                 by `connection.Connection()`
             id (str, Optional): Language's ID, defaults to None
             name (str, Optional): Language's name, defaults to None
@@ -252,7 +252,7 @@ class Language(Entity, DeleteMixin):
         """Create a new language with specified properties.
 
         Args:
-            connection (Connection): Strategy One connection object returned
+            connection (Connection): Strategy connection object returned
                 by `connection.Connection()`
             name (str): the name for the new Language
             base_language (Language | str | int): one of the following:
@@ -315,7 +315,7 @@ class Language(Entity, DeleteMixin):
         """Alter the language's specified properties.
 
         Args:
-            connection (Connection): Strategy One connection object returned
+            connection (Connection): Strategy connection object returned
                 by `connection.Connection()`
             name (str, Optional): new name for the Language
             comments (str, optional): long description of the Language

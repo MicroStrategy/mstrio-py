@@ -18,8 +18,7 @@ def delete_subscriptions_of_departed_users(connection: "Connection") -> None:
     """Delete all subscription in all projects which owners are departed users.
 
     Args:
-        Args:
-        connection: Strategy One connection object returned by
+        connection: Strategy connection object returned by
             `connection.Connection()`
     """
 

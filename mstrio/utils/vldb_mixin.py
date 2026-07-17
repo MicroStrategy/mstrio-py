@@ -56,7 +56,7 @@ class ResolvedLocation(AutoName):
 
 @dataclass
 class VldbSetting(Dictable):
-    """Class representation of single Strategy One VLDB setting.
+    """Class representation of single Strategy VLDB setting.
 
     Attributes:
         type (VldbPropertyType): Type of VLDB setting value.
@@ -326,7 +326,7 @@ class ModelVldbMixin:
 
         Args:
             names_to_values (dict[str, str | int | float | bool]): Dict with
-                VlDB settings names as keys and newly requested to set values
+                VLDB settings names as keys and newly requested to set values
                 as dictionary values. As VLDB Setting name you can provide both:
                 key or display name.
 

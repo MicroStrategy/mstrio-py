@@ -67,7 +67,7 @@ try:
     connection = psycopg2.connect(
         host=$host,
         port=$port,
-        database=$database,
+        dbname=$dbname,
         user=$user_name,
         password=$user_password
     )

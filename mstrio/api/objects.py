@@ -55,7 +55,7 @@ def get_object_info(
     provided in EnumDSSXMLObjectTypes.
 
     Args:
-        connection (object): Strategy One connection object returned by
+        connection (object): Strategy connection object returned by
             `connection.Connection()`.
         id (str): Object ID
         object_type (int): One of EnumDSSXMLObjectTypes. Ex. 34 (User or
@@ -68,7 +68,7 @@ def get_object_info(
             Defaults to [('ERR001 ', 500)] - ignore "Object not found" errors.
 
     Returns:
-        HTTP response object returned by the Strategy One REST server.
+        HTTP response object returned by the Strategy REST server.
     """
     project_id = _validate_project_id(connection, project_id)
 
@@ -92,7 +92,7 @@ def get_object_info_async(
 
     Args:
         future_session (FuturesSessionWithRenewal): Future Session object
-            to call Strategy One REST Server asynchronously
+            to call Strategy REST Server asynchronously
         id (str): Object ID
         object_type (int): One of EnumDSSXMLObjectTypes. Ex. 34 (User or
         UserGroup), 44 (Security Role), 32 (Project), 8 (Folder), 36 (type of
@@ -100,7 +100,7 @@ def get_object_info_async(
         project_id (str): ID of a project in which the object is located.
 
     Returns:
-        HTTP response object returned by the Strategy One REST server.
+        HTTP response object returned by the Strategy REST server.
     """
     project_id = _validate_project_id(future_session, project_id)
 
@@ -128,7 +128,7 @@ def delete_object(
     provided in EnumDSSXMLObjectTypes.
 
     Args:
-        connection (object): Strategy One connection object returned by
+        connection (object): Strategy connection object returned by
             `connection.Connection()`.
         id (str): Object ID
         object_type (int): One of EnumDSSXMLObjectTypes. Ex. 34 (User or
@@ -140,7 +140,7 @@ def delete_object(
             object's change journal entry.
 
     Returns:
-        HTTP response object returned by the Strategy One REST server.
+        HTTP response object returned by the Strategy REST server.
     """
     project_id = _validate_project_id(connection, project_id, False)
     params = {'type': object_type}
@@ -166,7 +166,7 @@ def bulk_delete_objects(
     values for object type are provided in EnumDSSXMLObjectTypes.
 
     Args:
-        connection (object): Strategy One connection object returned by
+        connection (object): Strategy connection object returned by
             `connection.Connection()`.
         body (list): List of dictionaries containing object IDs and types, e.g.
             [{"id": "object_id_1", "type": 3}, {"id": "object_id_2", "type": 8}]
@@ -209,7 +209,7 @@ def bulk_delete_project_objects(
         `ids` and `object_types` must have the same `len` to be zipped together.
 
     Args:
-        connection (object): Strategy One connection object returned by
+        connection (object): Strategy connection object returned by
             `connection.Connection()`.
         ids (list): List of object IDs
         object_types (list): List of object types
@@ -217,7 +217,7 @@ def bulk_delete_project_objects(
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
-        HTTP response object returned by the Strategy One REST server.
+        HTTP response object returned by the Strategy REST server.
     """
     if not ids or not object_types:
         raise ValueError("Both ids and object_types must be provided.")
@@ -255,7 +255,7 @@ def update_object(
     provided in EnumDSSXMLObjectTypes.
 
     Args:
-        connection (object): Strategy One connection object returned by
+        connection (object): Strategy connection object returned by
             `connection.Connection()`.
         id (str): Object ID
         body: (object): body of the response
@@ -266,7 +266,7 @@ def update_object(
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
-        HTTP response object returned by the Strategy One REST server.
+        HTTP response object returned by the Strategy REST server.
     """
     project_id = _validate_project_id(connection, project_id, False)
     comment = extract_comment_from_body(body)
@@ -303,7 +303,7 @@ def copy_object(
     the same folder as the source object.
 
     Args:
-        connection (object): Strategy One connection object returned by
+        connection (object): Strategy connection object returned by
             `connection.Connection()`.
         id (str): Object ID
         object_type (int): One of EnumDSSXMLObjectTypes. Ex. 34 (User or
@@ -313,7 +313,7 @@ def copy_object(
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
-        HTTP response object returned by the Strategy One REST server.
+        HTTP response object returned by the Strategy REST server.
     """
     project_id = _validate_project_id(connection, project_id, False)
 
@@ -340,7 +340,7 @@ def get_property_set(
     """Update a property set for an object.
 
     Args:
-        connection (Connection): Strategy One REST API connection object
+        connection (Connection): Strategy REST API connection object
         id (string): Project id string
         obj_type (int): Object type, as in ObjectTypes enum
         property_set_id (string): ID of a property set
@@ -366,7 +366,7 @@ def update_property_set(
     """Update a property set for an object.
 
     Args:
-        connection (Connection): Strategy One REST API connection object
+        connection (Connection): Strategy REST API connection object
         id (string): Project id string
         obj_type (int): Object type, as in ObjectTypes enum
         error_msg (string, optional): Custom Error Message for Error Handling
@@ -387,7 +387,7 @@ def get_vldb_settings(
     """Get vldb settings for an object.
 
     Args:
-        connection (object): Strategy One connection object returned by
+        connection (object): Strategy connection object returned by
             `connection.Connection()`.
         id (str): Object ID
         object_type (int): DssXmlTypeReportDefinition(3) for Dataset and
@@ -396,7 +396,7 @@ def get_vldb_settings(
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
-        HTTP response object returned by the Strategy One REST server
+        HTTP response object returned by the Strategy REST server
     """
     headers = {}
     if project_id:
@@ -422,7 +422,7 @@ def delete_vldb_settings(
     reset all vldb settings to default.
 
     Args:
-        connection (object): Strategy One connection object returned by
+        connection (object): Strategy connection object returned by
             `connection.Connection()`.
         id (str): Object ID
         object_type (int): DssXmlTypeReportDefinition(3) for Dataset and
@@ -431,7 +431,7 @@ def delete_vldb_settings(
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
-        HTTP response object returned by the Strategy One REST server
+        HTTP response object returned by the Strategy REST server
     """
     headers = {}
     if project_id:
@@ -456,7 +456,7 @@ def set_vldb_settings(
     """Set vldb settings for one property set in one object.
 
     Args:
-        connection (object): Strategy One connection object returned by
+        connection (object): Strategy connection object returned by
             `connection.Connection()`.
         id (str): Object ID
         object_type (int): DssXmlTypeReportDefinition(3) for Dataset and
@@ -468,7 +468,7 @@ def set_vldb_settings(
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
-        HTTP response object returned by the Strategy One REST server
+        HTTP response object returned by the Strategy REST server
     """
     headers = {}
     if project_id:
@@ -490,7 +490,7 @@ def toggle_certification(connection: Connection, id, object_type=3, certify=True
     """Certify/Uncertify a multi-table dataset.
 
     Args:
-        connection (object): Strategy One connection object returned by
+        connection (object): Strategy connection object returned by
             `connection.Connection()`.
         id (str): Identifier of a pre-existing dataset. Used when
             certifying a pre-existing dataset.
@@ -500,7 +500,7 @@ def toggle_certification(connection: Connection, id, object_type=3, certify=True
             certify (True) or decertify (False); defaults to True.
 
     Returns:
-        HTTP response object returned by the Strategy One REST server.
+        HTTP response object returned by the Strategy REST server.
     """
     endpoint = (
         f'/api/objects/{id}/certify/?type={str(object_type)}&certify={str(certify)}'
@@ -522,7 +522,7 @@ def update_translations(
 ):
     """Update translations for a specific object.
     Args:
-        connection (Connection): Strategy One connection object returned by
+        connection (Connection): Strategy connection object returned by
             `connection.Connection()`
         project_id (str): ID of the project in which the object is located
         id (str): ID of the object
@@ -531,7 +531,7 @@ def update_translations(
         fields(list, optional): Comma separated top-level field whitelist. This
             allows client to selectively retrieve part of the response model
     Returns:
-        HTTP response object returned by the Strategy One REST server."""
+        HTTP response object returned by the Strategy REST server."""
 
     object_type = ObjectTypes(object_type).name
     return connection.patch(
@@ -548,7 +548,7 @@ def get_translations(
 ):
     """Get translations for a specific object.
     Args:
-        connection (Connection): Strategy One connection object returned by
+        connection (Connection): Strategy connection object returned by
             `connection.Connection()`
         project_id (str | None): ID of the project in which the object is
             located in.
@@ -557,7 +557,7 @@ def get_translations(
         fields(list, optional): Comma separated top-level field whitelist. This
             allows client to selectively retrieve part of the response model
     Returns:
-        HTTP response object returned by the Strategy One REST server."""
+        HTTP response object returned by the Strategy REST server."""
 
     object_type = ObjectTypes(object_type).name
     return connection.get(
@@ -578,7 +578,7 @@ def create_shortcut(
     """Create a shortcut to an object.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         id: ID of the object to create a shortcut to
         object_type: Type of the object to create a shortcut to
         body: A dictionary specifying the request body

@@ -233,7 +233,7 @@ def list_functions(
         e.g. name_begins = ?onny will return Sonny and Tonny
 
     Args:
-        connection: Strategy One connection object returned by
+        connection: Strategy connection object returned by
             `connection.Connection()`
         name (string, optional): value the search pattern is set to, which
             will be applied to the names of functions being searched

@@ -11,14 +11,14 @@ def create_change_journal_search_instance(
     """Create a Change Journal search instance.
 
     Args:
-        connection (Connection): Strategy One connection object returned by
+        connection (Connection): Strategy connection object returned by
             `connection.Connection()`
         body (dict): JSON-formatted body of the search instance
         fields (str, optional): Comma separated top-level field whitelist. This
             allows client to selectively retrieve part of the response model
 
     Returns:
-        HTTP response object returned by the Strategy One REST server.
+        HTTP response object returned by the Strategy REST server.
     """
     return connection.post(
         endpoint='/api/changeJournal',
@@ -38,7 +38,7 @@ def get_change_journal_search_results(
     """Get Change Journal search results.
 
     Args:
-        connection (Connection): Strategy One connection object returned by
+        connection (Connection): Strategy connection object returned by
             `connection.Connection()`
         search_id (str): ID of the search instance
         offset (int, optional): Starting point within the collection of
@@ -49,7 +49,7 @@ def get_change_journal_search_results(
             allows client to selectively retrieve part of the response model
 
     Returns:
-        HTTP response object returned by the Strategy One REST server.
+        HTTP response object returned by the Strategy REST server.
     """
     return connection.get(
         endpoint=f'/api/changeJournal/{search_id}',
@@ -69,7 +69,7 @@ def purge_change_journal_entries(
     """Purge Change Journal entries.
 
     Args:
-        connection (Connection): Strategy One connection object returned by
+        connection (Connection): Strategy connection object returned by
             `connection.Connection()`
         all_projects (bool, optional): If true, purge entries for all projects
             in the environment. If false, purge entries for the specified

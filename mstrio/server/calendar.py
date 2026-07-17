@@ -26,7 +26,7 @@ def list_calendars(
     """List all available calendar objects.
 
     Args:
-        connection (Connection): Strategy One connection object returned
+        connection (Connection): Strategy connection object returned
             by `connection.Connection()`
         to_dictionary: If True, returns a list of dicts,
             otherwise returns a list of Calendar objects
@@ -225,7 +225,7 @@ class Calendar(Entity, CopyMixin, DeleteMixin):
         """Create a new calendar with the specified properties.
 
         Args:
-            connection (Connection): Strategy One connection object returned by
+            connection (Connection): Strategy connection object returned by
                 `connection.Connection()`
             name (str): Name of the calendar object
             base_calendar (str or Calendar, optional): Reference (ID or Calendar

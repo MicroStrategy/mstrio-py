@@ -1,7 +1,7 @@
 """This is the demo script to show how to manage tenants and
 tenant-aware objects.
 
-Tenants are available on Strategy One environments with I-Server version
+Tenants are available on Strategy environments with I-Server version
 11.6.0100 and higher.
 
 This script will not work without replacing parameters with real values.

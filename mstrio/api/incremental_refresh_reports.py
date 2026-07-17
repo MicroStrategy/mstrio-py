@@ -16,7 +16,7 @@ def get_incremental_refresh_report(
     """Get a definition of incremental refresh report
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         id (str): Incremental Refresh Report's ID
         project_id (str, optional): ID of a project
         show_expression_as (list[str], optional): Specifies the format in
@@ -71,7 +71,7 @@ def create_incremental_refresh_report(
     based on the definition provided in request body.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         body (dict): Incremental Refresh Report's creation data
         project_id (str, optional): ID of a project
         show_expression_as (list[str], optional): Specifies the format in
@@ -128,7 +128,7 @@ def update_incremental_refresh_report(
     based on the definition provided in request body.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         id (str): Incremental Refresh Report's ID
         body (dict): Incremental Refresh Report's update data
         project_id (str, optional): ID of a project
@@ -178,7 +178,7 @@ def get_incremental_refresh_report_vldb_properties(
     """Get vldb properties of an incremental refresh report.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         id (str): Incremental Refresh Report's ID
         project_id (str): ID of a project
 
@@ -202,7 +202,7 @@ def execute_incremental_refresh_report(
     """Execute an incremental refresh report.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         id (str): Incremental Refresh Report's ID
         project_id (str): ID of a project
         fields (str, optional): A whitelist of top-level fields separated
@@ -233,7 +233,7 @@ def request_incremental_refresh_report_preview_data(
     """Request preview data for an incremental refresh report.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         id (str): Incremental Refresh Report's ID
         instance_id (str): Instance's ID of an Incremental Refresh Report
         project_id (str): ID of a project
@@ -263,7 +263,7 @@ def get_incremental_refresh_report_preview_data(
     """Get preview data for an incremental refresh report.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         id (str): Incremental Refresh Report's ID
         instance_id (str): Instance's ID of an Incremental Refresh Report
         project_id (str): ID of a project
@@ -291,7 +291,7 @@ def create_incremental_refresh_report_instance(connection: Connection, id: str):
     """Create instance of an incremental refresh report.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         id (str): Incremental Refresh Report's ID
 
         Return:
@@ -309,7 +309,7 @@ def delete_incremental_refresh_report_instance(
     """Delete instance of an incremental refresh report.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         id (str): Incremental Refresh Report's ID
         instance_id (str): Incremental Refresh Report Instance ID
 

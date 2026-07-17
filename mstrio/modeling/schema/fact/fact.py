@@ -53,7 +53,7 @@ def list_facts(
     """Get list of Fact objects or dicts with them.
 
     Args:
-        connection (object): Strategy One connection object returned by
+        connection (object): Strategy connection object returned by
             `connection.Connection()`
         name (optional, str): value the search pattern is set to, which
             will be applied to the names of facts being searched
@@ -139,7 +139,7 @@ def list_facts(
 
 @class_version_handler('11.3.0100')
 class Fact(Entity, CopyMixin, DeleteMixin, MoveMixin):
-    """Python representation for Strategy One `Fact` object.
+    """Python representation for Strategy `Fact` object.
 
     Attributes:
         id: fact's ID
@@ -253,7 +253,7 @@ class Fact(Entity, CopyMixin, DeleteMixin, MoveMixin):
             is provided, `id` will be found automatically if such object exists.
 
         Args:
-             connection (object): Strategy One connection object returned by
+             connection (object): Strategy connection object returned by
                 `connection.Connection()`.
             id (optional, str): Identifier of a pre-existing fact containing the
                 required data.
@@ -341,7 +341,7 @@ class Fact(Entity, CopyMixin, DeleteMixin, MoveMixin):
         """Create new fact object.
 
         Args:
-            connection (object): Strategy One connection object returned
+            connection (object): Strategy connection object returned
                 by `connection.Connection()`
             name (str): new fact's name
             sub_type (str, enum): new fact's sub_type

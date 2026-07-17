@@ -57,7 +57,7 @@ def list_objects(
     objects by specifying filters.
 
     Args:
-        connection (Connection): Strategy One connection object returned by
+        connection (Connection): Strategy connection object returned by
             `connection.Connection()`
         object_type (TypeOrSubtype | int): Object type. Possible values can
             be found in EnumDSSXMLObjectTypes
@@ -149,7 +149,7 @@ def bulk_delete_objects(
     """Delete multiple objects in bulk.
 
     Args:
-        connection (Connection): Strategy One connection object returned by
+        connection (Connection): Strategy connection object returned by
             `connection.Connection()`
         objects (list[Object] | list[dict] | list[str]): List of objects to
             delete. Can be a list of Object instances, dicts with object
@@ -322,7 +322,7 @@ class Object(Entity, ACLMixin, CertifyMixin, CopyMixin, MoveMixin, DeleteMixin):
         """Initialize object by ID.
 
         Args:
-            connection: Strategy One connection object returned by
+            connection: Strategy connection object returned by
                 `connection.Connection()`.
             id (str): Identifier of an existing object.
             type (ObjectTypes): object type

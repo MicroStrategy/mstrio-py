@@ -9,7 +9,7 @@ def get_all(connection: Connection) -> list[dict]:
     """Get information for all gateways.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
 
     Returns:
         list of dict representing gateway objects
@@ -22,7 +22,7 @@ def get(connection: Connection, id: str) -> dict:
     """Get gateway by a specific ID.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         id: ID of the gateway
 
     Returns:

@@ -84,7 +84,7 @@ def list_incremental_refresh_reports(
         e.g. name = ?onny will return Sonny and Tonny
 
     Args:
-        connection (Connection): Strategy One connection object returned by
+        connection (Connection): Strategy connection object returned by
             `connection.Connection()`
         name (string, optional): value the search pattern is set to, which
             will be applied to the names of reports being searched
@@ -184,7 +184,7 @@ def list_incremental_refresh_reports(
 class IncrementalRefreshReport(
     Entity, CopyMixin, MoveMixin, DeleteMixin, ModelVldbMixin, PromptMixin
 ):
-    """Python representation of Strategy One Incremental Refresh Report object.
+    """Python representation of Strategy Incremental Refresh Report object.
 
     Attributes:
         name: (str) Name of the Incremental Refresh Report
@@ -312,7 +312,7 @@ class IncrementalRefreshReport(
         """Initialize an Incremental Refresh Report object.
 
         Args:
-            connection: Strategy One connection object returned by
+            connection: Strategy connection object returned by
                 `connection.Connection()`
             id (str, optional): ID of the Incremental Refresh Report
             name (str, optional): Name of the Incremental Refresh Report
@@ -549,7 +549,7 @@ class IncrementalRefreshReport(
         """Create a new Incremental Refresh Report.
 
         Args:
-            connection: Strategy One connection object returned by
+            connection: Strategy connection object returned by
                 `connection.Connection()`
             name (str, optional): Name of the Incremental Refresh Report
             destination_folder (Folder | str | FolderPathType, optional): Folder
@@ -676,7 +676,7 @@ class IncrementalRefreshReport(
         from an existing Intelligent Cube.
 
         Args:
-            connection: Strategy One connection object returned by
+            connection: Strategy connection object returned by
                 `connection.Connection()`
             name (str, optional): Name of the Incremental Refresh Report
             destination_folder (Folder, str): Folder object or folder ID where

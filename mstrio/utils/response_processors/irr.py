@@ -16,7 +16,7 @@ def execute_incremental_refresh_report(
     """Execute an Incremental Refresh Report.
 
     Args:
-        connection (Connection): Strategy One REST API connection object
+        connection (Connection): Strategy REST API connection object
         id (str): Incremental Refresh Report's ID
         project_id (str): ID of a project
         fields (str, optional): A whitelist of top-level fields separated

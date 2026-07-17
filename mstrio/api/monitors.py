@@ -32,7 +32,7 @@ def get_projects(
 ):
     """Get list of all projects from metadata.
     Args:
-        connection(object): Strategy One connection object returned by
+        connection(object): Strategy connection object returned by
             `connection.Connection()`.
         offset(int): Starting point within the collection of returned search
             results. Used to control paging behavior.
@@ -42,7 +42,7 @@ def get_projects(
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
-        HTTP response object returned by the Strategy One REST server.
+        HTTP response object returned by the Strategy REST server.
     """
 
     return connection.get(
@@ -58,7 +58,7 @@ def get_projects_async(
     """Get list of all projects from metadata asynchronously.
     Args:
         future_session(object): `FuturesSessionWithRenewal` object to call
-            Strategy One REST Server asynchronously
+            Strategy REST Server asynchronously
         offset(int): Starting point within the collection of returned search
             results. Used to control paging behavior.
         limit(int): Maximum number of items returned for a single search
@@ -66,7 +66,7 @@ def get_projects_async(
             limit (subject to governing settings).
 
     Returns:
-        HTTP response object returned by the Strategy One REST server.
+        HTTP response object returned by the Strategy REST server.
     """
     endpoint = '/api/monitors/projects'
     headers = {'X-MSTR-ProjectID': None}
@@ -92,7 +92,7 @@ def get_node_info(
     on each node. This operation requires the "Monitor cluster" privilege.
 
     Args:
-        connection(object): Strategy One connection object returned by
+        connection(object): Strategy connection object returned by
 
         id (str, optional): Project ID
         node_name (str, optional): Node Name
@@ -132,7 +132,7 @@ def update_node_properties(
     }
 
     Args:
-        connection(object): Strategy One connection object returned by
+        connection(object): Strategy connection object returned by
             `connection.Connection()`.
         node_name (string): Node Name.
         project_id (string): Project ID.
@@ -143,7 +143,7 @@ def update_node_properties(
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
-        HTTP response object returned by the Strategy One REST server.
+        HTTP response object returned by the Strategy REST server.
     """
 
     return connection.patch(
@@ -166,14 +166,14 @@ def get_project_status_on_node(
     """Get status of a project on a specific cluster node.
 
     Args:
-        connection(object): Strategy One connection object returned by
+        connection(object): Strategy connection object returned by
             `connection.Connection()`.
         node_name (string): Node Name.
         project_id (string): Project ID.
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
-        HTTP response object returned by the Strategy One REST server.
+        HTTP response object returned by the Strategy REST server.
     """
     return connection.get(
         endpoint=f'/api/monitors/iServer/nodes/{node_name}/projects/{project_id}/status'
@@ -192,7 +192,7 @@ def update_project_status(
     """Update status of a project on all cluster nodes.
 
     Args:
-        connection (object): Strategy One connection object returned by
+        connection (object): Strategy connection object returned by
             `connection.Connection()`.
         body (dict): Request body containing the updated project status.
         project_id (str, optional): Project ID to select. Must be provided if
@@ -204,7 +204,7 @@ def update_project_status(
         error_msg (string, optional): Custom error message for error handling
 
     Returns:
-        HTTP response object returned by the Strategy One REST server.
+        HTTP response object returned by the Strategy REST server.
     """
     params = {
         'projectId': project_id,
@@ -236,7 +236,7 @@ def add_node(
     privilege.
 
     Args:
-        connection(object): Strategy One connection object returned by
+        connection(object): Strategy connection object returned by
             `connection.Connection()`.
         node_name (string): Node Name.
         error_msg (string, optional): Custom Error Message for Error Handling
@@ -245,7 +245,7 @@ def add_node(
             i.e. whitelist = [('ERR001', 500),('ERR004', 404)]
 
     Returns:
-        HTTP response object returned by the Strategy One REST server.
+        HTTP response object returned by the Strategy REST server.
     """
 
     return connection.put(
@@ -272,7 +272,7 @@ def remove_node(
     "Administer cluster" privilege.
 
     Args:
-        connection(object): Strategy One connection object returned by
+        connection(object): Strategy connection object returned by
             `connection.Connection()`.
         node_name (string): Node Name.
         error_msg (string, optional): Custom Error Message for Error Handling
@@ -281,7 +281,7 @@ def remove_node(
             i.e. whitelist = [('ERR001', 500),('ERR004', 404)]
 
     Returns:
-        HTTP response object returned by the Strategy One REST server.
+        HTTP response object returned by the Strategy REST server.
     """
 
     return connection.delete(
@@ -301,7 +301,7 @@ def get_user_connections(
     """Get user connections information on specific intelligence server node.
 
     Args:
-        connection(object): Strategy One connection object returned by
+        connection(object): Strategy connection object returned by
             `connection.Connection()`.
         offset(int): Starting point within the collection of returned search
             results. Used to control paging behavior.
@@ -312,7 +312,7 @@ def get_user_connections(
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
-        HTTP response object returned by the Strategy One REST server.
+        HTTP response object returned by the Strategy REST server.
     """
     return connection.get(
         endpoint='/api/monitors/userConnections',
@@ -331,7 +331,7 @@ def get_user_connections_async(
 
     Args:
         future_session(object): `FuturesSessionWithRenewal` object to call
-            Strategy One REST Server asynchronously
+            Strategy REST Server asynchronously
         node_name (string): Node Name.
         offset(int): Starting point within the collection of returned search
             results. Used to control paging behavior.
@@ -340,7 +340,7 @@ def get_user_connections_async(
             limit (subject to governing settings).
 
     Returns:
-        HTTP response object returned by the Strategy One REST server.
+        HTTP response object returned by the Strategy REST server.
     """
     params = {'clusterNode': node_name, 'offset': offset, 'limit': limit}
     endpoint = '/api/monitors/userConnections'
@@ -355,7 +355,7 @@ def delete_user_connection(
     """Disconnect a user connection on specific intelligence server node.
 
     Args:
-        connection(object): Strategy One connection object returned by
+        connection(object): Strategy connection object returned by
             `connection.Connection()`.
         id (str, optional): Project ID
         error_msg (string, optional): Custom Error Message for Error Handling
@@ -379,7 +379,7 @@ def delete_user_connection_async(future_session: 'FuturesSessionWithRenewal', id
 
     Args:
         future_session(object): `FuturesSessionWithRenewal` object to call
-            Strategy One REST Server asynchronously
+            Strategy REST Server asynchronously
         id (str, optional): Project ID
     """
 
@@ -393,12 +393,12 @@ def delete_user_connections(connection: 'Connection', ids: list[str]):
     """Delete user connections on specific intelligence server node.
 
     Args:
-        connection(object): Strategy One connection object returned by
+        connection(object): Strategy connection object returned by
             `connection.Connection()`.
         ids (list of strings): list with ids of user connections to be deleted.
 
     Returns:
-        HTTP response object returned by the Strategy One REST server
+        HTTP response object returned by the Strategy REST server
     """
     body = {'userConnectionIds': ids}
     response = connection.post(
@@ -412,7 +412,7 @@ def get_cube_cache_info(connection: 'Connection', id: str):
     """Get a single cube cache info.
 
     Args:
-        connection: Strategy One connection object returned by
+        connection: Strategy connection object returned by
             `connection.Connection()`.
         id (string): cube cache id
 
@@ -427,7 +427,7 @@ def delete_cube_cache(connection: 'Connection', id: str, throw_error: bool = Tru
     """Delete a cube cache.
 
     Args:
-        connection: Strategy One connection object returned by
+        connection: Strategy connection object returned by
             `connection.Connection()`.
         id (string): cube cache id
         throw_error (bool, optional): Flag indicates if the error should be
@@ -451,7 +451,7 @@ def alter_cube_cache_status(
     'active' or 'loaded', never both.
 
     Args:
-        connection: Strategy One connection object returned by
+        connection: Strategy connection object returned by
             `connection.Connection()`.
         id (string): cube cache id,
         active (bool, optional): make cube cache active (True) or inactive
@@ -489,7 +489,7 @@ def get_cube_caches(
     """Get the list of cube caches on a specific cluster node.
 
     Args:
-        connection: Strategy One connection object returned by
+        connection: Strategy connection object returned by
             `connection.Connection()`.
         node (string): Intelligence Server cluster node name
         offset (integer, optional): Starting point within the collection of
@@ -536,7 +536,7 @@ def get_cube_caches_async(
     """Get the list of cube caches on a specific cluster node asynchronously.
 
     Args:
-        future_session(object): Future Session object to call Strategy One REST
+        future_session(object): Future Session object to call Strategy REST
             Server asynchronously
         node (string): Intelligence Server cluster node name
         offset (integer, optional): Starting point within the collection of
@@ -553,7 +553,7 @@ def get_cube_caches_async(
         sort_by (string, optional): Specify sorting criteria. For example
             '+name,-size' means sorting name ascending and size descending.
     Returns:
-        Future with HTTP response returned by the Strategy One REST server as
+        Future with HTTP response returned by the Strategy REST server as
         a result.
     """
     endpoint = '/api/monitors/caches/cubes'
@@ -577,7 +577,7 @@ def get_cube_cache_manipulation_status(
     """Get the manipulation status of cube cache.
 
     Args:
-        connection: Strategy One connection object returned by
+        connection: Strategy connection object returned by
             `connection.Connection()`.
         manipulation_id (string): cube cache manipulation ID
         throw_error (bool, optional): In case of True (default) the error will
@@ -601,12 +601,12 @@ def get_database_connections(
         server node.
 
     Args:
-        connection(object): Strategy One connection object returned by
+        connection(object): Strategy connection object returned by
             `connection.Connection()`.
         nodes_names (string): Node names split by ",".
         error_msg (string, optional): Custom Error Message for Error Handling
     Returns:
-        HTTP response object returned by the Strategy One REST server.
+        HTTP response object returned by the Strategy REST server.
     """
     return connection.get(
         endpoint='/api/monitors/dbConnectionInstances',
@@ -621,7 +621,7 @@ def delete_database_connection(
     """Disconnect a database connection on specific intelligence server node.
 
     Args:
-        connection(object): Strategy One connection object returned by
+        connection(object): Strategy connection object returned by
             `connection.Connection()`.
         connection_id (str, optional): Database Connection Id
         error_msg (string, optional): Custom Error Message for Error Handling
@@ -637,7 +637,7 @@ def delete_database_connection_async(
     """Disconnect a database connection on specific intelligence server node.
 
     Args:
-        future_session: Future Session object to call Strategy One REST
+        future_session: Future Session object to call Strategy REST
             Server asynchronously
         connection_id (str, optional): Database Connection Id
     """
@@ -655,7 +655,7 @@ def get_job(
     """Get job information.
 
     Args:
-        connection(object): Strategy One connection object returned by
+        connection(object): Strategy connection object returned by
             `connection.Connection()`.
         node_name(str, optional): Node name, if not passed list jobs
             on all nodes
@@ -663,7 +663,7 @@ def get_job(
             allows client to selectively retrieve part of the response model.
         error_msg (string, optional): Custom Error Message for Error Handling
     Returns:
-        HTTP response object returned by the Strategy One REST server
+        HTTP response object returned by the Strategy REST server
     """
     response = Mock()  # create empty mock object to mimic REST API response
 
@@ -715,13 +715,13 @@ def get_job_v2(
     """Get job information.
 
     Args:
-        connection(object): Strategy One connection object returned by
+        connection(object): Strategy connection object returned by
             `connection.Connection()`.
         fields(list, optional): Comma separated top-level field whitelist. This
             allows client to selectively retrieve part of the response model.
         error_msg (string, optional): Custom Error Message for Error Handling
     Returns:
-        HTTP response object returned by the Strategy One REST server
+        HTTP response object returned by the Strategy REST server
     """
     return connection.get(
         endpoint=f'/api/v2/monitors/jobs/{id}',
@@ -745,7 +745,7 @@ def get_jobs(
     """Get list of a jobs.
 
     Args:
-        connection(object): Strategy One connection object returned by
+        connection(object): Strategy connection object returned by
             `connection.Connection()`.
         node_name(str): Node name,
         project_id(str, optional): Project id ,
@@ -758,7 +758,7 @@ def get_jobs(
             allows client to selectively retrieve part of the response model.
         error_msg (string, optional): Custom Error Message for Error Handling
     Returns:
-        HTTP response object returned by the Strategy One REST server
+        HTTP response object returned by the Strategy REST server
     """
     params = {
         'nodeName': node_name,  # this needs to be first to work
@@ -790,7 +790,7 @@ def get_jobs_async(
     """Get list of a jobs asynchronously.
 
     Args:
-        future_session(object): Future Session object to call Strategy One REST
+        future_session(object): Future Session object to call Strategy REST
             Server asynchronously
         node_name(str): Node name,
         project_id(str, optional): Project id,
@@ -844,7 +844,7 @@ def get_jobs_v2(
     """Get list of a jobs.
 
     Args:
-        connection(object): Strategy One connection object returned by
+        connection(object): Strategy connection object returned by
             `connection.Connection()`.
         node_name(str): Node name,
         user(str, optional): Field to filter on job owner's full name (exact
@@ -884,7 +884,7 @@ def get_jobs_v2(
             allows client to selectively retrieve part of the response model.
         error_msg (string, optional): Custom Error Message for Error Handling
     Returns:
-        HTTP response object returned by the Strategy One REST server
+        HTTP response object returned by the Strategy REST server
     """
     params = {
         'nodeName': node_name,  # this needs to be first to work
@@ -932,7 +932,7 @@ def get_jobs_v2_async(
     """Get list of a jobs asynchronously.
 
     Args:
-        future_session(object): Future Session object to call Strategy One REST
+        future_session(object): Future Session object to call Strategy REST
             Server asynchronously
         node_name(str): Node name,
         user(str, optional): Field to filter on job owner's full name (exact
@@ -1009,14 +1009,14 @@ def cancel_job(
     is 11.3.2 or cancel_job_v2 otherwise.
 
     Args:
-        connection(object): Strategy One connection object returned by
+        connection(object): Strategy connection object returned by
             `connection.Connection()`.
         id(str): ID of the job
         fields(list, optional): Comma separated top-level field whitelist. This
             allows client to selectively retrieve part of the response model.
         error_msg(str, optional): Customized error message.
     Returns:
-        HTTP response object returned by the Strategy One REST server
+        HTTP response object returned by the Strategy REST server
     """
     if connection.iserver_version and version.parse(
         connection.iserver_version
@@ -1036,14 +1036,14 @@ def cancel_job_v1(
     """Cancel a job specified by `id`.
 
     Args:
-        connection(object): Strategy One connection object returned by
+        connection(object): Strategy connection object returned by
             `connection.Connection()`.
         id(str): ID of the job
         fields(list, optional): Comma separated top-level field whitelist. This
             allows client to selectively retrieve part of the response model.
         error_msg(str, optional): Customized error message.
     Returns:
-        HTTP response object returned by the Strategy One REST server
+        HTTP response object returned by the Strategy REST server
     """
     params = {'fields': ','.join(fields) if fields else None}
 
@@ -1060,14 +1060,14 @@ def cancel_job_v2(
     """Cancel a job specified by `id`.
 
     Args:
-        connection(object): Strategy One connection object returned by
+        connection(object): Strategy connection object returned by
             `connection.Connection()`.
         id(str): ID of the job
         fields(list, optional): Comma separated top-level field whitelist. This
             allows client to selectively retrieve part of the response model.
         error_msg(str, optional): Customized error message.
     Returns:
-        HTTP response object returned by the Strategy One REST server
+        HTTP response object returned by the Strategy REST server
     """
     params = {'fields': ','.join(fields) if fields else None}
 
@@ -1081,7 +1081,7 @@ def cancel_jobs(
     is 11.3.2 or cancel_jobs_v2 otherwise.
 
     Args:
-        connection(object): Strategy One connection object returned by
+        connection(object): Strategy connection object returned by
             `connection.Connection()`.
         ids(List[str]): IDs of the jobs
         fields(list, optional): Comma separated top-level field whitelist. This
@@ -1107,13 +1107,13 @@ def cancel_jobs_v1(
     """Cancel jobs specified by `ids`.
 
     Args:
-        connection(object): Strategy One connection object returned by
+        connection(object): Strategy connection object returned by
             `connection.Connection()`.
         ids(List[str]): IDs of the jobs
         fields(list, optional): Comma separated top-level field whitelist. This
             allows client to selectively retrieve part of the response model.
     Returns:
-        HTTP response object returned by the Strategy One REST server
+        HTTP response object returned by the Strategy REST server
     """
     params = {'fields': ','.join(fields) if fields else None}
 
@@ -1132,13 +1132,13 @@ def cancel_jobs_v2(
     """Cancel jobs specified by `ids`.
 
     Args:
-        connection(object): Strategy One connection object returned by
+        connection(object): Strategy connection object returned by
             `connection.Connection()`.
         ids(List[str]): IDs of the jobs
         fields(list, optional): Comma separated top-level field whitelist. This
             allows client to selectively retrieve part of the response model.
     Returns:
-        HTTP response object returned by the Strategy One REST server
+        HTTP response object returned by the Strategy REST server
     """
     params = {'fields': ','.join(fields) if fields else None}
 
@@ -1173,7 +1173,7 @@ def get_contents_caches(
     """Get cache objects
 
     Args:
-        connection(object): Strategy One connection object returned by
+        connection(object): Strategy connection object returned by
             `connection.Connection()`,
         project_id(str): Field to filter on project id (exact
             match),
@@ -1231,7 +1231,7 @@ def update_contents_caches(
         in multiple projects at specific node.
 
     Args:
-        connection(object): Strategy One connection object returned by
+        connection(object): Strategy connection object returned by
             `connection.Connection()`,
         node(str): Node name,
         body(dict): List of contents
@@ -1253,7 +1253,7 @@ def delete_caches(connection: 'Connection', project_id: str, cache_type: str):
     """Delete element or object caches for a specific project.
 
     Args:
-        connection(object): Strategy One connection object returned by
+        connection(object): Strategy connection object returned by
             `connection.Connection()`,
         project_id(str): Project id,
         cache_type(str): Cache type

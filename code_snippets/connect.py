@@ -1,5 +1,5 @@
 """
-This demo script shows how to connect to Strategy One Environment. This script
+This demo script shows how to connect to Strategy Environment. This script
 will not work without replacing parameters with real values. Its basic goal is
 to present what can be done with this module and to ease its usage.
 """
@@ -20,8 +20,8 @@ from mstrio import config
 # Define a variable which can be later used in a script
 PROJECT_NAME = $project_name  # Insert project name here
 
-# The Connection object manages your connection to Strategy One. Connect to
-# your Strategy One environment by providing the URL to the Strategy One REST
+# The Connection object manages your connection to Strategy. Connect to
+# your Strategy environment by providing the URL to the Strategy REST
 # API server, your username, password and the ID of the Project to connect to.
 # When a Connection object is created the user will be automatically logged-in.
 # Connection object automatically renews the connection or reconnects,
@@ -63,7 +63,7 @@ API_TOKEN = $api_token  # insert your api token here
 # To use API Token, just provide it to your Connection object via `api_token=` parameter:
 # If API Token is provided, login mode will automatically be set to 4096.
 # The identity token can be obtained by sending a request to
-# Strategy One REST API /auth/apiTokens endpoint.
+# Strategy REST API /auth/apiTokens endpoint.
 conn = Connection(BASE_URL, api_token=API_TOKEN, project_id=PROJECT_ID)
 
 # Once logged in, regardless of the method used, you can generate API Token for yourself
@@ -76,7 +76,7 @@ IDENTITY_TOKEN = $identity_token  # Insert your identity token here
 
 # Optionally, the Connection object can be created by passing the IDENTITY_TOKEN
 # parameter, which will create a delegated session. The identity token can be
-# obtained by sending a request to Strategy One REST API /auth/identityToken
+# obtained by sending a request to Strategy REST API /auth/identityToken
 # endpoint.
 conn = Connection(BASE_URL, identity_token=IDENTITY_TOKEN, project_id=PROJECT_ID)
 
@@ -206,7 +206,7 @@ PROXIES = {'http': PROXIES_HTTP_VALUE, PROXIES_HTTPS_KEY: PROXIES_HTTPS_VALUE }
 PROXIES_HTTP_VALUE_USERNAME_AND_PASSWORD = $proxies_http_value_username_and_password
 
 # Proxy
-# Optionally, proxy settings can be set for the Strategy One Connection object.
+# Optionally, proxy settings can be set for the Strategy Connection object.
 conn = Connection(BASE_URL, MSTR_USERNAME, MSTR_PASSWORD, project_id=PROJECT_ID, proxies=PROXIES)
 
 # User can also specify username and password in proxies parameter to use HTTP

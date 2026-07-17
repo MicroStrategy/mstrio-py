@@ -28,7 +28,7 @@ def get_documentation_list(
     """Get a list of documentation items with filtering and sorting options.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         id (str, optional): Comma-separated list of documentation IDs
         documentation_name (str, optional): Documentation name
         sort_by (str, optional): Sort by field with direction.
@@ -90,7 +90,7 @@ def create_documentation(
     later is Ready from /api/documentation/status.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         documentation_definition_id (str): Documentation definition ID
         error_msg (str, optional): Custom Error Message for Error Handling
 
@@ -112,7 +112,7 @@ def delete_documentation(
     """Delete documentation by documentation ID.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         id (str): Documentation ID
         error_msg (str, optional): Custom Error Message for Error Handling
 
@@ -134,7 +134,7 @@ def update_documentation(
     """Update documentation by documentation ID.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         id (str): Documentation ID
         body (dict): Dictionary containing documentation updates.
         error_msg (str, optional): Custom Error Message for Error Handling
@@ -159,7 +159,7 @@ def get_documentation_resource(
     """Get resource file in documentation by resource ID.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         id (str): Documentation ID
         resource_id (str): Resource ID
         fields (str, optional): Comma-separated list of fields to return
@@ -186,7 +186,7 @@ def export_documentation(
     This is a sync method so it can take a long time to finish.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         id (str): Documentation ID
         export_format (str, optional): Export format for the
             documentation file. Supported values: csv, json, excel
@@ -216,7 +216,7 @@ def get_documentation_objects(
     """Get documentation objects.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         id (str): Documentation ID
         documentation_object_name (str, optional): Documentation object
             name filter
@@ -262,7 +262,7 @@ def get_documentation_status(
     """Get job statuses for a list of documentation jobs.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         documentation_ids (str, optional): Comma-separated list of
             documentation IDs to get statuses for
         error_msg (str, optional): Custom Error Message for Error Handling

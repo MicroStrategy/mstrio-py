@@ -65,7 +65,7 @@ def list_transformations(
         e.g. name_begins = ?onny will return Sonny and Tonny
 
     Args:
-        connection: Strategy One connection object returned by
+        connection: Strategy connection object returned by
             `connection.Connection()`
         name (string, optional): characters that the transformation name must
             begin with
@@ -166,7 +166,7 @@ class MappingType(AutoName):
 
 @class_version_handler('11.3.0500')
 class Transformation(Entity, CopyMixin, MoveMixin, DeleteMixin):
-    """Python representation of Strategy One Transformation object.
+    """Python representation of Strategy Transformation object.
 
     Attributes:
         id: transformation's ID
@@ -252,7 +252,7 @@ class Transformation(Entity, CopyMixin, MoveMixin, DeleteMixin):
         """Initializes a new instance of Transformation class
 
         Args:
-            connection (Connection): Strategy One connection object returned
+            connection (Connection): Strategy connection object returned
                 by `connection.Connection()`
             id (str, optional): Transformation's ID. Defaults to None.
             name (str, optional): Transformation's name. Defaults to None.
@@ -346,7 +346,7 @@ class Transformation(Entity, CopyMixin, MoveMixin, DeleteMixin):
         """Create Transformation object.
 
         Args:
-            connection: Strategy One connection object returned
+            connection: Strategy connection object returned
                 by `connection.Connection()`
             sub_type: transformation's sub_type
             name: transformation's name

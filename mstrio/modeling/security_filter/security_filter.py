@@ -68,7 +68,7 @@ def list_security_filters(
         When both arguments are provided error is raised.
 
     Args:
-        connection (object): Strategy One connection object returned by
+        connection (object): Strategy connection object returned by
             `connection.Connection()`
         name_contains (str, optional): Text that security filter's name
             must contain
@@ -178,7 +178,7 @@ class UpdateOperator(Enum):
 
 @class_version_handler('11.3.0100')
 class SecurityFilter(Entity, CopyMixin, DeleteMixin, MoveMixin):
-    """Python representation of Strategy One Security Filter object.
+    """Python representation of Strategy Security Filter object.
 
     Attributes:
         name: name of the security filter
@@ -293,7 +293,7 @@ class SecurityFilter(Entity, CopyMixin, DeleteMixin, MoveMixin):
         """Initialize security filter object by its identifier.
 
         Args:
-            connection: Strategy One connection object returned
+            connection: Strategy connection object returned
                 by `connection.Connection()`
             id (str): identifier of a pre-existing security filter containing
                 the required data. Defaults to None.
@@ -390,7 +390,7 @@ class SecurityFilter(Entity, CopyMixin, DeleteMixin, MoveMixin):
         """Create a new security filter in a specific project.
 
         Args:
-            connection: Strategy One connection object returned by
+            connection: Strategy connection object returned by
                 `connection.Connection()`
             name (str): name of a new security filter
             destination_folder (Folder | str | FolderPathType, optional): Folder

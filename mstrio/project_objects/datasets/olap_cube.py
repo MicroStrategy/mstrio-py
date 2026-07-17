@@ -74,7 +74,7 @@ def list_olap_cubes(
         e.g. name = ?onny will return Sonny and Tonny
 
     Args:
-        connection (Connection): Strategy One connection object returned by
+        connection (Connection): Strategy connection object returned by
             `connection.Connection()`
         name (string, optional): value the search pattern is set to, which
             will be applied to the names of olap cubes being searched
@@ -149,7 +149,7 @@ class OlapCube(ModelVldbMixin, _Cube):
     Cube.
 
     Attributes:
-        connection: Strategy One connection object returned by
+        connection: Strategy connection object returned by
             `connection.Connection()`.
         id (str): Identifier of a pre-existing cube.
         instance_id (str): Identifier of a cube instance if already initialized,
@@ -254,7 +254,7 @@ class OlapCube(ModelVldbMixin, _Cube):
             uniquely identify cube.
 
         Args:
-            connection: Strategy One connection object returned by
+            connection: Strategy connection object returned by
                 `connection.Connection()`.
             id (str): Identifier of a pre-existing cube.
             name (str): Name of a cube.
@@ -365,7 +365,7 @@ class OlapCube(ModelVldbMixin, _Cube):
     ) -> list[dict] | list[pd.DataFrame]:
         """Get all metrics available on I-Server.
         Args:
-            connection: Strategy One connection object returned by
+            connection: Strategy connection object returned by
                 `connection.Connection()`
             basic_info_only(boolean, optional): When True (default value) only
                 values of `id`, `name` and `type` will be returned for each
@@ -390,7 +390,7 @@ class OlapCube(ModelVldbMixin, _Cube):
     ) -> list[dict] | list[pd.DataFrame]:
         """Get all attributes available on I-Server.
         Args:
-            connection: Strategy One connection object returned by
+            connection: Strategy connection object returned by
                 `connection.Connection()`
             basic_info_only(boolean, optional): When True (default value) only
                 values of `id`, `name` and `type` will be returned for each
@@ -415,7 +415,7 @@ class OlapCube(ModelVldbMixin, _Cube):
     ) -> list[dict] | list[pd.DataFrame]:
         """Get all attribute forms available on I-Server.
         Args:
-            connection: Strategy One connection object returned by
+            connection: Strategy connection object returned by
                 `connection.Connection()`
             basic_info_only(boolean, optional): When True (default value) only
                 values of `id`, `name` and `type` will be returned for each
@@ -500,7 +500,7 @@ class OlapCube(ModelVldbMixin, _Cube):
             cases.
 
         Args:
-            connection: Strategy One connection object returned by
+            connection: Strategy connection object returned by
                 `connection.Connection()`.
             name (str): OLAP Cube name.
             folder_id (str): ID of the folder where OLAP Cube should be saved.

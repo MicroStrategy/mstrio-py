@@ -2,14 +2,14 @@ from mstrio.utils.error_handlers import ErrorHandler
 
 
 @ErrorHandler(
-    err_msg="Error obtaining the list of registered nodes from the Strategy One "
+    err_msg="Error obtaining the list of registered nodes from the Strategy "
     "deployment."
 )
 def get_nodes(connection, error_msg=None):
-    """Obtain the list of registered nodes from the Strategy One deployment.
+    """Obtain the list of registered nodes from the Strategy deployment.
 
     Args:
-        connection(object): Strategy One connection object returned by
+        connection(object): Strategy connection object returned by
             'connection.Connection().
         error_msg (string, optional): Custom Error Message for Error Handling
     """
@@ -18,14 +18,14 @@ def get_nodes(connection, error_msg=None):
 
 @ErrorHandler(
     err_msg="Error obtaining the list of registered services available from "
-    "the Strategy One deployment"
+    "the Strategy deployment"
 )
 def get_services(connection, error_msg=None):
-    """Obtain the list of registered services available from the Strategy One
+    """Obtain the list of registered services available from the Strategy
     deployment.
 
     Args:
-        connection(object): Strategy One connection object returned by
+        connection(object): Strategy connection object returned by
             'connection.Connection().
         error_msg (string, optional): Custom Error Message for Error Handling
     """
@@ -34,14 +34,14 @@ def get_services(connection, error_msg=None):
 
 @ErrorHandler(
     err_msg="Error obtaining the metadata information for the registered services"
-    " available from the Strategy One deployment."
+    " available from the Strategy deployment."
 )
 def get_services_metadata(connection, error_msg=None):
     """Obtain the metadata information for the registered services available
-    from the Strategy One deployment.
+    from the Strategy deployment.
 
     Args:
-        connection(object): Strategy One connection object returned by
+        connection(object): Strategy connection object returned by
             "connection.Connection().
         error_msg (string, optional): Custom Error Message for Error Handling
     """
@@ -55,7 +55,7 @@ def start_stop_service(
     """Start or stop registered service.
 
     Args:
-        connection(object): Strategy One connection object returned by
+        connection(object): Strategy connection object returned by
             'connection.Connection()
         login (string): login for SSH operation
         password (string): password for SSH operation

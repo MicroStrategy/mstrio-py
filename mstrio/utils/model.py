@@ -50,7 +50,7 @@ class Model:
                 `table_name`, `data_frame`, and optionally `as_attribute` and
                 `as_metric`. Note that `as_attribute` and `as_metric` should be
                 used when the default Python data type (e.g. `int`) should be
-                converted to an attribute instead of a metric in Strategy One.
+                converted to an attribute instead of a metric in Strategy.
             name (str): Name of the data set.
             description (str, optional): Description of the data set. Must be
                 less than or equal to 250 characters.

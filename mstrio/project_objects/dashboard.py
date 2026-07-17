@@ -51,7 +51,7 @@ def list_dashboards(
     If `to_dictionary` is True, `to_dataframe` is omitted.
 
     Args:
-        connection(object): Strategy One connection object returned
+        connection(object): Strategy connection object returned
             by 'connection.Connection()'
         name: characters that the dashboard name must contain
         to_dictionary(bool, optional): if True, return Dashboards as
@@ -119,7 +119,7 @@ def list_dashboards_across_projects(
     If `to_dictionary` is True, `to_dataframe` is omitted.
 
     Args:
-        connection(object): Strategy One connection object returned
+        connection(object): Strategy connection object returned
             by 'connection.Connection()'
         name: characters that the dashboard name must contain
         to_dictionary(bool, optional): if True, return Dashboards as
@@ -200,7 +200,7 @@ class Dashboard(Document, RelatedSubscriptionMixin):
         """Initialize Dashboard object by passing name or id.
 
         Args:
-            connection (object): Strategy One connection object returned
+            connection (object): Strategy connection object returned
                 by `connection.Connection()`
             name (string, optional): name of Dashboard
             id (string, optional): ID of Dashboard

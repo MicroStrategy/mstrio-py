@@ -1,0 +1,52 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Comparison Summary</title>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+  </head>
+  <body>
+    <h1>Comparison Summary</h1>
+
+    <h2>Overview</h2>
+    <table>
+      <tbody>
+        <tr>
+          <td>ID</td>
+          <td>{id}</td>
+        </tr>
+        <tr>
+          <td>Source Environment</td>
+          <td>{source_environment}</td>
+        </tr>
+        <tr>
+          <td>Target Environment</td>
+          <td>{target_environment}</td>
+        </tr>
+        <tr>
+          <td>I-Server Version</td>
+          <td>{created_version}</td>
+        </tr>
+        <tr>
+          <td>Time</td>
+          <td>{date_created}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>Object Results</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Object</th>
+          <th>Visualization</th>
+          <th>SQL Status</th>
+          <th>Data Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {table_rows}
+      </tbody>
+    </table>
+  </body>
+</html>

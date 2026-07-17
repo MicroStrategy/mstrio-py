@@ -356,7 +356,7 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
             business facts or calculations.
         facts: list of objects representing essential elements within the
             business data model and basis for almost all metrics. They relate
-            numeric data values from the data warehouse to the Strategy One
+            numeric data values from the data warehouse to the Strategy
             reporting environment. E.g. sales dollars, units sold, profit etc.
         primary_data_source: Table's data can be from different data sources.
             Primary data source is the first option for table's data source.
@@ -369,7 +369,7 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
             physical table or free form sql.
         partition_tables: A list of objects representing partition's tables
             metadata
-        secondary_data_sources: Strategy One support mapping the table to more
+        secondary_data_sources: Strategy support mapping the table to more
             than one data source. This attribute is a list of object
             representations of a reference to a datasource.
         hidden: Specifies whether the object is hidden
@@ -621,7 +621,7 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
         """Create a new table in a specific project.
 
         Args:
-            connection (object): Strategy One connection object returned by
+            connection (object): Strategy connection object returned by
                 `connection.Connection()`.
             primary_data_source (object): Information about an object referenced
                 within the  specification of another object. An object reference
@@ -655,14 +655,14 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
             logical_size (int, optional): Size of a table
             is_part_of_partition (bool, optional): whether current table is part
                 of partition table.
-            is_true_key (bool, optional): Strategy One requires each table to
+            is_true_key (bool, optional): Strategy requires each table to
                 have a primary key, which is a unique value identifying each
                 distinct data record or row. A primary key can be defined by one
-                or more columns in the table. Strategy One determines the
+                or more columns in the table. Strategy determines the
                 primary key for a table based on the attribute's mapped to the
                 columns of the table. The key is made up of the lowest level
                 attributes. If these columns are mapped to attributes in
-                Strategy One, then the primary key is represented correctly.
+                Strategy, then the primary key is represented correctly.
                 In this case, if isTrueKey is returned as true, it indicates
                 specified primary key is the true key.
             enclose_sql_in_parentheses (bool, optional): This property is only
@@ -837,7 +837,7 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
         """Create a new table alias in a specific project.
 
         Args:
-            connection (object): Strategy One connection object returned by
+            connection (object): Strategy connection object returned by
                 `connection.Connection()`.
             id (str): Physical table id
         Returns:
@@ -887,14 +887,14 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
         Args:
             name (Optional[str], optional): Name of a logical table. Defaults to
                 None.
-            is_true_key (Optional[bool]): Strategy One requires each table to
+            is_true_key (Optional[bool]): Strategy requires each table to
                 have a primary key, which is a unique value identifying each
                 distinct data record or row. A primary key can be defined by one
-                or more columns in the table. Strategy One determines the
+                or more columns in the table. Strategy determines the
                 primary key for a table based on the attribute's mapped to the
                 columns of the table. The key is made up of the lowest level
                 attributes. If these columns are mapped to attributes in
-                Strategy One, then the primary key is represented correctly.
+                Strategy, then the primary key is represented correctly.
                 In this case, if isTrueKey is returned as true, it indicates
                 specified primary key is the true key. Defaults to None.
             logical_size (Optional[int], optional): Size of a logical table.
@@ -910,7 +910,7 @@ class LogicalTable(Entity, DeleteMixin, MoveMixin):
                 source is the first option for table's data source. Defaults to
                 None.
             secondary_data_sources (Optional[List[SchemaObjectReference] |
-                List[dict]], optional): Strategy One support mapping the table
+                List[dict]], optional): Strategy support mapping the table
                 to more than one data source. This attribute is a list of object
                 representations of a reference to a datasource. Defaults to None
             physical_table_object_name (Optional[str], optional): A new name of

@@ -214,7 +214,7 @@ class SchemaManagement:
         """Initialize schema management object for the given project.
 
         Args:
-            connection (Connection): Strategy One connection object returned by
+            connection (Connection): Strategy connection object returned by
                 `connection.Connection()`.
             project (Project | str, optional): Project object or ID or name
                 specifying the project. May be used instead of `project_id` or

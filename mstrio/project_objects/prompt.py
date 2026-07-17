@@ -8,7 +8,7 @@ deprecation_warning("mstrio.project_objects.prompt", "mstrio.modeling.prompt", "
 
 @dataclass
 class Prompt(Dictable):
-    """A Strategy One class representing a prompt.
+    """A Strategy class representing a prompt.
 
     Attributes:
         type (str): Type of the prompt

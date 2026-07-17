@@ -30,7 +30,7 @@ def list_schedules(
     """List schedule objects or schedule dictionaries. Optionally filter list.
 
     Args:
-        connection(object): Strategy One connection object returned by
+        connection(object): Strategy connection object returned by
             'connection.Connection()'
         to_dictionary(bool, optional): if True, return Schedules as
             list of dicts
@@ -56,10 +56,10 @@ def list_schedules(
 
 
 class Schedule(Entity, DeleteMixin, RelatedSubscriptionMixin, TenantMixin):
-    """Class representation of Strategy One Schedule object.
+    """Class representation of Strategy Schedule object.
 
     Attributes:
-        connection: A Strategy One connection object
+        connection: A Strategy connection object
         name: Schedule name
         id: Schedule ID
         description: Schedule description
@@ -70,7 +70,7 @@ class Schedule(Entity, DeleteMixin, RelatedSubscriptionMixin, TenantMixin):
     """
 
     class ScheduleType(AutoName):
-        """Class representation of a type of a Strategy One Schedule."""
+        """Class representation of a type of a Strategy Schedule."""
 
         EVENT_BASED = auto()
         TIME_BASED = auto()
@@ -157,7 +157,7 @@ class Schedule(Entity, DeleteMixin, RelatedSubscriptionMixin, TenantMixin):
         `name` is omitted.
 
         Args:
-            connection: Strategy One connection object returned
+            connection: Strategy connection object returned
                 by `connection.Connection()`.
             id: Schedule ID
             name: Schedule name

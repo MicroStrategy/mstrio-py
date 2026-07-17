@@ -78,7 +78,7 @@ def list_attributes(
         e.g. name_begins = ?onny will return Sonny and Tonny
 
     Args:
-        connection: Strategy One connection object returned by
+        connection: Strategy connection object returned by
             `connection.Connection()`
         name (string, optional): value the search pattern is set to, which
             will be applied to the names of attributes being searched
@@ -178,7 +178,7 @@ def list_attributes(
 
 @class_version_handler('11.3.0100')
 class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
-    """Python representation of Strategy One Attribute object.
+    """Python representation of Strategy Attribute object.
 
     Attributes:
         id: attribute's ID
@@ -423,7 +423,7 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
         """Alter attribute properties.
 
         Args:
-            connection: Strategy One connection object returned
+            connection: Strategy connection object returned
                 by `connection.Connection()`
             name: attribute's name
             sub_type: attribute's sub_type
@@ -532,7 +532,7 @@ class Attribute(Entity, CopyMixin, MoveMixin, DeleteMixin):  # noqa
         """Initializes a new instance of Attribute class
 
         Args:
-            connection (Connection): Strategy One connection object returned
+            connection (Connection): Strategy connection object returned
                 by `connection.Connection()`
             id (str, optional): Attribute's ID. Defaults to None.
             name (str, optional): Attribute's name. Defaults to None.

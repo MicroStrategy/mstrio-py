@@ -299,7 +299,7 @@ class License(Dictable):
         """Initialize License object.
 
         Args:
-            connection: Strategy One connection object returned by
+            connection: Strategy connection object returned by
                 `connection.Connection()`.
             node_name (str, optional): Name of the node to get license
                 information from. On the one node environment can be None.

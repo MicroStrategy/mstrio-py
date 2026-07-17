@@ -94,11 +94,11 @@ class _ApiPatchInstruction:
 
 
 class EntityBase(helper.Dictable):
-    """This class is for objects that do not have a specified Strategy One type.
+    """This class is for objects that do not have a specified Strategy type.
 
     Class attributes:
-    _OBJECT_TYPE (ObjectTypes): Strategy One Object type defined in ObjectTypes
-    _OBJECT_SUBTYPES (list[ObjectSubTypes] | None): Strategy One Object subtype
+    _OBJECT_TYPE (ObjectTypes): Strategy Object type defined in ObjectTypes
+    _OBJECT_SUBTYPES (list[ObjectSubTypes] | None): Strategy Object subtype
         defined in ObjectSubTypes. It contains a list of subtypes, which the
         class supports. Used in fetch(), to verify whether the retrieved object
         is supported. None means that subtype won't be verified.
@@ -195,9 +195,9 @@ class EntityBase(helper.Dictable):
         operation.
 
     Instance attributes:
-        connection (Connection): A Strategy One connection object
+        connection (Connection): A Strategy connection object
         id (str): Object's ID
-        type (ObjectTypes): Strategy One Object Type
+        type (ObjectTypes): Strategy Object Type
         name (str): Object's name
         _altered_properties (dict): This is a private attribute which is used to
             track and validate local changes to the object. It is used whenever
@@ -220,10 +220,10 @@ class EntityBase(helper.Dictable):
         date_created (DatetimeFormats): The object's creation time.
         date_modified (DatetimeFormats): The object's last modification time.
         version (str): The object's version ID. Used to compare if two Strategy
-            One objects are identical. If both objects IDs and objects version
-            IDs are the same, Strategy One Object Manager determines that
+            objects are identical. If both objects IDs and objects version
+            IDs are the same, Strategy Object Manager determines that
             objects as 'Exists Indentically'. Otherwise, if their IDs match
-            but their version IDs mismatch, Strategy One Object Manager
+            but their version IDs mismatch, Strategy Object Manager
             determines that objects 'Exists Differently'.
         owner (User): The object's owner information.
         icon_path (str): A path to a location where the object's icon is stored.
@@ -250,7 +250,7 @@ class EntityBase(helper.Dictable):
 
     _OBJECT_TYPE: ObjectTypes = (
         ObjectTypes.NOT_SUPPORTED
-    )  # Strategy One object type defined in ObjectTypes
+    )  # Strategy object type defined in ObjectTypes
     _OBJECT_SUBTYPES: list[ObjectSubTypes] | None = (
         None  # None means subtype won't be verified.
     )
@@ -273,7 +273,6 @@ class EntityBase(helper.Dictable):
     def __init__(
         self, connection: Connection, object_id: str, default_value=None, **kwargs
     ) -> None:
-        self._folder_id: str | None = None
         self._init_variables(
             connection=connection, id=object_id, default_value=default_value, **kwargs
         )
@@ -309,6 +308,7 @@ class EntityBase(helper.Dictable):
             else kwargs.get("type", self._OBJECT_TYPE)
         )
         self.name: str | None = kwargs.get("name", default_value)
+        self._folder_id: str | None = None
         self._altered_properties = {}
         if hasattr(super(), '_init_variables'):
             super()._init_variables(default_value=default_value, **kwargs)
@@ -699,7 +699,7 @@ class EntityBase(helper.Dictable):
             cls: Class (type) of an object that should be created.
             source (dict[str, Any]): a dictionary from which an object will be
                 constructed.
-            connection (Connection): A Strategy One Connection object.
+            connection (Connection): A Strategy Connection object.
             to_snake_case (bool, optional): Set to True if attribute names
                 should be converted from camel case to snake case, default True.
             with_missing_value: (bool, optional): If True, class attributes
@@ -709,6 +709,13 @@ class EntityBase(helper.Dictable):
         Returns:
             An instance of the `cls` class.
         """
+        if not isinstance(source, dict):
+            error_msg = "`source` must be a dictionary"
+            if isinstance(source, Connection):
+                error_msg += (
+                    " (were `source` and `connection` passed in reverse order?)"
+                )
+            raise TypeError(error_msg)
 
         obj = cls.__new__(cls)  # Does not call __init__
         object_source = helper.camel_to_snake(source) if to_snake_case else source
@@ -1195,7 +1202,7 @@ class EntityBase(helper.Dictable):
 
     @property
     def connection(self) -> Connection:
-        """An object representation of Strategy One connection specific to the
+        """An object representation of Strategy connection specific to the
         object."""
         return self._connection
 
@@ -1223,13 +1230,13 @@ class EntityBase(helper.Dictable):
 class Entity(
     EntityBase, ACLMixin, ChangeJournalMixin, DependenceMixin, TranslationMixin
 ):
-    """Base class representation of the Strategy One object.
+    """Base class representation of the Strategy object.
 
     Provides methods to fetch, update, and view the object. To implement
     this base class all class attributes have to be provided.
 
     Attributes:
-        connection: A Strategy One connection object
+        connection: A Strategy connection object
         id: Object ID
         name: Object name
         description: Object description
@@ -1741,12 +1748,38 @@ class VldbMixin:
         """Alter VLDB settings for a given property set."""
 
         connection = (
-            self.connection if hasattr(self, 'connection') else self._connection
+            self.connection if hasattr(self, "connection") else self._connection
         )
         if not project and not connection.project_id:
             raise ValueError(self._parameter_error)
 
-        body = [{"name": name, "value": value}]
+        # PUT body is interpreted as a delta from defaults, not from current
+        # values. Include all changed values for the property set to avoid
+        # overwriting them with defaults.
+        # Explicitly exclude the modified property if it is being set to its
+        # default value.
+        settings_in_propset = []
+        changed_setting = None
+        for s in self.vldb_settings.values():
+            if s["property_set_name"] == property_set_name:
+                if s["name"] == name:
+                    changed_setting = s
+                elif s["value"] != s.get("default_value"):
+                    settings_in_propset.append(s)
+        if not changed_setting:
+            changed_setting = {"name": name}
+        changed_setting["value"] = value
+        if changed_setting["value"] != changed_setting.get("default_value"):
+            settings_in_propset.append(changed_setting)
+        body = [
+            {
+                "name": s["name"],
+                "value": s["value"],
+            }
+            for s in settings_in_propset
+            if s["value"] != s.get("default_value")
+        ]
+
         response = objects.set_vldb_settings(
             connection,
             self.id,
@@ -1757,7 +1790,7 @@ class VldbMixin:
         )
         self.fetch_vldb_settings()
         if config.verbose and response.ok:
-            logger.info('VLDB settings altered.')
+            logger.info("VLDB settings altered.")
 
     def reset_vldb_settings(self, project: str | None = None) -> None:
         """Reset VLDB settings to default values."""
@@ -1796,7 +1829,7 @@ class VldbMixin:
 
 
 class PromptMixin:
-    """Mixin that adds prompt functionality to Strategy One objects.
+    """Mixin that adds prompt functionality to Strategy objects.
 
     Enables objects to retrieve and answer prompts - interactive input elements
     that collect user responses before execution. Must be mixed in with Entity
@@ -2157,6 +2190,7 @@ def auto_match_args_entity(
             default will not be included in the result
         id_weak_match: if `True`, the function will try to match IDs even if
             they are not exact (e.g. by ignoring certain prefixes)
+
     Raises:
         KeyError: could not match all required arguments
     """

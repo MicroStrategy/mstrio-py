@@ -22,7 +22,7 @@ def list_drivers(
     Optionally filter the drivers by specifying filters.
 
     Args:
-        connection: Strategy One connection object
+        connection: Strategy connection object
         to_dictionary: If True returns a list of Driver dicts,
            otherwise returns a list of Driver objects
        **filters: Available filter parameters:
@@ -33,10 +33,10 @@ def list_drivers(
 
 @class_version_handler('11.3.0960')
 class Driver(Entity):
-    """Object representation of Strategy One Driver
+    """Object representation of Strategy Driver
 
     Attributes:
-        connection: A Strategy One connection object
+        connection: A Strategy connection object
         id: Driver's ID
         name: Driver's name
         is_enabled: specifies if a Driver is enabled
@@ -99,7 +99,7 @@ class Driver(Entity):
         When `id` is provided, `name` is omitted.
 
         Args:
-            connection (Connection): Strategy One connection object
+            connection (Connection): Strategy connection object
             id (str): ID of Driver
             name (str): name of Driver
         """
@@ -163,7 +163,7 @@ class Driver(Entity):
         Optionally filter the drivers by specifying filters.
 
         Args:
-            connection (Connection): Strategy One connection object
+            connection (Connection): Strategy connection object
             to_dictionary (bool): If True returns a list of Driver dicts,
                otherwise returns a list of Driver objects
            **filters: Available filter parameters:

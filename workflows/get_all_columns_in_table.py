@@ -30,7 +30,7 @@ def list_table_columns(
     list all the columns for all available tables.
 
     Args:
-        connection: Strategy One connection object returned
+        connection: Strategy connection object returned
             by `connection.Connection()`
         table: SchemaObjectReference of a table or table id
 

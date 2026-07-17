@@ -11,7 +11,7 @@ def get_license(
     """Get the license information.
 
     Args:
-        connection (Connection): Strategy One REST API connection object
+        connection (Connection): Strategy REST API connection object
         node_name (str): Name of the node for which to get license information
         fields (str | None, optional): Comma-separated list of fields to return
             in the response
@@ -36,7 +36,7 @@ def get_license_activation_info(
     """Get the license activation information.
 
     Args:
-        connection (Connection): Strategy One REST API connection object
+        connection (Connection): Strategy REST API connection object
         node_name (str): Name of the node for which to get license activation
             information
         fields (str | None, optional): Comma-separated list of fields to return
@@ -62,7 +62,7 @@ def update_license_information(
     """Update the license information using operations list.
 
     Args:
-        connection (Connection): Strategy One REST API connection object
+        connection (Connection): Strategy REST API connection object
         node_name (str): Name of the node for which to update license
             information
         operations (list): List of operations to perform on the license
@@ -84,7 +84,7 @@ def update_license_activation(
     """Update the license activation information.
 
     Args:
-        connection (Connection): Strategy One REST API connection object
+        connection (Connection): Strategy REST API connection object
         node_name (str): Name of the node for which to update the license
             activation information
         operations (list): List of activation operations to be performed
@@ -106,7 +106,7 @@ def get_activation_xml_file(
     """Get the activation XML file.
 
     Args:
-        connection (Connection): Strategy One REST API connection object
+        connection (Connection): Strategy REST API connection object
         node_name (str): Name of the node for which to get activation XML file
         fields (str | None, optional): Comma-separated list of fields to return
             in the response
@@ -131,7 +131,7 @@ def get_license_history(
     """Get the license history.
 
     Args:
-        connection (Connection): Strategy One REST API connection object
+        connection (Connection): Strategy REST API connection object
         node_name (str): Name of the node for which to get license history
         fields (str | None, optional): Comma-separated list of fields to return
             in the response
@@ -156,7 +156,7 @@ def get_audit(
     """Get the license audit.
 
     Args:
-        connection (Connection): Strategy One REST API connection object
+        connection (Connection): Strategy REST API connection object
         fields (str | None, optional): Comma-separated list of fields to return
             in the response
         error_msg (str, optional): Custom Error Message for Error Handling
@@ -180,7 +180,7 @@ def get_compliance_check(
     """Get the license compliance check results.
 
     Args:
-        connection (Connection): Strategy One REST API connection object
+        connection (Connection): Strategy REST API connection object
         fields (str | None, optional): Comma-separated list of fields to return
             in the response
         error_msg (str, optional): Custom Error Message for Error Handling
@@ -204,7 +204,7 @@ def get_compliance_check_status(
     """Get the license compliance check status.
 
     Args:
-        connection (Connection): Strategy One REST API connection object
+        connection (Connection): Strategy REST API connection object
         fields (str | None, optional): Comma-separated list of fields to return
             in the response
         error_msg (str, optional): Custom Error Message for Error Handling
@@ -225,7 +225,7 @@ def get_compliance_check_status(
 def run_audit(connection: Connection, error_msg=None) -> Response:
     """Run the license audit.
     Args:
-        connection (Connection): Strategy One REST API connection object
+        connection (Connection): Strategy REST API connection object
         node_name (str): Name of the node for which to run the license audit
         error_msg (str, optional): Custom Error Message for Error Handling
 
@@ -241,7 +241,7 @@ def run_compliance_check(connection: Connection, error_msg=None) -> Response:
     """Run the license compliance check.
 
     Args:
-        connection (Connection): Strategy One REST API connection object
+        connection (Connection): Strategy REST API connection object
         error_msg (str, optional): Custom Error Message for Error Handling
 
     Returns:
@@ -262,7 +262,7 @@ def get_license_entitlements(
     """Get the license entitlements for a specific license key.
 
     Args:
-        connection (Connection): Strategy One REST API connection object
+        connection (Connection): Strategy REST API connection object
         node_name (str): Name of the node for which to get license entitlements
         fields (str | None, optional): Comma-separated list of fields to return
             in the response
@@ -293,7 +293,7 @@ def get_privileges_for_user(
     """Get the license privileges for selected user.
 
     Args:
-        connection (Connection): Strategy One REST API connection object
+        connection (Connection): Strategy REST API connection object
         id (str): User ID for which to get license privileges
         license_product (str): License product for which to get privileges
         fields (str | None, optional): Comma-separated list of fields to return

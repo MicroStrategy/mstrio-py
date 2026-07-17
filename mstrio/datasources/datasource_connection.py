@@ -40,7 +40,7 @@ def list_datasource_connections(
     connections by specifying filters.
 
     Args:
-        connection: Strategy One connection object returned by
+        connection: Strategy connection object returned by
             `connection.Connection()`
         to_dictionary: If True returns dict, by default (False) returns
             User objects.
@@ -73,7 +73,7 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin, TenantMixin):
     to the datasource.
 
     Attributes:
-        connection: A Strategy One connection object.
+        connection: A Strategy connection object.
         id: Unique datasource connection ID.
         name: Unique datasource connection name.
         description: Datasource connection description.
@@ -247,7 +247,7 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin, TenantMixin):
         """Initialize DatasourceConnection object and synchronize with server.
 
         Args:
-            connection: Strategy One connection object returned by
+            connection: Strategy connection object returned by
                 `connection.Connection()`.
             name: exact name of Datasource Connection
             id: ID of Datasource Connection
@@ -436,7 +436,7 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin, TenantMixin):
         """Create a new datasource connection on the I-Server.
 
         Args:
-            connection: Strategy One connection object returned by
+            connection: Strategy connection object returned by
                 `connection.Connection()`.
             name: Unique datasource connection name.
             description: Datasource connection description.
@@ -531,7 +531,7 @@ class DatasourceConnection(Entity, CopyMixin, DeleteMixin, TenantMixin):
 
         Args:
             source: Dictionary with DatasourceConnection properties
-            connection: Strategy One connection object returned by
+            connection: Strategy connection object returned by
                 `connection.Connection()`.
             to_snake_case: If True, keys in the source dictionary are converted
                 to snake_case.

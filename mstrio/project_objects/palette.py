@@ -36,7 +36,7 @@ def list_palettes(
         palettes will be listed.
 
     Args:
-        connection (Connection): Strategy One connection object returned
+        connection (Connection): Strategy connection object returned
             by `connection.Connection()`
         to_dictionary: If True, returns a list of dictionaries, otherwise
             returns a list of Palette objects.
@@ -121,7 +121,7 @@ class Palette(Entity, CopyMixin, DeleteMixin):
         """Initialize a Palette object.
 
         Args:
-            connection (Connection): Strategy One connection object returned
+            connection (Connection): Strategy connection object returned
                 by `connection.Connection()`
             id (str, optional): ID of the palette.
             name (str, optional): Name of the palette.
@@ -201,7 +201,7 @@ class Palette(Entity, CopyMixin, DeleteMixin):
             palettes will be created.
 
         Args:
-            connection (Connection): Strategy One connection object returned by
+            connection (Connection): Strategy connection object returned by
                 `connection.Connection()`
             name (str): Name of the new palette.
             colors (list[Color] | list[str]): List of colors in the palette.

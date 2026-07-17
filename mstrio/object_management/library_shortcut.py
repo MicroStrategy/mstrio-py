@@ -30,7 +30,7 @@ class LibraryShortcut(Entity):
     related to browsing the Library.
 
     Attributes:
-        connection (Connection): Strategy One connection object returned
+        connection (Connection): Strategy connection object returned
             by `connection.Connection()`.
         id (str): ID of the shortcut object
         name (str): Name of the shortcut
@@ -130,7 +130,7 @@ class LibraryShortcut(Entity):
             I-Server data.
 
         Args:
-            connection (Connection): Strategy One connection object returned
+            connection (Connection): Strategy connection object returned
                 by `connection.Connection()`.
             id (str): Shortcut ID
             project (Project | str, optional): Project object or ID or name

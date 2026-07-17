@@ -151,7 +151,7 @@ def is_server_min_version(connection: 'Connection', version_str: str) -> bool:
     """Check if iServer version is greater or equal than given version.
 
     Args:
-        connection (Connection): Strategy One REST API connection object
+        connection (Connection): Strategy REST API connection object
         version_str (str): String containing iServer version number
 
     Returns:

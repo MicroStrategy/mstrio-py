@@ -1,0 +1,37 @@
+html {
+  font-family: sans-serif;
+  overflow-x: scroll;
+}
+.tables {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  width: fit-content;
+}
+.panel {
+  flex: 1;
+  min-width: 0;
+}
+td {
+  border: 1px inset;
+}
+td.changed {
+  background-color: #fff2a8;
+}
+.sql-block {
+  border: 1px solid #ddd;
+  padding: 8px;
+  background: #fafafa;
+  font-family: monospace;
+}
+.sql-line {
+  white-space: pre-wrap;
+}
+.sql-line.changed {
+  background-color: #fff2a8;
+}
+.sql-ln {
+  color: #666;
+  display: inline-block;
+  min-width: 36px;
+}

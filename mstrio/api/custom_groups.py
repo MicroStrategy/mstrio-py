@@ -25,7 +25,7 @@ def get_custom_group(
     If both are provided, only the changeset ID is used.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         id (str): Custom Group ID. The ID can be:
             - the object ID used in the metadata.
             - the object ID used in the changeset, but not yet committed
@@ -68,7 +68,7 @@ def create_custom_group(
     """Create a Custom Group in the specified project.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         body (dict): Dictionary representing the Custom Group to be created.
         project_id (str, optional): Project ID
         show_expression_as (str, optional): specify how expressions should be
@@ -109,7 +109,7 @@ def update_custom_group(
     based on the definition provided in the request body.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         id (str): Custom Group ID. The ID can be:
             - the object ID used in the metadata.
             - the object ID used in the changeset, but not yet committed
@@ -145,7 +145,7 @@ def get_applicable_vldb_settings(
     """Get metadata of advanced VLDB settings for a custom group.
 
     Args:
-        connection (Connection): Strategy One REST API connection object
+        connection (Connection): Strategy REST API connection object
         id (str): Custom Group ID
         error_msg (str, optional): Custom error message for error handling
 

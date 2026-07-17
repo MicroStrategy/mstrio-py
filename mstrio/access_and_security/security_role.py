@@ -34,7 +34,7 @@ def list_security_roles(
     Optionally use `to_dictionary` or `to_dataframe` to choose output format.
 
     Args:
-        connection(object): Strategy One connection object returned
+        connection(object): Strategy connection object returned
             by 'connection.Connection()'
         to_dictionary(bool, optional): if True, return Security Roles as
             list of dicts
@@ -66,7 +66,7 @@ class SecurityRole(Entity, DeleteMixin, TenantMixin):
     project level.
 
     Attributes:
-        connection: A Strategy One connection object
+        connection: A Strategy connection object
         id: Security Role ID
         name: Security Role name
         description: Security Role description
@@ -119,7 +119,7 @@ class SecurityRole(Entity, DeleteMixin, TenantMixin):
         """Initialize Security Role object by passing name or id.
 
         Args:
-            connection: Strategy One connection object returned
+            connection: Strategy connection object returned
                 by `connection.Connection()`.
             name: name of Security Role
             id: ID of Security Role
@@ -162,7 +162,7 @@ class SecurityRole(Entity, DeleteMixin, TenantMixin):
         """Create a new Security Role.
 
         Args:
-            connection(object): Strategy One connection object returned
+            connection(object): Strategy connection object returned
                 by 'connection.Connection()'.
             name(string): Name of the Security Role
             privileges: List of privileges which will be assigned to this

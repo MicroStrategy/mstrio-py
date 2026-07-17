@@ -1,4 +1,4 @@
-"""Module for handling tenant management operations in Strategy One."""
+"""Module for handling tenant management operations in Strategy."""
 
 import logging
 from typing import TYPE_CHECKING
@@ -40,7 +40,7 @@ def list_tenants(
     parameters.
 
     Args:
-        connection: Strategy One connection object
+        connection: Strategy connection object
         to_dictionary (bool, optional): If True, returns list of dicts.
             If False (default), returns list of Tenant objects.
         limit (int, optional): Maximum number of tenants to retrieve.
@@ -71,10 +71,10 @@ def list_tenants(
 
 @class_version_handler("11.6.0100")
 class Tenant(Entity, DeleteMixin):
-    """Object representation of Strategy One Tenant.
+    """Object representation of Strategy Tenant.
 
     Attributes:
-        connection: A Strategy One connection object
+        connection: A Strategy connection object
         id: Tenant ID
         name: Tenant name
         suffix: Tenant suffix
@@ -130,7 +130,7 @@ class Tenant(Entity, DeleteMixin):
         """Initialize Tenant object by passing `id` or `name`.
 
         Args:
-            connection: Strategy One connection object
+            connection: Strategy connection object
             id: Tenant ID
             name: Tenant name
         """
@@ -881,7 +881,7 @@ class Tenant(Entity, DeleteMixin):
         """Create a new tenant on the I-Server.
 
         Args:
-            connection: Strategy One connection object
+            connection: Strategy connection object
             name (str): Name of the tenant to create
             suffix (str, optional): Suffix for the tenant. Defaults to None.
             fields (str, optional): Comma-separated list of fields to retrieve
