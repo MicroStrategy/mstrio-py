@@ -20,7 +20,7 @@ def add_email_to_new_users(
     For each successfully added email address a message will be printed.
 
     Args:
-        connection: Strategy One connection object returned by
+        connection: Strategy connection object returned by
             `connection.Connection()`
         domain: name of the domain in the email address (it should be
             provided without '@' symbol). Default value is "domain.com".

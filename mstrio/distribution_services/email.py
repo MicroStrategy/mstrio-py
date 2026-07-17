@@ -18,7 +18,7 @@ def send_email(
     """Send an email to specified recipients.
 
     Args:
-        connection (Connection): Strategy One connection object returned by
+        connection (Connection): Strategy connection object returned by
             `connection.Connection()`
         users(list[str | User]): List of user IDs or User objects to send
             the email to
@@ -40,5 +40,6 @@ def send_email(
     }
 
     emails.send_email(connection=connection, body=body)
+
     if config.verbose:
         logger.info(f"Email sent with the subject: {subject}")

@@ -51,7 +51,7 @@ def list_user_groups(
         e.g. name_begins = ?onny will return Sonny and Tonny
 
     Args:
-        connection: Strategy One connection object returned by
+        connection: Strategy connection object returned by
             `connection.Connection()`
         name_begins: Beginning of a User Groups name which we want to list
         to_dictionary: If True returns dict, by default (False) returns
@@ -77,10 +77,10 @@ def list_user_groups(
 
 
 class UserGroup(Entity, DeleteMixin, TrusteeACLMixin, TenantMixin):
-    """Object representation of Strategy One User Group object.
+    """Object representation of Strategy User Group object.
 
     Attributes:
-        connection: A Strategy One connection object
+        connection: A Strategy connection object
         memberships: User Groups that the User Group is a member of
         members: users that are members of User Group
         security_roles: security roles that the User Group is a member of
@@ -182,7 +182,7 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin, TenantMixin):
         provided (not `None`), `name` is omitted.
 
         Args:
-            connection: Strategy One connection object returned
+            connection: Strategy connection object returned
                 by `connection.Connection()`
             name: name of User Group
             id: ID of User Group
@@ -230,7 +230,7 @@ class UserGroup(Entity, DeleteMixin, TrusteeACLMixin, TenantMixin):
         """Create a new User Group on the I-Server. Returns `UserGroup` object.
 
         Args:
-            connection: Strategy One connection object returned by
+            connection: Strategy connection object returned by
                 `connection.Connection()`
             name: Name of a newly created User Group
             description: Description of a newly created User Group

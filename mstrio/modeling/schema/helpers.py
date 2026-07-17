@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 class ObjectSubType(AutoName):
     """String literal used to identify the type of a metadata object.
-    Some Strategy One APIs make a distinction between an object's type
+    Some Strategy APIs make a distinction between an object's type
     and subtype because in some cases (e.g. the different kinds of reports)
     it can be useful to see one "report" concept rather than to have to always
     distinguish between different kinds of reports. But there are cases

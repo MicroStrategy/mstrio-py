@@ -167,6 +167,9 @@ def get_connection(
     Returns:
         connection to I-Server or None in case of some error
     """
+
+    ssl_verify = bool(ssl_verify)  # convert from whatever was provided
+
     if not ssl_verify:
         disable_warnings(category=InsecureRequestWarning)
 
@@ -231,10 +234,10 @@ def get_connection(
 
 
 class Connection:
-    """Connect to and interact with the Strategy One environment.
+    """Connect to and interact with the Strategy environment.
 
     Creates a connection object which is used in subsequent requests and
-    manages the user's connection with the Strategy One REST and Intelligence
+    manages the user's connection with the Strategy REST and Intelligence
     Servers.
     The connection is automatically renewed, or reconnected if server's session
     associated with the connection expires due to inactivity.
@@ -253,10 +256,10 @@ class Connection:
         >>> conn.close()
 
     Attributes:
-        base_url: URL of the Strategy One REST API server.
+        base_url: URL of the Strategy REST API server.
         username: Username.
-        project_id: Id of the connected Strategy One Project.
-        project_name: Name of the connected Strategy One Project.
+        project_id: Id of the connected Strategy Project.
+        project_name: Name of the connected Strategy Project.
         login_mode: Authentication mode. Standard = 1 (default), LDAP = 16
             or API Token = 4096.
         ssl_verify: If True (default), verifies the server's SSL certificates
@@ -275,7 +278,7 @@ class Connection:
             waiting for response and raises `requests.Timeout`. If not
             provided explicitly, defaults to
             `mstrio.config.default_request_timeout` parameter value.
-        deployment_type: Type of the connected Strategy One deployment
+        deployment_type: Type of the connected Strategy deployment
     """
 
     def __init__(
@@ -300,7 +303,7 @@ class Connection:
         request_retry_on_timeout_count: int | None = None,
         locale: Locale | dict | str | None = None,
     ):
-        """Establish a connection with Strategy One REST API.
+        """Establish a connection with Strategy REST API.
 
         You can establish connection by either providing set of values
         (`username`, `password`, `login_mode`), just `identity_token`
@@ -320,7 +323,7 @@ class Connection:
             to `None`.
 
         Args:
-            base_url (str): URL of the Strategy One REST API server.
+            base_url (str): URL of the Strategy REST API server.
                 Typically of the form:
                 "https://<mstr_env>.com/MicroStrategyLibrary/api"
             username (str, optional): Username
@@ -378,6 +381,8 @@ class Connection:
                 provided, defaults to keeping timezone as UTC and all locale
                 parameters as "en_us".
         """
+
+        ssl_verify = bool(ssl_verify)
 
         if login_mode is None:
             login_mode = 4096 if api_token else 1
@@ -526,9 +531,7 @@ class Connection:
         if response and response.ok:
             self._reset_timeout()
             if config.verbose:
-                logger.info(
-                    'Connection to Strategy One Intelligence Server was renewed.'
-                )
+                logger.info('Connection to Strategy Intelligence Server was renewed.')
         else:
             response = self._login()
             self._reset_timeout()
@@ -537,7 +540,7 @@ class Connection:
 
             if config.verbose:
                 logger.info(
-                    'Connection to Strategy One Intelligence Server has been '
+                    'Connection to Strategy Intelligence Server has been '
                     'established.'
                 )
 
@@ -546,7 +549,7 @@ class Connection:
 
     def delegate(self):
         """Delegates identity token to get authentication token and connect to
-        Strategy One Intelligence Server."""
+        Strategy Intelligence Server."""
         response = authentication.delegate(
             self, self.identity_token, whitelist=[('ERR003', 401)]
         )
@@ -556,7 +559,7 @@ class Connection:
             self._fetch_session_info()
             if config.verbose:
                 logger.info(
-                    'Connection with Strategy One Intelligence Server has been '
+                    'Connection with Strategy Intelligence Server has been '
                     'delegated.'
                 )
         else:
@@ -582,7 +585,7 @@ class Connection:
         return validate.ok
 
     def close(self):
-        """Closes a connection with Strategy One REST API."""
+        """Closes a connection with Strategy REST API."""
         if self._through_get_connection:
             raise SyntaxError(
                 "Connection established via `get_connection` cannot be closed "
@@ -594,9 +597,7 @@ class Connection:
         self.token = None
 
         if config.verbose:
-            logger.info(
-                'Connection to Strategy One Intelligence Server has been closed.'
-            )
+            logger.info('Connection to Strategy Intelligence Server has been closed.')
 
     disconnect = close
 
@@ -609,10 +610,10 @@ class Connection:
         status = self._status()
 
         if status.status_code == 200:
-            logger.info('Connection to Strategy One Intelligence Server is active.')
+            logger.info('Connection to Strategy Intelligence Server is active.')
             return True
         else:
-            logger.info('Connection to Strategy One Intelligence Server is not active.')
+            logger.info('Connection to Strategy Intelligence Server is not active.')
             return False
 
     def select_project(
@@ -722,7 +723,8 @@ class Connection:
         try:
             yield self  # grabbing this yield is not necessary but may be useful
         finally:
-            if self and getattr(self, 'select_project', None):  # some edge-case-cover
+            # `if` for some edge-case-cover
+            if self and getattr(self, 'select_project', None):
                 self.select_project(project=orig_project_id)
 
     def set_request_timeout(self, timeout: int | float | None) -> None:
@@ -919,7 +921,7 @@ class Connection:
         self._deployment_type = json_response.get("deploymentType")
 
     def __check_version(self) -> bool:
-        """Checks version of I-Server and Strategy One Web and store these
+        """Checks version of I-Server and Strategy Web and store these
         variables."""
 
         if self.__read_server_status():

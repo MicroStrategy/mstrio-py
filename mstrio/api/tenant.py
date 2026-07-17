@@ -17,7 +17,7 @@ def remove_tenant_members(
     """Remove members from a tenant.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         body (dict): Dictionary containing members to be removed.
             Expected format:
             {
@@ -51,7 +51,7 @@ def add_tenant_members(
     """Add members to a specific tenant.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         tenant_id (str): Tenant ID
         body (dict): Dictionary containing members to be added.
             Expected format:
@@ -86,7 +86,7 @@ def update_tenant_status(
     """Update the enabled/disabled status of a tenant.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         tenant_id (str): Tenant ID
         enabled (bool): Whether the tenant should be enabled or disabled
         error_msg (str, optional): Custom Error Message for Error Handling
@@ -111,7 +111,7 @@ def update_tenant_suffix(
     """Update the tenant suffix for a specific tenant.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         tenant_id (str): Tenant ID
         tenant_suffix (str): Tenant suffix passed as query parameter.
             Empty string removes existing suffix.
@@ -136,7 +136,7 @@ def delete_tenant(
     """Delete a specific tenant.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         id (str): Tenant ID
         error_msg (str, optional): Custom Error Message for Error Handling
 
@@ -159,7 +159,7 @@ def get_tenant_data(
     """Get data for a specific tenant.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         tenant_id (str): Tenant ID
         fields (str, optional): Comma-separated list of fields to retrieve
         error_msg (str, optional): Custom Error Message for Error Handling
@@ -184,7 +184,7 @@ def create_tenant(
     """Create a new tenant.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         body (dict): Dictionary representing the tenant to be created.
             Expected format:
             {

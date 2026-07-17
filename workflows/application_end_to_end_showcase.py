@@ -216,12 +216,12 @@ app = Application.create(
         show_button_description=True,
         show_reminder=True,
         show_sent_by=True,
-        sent_by_text='Strategy One.',
+        sent_by_text='Strategy.',
         show_social_media=True,
         content=None,
         sender=Application.EmailSettings.Sender(
             address='library@strategy.com',
-            display_name='Strategy One Library',
+            display_name='Strategy Library',
         ),
         branding_image={
             'url': (

@@ -145,7 +145,7 @@ def list_custom_groups(
     objects by specifying `filters` parameters.
 
     Args:
-        connection (object): Strategy One connection object returned by
+        connection (object): Strategy connection object returned by
             `connection.Connection()`
         name (str, optional): value the search pattern is set to, which
             will be applied to the names of CustomGroup objects being searched
@@ -348,7 +348,7 @@ class CustomGroup(Entity, CopyMixin, MoveMixin, DeleteMixin, ModelVldbMixin):
         """Initialize Custom Group object by its identifier.
 
         Args:
-            connection: Strategy One connection object returned
+            connection: Strategy connection object returned
                 by `connection.Connection()`
             id (str, optional): Metadata ID of the Custom Group. May be omitted
                 if `name` parameter is provided.
@@ -445,7 +445,7 @@ class CustomGroup(Entity, CopyMixin, MoveMixin, DeleteMixin, ModelVldbMixin):
         """Create a new Custom Group object on the server.
 
         Args:
-            connection (Connection): Strategy One connection object returned by
+            connection (Connection): Strategy connection object returned by
                 `connection.Connection()`
             name (str): Name of the custom group.
             elements (list[CustomGroupElement]): List of elements to include in

@@ -28,7 +28,7 @@ def list_history_list_messages(connection: 'Connection', limit: int = -1) -> lis
     """Lists all history list messages for all users.
 
     Args:
-        connection (Connection): Strategy One connection object.
+        connection (Connection): Strategy connection object.
         limit (int): Maximum number of messages to retrieve.
             If `-1`, retrieves all messages.
 
@@ -49,7 +49,7 @@ def delete_all_history_list_messages(connection: 'Connection') -> None:
     """Removes all History List messages from all the users.
 
     Args:
-        connection (Connection): Strategy One connection object.
+        connection (Connection): Strategy connection object.
     """
 
     messages = list_history_list_messages(connection)

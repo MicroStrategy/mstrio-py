@@ -9,7 +9,7 @@ from mstrio.helpers import IServerError
 from mstrio.object_management import PredefinedFolders
 from mstrio.types import ObjectTypes
 from mstrio.users_and_groups import User
-from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, MoveMixin
+from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, EntityBase, MoveMixin
 from mstrio.utils.helper import (
     fetch_objects_async,
     get_default_args_from_func,
@@ -57,7 +57,7 @@ def list_folders(
         have to specify it explicitly.
 
     Args:
-        connection (Connection): Strategy One connection object returned by
+        connection (Connection): Strategy connection object returned by
             `connection.Connection()`
         project (Project | str, optional): Project object or ID or name
             specifying the project. May be used instead of `project_id` or
@@ -159,7 +159,7 @@ def get_my_personal_objects_contents(
     """Get contents of `My Personal Objects` folder in a specific project.
 
     Args:
-        connection (Connection): Strategy One connection object returned by
+        connection (Connection): Strategy connection object returned by
             `connection.Connection()`
         project (Project | str, optional): Project object or ID or name
             specifying the project. May be used instead of `project_id` or
@@ -198,11 +198,11 @@ def get_predefined_folder_contents(
     limit: int | None = None,
     **filters,
 ) -> list:
-    """Get contents of a pre-defined Strategy One folder in a specific project.
+    """Get contents of a pre-defined Strategy folder in a specific project.
     Available values for `folder_type` are stored in enum `PredefinedFolders`.
 
     Args:
-        connection (object): Strategy One connection object returned by
+        connection (object): Strategy connection object returned by
             `connection.Connection()`
         folder_type (enum): pre-defined folder type. Available values are
             stored in enum `PredefinedFolders`.
@@ -255,7 +255,7 @@ def get_folder_id_from_path(
     """Get folder id from folder path.
 
     Args:
-        connection (Connection): Strategy One connection object returned by
+        connection (Connection): Strategy connection object returned by
             `connection.Connection()`
         path (str): path of the Folder
             the path has to be provided in the following format:
@@ -351,7 +351,7 @@ def _folder_dfs_traversal(start_stack: list["Folder"]):
 
 
 class Folder(Entity, CopyMixin, MoveMixin, DeleteMixin):
-    """Object representation of Strategy One Folder object.
+    """Object representation of Strategy Folder object.
 
     Attributes:
         connection: MSTR Connection object
@@ -415,7 +415,7 @@ class Folder(Entity, CopyMixin, MoveMixin, DeleteMixin):
             Use ID or Path to guarantee uniqueness.
 
         Args:
-            connection (Connection): Strategy One connection object returned by
+            connection (Connection): Strategy connection object returned by
                 `connection.Connection()`.
             id (str, optional): Identifier of a pre-existing folder containing
                 the required data.
@@ -456,7 +456,7 @@ class Folder(Entity, CopyMixin, MoveMixin, DeleteMixin):
         by providing its name, id of parent folder and optionally description.
 
         Args:
-            connection: Strategy One connection object returned by
+            connection: Strategy connection object returned by
                 `connection.Connection()`.
             name (str): name of a new folder.
             parent (Folder | tuple | list | str, optional): Folder object or ID
@@ -529,7 +529,7 @@ class Folder(Entity, CopyMixin, MoveMixin, DeleteMixin):
         include_subfolders: bool = False,
         limit: int | None = None,
         **filters,
-    ) -> list:
+    ) -> list[EntityBase] | list[dict]:
         """Get contents of a folder. It can contain other folders or different
         kinds of objects.
 

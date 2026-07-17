@@ -13,6 +13,7 @@ from mstrio.distribution_services.schedule import Schedule
 from mstrio.modeling import Prompt
 from mstrio.object_management.search_operations import SearchPattern, full_search
 from mstrio.users_and_groups.user import User
+from mstrio.utils.ai import EnableForAiMixin
 from mstrio.utils.cache import CacheSource, ContentCacheMixin
 from mstrio.utils.certified_info import CertifiedInfo
 from mstrio.utils.entity import (
@@ -48,7 +49,7 @@ from mstrio.utils.response_processors import objects as objects_processors
 from mstrio.utils.response_processors import reports as reports_processors_api
 from mstrio.utils.sessions import FuturesSessionWithRenewal
 from mstrio.utils.version_helper import meets_minimal_version
-from mstrio.utils.vldb_mixin import ModelVldbMixin
+from mstrio.utils.vldb_mixin import ModelVldbMixin, VldbSetting
 
 if TYPE_CHECKING:
     from mstrio.object_management.folder import Folder
@@ -83,7 +84,7 @@ def list_reports(
         e.g. name = ?onny will return Sonny and Tonny
 
     Args:
-        connection: Strategy One connection object returned by
+        connection: Strategy connection object returned by
             `connection.Connection()`
         name (string, optional): value the search pattern is set to, which
             will be applied to the names of reports being searched
@@ -158,6 +159,7 @@ def list_reports(
 
 class Report(
     Entity,
+    EnableForAiMixin,
     CertifyMixin,
     CopyMixin,
     MoveMixin,
@@ -178,7 +180,7 @@ class Report(
     purposes.
 
     Attributes:
-        connection: Strategy One connection object returned by
+        connection: Strategy connection object returned by
             `connection.Connection()`.
         id: Identifier of a pre-existing report containing the required
             data.
@@ -265,7 +267,7 @@ class Report(
         """Initialize an instance of a report.
 
         Args:
-            connection: Strategy One connection object returned by
+            connection: Strategy connection object returned by
                 `connection.Connection()`.
             id (str): Identifier of a pre-existing report containing
                 the required data.
@@ -326,10 +328,6 @@ class Report(
         }
         self._model_vldb.connection = self.connection
         self._model_vldb.id = self.id
-
-        self.model_list_vldb_settings = self._model_vldb.list_vldb_settings
-        self.model_alter_vldb_settings = self._model_vldb.alter_vldb_settings
-        self.model_reset_vldb_settings = self._model_vldb.reset_vldb_settings
 
     def _init_variables(self, default_value, **kwargs):
         super()._init_variables(default_value=default_value, **kwargs)
@@ -1082,6 +1080,106 @@ class Report(
             'page_by_elements': page_by_elements,
             'valid_page_by_elements': self._valid_page_by_elements,
         }
+
+    def model_list_vldb_settings(
+        self,
+        set_names: list[str] | None = None,
+        names: list[str] | None = None,
+        groups: list[int] | list[str] | None = None,
+        to_dictionary: bool = False,
+        to_dataframe: bool = False,
+    ) -> dict[str, VldbSetting] | pd.DataFrame:
+        """List Modeling Service VLDB settings according to given parameters.
+
+        Args:
+            set_names (list[str], optional): List of names of VLDB settings
+                sets.
+            names (list[str], optional): List of names of VLDB settings.
+            groups (list[int], list[str], optional): List of group names or ids.
+            to_dictionary(bool, optional): If True, return VldbSetting
+                objects as list of dicts, default False.
+            to_dataframe (bool, optional): If True, return VldbSetting
+                objects as pandas DataFrame, default False.
+
+        Raises:
+            ValueError: If there are no VldbSetting objects with given
+                parameters or some of the parameters are incorrectly
+                specified.
+            TypeError: If groups list parameter consists of objects of
+                different types.
+
+        Returns:
+            Dict with settings names as keys and VldbSetting objects as values.
+        """
+        return self._model_vldb.list_vldb_settings(
+            set_names=set_names,
+            names=names,
+            groups=groups,
+            to_dictionary=to_dictionary,
+            to_dataframe=to_dataframe,
+        )
+
+    def model_alter_vldb_settings(
+        self, names_to_values: dict[str, str | int | float | bool]
+    ) -> None:
+        """Alter Modeling Service VLDB settings by name to value pairs.
+
+        Note:
+            Only common value type conversion will be done by default,
+            such as int->float, bool->int, int->bool and only if that is
+            possible according to interval of allowed values, error will be
+            thrown in other cases.
+
+        Args:
+            names_to_values (dict[str, str | int | float | bool]): Dict with
+                VLDB settings names as keys and newly requested to set values
+                as dictionary values. As VLDB Setting name you can provide both:
+                key or display name.
+
+        Raises:
+            ValueError: If there are no VldbSetting objects for some
+                provided names or names and values are not provided or some
+                of provided values will not be possible to set.
+            TypeError: If some of provided values to set have wrong type,
+                different from type of default VLDB setting value.
+        """
+        return self._model_vldb.alter_vldb_settings(
+            names_to_values=names_to_values,
+        )
+
+    def model_reset_vldb_settings(
+        self,
+        set_names: list[str] | None = None,
+        names: list[str] | None = None,
+        groups: list[int] | list[str] | None = None,
+        force: bool = False,
+    ) -> None:
+        """Reset Modeling Service VLDB settings to default values.
+        If called without parameters, then an additional prompt may be shown.
+
+        Args:
+            set_names (list[str], optional): List of names of VLDB setting
+                sets.
+            names (list[str], optional): List of names of VLDB settings.
+            groups (list[int], list[str], optional): List of group names
+                or IDs.
+            force (bool, optional): If True, no additional prompt will be
+                shown before resetting when all other arguments are not
+                provided, default False.
+
+        Raises:
+            ValueError: If there are no VldbSetting objects with given
+                parameters or some of the parameters are incorrectly
+                specified.
+            TypeError: If groups list parameter consists of objects of
+                different types.
+        """
+        return self._model_vldb.reset_vldb_settings(
+            set_names=set_names,
+            names=names,
+            groups=groups,
+            force=force,
+        )
 
     @property
     def attributes(self):

@@ -278,7 +278,7 @@ def list_search_objects(
     """List Search Objects in the environment.
 
     Args:
-        connection (Connection): A Strategy One connection object.
+        connection (Connection): A Strategy connection object.
         name (str | None): Name of the search object to find.
         search_pattern (SearchPattern | int): Search pattern to use, such as
             CONTAINS, BEGIN_WITH or EXACTLY. Default is CONTAINS.
@@ -345,7 +345,7 @@ class SearchObject(Entity, CopyMixin, MoveMixin, DeleteMixin):
     the `run()` method.
 
     Attributes:
-        connection (Connection): A Strategy One connection object
+        connection (Connection): A Strategy connection object
         id (str): Object ID
         name (str): Object name
         description (str): Object description
@@ -441,7 +441,7 @@ class SearchObject(Entity, CopyMixin, MoveMixin, DeleteMixin):
         """Initialize SearchObject object and synchronize with server.
 
         Args:
-            connection: Strategy One connection object returned by
+            connection: Strategy connection object returned by
                 `connection.Connection()`.
             id: ID of SearchObject. Either `id` or `name` must be provided.
             name: Name of SearchObject.
@@ -627,7 +627,7 @@ class SearchObject(Entity, CopyMixin, MoveMixin, DeleteMixin):
         """Create a new SearchObject.
 
         Args:
-            connection (Connection): Strategy One connection object returned by
+            connection (Connection): Strategy connection object returned by
                 `connection.Connection()`.
             name (str or None): Name of the SearchObject. If None, a default
                 name will be generated.
@@ -907,7 +907,7 @@ def quick_search(
      most recent.
 
     Args:
-        connection (object): Strategy One connection object returned by
+        connection (object): Strategy connection object returned by
             `connection.Connection()`
         project (string): `Project` object or ID
         name(string): Value the search pattern is set to, which will
@@ -1031,7 +1031,7 @@ def quick_search_from_object(
     search results and display them as a list.
 
     Args:
-        connection (object): Strategy One connection object returned by
+        connection (object): Strategy connection object returned by
             `connection.Connection()`
         project (string): `Project` object or ID
         search_object(SearchObject): Search object ID to retrieve result from
@@ -1085,7 +1085,7 @@ def get_search_suggestions(
     """Request search suggestions from the server.
 
     Args:
-        connection (object): Strategy One REST API connection object
+        connection (object): Strategy REST API connection object
         project (string, optional): `Project` object or ID
         key (string, optional): value the search pattern is set to, which will
             be applied to the names of suggestions being searched
@@ -1162,7 +1162,7 @@ def full_search(
         `limit` and `offset` parameters to retrieve the results in batches.
 
     Args:
-        connection (object): Strategy One connection object returned by
+        connection (object): Strategy connection object returned by
             `connection.Connection()`
         project (string): `Project` object or ID
         name(string): Value the search pattern is set to, which will
@@ -1312,7 +1312,7 @@ def start_full_search(
     Not to be confused with Search Object.
 
     Args:
-        connection (object): Strategy One connection object returned by
+        connection (object): Strategy connection object returned by
             `connection.Connection()`
         project (string): `Project` object or ID
         object_types(enum class object or integer or list of enum class objects
@@ -1563,7 +1563,7 @@ def get_search_results(
         `limit` and `offset` parameters to retrieve the results in batches.
 
     Args:
-        connection (object): Strategy One connection object returned by
+        connection (object): Strategy connection object returned by
             `connection.Connection()`
         search_id (str): Search ID (identifies the results of a previous search
             stored in IServer memory)
@@ -1676,7 +1676,7 @@ def find_objects_with_id(
         `mstrio.types.ObjectTypes` enum, are used.
 
     Args:
-        connection (Connection): Strategy One connection object returned by
+        connection (Connection): Strategy connection object returned by
             `connection.Connection()`.
         object_id (str): ID of an object.
         projects (list[Project] | list[str], optional): List of projects where
@@ -1782,7 +1782,7 @@ def quick_search_by_id(
     """Perform a quick search based on a project IDs and object IDs.
 
     Args:
-        connection (object): Strategy One connection object returned by
+        connection (object): Strategy connection object returned by
             `connection.Connection()`
         search_data (QuickSearchData | list[QuickSearchData]): search data
         to_dictionary (bool): If True returns dicts, by default

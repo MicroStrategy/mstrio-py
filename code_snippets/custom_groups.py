@@ -30,7 +30,7 @@ CUSTOM_GROUP_NAME_UPDATED = $custom_group_name_updated  # Updated name of the Cu
 QUALIFICATION_EXPRESSION_STRING = $qualification_expr_string  # Qualification expression string for the new element
 ELEMENT_NAME_TO_DELETE = $element_name_to_delete  # Name of the element to delete from the Custom Group
 
-# Connect to the Strategy One environment
+# Connect to the Strategy environment
 conn = get_connection(connectionData, project_name="MicroStrategy Tutorial")
 
 # List Custom Groups

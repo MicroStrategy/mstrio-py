@@ -35,7 +35,7 @@ def create_documentation_definition(
         }
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         body (dict): Dictionary representing documentation definition to create
         error_msg (str, optional): Custom Error Message for Error Handling
 
@@ -62,7 +62,7 @@ def delete_documentation_definition(
     """Delete documentation definition by documentation definition ID.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         documentation_definition_id (str): Documentation definition ID
         error_msg (str, optional): Custom Error Message for Error Handling
 
@@ -89,7 +89,7 @@ def update_documentation_definition(
     """Update documentation definition by documentation definition ID.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         documentation_definition_id (str): Documentation definition ID
         body (dict): Dictionary containing documentation definition updates.
         error_msg (str, optional): Custom Error Message for Error Handling
@@ -122,7 +122,7 @@ def get_documentation_definition_list(
     """Get list of documentation definitions with filtering and sorting.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         id (str, optional): Comma-separated list of definition IDs
         name (str, optional): Documentation definition name
         sort_by (str, optional): Sort by field with direction
@@ -183,7 +183,7 @@ def get_documentation_definition(
     """Get documentation definition details by documentation definition ID.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         documentation_definition_id (str): Documentation definition ID
         error_msg (str, optional): Custom Error Message for Error Handling
 

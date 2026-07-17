@@ -129,7 +129,7 @@ class PackageSettings(Dictable):
         entry levels if you changed the key structure of a table or if you
         changed the level at which a fact is stored.Use the recalculate table
         logical sizes to override any modifications that you have made to
-        logical table sizes. (Logical table sizes affect how the Strategy One
+        logical table sizes. (Logical table sizes affect how the Strategy
         SQL Engine determines which tables to use in a query.)
         """
 

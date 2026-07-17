@@ -275,7 +275,7 @@ def list_jobs(
 ) -> list["Job"] | list[dict]:
     """List jobs objects or job dictionaires.
     Args:
-        connection(object): Strategy One connection object returned by
+        connection(object): Strategy connection object returned by
             `connection.Connection()`
         node(Node, str, optional): Node object or name, if not passed list jobs
             on all nodes
@@ -415,7 +415,7 @@ def list_jobs_v1(
     NOTE: list_jobs can return up to 1024 jobs per request.
 
     Args:
-        connection(object): Strategy One connection object returned by
+        connection(object): Strategy connection object returned by
             'connection.Connection()'
         node(Node, str, optional): Node object or name, if not passed list jobs
             on all nodes
@@ -479,7 +479,7 @@ def kill_jobs(
     """Kill existing jobs by Job objects or job ids.
 
     Args:
-        connection(object): Strategy One connection object returned by
+        connection(object): Strategy connection object returned by
             'connection.Connection()'
         jobs: List of Job objects or job ids to kill
 
@@ -514,7 +514,7 @@ def kill_all_jobs(
     """Kill jobs filtered by passed fields
 
     Args:
-        connection(object): Strategy One connection object returned by
+        connection(object): Strategy connection object returned by
             `connection.Connection()`
          node(Node, str, optional): Node object or name, if not passed kill jobs
             on all nodes
@@ -641,7 +641,7 @@ class Job(EntityBase):
         attributes values.
 
     Attributes:
-        connection: A Strategy One connection object
+        connection: A Strategy connection object
         id: Job information id
         description: Description of the job
         status: Status of the job
@@ -743,7 +743,7 @@ class Job(EntityBase):
         """Initialize the Job object, populates it with I-Server data.
 
         Args:
-            connection: Strategy One connection object returned
+            connection: Strategy connection object returned
                 by `connection.Connection()`
             id: Job information id
         """

@@ -119,7 +119,7 @@ def list_transmitters(
     Optionally filter the transmitters by specifying filters.
 
     Args:
-        connection(object): Strategy One connection object
+        connection(object): Strategy connection object
         to_dictionary: If True returns a list of transmitter dicts,
             otherwise returns a list of transmitter objects
         limit: limit the number of elements returned. If `None` (default), all
@@ -135,7 +135,7 @@ def list_transmitters(
 
 @class_version_handler('11.3.0100')
 class Transmitter(Entity, DeleteMixin, TenantMixin):
-    """Object representation of Strategy One Transmitter object
+    """Object representation of Strategy Transmitter object
 
     Attributes:
         name: transmitter's name
@@ -208,7 +208,7 @@ class Transmitter(Entity, DeleteMixin, TenantMixin):
             fetching.
 
         Args:
-            connection: Strategy One connection object returned by
+            connection: Strategy connection object returned by
                 `connection.Connection()`.
             id (str, optional): Identifier of a pre-existing transmitter
             name (str, optional): Name of the pre-existing transmitter
@@ -261,7 +261,7 @@ class Transmitter(Entity, DeleteMixin, TenantMixin):
         """Create transmitter.
 
         Args:
-            connection: Strategy One connection object returned by
+            connection: Strategy connection object returned by
                 `connection.Connection()`.
             delivery_type: type of the transmitter
             name (str): transmitter's name

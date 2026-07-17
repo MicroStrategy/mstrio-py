@@ -22,8 +22,8 @@ packages = ["mstrio"]
 
 [project]
 name = "mstrio-py"
-description = "Python interface for the Strategy One REST API"
-authors = [{ name = "Strategy One", email = "bkaczynski@strategy.com" }]
+description = "Python interface for the Strategy REST API"
+authors = [{ name = "Strategy", email = "bkaczynski@strategy.com" }]
 requires-python = ">=3.10,<3.15"
 license = "LicenseRef-Proprietary"
 license-files = ["LICENSE"]

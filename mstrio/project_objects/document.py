@@ -68,7 +68,7 @@ def list_documents(
     If `to_dictionary` is True, `to_dataframe` is omitted.
 
     Args:
-        connection (Connection): Strategy One connection object returned
+        connection (Connection): Strategy connection object returned
             by 'connection.Connection()'
         to_dictionary (bool, optional): if True, return Documents as
             list of dicts
@@ -136,7 +136,7 @@ def list_documents_across_projects(
     If `to_dictionary` is True, `to_dataframe` is omitted.
 
     Args:
-        connection (Connection): Strategy One connection object returned
+        connection (Connection): Strategy connection object returned
             by 'connection.Connection()'
         name (string, optional): characters that the document name must contain
         to_dictionary (bool, optional): if True, return Documents as
@@ -199,7 +199,7 @@ class Document(
     LibraryMixin,
     PromptMixin,
 ):
-    """Python representation of Strategy One Document object
+    """Python representation of Strategy Document object
 
     _CACHE_TYPE is a variable used by ContentCache class for cache filtering
     purposes.
@@ -233,7 +233,7 @@ class Document(
         """Initialize Document object by passing name or id.
 
         Args:
-            connection (object): Strategy One connection object returned
+            connection (object): Strategy connection object returned
                 by `connection.Connection()`
             name (string, optional): name of Document
             id (string, optional): ID of Document

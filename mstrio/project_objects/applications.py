@@ -25,7 +25,7 @@ def list_applications(
     """Get list of available Applications.
 
     Args:
-        connection (Connection): Strategy One connection object returned by
+        connection (Connection): Strategy connection object returned by
             `connection.Connection()`
         to_dictionary (bool, optional): if True, return Applications as a
             list of dicts
@@ -54,7 +54,7 @@ def list_applications(
 
 @class_version_handler('11.3.1200')
 class Application(Entity, CopyMixin, DeleteMixin, TenantMixin):
-    """Python representation of a Strategy One Application object"""
+    """Python representation of a Strategy Application object"""
 
     @dataclass
     class GeneralSettings(Dictable):
@@ -889,7 +889,7 @@ class Application(Entity, CopyMixin, DeleteMixin, TenantMixin):
         """Initialize Application object by passing name or id.
 
         Args:
-            connection (object): Strategy One connection object returned
+            connection (object): Strategy connection object returned
                 by `connection.Connection()`
             name (string, optional): name of Application
             id (string, optional): ID of Application
@@ -956,7 +956,7 @@ class Application(Entity, CopyMixin, DeleteMixin, TenantMixin):
         """Create a new application.
 
         Args:
-            connection (Connection): Strategy One connection object returned by
+            connection (Connection): Strategy connection object returned by
                 `connection.Connection()`
             name (str): name of the application
             home_screen (Application.HomeSettings): home screen settings of the

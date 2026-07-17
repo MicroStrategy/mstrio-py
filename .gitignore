@@ -57,7 +57,6 @@ htmlcov/
 coverage.xml
 *.cover
 .hypothesis/
-*test*
 
 # Translations
 *.mo

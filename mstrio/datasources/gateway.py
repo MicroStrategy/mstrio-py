@@ -15,7 +15,7 @@ def list_gateways(
     Optionally filter the gateways by specifying filters.
 
     Args:
-        connection (Connection): Strategy One connection object
+        connection (Connection): Strategy connection object
         to_dictionary (bool): If True returns a list of Gateway dicts,
            otherwise returns a list of Gateway objects
        **filters: Available filter parameters:
@@ -27,7 +27,7 @@ def list_gateways(
 # TODO - should support tenant but API lack tenant_id (CGPY-3825)
 @class_version_handler('11.3.0960')
 class Gateway(EntityBase, ChangeJournalMixin):
-    """Object representation of Strategy One Gateway
+    """Object representation of Strategy Gateway
 
     Attributes:
         id: Gateway's ID
@@ -62,7 +62,7 @@ class Gateway(EntityBase, ChangeJournalMixin):
         When `id` is provided, `name` is omitted.
 
         Args:
-            connection (Connection): Strategy One connection object
+            connection (Connection): Strategy connection object
             id (str): ID of Driver
             name (str): name of Driver
         """
@@ -105,7 +105,7 @@ class Gateway(EntityBase, ChangeJournalMixin):
         Optionally filter the gateways by specifying filters.
 
         Args:
-            connection (Connection): Strategy One connection object
+            connection (Connection): Strategy connection object
             to_dictionary (bool): If True returns a list of Gateway dicts,
                otherwise returns a list of Gateway objects
            **filters: Available filter parameters:

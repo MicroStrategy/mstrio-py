@@ -90,7 +90,7 @@ def list_agents(
     """Get a list of Agents.
 
     Args:
-        connection (Connection): Strategy One connection object returned
+        connection (Connection): Strategy connection object returned
             by 'connection.Connection()'
         name (str, optional): characters that the dashboard name must contain
         to_dictionary (bool, optional): if True, return Agents as a
@@ -143,7 +143,7 @@ def list_agents(
 
 @class_version_handler('11.4.0300')
 class Agent(Entity, CertifyMixin, CopyMixin, DeleteMixin, MoveMixin, LibraryMixin):
-    """Python representation of a Strategy One Agent object"""
+    """Python representation of a Strategy Agent object"""
 
     _OBJECT_TYPE = ObjectTypes.DOCUMENT_DEFINITION
 
@@ -173,7 +173,7 @@ class Agent(Entity, CertifyMixin, CopyMixin, DeleteMixin, MoveMixin, LibraryMixi
         """Initialize Agent object by passing name or id.
 
         Args:
-            connection (object): Strategy One connection object returned
+            connection (object): Strategy connection object returned
                 by `connection.Connection()`
             name (string, optional): name of Agent
             id (string, optional): ID of Agent

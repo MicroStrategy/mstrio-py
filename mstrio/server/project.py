@@ -367,7 +367,7 @@ def list_projects(
     Either `conn` or `env` must be provided.
 
     Attributes:
-        conn (Connection, optional): A Strategy One connection object.
+        conn (Connection, optional): A Strategy connection object.
         env (Environment, optional): Environment object instance.
         ... (optional): Additional parameters to pass to
             `Environment.list_projects()`.
@@ -385,10 +385,10 @@ def list_projects(
 
 
 class Project(Entity, DeleteMixin, ModelVldbMixin, TenantMixin):
-    """Object representation of Strategy One Project (Project) object.
+    """Object representation of Strategy Project (Project) object.
 
     Attributes:
-        connection: A Strategy One connection object
+        connection: A Strategy connection object
         settings: Project settings object
         id: Project ID
         name: Project name
@@ -470,7 +470,7 @@ class Project(Entity, DeleteMixin, ModelVldbMixin, TenantMixin):
             param as the only one: `Project(connection=conn)`.
 
         Args:
-            connection: Strategy One connection object returned
+            connection: Strategy connection object returned
                 by `connection.Connection()`
             name: Project name
             id: Project ID
@@ -1234,7 +1234,7 @@ class Project(Entity, DeleteMixin, ModelVldbMixin, TenantMixin):
                 Default is False.
             strict (bool, optional): If True, performs additional checks that
                 the project is not only loaded on the server, but also reliably
-                accessible by Strategy One services that might not be
+                accessible by Strategy services that might not be
                 immediately synced after the project is loaded.
                 Default is False.
         """
@@ -2128,7 +2128,7 @@ class Project(Entity, DeleteMixin, ModelVldbMixin, TenantMixin):
 
 
 class ProjectSettings(BaseSettings):
-    """Object representation of Strategy One Project Settings.
+    """Object representation of Strategy Project Settings.
 
     Used to fetch, view, modify, update, export to file, import from file and
     validate Project settings.
@@ -2141,7 +2141,7 @@ class ProjectSettings(BaseSettings):
     project using the `update()` method.
 
     Attributes:
-        connection: A Strategy One connection object
+        connection: A Strategy connection object
     """
 
     _TYPE = "allProjectSettings"
@@ -2185,7 +2185,7 @@ class ProjectSettings(BaseSettings):
         """Initialize `ProjectSettings` object.
 
         Args:
-            connection: Strategy One connection object returned by
+            connection: Strategy connection object returned by
                 `connection.Connection()`.
             project_id: Project ID
         """
@@ -2355,7 +2355,7 @@ class DuplicationConfig(helper.Dictable):
         skip_empty_profile_folders (bool, optional): Whether to skip empty
             profile folders during duplication.
         skip_all_profile_folders (bool, optional): Whether to skip all profile
-            folders during duplication. Available in Strategy One 11.5.0900+.
+            folders during duplication. Available in Strategy 11.5.0900+.
         include_user_subscriptions (bool, optional): Whether to include user
             subscriptions in the duplication.
         include_contact_subscriptions (bool, optional): Whether to include
@@ -2397,7 +2397,7 @@ class DuplicationConfig(helper.Dictable):
         incompatible server versions.
 
         Args:
-            connection: Strategy One connection object.
+            connection: Strategy connection object.
 
         Raises:
             VersionException: If version-specific properties are used with
@@ -2436,7 +2436,7 @@ class DuplicationConfig(helper.Dictable):
         the API.
 
         Args:
-            connection (Connection, optional): Strategy One connection object
+            connection (Connection, optional): Strategy connection object
                 to validate version-specific properties.
 
         Returns:
@@ -2586,7 +2586,7 @@ class CrossDuplicationConfig(DuplicationConfig):
         accepted by the API.
 
         Args:
-            connection (Connection, optional): Strategy One connection object
+            connection (Connection, optional): Strategy connection object
                 to validate version-specific properties.
 
         Returns:
@@ -2695,7 +2695,7 @@ def list_projects_duplications(
     """Get project duplications.
 
     Args:
-        connection: Strategy One connection object returned by
+        connection: Strategy connection object returned by
             `connection.Connection()`
         limit (int, optional): Limit the number of elements returned. If `None`
             (default), all objects are returned.
@@ -2770,7 +2770,7 @@ class ProjectDuplication(EntityBase, ChangeJournalMixin, DeleteMixin):
         """Initialize ProjectDuplication object.
 
         Args:
-            connection: Strategy One connection object returned by
+            connection: Strategy connection object returned by
                 `connection.Connection()`.
             id: ID of the ProjectDuplication
         """

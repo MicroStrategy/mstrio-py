@@ -8,7 +8,7 @@ def get_attribute_relationships(connection: Connection, id: str, project_id: str
     """Get relationship(s) of an attribute
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         id: ID of an attribute
         project_id: ID of a project
 
@@ -34,7 +34,7 @@ def update_attribute_relationships(
     """Update relationship(s) of an attribute
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         id: ID of an attribute
         body: JSON-formatted definition of the attribute relationships
 

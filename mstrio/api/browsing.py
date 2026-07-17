@@ -34,7 +34,7 @@ def store_search_instance(
     Search the metadata and store an instance of search results.
 
     Args:
-        connection(object): Strategy One connection object returned by
+        connection(object): Strategy connection object returned by
             `connection.Connection()`.
         project_id(string, optional): Project ID
         name(string, optional): Value the search pattern is set to, which will
@@ -87,7 +87,7 @@ def store_search_instance(
         error_msg(string, optional): Custom Error Message for Error Handling
 
     Returns:
-        HTTP response returned by the Strategy One REST server.
+        HTTP response returned by the Strategy REST server.
     """
     return connection.post(
         endpoint='/api/metadataSearches/results',
@@ -136,7 +136,7 @@ def store_search_instance_v2(
     Search the metadata and store an instance of search results.
 
     Args:
-        connection (object): Strategy One connection object returned by
+        connection (object): Strategy connection object returned by
             `connection.Connection()`.
         body (dict): Request body containing extra search params
         project_id (string, optional): Project ID
@@ -194,7 +194,7 @@ def store_search_instance_v2(
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
-        HTTP response returned by the Strategy One REST server.
+        HTTP response returned by the Strategy REST server.
     """
     return connection.post(
         endpoint='/api/v2/metadataSearches/results',
@@ -233,7 +233,7 @@ def get_search_results(
     Get search results in a list format.
 
     Args:
-        connection(object): Strategy One connection object returned by
+        connection(object): Strategy connection object returned by
             `connection.Connection()`.
         search_id(string): Search ID (identifies the results for a previous
             search stored in I-Server memory)
@@ -247,7 +247,7 @@ def get_search_results(
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
-        HTTP response returned by the Strategy One REST server.
+        HTTP response returned by the Strategy REST server.
     """
     return connection.get(
         endpoint='/api/metadataSearches/results',
@@ -266,7 +266,7 @@ def get_search_results_async(
     """Get search results in a list format asynchronously.
 
     Args:
-        future_session(object): Future Session object to call Strategy One REST
+        future_session(object): Future Session object to call Strategy REST
             Server asynchronously
         search_id(string): Search ID (identifies the results for a previous
             search stored in I-Server memory)
@@ -279,7 +279,7 @@ def get_search_results_async(
             Default value is -1.
 
     Returns:
-        Future with HTTP response returned by the Strategy One REST server as
+        Future with HTTP response returned by the Strategy REST server as
         a result.
     """
     endpoint = '/api/objects'
@@ -304,7 +304,7 @@ def get_search_results_tree_format(
     Get search results in a tree format.
 
     Args:
-        connection(object): Strategy One connection object returned by
+        connection(object): Strategy connection object returned by
             `connection.Connection()`.
         search_id(string): Search ID (identifies the results for a previous
             search stored in I-Server memory)
@@ -318,7 +318,7 @@ def get_search_results_tree_format(
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
-        HTTP response returned by the Strategy One REST server.
+        HTTP response returned by the Strategy REST server.
     """
     return connection.get(
         endpoint='/api/metadataSearches/results/tree',
@@ -404,7 +404,7 @@ def get_shortcuts(
     in specific projects.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         body: A dictionary specifying the projects and shortcuts in the form of
             {[
                 {
@@ -442,7 +442,7 @@ def get_shortcut(
     """Get information about specific published shortcut in specific project.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         id: id of target shortcut
         project_id: id of project that the shortcut is in
         shortcut_info_flag: flag indicating what information about shortcut
@@ -487,7 +487,7 @@ def get_search_suggestions(
     """Store results of the Search engine to return search suggestions.
 
     Args:
-        connection (object): Strategy One REST API connection object
+        connection (object): Strategy REST API connection object
         project_id (string, optional): project ID
         key (string, optional): value the search pattern is set to, which will
             be applied to the names of suggestions being searched
@@ -520,7 +520,7 @@ def get_objects_from_quick_search(
     """Search for objects in the metadata.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         body: A dictionary specifying the search criteria
         include_ancestors: Include ancestors in the search results
         show_navigation_path: Show navigation path in the search results
@@ -550,7 +550,7 @@ def get_search_object(
     """Get information about a specific search object.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         id: ID of the search object
         error_msg: Custom Error Message for Error Handling
 
@@ -572,7 +572,7 @@ def create_search_object(
     """Create a search object.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         project_id: ID of the project where the search object will be created
         body: Dictionary containing the search object details
         error_msg: Custom Error Message for Error Handling
@@ -599,14 +599,14 @@ def update_search_object(
     Alter a stored search object.
 
     Args:
-        connection (object): Strategy One connection object returned by
+        connection (object): Strategy connection object returned by
             `connection.Connection()`.
         id (string): Search ID (identifies the search instance to alter)
         body (dict): Dictionary containing the search object details
         error_msg (string, optional): Custom error message for error handling
 
     Returns:
-        HTTP response returned by the Strategy One REST server.
+        HTTP response returned by the Strategy REST server.
     """
 
     return connection.patch(

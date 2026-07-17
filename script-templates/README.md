@@ -2,7 +2,7 @@
 
 This folder contains script templates designed specifically for use within
 **Workstation**. These templates provide starting points for common tasks
-within the Strategy One environment.
+within the Strategy environment.
 
 ## Important Note
 

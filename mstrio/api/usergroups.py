@@ -17,7 +17,7 @@ def get_privileges(
     privileges.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         id (string): ID of user group containing your required privileges
         privilege_level (string, optional) [server, project]: String
             representing level of privileges required
@@ -41,7 +41,7 @@ def get_memberships(connection, id, error_msg=None):
     specific user group.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         id (string): ID of user group containing your required memberships
         error_msg (string, optional): Custom Error Message for Error Handling
 
@@ -62,7 +62,7 @@ def get_members(
     """Get member information for a specific user group.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         id (string): ID of user group containing your required privileges
         include_access (bool, optional): Specifies whether to return access for
             members
@@ -89,7 +89,7 @@ def get_members_async(future_session, id, include_access=False, offset=0, limit=
 
     Args:
         future_session(object): `FuturesSessionWithRenewal` object to call
-            Strategy One REST Server asynchronously
+            Strategy REST Server asynchronously
         id (string): ID of user group containing your required privileges
         include_access (bool, optional): Specifies whether to return access for
             members
@@ -117,7 +117,7 @@ def get_settings(
     """Update the governing setting of the user group id.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         id (string): ID of user group containing your required privileges
         include_access (bool, optional): Specifies whether to return access for
             members
@@ -140,10 +140,10 @@ def get_settings(
 @ErrorHandler(err_msg="Error getting user groups top level.")
 def get_top_level(connection, error_msg=None):
     """Get information for all of the user groups that exist at the level of
-    the Strategy One Everyone user group.
+    the Strategy Everyone user group.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
@@ -161,7 +161,7 @@ def update_user_group_info(connection, id, body, error_msg=None):
     """Update specific information for a specific user group.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         id (string): ID of user group containing your required privileges
         body (JSON): Body.
         error_msg (string, optional): Custom Error Message for Error Handling
@@ -185,7 +185,7 @@ def delete_user_group(connection, id, error_msg=None):
     """Delete user group for specific user group id.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         id (string): ID of user group containing your required privileges
         error_msg (string, optional): Custom Error Message for Error Handling
 
@@ -204,7 +204,7 @@ def replace_user_group_info(connection, id, error_msg=None):
     """Update all of the information for a specific user group.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         id (string): ID of user group containing your required privileges
         error_msg (string, optional): Custom Error Message for Error Handling
 
@@ -229,7 +229,7 @@ def get_info_all_user_groups(
     returned.
 
     Args:
-        connection (object): Strategy One connection object returned by
+        connection (object): Strategy connection object returned by
             `connection.Connection()`.
         name_begins (string): only user groups with given beginning of name will
             be retrieved
@@ -243,7 +243,7 @@ def get_info_all_user_groups(
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
-        HTTP response object returned by the Strategy One REST server
+        HTTP response object returned by the Strategy REST server
     """
 
     return connection.get(
@@ -269,7 +269,7 @@ def get_info_all_user_groups_async(
 
     Args:
         future_session (FuturesSessionWithRenewal): Future Session object
-            to call Strategy One REST Server asynchronously
+            to call Strategy REST Server asynchronously
         name_begins(string): Characters that the user name must begin with.
         offset(int): Starting point within the collection of returned search
             results. Used to control paging behavior.
@@ -280,7 +280,7 @@ def get_info_all_user_groups_async(
             allows client to selectively retrieve part of the response model.
 
     Returns:
-        HTTP response object returned by the Strategy One REST server.
+        HTTP response object returned by the Strategy REST server.
     """
 
     params = {
@@ -308,7 +308,7 @@ def create_user_group(connection, body):
     of child users or user groups.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         body(JSON):{"name": "string",
                     "description": "string",
                     "memberships": ["string"],
@@ -324,7 +324,7 @@ def get_user_group_info(connection, id, error_msg=None):
     """Get information for a specific user group.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         id (string): ID of user group containing your required privileges
         error_msg (string, optional): Custom Error Message for Error Handling
 
@@ -355,7 +355,7 @@ def get_security_roles(connection, id, project_id=None, error_msg=None):
     """Get security roles for a specific user group in a specific project.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         id (string): ID of user group containing your required privileges
         project_id (string, optional): Project id string
         error_msg (string, optional): Custom Error Message for Error Handling
@@ -384,7 +384,7 @@ def get_security_filters(
     security filters for the user group with given ID.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         id (string): User group ID
         projects (str or list of str, optional): collection of projects' ids
             which is used for filtering data

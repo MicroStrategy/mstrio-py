@@ -52,7 +52,7 @@ class ContentCache(Cache, ContentCacheMixin):
         no I-Server request will be sent.
 
         Args:
-            connection (Connection): Strategy One connection object returned by
+            connection (Connection): Strategy connection object returned by
                 `connection.Connection()`.
             id (string): content cache id
             content_cache_dict (dict, optional): dictionary with properties of
@@ -245,7 +245,7 @@ class ContentCache(Cache, ContentCacheMixin):
 
         Args:
             cls (object): Class type for objects to be created
-            connection (Connection): Strategy One connection object returned by
+            connection (Connection): Strategy connection object returned by
                 `connection.Connection()`
             caches (list[dict]): list of dictionaries the Caches will be created
                 from

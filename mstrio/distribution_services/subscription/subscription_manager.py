@@ -51,7 +51,7 @@ def list_subscriptions(
     Optionally filter the subscriptions by specifying filters.
 
     Args:
-        connection (Connection): Strategy One connection object
+        connection (Connection): Strategy connection object
         project (Project | str, optional): Project object or ID or name
             specifying the project. May be used instead of `project_id` or
             `project_name`.
@@ -138,7 +138,7 @@ def dispatch_from_dict(
     Args:
         source: dictionary of an object to return from the specified
             subscription
-        connection: Strategy One connection object returned
+        connection: Strategy connection object returned
             by `connection.Connection()`
         project_id: Project ID
 
@@ -164,7 +164,7 @@ class SubscriptionManager:
         """Initialize the SubscriptionManager object.
 
         Args:
-            connection (Connection): Strategy One connection object returned
+            connection (Connection): Strategy connection object returned
                 by `connection.Connection()`
             project (Project | str, optional): Project object or ID or name
                 specifying the project. May be used instead of `project_id` or

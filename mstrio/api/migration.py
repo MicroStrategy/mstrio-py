@@ -14,7 +14,7 @@ def create_package_holder(
     """Create a new in-memory metadata package holder.
 
     Args:
-        connection (Connection): Strategy One REST API connection object.
+        connection (Connection): Strategy REST API connection object.
         project_id (Optional[str]): Optional ID of a project. Defaults to None.
         error_msg (Optional[str]): Optional error message. Defaults to None.
 
@@ -41,7 +41,7 @@ def update_package_holder(
     specification. Currently, it's only supported when the holder is empty.
 
     Args:
-        connection (Connection): Strategy One REST API connection object.
+        connection (Connection): Strategy REST API connection object.
         body (dict): dictionarized PackageConfig object (with `to_dict()`)
         id (str): ID of the package to be updated
         prefer (str, optional): API currently just supports asynchronous mode,
@@ -71,7 +71,7 @@ def download_package(
     """Download a package binary.
 
     Args:
-        connection (Connection): Strategy One REST API connection object.
+        connection (Connection): Strategy REST API connection object.
         id (str): ID of the package to be downloaded.
         project_id (Optional[str]): Optional ID of a project. Defaults to None.
         error_msg (Optional[str]): Optional error message. Defaults to None.
@@ -97,7 +97,7 @@ def upload_package(
     """Upload package to sandbox directly.
 
     Args:
-        connection (Connection): Strategy One REST API connection object.
+        connection (Connection): Strategy REST API connection object.
         id (str): ID of the package to be uploaded.
         file (bytes): package in a format of a binary string.
         project_id (Optional[str]): Optional ID of a project. Defaults to None.
@@ -126,7 +126,7 @@ def get_package_holder(
     content.
 
     Args:
-        connection (Connection): Strategy One REST API connection object.
+        connection (Connection): Strategy REST API connection object.
         id (str): ID of the package to be retrieved.
         project_id (Optional[str]): Optional ID of a project. Defaults to None.
         show_content (bool, optional): Show package content or not. Defaults to
@@ -156,7 +156,7 @@ def delete_package_holder(
     Intelligence Server resources.
 
     Args:
-        connection (Connection): Strategy One REST API connection object.
+        connection (Connection): Strategy REST API connection object.
         id (str): ID of the package to be deleted.
         prefer (str, optional): API currently just supports asynchronous mode,
         not support synchronous mode, so header parameter `Prefer` must be set
@@ -188,7 +188,7 @@ def create_import(
     """Create a package import process.
 
     Args:
-        connection (Connection): Strategy One REST API connection object.
+        connection (Connection): Strategy REST API connection object.
         id (str): ID of the package for which import process will be
             created.
         prefer (str, optional): Allow client to set preferences. Currently,
@@ -219,7 +219,7 @@ def get_import(
     """Get result of a package import process.
 
     Args:
-        connection (Connection): Strategy One REST API connection object.
+        connection (Connection): Strategy REST API connection object.
         id (str): Import process ID.
         project_id (Optional[str]): Optional ID of a project. Defaults to None.
         error_msg (Optional[str]): Optional error message. Defaults to None.
@@ -245,7 +245,7 @@ def delete_import(
     """Closes an existing import process previously created.
 
     Args:
-        connection (Connection): Strategy One REST API connection object.
+        connection (Connection): Strategy REST API connection object.
         id (str): Import process ID.
         prefer (str, optional): Allow client to set preferences. Currently,
             respond-async is the only supported mode.
@@ -272,7 +272,7 @@ def create_undo(
     """Download undo package binary for this import process.
 
     Args:
-        connection (Connection): Strategy One REST API connection object.
+        connection (Connection): Strategy REST API connection object.
         id (str): Import process ID.
         project_id (Optional[str]): Optional ID of a project. Defaults to None.
         error_msg (Optional[str]): Optional error message. Defaults to None.
@@ -299,7 +299,7 @@ def list_migrations(
     """Get a list of migrations.
 
     Args:
-        connection (Connection): Strategy One connection object returned by
+        connection (Connection): Strategy connection object returned by
             `connection.Connection()`
         offset (int, optional): Starting point within the collection of returned
             results
@@ -315,7 +315,7 @@ def list_migrations(
         error_msg (str, optional): Custom Error Message for Error Handling
 
     Returns:
-        HTTP response object returned by the Strategy One REST server."""
+        HTTP response object returned by the Strategy REST server."""
     return connection.get(
         endpoint='/api/migrations',
         params={
@@ -338,7 +338,7 @@ def get_migration(
     """Get definition of a single metric by id
 
     Args:
-        connection (Connection): Strategy One REST API connection object
+        connection (Connection): Strategy REST API connection object
         migration_id (str): ID of the migration object
         show_content (str, optional): The type of showing content, the allowable
             values include default, tocview, treeview, all
@@ -370,7 +370,7 @@ def delete_migration(
     """Delete migration package specified by ID.
 
     Args:
-        connection (Connection): Strategy One REST API connection object
+        connection (Connection): Strategy REST API connection object
         package_id (str): The ID of the migration package to be deleted
         error_msg (str, optional): Custom Error Message for Error Handling
         journal_comment (str, optional): Comment that will be added to the
@@ -399,7 +399,7 @@ def download_migration_package(
     """Get definition of a single metric by id
 
     Args:
-        connection (Connection): Strategy One REST API connection object
+        connection (Connection): Strategy REST API connection object
         package_id (str): The ID of the migration package to be downloaded
         fields (str, optional): Comma separated top-level field whitelist. This
             allows client to selectively retrieve part of the response model,
@@ -513,7 +513,7 @@ def update_migration(
     """Update a migration or trigger an undo process.
 
     Args:
-        connection (Connection): Strategy One connection object returned by
+        connection (Connection): Strategy connection object returned by
             `connection.Connection()`
         migration_id (str): ID of the migration object to be updated or reverted
         body (dict): Migration information to be updated
@@ -549,7 +549,7 @@ def edit_migration_package(
     """Edit migration package information.
 
     Args:
-        connection (Connection): Strategy One REST API connection object
+        connection (Connection): Strategy REST API connection object
         prefer (str): Prefer--allow client to set preferences. Currently,
             respond-async allows client to execute in async mode
         migration_id (str): ID of the migration object
@@ -582,7 +582,7 @@ def storage_service_create_file_metadata(
     storage service.
 
     Args:
-        connection (Connection): Strategy One REST API connection object
+        connection (Connection): Strategy REST API connection object
         body (dict): {
             "name": str,
             "extension": str ("mmp"),
@@ -626,7 +626,7 @@ def storage_service_download_file_binary(
     """Upload a file binary to storage service directly.
 
     Args:
-        connection (Connection): Strategy One REST API connection object
+        connection (Connection): Strategy REST API connection object
         file_id (str): file ID
         fields (str, optional): A comma-separated list of fields to include
                 in the response. By default, all fields are returned.
@@ -655,7 +655,7 @@ def storage_service_upload_file_binary(
     """Upload a file binary to storage service directly.
 
     Args:
-        connection (Connection): Strategy One REST API connection object
+        connection (Connection): Strategy REST API connection object
         file_id (str): file ID
         file (bytes): file object
         fields (str, optional): A comma-separated list of fields to include
@@ -683,7 +683,7 @@ def delete_file_binary(
     """Delete a file binary from storage service directly.
 
     Args:
-        connection (Connection): Strategy One REST API connection object
+        connection (Connection): Strategy REST API connection object
         file_id (str): file ID to be deleted
         error_msg (str, optional): Custom Error Message for Error Handling
 
@@ -707,7 +707,7 @@ def list_storage_files(
     """Get a list of storage files.
 
     Args:
-        connection (Connection): Strategy One connection object returned by
+        connection (Connection): Strategy connection object returned by
             `connection.Connection()`
         offset (int, optional): Starting point within the collection of returned
             results
@@ -721,7 +721,7 @@ def list_storage_files(
         error_msg (str, optional): Custom Error Message for Error Handling
 
     Returns:
-        HTTP response object returned by the Strategy One REST server."""
+        HTTP response object returned by the Strategy REST server."""
     return connection.get(
         endpoint='/api/mstrServices/library/storage/sharedFileStore/files',
         params={
@@ -745,7 +745,7 @@ def certify_migration_package(
     to synchronize the status.
 
     Args:
-        connection (Connection): Strategy One REST API connection object
+        connection (Connection): Strategy REST API connection object
         id (str): migration package ID
         body (dict, optional): Migration package information to be updated
         auto_sync (bool, optional): Whether to trigger a process to synchronize
@@ -777,7 +777,7 @@ def trigger_migration_package_validation(
     """Trigger a validation process
 
     Args:
-        connection (Connection): Strategy One REST API connection object
+        connection (Connection): Strategy REST API connection object
         id (str): migration package ID
         body (dict): Validation information
         project_id (str, optional): ID of the project

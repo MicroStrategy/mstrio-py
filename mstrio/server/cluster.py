@@ -47,16 +47,16 @@ class Cluster:
     """Manage, list nodes (servers) on a cluster.
 
     Manage Services on nodes. Manage node settings. Load and Unload
-    projects. A "service" is a product developed by Strategy One or
-    a third-party product distributed by Strategy One i.e.
-    "Strategy One Intelligence Server" or "Apache ZooKeeper".
+    projects. A "service" is a product developed by Strategy or
+    a third-party product distributed by Strategy i.e.
+    "Strategy Intelligence Server" or "Apache ZooKeeper".
     """
 
     def __init__(self, connection: Connection):
         """Initialize Cluster object.
 
         Args:
-            connection: Strategy One connection object returned by
+            connection: Strategy connection object returned by
                 `connection.Connection()`.
         """
         self.connection = connection
@@ -494,7 +494,7 @@ class Cluster:
         Args:
             node (str | Node): Name or object of the node to update.
             load_balance_factor (int): This setting becomes relevant in
-                an environment that has a Strategy One Intelligence Server
+                an environment that has a Strategy Intelligence Server
                 cluster. By default, the load balance factor is 1.
                 The value can be increased on more powerful servers in a cluster
                 to provide an appropriate balance. A larger load balance factor

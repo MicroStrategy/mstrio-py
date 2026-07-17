@@ -96,7 +96,7 @@ def list_prompts(
     """Get list of Prompt objects or dicts with them.
 
     Args:
-        connection (object): Strategy One connection object returned by
+        connection (object): Strategy connection object returned by
             `connection.Connection()`
         name (optional, str): value the search pattern is set to, which
             will be applied to the names of prompts being searched
@@ -182,7 +182,7 @@ def list_prompts(
 
 
 class Prompt(CopyMixin, DeleteMixin, Entity, MoveMixin):
-    """A Strategy One class representing a prompt.
+    """A Strategy class representing a prompt.
 
     This class can be used in two modes:
         1. Answer mode: Create local prompt objects for providing answers
@@ -306,7 +306,7 @@ class Prompt(CopyMixin, DeleteMixin, Entity, MoveMixin):
                 server
 
         Args:
-            connection (Connection, optional): Strategy One connection object
+            connection (Connection, optional): Strategy connection object
             id (str, optional): Identifier of a prompt object
             key (str, optional): Unique key of the prompt
             name (str, optional): Name of a prompt object
@@ -421,7 +421,7 @@ class Prompt(CopyMixin, DeleteMixin, Entity, MoveMixin):
         """Create a new prompt object.
 
         Args:
-            connection (Connection): Strategy One connection object.
+            connection (Connection): Strategy connection object.
             prompt_data (dict): Dictionary containing prompt configuration data.
             name (str): Name of the prompt.
             sub_type (ObjectSubType | str): Sub-type of the prompt.
@@ -487,7 +487,7 @@ class Prompt(CopyMixin, DeleteMixin, Entity, MoveMixin):
         """Create a new value prompt object.
 
         Args:
-            connection (Connection): Strategy One connection object.
+            connection (Connection): Strategy connection object.
             name (str): Name of the prompt.
             sub_type (ObjectSubType | str): Sub-type of the prompt
                 (PROMPT_STRING, PROMPT_DATE, PROMPT_DOUBLE, PROMPT_BIG_DECIMAL).

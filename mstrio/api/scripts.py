@@ -19,7 +19,7 @@ def get_info(
     """Get info about a script.
 
     Args:
-        connection (Connection): Strategy One connection object returned by
+        connection (Connection): Strategy connection object returned by
             `connection.Connection()`
         project_id (str): ID of the project
         id (str): ID of the script
@@ -56,7 +56,7 @@ def get_info_in_bulk(
     """Get a list of scripts.
 
     Args:
-        connection (Connection): Strategy One connection object returned by
+        connection (Connection): Strategy connection object returned by
             `connection.Connection()`
         project_id (str): ID of the project
         script_ids (list[str]): List of script IDs to filter by.
@@ -93,14 +93,14 @@ def create_script(
     """Create a script.
 
     Args:
-        connection (Connection): Strategy One connection object returned by
+        connection (Connection): Strategy connection object returned by
             `connection.Connection()`
         body (dict): JSON-formatted body of the new script
         project_id (str): ID of the project
         error_msg (str, optional): Custom Error Message for Error Handling
 
     Returns:
-        HTTP response object returned by the Strategy One REST server.
+        HTTP response object returned by the Strategy REST server.
     """
     if project_id is None:
         connection._validate_project_selected()
@@ -124,7 +124,7 @@ def update_script(
     """Update data about a script.
 
     Args:
-        connection (Connection): Strategy One connection object returned by
+        connection (Connection): Strategy connection object returned by
             `connection.Connection()`
         project_id (str): ID of the project
         id (str): ID of the script to be updated
@@ -132,7 +132,7 @@ def update_script(
         error_msg (str, optional): Custom Error Message for Error Handling
 
     Returns:
-        HTTP response object returned by the Strategy One REST server.
+        HTTP response object returned by the Strategy REST server.
     """
     if project_id is None:
         connection._validate_project_selected()
@@ -155,14 +155,14 @@ def delete_script(
     """Delete a script.
 
     Args:
-        connection (Connection): Strategy One connection object returned by
+        connection (Connection): Strategy connection object returned by
             `connection.Connection()`
         project_id (str): ID of the project
         id (str): ID of the script to be deleted
         error_msg (str, optional): Custom Error Message for Error Handling
 
     Returns:
-        HTTP response object returned by the Strategy One REST server.
+        HTTP response object returned by the Strategy REST server.
     """
     if project_id is None:
         connection._validate_project_selected()
@@ -184,7 +184,7 @@ def run_existing_script(
     """Run an existing script.
 
     Args:
-        connection (Connection): Strategy One connection object returned by
+        connection (Connection): Strategy connection object returned by
             `connection.Connection()`
         project_id (str): ID of the project
         id (str): ID of the script to be run
@@ -193,7 +193,7 @@ def run_existing_script(
         error_msg (str, optional): Custom Error Message for Error Handling
 
     Returns:
-        HTTP response object returned by the Strategy One REST server.
+        HTTP response object returned by the Strategy REST server.
     """
     if project_id is None:
         connection._validate_project_selected()
@@ -222,7 +222,7 @@ def run_python_code(
     """Run Python code.
 
     Args:
-        connection (Connection): Strategy One connection object returned by
+        connection (Connection): Strategy connection object returned by
             `connection.Connection()`
         code (str): Python code to be executed - needs to be `base64` encoded
         script_runtime_id (str, optional): ID of the script runtime to be used.
@@ -231,7 +231,7 @@ def run_python_code(
             passed to the script
 
     Returns:
-        HTTP response object returned by the Strategy One REST server.
+        HTTP response object returned by the Strategy REST server.
     """
     body = {"scriptContent": code}
 
@@ -251,21 +251,25 @@ def run_python_code(
 def get_run_result(
     connection: 'Connection',
     evaluation_id: str,
+    project_id: str | None = None,
     error_msg: str | None = None,
 ) -> Response:
     """Get result of a script execution.
 
     Args:
-        connection (Connection): Strategy One connection object returned by
+        connection (Connection): Strategy connection object returned by
             `connection.Connection()`
         evaluation_id (str): ID of the script evaluation
+        project_id (str, optional): ID of the project. Can be `None`. Required
+            only for getting result of script execution, not needed for code.
         error_msg (str, optional): Custom Error Message for Error Handling
 
     Returns:
-        HTTP response object returned by the Strategy One REST server.
+        HTTP response object returned by the Strategy REST server.
     """
     return connection.get(
         endpoint=f'/api/scripts/evaluation/{evaluation_id}',
+        headers={'X-MSTR-ProjectID': project_id},
     )
 
 
@@ -282,7 +286,7 @@ def get_last_run_results_in_bulk(
     """Get last run results for multiple scripts.
 
     Args:
-        connection (Connection): Strategy One connection object returned by
+        connection (Connection): Strategy connection object returned by
             `connection.Connection()`
         project_id (str): ID of the project
         script_ids (list[str] | str): ID or IDs of the scripts
@@ -291,7 +295,7 @@ def get_last_run_results_in_bulk(
         error_msg (str, optional): Custom Error Message for Error Handling
 
     Returns:
-        HTTP response object returned by the Strategy One REST server.
+        HTTP response object returned by the Strategy REST server.
     """
     if project_id is None:
         connection._validate_project_selected()
@@ -317,21 +321,25 @@ def get_last_run_results_in_bulk(
 def stop_script_or_code_execution(
     connection: 'Connection',
     evaluation_id: str,
+    project_id: str | None = None,
     error_msg: str | None = None,
 ) -> Response:
     """Stop a running script or code execution.
 
     Args:
-        connection (Connection): Strategy One connection object returned by
+        connection (Connection): Strategy connection object returned by
             `connection.Connection()`
         evaluation_id (str): ID of the script evaluation
+        project_id (str, optional): ID of the project. Can be `None`. Required
+            only for stopping script execution, not needed for stopping code.
         error_msg (str, optional): Custom Error Message for Error Handling
 
     Returns:
-        HTTP response object returned by the Strategy One REST server.
+        HTTP response object returned by the Strategy REST server.
     """
     return connection.delete(
         endpoint=f'/api/scripts/evaluation/{evaluation_id}',
+        headers={'X-MSTR-ProjectID': project_id},
     )
 
 
@@ -347,14 +355,14 @@ def get_script_variables_personal_answers(
     """Get script variables answers.
 
     Args:
-        connection (Connection): Strategy One connection object returned by
+        connection (Connection): Strategy connection object returned by
             `connection.Connection()`
         project_id (str): ID of the project
         id (str): ID of the script
         error_msg (str, optional): Custom Error Message for Error Handling
 
     Returns:
-        HTTP response object returned by the Strategy One REST server.
+        HTTP response object returned by the Strategy REST server.
     """
     if project_id is None:
         connection._validate_project_selected()
@@ -379,7 +387,7 @@ def update_script_variables_personal_answers(
     """Update script variables answers.
 
     Args:
-        connection (Connection): Strategy One connection object returned by
+        connection (Connection): Strategy connection object returned by
             `connection.Connection()`
         project_id (str): ID of the project
         id (str): ID of the script
@@ -387,7 +395,7 @@ def update_script_variables_personal_answers(
         error_msg (str, optional): Custom Error Message for Error Handling
 
     Returns:
-        HTTP response object returned by the Strategy One REST server.
+        HTTP response object returned by the Strategy REST server.
     """
     if project_id is None:
         connection._validate_project_selected()

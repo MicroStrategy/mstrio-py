@@ -14,7 +14,7 @@ def create_device(connection: Connection, body: dict, error_msg: str | None = No
     """Create a new device.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         body: Device creation info.
         error_msg (string, optional): Custom Error Message for Error Handling
 
@@ -35,7 +35,7 @@ def get_device(connection: Connection, id: str, error_msg: str | None = None):
     """Get device by a specific id.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         id: ID of the device
         error_msg (string, optional): Custom Error Message for Error Handling
 
@@ -56,7 +56,7 @@ def delete_device(
     """Delete a device.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         id: ID of the device
         error_msg (string, optional): Custom Error Message for Error Handling
         journal_comment (str, optional): Comment that will be added to the
@@ -82,7 +82,7 @@ def update_device(
     """Update a device.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         id: ID of the device
         body: Device update info.
         error_msg (string, optional): Custom Error Message for Error Handling
@@ -110,7 +110,7 @@ def get_devices(
     """Get information for all devices.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         fields(list, optional): Comma separated top-level field whitelist. This
             allows client to selectively retrieve part of the response model.
         device_type (str, optional): Device type, Supported values are: email,

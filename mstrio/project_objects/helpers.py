@@ -1,14 +1,127 @@
 import logging
 from collections.abc import Callable
+from dataclasses import dataclass
+from enum import Enum, auto
 from typing import TYPE_CHECKING, Any
 
 from mstrio import config
+from mstrio.utils.enum_helper import AutoName
 from mstrio.utils.helper import get_response_json
 
 if TYPE_CHECKING:
     from mstrio.project_objects import Prompt
 
 logger = logging.getLogger(__name__)
+
+
+class EnableForAiStatus(AutoName):
+    """Enumeration of AI enablement status values."""
+
+    NULL = auto()
+    READY = auto()
+    PENDING = auto()
+    FAILED = auto()
+    STARTED = auto()
+    DECERTIFIED = auto()
+    BASE_CUBE_DECERTIFIED = auto()
+    RESERVED = auto()
+
+
+class EnableForAiErrorReason(Enum):
+    """
+    Enumeration of AI enablement error reason codes.
+
+    OK (0)
+        "No error."
+
+    UNKNOWN_ERROR (-1)
+        "An unknown error occurred."
+
+    EXCEPTION_WRITING_TO_CLICKHOUSE (1)
+        "An unexpected error occurred while saving data to ClickHouse."
+
+    FAILED_WRITING_TO_CLICKHOUSE (2)
+        "Failed to write data to ClickHouse."
+
+    ERROR_WHEN_GETTING_SAMPLE_DATA_FROM_CLICKHOUSE (3)
+        "Failed to retrieve sample data from ClickHouse."
+
+    CUBE_INSTANCE_NOT_FOUND (4)
+        "Cube instance not found."
+
+    AI_INFORMATION_GENERATION_FAILED (5)
+        "Failed to generate AI information from the AI service."
+
+    DISK_FULL_IN_CLICKHOUSE (6)
+        "Failed to write data to ClickHouse due to disk full."
+
+    ERR_GENERAL (100)
+        "An unspecified error occurred."
+
+    OUTDATED_DISK (11)
+    ERR_DISK (101)
+        "Failed to dump cube due to disk error."
+
+    OUTDATED_CLOUD (12)
+    ERR_CLOUD (102)
+        "Failed to upload file stream to cloud storage."
+
+    ERR_DB (103)
+        "Failed to generate AI metadata."
+
+    ERR_CLICKHOUSE (104)
+        "Failed to load into Clickhouse."
+
+    ERR_AI (105)
+        "Failed to generate AI-assisted descriptions."
+    """
+
+    OK = 0
+    UNKNOWN_ERROR = -1
+    EXCEPTION_WRITING_TO_CLICKHOUSE = 1
+    FAILED_WRITING_TO_CLICKHOUSE = 2
+    ERROR_WHEN_GETTING_SAMPLE_DATA_FROM_CLICKHOUSE = 3
+    CUBE_INSTANCE_NOT_FOUND = 4
+    AI_INFORMATION_GENERATION_FAILED = 5
+    DISK_FULL_IN_CLICKHOUSE = 6
+
+    ERR_GENERAL = 100
+    ERR_DISK = 101
+    ERR_CLOUD = 102
+    ERR_DB = 103
+    ERR_CLICKHOUSE = 104
+    ERR_AI = 105
+    OUTDATED_DISK = 11
+    OUTDATED_CLOUD = 12
+
+    RESERVED = -100
+
+
+@dataclass
+class EnableForAiState:
+    """Result of a bot cube status query.
+
+    Attributes:
+        id: ID of cube, report or mosaic model.
+        status: Current enablement status.
+        error_reason: Error reason if applicable.
+        progress: progress: Progress percentage (0-100). Available
+            since 25.09 release.
+        remaining_time: Estimated remaining time for completion in seconds.
+            Available since 25.09 release, but not guaranteed in every
+            server response (for example, it may be missing for terminal
+            statuses). In those cases this value is `None`.
+        last_updated_at: Timestamp of last status update.
+        user: User who initiated the enablement.
+    """
+
+    id: str
+    status: 'EnableForAiStatus'
+    error_reason: 'EnableForAiErrorReason | None'
+    progress: int | None
+    remaining_time: int | None
+    last_updated_at: int | None
+    user: str | None
 
 
 def get_prompt_answer(

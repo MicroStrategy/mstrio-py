@@ -44,7 +44,7 @@ def list_shortcuts(
         from the `connection` object is used.
 
     Args:
-        connection (Connection): Strategy One connection object returned
+        connection (Connection): Strategy connection object returned
             by `connection.Connection()`.
         name (string, optional): The search pattern for listing shortcuts.
             Supports wildcards '*' (any number of characters) and '?' (exactly
@@ -118,7 +118,7 @@ class Shortcut(Entity, CopyMixin, MoveMixin, DeleteMixin):
         `LibraryShortcut`.
 
     Attributes:
-        connection (Connection): Strategy One connection object returned
+        connection (Connection): Strategy connection object returned
             by `connection.Connection()`.
         id (str): ID of the shortcut object
         name (str): Name of the shortcut
@@ -185,7 +185,7 @@ class Shortcut(Entity, CopyMixin, MoveMixin, DeleteMixin):
         """Initialize the Shortcut object and populate it with I-Server data.
 
         Args:
-            connection: Strategy One connection object returned
+            connection: Strategy connection object returned
                 by `connection.Connection()`.
             id: Shortcut ID
             project_id: ID of the project that the shortcut is in

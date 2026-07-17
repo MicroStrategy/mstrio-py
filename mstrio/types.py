@@ -293,6 +293,7 @@ class ObjectSubTypes(Enum):
     DOCUMENT_BOT = 14084
     PROJECT_DOCUMENTATION = 14085
     DOCUMENT_BOT_2_0 = 14087
+    AI_DATASET_COLLECTION = 14088
     DOCUMENT_BOT_UNIVERSAL = 14091
     DOCUMENT_AGENT = 14087
     DOCUMENT_AGENT_UNIVERSAL = 14091
@@ -477,3 +478,30 @@ class ExtendedType(Enum):
 TypeOrSubtype: TypeAlias = (
     int | ObjectTypes | ObjectSubTypes | list[int | ObjectTypes | ObjectSubTypes]
 )
+
+
+class ViewMedia(Enum):
+    EMPTY = 0x00000000
+    AVAILABLE_SERVE_AS_MODEL = 0x00010000
+    AVAILABLE_OFF_MEMORY = 0x00040000
+    MOSAIC_LINKING = 0x01000000
+
+    def __int__(self) -> int:
+        return self.value
+
+    @classmethod
+    def _missing_(cls, value: int) -> "ViewMedia":
+        member = object.__new__(cls)
+        member._value_ = value
+        member._name_ = f"UNDEFINED_VIEW_MEDIA:{value}"
+        return member
+
+    # ViewMedia enum was added in version 26.07; to avoid breaking changes
+    # we allow comparisons between ViewMedia and int values,
+    # since `view_media` on the entity is an int.
+    def __eq__(self, other) -> bool:
+        if isinstance(other, ViewMedia):
+            return self.value == other.value
+        if isinstance(other, int):
+            return self.value == other
+        return NotImplemented

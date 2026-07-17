@@ -1,6 +1,7 @@
 # flake8: noqa
 # this order of imports is important to avoid circular imports
 from .applications import Application, list_applications
+from .ai_dataset_collection import AIDatasetCollection, list_ai_dataset_collections
 from .agents import Agent, list_agents
 from .content_cache import ContentCache
 from .content_group import ContentGroup, list_content_groups
@@ -21,6 +22,7 @@ from .incremental_refresh_report import (
     list_incremental_refresh_reports,
 )
 from .library import Library
+from .mosaic_model import MosaicModel, list_mosaic_models
 from .palette import Palette, list_palettes
 from .report import Report, list_reports
 

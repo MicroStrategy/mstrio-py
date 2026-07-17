@@ -25,7 +25,7 @@ from mstrio.distribution_services.subscription.delivery import (
 from mstrio.distribution_services.subscription.subscription_status import (
     SubscriptionStatus,
 )
-from mstrio.helpers import NotSupportedError
+from mstrio.helpers import IServerError, NotSupportedError
 from mstrio.modeling import Prompt
 from mstrio.users_and_groups import User
 from mstrio.utils import helper, time_helper
@@ -58,11 +58,11 @@ class RecipientsTypes(AutoUpperName):
 
 
 class Subscription(EntityBase, ChangeJournalMixin, TenantMixin):
-    """Class representation of Strategy One Subscription object.
+    """Class representation of Strategy Subscription object.
 
     Attributes:
         subscription_id: The ID of the Subscription
-        connection: The Strategy One connection object
+        connection: The Strategy connection object
         project_id: The ID of the project the Subscription belongs to
     """
 
@@ -125,7 +125,7 @@ class Subscription(EntityBase, ChangeJournalMixin, TenantMixin):
         """Initialize Subscription object, populates it with I-Server data.
 
         Args:
-            connection (Connection): Strategy One connection object returned
+            connection (Connection): Strategy connection object returned
                 by `connection.Connection()`
             id (str, optional): ID of the subscription to be initialized, only
                 id or subscription_id have to be provided at once, if both
@@ -989,7 +989,7 @@ class Subscription(EntityBase, ChangeJournalMixin, TenantMixin):
         """Creates a subscription Create_Subscription_Outline.
 
         Args:
-            connection (Connection): a Strategy One connection object
+            connection (Connection): a Strategy connection object
             name (str): name of the subscription,
             contents (Content): The content settings.
             project (Project | str, optional): Project object or ID or name
@@ -1386,17 +1386,29 @@ class Subscription(EntityBase, ChangeJournalMixin, TenantMixin):
     def prompts(self) -> dict:
         """Prompts of the report."""
         if self._prompts is None:
-            prompts = (
-                subscriptions.get_subscription_prompts(
-                    connection=self.connection,
-                    subscription_id=self.id,
-                    project_id=self.project_id,
+            try:
+                prompts = (
+                    subscriptions.get_subscription_prompts(
+                        connection=self.connection,
+                        subscription_id=self.id,
+                        project_id=self.project_id,
+                    )
+                    .json()
+                    .get('prompts', [])
                 )
-                .json()
-                .get('prompts', [])
-            )
-            self._prompts = [
-                Prompt.from_dict(source=prompt, connection=self.connection)
-                for prompt in prompts
-            ]
+            except IServerError as e:
+                # actual error message for unsupported subscription content,
+                # not related to HTTP Content-Type header
+                REST_ERROR_MSG = "Unsupported Content-Type"
+                if REST_ERROR_MSG in str(e):
+                    raise NotSupportedError(
+                        "Prompts are not supported for this subscription."
+                    )
+                else:
+                    raise e
+            else:
+                self._prompts = [
+                    Prompt.from_dict(source=prompt, connection=self.connection)
+                    for prompt in prompts
+                ]
         return self._prompts

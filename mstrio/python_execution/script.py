@@ -499,6 +499,7 @@ class Code:
             self._evaluation_id = scripts_processor.start_run(
                 connection=self._source_script.connection,
                 script_id=self._source_script.id,
+                project_id=self._source_script.project_id,
                 variables_data=[v.get_answer_as_dict() for v in variables if v.prompt],
             )
         else:
@@ -541,7 +542,11 @@ class Code:
                 "Code execution cannot be stopped as it is not running."
             )
 
-        scripts_processor.stop_run(self._connection, self._evaluation_id)
+        scripts_processor.stop_run(
+            self._connection,
+            evaluation_id=self._evaluation_id,
+            project_id=self._source_script.project_id if self._source_script else None,
+        )
         self.get_execution_details()
         self._evaluation_id = None
 
@@ -622,7 +627,9 @@ class Code:
             )
 
         self._run_details = scripts_processor.get_run_result(
-            self._connection, self._evaluation_id
+            self._connection,
+            evaluation_id=self._evaluation_id,
+            project_id=self._source_script.project_id if self._source_script else None,
         )
 
         return self._run_details
@@ -743,7 +750,7 @@ class Code:
             existing, so re-raises any OS-specific errors.
 
         Args:
-            connection (Connection): Strategy One connection object returned by
+            connection (Connection): Strategy connection object returned by
                 `connection.Connection()`.
             path (Path | str): Path to a file on your local drive containing
                 the code.
@@ -868,7 +875,7 @@ class Script(
 
             id = opts[0].id
 
-        super().__init__(connection, object_id=id)
+        super().__init__(connection, object_id=id, project_id=connection.project_id)
         self.fetch()
         self._script_content._source_script = self
 
@@ -1030,7 +1037,8 @@ class Script(
             )
 
         self._history_last_entry = (
-            scripts_processor.get_history(self.connection, self.id) or {}
+            scripts_processor.get_history(self.connection, self.id, self.project_id)
+            or {}
         )
 
         return self._history_last_entry
@@ -1057,7 +1065,7 @@ class Script(
             try:
                 self._variables_personal_answers = (
                     scripts_processor.get_variables_personal_answers(
-                        self.connection, self.id
+                        self.connection, self.id, self.project_id
                     )
                 )
             except (KeyError, ValueError):
@@ -1165,6 +1173,7 @@ class Script(
         scripts_processor.save_variables_personal_answers(
             self.connection,
             script_id=self.id,
+            project_id=self.project_id,
             answers=answers,
         )
 
@@ -1506,7 +1515,10 @@ class Script(
                     "Script of type Jupyter Notebook is not supported."
                 )
             case ObjectSubTypes.FLOW_SCRIPT:
-                raise NotImplementedError("Script of type Flow is not supported yet.")
+                # TODO: temporarily treat Flow as a Standard Script until
+                # dedicated module is implemented (add integration test for
+                # supporting this when adding Flows Module)
+                return ScriptUsageType.STANDARD
             case _:
                 raise ScriptSetupError(
                     f'Unrecognized or unsupported Script Subtype: {self.subtype}'
@@ -1756,19 +1768,25 @@ class Variable(Dictable):
             if not self.value and not isinstance(self.value, list):
                 self.value = None
         else:
-            self.required = None
             self.nullable = None
             self.editable = None
 
+            if not self.prompt:
+                self.required = None
+
         # validation
+        prompted_non_value = self.value is None and self.prompt
         if self.multiple:
-            assert (self.value is None and self.prompt) or isinstance(
+            # Consider value has been initialized as stringified list
+            self.value = self._parse_str_as_list_or_noop(self.value)
+
+            assert prompted_non_value or isinstance(
                 self.value, list
             ), "When Variable is set to Multiple, its Value needs to be a list."
         else:
-            assert (self.value is None and self.prompt) or not isinstance(
+            assert prompted_non_value or not isinstance(
                 self.value, list
-            ), "When Variable is not set to Multiple, its Value cannot to be a list."
+            ), "When Variable is not set to Multiple, its Value cannot be a list."
 
         is_multiple = self.multiple is True
         is_non_multi_type = self.type in [
@@ -2019,6 +2037,26 @@ class Variable(Dictable):
 
         raise TypeError("Variable is neither Variable-class-based nor dict.")
 
+    @staticmethod
+    def _parse_str_as_list_or_noop(value: Any) -> list[Any]:
+        """Assuming the variable in question is `multiple=True`, check if
+        conditions are met to convert stringified list into list, or noop
+        otherwise.
+        """
+        if value == '':
+            value = []
+
+        if (
+            value
+            and isinstance(value, str)
+            and value.startswith("[")
+            and value.endswith("]")
+        ):
+            with contextlib.suppress(json.JSONDecodeError):
+                value = json.loads(value.replace("'", '"'))
+
+        return value
+
 
 TVar = TypeVar("TVar", Variable, dict)
 
@@ -2034,6 +2072,8 @@ class VariableStandardScript(Variable):
         desc: Variable description
         multiple: Whether the variable is a list of values
         prompt: Whether the variable prompts the user for input to be answered
+        required: Whether the variable is required to be answered, if
+            `prompt=True`. Obsolete otherwise.
         value: Variable default value, if any
         object_ref: For System Prompt variable, the System Prompt object
             referenced
@@ -2046,6 +2086,7 @@ class VariableStandardScript(Variable):
     desc: str | None = None
     multiple: bool | None = False
     prompt: bool | None = True
+    required: bool | None = False
     value: VariableValue | None = None
     object_ref: 'SystemPrompt | dict | None' = None
 
@@ -2057,7 +2098,7 @@ class VariableStandardScript(Variable):
             "Transaction Provenance Column"
         )
         assert (
-            isinstance(self.value, (str, int, float, date, datetime))
+            isinstance(self.value, (str, int, float, date, datetime, list))
             # warning does not mention that secret will not be received from API
             # but it's by design
             or (self.id and self.type == VariableType.SECRET)
@@ -2067,6 +2108,9 @@ class VariableStandardScript(Variable):
             "For Standard Script, variable needs to either have a value, "
             "be prompted or be a set System Prompt."
         )
+        assert (
+            not self.required or self.prompt
+        ), "For Standard Script, only prompted variables can be required"
 
 
 @dataclass
@@ -2229,16 +2273,20 @@ class VariableAnswer(Variable):
         """
 
         if source_variable.multiple:
+            answer_value = cls._parse_str_as_list_or_noop(answer_value)
+
             if not isinstance(answer_value, (list, tuple)):
                 return False
 
             mocked_var = deepcopy(source_variable)
             mocked_var.multiple = False
 
-            return all(
-                VariableAnswer.is_of_valid_type(mocked_var, value)
-                for value in answer_value
-            )
+            for value in answer_value:
+                mocked_var.value = value
+                if not VariableAnswer.is_of_valid_type(mocked_var, value):
+                    return False
+
+            return True
 
         is_number = source_variable.type == VariableType.NUMERICAL
         is_date = source_variable.type in [

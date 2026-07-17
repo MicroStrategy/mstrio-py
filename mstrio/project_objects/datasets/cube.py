@@ -17,6 +17,7 @@ from mstrio.project_objects.datasets import cube_cache
 from mstrio.server import Job
 from mstrio.types import ObjectSubTypes, ObjectTypes
 from mstrio.users_and_groups.user import User
+from mstrio.utils.ai import EnableForAiMixin
 from mstrio.utils.certified_info import CertifiedInfo
 from mstrio.utils.entity import DeleteMixin, Entity, VldbMixin
 from mstrio.utils.filter import Filter
@@ -128,7 +129,7 @@ def list_all_cubes(
         e.g. name = ?onny will return Sonny and Tonny
 
     Args:
-        connection: Strategy One connection object returned by
+        connection: Strategy connection object returned by
             `connection.Connection()`
         name (string, optional): value the search pattern is set to, which
             will be applied to the names of cubes being searched
@@ -234,7 +235,7 @@ def load_cube(
     `instance_id` is used only when a single cube is retrieved.
 
     Args:
-        connection: Strategy One connection object returned by
+        connection: Strategy connection object returned by
             `connection.Connection()`
         cube_id(string, optional): ID of cube
         cube_name(string, optional): name of cube
@@ -311,8 +312,8 @@ def load_cube(
         return ret_cubes
 
 
-class _Cube(Entity, VldbMixin, DeleteMixin):
-    """Access, filter, publish, and extract data from Strategy One in-memory
+class _Cube(Entity, EnableForAiMixin, VldbMixin, DeleteMixin):
+    """Access, filter, publish, and extract data from Strategy in-memory
     cubes.
 
     Create a Cube object to load basic information on a cube dataset. Specify
@@ -320,7 +321,7 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
     `Cube.clear_filters()`. Fetch dataset through `Cube.to_dataframe()` method.
 
     Attributes:
-        connection: Strategy One connection object returned by
+        connection: Strategy connection object returned by
             `connection.Connection()`.
         id: Identifier of a pre-existing cube containing the required data.
         instance_id (str): Identifier of an instance if cube instance has been
@@ -396,7 +397,7 @@ class _Cube(Entity, VldbMixin, DeleteMixin):
             uniquely identify cube.
 
         Args:
-            connection: Strategy One connection object returned by
+            connection: Strategy connection object returned by
                 `connection.Connection()`.
             id (str): Identifier of a pre-existing cube containing
                 the required data.

@@ -17,7 +17,7 @@ class IServerError(IOError):
 
 
 class MstrException(Exception):
-    """Base class for exceptions returned by the Strategy One REST API.
+    """Base class for exceptions returned by the Strategy REST API.
 
     Attributes:
         code: Error code

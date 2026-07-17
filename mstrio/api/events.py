@@ -13,13 +13,13 @@ def trigger_event(
     """Trigger an event.
 
     Args:
-        connection(object): Strategy One connection object returned by
+        connection(object): Strategy connection object returned by
             `connection.Connection()`.
         id(str): ID of the event
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
-        HTTP response object returned by the Strategy One REST server.
+        HTTP response object returned by the Strategy REST server.
     """
     endpoint = f'/api/events/{id}/trigger'
     return connection.post(endpoint=endpoint, params={'fields': fields})
@@ -32,12 +32,12 @@ def list_events(
     """Get list of events.
 
     Args:
-        connection(object): Strategy One connection object returned by
+        connection(object): Strategy connection object returned by
                 `connection.Connection()`.
         error_msg(str, optional): Customized error message.
 
     Returns:
-        HTTP response object returned by the Strategy One REST server.
+        HTTP response object returned by the Strategy REST server.
     """
     return connection.get(endpoint='/api/events', params={'fields': fields})
 
@@ -52,7 +52,7 @@ def get_event(
     """Get information of a specific event
 
     Args:
-        connection(object): Strategy One connection object returned by
+        connection(object): Strategy connection object returned by
             `connection.Connection()`.
         id(str): ID of the event
         fields(list, optional): Comma separated top-level field whitelist. This
@@ -60,7 +60,7 @@ def get_event(
         error_msg(str, optional): Customized error message.
 
     Returns:
-        HTTP response object returned by the Strategy One REST server
+        HTTP response object returned by the Strategy REST server
     """
     return connection.get(
         endpoint=f'/api/events/{id}',
@@ -78,7 +78,7 @@ def create_event(
     """Create an event.
 
     Args:
-        connection(object): Strategy One connection object returned by
+        connection(object): Strategy connection object returned by
             `connection.Connection()`.
         body: JSON-formatted body of the new event
         fields:  Comma separated top-level field whitelist. This
@@ -86,7 +86,7 @@ def create_event(
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
-        HTTP response object returned by the Strategy One REST server.
+        HTTP response object returned by the Strategy REST server.
     """
     endpoint = '/api/events'
     return connection.post(endpoint=endpoint, params={'fields': fields}, json=body)
@@ -103,7 +103,7 @@ def update_event(
     """Update an event.
 
     Args:
-        connection(object): Strategy One connection object returned by
+        connection(object): Strategy connection object returned by
             `connection.Connection()`.
         body: JSON-formatted body of the updated event
         fields:  Comma separated top-level field whitelist. This
@@ -111,7 +111,7 @@ def update_event(
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:
-        HTTP response object returned by the Strategy One REST server.
+        HTTP response object returned by the Strategy REST server.
     """
     endpoint = f'/api/events/{id}'
     return connection.put(endpoint=endpoint, params={'fields': fields}, json=body)
@@ -127,7 +127,7 @@ def delete_event(
     """Delete an event.
 
     Args:
-        connection(object): Strategy One connection object returned by
+        connection(object): Strategy connection object returned by
             `connection.Connection()`.
         id: ID of the event to be deleted
         error_msg (string, optional): Custom Error Message for Error Handling
@@ -135,7 +135,7 @@ def delete_event(
             object's change journal entry.
 
     Returns:
-        HTTP response object returned by the Strategy One REST server.
+        HTTP response object returned by the Strategy REST server.
     """
     endpoint = f'/api/events/{id}'
     params = add_comment_to_dict(None, journal_comment)

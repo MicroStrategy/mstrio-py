@@ -633,7 +633,7 @@ def modify_rights(
         - `ObjectTypes.UserGroup`
 
     Args:
-        connection (Connection): Strategy One connection object returned by
+        connection (Connection): Strategy connection object returned by
             `connection.Connection()`
         object_type (ObjectTypes, int): Type of every object from ids list.
             One of EnumDSSXMLObjectTypes. Ex. 34 (User or UserGroup),

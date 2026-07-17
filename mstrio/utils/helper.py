@@ -462,7 +462,7 @@ def get_total_count_of_objects(
         source: GET API wrapper function that will return a Response object
             (fn accepting `limit` parameter) or Response object with
             the total count in headers
-        connection: Strategy One REST API connection object if `source`
+        connection: Strategy REST API connection object if `source`
             is a callable.
         **kwargs: additional parameters to pass to the `source` function if it
             is a callable
@@ -520,7 +520,7 @@ def fetch_objects_async(
     query parameter (pagination).
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         api: GET API wrapper function that will return list of objects in bulk
         async_api: asynchronous wrapper of the `api` function
         dict_unpack_value: if the response needs to be unpacked to get into
@@ -613,7 +613,7 @@ def fetch_objects(
     pagination.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         api: GET API wrapper function (or response processor) that will return
             the list of objects in bulk
         dict_unpack_value: if the response needs to be unpacked to get into
@@ -697,6 +697,7 @@ def auto_match_args(
             default will not be included in the result
         id_weak_match: if `True`, the function will try to match IDs even if
             they are not exact (e.g. by ignoring certain prefixes)
+
     Raises:
         KeyError: could not match all required arguments
     """
@@ -1030,7 +1031,7 @@ def get_temp_connection(
     """Return a temporary connection object with a selected project.
 
     Args:
-        connection: Strategy One connection object
+        connection: Strategy connection object
         project_id: Project ID
     """
     temp_conn = deepcopy(connection)
@@ -1360,7 +1361,7 @@ def find_object_with_name(
     """Find objects with given name if no id is given.
 
     Args:
-        connection: A Strategy One connection object
+        connection: A Strategy connection object
         name: name of the object. Defaults to None.
         listing_function: function called to list all the objects
             with given name
@@ -1515,7 +1516,7 @@ def get_owner_id(
     """Get owner ID based on provided parameters.
 
     Args:
-        connection (Connection): Strategy One connection object.
+        connection (Connection): Strategy connection object.
         owner (str | User | dict | None): Owner as ID, User object or dict.
             Will take precedence over other parameters.
         owner_id (str | None): Owner's ID.
@@ -1587,7 +1588,7 @@ def get_user_based_on_id_or_username(
     """Get User object based on provided user ID or username.
 
     Args:
-        connection (Connection): Strategy One connection object.
+        connection (Connection): Strategy connection object.
         user_id (str | None): User's ID.
         user_username (str | None): User's username (e.g. 'mstr').
         user_name (str | None): User's name (e.g. 'MSTR User').
@@ -1659,7 +1660,7 @@ def check_version_for_change_journal_comment(
     """Check if API version supports change journal comments.
 
     Args:
-        connection (Connection): Strategy One connection object.
+        connection (Connection): Strategy connection object.
         min_version (str, optional): Minimum API version required for change
             journal comments. If None change journal comment is not supported.
         comment (str, optional): Comment to check.
@@ -1694,7 +1695,7 @@ def process_change_journal_comment(
     """Process change journal comment based on API version.
 
     Args:
-        connection (Connection): Strategy One connection object.
+        connection (Connection): Strategy connection object.
         body (dict): Request body to which the comment will be added if the
             API version supports it.
         min_version (str, optional): Minimum API version required for change
@@ -1726,7 +1727,7 @@ def process_delete_change_journal_comment(
     """Process change journal comment for delete operation based on API version.
 
     Args:
-        connection (Connection): Strategy One connection object.
+        connection (Connection): Strategy connection object.
         min_version (str, optional): Minimum API version required for change
             journal comments. If None, change journal comments are not
             supported.
@@ -1762,7 +1763,7 @@ def add_journal_comment_to_operation_list(
     """Add change journal comment to operation list in request body.
 
     Args:
-        connection (Connection, optional): Strategy One connection object.
+        connection (Connection, optional): Strategy connection object.
         body (dict | None): Request body to which the comment will be added.
         min_version (str, optional): Minimum API version required for change
             journal comments.

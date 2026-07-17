@@ -99,7 +99,7 @@ def list_change_journal_entries(
         depending on the volume of data.
 
     Args:
-        connection (Connection): Strategy One connection object returned by
+        connection (Connection): Strategy connection object returned by
             `connection.Connection()`
         transaction_sources (str | list[str], optional): Transaction sources to
             filter by. Can be a single string or list of strings.
@@ -248,7 +248,7 @@ def purge_change_journal_entries(
     Note: If no projects are provided, all loaded projects will be targeted.
 
     Args:
-        connection (Connection): Strategy One connection object returned by
+        connection (Connection): Strategy connection object returned by
             `connection.Connection()`
         projects (str | Project | list[str | Project]): Project(s) to purge
             change journal entries from. Can be a single project ID,

@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 
 @class_version_handler('11.3.0600')
 class FileSubscription(Subscription):
-    """Class representation of Strategy One File Subscription object."""
+    """Class representation of Strategy File Subscription object."""
 
     def __init__(
         self,
@@ -26,7 +26,7 @@ class FileSubscription(Subscription):
         I-Server data if id or subscription_id is passed.
 
         Args:
-            connection (Connection): Strategy One connection object returned
+            connection (Connection): Strategy connection object returned
                 by `connection.Connection()`
             id (str, optional): ID of the subscription to be initialized, only
                 id or subscription_id have to be provided at once, if both are
@@ -75,7 +75,7 @@ class FileSubscription(Subscription):
     ) -> "FileSubscription":
         """Creates a new file subscription.
         Args:
-            connection (Connection): a Strategy One connection object
+            connection (Connection): a Strategy connection object
             name (str): name of the subscription
             filename (str): the filename that will be delivered when
                 the subscription is executed

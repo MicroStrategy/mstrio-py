@@ -55,7 +55,7 @@ def create_users_from_csv(connection: Connection, csv_file: str) -> list["User"]
     users are the same as in the `User.create()` method.
 
     Args:
-        connection: Strategy One connection object returned by
+        connection: Strategy connection object returned by
             `connection.Connection()`
         csv_file: path to file containing at minimum 'username' and 'full_name'
             headers'.
@@ -80,7 +80,7 @@ def list_users(
         e.g. name_begins = ?onny will return Sonny and Tonny
 
     Args:
-        connection (Connection): Strategy One connection object returned by
+        connection (Connection): Strategy connection object returned by
             `connection.Connection()`
         name_begins (str, optional): characters that the user name must
             begin with.
@@ -115,10 +115,10 @@ _DEL_PROF_MIN_VER = '11.5.0300'
 
 
 class User(Entity, TrusteeACLMixin, RelatedSubscriptionMixin, TenantMixin):
-    """Object representation of Strategy One User object.
+    """Object representation of Strategy User object.
 
     Attributes:
-        connection: A Strategy One connection object
+        connection: A Strategy connection object
         id: User ID
         name: User name
         username: User username
@@ -305,7 +305,7 @@ class User(Entity, TrusteeACLMixin, RelatedSubscriptionMixin, TenantMixin):
         `None`), `name` is omitted.
 
         Args:
-            connection: Strategy One connection object returned by
+            connection: Strategy connection object returned by
                 `connection.Connection()`
             id: ID of User
             username: username of User
@@ -404,7 +404,7 @@ class User(Entity, TrusteeACLMixin, RelatedSubscriptionMixin, TenantMixin):
         """Create a new user on the I-Server. Returns User object.
 
         Args:
-            connection: Strategy One connection object returned by
+            connection: Strategy connection object returned by
                 `connection.Connection()`
             username: username of user
             full_name: user full name

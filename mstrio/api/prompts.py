@@ -18,7 +18,7 @@ def get_prompt(
     """Get a prompt by its ID.
 
     Args:
-        connection (Connection): Strategy One connection object returned by
+        connection (Connection): Strategy connection object returned by
             `connection.Connection()`
         id (str): ID of the prompt to get
         project_id (str, optional): ID of the project to which the prompt
@@ -58,7 +58,7 @@ def create_prompt(
     """Create a new prompt.
 
     Args:
-        connection (Connection): Strategy One connection object returned by
+        connection (Connection): Strategy connection object returned by
             `connection.Connection()`
         body (dict): JSON-formatted body of the new prompt
         show_expression_as (list[str], optional): Specifies the format in
@@ -93,7 +93,7 @@ def update_prompt(
     """Update an existing prompt.
 
     Args:
-        connection (Connection): Strategy One connection object
+        connection (Connection): Strategy connection object
         id (str): ID of the prompt to update
         body (dict): JSON-formatted body with updated prompt data
         show_expression_as (list[str], optional): Specifies the format in
@@ -131,7 +131,7 @@ def create_personal_answer(
     """Create personal answers for a prompt.
 
     Args:
-        connection (Connection): Strategy One connection object
+        connection (Connection): Strategy connection object
         id (str): ID of the prompt to create a personal answer for
         project_id (str): ID of the project to which the prompt belongs
         body (dict): JSON-formatted body with personal answer data
@@ -168,7 +168,7 @@ def edit_personal_answer(
     """Edit a personal answer for a prompt.
 
     Args:
-        connection (Connection): Strategy One connection object
+        connection (Connection): Strategy connection object
         id (str): ID of the prompt to edit a personal answer for
         project_id (str): ID of the project containing the prompt
         personal_answer_id (str): ID of the personal answer to edit

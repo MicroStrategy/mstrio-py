@@ -32,7 +32,7 @@ def list_content_groups(
     """Get a list of content groups.
 
     Args:
-        connection (Connection): Strategy One connection object returned
+        connection (Connection): Strategy connection object returned
             by 'connection.Connection()'
         to_dictionary (bool, optional): if True, return Content Groups as a
             list of dicts
@@ -61,7 +61,7 @@ def list_content_groups(
 
 @class_version_handler('11.3.1200')
 class ContentGroup(Entity, CopyMixin, DeleteMixin, TenantMixin):
-    """Python representation of a Strategy One Content Group object"""
+    """Python representation of a Strategy Content Group object"""
 
     _OBJECT_TYPE = ObjectTypes.CONTENT_BUNDLE
     _API_GETTERS = {
@@ -88,7 +88,7 @@ class ContentGroup(Entity, CopyMixin, DeleteMixin, TenantMixin):
         """Initialize Content Group object by passing name or id.
 
         Args:
-            connection (Connection): Strategy One connection object returned
+            connection (Connection): Strategy connection object returned
                 by `connection.Connection()`
             name (string, optional): name of Content Group
             id (string, optional): ID of Content Group
@@ -130,7 +130,7 @@ class ContentGroup(Entity, CopyMixin, DeleteMixin, TenantMixin):
         """Create a new content group.
 
         Args:
-            connection (Connection): Strategy One connection object returned by
+            connection (Connection): Strategy connection object returned by
                 `connection.Connection()`
             name (str): name of the content group
             color (str, optional): color of the content group, in hex format

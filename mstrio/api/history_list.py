@@ -29,7 +29,7 @@ def list_history_list_messages(
     """Lists history list messages, with optional filtering and pagination.
 
     Args:
-        connection (Connection): Strategy One REST API connection object.
+        connection (Connection): Strategy REST API connection object.
         project_id (str | None): Field to filter on project ID of messages.
         scope (str | None): History list retrieval scope. Available values:
             single_user, all_users, single_library_user
@@ -95,7 +95,7 @@ def delete_all_history_list_messages(
         group the messages-to-remove by project ID.
 
     Args:
-        connection (Connection): Strategy One REST API connection object.
+        connection (Connection): Strategy REST API connection object.
         body (dict): Request body containing list of message IDs to delete,
             in the format:
             ```

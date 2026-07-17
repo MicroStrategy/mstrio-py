@@ -7,7 +7,7 @@ from mstrio.utils.helper import response_handler
 def server_status(connection) -> 'Response | None':
     """
      Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
     Returns:
         Complete HTTP response object
     """

@@ -49,7 +49,7 @@ def get_documentations_statuses(
     """List statuses for one or more documentation jobs.
 
     Args:
-        connection (Connection): Strategy One connection object.
+        connection (Connection): Strategy connection object.
         documentations (Documentation | str | list[Documentation | str]):
             A documentation object, documentation ID, or a list containing
             documentation objects and/or IDs.
@@ -99,7 +99,7 @@ def list_documentations(
     """List documentation jobs.
 
     Args:
-        connection (Connection): Strategy One connection object.
+        connection (Connection): Strategy connection object.
         definition (DocumentationDefinition | str, optional): Documentation
             definition object or ID used to filter jobs by definition.
         name (str, optional): Documentation name filter.
@@ -176,7 +176,7 @@ def list_documentation_definitions(
     """List documentation definitions.
 
     Args:
-        connection (Connection): Strategy One connection object.
+        connection (Connection): Strategy connection object.
         id (str, optional): Comma-separated list of definition IDs.
         name (str, optional): Expected definition name filter.
         sort_by (DocDefinitionSortBy | str, optional): Sort by field with
@@ -496,7 +496,7 @@ class DocFolderType(AutoPascalName):
 class DocApplicationType(AutoPascalName):
     """Application object types included in a documentation definition.
 
-    Specifies which application-layer Strategy One object types (reports,
+    Specifies which application-layer Strategy object types (reports,
     dashboards, metrics, etc.) are captured by the documentation
     definition.
     """
@@ -529,7 +529,7 @@ class DocApplicationType(AutoPascalName):
 class DocSchemaType(AutoPascalName):
     """Schema object types included in a documentation definition.
 
-    Specifies which schema-layer Strategy One object types (attributes,
+    Specifies which schema-layer Strategy object types (attributes,
     facts, hierarchies, etc.) are captured by the documentation
     definition.
     """
@@ -621,10 +621,10 @@ class DocDefinitionSortBy(Enum):
 
 
 class Documentation(Entity, DeleteMixin):
-    """Represents a Strategy One documentation job.
+    """Represents a Strategy documentation job.
 
     A documentation job is created by executing a `DocumentationDefinition`
-    and captures a snapshot of Strategy One metadata at a point in time.
+    and captures a snapshot of Strategy metadata at a point in time.
 
     Attributes:
         id (str): Unique documentation job ID.
@@ -691,7 +691,7 @@ class Documentation(Entity, DeleteMixin):
         """Initialize Documentation object by passing `id` or `name`.
 
         Args:
-            connection (Connection): Strategy One connection object.
+            connection (Connection): Strategy connection object.
             id (str, optional): Documentation job ID.
             name (str, optional): Documentation job name. Used to resolve ID
                 when `id` is not provided.
@@ -1001,7 +1001,7 @@ class Documentation(Entity, DeleteMixin):
 
 
 class DocumentationDefinition(Entity, DeleteMixin, TenantMixin):
-    """Represents a Strategy One documentation definition.
+    """Represents a Strategy documentation definition.
 
     A documentation definition specifies the scope and content of a
     documentation job, including which object types, properties, and
@@ -1095,7 +1095,7 @@ class DocumentationDefinition(Entity, DeleteMixin, TenantMixin):
         """Initialize DocumentationDefinition object by passing `id` or `name`.
 
         Args:
-            connection (Connection): Strategy One connection object.
+            connection (Connection): Strategy connection object.
             id (str, optional): Documentation definition ID.
             name (str, optional): Documentation definition name. Used to
                 resolve ID when `id` is not provided.
@@ -1292,7 +1292,7 @@ class DocumentationDefinition(Entity, DeleteMixin, TenantMixin):
         """Create a documentation definition.
 
         Args:
-            connection (Connection): Strategy One connection object.
+            connection (Connection): Strategy connection object.
             name (str): Name of the documentation definition.
             hidden_objects (bool, optional): Whether to include hidden
                 objects. Defaults to `True`.

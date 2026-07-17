@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 
 
 class EmailSubscription(Subscription):
-    """Class representation of Strategy One Email Subscription object."""
+    """Class representation of Strategy Email Subscription object."""
 
     def __init__(
         self,
@@ -26,7 +26,7 @@ class EmailSubscription(Subscription):
         if id or subscription_id is passed.
 
         Args:
-            connection (Connection): Strategy One connection object returned
+            connection (Connection): Strategy connection object returned
                 by `connection.Connection()`
             id (str, optional): ID of the subscription to be initialized, only
                 id or subscription_id have to be provided at once, if both are
@@ -76,7 +76,7 @@ class EmailSubscription(Subscription):
         """Creates a new email subscription.
 
         Args:
-            connection (Connection): a Strategy One connection object
+            connection (Connection): a Strategy connection object
             name (str): name of the subscription,
             project (Project | str, optional): Project object or ID or name
                 specifying the project. May be used instead of `project_id` or

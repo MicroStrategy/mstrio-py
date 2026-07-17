@@ -1,11 +1,29 @@
 # Changelog
 
+## 11.6.7.101 - 2026/07/17
+
+### New features
+
+- added classes `ObjectBaseline` and `ObjectComparison` to store object- and visualization-level details in Integrity Test objects
+- added methods `fetch_result_details()` and `export_json()` to classes `Baseline` and `ComparisonTestResult`
+- added method `export_html()` to class `ComparisonTestResult`
+- added class `MosaicModel` with list, initialize, alter, copy, move, certify, decertify, delete, and AI enablement operations
+- added class `AIDatasetCollection` with list, initialize, alter, copy, move, and delete operations
+- added `EnableForAiMixin` support to `MosaicModel`, cube classes, and `Report` with enable, disable, status, and wait operations
+
+### Bug fixes
+
+- fixed altering `Script` class via `alter` failing with error when the class was initialized via `.from_dict` method
+- fixed property retrieval failing in Subscriptions with prompted content
+- fixed handling of `Variable(..., multiple=True)` in `mstrio.python_execution.script` module
+- fixed `alter_vldb_settings` resetting other settings in the property set to default
+
 ## 11.6.6.101 - 2026/06/18
 
 ### New features
 
 - added `documentation` module with support for project documentation:
-  - `DocumentationDefinition` class with `create`, `alter`, `execute`, and `delete` operations and listing via   `list_documentation_definitions`
+  - `DocumentationDefinition` class with `create`, `alter`, `execute`, and `delete` operations and listing via `list_documentation_definitions`
   - `Documentation` class with support for monitoring execution (`get_status`, `wait_for_execution_finish`), listing documentation jobs (`list_documentations`), deleting jobs, and exporting results to files (`export_to_file`) in `CSV`, `JSON` or `EXCEL` formats
   - `get_documentations_statuses` helper for bulk status retrieval
   - support for listing documented objects and resources (`Documentation.list_objects`, `Documentation.get_resource`) with dedicated enums for object and property selection (for example `DocObjectType`, `DocFolderType`, `DocApplicationType`, `DocSchemaType`, `DocMdxCubeType`, `DocBasicProperty`) and definition sorting (`DocDefinitionSortBy`)

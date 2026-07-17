@@ -45,7 +45,7 @@ def list_datasource_instances(
     datasource instances by specifying filters.
 
     Args:
-        connection: Strategy One connection object returned by
+        connection: Strategy connection object returned by
             `connection.Connection()`
         to_dictionary: If True returns dict, by default (False) returns
             User objects.
@@ -105,7 +105,7 @@ def list_connected_datasource_instances(
     Database Login and are connected to a project mapped to a Connection object.
 
     Args:
-        connection (Connection): Strategy One connection object returned by
+        connection (Connection): Strategy connection object returned by
             `connection.Connection()`
         to_dictionary (bool, optional): If True returns a list of dictionaries
             representing datasource instances
@@ -150,10 +150,10 @@ class DatasourceType(AutoName):
 
 @class_version_handler('11.3.0000')
 class DatasourceInstance(Entity, CopyMixin, DeleteMixin, ModelVldbMixin, TenantMixin):
-    """Object representation of Strategy One DataSource Instance object.
+    """Object representation of Strategy DataSource Instance object.
 
     Attributes:
-        connection: A Strategy One connection object
+        connection: A Strategy connection object
         id: Datasource Instance ID
         name: Datasource Instance name
         description: Datasource Instance description
@@ -271,7 +271,7 @@ class DatasourceInstance(Entity, CopyMixin, DeleteMixin, ModelVldbMixin, TenantM
         `list_datasource_instance()` method.
 
         Args:
-            connection: Strategy One connection object returned by
+            connection: Strategy connection object returned by
                 `connection.Connection()`.
             name: exact name of Datasource Instance
             id: ID of Datasource Instance
@@ -359,7 +359,7 @@ class DatasourceInstance(Entity, CopyMixin, DeleteMixin, ModelVldbMixin, TenantM
         """Create a new DatasourceInstance object on I-Server.
 
         Args:
-            connection: Strategy One connection object returned by
+            connection: Strategy connection object returned by
                 `connection.Connection()`.
             name: Datasource name
             dbms: The database management system (DBMS) object or id
@@ -576,7 +576,7 @@ class DatasourceInstance(Entity, CopyMixin, DeleteMixin, ModelVldbMixin, TenantM
         """Execute an SQL query on the given datasource.
 
         Args:
-            connection (Connection): Strategy One connection object returned by
+            connection (Connection): Strategy connection object returned by
                 `connection.Connection()`
             query (str): query to be executed
             datasource_id (str): ID of the DatasourceInstance to execute the

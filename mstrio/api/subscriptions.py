@@ -27,7 +27,7 @@ def list_subscriptions(
     """Get a list of subscriptions.
 
     Args:
-        connection (object): Strategy One connection object returned by
+        connection (object): Strategy connection object returned by
             `connection.Connection()`.
         project_id (str): ID of the project
         fields (list, optional): Comma separated top-level field whitelist. This
@@ -42,7 +42,7 @@ def list_subscriptions(
         error_msg (str, optional): Customized error message.
 
     Returns:
-        HTTP response object returned by the Strategy One REST server.
+        HTTP response object returned by the Strategy REST server.
     """
 
     params = {'offset': offset, 'limit': limit, 'fields': fields}
@@ -70,7 +70,7 @@ def list_subscriptions_async(
     """Get a list of subscriptions asynchronously.
 
     Args:
-        future_session: Future Session object to call Strategy One REST
+        future_session: Future Session object to call Strategy REST
             Server asynchronously
         project_id (str): ID of the project
         fields (list, optional): Comma separated top-level field whitelist. This
@@ -108,7 +108,7 @@ def list_dynamic_recipient_lists(
     """Get a list of Dynamic Recipient Lists.
 
     Args:
-        connection (object): Strategy One connection object returned by
+        connection (object): Strategy connection object returned by
             `connection.Connection()`.
         project_id (str): ID of the project
         offset (integer, optional): Starting point within the collection of
@@ -121,7 +121,7 @@ def list_dynamic_recipient_lists(
         error_msg (str, optional): Customized error message.
 
     Returns:
-        HTTP response object returned by the Strategy One REST server.
+        HTTP response object returned by the Strategy REST server.
     """
     return connection.get(
         endpoint='/api/dynamicRecipientLists',
@@ -140,7 +140,7 @@ def list_dynamic_recipient_lists_async(
     """Get a list of Dynamic Recipient Lists asynchronously.
 
     Args:
-        future_session: Future Session object to call Strategy One REST
+        future_session: Future Session object to call Strategy REST
             Server asynchronously
         project_id (str): ID of the project
         offset (integer, optional): Starting point within the collection of
@@ -172,7 +172,7 @@ def get_subscription(
     """Get information of a specific subscription for a given project.
 
     Args:
-        connection (object): Strategy One connection object returned by
+        connection (object): Strategy connection object returned by
             `connection.Connection()`.
         subscription_id (str): ID of the subscription
         project_id (str): ID of the project
@@ -181,7 +181,7 @@ def get_subscription(
         error_msg (str, optional): Customized error message.
 
     Returns:
-        HTTP response object returned by the Strategy One REST server
+        HTTP response object returned by the Strategy REST server
     """
     return connection.get(
         endpoint=f'/api/subscriptions/{subscription_id}',
@@ -201,7 +201,7 @@ def get_dynamic_recipient_list(
     """Get information of a specific Dynamic Recipient List for a given project.
 
     Args:
-        connection (object): Strategy One connection object returned by
+        connection (object): Strategy connection object returned by
             `connection.Connection()`.
         id (str): ID of the Dynamic Recipient List
         project_id (str): ID of the project
@@ -210,7 +210,7 @@ def get_dynamic_recipient_list(
         error_msg (str, optional): Customized error message.
 
     Returns:
-        HTTP response object returned by the Strategy One REST server
+        HTTP response object returned by the Strategy REST server
     """
     return connection.get(
         endpoint=f'/api/dynamicRecipientLists/{id}',
@@ -230,7 +230,7 @@ def create_subscription(
     """Create a new subscription.
 
     Args:
-        connection (object): Strategy One connection object returned by
+        connection (object): Strategy connection object returned by
             `connection.Connection()`.
         project_id (str): ID of the project
         body: JSON-formatted body of the new subscription
@@ -239,7 +239,7 @@ def create_subscription(
         error_msg(str, optional): Customized error message.
 
     Returns:
-        HTTP response object returned by the Strategy One REST server.
+        HTTP response object returned by the Strategy REST server.
     """
     return connection.post(
         endpoint='/api/subscriptions',
@@ -260,7 +260,7 @@ def create_dynamic_recipient_list(
     """Create a new subscription.
 
     Args:
-        connection (object): Strategy One connection object returned by
+        connection (object): Strategy connection object returned by
             `connection.Connection()`.
         project_id (str): ID of the project
         body: JSON-formatted body of the new subscription
@@ -269,7 +269,7 @@ def create_dynamic_recipient_list(
         error_msg (str, optional): Customized error message.
 
     Returns:
-        HTTP response object returned by the Strategy One REST server.
+        HTTP response object returned by the Strategy REST server.
     """
     return connection.post(
         endpoint='/api/dynamicRecipientLists',
@@ -289,7 +289,7 @@ def remove_subscription(
     """Remove (Unsubscribe) the subscription using subscription id.
 
     Args:
-        connection (object): Strategy One connection object returned by
+        connection (object): Strategy connection object returned by
             `connection.Connection()`.
         subscription_id (str): ID of the subscription
         project_id (str): ID of the project
@@ -297,7 +297,7 @@ def remove_subscription(
         exception_type (Exception): Instance of Exception or Warning class
 
     Returns:
-        HTTP response object returned by the Strategy One REST server.
+        HTTP response object returned by the Strategy REST server.
     """
     response = connection.delete(
         endpoint=f'/api/subscriptions/{subscription_id}',
@@ -324,7 +324,7 @@ def remove_dynamic_recipient_list(
     """Delete a Dynamic Recipient List.
 
     Args:
-        connection (object): Strategy One connection object returned by
+        connection (object): Strategy connection object returned by
             `connection.Connection()`.
         id (str): ID of the Dynamic Recipient List
         project_id (str): ID of the project
@@ -333,7 +333,7 @@ def remove_dynamic_recipient_list(
             object's change journal entry.
 
     Returns:
-        HTTP response object returned by the Strategy One REST server.
+        HTTP response object returned by the Strategy REST server.
     """
     params = add_comment_to_dict(None, journal_comment)
     return connection.delete(
@@ -355,7 +355,7 @@ def update_subscription(
     """Updates a subscription.
 
     Args:
-        connection (object): Strategy One connection object returned by
+        connection (object): Strategy connection object returned by
             `connection.Connection()`.
         subscription_id (str): ID of the subscription
         project_id (str): ID of the project
@@ -365,7 +365,7 @@ def update_subscription(
         error_msg (str, optional): Customized error message.
 
     Returns:
-        HTTP response object returned by the Strategy One REST server.
+        HTTP response object returned by the Strategy REST server.
     """
     return connection.put(
         endpoint=f'/api/subscriptions/{subscription_id}',
@@ -387,7 +387,7 @@ def update_dynamic_recipient_list(
     """Updates a Dynamic Recipient List.
 
     Args:
-        connection (object): Strategy One connection object returned by
+        connection (object): Strategy connection object returned by
             `connection.Connection()`.
         id (str): ID of the Dynamic Recipient List
         project_id (str): ID of the project
@@ -397,7 +397,7 @@ def update_dynamic_recipient_list(
         error_msg (str, optional): Customized error message.
 
     Returns:
-        HTTP response object returned by the Strategy One REST server.
+        HTTP response object returned by the Strategy REST server.
     """
     return connection.put(
         endpoint=f'/api/dynamicRecipientLists/{id}',
@@ -422,7 +422,7 @@ def available_recipients(
     and delivery type, within a given project.
 
     Args:
-        connection (object): Strategy One connection object returned by
+        connection (object): Strategy connection object returned by
             `connection.Connection()`
         project_id (str): ID of the project
         body (json): {
@@ -446,7 +446,7 @@ def available_recipients(
 
 
     Returns:
-        HTTP response object returned by the Strategy One REST server
+        HTTP response object returned by the Strategy REST server
     """
     return connection.post(
         endpoint='/api/subscriptions/recipients/results',
@@ -475,7 +475,7 @@ def bursting_attributes(
     other information about available attributes.
 
     Args:
-        connection (object): Strategy One connection object returned by
+        connection (object): Strategy connection object returned by
             `connection.Connection()`
         project_id (str): ID of the project
         content_id (str): ID of the content
@@ -485,7 +485,7 @@ def bursting_attributes(
         error_msg (str, optional): Customized error message.
 
     Returns:
-        HTTP response object returned by the Strategy One REST server
+        HTTP response object returned by the Strategy REST server
     """
     return connection.get(
         endpoint='/api/subscriptions/bursting',
@@ -505,7 +505,7 @@ def send_subscription(
     """Send the existing subscription immediately.
 
     Args:
-        connection (object): Strategy One connection object returned by
+        connection (object): Strategy connection object returned by
             `connection.Connection()`
         subscription_id (str): ID of subscription
         project_id (str): ID of the project
@@ -514,7 +514,7 @@ def send_subscription(
         error_msg (str, optional): Customized error message.
 
     Returns:
-        HTTP response object returned by the Strategy One REST server
+        HTTP response object returned by the Strategy REST server
     """
     return connection.post(
         endpoint=f'/api/v2/subscriptions/{subscription_id}/send',
@@ -533,7 +533,7 @@ def get_subscription_status(
     """Get the status of the existing subscription.
 
     Args:
-        connection (object): Strategy One connection object returned by
+        connection (object): Strategy connection object returned by
             `connection.Connection()`
         id (str): ID of subscription
         error_msg (str, optional): Customized error message.
@@ -542,7 +542,7 @@ def get_subscription_status(
             i.e. whitelist = [('ERR001', 500),('ERR004', 404)]
 
     Returns:
-        HTTP response object returned by the Strategy One REST server
+        HTTP response object returned by the Strategy REST server
     """
     return connection.get(endpoint=f'/api/subscriptions/{id}/status')
 
@@ -559,7 +559,7 @@ def get_dependent_subscriptions(
     """List dependent subscriptions of an object.
 
     Args:
-        connection (object): Strategy One connection object returned by
+        connection (object): Strategy connection object returned by
             `connection.Connection()`.
         object_id (str): ID of the object.
         object_type (str): Type of the object.
@@ -569,7 +569,7 @@ def get_dependent_subscriptions(
         error_msg (str, optional): Customized error message.
 
     Returns:
-        HTTP response object returned by the Strategy One REST server.
+        HTTP response object returned by the Strategy REST server.
     """
     return connection.get(
         endpoint='/api/dependentSubscriptions',
@@ -589,16 +589,16 @@ def get_subscription_prompts(
     or the child subscription identifier.
 
     Args:
-        connection (object): Strategy One connection object returned by
+        connection (object): Strategy connection object returned by
             `connection.Connection()`.
         subscription_id (str): ID of the subscription.
         project_id (str): ID of the project.
         error_msg (str, optional): Customized error message.
 
     Returns:
-        HTTP response object returned by the Strategy One REST server.
+        HTTP response object returned by the Strategy REST server.
     """
     return connection.get(
         endpoint=f'/api/subscriptions/{subscription_id}/prompts',
-        headers={'X-MSTR-ProjectID': project_id},
+        headers={'X-MSTR-ProjectID': project_id, 'X-MSTR-ClientVersion': '25.06'},
     )

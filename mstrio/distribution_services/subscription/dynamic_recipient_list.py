@@ -35,7 +35,7 @@ def list_dynamic_recipient_lists(
     """Get list of Dynamic Recipient List objects or dicts with them.
 
     Args:
-        connection: Strategy One connection object returned by
+        connection: Strategy connection object returned by
             `connection.Connection()`
         project (Project | str, optional): Project object or ID or name
             specifying the project. May be used instead of `project_id` or
@@ -89,7 +89,7 @@ def list_dynamic_recipient_lists(
 
 @class_version_handler('11.3.0600')
 class DynamicRecipientList(EntityBase, ChangeJournalMixin, DeleteMixin):
-    """Python representation of Strategy One DynamicRecipientList object.
+    """Python representation of Strategy DynamicRecipientList object.
 
     Attributes:
         id: DynamicRecipientList's ID
@@ -173,7 +173,7 @@ class DynamicRecipientList(EntityBase, ChangeJournalMixin, DeleteMixin):
         """Initializes a new instance of a DynamicRecipientList class
 
         Args:
-            connection (Connection): Strategy One connection object returned
+            connection (Connection): Strategy connection object returned
                 by `connection.Connection()`
             id (str, optional): DynamicRecipientList's ID. Defaults to None
             name (str, optional): DynamicRecipientList's name. Defaults to None

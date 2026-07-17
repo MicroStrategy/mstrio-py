@@ -24,7 +24,7 @@ def get_dashboards(
     """Get the list of available dashboards.
 
     Args:
-        connection(object): Strategy One REST API connection object
+        connection(object): Strategy REST API connection object
         offset(int): Starting point within the collection of returned search
             results. Used to control paging behavior.
         limit(int): Maximum number of items returned for a single request.
@@ -121,7 +121,7 @@ def get_documents(
     """Get the list of available documents.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         offset(int): Starting point within the collection of returned search
             results. Used to control paging behavior.
         limit(int): Maximum number of items returned for a single request.
@@ -213,7 +213,7 @@ def get_document_status(
     """Get the status of a dashboard or document instance.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         document_id (string): Document ID
         instance_id (string): Document Instance ID
         project_id (string, optional): Project ID
@@ -241,7 +241,7 @@ def get_prompts_for_instance(
     dashboard/document instance.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         document_id (string): Document ID
         instance_id (string): Document Instance ID
         closed(bool, optional): Prompt status, true means get closed prompt,
@@ -273,7 +273,7 @@ def get_attribute_element_for_prompt(
     attribute element prompt.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         document_id (string): Document ID
         instance_id (string): Document Instance ID
         prompt_identifier (string): Prompt key or ID
@@ -303,7 +303,7 @@ def get_available_object(
     """Get available object for answering all kinds of prompts.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         document_id (string): Document ID
         instance_id (string): Document Instance ID
         prompt_identifier (string): Prompt key or ID
@@ -334,7 +334,7 @@ def export_visualization_to_pdf(
     file.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         document_id (string): Document ID
         instance_id (string): Document Instance ID
         node_key (string): Visualization node key
@@ -368,7 +368,7 @@ def export_visualization_to_csv(
     file.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         document_id (string): Document ID
         instance_id (string): Document Instance ID
         node_key (string): Visualization node key
@@ -398,7 +398,7 @@ def export_document_to_pdf(
     """Export a specific document instance to a PDF file.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         document_id (string): Document ID
         instance_id (string): Document Instance ID
         body: JSON-formatted information used to format the document
@@ -425,7 +425,7 @@ def export_document_to_mstr(
     """Export a specific document in a specific project to an .mstr file.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         document_id (string): Document ID
         instance_id (string): Document Instance ID
         body: JSON-formatted information used to format the document
@@ -452,7 +452,7 @@ def export_document_to_excel(
     """Export a document from a specific document instance to an Excel file.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         document_id (string): Document ID
         instance_id (string): Document Instance ID
         body: JSON-formatted information used to format the document
@@ -478,7 +478,7 @@ def set_document_to_prompt_status(
     """Export a document from a specific document instance to an Excel file.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         document_id (string): Document ID
         instance_id (string): Document Instance ID
         error_msg (string, optional): Custom Error Message for Error Handling
@@ -498,7 +498,7 @@ def get_cubes_used_by_document(
     or indirectly.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         document_id (string): Document ID
         error_msg (string, optional): Custom Error Message for Error Handling
 
@@ -519,7 +519,7 @@ def overwrite_document(
     """Save a document instance by overwriting an existing document.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         document_id (string): Document ID
         instance_id (string): Document Instance ID
         error_msg (string, optional): Custom Error Message for Error Handling
@@ -541,7 +541,7 @@ def save_document_as(
     """Save a document instance by creating a new document.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         document_id (string): Document ID
         instance_id (string): Document Instance ID
         error_msg (string, optional): Custom Error Message for Error Handling
@@ -561,7 +561,7 @@ def create_new_document_instance(
     of the document.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         document_id (string): Document ID
         body: JSON-formatted information used to format the document
         error_msg (string, optional): Custom Error Message for Error Handling
@@ -583,7 +583,7 @@ def delete_document_instance(
     """Save a document instance by overwriting an existing document.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         document_id (string): Document ID
         instance_id (string): Document Instance ID
         error_msg (string, optional): Custom Error Message for Error Handling
@@ -606,7 +606,7 @@ def refresh_document_instance(
     of the document.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         document_id (string): Document ID
         instance_id (string): Document Instance ID
         error_msg (string, optional): Custom Error Message for Error Handling
@@ -630,7 +630,7 @@ def get_prompts(
     dashboard/document definition.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         document_id (string): Document ID
         project_id (string, optional): Project ID
         closed (bool, optional): Prompt status, true means get closed prompt,
@@ -662,7 +662,7 @@ def answer_prompts(
     answers, or if the prompt is not required the prompt can simply be closed.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         document_id (string): Document ID
         instance_id (string): Document Instance ID
         body: JSON-formatted information used to format the document
@@ -688,7 +688,7 @@ def get_document_shortcut(
     """Retrieve a published shortcut from a specific document instance.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         document_id (string): Document ID
         instance_id (string): Document Instance ID
         error_msg (string, optional): Custom Error Message for Error Handling
@@ -710,7 +710,7 @@ def create_dashboard_instance(
     """Execute a specific dashboard and create an instance of the dashboard.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         dashboard_id (string): Dashboard ID
         body: JSON-formatted information used to format the document
         error_msg (string, optional): Custom Error Message for Error Handling
@@ -727,7 +727,7 @@ def get_dashboard_hierarchy(connection: 'Connection', id: str) -> Response:
     """Get the hierarchy of a specific dashboard in a specific project.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         id (string): Dashboard ID
 
     Returns:
@@ -744,7 +744,7 @@ def get_document_definition(
     """Get details about a specific document.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         id (string): Document ID
         error_msg (string, optional): Custom Error Message for Error Handling
 
@@ -766,7 +766,7 @@ def get_dashboard_hierarchy_from_instance(
     instance.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         dashboard_id (string): Dashboard ID
         instance_id (string): Document Instance ID
         error_msg (string, optional): Custom Error Message for Error Handling
@@ -793,7 +793,7 @@ def get_definition_and_results_of_visualization(
     specific dashboard in a specific project.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         instance_id (string): Document Instance ID
         chapter_key (string): Chapter Key
         visualization_key (string): Visualization Key

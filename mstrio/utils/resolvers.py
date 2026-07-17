@@ -541,7 +541,7 @@ def get_documentation_id_from_params_set(
     the documentation ID, but only one of those is required to be passed.
 
     Args:
-        conn: A Strategy One connection object.
+        conn: A Strategy connection object.
         documentation: An instance of the `Documentation` class or its ID or
             name.
         documentation_id: ID of the documentation job.
@@ -602,7 +602,7 @@ def get_documentation_definition_id_from_params_set(
     the definition ID, but only one of those is required to be passed.
 
     Args:
-        conn: A Strategy One connection object.
+        conn: A Strategy connection object.
         definition: An instance of the `DocumentationDefinition` class or its
             ID or name.
         definition_id: ID of the documentation definition.

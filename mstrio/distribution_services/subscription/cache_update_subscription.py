@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 
 class CacheUpdateSubscription(Subscription):
-    """Class representation of Strategy One Cache Update Subscription
+    """Class representation of Strategy Cache Update Subscription
     object."""
 
     def __init__(
@@ -28,7 +28,7 @@ class CacheUpdateSubscription(Subscription):
         I-Server data if id or subscription_id is passed.
 
         Args:
-            connection (Connection): Strategy One connection object returned
+            connection (Connection): Strategy connection object returned
                 by `connection.Connection()`
             id (str, optional): ID of the subscription to be initialized, only
                 id or subscription_id have to be provided at once, if both are
@@ -76,7 +76,7 @@ class CacheUpdateSubscription(Subscription):
         """Creates a new cache update subscription.
 
         Args:
-            connection (Connection): a Strategy One connection object
+            connection (Connection): a Strategy connection object
             name (str): name of the subscription,
             project (Project | str, optional): Project object or ID or name
                 specifying the project. May be used instead of `project_id` or

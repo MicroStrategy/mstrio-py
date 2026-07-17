@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 )
 def login(connection: 'Connection') -> 'Response':
     """Authenticate a user and create an HTTP session on the web server where
-    the user's Strategy One sessions are stored.
+    the user's Strategy sessions are stored.
 
     This request returns an authorization token (X-MSTR-AuthToken) which will be
     submitted with subsequent requests. The body of the request contains
@@ -24,7 +24,7 @@ def login(connection: 'Connection') -> 'Response':
     System Administration REST APIs, if they are supported by the deployment.
 
     Args:
-        connection (Connection): Strategy One REST API connection object
+        connection (Connection): Strategy REST API connection object
 
     Returns:
         Complete HTTP response object.
@@ -73,7 +73,7 @@ def logout(connection: 'Connection', error_msg=None, whitelist=None) -> 'Respons
     """Close all existing sessions for the authenticated user.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
 
     Returns:
         Complete HTTP response object.
@@ -90,7 +90,7 @@ def session_renew(connection: 'Connection') -> 'Response':
     timeouts.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
 
     Returns:
         Complete HTTP response object.
@@ -107,7 +107,7 @@ def session_status(connection: 'Connection') -> 'Response':
     """Checks Intelligence Server session status.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
 
     Returns:
         Complete HTTP response object.
@@ -128,7 +128,7 @@ def identity_token(connection: 'Connection') -> 'Response':
     session.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
 
     Returns:
         Complete HTTP response object.
@@ -147,7 +147,7 @@ def api_token(
     An API token is used to authenticate a user via login mode 4096.
 
     Args:
-        connection: Strategy One REST API connection object.
+        connection: Strategy REST API connection object.
         target_user_id: User id of the user for whom the API token
             is to be created. When omitted, token is for `connection`'s user.
 
@@ -170,7 +170,7 @@ def validate_identity_token(
     """Validate an identity token.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         identity_token: Identity token
 
     Returns:
@@ -193,7 +193,7 @@ def delegate(
     IdentityToken.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         identity_token: Identity token
         whitelist: list of errors for which we skip printing error messages
 
@@ -215,7 +215,7 @@ def user_privileges(connection: 'Connection') -> 'Response':
     privilege and specifies which projects the privileges are valid for.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
 
     Returns:
         Complete HTTP response object.
@@ -230,7 +230,7 @@ def get_info_for_authenticated_user(
     """Get information for the authenticated user.
 
     Args:
-        connection: Strategy One REST API connection object
+        connection: Strategy REST API connection object
         error_msg (string, optional): Custom Error Message for Error Handling
 
     Returns:

@@ -61,7 +61,7 @@ def list_devices(
     devices by specifying filters.
 
     Args:
-        connection: Strategy One connection object returned by
+        connection: Strategy connection object returned by
             `connection.Connection()`
         to_dictionary: If True returns dict, by default (False) returns
             Device objects.
@@ -229,7 +229,7 @@ class Device(Entity, DeleteMixin, TenantMixin):
         """Create a new device.
 
         Args:
-            connection: Strategy One connection object returned by
+            connection: Strategy connection object returned by
                 `connection.Connection()`
             name: device object name
             device_type: type of the device

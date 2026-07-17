@@ -30,7 +30,7 @@ def list_timezones(
     """Get list of all time zones.
 
     Args:
-        connection: Strategy One connection object returned
+        connection: Strategy connection object returned
             by `connection.Connection()`.
         to_dictionary (bool, optional): If True, returns list of time zones
             as dicts, otherwise list of TimeZone objects. Defaults to False.
@@ -106,7 +106,7 @@ class TimeZone(Entity, CopyMixin, DeleteMixin):
         When `id` is provided, `name` is omitted.
 
         Args:
-            connection: Strategy One connection object
+            connection: Strategy connection object
             id (str, optional): ID of the time zone object
             name (str, optional): Name of the time zone object. Must be provided
                 if `id` is not.
@@ -146,7 +146,7 @@ class TimeZone(Entity, CopyMixin, DeleteMixin):
         """Create a new time zone object with the specified properties.
 
         Args:
-            connection: Strategy One connection object returned
+            connection: Strategy connection object returned
                 by `connection.Connection()`.
             name (str): Name of the new time zone.
             base_timezone (str | TimeZone): Existing time zone object to base

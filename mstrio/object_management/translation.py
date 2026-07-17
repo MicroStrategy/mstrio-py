@@ -37,7 +37,7 @@ def list_translations(
     """Lists translations of the given Object.
 
     Args:
-        connection (Connection): Strategy One connection object returned by
+        connection (Connection): Strategy connection object returned by
             `connection.Connection()`
         id (str): ID of the Object the translations will be listed for
         object_type (int | ObjectTypes): type of the Object the translations
@@ -190,7 +190,7 @@ class Translation(Dictable):
         """Adds translations to the Object.
 
         Args:
-            connection (Connection): Strategy One connection object returned by
+            connection (Connection): Strategy connection object returned by
             `connection.Connection()`
             id (str): ID of the Object the translation will be added to
             object_type (int | ObjectTypes): type of the Object
@@ -266,7 +266,7 @@ class Translation(Dictable):
         """Alters translations for the Object.
 
         Args:
-            connection(Connection): Strategy One connection object returned by
+            connection(Connection): Strategy connection object returned by
             `connection.Connection()`
             id (str): ID of the Object the translation will be added to
             object_type (int | ObjectTypes): type of the Object
@@ -362,7 +362,7 @@ class Translation(Dictable):
         """Removes translations from the Object.
 
         Args:
-            connection(Connection): Strategy One connection object returned by
+            connection(Connection): Strategy connection object returned by
             `connection.Connection()`
             id (str): ID of the Object the translation will be added to
             object_type (int | ObjectTypes): type of the Object
@@ -441,7 +441,7 @@ class Translation(Dictable):
         """Export translations of the given objects to a CSV file.
 
         Args:
-            connection (Connection): Strategy One connection object returned by
+            connection (Connection): Strategy connection object returned by
                 `connection.Connection()`
             object_list (list[Entity]): list of Objects to export translations
                 for. Objects have to be provided as class objects such as a
@@ -524,7 +524,7 @@ class Translation(Dictable):
         """Add translations from a specified CSV file.
 
         Args:
-            connection (Connection): Strategy One connection object returned by
+            connection (Connection): Strategy connection object returned by
                 `connection.Connection()`
             file_path (str): a path specifying the CSV file
             separator (str, optional): specify the separator of the csv file.
@@ -589,7 +589,7 @@ class Translation(Dictable):
         """Export translations of the given objects to an SQL database table.
 
         Args:
-            connection (Connection): Strategy One connection object returned by
+            connection (Connection): Strategy connection object returned by
                 `connection.Connection()`
             object_list (list[Entity]): list of Objects to export translations
                 for. Objects have to be provided as class objects such as a
@@ -726,7 +726,7 @@ class Translation(Dictable):
         """Add translations from a specified database table.
 
         Args:
-            connection (Connection): Strategy One connection object returned by
+            connection (Connection): Strategy connection object returned by
                 `connection.Connection()`
             table_name (str): name of the table to import the data from
             datasource (DatasourceInstance | str): DatasourceInstance object or
@@ -800,7 +800,7 @@ class Translation(Dictable):
         """Export translations of the given objects to a JSON file.
 
         Args:
-            connection (Connection): Strategy One connection object returned by
+            connection (Connection): Strategy connection object returned by
                 `connection.Connection()`
             object_list (list[Entity]): list of Objects to export translations
                 for. Objects have to be provided as class objects such as a
@@ -890,7 +890,7 @@ class Translation(Dictable):
         """Add translations from a specified JSON file.
 
         Args:
-            connection (Connection): Strategy One connection object returned by
+            connection (Connection): Strategy connection object returned by
                 `connection.Connection()`
             file_path (str): a path specifying the JSON file
             project (Project | str, optional): Project object or ID or name
@@ -949,7 +949,7 @@ class Translation(Dictable):
         """Export translations of the given objects to a dataframe.
 
         Args:
-            connection (Connection): Strategy One connection object returned by
+            connection (Connection): Strategy connection object returned by
                 `connection.Connection()`
             object_list (list[Entity]): list of Objects to export translations
                 for. Objects have to be provided as class objects such as a
@@ -1025,7 +1025,7 @@ class Translation(Dictable):
         """Add translations from a given dataframe.
 
         Args:
-            connection (Connection): Strategy One connection object returned by
+            connection (Connection): Strategy connection object returned by
                 `connection.Connection()`
             dataframe (pd.DataFrame): dataframe containing the data to be
                 imported
@@ -1070,7 +1070,7 @@ class Translation(Dictable):
         """Returns the lcid of the language.
 
         Args:
-            connection (Connection): Strategy One connection object returned by
+            connection (Connection): Strategy connection object returned by
                 `connection.Connection()`
             language (str | int | Language): language to get the lcid for, can
                 be one of the following:
@@ -1167,7 +1167,7 @@ class Translation(Dictable):
         translation values for all required languages.
 
         Args:
-            connection (Connection): Strategy One connection object returned by
+            connection (Connection): Strategy connection object returned by
                 `connection.Connection()`
             project_id (str): ID of the project the Objects are a part of
             object_list (list[Entity]): list of Objects to export translations
@@ -1307,7 +1307,7 @@ class Translation(Dictable):
         target_id and one language at a time.
 
         Args:
-            connection (Connection): Strategy One connection object returned by
+            connection (Connection): Strategy connection object returned by
                 `connection.Connection()`
             project_id (str): ID of the project the Objects are a part of
             object_list (list[Entity]): list of Objects to export translations
@@ -1448,7 +1448,7 @@ class Translation(Dictable):
         """Implements changes to translations from a dataframe.
 
         Args:
-            connection (Connection): Strategy One connection object returned by
+            connection (Connection): Strategy connection object returned by
                 `connection.Connection()`
             df (pd.DataFrame): dataframe containing the changes to be applied
                 to the translations on the server
@@ -1611,7 +1611,7 @@ class Translation(Dictable):
             the server and automatches absent ones if possible.
 
         Args:
-            connection (Connection): Strategy One connection object returned by
+            connection (Connection): Strategy connection object returned by
                 `connection.Connection()`
             translations (list[OperationData]): list of operations to check
             id (str): ID of the object
@@ -1660,7 +1660,7 @@ class Translation(Dictable):
         """Returns a list of target IDs that are valid for the given object.
 
         Args:
-            connection (Connection): Strategy One connection object returned by
+            connection (Connection): Strategy connection object returned by
                 `connection.Connection()`
             translations (list[OperationData]): list of operations to check
             id (str): ID of the object

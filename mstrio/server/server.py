@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 class ServerSettings(BaseSettings):
-    """Object representation of Strategy One I-Server Settings.
+    """Object representation of Strategy I-Server Settings.
 
     Used to fetch, view, modify, update, export to file, import from file and
     validate Server settings.
@@ -51,7 +51,7 @@ class ServerSettings(BaseSettings):
         """Initialize `ServerSettings` object.
 
         Args:
-            connection: Strategy One connection object returned by
+            connection: Strategy connection object returned by
                 `connection.Connection()`
         """
         # fix conversion map due to changes in REST Layer

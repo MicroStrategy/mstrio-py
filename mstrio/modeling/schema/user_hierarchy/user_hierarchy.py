@@ -50,7 +50,7 @@ def list_user_hierarchies(
     user hierarchies by specifying filters.
 
     Args:
-        connection: Strategy One connection object returned by
+        connection: Strategy connection object returned by
             `connection.Connection()`
         to_dictionary: If True returns dict, by default (False) returns
             User Hierarchy objects.
@@ -226,7 +226,7 @@ class SystemHierarchy(EntityBase):
         """Initialize the system hierarchy object.
 
         Args:
-            connection (Connection): Strategy One connection object returned by
+            connection (Connection): Strategy connection object returned by
                 `connection.Connection()`.
         """
         # The system hierarchy ID is not directly exposed. Here it is found
@@ -405,7 +405,7 @@ class UserHierarchy(Entity, CopyMixin, MoveMixin, DeleteMixin):
             is provided, `id` will be found automatically if such object exists.
 
         Args:
-            connection (Connection): Strategy One connection object returned by
+            connection (Connection): Strategy connection object returned by
                 `connection.Connection()`.
             id (str, optional): ID of the user hierarchy.
             name (str, optional): Name of the user hierarchy.
@@ -478,7 +478,7 @@ class UserHierarchy(Entity, CopyMixin, MoveMixin, DeleteMixin):
         """Create a new user hierarchy in a specific project.
 
         Args:
-            connection: Strategy One connection object returned by
+            connection: Strategy connection object returned by
                 `connection.Connection()`.
             name (str): name of a new user hierarchy.
             sub_type (str, enum): string literal used to identify the type of
