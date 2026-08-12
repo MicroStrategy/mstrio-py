@@ -40,6 +40,7 @@ from mstrio.utils.entity import (
 from mstrio.utils.enum_helper import AutoName, AutoUpperName, get_enum_val
 from mstrio.utils.resolvers import (
     get_conn_and_env_from_mixed_param,
+    get_project_id_from_params_set,
     get_tenant_id_from_params_set,
     validate_owner_key_in_filters,
 )
@@ -64,7 +65,7 @@ if TYPE_CHECKING:
     from mstrio.server.environment import Environment
     from mstrio.server.node import Node
     from mstrio.server.tenant import Tenant
-    from mstrio.users_and_groups import User
+    from mstrio.users_and_groups import User, UserOrGroup
 
 
 logger = logging.getLogger(__name__)
@@ -2308,6 +2309,292 @@ class ProjectSettings(BaseSettings):
             ).items()
             if any(word in k.lower() for word in ("cache", "caching"))
         }
+
+
+class WebPreferences:
+    class ValueType(AutoName):
+        STRING = auto()
+        INTEGER = auto()
+        BOOLEAN = auto()
+        REAL = auto()
+
+    class _Scope(Enum):
+        SELECTED_USER_AND_PROJECT = auto()
+        SELECTED_USER_ALL_PROJECTS = auto()
+        CURRENT_USER_SELECTED_PROJECT = auto()
+        CURRENT_USER_ALL_PROJECTS = auto()
+        ALL_USERS_SELECTED_PROJECT = auto()
+
+    @dataclass
+    class Preference(helper.Dictable):
+        name: str
+        description: str
+        type: str
+        group: str
+        value: "WebPreferences.ValueType"
+        use_default_value: bool
+        value_description: str | None = None
+
+    def _get_scope(
+        self,
+        user_or_group: "UserOrGroup | None" = None,
+        use_current_user: bool = False,
+        project: "Project | str | None" = None,
+    ) -> "_Scope":
+        if user_or_group and use_current_user:
+            raise ValueError(
+                "Cannot specify both `user_or_group` and `use_current_user`."
+            )
+        if not user_or_group and not use_current_user and not project:
+            raise ValueError(
+                "At least one of `user_or_group`, `use_current_user` "
+                "or `project` must be specified."
+            )
+
+        match (user_or_group is not None, use_current_user, project is not None):
+            case (True, True, _):
+                raise ValueError(
+                    "Cannot specify both `user_or_group` and `use_current_user`."
+                )
+            case (True, False, True):
+                return WebPreferences._Scope.SELECTED_USER_AND_PROJECT
+            case (True, False, False):
+                return WebPreferences._Scope.SELECTED_USER_ALL_PROJECTS
+            case (False, True, True):
+                return WebPreferences._Scope.CURRENT_USER_SELECTED_PROJECT
+            case (False, True, False):
+                return WebPreferences._Scope.CURRENT_USER_ALL_PROJECTS
+            case (False, False, True):
+                return WebPreferences._Scope.ALL_USERS_SELECTED_PROJECT
+            case (False, False, False):
+                raise ValueError(
+                    "At least one of `user_or_group`, `use_current_user` "
+                    "or `project` must be specified."
+                )
+
+    @staticmethod
+    def _select_apis(scope: "_Scope") -> tuple[Callable, Callable]:
+        match scope:
+            case WebPreferences._Scope.SELECTED_USER_AND_PROJECT:
+                return (
+                    projects.get_web_preferences_user_project,
+                    projects.set_web_preferences_user_project,
+                )
+            case WebPreferences._Scope.SELECTED_USER_ALL_PROJECTS:
+                return (
+                    projects.get_web_preferences_user,
+                    projects.set_web_preferences_user,
+                )
+            case WebPreferences._Scope.CURRENT_USER_SELECTED_PROJECT:
+                return (
+                    projects.get_web_preferences_current_user_per_project,
+                    projects.set_web_preferences_current_user_per_project,
+                )
+            case WebPreferences._Scope.CURRENT_USER_ALL_PROJECTS:
+                return (
+                    projects.get_web_preferences_current_user,
+                    projects.set_web_preferences_current_user,
+                )
+            case WebPreferences._Scope.ALL_USERS_SELECTED_PROJECT:
+                return (
+                    projects.get_web_preferences_project,
+                    projects.set_web_preferences_project,
+                )
+            case _:
+                raise ValueError(f"Invalid scope: {scope}")
+
+    def __init__(
+        self,
+        connection: Connection,
+        user_or_group: "UserOrGroup | None" = None,
+        use_current_user: bool = False,
+        project: "Project | str | None" = None,
+        project_id: str | None = None,
+        project_name: str | None = None,
+    ):
+        """Initialize the object tracking Web Preferences for a given
+        scope.
+
+        Args:
+            connection: Strategy connection object returned by
+                `connection.Connection()`.
+            user_or_group (UserOrGroup, optional): User or UserGroup object
+                or ID string to get preferences for.
+            use_current_user (bool, optional): Whether to use the current
+                user. Defaults to False.
+            project (Project | str, optional): Project object or ID or name
+                specifying the project. May be used instead of `project_id`
+                or `project_name`.
+            project_id (str, optional): Project ID
+            project_name (str, optional): Project name
+        """
+        proj_id = get_project_id_from_params_set(
+            connection,
+            project,
+            project_id,
+            project_name,
+            assert_id_exists=False,
+            no_fallback_from_connection=True,
+        )
+        user_id = (
+            user_or_group.id if isinstance(user_or_group, Entity) else user_or_group
+        )
+
+        self.connection = connection
+        self.use_current_user = use_current_user
+        self.user_id = user_id
+        self.project_id = proj_id
+
+        self._scope = self._get_scope(user_or_group, use_current_user, proj_id)
+        self._api_get, self._api_set = self._select_apis(self._scope)
+        self._preferences_by_group = {}
+        self._preferences_by_name = {}
+
+    def _set_preferences(self, source: list[dict]):
+        def _parse_group(group: dict) -> list:
+            if not (prefs := group["preferences"]):
+                return []
+            for pref in prefs:
+                pref["group"] = group["group"]
+            return prefs
+
+        self._preferences_by_group = {
+            group["group"]: self.Preference.bulk_from_dict(
+                _parse_group(group), self.connection
+            )
+            for group in source
+        }
+        # Build name index from the first occurrence of each name.
+        # Some environments return the same preference name in multiple
+        # groups; _preferences_by_name is used only for get() look-ups.
+        self._preferences_by_name = {}
+        for group in self._preferences_by_group.values():
+            for pref in group:
+                if pref.name not in self._preferences_by_name:
+                    self._preferences_by_name[pref.name] = pref
+
+    def list(self, to_dictionary: bool = False) -> "list[Preference] | list[dict]":
+        prefs = [p for g in self._preferences_by_group.values() for p in g]
+        return [p.to_dict() for p in prefs] if to_dictionary else prefs
+
+    def list_groups(
+        self, to_dictionary: bool = False
+    ) -> "dict[str, Preference] | dict[str, dict]":
+        return (
+            {
+                group_name: [pref.to_dict() for pref in group]
+                for group_name, group in self._preferences_by_group.items()
+            }
+            if to_dictionary
+            else self._preferences_by_group
+        )
+
+    def get(
+        self,
+        name: str,
+        to_dictionary: bool = False,
+    ) -> "Preference | dict":
+        pref = self._preferences_by_name.get(name)
+        if not pref:
+            raise KeyError(f"Preference '{name}' not found.")
+        return pref.to_dict() if to_dictionary else pref
+
+    def get_group(
+        self,
+        name: str,
+        to_dictionary: bool = False,
+    ) -> "list[Preference] | list[dict]":
+        group = self._preferences_by_group.get(name)
+        if not group:
+            raise KeyError(f"Preference group '{name}' not found.")
+        return [pref.to_dict() for pref in group] if to_dictionary else group
+
+    def fetch(self) -> None:
+        """Fetch the current preferences from the server and update the
+        object."""
+        response = helper.auto_match_args_then_call(self._api_get, self.__dict__)
+        self._set_preferences(response.json())
+
+    @staticmethod
+    def _value_to_rest(value) -> str:
+        """Convert a Python value to a REST API compatible string
+        representation.
+
+        Args:
+            value: The Python value to convert.
+
+        Returns:
+            str: The string representation of the value for REST API.
+        """
+        if isinstance(value, bool):
+            value = int(value)
+        return str(value)
+
+    def alter(self, **names_to_values: dict) -> None:
+        """Alter the preferences on the server and update the object.
+
+        Args:
+            **names_to_values: Keyword arguments where keys are preference
+                names and values are the new values to set for those
+                preferences.
+        """
+        body = {
+            'items': [
+                {'name': name, 'value': self._value_to_rest(value)}
+                for name, value in names_to_values.items()
+            ]
+        }
+        response = helper.auto_match_args_then_call(
+            self._api_set, self.__dict__, body=body
+        )
+        if prefs := response.json().get('preferences'):
+            self._set_preferences(prefs)
+
+    def reset(self, names: "str | list[str]") -> None:
+        """Reset the specified preferences to their default values on the
+        server.
+
+        Args:
+            names: A single preference name or a list of preference names
+                to reset.
+        """
+        if isinstance(names, str):
+            names = [names]
+        body = {'items': [{'name': name, 'useDefault': True} for name in names]}
+        response = helper.auto_match_args_then_call(
+            self._api_set, self.__dict__, body=body
+        )
+        if prefs := response.json().get('preferences'):
+            self._set_preferences(prefs)
+
+    def reset_all(self, force: bool = False) -> None:
+        """Reset all preferences to their default values on the server.
+
+        Args:
+            force (bool, optional): If False, prompts the user for confirmation.
+                If True, resets without prompting. Defaults to False.
+        """
+        if not force:
+            message = (
+                "Are you sure you want to reset all preferences to their "
+                "default values? (Y/N): "
+            )
+            user_input = input(message)
+            if user_input.strip().upper() != "Y":
+                return
+
+        body = {"defaultValues": True}
+        response = helper.auto_match_args_then_call(
+            self._api_set, self.__dict__, body=body
+        )
+        if prefs := response.json().get('preferences'):
+            self._set_preferences(prefs)
+
+    def __getitem__(self, subscript):
+        return self.get(subscript)
+
+    def __setitem__(self, key, value):
+        self.alter(**{key: value})
 
 
 class ProjectDuplicationRule(Enum):

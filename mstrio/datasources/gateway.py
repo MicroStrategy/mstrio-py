@@ -99,7 +99,7 @@ class Gateway(EntityBase, ChangeJournalMixin):
     @classmethod
     def list(
         cls, connection: Connection, to_dictionary: bool = False, **filters
-    ) -> list[type['Gateway']] | list[dict]:
+    ) -> "list[Gateway] | list[dict]":
         """Get all gateways as list of Gateway objects or dictionaries.
 
         Optionally filter the gateways by specifying filters.

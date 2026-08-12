@@ -1,9 +1,11 @@
 from enum import auto
 
 from mstrio.utils import helper
-from mstrio.utils.enum_helper import AutoName, get_enum_val
+from mstrio.utils.enum_helper import AutoName, AutoUpperName, get_enum_val
 from mstrio.utils.enums import DaysOfWeek as _DaysOfWeek
 from mstrio.utils.helper import Dictable
+
+# region Enums
 
 
 class ScheduleEnums:
@@ -11,7 +13,7 @@ class ScheduleEnums:
     Object representations of recurrence information of a time-based schedule
     """
 
-    DaysOfWeek = _DaysOfWeek
+    DaysOfWeek = _DaysOfWeek  # NOSONAR
 
     class WeekOffset(AutoName):
         FIRST = auto()
@@ -53,6 +55,11 @@ class ScheduleEnums:
         DAY = auto()
         DAY_OF_WEEK = auto()
         NONE = None
+
+
+# endregion
+
+# region Schedule Time
 
 
 class ScheduleTime(Dictable):
@@ -790,3 +797,109 @@ class ScheduleTime(Dictable):
                         'day_of_week': day_of_week,
                     }
                 )
+
+
+# endregion
+
+# region Universal Helpers
+
+
+class UnixTimeZone(AutoUpperName):
+    """Enum class representing selected, Strategy-supported Unix Timezones.
+
+    Those values may not be a closed list. If you lack a value you need,
+    wherever this Enum is used, direct string value should also be supported.
+    Use raw string value there instead to check if your timezone will be
+    accepted by REST API.
+    """
+
+    # FYI: see Tasks Plugin implementation for details about source.
+    #
+    # When using, make sure to support direct raw string and DO NOT validate
+    # against this enum in such case - let REST do it - as this list may not be
+    # final and closed
+
+    MIT = auto()
+    """(MIT) Midway Islands Time, UTC -11"""
+    HST = auto()
+    """(HST) Hawaii Time, UTC -10"""
+    AKST = 'America/Anchorage'
+    """(AKST) Alaska Time, UTC -9"""
+    PST = auto()
+    """(PST) Pacific Time (US & Canada), UTC -8"""
+    PNT = auto()
+    """(PNT) Arizona Time, UTC -7"""
+    MST = 'US/Mountain'
+    """(MST) Mountain Time (US & Canada), UTC -7"""
+    CST = auto()
+    """(CST) Central Time (US & Canada), UTC -6"""
+    CDMX = 'America/Mexico_City'
+    """(CDMX) Mexico City Time, UTC -6"""
+    EST = 'US/Eastern'
+    """(EST) Eastern Time (US & Canada), UTC -5"""
+    AST = 'Canada/Atlantic'
+    """(AST) Atlantic Time (Canada), UTC -4"""
+    PRT = auto()
+    """(PRT) Puerto Rico Time, UTC -4"""
+    CNT = auto()
+    """(CNT) Newfoundland Time, UTC -3:30"""
+    AGT = auto()
+    """(AGT) Argentina Time, UTC -3"""
+    BET = auto()
+    """(BET) Brazil Time, UTC -3"""
+    ETC = 'Etc/GMT+2'
+    """(ETC) Mid-Atlantic Time, UTC -2"""
+    CVT = 'Atlantic/Cape_Verde'
+    """(CVT) Azores, Cape Verde Time, UTC -1"""
+    GMT = 'Europe/London'
+    """(GMT) Greenwich Mean Time, UTC +0"""
+    WET = auto()
+    """(WET) Western Europe Time, UTC +0"""
+    CET = 'Europe/Berlin'
+    """(CET) Europe/Berlin Time, UTC +1"""
+    CAT = auto()
+    """(CAT) Central Africa Time, UTC +2"""
+    ART = auto()
+    """(ART) Egypt Time, UTC +2"""
+    EET = auto()
+    """(EET) Eastern Europe Time, UTC +2"""
+    EAT = auto()
+    """(EAT) East Africa Time, UTC +3"""
+    MEST = 'Asia/Riyadh'
+    """(MEST) Middle East Time, UTC +3"""
+    NET = auto()
+    """(NET) Near East Time, UTC +4"""
+    PLT = auto()
+    """(PLT) Pakistan/Lahore Time, UTC +5"""
+    IST = auto()  # codespell:ignore
+    """(IST) India Time, UTC +5:30"""  # codespell:ignore
+    BST = auto()
+    """(BST) Bangladesh Time, UTC +6"""
+    VST = auto()
+    """(VST) Vietnam Time, UTC +7"""
+    CTT = auto()
+    """(CTT) China Time (Taiwan) Time, UTC +8"""
+    KST = 'Asia/Seoul'
+    """(KST) Seoul Time, UTC +9"""
+    JST = auto()
+    """(JST) Osaka, Sapporo, Tokyo, UTC +9"""
+    ACT = auto()
+    """(ACT) Australia Central Time, UTC +9:30"""
+    AET = auto()
+    """(AET) Australia Eastern Time, UTC +10"""
+    SST = auto()
+    """(SST) Solomon Islands Time, UTC +11"""
+    NST = auto()
+    """(NST) New Zealand Time, UTC +12"""
+
+    def __str__(self):
+        return self.value
+
+    def __eq__(self, value):
+        try:
+            return str(self) == str(value) or super().__eq__(value)
+        except Exception:
+            return super().__eq__(value)
+
+
+# endregion

@@ -31,7 +31,7 @@ from mstrio.utils.entity import (
     Entity,
     MoveMixin,
 )
-from mstrio.utils.enum_helper import AutoName, get_enum_val
+from mstrio.utils.enum_helper import AutoName, get_enum, get_enum_val
 from mstrio.utils.helper import Dictable, delete_none_values
 from mstrio.utils.resolvers import (
     FolderPathType,
@@ -147,6 +147,9 @@ class VariableType(Enum):
     SYSTEM_PROMPT = 0x100A  # 4106
     TXN_ROW_PROVENANCE = 0x8001  # 32769
 
+    def __int__(self):
+        return int(self.value)
+
 
 # --- END: Enums ---
 
@@ -210,7 +213,7 @@ def list_scripts(
                     `/MicroStrategy Tutorial/Public Objects/Metrics`
                 if it's a root folder, start with `CASTOR_SERVER_CONFIGURATION`:
                     `/CASTOR_SERVER_CONFIGURATION/Users`
-        **filters: Available filter parameters: ['id', 'description, 'owner',
+        **filters: Available filter parameters: ['id', 'description', 'owner',
             'date_created', 'date_modified', 'version', 'acg']
 
     Returns:
@@ -318,6 +321,10 @@ class Code:
 
         Returns:
             `tuple(variables, answers)`
+
+        Raises:
+            ScriptSetupError: If variables or answers have incorrect shape or
+                refer to non-existent variables.
         """
 
         # FYI: Either explicitly provided factory...
@@ -364,9 +371,25 @@ class Code:
         answers = answers.copy()
 
         # calculate answers if done via `VariableAnswer.For(...)...` callback
+        # or if via list of dicts, couple with answer
         for i, answer in enumerate(answers):
             if isfunction(answer) and getattr(answer, '_is_internal_mstrio', None):
                 answers[i] = answer(variables)
+
+            if isinstance(answer, dict):
+                if (
+                    "name" not in answer and "id" not in answer
+                ) or "value" not in answer:
+                    raise ScriptSetupError(
+                        "Not enough information in `answers` to couple them with "
+                        "proper `variables`."
+                    )
+
+                next(
+                    v
+                    for v in variables
+                    if v.name == answer.get("name") or v.id == answer.get("id")
+                ).answer(answer["value"])
 
         return (variables, answers)
 
@@ -868,8 +891,8 @@ class Script(
 
             if len(opts) != 1:
                 raise ValueError(
-                    f"Cannot uniquely identify Script with name '{name}'. "
-                    f"Found {len(opts)} Scripts with this name. "
+                    f"Cannot uniquely identify {self.__class__.__name__} with name "
+                    f"'{name}'. Found {len(opts)} hits. "
                     "Please provide ID instead."
                 )
 
@@ -1497,12 +1520,14 @@ class Script(
 
     # TODO: deliver this prop during Runtimes Module dev
     # @property
-    # def script_runtime_details(self):
+    # def script_runtime(self):
     #     pass
 
     @property
     def script_usage_type(self) -> ScriptUsageType:
-        match self.subtype:
+        subtype = get_enum(self.subtype, ObjectSubTypes)
+
+        match subtype:
             case ObjectSubTypes.DATASOURCE_SCRIPT:
                 return ScriptUsageType.DATASOURCE
             case ObjectSubTypes.TRANSACTION_SCRIPT:
@@ -2254,6 +2279,8 @@ class VariableAnswer(Variable):
         )
         if vid := self.source_variable.id:
             ret['id'] = vid
+        if (vt := self.source_variable.type) is not None:
+            ret['type'] = int(vt)
         return ret
 
     @classmethod

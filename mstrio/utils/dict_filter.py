@@ -2,18 +2,18 @@ import fnmatch
 import logging
 from collections.abc import Callable, Iterable
 from enum import Enum
-from typing import TYPE_CHECKING, Any, TypeVar, Union
+from typing import TYPE_CHECKING, Any, TypeAlias, TypeVar, Union
 
 if TYPE_CHECKING:
     from mstrio.utils.entity import EntityBase
 
-    SupportedExpression = Union[
+    SupportedExpression: TypeAlias = Union[
         list, str, dict, int, float, bool, EntityBase, Enum, tuple
     ]
 
 logger = logging.getLogger(__name__)
 
-SupportedExpression = Union[list, str, dict, int, float, bool, Enum]
+SupportedExpression: TypeAlias = Union[list, str, dict, int, float, bool, Enum]
 KT = TypeVar("KT")
 VT = TypeVar("VT")
 

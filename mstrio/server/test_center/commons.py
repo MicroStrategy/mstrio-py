@@ -188,6 +188,8 @@ class ObjectResult(EntityBase, metaclass=ABCMeta):
 class TestExecutionStatus(AutoUpperName):
     """Enum for test execution status."""
 
+    __test__ = False  # prevent pytest from collecting this class as a test
+
     UNKNOWN = auto()
     RUNNING = auto()
     COMPLETED = auto()

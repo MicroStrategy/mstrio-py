@@ -650,6 +650,9 @@ def update_project(
     )
 
 
+# region Duplications
+
+
 @ErrorHandler(err_msg="Error getting project duplications")
 def get_project_duplications(
     connection: 'Connection',
@@ -908,3 +911,253 @@ def delete_project_duplication(
         HTTP response object. 200 on success.
     """
     return connection.delete(endpoint=f'/api/projectDuplications/{id}')
+
+
+# endregion
+
+
+# region Web Prefs
+
+
+@ErrorHandler(err_msg="Error getting web preferences for the current user.")
+def get_web_preferences_current_user(
+    connection: 'Connection',
+    error_msg: str | None = None,
+) -> Response:
+    """List web preferences for the current user.
+
+    Args:
+        connection (Connection): Strategy REST API connection object
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object.
+    """
+    return connection.get(endpoint='/api/preferences/webpreferences/currentuser')
+
+
+@ErrorHandler(err_msg="Error setting web preferences for the current user.")
+def set_web_preferences_current_user(
+    connection: 'Connection',
+    body: dict,
+    error_msg: str | None = None,
+) -> Response:
+    """Set or reset web preferences for the current user.
+
+    Args:
+        connection (Connection): Strategy REST API connection object
+        body (dict): JSON-formatted web preferences data, e.g.
+            ``{"items": [{"name": "...", "value": "..."}]}``
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object.
+    """
+    return connection.patch(
+        endpoint='/api/preferences/webpreferences/currentuser',
+        json=body,
+    )
+
+
+@ErrorHandler(
+    err_msg="Error getting web preferences for the current user "
+    "and project with ID {project_id}."
+)
+def get_web_preferences_current_user_per_project(
+    connection: 'Connection',
+    project_id: str,
+    error_msg: str | None = None,
+) -> Response:
+    """List web preferences for the current user and a given project.
+
+    Args:
+        connection (Connection): Strategy REST API connection object
+        project_id (string): Project ID
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object.
+    """
+    return connection.get(
+        endpoint=f'/api/preferences/webpreferences/currentuser' f'/project/{project_id}'
+    )
+
+
+@ErrorHandler(
+    err_msg="Error setting web preferences for the current user "
+    "and project with ID {project_id}."
+)
+def set_web_preferences_current_user_per_project(
+    connection: 'Connection',
+    project_id: str,
+    body: dict,
+    error_msg: str | None = None,
+) -> Response:
+    """Set or reset web preferences for the current user and a given project.
+
+    Args:
+        connection (Connection): Strategy REST API connection object
+        project_id (string): Project ID
+        body (dict): JSON-formatted web preferences data, e.g.
+            ``{"items": [{"name": "...", "value": "..."}]}``
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object.
+    """
+    return connection.patch(
+        endpoint=f'/api/preferences/webpreferences/currentuser'
+        f'/project/{project_id}',
+        json=body,
+    )
+
+
+@ErrorHandler(err_msg="Error getting web preferences for user with ID {user_id}.")
+def get_web_preferences_user(
+    connection: 'Connection',
+    user_id: str,
+    error_msg: str | None = None,
+) -> Response:
+    """List web preferences for a given user or user group.
+
+    Args:
+        connection (Connection): Strategy REST API connection object
+        user_id (string): User or user group ID
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object.
+    """
+    return connection.get(endpoint=f'/api/preferences/webpreferences/user/{user_id}')
+
+
+@ErrorHandler(err_msg="Error setting web preferences for user with ID {user_id}.")
+def set_web_preferences_user(
+    connection: 'Connection',
+    user_id: str,
+    body: dict,
+    error_msg: str | None = None,
+) -> Response:
+    """Set or reset web preferences for a given user or user group.
+
+    Args:
+        connection (Connection): Strategy REST API connection object
+        user_id (string): User or user group ID
+        body (dict): JSON-formatted web preferences data, e.g.
+            ``{"items": [{"name": "...", "value": "..."}]}``
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object.
+    """
+    return connection.patch(
+        endpoint=f'/api/preferences/webpreferences/user/{user_id}',
+        json=body,
+    )
+
+
+@ErrorHandler(
+    err_msg="Error getting web preferences for user with ID {user_id} "
+    "and project with ID {project_id}."
+)
+def get_web_preferences_user_project(
+    connection: 'Connection',
+    user_id: str,
+    project_id: str,
+    error_msg: str | None = None,
+) -> Response:
+    """List web preferences for a given user or user group and project.
+
+    Args:
+        connection (Connection): Strategy REST API connection object
+        user_id (string): User or user group ID
+        project_id (string): Project ID
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object.
+    """
+    return connection.get(
+        endpoint=f'/api/preferences/webpreferences/user/{user_id}'
+        f'/project/{project_id}'
+    )
+
+
+@ErrorHandler(
+    err_msg="Error setting web preferences for user with ID {user_id} "
+    "and project with ID {project_id}."
+)
+def set_web_preferences_user_project(
+    connection: 'Connection',
+    user_id: str,
+    project_id: str,
+    body: dict,
+    error_msg: str | None = None,
+) -> Response:
+    """Set or reset web preferences for a given user or user group and project.
+
+    Args:
+        connection (Connection): Strategy REST API connection object
+        user_id (string): User or user group ID
+        project_id (string): Project ID
+        body (dict): JSON-formatted web preferences data, e.g.
+            ``{"items": [{"name": "...", "value": "..."}]}``
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object.
+    """
+    return connection.patch(
+        endpoint=f'/api/preferences/webpreferences/user/{user_id}'
+        f'/project/{project_id}',
+        json=body,
+    )
+
+
+@ErrorHandler(err_msg="Error getting web preferences for project with ID {project_id}.")
+def get_web_preferences_project(
+    connection: 'Connection',
+    project_id: str,
+    error_msg: str | None = None,
+) -> Response:
+    """List web preferences for all users in a given project.
+
+    Args:
+        connection (Connection): Strategy REST API connection object
+        project_id (string): Project ID
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object.
+    """
+    return connection.get(
+        endpoint=f'/api/preferences/webpreferences/project/{project_id}'
+    )
+
+
+@ErrorHandler(err_msg="Error setting web preferences for project with ID {project_id}.")
+def set_web_preferences_project(
+    connection: 'Connection',
+    project_id: str,
+    body: dict,
+    error_msg: str | None = None,
+) -> Response:
+    """Set or reset web preferences for all users in a given project.
+
+    Args:
+        connection (Connection): Strategy REST API connection object
+        project_id (string): Project ID
+        body (dict): JSON-formatted web preferences data, e.g.
+            ``{"items": [{"name": "...", "value": "..."}]}``
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object.
+    """
+    return connection.patch(
+        endpoint=f'/api/preferences/webpreferences/project/{project_id}',
+        json=body,
+    )
+
+
+# endregion

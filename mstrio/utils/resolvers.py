@@ -12,19 +12,19 @@ if t.TYPE_CHECKING:
     from mstrio.server.environment import Environment
     from mstrio.server.project import Project
     from mstrio.server.tenant import Tenant
+    from mstrio.utils.entity import EntityBase
 
-
-T = t.TypeVar('T')
+    T = t.TypeVar('T', bound=EntityBase)
 
 
 # --- PARAMETERS Resolvers ---
 def _get_id_from_params_set(
-    object: T | str | None,
+    object: 'T | str | None',
     object_id: str | None,
     object_prop: str | None,
-    object_class: type[T],
+    object_class: 'type[T]',
     object_listing_method: (
-        t.Callable[[], list[T | dict]] | t.Generator[T | dict, None, None]
+        't.Callable[[], list[T | dict]] | t.Generator[T | dict, None, None]'
     ),
     fallback_value: str | None = None,
     property_name: str = 'name',
@@ -705,6 +705,38 @@ def get_conn_and_env_from_mixed_param(
 
 
 # --- FILTERS KWARGS Resolvers ---
+def _validate_some_complex_key_in_filters(
+    filters_kwargs: dict[str, t.Any], key: str
+) -> None:
+    if key not in filters_kwargs:
+        return  # NOOP
+
+    val = filters_kwargs[key]
+    if val is None:
+        del filters_kwargs[key]
+        return
+
+    from mstrio.utils.entity import Entity
+
+    if isinstance(val, Entity):
+        # We do not care for more specific module than `Entity`
+        # REST will handle invalid ID
+        val = val.id
+
+    if isinstance(val, str):
+        filters_kwargs[key] = {"id": val}
+        return
+
+    if isinstance(val, dict) and "id" in val:
+        filters_kwargs[key] = {"id": val["id"]}  # sanitize: remove other keys
+        return
+
+    raise AttributeError(
+        f"`{key}` filter has incorrect value. It should be a class instance, "
+        "item ID as string or dict in a shape `{'id': <id>}`"
+    )
+
+
 def validate_owner_key_in_filters(filters_kwargs: dict[str, t.Any]) -> None:
     """Validate if `owner` filter kwarg is in valid shape.
 
@@ -720,33 +752,22 @@ def validate_owner_key_in_filters(filters_kwargs: dict[str, t.Any]) -> None:
     Args:
         filters_kwargs: Dictionary of filter kwargs to validate `owner` in.
     """
-    if 'owner' not in filters_kwargs:
-        return  # NOOP
 
-    val = filters_kwargs['owner']
-    if val is None:
-        del filters_kwargs['owner']
-        return
+    return _validate_some_complex_key_in_filters(filters_kwargs, "owner")
 
-    from mstrio.utils.entity import Entity
 
-    if isinstance(val, Entity):
-        # We do not care for more specific module than `Entity`
-        # REST will handle invalid ID
-        val = val.id
+def validate_content_key_in_filters(filters_kwargs: dict[str, t.Any]) -> None:
+    """Validate if `content` filter kwarg is in valid shape.
 
-    if isinstance(val, str):
-        filters_kwargs['owner'] = {"id": val}
-        return
+    Note:
+        This method does not return a value, it modifies the input dict
+        in-place!
 
-    if isinstance(val, dict) and "id" in val:
-        filters_kwargs['owner'] = {"id": val["id"]}  # sanitize: remove other keys
-        return
+    Args:
+        filters_kwargs: Dictionary of filter kwargs to validate `content` in.
+    """
 
-    raise AttributeError(
-        "`owner` filter has incorrect value. It should be a class instance, "
-        "item ID as string or dict in a shape `{'id': <id>}`"
-    )
+    return _validate_some_complex_key_in_filters(filters_kwargs, "content")
 
 
 # --- END: FILTERS KWARGS Resolvers ---
