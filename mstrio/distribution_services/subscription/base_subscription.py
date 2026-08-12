@@ -543,7 +543,9 @@ class Subscription(EntityBase, ChangeJournalMixin, TenantMixin):
             self.connection, self.id, self.project_id
         )
         if config.verbose:
-            logger.info(f"Deleted subscription '{self.name}' with ID: {self.id}.")
+            logger.info(
+                f"Successfully deleted subscription '{self.name}' with ID: {self.id}."
+            )
         return response.ok
 
     @method_version_handler('11.3.0000')

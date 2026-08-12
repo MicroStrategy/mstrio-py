@@ -1306,6 +1306,59 @@ def validate_telemetry_connections(
     )
 
 
+def get_telemetry_status(connection: Connection) -> Response:
+    """Get the current status of the telemetry pipeline.
+
+    The endpoint returns ``text/plain`` (e.g. ``"OK"``) rather than JSON,
+    so the standard ``ErrorHandler`` decorator (which would attempt
+    ``response.json()``) is skipped and HTTP status validated manually.
+
+    Args:
+        connection (Connection): Strategy One REST API connection object.
+
+    Returns:
+        Complete HTTP response object.
+    """
+
+    response = connection.get(
+        endpoint='/api/telemetry/status',
+        headers={'X-MSTR-ProjectID': None},
+    )
+    if not response.ok:
+        from mstrio.helpers import MstrException
+
+        raise MstrException(
+            {
+                'code': str(response.status_code),
+                'message': (
+                    f"Error getting telemetry status. "
+                    f"HTTP {response.status_code}: {response.text}"
+                ),
+            }
+        )
+    return response
+
+
+@ErrorHandler(err_msg="Error sending telemetry to Messaging Services.")
+def send_telemetry(connection: Connection, body: dict) -> Response:
+    """Send Telemetry logs to Messaging Services.
+
+    Args:
+        connection (Connection): Strategy One REST API connection object.
+        body (dict): Telemetry log payload conforming to the TelemetryLogList
+            schema.
+
+    Returns:
+        Complete HTTP response object.
+    """
+
+    return connection.post(
+        endpoint='/api/mstrServices/library/telemetryProducer/send',
+        headers={'X-MSTR-ProjectID': None},
+        json=body,
+    )
+
+
 # endregion
 
 # region cfg lock

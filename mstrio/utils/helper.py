@@ -729,6 +729,27 @@ def auto_match_args(
     return param_value_dict
 
 
+def auto_match_args_then_call(
+    func: Callable,
+    param_dict: dict,
+    exclude: list | None = None,
+    include_defaults: bool = True,
+    id_weak_match: bool = False,
+    **kwargs,
+):
+    params = {
+        **auto_match_args(
+            func=func,
+            param_dict=param_dict,
+            exclude=exclude,
+            include_defaults=include_defaults,
+            id_weak_match=id_weak_match,
+        ),
+        **kwargs,
+    }
+    return func(**params)
+
+
 def get_val_safely(param_dict: dict, key: str, default_dict: dict) -> Any:
     """Safely get a value from a dictionary."""
     return (
@@ -891,6 +912,8 @@ def delete_none_values(
     return new_dict
 
 
+# TODO: consider whether obsolete after implementation of
+# `EntityBase._get_id_from_any_param`
 def get_objects_id(obj, obj_class):
     if isinstance(obj, str):
         return obj
@@ -1048,6 +1071,9 @@ class Dictable:
     # list of attribute name, which are allowed to have none values
     # in dict returned by .to_dict()
     _ALLOW_NONE_ATTRIBUTES: list[str] = []
+    # exclude below keys when listing via
+    # `to_dict` or similar (example: `list_properties`)
+    _EXCLUDE_WHEN_LISTING: list[str] = []
     _KEEP_CAMEL_CASE: list[str] = []
 
     @classmethod
@@ -1127,7 +1153,7 @@ class Dictable:
             '_type',
             '_WITH_MISSING_VALUE',
             '_API_GETTERS',
-        ]
+        ] + self._EXCLUDE_WHEN_LISTING
         whitelist_keys = whitelist_keys or []
         cleaned_dict = self.__dict__.copy()
         # TODO: add units for flag skip private keys

@@ -50,6 +50,7 @@ from .project import (
     ProjectInfo,
     ProjectSettings,
     ProjectStatus,
+    WebPreferences,
     compare_project_settings,
     list_projects,
     list_projects_duplications,

@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 
 import requests
 from requests import (  # NOQA F401 (imports for ease of access)
+    ConnectionError,
     ConnectTimeout,
     ReadTimeout,
     Session,
@@ -780,6 +781,7 @@ class Connection:
         while retries_left > 0:
             try:
                 return method(url, **kwargs)
+
             except (Timeout, TimeoutError) as err:
                 retries_left -= 1
                 if not retries_left:
@@ -789,6 +791,22 @@ class Connection:
                             "See traceback for more details."
                         ) from err
                     raise err
+
+            except ConnectionError as err:
+                if "Connection reset by peer" in str(err) and self.is_run_in_our_app():
+                    # FYI: If we are within Server-Side Execution, we can guess
+                    # a bit more about what happened even though the error
+                    # itself is generic. Re-raise with custom, actionable error.
+                    raise ConnectionError(
+                        "Library REST or I-Server refused to receive the request from "
+                        f"'{url}'. If this happens on every request, check your "
+                        "Runtime Network Access and validate whether it can connect to "
+                        "the Library URL. Otherwise, validate whether the environment "
+                        "is started, stable and can be accessed via network requests "
+                        "and Library REST APIs."
+                    ) from err
+
+                raise
 
     def get(self, url=None, *, endpoint=None, **kwargs):
         """Sends a GET request."""
@@ -986,7 +1004,7 @@ class Connection:
             raise_on_status=False,
         )
         adapter = HTTPAdapter(max_retries=retry)
-        session.mount('http://', adapter)
+        session.mount('http://', adapter)  # NOSONAR
         session.mount('https://', adapter)
 
         return session

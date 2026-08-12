@@ -15,7 +15,7 @@ from mstrio.server.test_center.commons import (
 from mstrio.types import ExtendedType, ObjectSubTypes, ObjectTypes
 from mstrio.utils.entity import Entity
 from mstrio.utils.enum_helper import AutoUpperName, get_enum_val
-from mstrio.utils.helper import Dictable
+from mstrio.utils.helper import Dictable, is_dashboard
 from mstrio.utils.object_mapping import map_objects_list
 from mstrio.utils.response_processors import test_center as tc_processors
 from mstrio.utils.test_center.export_html import Raw, Template
@@ -26,6 +26,42 @@ from mstrio.utils.version_helper import (
 )
 
 logger = logging.getLogger(__name__)
+
+_SUPPORTED_TEST_CENTER_REPORT_SUBTYPES = {
+    ObjectSubTypes.REPORT_GRID.value,
+    ObjectSubTypes.REPORT_GRAPH.value,
+    ObjectSubTypes.REPORT_ENGINE.value,
+    ObjectSubTypes.REPORT_TEXT.value,
+    ObjectSubTypes.REPORT_DATAMART.value,
+    ObjectSubTypes.REPORT_BASE.value,
+    ObjectSubTypes.REPORT_GRID_AND_GRAPH.value,
+    ObjectSubTypes.REPORT_NON_INTERACTIVE.value,
+    ObjectSubTypes.OLAP_CUBE.value,
+    ObjectSubTypes.INCREMENTAL_REFRESH_REPORT.value,
+    ObjectSubTypes.REPORT_TRANSACTION.value,
+    ObjectSubTypes.SUPER_CUBE.value,
+    ObjectSubTypes.SUPER_CUBE_IRR.value,
+    ObjectSubTypes.REPORT_HYPER_CARD.value,
+    ObjectSubTypes.DATAMART_REPORT.value,
+}
+
+
+def is_supported_test_center_object(obj: Entity) -> bool:
+    """Return whether an object's metadata is supported by Test Center."""
+    try:
+        object_type = get_enum_val(obj.type, ObjectTypes)
+        object_subtype = get_enum_val(obj.subtype, ObjectSubTypes)
+    except (TypeError, ValueError):
+        return False
+
+    if object_type == ObjectTypes.DOCUMENT_DEFINITION.value:
+        view_media = getattr(obj, "view_media", 0)
+        return isinstance(view_media, int) and is_dashboard(view_media)
+
+    return (
+        object_type == ObjectTypes.REPORT_DEFINITION.value
+        and object_subtype in _SUPPORTED_TEST_CENTER_REPORT_SUBTYPES
+    )
 
 
 def _object_list_from_dict(source: list[dict], connection: Connection):

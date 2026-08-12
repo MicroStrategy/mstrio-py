@@ -157,7 +157,7 @@ class Driver(Entity):
     @classmethod
     def list(
         cls, connection: Connection, to_dictionary: bool = False, **filters
-    ) -> list[type['Driver']] | list[dict]:
+    ) -> "list[Driver] | list[dict]":
         """Get all driver as list of Driver objects or dictionaries.
 
         Optionally filter the drivers by specifying filters.

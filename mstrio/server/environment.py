@@ -20,6 +20,7 @@ from mstrio.server.storage import StorageService, StorageType
 from mstrio.utils import helper
 from mstrio.utils.enum_helper import AutoUpperName, get_enum_val
 from mstrio.utils.resolvers import get_project_id_from_params_set
+from mstrio.utils.response_processors import object_telemetry as ot_processors
 from mstrio.utils.response_processors import pa_statistics as pa_processors
 from mstrio.utils.version_helper import class_version_handler, method_version_handler
 
@@ -288,6 +289,70 @@ class PAStatisticsEnvLevel:
         return self._parent.connection
 
 
+class ObjectTelemetryEnvLevel:
+    """Object Telemetry operations on the Environment.
+
+    Provides a Python equivalent for the following Command Manager outline:
+        TRIGGER EVENT "Load Metadata Object Telemetry";
+
+    Note:
+        Not intended to be used directly. Use ``Environment.object_telemetry``.
+    """
+
+    def __init__(self, parent: 'Environment'):
+        self._parent = parent
+
+    def get_status(self) -> str:
+        """Returns the current telemetry pipeline status string."""
+        return ot_processors.get_telemetry_status(self._connection)
+
+    @method_version_handler('11.6.0700')
+    def trigger_load(self) -> bool:
+        """Triggers an immediate Load Metadata Object Telemetry operation.
+
+        The operation runs at configuration scope, i.e. across all projects.
+
+        Returns:
+            bool: True if the server accepted the trigger.
+        """
+        triggered = ot_processors.trigger_load_object_telemetry(self._connection)
+        if triggered and config.verbose:
+            logger.info('Load Metadata Object Telemetry triggered for all projects.')
+        return triggered
+
+    @method_version_handler('11.6.0700')
+    def send_telemetry(
+        self,
+        client_source: int,
+        telemetry_logs_by_topics: list[dict],
+    ) -> bool:
+        """Forwards telemetry log batches to Messaging Services.
+
+        Args:
+            client_source (int): Numeric identifier of the telemetry source.
+            telemetry_logs_by_topics (list[dict]): TelemetryLogsByTopic
+                payload objects.
+
+        Returns:
+            bool: True if the server accepted the batch.
+        """
+        sent = ot_processors.send_telemetry(
+            self._connection,
+            client_source=client_source,
+            telemetry_logs_by_topics=telemetry_logs_by_topics,
+        )
+        if sent and config.verbose:
+            logger.info(
+                f"Sent {len(telemetry_logs_by_topics)} telemetry topic "
+                f"batch(es) to Messaging Services (clientSource={client_source})."
+            )
+        return sent
+
+    @property
+    def _connection(self) -> 'Connection':
+        return self._parent.connection
+
+
 class LDAPBatchImport:
     """Class for handling LDAP batch import operations.
 
@@ -416,6 +481,7 @@ class Environment:
 
     _ldap_batch_import_engine: LDAPBatchImport | None = None
     _pa_stats_engine: PAStatisticsEnvLevel | None = None
+    _object_telemetry_engine: ObjectTelemetryEnvLevel | None = None
 
     def __init__(self, connection: 'Connection'):
         """Initialize Environment object.
@@ -429,6 +495,7 @@ class Environment:
         self._storage_service: StorageService | None = None
         self._ldap_batch_import_engine = LDAPBatchImport(self)
         self._pa_stats_engine = PAStatisticsEnvLevel(self)
+        self._object_telemetry_engine = ObjectTelemetryEnvLevel(self)
 
     @property
     def server_settings(self) -> ServerSettings:
@@ -942,3 +1009,12 @@ class Environment:
             self._pa_stats_engine = PAStatisticsEnvLevel(self)
 
         return self._pa_stats_engine
+
+    @property
+    def object_telemetry(self) -> ObjectTelemetryEnvLevel:
+        """Engine handling Object Telemetry operations for this Environment."""
+
+        if not self._object_telemetry_engine:
+            self._object_telemetry_engine = ObjectTelemetryEnvLevel(self)
+
+        return self._object_telemetry_engine

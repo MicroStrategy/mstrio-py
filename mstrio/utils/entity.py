@@ -264,7 +264,9 @@ class EntityBase(helper.Dictable):
     _AVAILABLE_ATTRIBUTES: dict[str, type] = {}  # fetched on runtime from all Getters
     # TODO: change to `dict[tuple[str], tuple[Callable, str, bool | Never]]`
     # with Python 3.11
-    _API_PATCH: dict[tuple[str], tuple[Callable, str, bool] | tuple[Callable, str]] = {}
+    _API_PATCH: dict[
+        tuple[str, ...], tuple[Callable, str, bool] | tuple[Callable, str]
+    ] = {}
     _PATCH_PATH_TYPES: dict[str, type] = {}  # used in update_properties method
     _API_DELETE: Callable = staticmethod(objects.delete_object)
     _API_DEL_JOURNAL_MIN_VER: str | None = '11.5.0300'
@@ -638,7 +640,9 @@ class EntityBase(helper.Dictable):
                     self.__class__, lambda x: isinstance(x, property)
                 )
             ]
-            excluded_properties = excluded_properties or []
+            excluded_properties = (
+                excluded_properties or []
+            ) + self._EXCLUDE_WHEN_LISTING
             attr = [a for a in attr if a not in excluded_properties]
             attr = list(set(attr))
             for a in attr:
@@ -1016,6 +1020,46 @@ class EntityBase(helper.Dictable):
                 changed.append(False)
         return changed
 
+    # TODO: apply where applicable
+    def _auto_match_params_then_call(
+        self,
+        func: Callable,
+        exclude: list | None = None,
+        include_defaults: bool = True,
+        id_weak_match: bool = False,
+        **kwargs,
+    ) -> Any:
+        """Automatically matches parameters for a function call based on the
+        attributes of the current object and additional keyword arguments.
+
+        Args:
+            func (Callable): The function to call.
+            exclude (list | None, optional): List of attribute names to exclude
+                from automatic matching. Defaults to None.
+            include_defaults (bool, optional): Whether to include default values
+                for missing attributes. Defaults to True.
+            id_weak_match (bool, optional): Whether to use weak matching for
+                IDs. Defaults to False.
+            **kwargs: Additional keyword arguments to pass to the function.
+                This has priority over automatched values, if any.
+
+        Returns:
+            Any: The result of the function call.
+        """
+
+        params = {
+            **auto_match_args_entity(
+                func=func,
+                obj=self,
+                exclude=exclude,
+                include_defaults=include_defaults,
+                id_weak_match=id_weak_match,
+            ),
+            **kwargs,
+        }
+
+        return func(**params)
+
     def _alter_properties(self, **properties) -> None:
         """Generic alter method that has to be implemented in child classes
         where arguments will be specified. If a **properties dictionary is empty
@@ -1199,6 +1243,24 @@ class EntityBase(helper.Dictable):
                     setattr(self, key, kwargs.get(key))
                 elif len(key) > 1 and key[0] == '_' and kwargs.get(key[1:]):
                     setattr(self, key, kwargs.get(key[1:]))
+
+    @classmethod
+    def _get_id_from_any_param(
+        cls, value: 'EntityBase | str', connection: 'Connection'
+    ) -> str:
+        """Get specifically EntityBase ID from param that can be class instance,
+        ID or name.
+        """
+        # TODO: create a Story to apply this method on existing usable places
+
+        if isinstance(value, cls):
+            return value.id
+
+        if helper.is_valid_str_id(value):
+            return value
+
+        with config.temp_verbose_disable():
+            return cls(connection, name=value).id
 
     @property
     def connection(self) -> Connection:

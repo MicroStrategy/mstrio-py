@@ -15,28 +15,38 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable, Sequence
 from functools import partial
 from itertools import count
+from math import isfinite
 from textwrap import indent as _indent_orig
 from typing import Any, Literal, TypeAlias
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import yaml
 
 from mstrio.connection import Connection
+from mstrio.helpers import try_str_to_num
 from mstrio.python_execution.script import ReadOnlyCode
 from mstrio.utils.helper import get_args_from_func
 
 # region Helpers
 
 GENERATOR_VERSION = 1
+DEFAULT_PARALLEL_TIMEOUT_SECONDS = 10_800
+PARALLEL_CANCELLATION_GRACE_SECONDS = 30
 REGEX_PATTERN = r"^[a-zA-Z0-9_]+$"
 INDENTATION = " " * 4
 GLOBALS = """
+import contextlib
 import datetime as dt
 import json
+import operator
 import time
 import threading as t
+from math import isfinite
+from zoneinfo import ZoneInfo
 
 from mstrio import config
 from mstrio.connection import Connection, get_connection
+from mstrio.helpers import try_str_to_num
 from mstrio.python_execution import (
     Script, Code, VariableAnswer, ExecutionStatus
 )
@@ -45,9 +55,21 @@ config.verbose = False
 config.delay_between_polling = 10
 glob = {}
 log_lock = t.Lock()
+_script_stop_lock = t.Lock()
+_script_stop_requests = {}
 
 class FlowExitStep(RuntimeError):
     pass
+
+class ParallelTimeoutError(TimeoutError):
+    pass
+
+_CONDITION_FAILURE_PREFIX = "Failed to evaluate the condition"
+
+class ConditionEvaluationError(ValueError):
+    def __init__(self, detail):
+        self.reason = f"{_CONDITION_FAILURE_PREFIX}: {detail}."
+        super().__init__(self.reason)
 
 _last_script_error = None
 
@@ -58,6 +80,179 @@ def log(key, unique_id, data=None):
         txt = f"{key} | {unique_id} | {data or '-'}"
         print(txt)
 
+def _evaluate_condition(condition, unique_id):
+    try:
+        result = bool(condition())
+        reason = "" if result else "Condition evaluated to false."
+    except ConditionEvaluationError as error:
+        result, reason = False, error.reason
+    except Exception:
+        result, reason = False, f"{_CONDITION_FAILURE_PREFIX}."
+
+    key = "DECISION_COND_S" if result else "DECISION_COND_F"
+    log(
+        key,
+        unique_id,
+        {
+            "timestamp": str(dt.datetime.now(dt.timezone.utc)),
+            "reason": reason,
+        },
+    )
+    return result
+
+def _parse_numeric_comparison_value(value, side):
+    if isinstance(value, str):
+        try:
+            value = try_str_to_num(value)
+        except OverflowError:
+            raise ConditionEvaluationError(f"{side} operand is not numeric")
+    if type(value) not in (int, float) or (
+        type(value) is float and not isfinite(value)
+    ):
+        raise ConditionEvaluationError(f"{side} operand is not numeric")
+    return value
+
+def _string_comparison_value(value, side):
+    if value is None or isinstance(value, (list, tuple, set, dict)):
+        raise ConditionEvaluationError(f"{side} operand is not scalar")
+    return str(value)
+
+def _is_supported_membership_value(value):
+    return type(value) in (str, int, float)
+
+def _contains_comparison_value(container, item):
+    if not _is_supported_membership_value(item):
+        raise ConditionEvaluationError("right operand has unsupported data")
+
+    if isinstance(container, (list, tuple, set)):
+        if not all(_is_supported_membership_value(value) for value in container):
+            raise ConditionEvaluationError(
+                "left operand contains unsupported collection data"
+            )
+        return item in container
+
+    if isinstance(container, dict):
+        raise ConditionEvaluationError("left operand has unsupported data")
+
+    return str(item) in _string_comparison_value(container, "left")
+
+_parallel_thread_state = t.local()
+
+class ParallelExecutionContext:
+    def __init__(self, timeout_seconds, parent=None):
+        start_time = time.monotonic()
+        own_deadline = start_time + timeout_seconds
+        self.deadline = (
+            min(own_deadline, parent.deadline) if parent is not None else own_deadline
+        )
+        self.effective_timeout_seconds = round(
+            max(0.0, self.deadline - start_time), 3
+        )
+        self.parent = parent
+        self.cancelled = t.Event()
+        self.active_scripts = {}
+        self.cancellation_threads = []
+        self.lock = t.Lock()
+
+    def remaining_seconds(self):
+        return max(0.0, self.deadline - time.monotonic())
+
+    def contexts(self):
+        context = self
+        while context is not None:
+            yield context
+            context = context.parent
+
+    def register_script(self, script):
+        timed_out = False
+        for context in self.contexts():
+            with context.lock:
+                context.active_scripts[id(script)] = script
+                timed_out = timed_out or (
+                    context.cancelled.is_set()
+                    or context.remaining_seconds() <= 0
+                )
+
+        if timed_out:
+            self.unregister_script(script)
+            _stop_script_execution(script)
+            raise ParallelTimeoutError(
+                "Parallel execution exceeded its completion timeout."
+            )
+
+    def unregister_script(self, script):
+        for context in self.contexts():
+            with context.lock:
+                context.active_scripts.pop(id(script), None)
+
+    def cancel(self):
+        with self.lock:
+            if not self.cancelled.is_set():
+                self.cancelled.set()
+                self.cancellation_threads = [
+                    t.Thread(
+                        target=_stop_script_execution,
+                        args=(script,),
+                        daemon=True,
+                    )
+                    for script in self.active_scripts.values()
+                ]
+                for thread in self.cancellation_threads:
+                    thread.start()
+
+            return list(self.cancellation_threads)
+
+    def check_cancelled(self):
+        for context in self.contexts():
+            if context.cancelled.is_set() or context.remaining_seconds() <= 0:
+                context.cancel()
+                raise ParallelTimeoutError(
+                    "Parallel execution exceeded its completion timeout."
+                )
+
+def _stop_script_execution(script):
+    script_id = id(script)
+    with _script_stop_lock:
+        if script_id in _script_stop_requests:
+            return
+        _script_stop_requests[script_id] = script
+
+    with contextlib.suppress(Exception):
+        script.stop_execution()
+
+def _current_parallel_context():
+    return getattr(_parallel_thread_state, "context", None)
+
+def _check_parallel_cancelled():
+    if context := _current_parallel_context():
+        context.check_cancelled()
+
+def _flow_sleep(duration):
+    context = _current_parallel_context()
+    if context is None:
+        time.sleep(duration)
+        return
+
+    context.check_cancelled()
+    wait_seconds = min(duration, context.remaining_seconds())
+    context.cancelled.wait(wait_seconds)
+    context.check_cancelled()
+
+def _wait_for_flow_script(script):
+    context = _current_parallel_context()
+    if context is None:
+        return script.wait_for_execution_finish(pipe_logs=False)
+
+    context.register_script(script)
+    try:
+        return script.wait_for_execution_finish(pipe_logs=False)
+    finally:
+        context.unregister_script(script)
+
+def _join_threads_until(threads, deadline):
+    for thread in threads:
+        thread.join(max(0.0, deadline - time.monotonic()))
+
 class PropagatingThread(t.Thread):
     def run(self):
         self._propagated_exception = None
@@ -66,10 +261,10 @@ class PropagatingThread(t.Thread):
         except BaseException as err:
             self._propagated_exception = err
 
-    def join(self):
-        super().join()
+    def join(self, timeout=None):
+        super().join(timeout)
 
-        return self._propagated_exception
+        return None if self.is_alive() else self._propagated_exception
 """
 
 
@@ -131,6 +326,46 @@ def all_keys_present(entry: AnyEntry, keys: list[str]) -> bool:
     return all(key in entry for key in keys)
 
 
+def validate_variable_reference(reference: Any) -> None:
+    if not isinstance(reference, str):
+        raise InvalidInput(f"Variable source should be a string, is: {reference}.")
+
+    try:
+        source, output = reference.split(".", 1)
+    except ValueError:
+        raise InvalidInput(
+            f"Variable source should be in format 'key.ref', is: {reference}."
+        )
+
+    is_flow_var = source == "flow_var" and re.match(REGEX_PATTERN, output)
+    is_step_ref = re.match(REGEX_PATTERN, source) and output in ("stdout", "return")
+
+    if not is_flow_var and not is_step_ref:
+        raise InvalidInput(
+            "Variable source should be either reference to Flow variable in "
+            "format 'flow_var.var_name' or reference to previous step output "
+            "in format 'step_id.stdout' or 'step_id.return', "
+            f"is: {reference}."
+        )
+
+
+def validate_conditional_branches(entry: AnyEntry) -> None:
+    for key in ["on_fail", "on_success"]:
+        if key not in entry:
+            continue
+
+        if not isinstance(steps := entry[key], list):
+            raise InvalidInput(
+                f"Conditional branch '{key}' should be a list of valid steps "
+                "when provided."
+            )
+
+        [
+            validate_any_step_entry(step, prev)
+            for step, prev in list_with_prev_ref(steps, first_prev=entry)
+        ]
+
+
 _found_objects = []
 
 
@@ -173,45 +408,12 @@ def validate_script_step_entry(entry: AnyEntry) -> None:
             )
 
         for var_source in vars.values():
-            if not isinstance(var_source, str):
-                raise InvalidInput(
-                    f"Variable source should be a string, is: {var_source}."
-                )
-
             if var_source == "default":
                 continue
 
-            try:
-                key, ref = var_source.split(".", 1)
-            except ValueError:
-                raise InvalidInput(
-                    "Variable source should be in format 'key.ref' if not "
-                    f"'default', is: {var_source}."
-                )
+            validate_variable_reference(var_source)
 
-            is_flow_var = key == "flow_var" and re.match(REGEX_PATTERN, ref)
-            is_step_ref = re.match(REGEX_PATTERN, key) and ref in ("stdout", "return")
-
-            if not is_flow_var and not is_step_ref:
-                raise InvalidInput(
-                    f"Variable source should be either 'default', reference to "
-                    f"Flow variable in format 'flow_var.var_name' or reference "
-                    f"to previous step output in format 'step_id.stdout' or "
-                    f"'step_id.return', is: {var_source}."
-                )
-
-    for key in ["on_fail", "on_success"]:  # noqa
-        if key in entry:
-            if not isinstance(steps := entry[key], list):
-                raise InvalidInput(
-                    f"Conditional branch '{key}' should be a list of valid steps "
-                    "when provided."
-                )
-
-            [
-                validate_any_step_entry(step, prev)
-                for step, prev in list_with_prev_ref(steps, first_prev=entry)
-            ]
+    validate_conditional_branches(entry)
 
 
 def validate_sleep_step_entry(entry: AnyEntry) -> None:
@@ -241,35 +443,177 @@ def validate_parallel_step_entry(entry: AnyEntry) -> None:
             for step, prev in list_with_prev_ref(steps, first_prev=entry)
         ]
 
+    timeout_seconds = entry.get("timeout_seconds", DEFAULT_PARALLEL_TIMEOUT_SECONDS)
+    if type(timeout_seconds) is not int or timeout_seconds <= 0:
+        raise InvalidInput(
+            "Parallel Entry `timeout_seconds` should be a positive integer "
+            f"when provided, is: {timeout_seconds}."
+        )
+
+    validate_conditional_branches(entry)
+
+
+def validate_weekday_condition_entry(entry: AnyEntry) -> None:
+    values = entry.get("value")
+    if (
+        not isinstance(values, list)
+        or not values
+        or any(type(value) is not int or value not in range(7) for value in values)
+    ):
+        raise InvalidInput(
+            "Weekday Condition `value` should be a non-empty list of integers "
+            "between 0 and 6."
+        )
+
+    if "timezone" not in entry:
+        return
+
+    timezone = entry["timezone"]
+    if not isinstance(timezone, str):
+        raise InvalidInput("Weekday Condition `timezone` should be an IANA string.")
+
+    try:
+        ZoneInfo(timezone)
+    except (ValueError, ZoneInfoNotFoundError):
+        raise InvalidInput(f"Weekday Condition has invalid IANA timezone: {timezone}.")
+
+
+COMPARISON_OPERATORS = {
+    "equals",
+    "not_equals",
+    "contains",
+    "begins_with",
+    "ends_with",
+    "greater_than",
+    "greater_than_or_equal",
+    "less_than",
+    "less_than_or_equal",
+}
+
+ORDERING_COMPARISON_OPERATORS = {
+    "greater_than",
+    "greater_than_or_equal",
+    "less_than",
+    "less_than_or_equal",
+}
+
+
+def parse_numeric_comparison_constant(value: Any, side: str) -> int | float:
+    if isinstance(value, str):
+        try:
+            value = try_str_to_num(value)
+        except OverflowError:
+            pass
+
+    if type(value) is int or (type(value) is float and isfinite(value)):
+        return value
+
+    raise InvalidInput(
+        f"Comparison Condition ordering operator requires numeric constant "
+        f"`{side}`, is: {value!r}."
+    )
+
+
+def validate_comparison_operand_entry(entry: Any, side: str) -> None:
+    if not isinstance(entry, dict) or "type" not in entry:
+        raise InvalidInput(f"Comparison Condition `{side}` should be a typed operand.")
+
+    match entry["type"]:
+        case "variable":
+            if "name" not in entry:
+                raise InvalidInput(
+                    f"Comparison Condition variable `{side}` should contain `name`."
+                )
+            validate_variable_reference(entry["name"])
+        case "constant":
+            if "value" not in entry:
+                raise InvalidInput(
+                    f"Comparison Condition constant `{side}` should contain `value`."
+                )
+
+            value = entry["value"]
+            is_valid_number = type(value) in (int, float) and (
+                type(value) is int or isfinite(value)
+            )
+            if not isinstance(value, str) and not is_valid_number:
+                raise InvalidInput(
+                    "Comparison Condition constants should be strings or finite "
+                    f"numbers, is: {value}."
+                )
+
+            if isinstance(value, str) and any(char in value for char in ">~"):
+                raise InvalidInput(
+                    "Comparison Condition string constants cannot contain "
+                    "characters '>' or '~'."
+                )
+        case other:
+            raise InvalidInput(
+                f"Unsupported Comparison Condition operand type: '{other}'."
+            )
+
+
+def validate_comparison_condition_entry(entry: AnyEntry) -> None:
+    if not all_keys_present(entry, ["operator", "left", "right"]):
+        raise InvalidInput(
+            "Comparison Condition should contain `operator`, `left` and `right`."
+        )
+
+    operator = entry["operator"]
+    if not isinstance(operator, str) or operator not in COMPARISON_OPERATORS:
+        raise InvalidInput(f"Unsupported Comparison Condition operator: '{operator}'.")
+
+    validate_comparison_operand_entry(entry["left"], "left")
+    validate_comparison_operand_entry(entry["right"], "right")
+
+    if operator in ORDERING_COMPARISON_OPERATORS:
+        for side in ("left", "right"):
+            operand = entry[side]
+            if operand["type"] == "constant":
+                parse_numeric_comparison_constant(operand["value"], side)
+
+
+def validate_condition_entry(entry: Any) -> None:
+    if not isinstance(entry, dict) or "type" not in entry:
+        raise InvalidInput("Decision Entry `condition` should be a typed dictionary.")
+
+    match entry["type"]:
+        case "weekday":
+            validate_weekday_condition_entry(entry)
+        case "comparison":
+            validate_comparison_condition_entry(entry)
+        case other:
+            raise InvalidInput(f"Unsupported Decision Condition type: '{other}'.")
+
+
+def validate_decision_step_entry(entry: AnyEntry) -> None:
+    if "condition" not in entry:
+        raise InvalidInput("Decision Entry should contain `condition`.")
+
+    validate_condition_entry(entry["condition"])
+    validate_conditional_branches(entry)
+
 
 def validate_exit_step_entry(entry: AnyEntry, prev_entry: AnyEntry | None) -> None:
     if "message" in entry:
         if not isinstance(entry["message"], str):
             raise InvalidInput("Exit Entry `message` should be a string.")
     else:
-        prev_is_script_but_exit_invalid = (
+        previous_step_provides_error = (
             prev_entry
-            and prev_entry["type"] == "script"
-            and (
-                "on_fail" not in prev_entry
-                or not prev_entry["on_fail"]
-                or prev_entry["on_fail"][0] is not entry
-            )
+            and prev_entry["type"] in ("script", "parallel")
+            and "on_fail" in prev_entry
+            and prev_entry["on_fail"]
+            and prev_entry["on_fail"][0] is entry
         )
 
-        if (
-            not prev_entry
-            or prev_entry["type"] != "script"
-            or prev_is_script_but_exit_invalid
-        ):
+        if not previous_step_provides_error:
             # Those are the scenarios that may happen and are invalid:
             #   - there is no previous step
-            #   - previous step is not a script
-            #   - previous step is a script but this exit step is not a first
-            #       entry in `on_fail` conditional of that script
+            #   - previous step does not expose an execution error
+            #   - this exit step is not the first entry in `on_fail`
             raise InvalidInput(
                 "Exit Entry without custom message can only be used directly "
-                "after a Script Entry, in its `on_fail` conditional."
+                "in a Script or Parallel Entry `on_fail` conditional."
             )
 
 
@@ -289,6 +633,8 @@ def validate_any_step_entry(entry: AnyEntry, prev_entry: AnyEntry | None) -> Non
             return validate_parallel_step_entry(entry)
         case "noop":
             return
+        case "decision":
+            return validate_decision_step_entry(entry)
         case "exit":
             return validate_exit_step_entry(entry, prev_entry)
         case other:
@@ -391,6 +737,17 @@ def generate_code_for_connection(
     return ret
 
 
+def build_variable_reference(reference: str) -> str:
+    validate_variable_reference(reference)
+
+    source, output = reference.split(".", 1)
+    if source == "flow_var":
+        return f"${output}"
+
+    prop = "execution_stdout" if output == "stdout" else "execution_result"
+    return f"glob['_{source}'].{prop}"
+
+
 class BaseCodeBuilder(ABC):
     """Base class for all code builders to synchronize APIs for code generation
     and logging in Flows.
@@ -411,7 +768,7 @@ class BaseCodeBuilder(ABC):
 class SleepCodeBuilder(BaseCodeBuilder):
     _core_template = """
 log("SLEEP_PRE", {unique_id}, str(dt.datetime.now(dt.timezone.utc)))
-time.sleep({duration})
+_flow_sleep({duration})
 log("SLEEP_POST", {unique_id}, str(dt.datetime.now(dt.timezone.utc)))
 """
 
@@ -457,9 +814,7 @@ glob['_{step_id}'].execute(
 """
 
     _result_template = """
-glob['_{step_id}_res'] = glob['_{step_id}'].wait_for_execution_finish(
-    pipe_logs=False,
-)
+glob['_{step_id}_res'] = _wait_for_flow_script(glob['_{step_id}'])
 log(
     "SCRIPT_POST",
     {unique_id},
@@ -521,17 +876,9 @@ else:
                 )
                 continue
 
-            ref, key = var_source.split(".", 1)
-
-            # take answer from Flow's Variable
-            if ref == "flow_var":
-                ret += indent_twice(f"'{var_name}': ${key},\n")
-                continue
-
-            # take answer from some previous script output:
-            # either return value or stdout
-            prop = "execution_stdout" if key == "stdout" else "execution_result"
-            ret += indent_twice(f"'{var_name}': glob['_{ref}'].{prop},\n")
+            ret += indent_twice(
+                f"'{var_name}': {build_variable_reference(var_source)},\n"
+            )
 
         ret += indent_once("}")
 
@@ -575,38 +922,242 @@ else:
         return self.get_exec_code() + self.get_result_code() + self.get_condition_code()
 
 
+class BaseConditionCodeBuilder(ABC):
+    """Base class for code builders used by Decision step conditions."""
+
+    def __init__(self, condition: AnyEntry):
+        self._condition = condition
+
+    @abstractmethod
+    def get_content(self) -> str:
+        pass
+
+    def __str__(self) -> str:
+        return self.get_content()
+
+
+class WeekdayConditionCodeBuilder(BaseConditionCodeBuilder):
+    def get_content(self) -> str:
+        timezone = self._condition.get("timezone")
+        current_datetime = (
+            f"dt.datetime.now(ZoneInfo({timezone!r}))"
+            if timezone
+            else "dt.datetime.now().astimezone()"
+        )
+        return f"{current_datetime}.weekday() in {self._condition['value']!r}"
+
+
+class ComparisonConditionCodeBuilder(BaseConditionCodeBuilder):
+    _function_operators = {
+        "equals": "eq",
+        "not_equals": "ne",
+        "contains": "contains",
+        "greater_than": "gt",
+        "greater_than_or_equal": "ge",
+        "less_than": "lt",
+        "less_than_or_equal": "le",
+    }
+
+    @staticmethod
+    def _build_operand(
+        operand: AnyEntry,
+        side: str,
+        parse_numeric: bool = False,
+        stringify: bool = False,
+    ) -> str:
+        if operand["type"] == "variable":
+            reference = build_variable_reference(operand["name"])
+            if parse_numeric:
+                return f"_parse_numeric_comparison_value({reference}, {side!r})"
+            if stringify:
+                return f"_string_comparison_value({reference}, {side!r})"
+            return reference
+        value = operand["value"]
+        if parse_numeric:
+            value = parse_numeric_comparison_constant(value, side)
+        if stringify:
+            value = str(value)
+        return repr(value)
+
+    def get_content(self) -> str:
+        operator = self._condition["operator"]
+        parse_numeric = operator in ORDERING_COMPARISON_OPERATORS
+
+        if operator == "begins_with":
+            left = self._build_operand(self._condition["left"], "left", stringify=True)
+            right = self._build_operand(
+                self._condition["right"], "right", stringify=True
+            )
+            return f"{left}.startswith({right})"
+        if operator == "ends_with":
+            left = self._build_operand(self._condition["left"], "left", stringify=True)
+            right = self._build_operand(
+                self._condition["right"], "right", stringify=True
+            )
+            return f"{left}.endswith({right})"
+        if operator == "contains":
+            left = self._build_operand(self._condition["left"], "left")
+            right = self._build_operand(self._condition["right"], "right")
+            return f"_contains_comparison_value({left}, {right})"
+
+        left = self._build_operand(self._condition["left"], "left", parse_numeric)
+        right = self._build_operand(self._condition["right"], "right", parse_numeric)
+        return f"operator.{self._function_operators[operator]}({left}, {right})"
+
+
+def build_condition_code(condition: AnyEntry) -> str:
+    condition_type = condition["type"]
+    if condition_type == "weekday":
+        return str(WeekdayConditionCodeBuilder(condition))
+    if condition_type == "comparison":
+        return str(ComparisonConditionCodeBuilder(condition))
+    raise InvalidInput(  # pragma: no cover - condition validation handles this
+        f"Unsupported Decision Condition type: '{condition_type}'."
+    )
+
+
+class DecisionCodeBuilder(BaseCodeBuilder):
+    _core_template = """
+if _evaluate_condition(lambda: {condition_code}, {unique_id}):
+{success_code}
+else:
+{fail_code}
+"""
+
+    def __init__(self, decision_step: AnyEntry):
+        super().__init__(decision_step)
+        self._condition = decision_step["condition"]
+        self._onsuccess_data: EntrySteps | None = decision_step.get("on_success")
+        self._onfail_data: EntrySteps | None = decision_step.get("on_fail")
+
+    def get_content(self) -> str:
+        return self._core_template.format(
+            condition_code=build_condition_code(self._condition),
+            unique_id=self._unique_id,
+            success_code=(
+                indent_once(str(CodeGenerator(self._onsuccess_data)))
+                if self._onsuccess_data
+                else indent_once("pass")
+            ),
+            fail_code=(
+                indent_once(str(CodeGenerator(self._onfail_data)))
+                if self._onfail_data
+                else indent_once("pass")
+            ),
+        )
+
+
 class ParallelCodeBuilder(BaseCodeBuilder):
     _pre_branches_template = """
 log("PARALLEL_PRE", {unique_id}, str(dt.datetime.now(dt.timezone.utc)))
 """
 
     _branch_template = """
-def _branch_{suffix}():
+def _branch_{suffix}(_context):
+    _previous_context = _current_parallel_context()
+    _parallel_thread_state.context = _context
+    try:
 {code}
+    finally:
+        _parallel_thread_state.context = _previous_context
 """
 
-    _run_single_template = "PropagatingThread(target=_branch_{suffix})"
-
-    _run_all_template = """
-_par_br_{suffix} = [{list_content}]
-[th.start() for th in _par_br_{suffix}]
-if any(res := [th.join() for th in _par_br_{suffix}]):
-    _errs = [err for err in res if err]
-    if (_e := [err for err in _errs if isinstance(err, FlowExitStep)]):
-        raise _e[0]
-    raise RuntimeError(
-        "Error in at least one of the parallel branches.",
-        [err for err in res if err],
+    _run_single_template = (
+        "PropagatingThread("
+        "target=_branch_{suffix}, "
+        "args=(_par_ctx_{step_suffix},), "
+        "daemon=True"
+        ")"
     )
 
-log("PARALLEL_POST", {unique_id}, str(dt.datetime.now(dt.timezone.utc)))
+    _run_all_template = """
+_par_ctx_{suffix} = ParallelExecutionContext(
+    {timeout_seconds},
+    parent=_current_parallel_context(),
+)
+_par_br_{suffix} = [{list_content}]
+[th.start() for th in _par_br_{suffix}]
+for _thread in _par_br_{suffix}:
+    _thread.join(_par_ctx_{suffix}.remaining_seconds())
+
+_thread_states = []
+for _thread in _par_br_{suffix}:
+    _was_alive = _thread.is_alive()
+    _error = _thread.join(0)
+    _thread_states.append((_was_alive, _error))
+
+_errs = [
+    _error
+    for _, _error in _thread_states
+    if _error is not None
+]
+_timed_out = (
+    any(_was_alive for _was_alive, _ in _thread_states)
+    or any(isinstance(_error, ParallelTimeoutError) for _error in _errs)
+)
+if _timed_out:
+    _cancel_threads = _par_ctx_{suffix}.cancel()
+    _cancellation_deadline = (
+        time.monotonic() + {cancellation_grace_seconds}
+    )
+    _join_threads_until(_cancel_threads, _cancellation_deadline)
+    _join_threads_until(_par_br_{suffix}, _cancellation_deadline)
+
+if (_exit_errors := [
+    _error for _error in _errs if isinstance(_error, FlowExitStep)
+]):
+    raise _exit_errors[0]
+
+if _timed_out or _errs:
+    _last_script_error = (
+        f"Parallel execution exceeded its "
+        f"{{_par_ctx_{suffix}.effective_timeout_seconds:g}}-second "
+        f"completion timeout."
+        if _timed_out
+        else "Error in at least one of the parallel branches."
+    )
+{failure_log}
+{fail_code}
+else:
+    log("PARALLEL_POST", {unique_id}, str(dt.datetime.now(dt.timezone.utc)))
+{success_log}
+{success_code}
 """
+
+    _failure_log_template = """log(
+    "PARALLEL_COND_F",
+    {unique_id},
+    {{
+        "timestamp": str(dt.datetime.now(dt.timezone.utc)),
+        "reason": _last_script_error,
+    }},
+)"""
+
+    _success_log_template = (
+        'log("PARALLEL_COND_S", '
+        "{unique_id}, "
+        "str(dt.datetime.now(dt.timezone.utc)))"
+    )
+
+    _unhandled_failure_template = """raise RuntimeError(
+    _last_script_error,
+    _errs,
+)"""
 
     def __init__(self, parallel_step: AnyEntry):
         super().__init__(parallel_step)
         self._branches = parallel_step["branches"]
+        self._timeout_seconds = parallel_step.get(
+            "timeout_seconds", DEFAULT_PARALLEL_TIMEOUT_SECONDS
+        )
+        self._onsuccess_data: EntrySteps | None = parallel_step.get("on_success")
+        self._onfail_data: EntrySteps | None = parallel_step.get("on_fail")
         self._step_suffix = next(UNIQUE_ID)
         self._suffixes = [next(UNIQUE_ID) for _ in self._branches]
+
+    @property
+    def has_conditionals(self) -> bool:
+        return self._onsuccess_data is not None or self._onfail_data is not None
 
     def get_pre_branches_code(self) -> str:
         return self._pre_branches_template.format(unique_id=self._unique_id)
@@ -617,7 +1168,7 @@ log("PARALLEL_POST", {unique_id}, str(dt.datetime.now(dt.timezone.utc)))
         for data, suffix in zip(self._branches, self._suffixes):
             ret += self._branch_template.format(
                 suffix=suffix,
-                code=indent_once(str(CodeGenerator(data["steps"]))),
+                code=indent_twice(str(CodeGenerator(data["steps"]))),
             )
 
         return ret
@@ -625,7 +1176,10 @@ log("PARALLEL_POST", {unique_id}, str(dt.datetime.now(dt.timezone.utc)))
     def _get_list_content(self) -> str:
         return ", ".join(
             [
-                self._run_single_template.format(suffix=suffix)
+                self._run_single_template.format(
+                    suffix=suffix,
+                    step_suffix=self._step_suffix,
+                )
                 for suffix in self._suffixes
             ]
         )
@@ -634,7 +1188,34 @@ log("PARALLEL_POST", {unique_id}, str(dt.datetime.now(dt.timezone.utc)))
         return self._run_all_template.format(
             unique_id=self._unique_id,
             suffix=self._step_suffix,
+            step_suffix=self._step_suffix,
             list_content=self._get_list_content(),
+            timeout_seconds=self._timeout_seconds,
+            cancellation_grace_seconds=PARALLEL_CANCELLATION_GRACE_SECONDS,
+            failure_log=(
+                indent_once(
+                    self._failure_log_template.format(unique_id=self._unique_id)
+                )
+                if self.has_conditionals
+                else ""
+            ),
+            fail_code=(
+                indent_once(str(CodeGenerator(self._onfail_data)))
+                if self._onfail_data
+                else indent_once(self._unhandled_failure_template)
+            ),
+            success_log=(
+                indent_once(
+                    self._success_log_template.format(unique_id=self._unique_id)
+                )
+                if self.has_conditionals
+                else ""
+            ),
+            success_code=(
+                indent_once(str(CodeGenerator(self._onsuccess_data)))
+                if self._onsuccess_data
+                else indent_once("pass")
+            ),
         )
 
     def get_content(self) -> str:
@@ -665,6 +1246,8 @@ class CodeGenerator:
                     self._generate_and_add_code_section(step, ScriptCodeBuilder)
                 case "parallel":
                     self._generate_and_add_code_section(step, ParallelCodeBuilder)
+                case "decision":
+                    self._generate_and_add_code_section(step, DecisionCodeBuilder)
                 case "exit":
                     self._generate_and_add_code_section(step, ExitCodeBuilder)
 
@@ -672,7 +1255,7 @@ class CodeGenerator:
         self, step: AnyEntry, code_factory: type[BaseCodeBuilder]
     ) -> None:
         builder = code_factory(step)
-        self._add_code_sections(str(builder))
+        self._add_code_sections("_check_parallel_cancelled()", str(builder))
 
     def _add_code_sections(self, *sections: str) -> None:
         self._ready_code_sections.extend(sections)
