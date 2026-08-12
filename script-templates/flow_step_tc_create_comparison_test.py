@@ -24,7 +24,7 @@ The workflow currently assumes:
     Settings and otherwise defaults will be kept.
 """
 
-from mstrio.connection import get_connection, Connection
+from mstrio.connection import get_connection
 from mstrio.server.test_center.baseline import Baseline, BaselineTest
 from mstrio.server.test_center.comparison import ComparisonTest, ComparisonTestSettings
 

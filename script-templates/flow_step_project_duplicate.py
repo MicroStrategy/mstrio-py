@@ -17,8 +17,8 @@ The workflow currently assumes:
 - Actions set for `DuplicationConfig` or `CrossDuplicationConfig` are hardcoded
     in the code below to their default values and can be edited in the
     code below.
-- For cross-environment duplication, storage service has been configured for
-    both source and target environments
+- For cross-environment duplication, Storage Location is shared between source
+    and target environments and properly configured.
 """
 
 from mstrio.connection import get_connection, Connection
