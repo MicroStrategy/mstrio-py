@@ -18,11 +18,17 @@ The workflow currently assumes:
     Settings and otherwise defaults will be kept.
 """
 
-from mstrio.connection import get_connection, Connection
+from mstrio.connection import get_connection
 from mstrio.object_management.folder import Folder
+from mstrio.object_management.object import Object
 from mstrio.object_management.search_enums import SearchResultsFormat
 from mstrio.object_management.search_operations import SearchObject
-from mstrio.server.test_center.baseline import BaselineTest, BaselineTestSettings
+from mstrio.object_management.shortcut import Shortcut
+from mstrio.server.test_center.baseline import (
+    BaselineTest,
+    BaselineTestSettings,
+    is_supported_test_center_object,
+)
 from mstrio.types import ObjectTypes
 
 PROJECT_NAME = $project_name
@@ -34,6 +40,9 @@ conn = get_connection(connectionData, project=PROJECT_NAME)
 BT_NAME = $baseline_test_name
 SEARCH_IDS = $list_of_search_object_ids or []
 FOLDER_IDS = $list_of_folder_ids or []
+REPORT_IDS = $list_of_report_ids or []
+DOCUMENT_IDS = $list_of_document_ids or []
+SHORTCUT_IDS = $list_of_shortcut_ids or []
 CONTENT = $execute_content or []
 
 is_sql = "SQL" in CONTENT
@@ -58,9 +67,40 @@ for fid in FOLDER_IDS:
         if o.type != ObjectTypes.FOLDER
     ]
 
+for rid in REPORT_IDS:
+    objects.append(Object(conn, type=ObjectTypes.REPORT_DEFINITION, id=rid))
+
+for did in DOCUMENT_IDS:
+    objects.append(Object(conn, type=ObjectTypes.DOCUMENT_DEFINITION, id=did))
+
+for sid in SHORTCUT_IDS:
+    target_info = Shortcut(conn, id=sid).target_info
+    target_id = target_info.get("id")
+    target_type_value = target_info.get("type")
+    if not target_id or target_type_value is None:
+        raise ValueError("Shortcut target metadata is incomplete.")
+    target_type = ObjectTypes(int(target_type_value))
+    objects.append(Object(conn, type=target_type, id=target_id))
+
+supported_objects = {}
+unsupported_object_ids = []
+for obj in objects:
+    if is_supported_test_center_object(obj):
+        supported_objects.setdefault(obj.id, obj)
+    else:
+        unsupported_object_ids.append(str(obj.id))
+
+if unsupported_object_ids:
+    print(
+        "Skipped objects not supported by Test Center: "
+        + ", ".join(unsupported_object_ids)
+    )
+
+objects = list(supported_objects.values())
+
 if not objects:
     raise RuntimeError(
-        "Provided SEARCH_IDS and FOLDER_IDS yielded no objects for Baseline creation."
+        "The provided selections yielded no supported objects for Baseline creation."
     )
 
 bt = BaselineTest.create(

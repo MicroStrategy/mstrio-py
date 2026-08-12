@@ -49,7 +49,6 @@ classifiers = [
     "Topic :: Software Development",
 ]
 
-# FYI: when changing this section, make sure to update `[strict]` deps below
 dependencies = [
     "packaging >= 24.2",
     # FYI: <https://github.com/pandas-dev/pandas/blob/fa5c2550e81c3e745eb7948b56adac45454853d5/pyproject.toml#L60>

@@ -68,7 +68,7 @@ import hashlib
 import hmac
 import urllib.parse
 import requests
-import xml
+import xml.etree.ElementTree as XMLElementTree
 
 
 ACCESS_KEY_ID = $aws_access_key_id
@@ -174,7 +174,7 @@ def send_request(
         (
             None
             if not ret.text.startswith("<?xml")
-            else xml.etree.ElementTree.fromstring(ret.text)
+            else XMLElementTree.fromstring(ret.text)
         ),
     )
 

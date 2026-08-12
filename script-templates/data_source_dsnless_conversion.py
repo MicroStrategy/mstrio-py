@@ -1,20 +1,13 @@
 """
-Flow Step Template: Convert Datasource Connection to DSN-less
-Script Result Type: text
-
-This workflow template works OOTB after providing values for all required
-Variables.
-
-It represents converting Datasource Connection to DSN-less action.
+This is a template to convert Datasource Connection to DSN-less.
 
 The Script will return connection string.
 
 Either `$datasource_connection_id` or `$datasource_connection_name` is required.
 
-The workflow currently assumes:
-- That the connection will be established via `get_connection`
-- That the Datasource Connection which will be converted is already created,
-    configured and available - and will be identified by name
+The template currently assumes:
+- Datasource Connection which will be converted is already created,
+    configured and available - and will be identified by id or name
 """
 
 from mstrio.connection import get_connection, Connection

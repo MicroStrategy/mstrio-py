@@ -13,6 +13,8 @@ The workflow currently assumes:
     all provided via Variables
 - Actions set for `ProjectMergePackageSettings` are hardcoded in the code below
     to their default values ("REPLACE").
+- Storage Location is shared between source and target environments and properly
+    configured.
 """
 
 from time import sleep

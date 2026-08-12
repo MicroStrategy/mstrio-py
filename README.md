@@ -142,7 +142,7 @@ Since version **11.3.0.1**, **mstrio-py** includes also administration modules:
 
 ## Versioning & Changelog
 
-Current version: **11.6.7.101** (17 July 2026). Check out [CHANGELOG][release_notes] to see what's new.
+Current version: **11.6.8.101** (14 August 2026). Check out [CHANGELOG][release_notes] to see what's new.
 
 `mstrio-py` is constantly developed to support newest Strategy REST APIs. Functionalities may be added to mstrio on monthly basis. It is **recommended** to always install the newest version of mstrio-py, as it will be most stable and still maintain backwards compatibility with various Strategy installations, dating back to 11.1.4.
 

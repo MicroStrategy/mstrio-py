@@ -1,5 +1,17 @@
 # Changelog
 
+## 11.6.8.101 - 2026/08/14
+
+### New features
+
+- added class `WebPreferences` to `mstrio.server` with `fetch()`, `list()`, `list_groups()`, `get()`, `get_group()`, `alter()`, `reset()`, and `reset_all()` methods for managing Strategy web preferences per user, user+project, and project-default scopes
+- added `task` module under `mstrio.python_execution.task` for administration of Python Scripts scheduling via `Task` class (including methods for creating, altering and deleting) and `list_tasks` function
+- added `MDXCatalogCube` class and `list_mdx_catalog_cubes` function for listing, initializing, and retargeting imported MDX catalog cubes
+
+### Minor changes
+
+- enhanced error handling and improved logged suggestions (to be more actionable) for connectivity issues via mstrio-py to Library REST / I-Server when encountered within Server-Side Execution architecture
+
 ## 11.6.7.101 - 2026/07/17
 
 ### New features
