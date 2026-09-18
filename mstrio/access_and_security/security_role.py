@@ -6,6 +6,7 @@ from pandas import DataFrame
 from mstrio import config
 from mstrio.api import security
 from mstrio.connection import Connection
+from mstrio.helpers import VersionException
 from mstrio.utils import helper
 from mstrio.utils.collections import remove_duplicate_objects
 from mstrio.utils.entity import DeleteMixin, Entity, ObjectTypes, TenantMixin
@@ -356,7 +357,7 @@ class SecurityRole(Entity, DeleteMixin, TenantMixin):
         self._update_nested_properties(
             objects=value,
             path="members",
-            op='add',
+            op='addElement',
         )
         if config.verbose:
             if succeeded:
@@ -415,7 +416,7 @@ class SecurityRole(Entity, DeleteMixin, TenantMixin):
         self._update_nested_properties(
             objects=value,
             path="members",
-            op='remove',
+            op='removeElement',
         )
 
         if succeeded and config.verbose:
@@ -580,10 +581,20 @@ class SecurityRole(Entity, DeleteMixin, TenantMixin):
             "operationList": [{"op": op, "path": f'/{path}', "value": objects}],
         }
 
-        response = security.update_security_role(self.connection, self.id, body)
+        if path == 'members':
+            try:
+                response = self._update_members(body)
+            except VersionException:
+                response = security.update_security_role(self.connection, self.id, body)
+        else:
+            response = security.update_security_role(self.connection, self.id, body)
         response = response.json()
         if isinstance(response, dict):
             self._set_object_attributes(**response)
+
+    @method_version_handler('11.6.0400')
+    def _update_members(self, body):
+        return security.update_security_role_members(self.connection, self.id, body)
 
     @property
     def projects(self):

@@ -375,6 +375,157 @@ def update_subscription(
     )
 
 
+@ErrorHandler(err_msg='Error partially updating subscription {subscription_id}')
+def patch_subscription(
+    connection: 'Connection',
+    subscription_id: str,
+    project_id: str | None,
+    body: dict,
+    fields: str | None = None,
+    error_msg: str | None = None,
+) -> 'Response':
+    """Partially update a subscription.
+
+    Args:
+        connection (Connection): Strategy connection object.
+        subscription_id (str): ID of the subscription.
+        project_id (str | None): ID of the project.
+        body (dict): JSON-formatted partial subscription settings.
+        fields (str, optional): Comma-separated response fields.
+        error_msg (str, optional): Customized error message.
+
+    Returns:
+        HTTP response object returned by the Strategy REST server.
+    """
+    headers = {'X-MSTR-ClientVersion': '25.06'}
+    if project_id:
+        headers['X-MSTR-ProjectID'] = project_id
+    return connection.patch(
+        endpoint=f'/api/subscriptions/{subscription_id}',
+        params={'fields': fields},
+        headers=headers,
+        json=body,
+    )
+
+
+@ErrorHandler(err_msg='Error changing owner of subscription {subscription_id}')
+def change_subscription_owner(
+    connection: 'Connection',
+    subscription_id: str,
+    project_id: str | None,
+    body: dict,
+    error_msg: str | None = None,
+) -> 'Response':
+    """Change the owner of a subscription."""
+    headers = {'X-MSTR-ClientVersion': '25.06'}
+    if project_id:
+        headers['X-MSTR-ProjectID'] = project_id
+    return connection.patch(
+        endpoint=f'/api/subscriptions/{subscription_id}/owner',
+        headers=headers,
+        json=body,
+    )
+
+
+@ErrorHandler(err_msg='Error sending subscription {subscription_id}')
+def send_subscription_v1(
+    connection: 'Connection',
+    subscription_id: str,
+    project_id: str | None = None,
+    body: dict | None = None,
+    fields: str | None = None,
+    error_msg: str | None = None,
+) -> 'Response':
+    """Send a subscription through the v1 REST endpoint.
+
+    Args:
+        connection (Connection): Strategy connection object.
+        subscription_id (str): ID of the subscription.
+        project_id (str, optional): ID of the project.
+        body (dict, optional): Prompt content and instance IDs.
+        fields (str, optional): Comma-separated response fields.
+        error_msg (str, optional): Customized error message.
+
+    Returns:
+        HTTP response object returned by the Strategy REST server.
+    """
+    headers = {'X-MSTR-ClientVersion': '25.06'}
+    if project_id:
+        headers['X-MSTR-ProjectID'] = project_id
+    return connection.post(
+        endpoint=f'/api/subscriptions/{subscription_id}/send',
+        params={'fields': fields},
+        headers=headers,
+        json=body,
+    )
+
+
+@ErrorHandler(err_msg='Error creating an instance for subscription {subscription_id}')
+def create_subscription_instance(
+    connection: 'Connection',
+    subscription_id: str,
+    content_id: str,
+    project_id: str,
+    body: dict | None = None,
+    fields: str | None = None,
+    error_msg: str | None = None,
+) -> 'Response':
+    """Create a content instance for a subscription."""
+    return connection.post(
+        endpoint=(
+            f'/api/subscriptions/{subscription_id}/content/{content_id}/instances'
+        ),
+        params={'fields': fields},
+        headers={'X-MSTR-ProjectID': project_id},
+        json=body,
+    )
+
+
+@ErrorHandler(err_msg='Error listing subscriptions across projects')
+def query_subscriptions(
+    connection: 'Connection',
+    body: dict | None = None,
+    offset: int | None = None,
+    limit: int | None = None,
+    delivery_modes: int = -1,
+    last_run: bool = False,
+    ignore_admin_privileges: bool = False,
+    fields: str | None = None,
+    error_msg: str | None = None,
+) -> 'Response':
+    """List subscriptions across multiple projects."""
+    params = {
+        'deliveryModes': delivery_modes,
+        'lastRun': last_run,
+        'ignoreAdminPrivileges': ignore_admin_privileges,
+        'fields': fields,
+    }
+    if offset is not None:
+        params['offset'] = offset
+    if limit is not None:
+        params['limit'] = limit
+    return connection.post(
+        endpoint='/api/subscriptions/query',
+        params=params,
+        headers={'X-MSTR-ClientVersion': '25.06'},
+        json=body,
+    )
+
+
+@ErrorHandler(err_msg='Error listing personal addresses')
+def list_personal_addresses(
+    connection: 'Connection',
+    delivery_type: str,
+    fields: str | None = None,
+    error_msg: str | None = None,
+) -> 'Response':
+    """List personal addresses for a delivery type."""
+    return connection.get(
+        endpoint='/api/subscriptions/recipients/personalAddresses',
+        params={'deliveryType': delivery_type, 'fields': fields},
+    )
+
+
 @ErrorHandler(err_msg="Error updating Dynamic Recipient List {list_id}")
 def update_dynamic_recipient_list(
     connection: 'Connection',

@@ -38,3 +38,35 @@ def get_subscription_last_run(connection: Connection, id: str, project_id: str):
     sub = next(sub for sub in response if sub['id'] == id).get('lastRun')
 
     return {'last_run': sub}
+
+
+def list_subscriptions_cross_projects(
+    connection: Connection,
+    project_ids: list[str] | None = None,
+    offset: int | None = None,
+    limit: int | None = None,
+    delivery_modes: int = -1,
+    last_run: bool = False,
+    ignore_admin_privileges: bool = False,
+) -> list[dict]:
+    """List subscriptions from multiple projects."""
+    body = {'projectIds': project_ids} if project_ids is not None else None
+    response = subscriptions_api.query_subscriptions(
+        connection=connection,
+        body=body,
+        offset=offset,
+        limit=limit,
+        delivery_modes=delivery_modes,
+        last_run=last_run,
+        ignore_admin_privileges=ignore_admin_privileges,
+    )
+    return response.json().get('subscriptions', [])
+
+
+def list_personal_addresses(connection: Connection, delivery_type: str) -> list[dict]:
+    """List personal addresses for a delivery type."""
+    response = subscriptions_api.list_personal_addresses(
+        connection=connection,
+        delivery_type=delivery_type,
+    )
+    return response.json().get('personalAddresses', [])

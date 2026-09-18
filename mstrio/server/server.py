@@ -3,6 +3,7 @@ import logging
 from mstrio import config
 from mstrio.api import administration
 from mstrio.connection import Connection
+from mstrio.server.history_list import HistoryList
 from mstrio.utils import helper
 from mstrio.utils.settings.base_settings import BaseSettings
 from mstrio.utils.settings.setting_types import SettingValue
@@ -13,6 +14,8 @@ from mstrio.utils.version_helper import (
 )
 
 logger = logging.getLogger(__name__)
+
+__all__ = ["HistoryList", "ServerSettings"]
 
 
 class ServerSettings(BaseSettings):
