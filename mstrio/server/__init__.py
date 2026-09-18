@@ -24,6 +24,15 @@ from .documentation import (
     get_documentations_statuses,
 )
 from .environment import Environment
+from .history_list import (
+    HistoryList,
+    bulk_send_to_history_list,
+    delete_all_history_list_messages,
+    get_history_list_messages_by_ids,
+    list_history_list_messages,
+    send_to_history_list,
+    update_history_list_messages_status,
+)
 from .language import Language, list_interface_languages, list_languages
 from .license import (
     ActivationInfo,

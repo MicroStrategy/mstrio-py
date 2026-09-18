@@ -50,6 +50,9 @@ class PropagationBehavior(AutoName):
     - append_recursive
     - precise_children
     - precise_recursive
+    - merge_selected
+    - overwrite_selected
+    - overwrite_all
     Allowed values for Users/User Groups are:
     - merge_selected
     - overwrite_selected
@@ -190,6 +193,7 @@ class ACLMixin:
         inheritable: bool | None = None,
         propagate_to_children: bool | None = None,
         propagation_behavior: PropagationBehavior | str | None = None,
+        recursive: bool | None = None,
     ) -> None:
         """Add Access Control Element (ACE) to the object ACL.
 
@@ -215,6 +219,9 @@ class ACLMixin:
                 is None, if set to True/False adds `propagateACLToChildren`
                 keyword to the request body and sets its value accordingly
             propagation_behavior: Behavior of ACL propagation to children.
+            recursive: used for folder objects only. If set to False,
+                propagation is limited to direct children; if omitted,
+                propagation is recursive.
 
         Examples:
             >>> obj.acl_add(rights=Rights.BROWSE | Rights.EXECUTE,
@@ -228,6 +235,7 @@ class ACLMixin:
             inheritable=inheritable,
             propagate_to_children=propagate_to_children,
             propagation_behavior=propagation_behavior,
+            recursive=recursive,
         )
 
     def acl_remove(
@@ -238,6 +246,7 @@ class ACLMixin:
         inheritable: bool | None = None,
         propagate_to_children: bool | None = None,
         propagation_behavior: PropagationBehavior | str | None = None,
+        recursive: bool | None = None,
     ) -> None:
         """Remove Access Control Element (ACE) from the object ACL.
 
@@ -263,6 +272,9 @@ class ACLMixin:
                 is None, if set to True/False adds `propagateACLToChildren`
                 keyword to the request body and sets its value accordingly
             propagation_behavior: Behavior of ACL propagation to children.
+            recursive: used for folder objects only. If set to False,
+                propagation is limited to direct children; if omitted,
+                propagation is recursive.
 
         Examples:
             >>> obj.acl_remove(rights=Rights.BROWSE | Rights.EXECUTE,
@@ -276,6 +288,7 @@ class ACLMixin:
             inheritable=inheritable,
             propagate_to_children=propagate_to_children,
             propagation_behavior=propagation_behavior,
+            recursive=recursive,
         )
 
     def acl_alter(
@@ -286,6 +299,7 @@ class ACLMixin:
         inheritable: bool | None = None,
         propagate_to_children: bool | None = None,
         propagation_behavior: PropagationBehavior | str | None = None,
+        recursive: bool | None = None,
     ) -> None:
         """Alter an existing Access Control Element (ACE) of the object ACL.
 
@@ -311,6 +325,9 @@ class ACLMixin:
                 is None, if set to True/False adds `propagateACLToChildren`
                 keyword to the request body and sets its value accordingly
             propagation_behavior: Behavior of ACL propagation to children.
+            recursive: used for folder objects only. If set to False,
+                propagation is limited to direct children; if omitted,
+                propagation is recursive.
 
         Examples:
             >>> obj.acl_alter(rights=Rights.BROWSE | Rights.EXECUTE,
@@ -324,6 +341,7 @@ class ACLMixin:
             inheritable=inheritable,
             propagate_to_children=propagate_to_children,
             propagation_behavior=propagation_behavior,
+            recursive=recursive,
         )
 
     def _update_acl(
@@ -335,6 +353,7 @@ class ACLMixin:
         inheritable: bool | None = None,
         propagate_to_children: bool | None = None,
         propagation_behavior: PropagationBehavior | str | None = None,
+        recursive: bool | None = None,
     ) -> None:
         """Updates the ACL for this object, performs operation defined by the
         `op` parameter on all objects from `trustees` list.
@@ -355,6 +374,9 @@ class ACLMixin:
                 is None, if set to True/False adds `propagateACLToChildren`
                 keyword to the request body and sets its value accordingly
             propagation_behavior: Behavior of ACL propagation to children.
+            recursive: used for folder objects only. If set to False,
+                propagation is limited to direct children; if omitted,
+                propagation is recursive.
         """
 
         response = modify_rights(
@@ -368,6 +390,7 @@ class ACLMixin:
             inheritable=inheritable,
             propagate_to_children=propagate_to_children,
             propagation_behavior=propagation_behavior,
+            recursive=recursive,
         )
 
         self._set_object_attributes(**response)
@@ -387,6 +410,7 @@ class TrusteeACLMixin:
         project: 'Project | str | None' = None,
         propagate_to_children: bool | None = None,
         propagation_behavior: PropagationBehavior | str | None = None,
+        recursive: bool | None = None,
     ) -> None:
         """Set permission to perform actions on given object(s).
 
@@ -410,6 +434,9 @@ class TrusteeACLMixin:
             propagate_to_children: Flag used in the request to determine if
                 those rights will be propagated to children of the trustee
             propagation_behavior: Behavior of ACL propagation to children.
+            recursive: Flag used to limit folder propagation to direct
+                children when set to False. If omitted, propagation is
+                recursive.
         Returns:
             None
         """
@@ -438,6 +465,7 @@ class TrusteeACLMixin:
                     denied=is_denied,
                     propagate_to_children=propagate_to_children,
                     propagation_behavior=propagation_behavior,
+                    recursive=recursive,
                     project=project,
                 )
                 if config.verbose:
@@ -461,6 +489,7 @@ class TrusteeACLMixin:
                     denied=denied,
                     propagate_to_children=propagate_to_children,
                     propagation_behavior=propagation_behavior,
+                    recursive=recursive,
                     project=project,
                 )
                 if config.verbose:
@@ -480,6 +509,9 @@ class TrusteeACLMixin:
         write: str | None = None,
         read: str | None = None,
         browse: str | None = None,
+        propagate_to_children: bool | None = None,
+        propagation_behavior: PropagationBehavior | str | None = None,
+        recursive: bool | None = None,
     ) -> None:
         """Set custom permissions to perform actions on given object(s).
 
@@ -513,6 +545,12 @@ class TrusteeACLMixin:
                 'deny', 'default' or None
             browse (str): value for right "Browse. Available are 'grant',
                 'deny', 'default' or None
+            propagate_to_children: Flag used in the request to determine if
+                those rights will be propagated to children.
+            propagation_behavior: Behavior of ACL propagation to children.
+            recursive: Flag used to limit folder propagation to direct
+                children when set to False. If omitted, propagation is
+                recursive.
         Returns:
             None
         """
@@ -526,7 +564,9 @@ class TrusteeACLMixin:
             denied: bool,
             default: bool = False,
             propagate_to_children: bool | None = None,
+            propagation_behavior: PropagationBehavior | str | None = None,
             project: 'Project | str | None' = None,
+            recursive: bool | None = None,
         ) -> None:
             right_value = _get_custom_right_value(right)
             with suppress(IServerError):
@@ -540,6 +580,8 @@ class TrusteeACLMixin:
                     project=project,
                     denied=(not denied),
                     propagate_to_children=propagate_to_children,
+                    propagation_behavior=propagation_behavior,
+                    recursive=recursive,
                 )
 
             op = 'REMOVE' if default else 'ADD'
@@ -554,6 +596,8 @@ class TrusteeACLMixin:
                     project=project,
                     denied=denied,
                     propagate_to_children=propagate_to_children,
+                    propagation_behavior=propagation_behavior,
+                    recursive=recursive,
                 )
 
         rights_dict = {
@@ -585,6 +629,9 @@ class TrusteeACLMixin:
             to_objects=to_objects,
             object_type=object_type,
             denied=False,
+            propagate_to_children=propagate_to_children,
+            propagation_behavior=propagation_behavior,
+            recursive=recursive,
             project=project,
         )
         modify_custom_rights(
@@ -594,6 +641,9 @@ class TrusteeACLMixin:
             to_objects=to_objects,
             object_type=object_type,
             denied=True,
+            propagate_to_children=propagate_to_children,
+            propagation_behavior=propagation_behavior,
+            recursive=recursive,
             project=project,
         )
         modify_custom_rights(
@@ -605,6 +655,9 @@ class TrusteeACLMixin:
             denied=True,
             project=project,
             default=True,
+            propagate_to_children=propagate_to_children,
+            propagation_behavior=propagation_behavior,
+            recursive=recursive,
         )
 
 
@@ -620,14 +673,16 @@ def modify_rights(
     propagate_to_children: bool | None = None,
     propagation_behavior: PropagationBehavior | str | None = None,
     project: 'Project | str | None' = None,
+    recursive: bool | None = None,
 ) -> None | dict:
     """Updates the ACL for all given objects specified by id from ids list,
     performs operation defined by the `op` parameter on all objects for
     every user or group from `trustees` list.
 
     Note:
-        Argument `inheritable`, `propagate_to_children`
-        and `propagation_behavior` are used only for objects with types:
+        Argument `inheritable`, `propagate_to_children`,
+        `propagation_behavior`, and `recursive` are used only for objects
+        with types:
         - `ObjectTypes.Folder`
         - `ObjectTypes.User`
         - `ObjectTypes.UserGroup`
@@ -658,6 +713,9 @@ def modify_rights(
             on which objects are stored, if not specified project id from
             connection will be used.
         propagation_behavior: Behavior of ACL propagation to children.
+        recursive (bool, optional): Used for folder objects only. If set
+            to False, propagation is limited to direct children. If omitted,
+            propagation is recursive.
 
     Returns:
         Dict with updated object properties if there was only one id in ids
@@ -670,6 +728,9 @@ def modify_rights(
     if not isinstance(object_type, ObjectTypes):
         object_type = ObjectTypes(object_type)
 
+    if recursive is not None and not isinstance(recursive, bool):
+        raise TypeError('recursive must be a boolean or None')
+
     trustees = [
         trustee if isinstance(trustee, str) else trustee.id for trustee in trustees
     ]
@@ -679,7 +740,8 @@ def modify_rights(
 
     for id in ids:
         for trustee in trustees:
-            if inheritable is None and object_type is ObjectTypes.FOLDER:
+            ace_inheritable = inheritable
+            if ace_inheritable is None and object_type is ObjectTypes.FOLDER:
                 response = objects_processors.get_info(
                     connection=connection,
                     id=id,
@@ -691,7 +753,7 @@ def modify_rights(
                     for ace in response.get('acl', [])
                     if ace['trusteeId'] == trustee and ace['deny'] == denied
                 ]
-                inheritable = False if not tmp else tmp[0]
+                ace_inheritable = False if not tmp else tmp[0]
 
             body = {
                 'acl': [
@@ -701,43 +763,47 @@ def modify_rights(
                         'rights': rights,
                         'type': 1,
                         'denied': denied,
-                        'inheritable': inheritable,
+                        'inheritable': ace_inheritable,
                     },
                 ]
             }
 
-            if propagate_to_children:
-                if propagation_behavior and not is_server_min_version(
-                    connection, '11.4.0900'
-                ):
-                    raise VersionException(
-                        "Propagation behavior requires version 11.4.0900 or higher"
-                    )
+            if propagate_to_children is not None:
+                if propagate_to_children:
+                    if propagation_behavior and not is_server_min_version(
+                        connection, '11.4.0900'
+                    ):
+                        raise VersionException(
+                            "Propagation behavior requires version 11.4.0900 or higher"
+                        )
 
-                propagation_behavior = get_enum_val(
-                    propagation_behavior, PropagationBehavior
-                )
+                    propagation_behavior = get_enum_val(
+                        propagation_behavior, PropagationBehavior
+                    )
 
                 if is_server_min_version(connection, '11.4.0900') and object_type in [
                     ObjectTypes.USER,
                     ObjectTypes.USERGROUP,
                     ObjectTypes.FOLDER,
                 ]:
-                    propagation_behavior = propagation_behavior or (
-                        'overwrite_recursive'
-                        if object_type is ObjectTypes.FOLDER
-                        else 'overwrite_all'
-                    )
                     body['acl'][0]['propagateToChildren'] = propagate_to_children
                     body['propagateACLToChildren'] = propagate_to_children
-                    body['propagationBehavior'] = propagation_behavior
+                    if propagate_to_children:
+                        body['propagationBehavior'] = (
+                            propagation_behavior or 'overwrite_all'
+                        )
+                    if object_type is ObjectTypes.FOLDER and recursive is not None:
+                        body['isRecursive'] = recursive
                 # On version below 11.4.0900, recursive propagation
                 # is only available for ObjectTypes.FOLDER
                 elif object_type is ObjectTypes.FOLDER:
                     body['propagateACLToChildren'] = propagate_to_children
-                    body['propagationBehavior'] = (
-                        propagation_behavior or 'overwrite_recursive'
-                    )
+                    if propagate_to_children:
+                        body['propagationBehavior'] = (
+                            propagation_behavior or 'overwrite_recursive'
+                        )
+                    if recursive is not None:
+                        body['isRecursive'] = recursive
 
             response = objects_processors.update(
                 connection=connection,

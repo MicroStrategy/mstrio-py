@@ -10,6 +10,7 @@ from mstrio.utils.resolvers import (
     get_project_id_from_params_set,
     validate_owner_key_in_filters,
 )
+from mstrio.utils.response_processors import subscriptions as subscriptions_processors
 from mstrio.utils.version_helper import (
     class_version_handler,
     is_server_min_version,
@@ -111,6 +112,63 @@ def list_subscriptions(
     ]
 
 
+def list_subscriptions_cross_projects(
+    connection: Connection,
+    project_ids: list[str] | None = None,
+    to_dictionary: bool = False,
+    offset: int | None = None,
+    limit: int | None = None,
+    delivery_modes: int = -1,
+    last_run: bool = False,
+    ignore_admin_privileges: bool = False,
+) -> list['Subscription'] | list[dict]:
+    """Get subscriptions from multiple projects."""
+    objects = subscriptions_processors.list_subscriptions_cross_projects(
+        connection=connection,
+        project_ids=project_ids,
+        offset=offset,
+        limit=limit,
+        delivery_modes=delivery_modes,
+        last_run=last_run,
+        ignore_admin_privileges=ignore_admin_privileges,
+    )
+    if to_dictionary:
+        return objects
+
+    result = []
+    for obj in objects:
+        normalized = helper.camel_to_snake(obj)
+        project_id = normalized.get('project_id')
+        if not project_id and project_ids and len(project_ids) == 1:
+            project_id = project_ids[0]
+        if not project_id:
+            project_id = connection.project_id
+        if not project_id:
+            raise ValueError(
+                'Cross-project subscription responses must include project_id '
+                'when the connection has no selected project.'
+            )
+        result.append(
+            dispatch_from_dict(
+                source=normalized,
+                connection=connection,
+                project_id=project_id,
+            )
+        )
+    return result
+
+
+def list_personal_addresses(
+    connection: Connection,
+    delivery_type: str = 'EMAIL',
+) -> list[dict]:
+    """Get personal addresses for a delivery type."""
+    return subscriptions_processors.list_personal_addresses(
+        connection=connection,
+        delivery_type=delivery_type,
+    )
+
+
 DeliveryMode = Delivery.DeliveryMode
 subscription_type_from_delivery_mode_dict = {
     DeliveryMode.CACHE: CacheUpdateSubscription,
@@ -210,6 +268,35 @@ class SubscriptionManager:
             limit=limit,
             last_run=last_run,
             **filters,
+        )
+
+    def list_subscriptions_cross_projects(
+        self,
+        project_ids: list[str] | None = None,
+        to_dictionary: bool = False,
+        offset: int | None = None,
+        limit: int | None = None,
+        delivery_modes: int = -1,
+        last_run: bool = False,
+        ignore_admin_privileges: bool = False,
+    ) -> list['Subscription'] | list[dict]:
+        """Get subscriptions from multiple projects."""
+        return list_subscriptions_cross_projects(
+            connection=self.connection,
+            project_ids=project_ids,
+            to_dictionary=to_dictionary,
+            offset=offset,
+            limit=limit,
+            delivery_modes=delivery_modes,
+            last_run=last_run,
+            ignore_admin_privileges=ignore_admin_privileges,
+        )
+
+    def list_personal_addresses(self, delivery_type: str = 'EMAIL') -> list[dict]:
+        """Get personal addresses for a delivery type."""
+        return list_personal_addresses(
+            connection=self.connection,
+            delivery_type=delivery_type,
         )
 
     def _normalize_subscriptions(self, subscriptions) -> list[Subscription]:

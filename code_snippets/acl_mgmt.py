@@ -69,7 +69,7 @@ attr.acl_alter(
 schedule = Schedule(connection=conn, id=SCHEDULE_ID)
 
 # List ACL for schedule object
-schedule = Schedule(connection=conn, id=SCHEDULE_NAME)
+schedule = Schedule(connection=conn, name=SCHEDULE_NAME)
 print(schedule.acl)
 
 # Add ACL right to the schedule object
@@ -88,28 +88,40 @@ schedule.acl_alter(
 # Third example - folder
 
 # Get folder with a given ID
-folder = Folder(conn, id=FOLDER_ID)
+folder = Folder(connection=conn, id=FOLDER_ID)
 
 # List ACL for folder object
-folder = Folder(connection=conn, id=FOLDER_NAME)
+folder = Folder(connection=conn, name=FOLDER_NAME)
 print(folder.acl)
 
-# Add ACL right to the folder for the user and propagate to children of folder
+# Add ACL right to the folder for the user and merge the selected change into
+# children of the folder
 folder.acl_add(
     Rights.EXECUTE, # The degree to which the user or user group is granted or denied access to the object.
     trustees=TRUSTED_USER_ID, # User or user groups IDs to update the ACE for. It can be a single entry or list of entries.
     denied=False, # Indicates if access is granted or denied to the object
     inheritable=True, # If True any objects placed in the folder inherit the folder's entry in the ACL.
     propagate_to_children=True, # If True propagates the access rule to subfolders.
-    propagation_behavior=PropagationBehavior.PRECISE_RECURSIVE # Add recursively for all children.
+    propagation_behavior=PropagationBehavior.MERGE_SELECTED, # Merge the selected ACL change.
+    recursive=False, # If False, propagate only to direct children.
 )  # see mstrio/utils/acl.py for PropagationBehavior values
 
-# Alter ACL for folder object
+# Overwrite the selected ACL entry on children while preserving other entries
 folder.acl_alter(
     Rights.READ, # The degree to which the user or user group is granted or denied access to the object.
     trustees=TRUSTED_USER_ID, # User or user groups IDs to update the ACE for. It can be a single entry or list of entries.
     denied=True, # Indicates if access is granted or denied to the object
     inheritable=False, # If True any objects placed in the folder inherit the folder's entry in the ACL.
-    propagate_to_children=False, # If True propagates the access rule to subfolders.
-    propagation_behavior=PropagationBehavior.PRECISE_RECURSIVE # Add recursively for all children.
+    propagate_to_children=True, # If True propagates the access rule to subfolders.
+    propagation_behavior=PropagationBehavior.OVERWRITE_SELECTED
+)
+
+# Use OVERWRITE_ALL to make every child use the folder's ACL settings.
+folder.acl_alter(
+    Rights.READ,
+    trustees=TRUSTED_USER_ID,
+    denied=True,
+    inheritable=False,
+    propagate_to_children=True,
+    propagation_behavior=PropagationBehavior.OVERWRITE_ALL,
 )

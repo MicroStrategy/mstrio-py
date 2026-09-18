@@ -1,5 +1,16 @@
 # Changelog
 
+## 11.6.9.101 - 2026/09/18
+
+### New features
+
+- added class `HistoryList` for listing, viewing, sending, updating, and deleting Strategy history list messages
+- added support for `specific_dates` recurrence in time-based `Schedule` objects via the `specific_dates` parameter of `Schedule.create()` and `Schedule.alter()`, allowing schedules to trigger on an explicit list of dates across multiple years (requires I-Server version 11.6.0900 or newer)
+- expanded subscription management with partial subscription updates, owner
+  changes, prompt instances, cross-project listing, personal addresses, and
+  image and Excel template management
+- added folder ACL propagation behaviors for merging selected changes, overwriting selected entries, overwriting all child ACLs, and limiting propagation to direct children
+
 ## 11.6.8.101 - 2026/08/14
 
 ### New features

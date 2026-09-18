@@ -96,6 +96,25 @@ new_schedule = Schedule.create(
 # DailyPattern and ExecutionPattern values
 
 # Define a variable which can be later used in a script
+SCHEDULE_SPECIFIC_DATES = $schedule_specific_dates  # list of `date` objects
+
+# Create a time based schedule which triggers on an explicit list of dates,
+# possibly spanning multiple years (custom calendar), instead of a recurring
+# pattern. Requires I-Server version 11.6.0900 or newer.
+new_schedule = Schedule.create(
+    connection=conn,
+    name=SCHEDULE_NAME,
+    schedule_type=Schedule.ScheduleType.TIME_BASED,
+    start_date=SCHEDULE_START_DATE,
+    specific_dates=SCHEDULE_SPECIFIC_DATES,
+    execution_pattern=ScheduleEnums.ExecutionPattern.ONCE,
+    execution_time=SCHEDULE_EXECUTE_TIME,
+)
+
+# specific dates can also be set/replaced on an existing schedule
+schedule.alter(specific_dates=SCHEDULE_SPECIFIC_DATES)
+
+# Define a variable which can be later used in a script
 SCHEDULE_EVENT_NAME = $schedule_event_name  # name of existing event to base a schedule on
 
 # create event based schedule

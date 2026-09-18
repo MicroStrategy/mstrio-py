@@ -13,7 +13,15 @@ from mstrio.distribution_services import (
     FileSubscription,
     FTPSubscription,
     HistoryListSubscription,
+    Image,
+    ExcelTemplate,
+    get_excel_template,
+    get_image,
+    list_excel_templates,
+    list_images,
+    list_personal_addresses,
     list_subscriptions,
+    list_subscriptions_cross_projects,
     Subscription,
     SubscriptionManager
 )
@@ -24,6 +32,7 @@ from mstrio.connection import get_connection
 
 # Define a variable which can be later used in a script
 PROJECT_NAME = $project_name  # Project to connect to
+PROJECT_ID = $project_id
 
 # Create connection based on connection data
 CONN = get_connection(connectionData, project_name=PROJECT_NAME)
@@ -286,3 +295,78 @@ prompted_sub.answer_prompts(prompt_answers=[PROMPT_1, PROMPT_2], force=True)
 # Execute prompted subscription with new answers
 prompted_sub.execute()
 
+# Partially update a subscription, change its owner, and execute it with
+# prompt answers from a newly created content instance.
+prompted_sub.patch(name=CACHE_SUBSCRIPTION_NEW_NAME, soft_disabled=False)
+prompted_sub.change_owner(owner_id=OWNER_ID)
+INSTANCE = prompted_sub.create_instance(content_id=CONTENT_ID)
+prompted_sub.execute(
+    content_id=CONTENT_ID,
+    instance_id=INSTANCE["id"],
+)
+
+# List subscriptions across projects and personal addresses.
+cross_project_subscriptions = list_subscriptions_cross_projects(
+    connection=CONN,
+    project_ids=[PROJECT_ID],
+)
+personal_addresses = list_personal_addresses(CONN, delivery_type="EMAIL")
+
+# Create and manage subscription images and Excel templates.
+IMAGE_FILE_PATH = $image_file_path
+IMAGE_NAME = $image_name
+IMAGE_DESCRIPTION = $image_description
+IMAGE_PATCH_DESCRIPTION = $image_patch_description
+IMAGE_UPDATE_NAME = $image_update_name
+IMAGE_UPDATE_DESCRIPTION = $image_update_description
+
+with open(IMAGE_FILE_PATH, "rb") as image_file:
+    image = Image.create(
+        connection=CONN,
+        name=IMAGE_NAME,
+        description=IMAGE_DESCRIPTION,
+        file=image_file,
+    )
+image = get_image(connection=CONN, id=image.id)
+image.patch(description=IMAGE_PATCH_DESCRIPTION)
+with open(IMAGE_FILE_PATH, "rb") as image_file:
+    image.update(
+        name=IMAGE_UPDATE_NAME,
+        description=IMAGE_UPDATE_DESCRIPTION,
+        file=image_file,
+    )
+images = list_images(connection=CONN, include_hidden=True)
+
+EXCEL_TEMPLATE_FILE_PATH = $excel_template_file_path
+EXCEL_TEMPLATE_NAME = $excel_template_name
+EXCEL_TEMPLATE_DESCRIPTION = $excel_template_description
+EXCEL_TEMPLATE_PATCH_NAME = $excel_template_patch_name
+EXCEL_TEMPLATE_UPDATE_NAME = $excel_template_update_name
+EXCEL_TEMPLATE_UPDATE_DESCRIPTION = $excel_template_update_description
+
+with open(EXCEL_TEMPLATE_FILE_PATH, "rb") as excel_template_file:
+    excel_template = ExcelTemplate.create(
+        connection=CONN,
+        name=EXCEL_TEMPLATE_NAME,
+        description=EXCEL_TEMPLATE_DESCRIPTION,
+        file=excel_template_file,
+    )
+excel_template = get_excel_template(
+    connection=CONN,
+    id=excel_template.id,
+    show_sheets=True,
+)
+excel_template.patch(name=EXCEL_TEMPLATE_PATCH_NAME)
+with open(EXCEL_TEMPLATE_FILE_PATH, "rb") as excel_template_file:
+    excel_template.update(
+        name=EXCEL_TEMPLATE_UPDATE_NAME,
+        description=EXCEL_TEMPLATE_UPDATE_DESCRIPTION,
+        file=excel_template_file,
+    )
+excel_templates = list_excel_templates(
+    connection=CONN,
+    include_hidden=True,
+)
+
+image.delete(force=True)
+excel_template.delete(force=True)

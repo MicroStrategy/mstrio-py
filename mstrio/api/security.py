@@ -135,6 +135,26 @@ def update_security_role(connection, id, body, error_msg=None):
     )
 
 
+@ErrorHandler(err_msg="Error updating members of security role with ID {id}")
+def update_security_role_members(connection, id, body, error_msg=None):
+    """Update members of a specific security role.
+
+    Args:
+        connection: Strategy REST API connection object
+        id (string): Security role ID
+        body: JSON-formatted definition of the membership update.
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        Complete HTTP response object.
+    """
+    return connection.patch(
+        endpoint=f'/api/securityRoles/{id}/members',
+        headers={'X-MSTR-ProjectID': None},
+        json=body,
+    )
+
+
 @ErrorHandler(
     err_msg="Error getting security role with ID {id} for project with ID {project_id}"
 )

@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from enum import auto
 
 from mstrio import config
@@ -7,6 +7,7 @@ from mstrio.api import schedules
 from mstrio.connection import Connection
 from mstrio.distribution_services.event import Event
 from mstrio.distribution_services.schedule import ScheduleEnums, ScheduleTime
+from mstrio.helpers import VersionException
 from mstrio.users_and_groups.user import User
 from mstrio.utils import helper
 from mstrio.utils.entity import DeleteMixin, Entity, ObjectTypes, TenantMixin
@@ -18,9 +19,13 @@ from mstrio.utils.time_helper import (
     map_datetime_to_str,
     map_str_to_datetime,
 )
-from mstrio.utils.version_helper import method_version_handler
+from mstrio.utils.version_helper import is_server_min_version, method_version_handler
 
 logger = logging.getLogger(__name__)
+
+# Minimum I-Server version that supports the `specific_dates` recurrence
+# pattern for time-based schedules.
+SPECIFIC_DATES_MIN_VERSION = '11.6.0900'
 
 
 @method_version_handler('11.3.0000')
@@ -352,6 +357,7 @@ class Schedule(Entity, DeleteMixin, RelatedSubscriptionMixin, TenantMixin):
         monthly_pattern: ScheduleEnums.MonthlyPattern | str | None = None,
         yearly_pattern: ScheduleEnums.YearlyPattern | str | None = None,
         journal_comment: str | None = None,
+        specific_dates: list[date | str] | None = None,
     ) -> 'Schedule':
         """Create a Schedule using provided parameters as data.
 
@@ -413,6 +419,13 @@ class Schedule(Entity, DeleteMixin, RelatedSubscriptionMixin, TenantMixin):
                 are DAY, DAY_OF_WEEK. Defaults to None.
             journal_comment: Comment that will be added to the object's change
                 journal entry
+            specific_dates (list[date | str], optional):
+                The list of specific dates of the schedule. Can be
+                datetime.date, datetime.datetime, or string objects in
+                YYYY-MM-DD format. If provided, recurrence_pattern is set to
+                SPECIFIC_DATES and all other recurrence-pattern-specific
+                parameters (daily_pattern, monthly_pattern, etc.) are ignored.
+                Defaults to None.
         Returns:
             Schedule object with provided parameters.
         """
@@ -441,7 +454,24 @@ class Schedule(Entity, DeleteMixin, RelatedSubscriptionMixin, TenantMixin):
             execution_details = {'type': 'event', 'content': {'id': event_id}}
         elif schedule_type == cls.ScheduleType.TIME_BASED.value:
             if time is None:
-                time = ScheduleTime.from_details(**time_kwargs)
+                if specific_dates is not None:
+                    if not is_server_min_version(
+                        connection, SPECIFIC_DATES_MIN_VERSION
+                    ):
+                        raise VersionException(
+                            "`specific_dates` scheduling requires I-Server "
+                            f"version {SPECIFIC_DATES_MIN_VERSION} or newer."
+                        )
+                    time = ScheduleTime.from_specific_dates(
+                        dates=specific_dates,
+                        execution_pattern=execution_pattern,
+                        execution_time=execution_time,
+                        start_time=start_time,
+                        stop_time=stop_time,
+                        execution_repeat_interval=execution_repeat_interval,
+                    )
+                else:
+                    time = ScheduleTime.from_details(**time_kwargs)
             execution_details = {'type': 'time', 'content': time.to_dict()}
 
         # Datetime dates to string format conversion
@@ -502,6 +532,7 @@ class Schedule(Entity, DeleteMixin, RelatedSubscriptionMixin, TenantMixin):
         comments: str | None = None,
         owner: str | User | None = None,
         journal_comment: str | None = None,
+        specific_dates: list[date | str] | None = None,
     ) -> None:
         """Alter Schedule properties.
 
@@ -567,6 +598,14 @@ class Schedule(Entity, DeleteMixin, RelatedSubscriptionMixin, TenantMixin):
                 to None.
             journal_comment (optional, str): Comment that will be added to the
                 object's change journal entry
+            specific_dates (list[date | str], optional):
+                The new list of specific dates of the schedule. Can be
+                datetime.date, datetime.datetime, or string objects in
+                YYYY-MM-DD format. If provided, replaces the schedule's
+                recurrence with SPECIFIC_DATES and overwrites any previous
+                specific dates. Only applicable to already time-based
+                schedules; ignored if `time` is also provided. Defaults to
+                None.
         Returns:
             None
         """
@@ -585,24 +624,32 @@ class Schedule(Entity, DeleteMixin, RelatedSubscriptionMixin, TenantMixin):
             properties['event'] = Event(connection=self._connection, id=event_id)
         elif self.schedule_type == self.ScheduleType.TIME_BASED:
             properties['schedule_type'] = self.ScheduleType.TIME_BASED
+            if specific_dates is not None and not is_server_min_version(
+                self._connection, SPECIFIC_DATES_MIN_VERSION
+            ):
+                raise VersionException(
+                    "`specific_dates` scheduling requires I-Server "
+                    f"version {SPECIFIC_DATES_MIN_VERSION} or newer."
+                )
             self.time.update_properties(
-                recurrence_pattern,
-                execution_pattern,
-                execution_time,
-                start_time,
-                stop_time,
-                execution_repeat_interval,
-                daily_pattern,
-                repeat_interval,
-                days_of_week,
-                day,
-                month,
-                week_offset,
-                day_of_week,
-                weekday_offset,
-                days_of_month,
-                monthly_pattern,
-                yearly_pattern,
+                recurrence_pattern=recurrence_pattern,
+                execution_pattern=execution_pattern,
+                execution_time=execution_time,
+                start_time=start_time,
+                stop_time=stop_time,
+                execution_repeat_interval=execution_repeat_interval,
+                daily_pattern=daily_pattern,
+                repeat_interval=repeat_interval,
+                days_of_week=days_of_week,
+                day=day,
+                month=month,
+                week_offset=week_offset,
+                day_of_week=day_of_week,
+                weekday_offset=weekday_offset,
+                days_of_month=days_of_month,
+                monthly_pattern=monthly_pattern,
+                yearly_pattern=yearly_pattern,
+                specific_dates=specific_dates,
             )
             properties['time'] = self.time
 

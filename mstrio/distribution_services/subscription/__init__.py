@@ -17,4 +17,17 @@ from .file_subscription import FileSubscription
 from .ftp_subscription import FTPSubscription
 from .history_list_subscription import HistoryListSubscription
 from .mobile_subscription import MobileSubscription
-from .subscription_manager import SubscriptionManager, list_subscriptions
+from .subscription_asset import (
+    ExcelTemplate,
+    Image,
+    get_excel_template,
+    get_image,
+    list_excel_templates,
+    list_images,
+)
+from .subscription_manager import (
+    SubscriptionManager,
+    list_personal_addresses,
+    list_subscriptions,
+    list_subscriptions_cross_projects,
+)

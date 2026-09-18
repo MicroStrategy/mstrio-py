@@ -1,3 +1,4 @@
+from datetime import date, datetime
 from enum import auto
 
 from mstrio.utils import helper
@@ -28,6 +29,7 @@ class ScheduleEnums:
         WEEKLY = auto()
         MONTHLY = auto()
         YEARLY = auto()
+        SPECIFIC_DATES = auto()
 
     class ExecutionPattern(AutoName):
         ONCE = auto()
@@ -60,6 +62,57 @@ class ScheduleEnums:
 # endregion
 
 # region Schedule Time
+
+
+def _normalize_dates(dates: list[date | str]) -> list[date]:
+    """Normalize a list of dates to datetime.date objects.
+
+    Accepts strings (YYYY-MM-DD format), datetime objects, and date objects.
+    Converts all to datetime.date objects.
+
+    Args:
+        dates: List containing date objects, datetime objects, or strings.
+
+    Returns:
+        List of normalized datetime.date objects.
+
+    Raises:
+        ValueError: If a string date has invalid format.
+        TypeError: If an unsupported type is provided.
+    """
+    if not dates:
+        helper.exception_handler(
+            msg="dates list must not be empty",
+            exception_type=ValueError,
+        )
+
+    normalized_dates = []
+    for d in dates:
+        if isinstance(d, datetime):
+            normalized_dates.append(d.date())
+        elif isinstance(d, date):
+            normalized_dates.append(d)
+        elif isinstance(d, str):
+            try:
+                normalized_dates.append(datetime.strptime(d, "%Y-%m-%d").date())
+            except ValueError:
+                helper.exception_handler(
+                    msg=(
+                        f"String date '{d}' has invalid format. "
+                        "Expected YYYY-MM-DD format."
+                    ),
+                    exception_type=ValueError,
+                )
+        else:
+            helper.exception_handler(
+                msg=(
+                    "dates must be datetime.date, datetime.datetime, or "
+                    f"string (YYYY-MM-DD) objects. Got {type(d).__name__}"
+                ),
+                exception_type=TypeError,
+            )
+
+    return normalized_dates
 
 
 class ScheduleTime(Dictable):
@@ -359,13 +412,15 @@ class ScheduleTime(Dictable):
         weekly: Weekly | None = None,
         monthly: Monthly | None = None,
         yearly: Yearly | None = None,
+        specific_date: list[str] | None = None,
     ):
         """Set attributes representing details of the time-based schedule.
 
         Args:
             recurrence_pattern (ScheduleEnums.RecurrencePattern, optional):
                 The recurrence pattern of the schedule. Possible values are
-                DAILY, WEEKLY, MONTHLY, YEARLY. Defaults to None.
+                DAILY, WEEKLY, MONTHLY, YEARLY, SPECIFIC_DATES. Defaults to
+                None.
             execution (Execution, optional):
                 Object representing the execution information of the schedule.
                 Defaults to None.
@@ -381,6 +436,10 @@ class ScheduleTime(Dictable):
             yearly (Yearly, optional):
                 Object representing yearly recurrence information of the
                 schedule. Defaults to None.
+            specific_date (list[str], optional):
+                The list of specific dates (in 'YYYY-MM-DD' format) of the
+                schedule, if recurrence_pattern is SPECIFIC_DATES. Defaults to
+                None.
         """
 
         self.recurrence_pattern = (
@@ -397,6 +456,8 @@ class ScheduleTime(Dictable):
             self.monthly = monthly
         elif yearly:
             self.yearly = yearly
+        elif specific_date:
+            self.specific_date = specific_date
 
     @classmethod
     def from_details(
@@ -586,6 +647,75 @@ class ScheduleTime(Dictable):
                 yearly=yearly,
             )
 
+    @classmethod
+    def from_specific_dates(
+        cls,
+        dates: list[date | str],
+        execution_pattern: ScheduleEnums.ExecutionPattern | str,
+        execution_time: str | None = None,
+        start_time: str | None = None,
+        stop_time: str | None = None,
+        execution_repeat_interval: int | None = None,
+    ) -> "ScheduleTime":
+        """Create ScheduleTime for 'specific dates' recurrence.
+
+        Args:
+            dates (list[date | str]): The list of specific dates of the
+                schedule. Can be datetime.date, datetime.datetime, or string
+                objects in YYYY-MM-DD format.
+            execution_pattern (ScheduleEnums.ExecutionPattern): The execution
+                pattern of the schedule. Possible values are ONCE, REPEAT.
+            execution_time (str, optional): The execution time of the
+                execution day, if execution_pattern is ONCE. Format should be
+                HH:mm:ss. Defaults to None.
+            start_time (str, optional): The start time of the execution day,
+                if execution_pattern is REPEAT. Format should be HH:mm:ss.
+                Defaults to None.
+            stop_time (str, optional): The stop time of the execution day, if
+                execution_pattern is REPEAT. Format should be HH:mm:ss.
+                Defaults to None.
+            execution_repeat_interval (int, optional): The repeat interval of
+                minutes of the execution day, if execution_pattern is REPEAT.
+                Defaults to None.
+        Returns:
+            ScheduleTime: Object representation of details of a
+            specific-dates time-based schedule.
+        """
+
+        dates = _normalize_dates(dates)
+
+        execution_pattern_val = get_enum_val(
+            execution_pattern, ScheduleEnums.ExecutionPattern
+        )
+
+        if execution_pattern_val == ScheduleEnums.ExecutionPattern.ONCE.value:
+            execution = cls.Execution.from_dict(
+                {
+                    'execution_pattern': execution_pattern_val,
+                    'execution_time': execution_time,
+                }
+            )
+        elif execution_pattern_val == ScheduleEnums.ExecutionPattern.REPEAT.value:
+            execution = cls.Execution.from_dict(
+                {
+                    'execution_pattern': execution_pattern_val,
+                    'start_time': start_time,
+                    'stop_time': stop_time,
+                    'repeat_interval': execution_repeat_interval,
+                }
+            )
+        else:
+            helper.exception_handler(
+                msg="Unsupported execution_pattern for specific dates",
+                exception_type=ValueError,
+            )
+
+        return cls(
+            recurrence_pattern=ScheduleEnums.RecurrencePattern.SPECIFIC_DATES,
+            execution=execution,
+            specific_date=[_date_to_str(d) for d in dates],
+        )
+
     def update_properties(
         self,
         recurrence_pattern: ScheduleEnums.RecurrencePattern | str | None = None,
@@ -605,6 +735,7 @@ class ScheduleTime(Dictable):
         days_of_month: list[str] | None = None,
         monthly_pattern: ScheduleEnums.MonthlyPattern | str | None = None,
         yearly_pattern: ScheduleEnums.YearlyPattern | str | None = None,
+        specific_dates: list[date | str] | None = None,
     ):
         """
         Updates ScheduleTime object according to provided parameters. If a
@@ -614,7 +745,8 @@ class ScheduleTime(Dictable):
         Args:
             recurrence_pattern (ScheduleEnums.RecurrencePattern, optional):
                 The recurrence pattern of the schedule. Possible values are
-                DAILY, WEEKLY, MONTHLY, YEARLY. Defaults to None.
+                DAILY, WEEKLY, MONTHLY, YEARLY, SPECIFIC_DATES. Defaults to
+                None.
             execution_pattern (ScheduleEnums.ExecutionPattern, optional):
                 The execution pattern of the schedule. Possible values are ONCE,
                 REPEAT. Defaults to None.
@@ -671,7 +803,25 @@ class ScheduleTime(Dictable):
             yearly_pattern (ScheduleEnums.YearlyPattern, optional):
                 The yearly recurrence pattern of the schedule. Possible values
                 are DAY, DAY_OF_WEEK. Defaults to None.
+            specific_dates (list[date | str], optional):
+                The new list of specific dates of the schedule. Can be
+                datetime.date, datetime.datetime, or string objects in
+                YYYY-MM-DD format. If provided, recurrence_pattern defaults to
+                SPECIFIC_DATES. Defaults to None.
         """
+
+        if recurrence_pattern is None and specific_dates is not None:
+            recurrence_pattern = ScheduleEnums.RecurrencePattern.SPECIFIC_DATES
+        elif (
+            specific_dates is not None
+            and recurrence_pattern is not None
+            and recurrence_pattern != ScheduleEnums.RecurrencePattern.SPECIFIC_DATES
+        ):
+            helper.exception_handler(
+                msg="'specific_dates' can only be used with "
+                "recurrence_pattern 'SPECIFIC_DATES'.",
+                exception_type=ValueError,
+            )
 
         if execution_pattern:
             execution_pattern = (
@@ -798,10 +948,35 @@ class ScheduleTime(Dictable):
                     }
                 )
 
+        if self.recurrence_pattern == ScheduleEnums.RecurrencePattern.SPECIFIC_DATES:
+            if specific_dates is not None:
+                dates = _normalize_dates(specific_dates)
+                self.specific_date = [_date_to_str(d) for d in dates]
+            else:
+                existing_dates = getattr(self, 'specific_date', None)
+                if not existing_dates:
+                    helper.exception_handler(
+                        msg="specific_dates list must not be empty",
+                        exception_type=ValueError,
+                    )
+                self.specific_date = existing_dates
+
 
 # endregion
 
 # region Universal Helpers
+
+
+def _date_to_str(value: date) -> str:
+    """Convert a `date` (or `datetime`) to a 'YYYY-MM-DD' string.
+
+    `datetime` is a subclass of `date`, so callers accept both. This
+    normalizes any `datetime` to its date part to avoid leaking a time
+    component into the serialized value.
+    """
+    if isinstance(value, datetime):
+        value = value.date()
+    return value.isoformat()
 
 
 class UnixTimeZone(AutoUpperName):

@@ -163,6 +163,7 @@ class Subscription(EntityBase, ChangeJournalMixin, TenantMixin):
         self.allow_delivery_changes = kwargs.get('allow_delivery_changes')
         self.allow_personalization_changes = kwargs.get('allow_personalization_changes')
         self.allow_unsubscribe = kwargs.get('allow_unsubscribe')
+        self.soft_disabled = kwargs.get('soft_disabled')
         self.date_created = time_helper.map_str_to_datetime(
             "date_created", kwargs.get("date_created"), self._FROM_DICT_MAP
         )
@@ -479,6 +480,62 @@ class Subscription(EntityBase, ChangeJournalMixin, TenantMixin):
                 msg = custom_msg or msg
                 logger.info(msg)
 
+    def patch(
+        self,
+        name: str | None = None,
+        soft_disabled: bool | None = None,
+    ) -> None:
+        """Partially update subscription settings."""
+        body = helper.delete_none_values(
+            {'name': name, 'softDisabled': soft_disabled},
+            recursion=True,
+        )
+        if not body:
+            return
+
+        response = subscriptions.patch_subscription(
+            connection=self.connection,
+            subscription_id=self.id,
+            project_id=self.project_id,
+            body=body,
+        )
+        if response.ok:
+            self._set_object_attributes(**body)
+
+    partial_update = patch
+
+    def change_owner(self, owner_id: str | User) -> bool:
+        """Change the subscription owner."""
+        owner = owner_id if isinstance(owner_id, User) else None
+        if isinstance(owner_id, User):
+            owner_id = owner_id.id
+        if not owner_id:
+            raise ValueError('A subscription owner ID must be provided.')
+
+        response = subscriptions.change_subscription_owner(
+            connection=self.connection,
+            subscription_id=self.id,
+            project_id=self.project_id,
+            body={'id': owner_id},
+        )
+        if response.ok:
+            self.owner = owner or User.from_dict(
+                {'id': owner_id}, connection=self.connection
+            )
+        return response.ok
+
+    def create_instance(self, content_id: str) -> dict:
+        """Create a content instance for updating prompt answers."""
+        if not content_id:
+            raise ValueError('A content ID must be provided.')
+        response = subscriptions.create_subscription_instance(
+            connection=self.connection,
+            subscription_id=self.id,
+            content_id=content_id,
+            project_id=self.project_id,
+        )
+        return response.json()
+
     def __is_val_changed(self, nested=None, **kwargs):
         for key, value in kwargs.items():
             if nested:
@@ -518,9 +575,33 @@ class Subscription(EntityBase, ChangeJournalMixin, TenantMixin):
             for content in contents
         ]
 
-    def execute(self) -> None:
+    def execute(
+        self,
+        content_id: str | None = None,
+        instance_id: str | None = None,
+    ) -> None:
         """Executes a subscription with given name or GUID for given project."""
-        subscriptions.send_subscription(self.connection, self.id, self.project_id)
+        if (content_id is None) != (instance_id is None):
+            raise ValueError('Both content_id and instance_id must be provided.')
+
+        body = (
+            {'contentId': content_id, 'instanceId': instance_id}
+            if content_id is not None
+            else None
+        )
+        if body is None:
+            subscriptions.send_subscription(
+                self.connection,
+                self.id,
+                self.project_id,
+            )
+        else:
+            subscriptions.send_subscription_v1(
+                self.connection,
+                self.id,
+                self.project_id,
+                body=body,
+            )
         if config.verbose:
             logger.info(f"Executed subscription '{self.name}' with ID: {self.id}.")
 
