@@ -18,7 +18,7 @@ from mstrio.connection import (
 from mstrio import config
 
 # Define a variable which can be later used in a script
-PROJECT_NAME = $project_name  # Insert project name here
+PROJECT_NAME = aquisition  # Insert project name here
 
 # The Connection object manages your connection to Strategy. Connect to
 # your Strategy environment by providing the URL to the Strategy REST
