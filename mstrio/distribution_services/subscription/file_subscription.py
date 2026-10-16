@@ -184,16 +184,18 @@ class FileSubscription(Subscription):
         custom_msg: str | None = None,
         delivery_expiration_date: str | None = None,
         delivery_expiration_timezone: str | None = None,
-        contact_security: bool = True,
+        contact_security: bool | None = None,
         zip_filename: str | None = None,
         zip_password_protect: bool | None = None,
         zip_password: str | None = None,
         file_burst_sub_folder: str | None = None,
         space_delimiter: str | None = None,
-        delivery_notification_enabled: bool = False,
+        delivery_notification_enabled: bool | None = None,
         delivery_personal_notification_address_id: str | None = None,
+        contents: Content | list[Content] | None = None,
     ):
         """Alter the subscription.
+
         Args:
             name (str, optional): name of the subscription
             filename (str): the filename that will be delivered when
@@ -219,8 +221,8 @@ class FileSubscription(Subscription):
                 of the subscription, format should be yyyy - MM - dd
             delivery_expiration_timezone (str, optional): expiration timezone
                 of the subscription
-            contact_security (bool): whether to use contact security for each
-                contact group member
+            contact_security (bool, optional): whether to use contact security
+                for each contact group member
             zip_filename(str, optional): filename of the compressed content
             zip_password_protect(bool, optional): whether to password protect
                 zip file
@@ -228,16 +230,37 @@ class FileSubscription(Subscription):
                 file
             file_burst_sub_folder(str, optional): burst sub folder
             space_delimiter(str, optional): space delimiter
-            delivery_notification_enabled (bool): Whether notification is
-                enabled, notification applies to cache
+            delivery_notification_enabled (bool, optional): Whether
+                notification is enabled, notification applies to cache
             delivery_personal_notification_address_id (str, optional):
                 Notification details
+            contents (Content | list[Content], optional): The content settings
         """
         notification_address_id = delivery_personal_notification_address_id
+        if (
+            delivery_notification_enabled is not None
+            or notification_address_id is not None
+        ):
+            target_delivery = (
+                Delivery.from_dict(delivery)
+                if isinstance(delivery, dict)
+                else delivery or self.delivery
+            )
+            if delivery_notification_enabled is not None:
+                target_delivery.notification_enabled = delivery_notification_enabled
+            if notification_address_id is not None:
+                personal_notification = (
+                    getattr(target_delivery, 'personal_notification', {}) or {}
+                )
+                personal_notification['address_id'] = notification_address_id
+                target_delivery.personal_notification = personal_notification
+            if delivery is not None:
+                delivery = target_delivery
 
         return super().alter(
             name=name,
             filename=filename,
+            contents=contents,
             multiple_contents=multiple_contents,
             allow_delivery_changes=allow_delivery_changes,
             allow_personalization_changes=allow_personalization_changes,

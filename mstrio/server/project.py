@@ -61,6 +61,7 @@ if TYPE_CHECKING:
     from requests import Response
 
     from mstrio.datasources import DatasourceInstance
+    from mstrio.distribution_services.schedule import Schedule
     from mstrio.object_management.object import Object
     from mstrio.server.environment import Environment
     from mstrio.server.node import Node
@@ -303,8 +304,8 @@ class IdleMode(AutoName):
     REQUEST = "request_idle"
     EXECUTION = "exec_idle"
     WAREHOUSEEXEC = "wh_exec_idle"
-    FULL = "partial_idle"
-    PARTIAL = "full_idle"
+    FULL = "full_idle"
+    PARTIAL = "partial_idle"
     UNLOADED = auto()
     LOADED = auto()
     UNLOADED_PENDING = auto()
@@ -1425,6 +1426,195 @@ class Project(Entity, DeleteMixin, ModelVldbMixin, TenantMixin):
             logger.info(
                 f"Datasources were successfully removed from the project {self.id}."
             )
+
+    @staticmethod
+    def _normalize_allowed_schedules(
+        schedules: "Schedule | str | list[Schedule | str]",
+    ) -> list[str]:
+        from mstrio.distribution_services.schedule import Schedule
+
+        if isinstance(schedules, (Schedule, str)):
+            schedules = [schedules]
+        elif not isinstance(schedules, list):
+            raise TypeError(
+                "'schedules' must be a Schedule object, schedule ID, or a list of "
+                "Schedule objects and schedule IDs."
+            )
+
+        if not schedules:
+            raise ValueError("'schedules' must not be empty.")
+
+        schedule_ids = []
+        for schedule in schedules:
+            if isinstance(schedule, Schedule):
+                schedule_id = schedule.id
+            elif isinstance(schedule, str):
+                schedule_id = schedule
+            else:
+                raise TypeError(
+                    "'schedules' must contain only Schedule objects or IDs."
+                )
+
+            if not helper.is_valid_str_id(schedule_id):
+                raise ValueError(f"Invalid schedule ID: {schedule_id!r}.")
+            schedule_ids.append(schedule_id)
+
+        return schedule_ids
+
+    def _schedule_objects(self, schedules: list[dict]) -> "list[Schedule]":
+        from mstrio.distribution_services.schedule import Schedule
+
+        return [Schedule.from_dict(schedule, self.connection) for schedule in schedules]
+
+    @method_version_handler("11.6.0500")
+    def list_allowed_schedules(
+        self, to_dictionary: bool = False
+    ) -> "list[Schedule] | list[dict]":
+        """List schedules allowed for the project.
+
+        An empty list means that schedules are not restricted for the project.
+
+        Args:
+            to_dictionary (bool, optional): If True, return dictionaries instead
+                of Schedule objects. Defaults to False.
+
+        Returns:
+            List of allowed Schedule objects or dictionaries.
+        """
+        schedules = (
+            projects.get_project_schedule_preferences(
+                connection=self.connection,
+                project_id=self.id,
+            )
+            .json()
+            .get("schedules", [])
+        )
+
+        if to_dictionary:
+            return schedules
+        return self._schedule_objects(schedules)
+
+    @method_version_handler("11.6.0500")
+    def set_allowed_schedules(
+        self, schedules: "Schedule | str | list[Schedule | str]"
+    ) -> "list[Schedule]":
+        """Set schedules allowed for the project.
+
+        Args:
+            schedules (Schedule | str | list[Schedule | str]): Schedule object,
+                schedule ID, or a list of Schedule objects and schedule IDs.
+
+        Returns:
+            Updated list of allowed Schedule objects.
+        """
+        if isinstance(schedules, list) and not schedules:
+            raise ValueError(
+                "'schedules' must not be empty. Use "
+                "'remove_schedule_restrictions()' to allow all schedules."
+            )
+        schedule_ids = self._normalize_allowed_schedules(schedules)
+
+        body = {"schedules": [{"id": schedule_id} for schedule_id in schedule_ids]}
+        schedules = (
+            projects.set_project_schedule_preferences(
+                connection=self.connection,
+                project_id=self.id,
+                body=body,
+            )
+            .json()
+            .get("schedules", [])
+        )
+
+        return self._schedule_objects(schedules)
+
+    def _update_allowed_schedules(
+        self,
+        schedules: "Schedule | str | list[Schedule | str]",
+        operation: Literal['add', 'remove'],
+    ) -> "list[Schedule]":
+        schedule_ids = self._normalize_allowed_schedules(schedules)
+        body = {
+            "operationList": [
+                {
+                    "op": operation,
+                    "path": "/schedules",
+                    "value": [{"id": schedule_id} for schedule_id in schedule_ids],
+                }
+            ]
+        }
+        schedules = (
+            projects.update_project_schedule_preferences(
+                connection=self.connection,
+                project_id=self.id,
+                body=body,
+            )
+            .json()
+            .get("schedules", [])
+        )
+        return self._schedule_objects(schedules)
+
+    @method_version_handler("11.6.1000")
+    def add_allowed_schedules(
+        self, schedules: "Schedule | str | list[Schedule | str]"
+    ) -> "list[Schedule]":
+        """Add schedules to the project's allowlist.
+
+        If the project is unrestricted, all schedules are already allowed and
+        this method leaves it unrestricted.
+
+        Args:
+            schedules (Schedule | str | list[Schedule | str]): Schedule object,
+                schedule ID, or a list of Schedule objects and schedule IDs.
+
+        Returns:
+            Updated list of allowed Schedule objects. An empty list means that
+            the project is unrestricted.
+        """
+        return self._update_allowed_schedules(schedules, 'add')
+
+    @method_version_handler("11.6.1000")
+    def remove_allowed_schedules(
+        self, schedules: "Schedule | str | list[Schedule | str]"
+    ) -> "list[Schedule]":
+        """Remove schedules from the project's allowlist.
+
+        Removing a schedule from an unrestricted project enables restrictions
+        and leaves every other project schedule allowed. Removing the final
+        allowed schedule removes schedule restrictions, making all project
+        schedules available.
+
+        Args:
+            schedules (Schedule | str | list[Schedule | str]): Schedule object,
+                schedule ID, or a list of Schedule objects and schedule IDs.
+
+        Returns:
+            Updated list of allowed Schedule objects. An empty list means that
+            the project is unrestricted.
+        """
+        return self._update_allowed_schedules(schedules, 'remove')
+
+    @method_version_handler("11.6.0500")
+    def remove_schedule_restrictions(self, force: bool = False) -> None:
+        """Remove schedule restrictions, making all schedules available.
+
+        Args:
+            force (bool, optional): If False, prompts the user for confirmation.
+                If True, removes restrictions without prompting. Defaults to
+                False.
+        """
+        if not force:
+            message = (
+                "Are you sure you want to remove all schedule restrictions from "
+                f"project '{self.name}'? [Y/N]: "
+            )
+            if input(message).strip().upper() != "Y":
+                return
+
+        projects.set_project_schedule_preferences(
+            connection=self.connection,
+            project_id=self.id,
+            body={"schedules": []},
+        )
 
     def _fetch_lock_status(self) -> dict:
         """Fetch the current lock status of the project.

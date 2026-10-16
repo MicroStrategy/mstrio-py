@@ -1,5 +1,42 @@
 # Changelog
 
+## 11.6.10.101 - 2026/10/16
+
+### New features
+
+- added support for creating, updating, and executing prompted
+  `FileSubscription` objects
+- added support for creating and executing email subscriptions with dependent
+  prompts
+- added support for asynchronous `Report` execution via the `async_execution`
+  parameter of `Report.to_dataframe()`, to help avoid request timeouts on
+  long-running reports
+- added `Project` methods for listing and setting allowed schedules, incrementally
+  adding or removing allowed schedules, and removing schedule restrictions;
+  incremental updates require I-Server version 11.6.1000 or newer
+- added `runtime` module under `mstrio.python_execution` for listing, creating,
+  retrieving, updating, and deleting Python execution runtimes
+
+### Bug fixes
+
+- fixed `Subscription.answer_prompts()` to preserve unrelated content
+  personalization when updating prompt answers
+- added retrieval of complete subscription prompt definitions and saved answers
+  as Prompt objects or dictionaries, with optional cache refresh
+- fixed single-content prompted subscription execution by creating a fresh
+  prompt instance automatically, including for connections delegated from
+  Workstation, while preserving v2 execution for multi-content subscriptions
+- fixed `SearchObject.run()` omitting saved relationship and exact-match
+  criteria, and aligned its default object-type scope with Workstation
+- added create, fetch, alter, and run support for type-only and negative
+  relationship criteria
+
+### Major changes
+
+- added `uses`, `not_uses`, `used_by` and `not_used_by` parameters to
+  `full_search()` and `start_full_search()`, allowing search results to be
+  constrained by the object type or subtype of related objects
+
 ## 11.6.9.101 - 2026/09/18
 
 ### New features

@@ -50,7 +50,7 @@ is_data = "DATA" in CONTENT
 
 if not is_sql and not is_data:
     raise ValueError(
-        "`$execute_content` variable must contain at least 'SQL' or 'DATA' (or both)."
+        "$`execute_content` variable must contain at least 'SQL' or 'DATA' (or both)."
     )
 
 objects = []

@@ -51,30 +51,51 @@ def merge_code_sections(sections: list[str]) -> str:
 def _defined_symbols(source: str) -> set[str]:
     tree = ast.parse(source, filename="<flow-engine>")
     symbols = set()
-    for statement in tree.body:
-        if isinstance(
-            statement,
-            (ast.AsyncFunctionDef, ast.ClassDef, ast.FunctionDef),
-        ):
-            symbols.add(statement.name)
-        elif isinstance(statement, (ast.Import, ast.ImportFrom)):
-            symbols.update(
-                alias.asname or alias.name.split(".", 1)[0] for alias in statement.names
-            )
-        elif isinstance(statement, ast.Assign):
-            symbols.update(
-                target.id
-                for target in statement.targets
-                if isinstance(target, ast.Name)
-            )
-        elif isinstance(statement, ast.AnnAssign) and isinstance(
-            statement.target, ast.Name
-        ):
-            symbols.add(statement.target.id)
+
+    def collect(statements):
+        for statement in statements:
+            if isinstance(
+                statement,
+                (ast.AsyncFunctionDef, ast.ClassDef, ast.FunctionDef),
+            ):
+                symbols.add(statement.name)
+            elif isinstance(statement, (ast.Import, ast.ImportFrom)):
+                symbols.update(
+                    alias.asname or alias.name.split(".", 1)[0]
+                    for alias in statement.names
+                )
+            elif isinstance(statement, ast.Assign):
+                symbols.update(
+                    target.id
+                    for target in statement.targets
+                    if isinstance(target, ast.Name)
+                )
+            elif isinstance(statement, ast.AnnAssign) and isinstance(
+                statement.target, ast.Name
+            ):
+                symbols.add(statement.target.id)
+            elif isinstance(statement, ast.If):
+                collect(statement.body)
+                collect(statement.orelse)
+            elif isinstance(statement, ast.Try):
+                collect(statement.body)
+                for handler in statement.handlers:
+                    collect(handler.body)
+                collect(statement.orelse)
+                collect(statement.finalbody)
+
+    collect(tree.body)
     return symbols
 
 
 ENGINE_SYMBOLS = _defined_symbols(GLOBALS)
+RUNTIME_SUPPORT_SYMBOLS = set().union(
+    *(
+        _defined_symbols(node_spec.runtime_support_source_text.strip())
+        for node_spec in NODE_SPECS.values()
+        if node_spec.runtime_support_source_text
+    )
+)
 
 
 def _validated_runtime_source(kind: str, node_spec: type[BaseNode]) -> str:
@@ -93,7 +114,7 @@ def _validated_runtime_source(kind: str, node_spec: type[BaseNode]) -> str:
         )
 
     missing_helpers = set(node_spec.runtime_required_helpers) - (
-        ENGINE_SYMBOLS | {"conn", "conn_lock"}
+        ENGINE_SYMBOLS | RUNTIME_SUPPORT_SYMBOLS | {"conn", "conn_lock"}
     )
     if missing_helpers:
         missing = ", ".join(sorted(missing_helpers))
@@ -102,6 +123,24 @@ def _validated_runtime_source(kind: str, node_spec: type[BaseNode]) -> str:
             f"engine helpers: {missing}."
         )
     return source
+
+
+def _runtime_support_sections(graph: AnyEntry) -> list[str]:
+    node_kinds = {node["kind"] for node in graph["nodes"]}
+    sections = []
+    for kind, node_spec in NODE_SPECS.items():
+        if kind not in node_kinds:
+            continue
+        source = dedent(node_spec.runtime_support_source_text).strip()
+        if source:
+            try:
+                ast.parse(source, filename=f"<{kind}-runtime-support>")
+            except SyntaxError as error:
+                raise SyntaxError(
+                    f"Invalid runtime support source for node type '{kind}'."
+                ) from error
+            sections.append(source)
+    return sections
 
 
 def generate_code_for_connection(
@@ -167,6 +206,7 @@ def emit_flow_code(
     return merge_code_sections(
         [
             *sections,
+            *_runtime_support_sections(graph),
             *_runtime_sections(graph),
             f"_FLOW_GRAPH = {_emit_literal(graph)}",
             "_run_flow(_FLOW_GRAPH)",

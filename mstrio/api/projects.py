@@ -434,7 +434,7 @@ def update_vldb_settings(
     Returns:
         Complete HTTP response object.
     """
-    with changeset_manager(connection) as changeset_id:
+    with changeset_manager(connection, project_id=id) as changeset_id:
         return connection.put(
             endpoint=f'/api/model/projects/{id}',
             headers={'X-MSTR-MS-Changeset': changeset_id},
@@ -459,7 +459,8 @@ def get_applicable_vldb_settings(
         Complete HTTP response object.
     """
     return connection.get(
-        endpoint=f'/api/model/projects/{id}/applicableAdvancedProperties'
+        endpoint=f'/api/model/projects/{id}/applicableAdvancedProperties',
+        headers={'X-MSTR-ProjectID': id},
     )
 
 
@@ -1156,6 +1157,82 @@ def set_web_preferences_project(
     """
     return connection.patch(
         endpoint=f'/api/preferences/webpreferences/project/{project_id}',
+        json=body,
+    )
+
+
+@ErrorHandler(
+    err_msg="Error getting schedule preferences for project with ID {project_id}."
+)
+def get_project_schedule_preferences(
+    connection: 'Connection',
+    project_id: str,
+    error_msg: str | None = None,
+) -> Response:
+    """Get schedules allowed for a project.
+
+    An empty ``schedules`` list in the response means that schedules are not
+    restricted for the project.
+
+    Args:
+        connection (Connection): Strategy REST API connection object.
+        project_id (str): Project ID.
+        error_msg (str, optional): Custom error message for error handling.
+
+    Returns:
+        Complete HTTP response object.
+    """
+    return connection.get(endpoint=f'/api/preferences/project/{project_id}/schedules')
+
+
+@ErrorHandler(
+    err_msg="Error setting schedule preferences for project with ID {project_id}."
+)
+def set_project_schedule_preferences(
+    connection: 'Connection',
+    project_id: str,
+    body: dict,
+    error_msg: str | None = None,
+) -> Response:
+    """Set schedules allowed for a project.
+
+    Args:
+        connection (Connection): Strategy REST API connection object.
+        project_id (str): Project ID.
+        body (dict): JSON-formatted schedule preferences data.
+        error_msg (str, optional): Custom error message for error handling.
+
+    Returns:
+        Complete HTTP response object.
+    """
+    return connection.put(
+        endpoint=f'/api/preferences/project/{project_id}/schedules',
+        json=body,
+    )
+
+
+@ErrorHandler(
+    err_msg="Error updating schedule preferences for project with ID {project_id}."
+)
+def update_project_schedule_preferences(
+    connection: 'Connection',
+    project_id: str,
+    body: dict,
+    error_msg: str | None = None,
+) -> Response:
+    """Add schedules to or remove schedules from a project's allowlist.
+
+    Args:
+        connection (Connection): Strategy REST API connection object.
+        project_id (str): Project ID.
+        body (dict): JSON-formatted patch operations.
+        error_msg (str, optional): Custom error message for error handling.
+
+    Returns:
+        Complete HTTP response object.
+    """
+    return connection.patch(
+        endpoint=f'/api/preferences/project/{project_id}/schedules',
         json=body,
     )
 

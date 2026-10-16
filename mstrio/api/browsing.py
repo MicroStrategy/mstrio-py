@@ -20,10 +20,10 @@ def store_search_instance(
     domain: int | None = None,
     root: str | None = None,
     object_types: list[int] | None = None,
-    uses_object: str | None = None,
+    uses_object: str | list[str] | None = None,
     uses_recursive: bool = False,
     uses_one_of: bool | None = None,
-    used_by_object: str | None = None,
+    used_by_object: str | list[str] | None = None,
     used_by_recursive: bool | None = None,
     used_by_one_of: bool | None = None,
     begin_modification_time: str | None = None,
@@ -56,20 +56,20 @@ def store_search_instance(
             Folder, Attribute or User. Possible values available in ENUMs
             mstrio.types.ObjectTypes and
             mstrio.types.ObjectSubTypes.
-        uses_object(string, optional): Constrain the search to only return
-            objects which use the given object. The value should be 'objectId;
-            object type', for example 'E02FE6DC430378A8BBD315AA791FC580;3'. It
-            is not allowed to use both 'uses_object' and 'used_by_object' in one
-            request.
+        uses_object(string or list[string], optional): Constrain the search to
+            only return objects which use the given object. Each value should
+            be 'objectId;object type', for example
+            'E02FE6DC430378A8BBD315AA791FC580;3'. It is not allowed to use both
+            'uses_object' and 'used_by_object' in one request.
         uses_recursive(boolean, optional): Control the Intelligence server to
             also find objects that use the given objects indirectly. Default
             value is false.
         uses_one_of(boolean): Control the Intelligence server to also find
             objects that use one of or all of given objects indirectly.
             Default value is false.
-        used_by_object(string, optional): Constrain the search to only return
-            objects which are used by the given object. The value should be
-            'object Id; object type', for example:
+        used_by_object(string or list[string], optional): Constrain the search
+            to only return objects which are used by the given object. Each
+            value should be 'objectId;object type', for example
             'E02FE6DC430378A8BBD315AA791FC580;3'. It is not allowed to use both
             'uses_object' and 'used_by_object' in one request.
         used_by_recursive(boolean, optional): Control the Intelligence server
@@ -121,10 +121,14 @@ def store_search_instance_v2(
     scope: str | None = None,
     root: str | None = None,
     object_types: list[int] | None = None,
-    uses_object: str | None = None,
+    uses_object: str | list[str] | None = None,
+    uses: int | None = None,
+    not_uses: int | None = None,
     uses_recursive: bool = False,
     uses_one_of: bool | None = None,
-    used_by_object: str | None = None,
+    used_by_object: str | list[str] | None = None,
+    used_by: int | None = None,
+    not_used_by: int | None = None,
     used_by_recursive: bool | None = None,
     used_by_one_of: bool | None = None,
     begin_modification_time: str | None = None,
@@ -160,22 +164,36 @@ def store_search_instance_v2(
         object_types (list of integers, optional): Type(s) of object(s) to be
             searched. Possible values are available in enums
             `mstrio.types.ObjectTypes` and `mstrio.types.ObjectSubTypes`.
-        uses_object (string, optional): Constrain the search to only return
-            objects which use the given object. The value should be 'objectId;
-            object type', for example 'E02FE6DC430378A8BBD315AA791FC580;3'. It
-            is not allowed to use both 'uses_object' and 'used_by_object' in one
-            request.
+        uses_object (string or list[string], optional): Constrain the search to
+            only return objects which use the given object. Each value should
+            be 'objectId;object type', for example
+            'E02FE6DC430378A8BBD315AA791FC580;3'. It is not allowed to use both
+            'uses_object' and 'used_by_object' in one request.
+        uses (integer, optional): Constrain the search to only return objects
+            which use the given type or subtype. Possible values are available
+            in enums `mstrio.types.ObjectTypes` and
+            `mstrio.types.ObjectSubTypes`.
+        not_uses (integer, optional): Constrain the search to only return
+            objects which do not use the given type or subtype. The same value
+            cannot be used for both 'uses' and 'not_uses'.
         uses_recursive (boolean, optional): Control the Intelligence server to
             also find objects that use the given objects indirectly. Default
             value is false.
         uses_one_of (boolean): Control the Intelligence server to also find
             objects that use one of or all of given objects indirectly.
             Default value is false.
-        used_by_object (string, optional): Constrain the search to only return
-            objects which are used by the given object. The value should be
-            'object Id; object type', for example:
+        used_by_object (string or list[string], optional): Constrain the search
+            to only return objects which are used by the given object. Each
+            value should be 'objectId;object type', for example
             'E02FE6DC430378A8BBD315AA791FC580;3'. It is not allowed to use both
             'uses_object' and 'used_by_object' in one request.
+        used_by (integer, optional): Constrain the search to only return objects
+            which are used by the given type or subtype. Possible values are
+            available in enums `mstrio.types.ObjectTypes` and
+            `mstrio.types.ObjectSubTypes`.
+        not_used_by (integer, optional): Constrain the search to only return
+            objects which are not used by the given type or subtype. The same
+            value cannot be used for both 'used_by' and 'not_used_by'.
         used_by_recursive (boolean, optional): Control the Intelligence server
             to also find objects that are used by the given objects indirectly.
             Default value is false.
@@ -196,6 +214,16 @@ def store_search_instance_v2(
     Returns:
         HTTP response returned by the Strategy REST server.
     """
+    body = body.copy()
+    if uses_object is not None:
+        body['usesObject'] = (
+            uses_object if isinstance(uses_object, list) else [uses_object]
+        )
+    if used_by_object is not None:
+        body['usedByObject'] = (
+            used_by_object if isinstance(used_by_object, list) else [used_by_object]
+        )
+
     return connection.post(
         endpoint='/api/v2/metadataSearches/results',
         headers={'X-MSTR-ProjectID': project_id},
@@ -206,9 +234,15 @@ def store_search_instance_v2(
             'scope': scope,
             'root': root,
             'type': object_types,
-            'usesObject': uses_object,
+            'usesObject': uses_object if isinstance(uses_object, str) else None,
+            'uses': uses,
+            'notUses': not_uses,
             'usesRecursive': uses_recursive,
-            'usedByObject': used_by_object,
+            'usedByObject': (
+                used_by_object if isinstance(used_by_object, str) else None
+            ),
+            'usedBy': used_by,
+            'notUsedBy': not_used_by,
             'usedByRecursive': used_by_recursive,
             'usesOneOf': uses_one_of,
             'usedByOneOf': used_by_one_of,
@@ -481,7 +515,7 @@ def get_search_suggestions(
     connection: 'Connection',
     project_id: str | None = None,
     key: str | None = None,
-    count: int = -1,
+    count: int = 4,
     is_cross_cluster: bool = None,
 ):
     """Store results of the Search engine to return search suggestions.
@@ -492,19 +526,22 @@ def get_search_suggestions(
         key (string, optional): value the search pattern is set to, which will
             be applied to the names of suggestions being searched
         count (int, optional): maximum number of items returned for a single
-            request. Used to control paging behavior. Default value is `-1` for
-            no limit.
+            request. Used to control paging behavior. Default value is `4`.
         is_cross_cluster (bool, optional): perform search in all unique projects
             across the cluster, this parameter only takes effect for I-Server
             with cluster nodes. Default value is `None`
     """
-    is_cross_cluster = str(is_cross_cluster).lower() if is_cross_cluster else None
+    is_cross_cluster = (
+        str(is_cross_cluster).lower() if is_cross_cluster is not None else None
+    )
     return connection.get(
-        endpoint=(
-            '/api/searches/suggestions'
-            f'?key={key}?count={count}?isCrossCluster={is_cross_cluster}'
-        ),
+        endpoint='/api/searches/suggestions',
         headers={'X-MSTR-ProjectID': project_id},
+        params={
+            'key': key,
+            'count': count,
+            'isCrossCluster': is_cross_cluster,
+        },
     )
 
 

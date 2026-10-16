@@ -3,6 +3,7 @@ import logging
 from concurrent.futures import as_completed
 from dataclasses import dataclass
 from datetime import date, datetime
+from enum import Enum
 from typing import TYPE_CHECKING
 
 from requests import Response
@@ -21,6 +22,7 @@ from mstrio.object_management.search_enums import (
 from mstrio.types import ObjectSubTypes, ObjectTypes
 from mstrio.users_and_groups import User
 from mstrio.utils.entity import CopyMixin, DeleteMixin, Entity, EntityBase, MoveMixin
+from mstrio.utils.enum_helper import get_enum
 from mstrio.utils.helper import (
     Dictable,
     _prepare_objects,
@@ -184,6 +186,94 @@ def _scope_to_search_rest(scope: SearchScope | None) -> str | None:
             return scope.name.lower()
 
 
+# Object types sent by Workstation when a metadata search has no explicit
+# type filter, i.e. when the user leaves the type selection empty.
+#
+# The metadata search endpoint does not treat the `uses`, `notUses`, `usedBy`
+# and `notUsedBy` parameters as search criteria on their own, so a search
+# constrained only by them is rejected by the Intelligence Server. Workstation
+# avoids this by always sending an explicit type list, and this constant
+# mirrors the list it sends for its "any type" state.
+#
+# Captured from a Workstation
+# `POST /api/v2/metadataSearches/results` request against I-Server 11.5.0600
+# on 2026-09-15. The list is defined by Workstation, not by the REST API, so
+# it may need to be refreshed when the platform introduces new object types.
+# The values are kept as plain integers because two of them have no
+# counterpart in `ObjectTypes` or `ObjectSubTypes`. The comments give the
+# matching enum member where one exists.
+DEFAULT_SEARCH_OBJECT_TYPES: list[int] = [
+    10,  # ObjectTypes.PROMPT
+    13,  # ObjectTypes.FACT
+    18,  # ObjectTypes.SHORTCUT_TYPE
+    48,  # ObjectTypes.CONSOLIDATION_ELEMENT
+    56,  # ObjectTypes.DRILL_MAP
+    58,  # ObjectTypes.SECURITY_FILTER
+    256,  # ObjectSubTypes.FILTER
+    257,  # ObjectSubTypes.CUSTOM_GROUP
+    448,  # No enum member, a subtype of ObjectTypes.FILTER
+    512,  # ObjectSubTypes.TEMPLATE
+    768,  # ObjectSubTypes.REPORT_GRID
+    769,  # ObjectSubTypes.REPORT_GRAPH
+    770,  # ObjectSubTypes.REPORT_ENGINE
+    771,  # ObjectSubTypes.REPORT_TEXT
+    772,  # ObjectSubTypes.REPORT_DATAMART
+    774,  # ObjectSubTypes.REPORT_GRID_AND_GRAPH
+    775,  # ObjectSubTypes.REPORT_NON_INTERACTIVE
+    776,  # ObjectSubTypes.OLAP_CUBE
+    777,  # ObjectSubTypes.INCREMENTAL_REFRESH_REPORT
+    778,  # ObjectSubTypes.REPORT_TRANSACTION
+    779,  # ObjectSubTypes.SUPER_CUBE
+    780,  # ObjectSubTypes.SUPER_CUBE_IRR
+    781,  # ObjectSubTypes.REPORT_HYPER_CARD
+    1024,  # ObjectSubTypes.METRIC
+    1025,  # ObjectSubTypes.SUBTOTAL_DEFINITION
+    1027,  # ObjectSubTypes.METRIC_DMX
+    1028,  # ObjectSubTypes.METRIC_TRAINING
+    1033,  # No enum member, a subtype of ObjectTypes.METRIC
+    1536,  # ObjectSubTypes.STYLE
+    1792,  # ObjectSubTypes.METRIC_AGG
+    2048,  # ObjectSubTypes.FOLDER
+    2816,  # ObjectSubTypes.FUNCTION
+    3072,  # ObjectSubTypes.ATTRIBUTE
+    3584,  # ObjectSubTypes.DIMENSION_SYSTEM
+    3585,  # ObjectSubTypes.DIMENSION_USER
+    3587,  # ObjectSubTypes.DIMENSION_USER_HIERARCHY
+    3840,  # ObjectSubTypes.TABLE
+    3842,  # ObjectSubTypes.TABLE_PARTITION_WH
+    9984,  # ObjectSubTypes.SEARCH
+    11009,  # ObjectSubTypes.ROLE_TRANSFORMATION
+    12032,  # ObjectSubTypes.CONSOLIDATION
+    14080,  # ObjectSubTypes.DOCUMENT_DEFINITION
+    14081,  # ObjectSubTypes.REPORT_WRITING_DOCUMENT
+    15232,  # ObjectSubTypes.PROMPT_ANSWER
+]
+
+
+def _relationship_type_to_value(
+    value: 'ObjectTypes | ObjectSubTypes | int | None',
+) -> int | None:
+    """Convert a relationship type criterion to a value accepted by REST.
+
+    The `uses`, `notUses`, `usedBy` and `notUsedBy` query parameters of the
+    metadata search endpoint accept either an object type or an object
+    subtype value.
+
+    Args:
+        value (ObjectTypes | ObjectSubTypes | int | None): Type or subtype
+            to be converted.
+
+    Returns:
+        int | None: Numeric type or subtype value, or `None` if no value
+            was provided.
+    """
+
+    if value is None:
+        return None
+
+    return int(value.value if isinstance(value, Enum) else value)
+
+
 def _visibility_to_rest(include_hidden: bool | None) -> str | None:
     """Convert a visibility filter to a string accepted by REST endpoint.
 
@@ -258,6 +348,85 @@ def _get_date_query_fields(
                 date_query['end_time'] += TZ_SUFFIX
 
     return date_query_type, date_query
+
+
+@dataclass
+class SearchObjectMember(Dictable):
+    """Object referenced by a Search Object relationship criterion.
+
+    Attributes:
+        id (str): ID of the referenced object.
+        display_name (str, optional): Display name of the referenced object.
+        type (ObjectTypes | int, optional): Type of the referenced object.
+            Required when creating or altering a Search Object.
+        subtype (ObjectSubTypes | int, optional): Subtype of the referenced
+            object. Required when creating or altering a Search Object.
+    """
+
+    _FROM_DICT_MAP = {
+        'type': ObjectTypes.from_rest_value,
+        'subtype': ObjectSubTypes.from_rest_value,
+    }
+
+    id: str
+    display_name: str | None = None
+    type: ObjectTypes | int | None = None
+    subtype: ObjectSubTypes | int | None = None
+
+    def to_rest_dict(self) -> dict:
+        """Convert the member to the Search Object REST representation."""
+        object_type = get_enum(self.type, ObjectTypes)
+        subtype = get_enum(self.subtype, ObjectSubTypes)
+        return delete_none_values(
+            {
+                'id': self.id,
+                'displayName': self.display_name,
+                'type': (
+                    object_type.to_rest_value() if object_type is not None else None
+                ),
+                'subtype': subtype.to_rest_value() if subtype is not None else None,
+            },
+            recursion=True,
+        )
+
+    def to_patch_value(self) -> str:
+        """Convert the member to the Search Object PATCH representation."""
+        if self.type is None or self.subtype is None:
+            raise ValueError(
+                "Search Object members require type and subtype for alteration."
+            )
+        object_type = get_enum_val(self.type, ObjectTypes)
+        subtype = get_enum_val(self.subtype, ObjectSubTypes)
+        return f'{self.id};{object_type};{subtype}'
+
+
+def _merge_search_object_ids_and_types(
+    object_ids: EntityBase | str | list[EntityBase | str] | None,
+    object_types: (
+        ObjectTypes
+        | ObjectSubTypes
+        | int
+        | list[ObjectTypes | ObjectSubTypes | int]
+        | None
+    ),
+    error_message: str,
+) -> str | list[str] | None:
+    """Merge one or more object IDs and types into REST relationship values."""
+    if not object_ids:
+        return None
+
+    ids = object_ids if isinstance(object_ids, list) else [object_ids]
+    types = object_types if isinstance(object_types, list) else [object_types]
+    if not types or (len(types) != 1 and len(types) != len(ids)):
+        exception_handler(msg=error_message, exception_type=AttributeError)
+    if len(types) == 1 and len(ids) > 1:
+        types *= len(ids)
+
+    merged = [
+        merge_id_and_type(object_id, object_type, error_message)
+        for object_id, object_type in zip(ids, types)
+    ]
+    return merged if isinstance(object_ids, list) else merged[0]
 
 
 def list_search_objects(
@@ -380,6 +549,26 @@ class SearchObject(Entity, CopyMixin, MoveMixin, DeleteMixin):
             from the search
         scope (SearchScope, optional): Scope of the search with regard to
             System Managed Objects.
+        uses_query (ObjectTypes | ObjectSubTypes, optional): Type or subtype
+            which matching objects must use.
+        not_uses_query (ObjectTypes | ObjectSubTypes, optional): Type or subtype
+            which matching objects must not use.
+        uses_object_query (list[SearchObjectMember], optional): Objects that
+            matching objects must use
+        used_by_query (ObjectTypes | ObjectSubTypes, optional): Type or subtype
+            which must use matching objects.
+        not_used_by_query (ObjectTypes | ObjectSubTypes, optional): Type or
+            subtype which must not use matching objects.
+        used_by_object_query (list[SearchObjectMember], optional): Objects that
+            must use matching objects
+        uses_recursive (bool, optional): Whether used objects may be indirect
+        uses_one_of (bool, optional): Whether any used object may match
+        used_by_recursive (bool, optional): Whether used-by objects may be
+            indirect
+        used_by_one_of (bool, optional): Whether any used-by object may match
+        match_exact_name (bool, optional): Whether name matching is exact
+        match_exact_description (bool, optional): Whether description matching
+            is exact
     """
 
     @staticmethod
@@ -388,6 +577,22 @@ class SearchObject(Entity, CopyMixin, MoveMixin, DeleteMixin):
         if source is None:
             return None
         return DateQuery.from_dict(source, *args, **kwargs)
+
+    @staticmethod
+    def _relationship_type_or_none(
+        source: str | int | ObjectTypes | ObjectSubTypes | None,
+        *args,
+        **kwargs,
+    ) -> ObjectTypes | ObjectSubTypes | None:
+        """Convert a relationship type returned by REST to an enum."""
+        if source is None or isinstance(source, (ObjectTypes, ObjectSubTypes)):
+            return source
+        if isinstance(source, int):
+            return ObjectTypes(source) if source < 256 else ObjectSubTypes(source)
+        try:
+            return ObjectTypes.from_rest_value(source)
+        except (KeyError, ValueError):
+            return ObjectSubTypes.from_rest_value(source)
 
     _OBJECT_TYPE = ObjectTypes.SEARCH
     _FROM_DICT_MAP = {
@@ -398,6 +603,12 @@ class SearchObject(Entity, CopyMixin, MoveMixin, DeleteMixin):
         'date_created_query': _date_query_or_none,
         'date_modified_query': _date_query_or_none,
         'scope': SearchScope,
+        'uses_query': _relationship_type_or_none,
+        'not_uses_query': _relationship_type_or_none,
+        'uses_object_query': [SearchObjectMember.from_dict],
+        'used_by_query': _relationship_type_or_none,
+        'not_used_by_query': _relationship_type_or_none,
+        'used_by_object_query': [SearchObjectMember.from_dict],
     }
     # unwrapping so dynamic updates don't affect field in superclass
     _API_GETTERS = {**Entity._API_GETTERS}
@@ -418,6 +629,18 @@ class SearchObject(Entity, CopyMixin, MoveMixin, DeleteMixin):
             'include_subfolders',
             'excluded_folders',
             'scope',
+            'uses',
+            'not_uses',
+            'uses_object',
+            'uses_recursive',
+            'uses_one_of',
+            'used_by',
+            'not_used_by',
+            'used_by_object',
+            'used_by_recursive',
+            'used_by_one_of',
+            'match_exact_name',
+            'match_exact_description',
         ): (browsing.update_search_object, 'patch'),
     }
 
@@ -430,6 +653,12 @@ class SearchObject(Entity, CopyMixin, MoveMixin, DeleteMixin):
         # Not to be confused with owner of the object itself, which is passed
         # with "owner"
         "owner_id": "owner_query",
+        "uses": "uses_query",
+        "not_uses": "not_uses_query",
+        "uses_object": "uses_object_query",
+        "used_by": "used_by_query",
+        "not_used_by": "not_used_by_query",
+        "used_by_object": "used_by_object_query",
     }
 
     def __init__(
@@ -479,6 +708,18 @@ class SearchObject(Entity, CopyMixin, MoveMixin, DeleteMixin):
         self.include_subfolders = kwargs.get('include_subfolders')
         self.exclude_folders = kwargs.get('exclude_folders')
         self.scope = kwargs.get('scope')
+        self.uses_query = kwargs.get('uses_query')
+        self.not_uses_query = kwargs.get('not_uses_query')
+        self.uses_object_query = kwargs.get('uses_object_query')
+        self.used_by_query = kwargs.get('used_by_query')
+        self.not_used_by_query = kwargs.get('not_used_by_query')
+        self.used_by_object_query = kwargs.get('used_by_object_query')
+        self.uses_recursive = kwargs.get('uses_recursive')
+        self.uses_one_of = kwargs.get('uses_one_of')
+        self.used_by_recursive = kwargs.get('used_by_recursive')
+        self.used_by_one_of = kwargs.get('used_by_one_of')
+        self.match_exact_name = kwargs.get('match_exact_name')
+        self.match_exact_description = kwargs.get('match_exact_description')
 
         # Dynamically update getters based on version. This cannot be done
         # in __init__ because this step would be skipped e.g. in from_dict
@@ -500,6 +741,18 @@ class SearchObject(Entity, CopyMixin, MoveMixin, DeleteMixin):
                         "include_subfolders",
                         "exclude_folders",
                         "scope",
+                        "uses_query",
+                        "not_uses_query",
+                        "uses_object_query",
+                        "used_by_query",
+                        "not_used_by_query",
+                        "used_by_object_query",
+                        "uses_recursive",
+                        "uses_one_of",
+                        "used_by_recursive",
+                        "used_by_one_of",
+                        "match_exact_name",
+                        "match_exact_description",
                     ): browsing_processors.get_search_object,
                 }
             )
@@ -524,7 +777,33 @@ class SearchObject(Entity, CopyMixin, MoveMixin, DeleteMixin):
         return t.to_rest_value()
 
     @staticmethod
-    def _filter_search_object_params(connection: 'Connection', **params):
+    def _relationship_type_to_rest(
+        relationship_type: ObjectTypes | ObjectSubTypes | int | None,
+    ) -> str | None:
+        """Convert a relationship type or subtype to a REST value."""
+        if relationship_type is None:
+            return None
+        if isinstance(relationship_type, int):
+            relationship_type = (
+                ObjectTypes(relationship_type)
+                if relationship_type < 256
+                else ObjectSubTypes(relationship_type)
+            )
+        if not isinstance(relationship_type, (ObjectTypes, ObjectSubTypes)):
+            raise TypeError(
+                'Relationship type must be an ObjectTypes, ObjectSubTypes or int.'
+            )
+        if (
+            relationship_type is ObjectTypes.NOT_SUPPORTED
+            or relationship_type.name not in type(relationship_type).__members__
+        ):
+            raise ValueError(f'Invalid relationship type: {relationship_type.value}.')
+        return relationship_type.to_rest_value()
+
+    @staticmethod
+    def _filter_search_object_params(
+        connection: 'Connection', *, for_update: bool = False, **params
+    ):
         from mstrio.object_management import Folder
 
         destination_folder = params.pop('destination_folder', None)
@@ -581,7 +860,9 @@ class SearchObject(Entity, CopyMixin, MoveMixin, DeleteMixin):
         )
         params['owner_id'] = owner_query
 
-        params['visibility'] = _visibility_to_rest(params.pop('include_hidden', None))
+        # Search Object JSON expects enum names, not query parameter values.
+        visibility = _visibility_to_rest(params.pop('include_hidden', None))
+        params['visibility'] = visibility.upper() if visibility is not None else None
 
         if (exclude_folders := params.pop('exclude_folders', None)) is not None:
             params['excluded_folders'] = [
@@ -591,6 +872,40 @@ class SearchObject(Entity, CopyMixin, MoveMixin, DeleteMixin):
 
         if isinstance(scope := params.get('scope'), SearchScope):
             params['scope'] = scope.value
+
+        for query_name, rest_name in (
+            ('uses_query', 'uses'),
+            ('not_uses_query', 'not_uses'),
+            ('used_by_query', 'used_by'),
+            ('not_used_by_query', 'not_used_by'),
+        ):
+            params[rest_name] = SearchObject._relationship_type_to_rest(
+                params.pop(query_name, None)
+            )
+
+        for query_name, rest_name in (
+            ('uses_object_query', 'uses_object'),
+            ('used_by_object_query', 'used_by_object'),
+        ):
+            members = params.pop(query_name, None)
+            if members is not None:
+                if isinstance(members, SearchObjectMember):
+                    members = [members]
+                serialized_members = []
+                for member in members:
+                    if for_update:
+                        value = member.to_patch_value()
+                    elif isinstance(member, SearchObjectMember):
+                        if member.type is None or member.subtype is None:
+                            raise ValueError(
+                                "Search Object members require type and subtype "
+                                "for creation."
+                            )
+                        value = member.to_rest_dict()
+                    else:
+                        value = member
+                    serialized_members.append(value)
+                params[rest_name] = serialized_members
 
         return delete_none_values(params, recursion=True)
 
@@ -623,6 +938,20 @@ class SearchObject(Entity, CopyMixin, MoveMixin, DeleteMixin):
         exclude_folders: 'list[str | Folder] | None' = None,
         scope: SearchScope | None = None,
         to_dictionary: bool = False,
+        uses_query: ObjectTypes | ObjectSubTypes | int | None = None,
+        not_uses_query: ObjectTypes | ObjectSubTypes | int | None = None,
+        uses_object_query: SearchObjectMember | list[SearchObjectMember] | None = None,
+        used_by_query: ObjectTypes | ObjectSubTypes | int | None = None,
+        not_used_by_query: ObjectTypes | ObjectSubTypes | int | None = None,
+        used_by_object_query: (
+            SearchObjectMember | list[SearchObjectMember] | None
+        ) = None,
+        uses_recursive: bool | None = None,
+        uses_one_of: bool | None = None,
+        used_by_recursive: bool | None = None,
+        used_by_one_of: bool | None = None,
+        match_exact_name: bool | None = None,
+        match_exact_description: bool | None = None,
     ) -> 'SearchObject | dict':
         """Create a new SearchObject.
 
@@ -677,6 +1006,28 @@ class SearchObject(Entity, CopyMixin, MoveMixin, DeleteMixin):
                 to System Managed Objects. Possible values are
                 "not_managed_only", "managed_only", "all". Defaults to
                 "not_managed_only".
+            uses_query (ObjectTypes | ObjectSubTypes | int, optional): Type or
+                subtype which matching objects must use.
+            not_uses_query (ObjectTypes | ObjectSubTypes | int, optional): Type
+                or subtype which matching objects must not use.
+            uses_object_query (SearchObjectMember | list[SearchObjectMember],
+                optional): Objects that matching objects must use.
+            used_by_query (ObjectTypes | ObjectSubTypes | int, optional): Type
+                or subtype which must use matching objects.
+            not_used_by_query (ObjectTypes | ObjectSubTypes | int, optional):
+                Type or subtype which must not use matching objects.
+            used_by_object_query (SearchObjectMember | list[SearchObjectMember],
+                optional): Objects that must use matching objects.
+            uses_recursive (bool, optional): Whether used objects may be
+                indirect.
+            uses_one_of (bool, optional): Whether any used object may match.
+            used_by_recursive (bool, optional): Whether used-by objects may be
+                indirect.
+            used_by_one_of (bool, optional): Whether any used-by object may
+                match.
+            match_exact_name (bool, optional): Whether name matching is exact.
+            match_exact_description (bool, optional): Whether description
+                matching is exact.
             to_dictionary (bool): If True, returns a dictionary with the new
                 object's details instead of a SearchObject. Defaults to False.
 
@@ -744,6 +1095,20 @@ class SearchObject(Entity, CopyMixin, MoveMixin, DeleteMixin):
         include_subfolders: bool | None = None,
         exclude_folders: 'list[str | Folder] | None' = None,
         scope: SearchScope | None = None,
+        uses_query: ObjectTypes | ObjectSubTypes | int | None = None,
+        not_uses_query: ObjectTypes | ObjectSubTypes | int | None = None,
+        uses_object_query: SearchObjectMember | list[SearchObjectMember] | None = None,
+        used_by_query: ObjectTypes | ObjectSubTypes | int | None = None,
+        not_used_by_query: ObjectTypes | ObjectSubTypes | int | None = None,
+        used_by_object_query: (
+            SearchObjectMember | list[SearchObjectMember] | None
+        ) = None,
+        uses_recursive: bool | None = None,
+        uses_one_of: bool | None = None,
+        used_by_recursive: bool | None = None,
+        used_by_one_of: bool | None = None,
+        match_exact_name: bool | None = None,
+        match_exact_description: bool | None = None,
     ):
         """Alter Search Object properties.
 
@@ -789,6 +1154,28 @@ class SearchObject(Entity, CopyMixin, MoveMixin, DeleteMixin):
                 to System Managed Objects. Possible values are
                 "not_managed_only", "managed_only", "all". Defaults to
                 "not_managed_only".
+            uses_query (ObjectTypes | ObjectSubTypes | int, optional): Type or
+                subtype which matching objects must use.
+            not_uses_query (ObjectTypes | ObjectSubTypes | int, optional): Type
+                or subtype which matching objects must not use.
+            uses_object_query (SearchObjectMember | list[SearchObjectMember],
+                optional): Objects that matching objects must use.
+            used_by_query (ObjectTypes | ObjectSubTypes | int, optional): Type
+                or subtype which must use matching objects.
+            not_used_by_query (ObjectTypes | ObjectSubTypes | int, optional):
+                Type or subtype which must not use matching objects.
+            used_by_object_query (SearchObjectMember | list[SearchObjectMember],
+                optional): Objects that must use matching objects.
+            uses_recursive (bool, optional): Whether used objects may be
+                indirect.
+            uses_one_of (bool, optional): Whether any used object may match.
+            used_by_recursive (bool, optional): Whether used-by objects may be
+                indirect.
+            used_by_one_of (bool, optional): Whether any used-by object may
+                match.
+            match_exact_name (bool, optional): Whether name matching is exact.
+            match_exact_description (bool, optional): Whether description
+                matching is exact.
         """
         if owner or owner_id or owner_username:
             owner = get_owner_id(self.connection, owner, owner_id, owner_username)
@@ -797,7 +1184,7 @@ class SearchObject(Entity, CopyMixin, MoveMixin, DeleteMixin):
         unfiltered_properties = locals()
         unfiltered_properties.pop('self')
         properties = self._filter_search_object_params(
-            self.connection, **unfiltered_properties
+            self.connection, for_update=True, **unfiltered_properties
         )
         self._alter_properties(**properties)
         self.fetch()
@@ -816,6 +1203,13 @@ class SearchObject(Entity, CopyMixin, MoveMixin, DeleteMixin):
         to_dictionary: bool = False,
     ) -> list[EntityBase] | list[dict]:
         """Execute the search operation with the stored parameters.
+
+        Note:
+            The Intelligence Server does not accept a search that is
+            constrained only by relationship criteria. When the Search Object
+            defines any relationship criterion but does not restrict the object
+            types, the search is executed with `DEFAULT_SEARCH_OBJECT_TYPES`,
+            matching the behavior of Workstation.
 
         Args:
             domain(integer or enum class object): Domain where the search
@@ -849,7 +1243,23 @@ class SearchObject(Entity, CopyMixin, MoveMixin, DeleteMixin):
         )
 
         if self.object_types_query is None and self.object_subtypes_query is None:
-            type_query = None
+            # The Intelligence Server does not accept a search constrained only
+            # by relationship criteria, so fall back to the same default
+            # type list that Workstation sends when no type filter is set.
+            type_query = (
+                list(DEFAULT_SEARCH_OBJECT_TYPES)
+                if any(
+                    (
+                        self.uses_query,
+                        self.not_uses_query,
+                        self.used_by_query,
+                        self.not_used_by_query,
+                        self.uses_object_query,
+                        self.used_by_object_query,
+                    )
+                )
+                else None
+            )
         else:
             type_query = (self.object_types_query or []) + (
                 self.object_subtypes_query or []
@@ -873,6 +1283,36 @@ class SearchObject(Entity, CopyMixin, MoveMixin, DeleteMixin):
             include_subfolders=self.include_subfolders,
             exclude_folders=self.exclude_folders,
             scope=self.scope,
+            uses_object_id=(
+                [member.id for member in self.uses_object_query]
+                if self.uses_object_query
+                else None
+            ),
+            uses_object_type=(
+                [member.type for member in self.uses_object_query]
+                if self.uses_object_query
+                else None
+            ),
+            uses_recursive=self.uses_recursive or False,
+            uses_one_of=self.uses_one_of or False,
+            uses=self.uses_query,
+            not_uses=self.not_uses_query,
+            used_by_object_id=(
+                [member.id for member in self.used_by_object_query]
+                if self.used_by_object_query
+                else None
+            ),
+            used_by_object_type=(
+                [member.type for member in self.used_by_object_query]
+                if self.used_by_object_query
+                else None
+            ),
+            used_by_recursive=self.used_by_recursive or False,
+            used_by_one_of=self.used_by_one_of or False,
+            used_by=self.used_by_query,
+            not_used_by=self.not_used_by_query,
+            match_exact_name=self.match_exact_name or False,
+            match_exact_description=self.match_exact_description or False,
             results_format=results_format,
             limit=limit,
             offset=offset,
@@ -1091,7 +1531,7 @@ def get_search_suggestions(
             be applied to the names of suggestions being searched
         max_results (int, optional): maximum number of items returned
             for a single request. Used to control paging behavior.
-            Default value is `-1` for no limit.
+            Default value is `4`.
         cross_cluster (bool, optional): perform search in all unique projects
             across the cluster, this parameter only takes effect for I-Server
             with cluster nodes. Default value is `None`
@@ -1129,14 +1569,32 @@ def full_search(
     root_name: str | None = None,
     root_path: FolderPathType | None = None,
     object_types: 'TypeOrSubtype | None' = None,
-    uses_object_id: EntityBase | str | None = None,
-    uses_object_type: ObjectTypes | int | None = None,
+    uses_object_id: EntityBase | str | list[EntityBase | str] | None = None,
+    uses_object_type: (
+        ObjectTypes
+        | ObjectSubTypes
+        | int
+        | list[ObjectTypes | ObjectSubTypes | int]
+        | None
+    ) = None,
     uses_recursive: bool = False,
     uses_one_of: bool = False,
-    used_by_object_id: EntityBase | str | None = None,
-    used_by_object_type: ObjectTypes | str | None = None,
+    uses: ObjectTypes | ObjectSubTypes | int | None = None,
+    not_uses: ObjectTypes | ObjectSubTypes | int | None = None,
+    used_by_object_id: EntityBase | str | list[EntityBase | str] | None = None,
+    used_by_object_type: (
+        ObjectTypes
+        | ObjectSubTypes
+        | int
+        | list[ObjectTypes | ObjectSubTypes | int]
+        | None
+    ) = None,
     used_by_recursive: bool = False,
     used_by_one_of: bool = False,
+    used_by: ObjectTypes | ObjectSubTypes | int | None = None,
+    not_used_by: ObjectTypes | ObjectSubTypes | int | None = None,
+    match_exact_name: bool = False,
+    match_exact_description: bool = False,
     begin_modification_time: str | None = None,
     end_modification_time: str | None = None,
     query_modification_time: DateQuery | None = None,
@@ -1194,28 +1652,49 @@ def full_search(
             Folder, Attribute or User. Possible values available in ENUMs
             mstrio.types.ObjectTypes and
             mstrio.types.ObjectSubTypes
-        uses_object_id(string): Constrain the search to only return
-            objects which use the given object.
-        uses_object_type(string): Constrain the search to only return
-            objects which use the given object. Possible values
-            available in ENUMs mstrio.types.ObjectTypes
+        uses_object_id(string or list[string]): Constrain the search to only
+            return objects which use the given object or objects.
+        uses_object_type(ObjectTypes or list[ObjectTypes]): Constrain the search
+            to only return objects which use the given object or objects.
+            Possible values are available in ENUMs mstrio.types.ObjectTypes
         uses_recursive(boolean): Control the Intelligence server to
             also find objects that use the given objects indirectly. Default
             value is false.
         uses_one_of(boolean): Control the Intelligence server to also
             find objects that use one of or all of given objects indirectly.
             Default value is false.
-        used_by_object_id(string): Constrain the search to only return
-            objects which are used by the given object.
-        used_by_object_type(string): Constrain the search to only return
-            objects which are used by the given object. Possible values
-            available in ENUM mstrio.types.ObjectTypes
+        uses (ObjectTypes, ObjectSubTypes or int, optional): Constrain the
+            search to only return objects which use objects of the given type
+            or subtype. Supported only for I-Server version 11.4.1200 or later.
+        not_uses (ObjectTypes, ObjectSubTypes or int, optional): Constrain the
+            search to only return objects which do not use objects of the given
+            type or subtype. The same value cannot be used for both `uses` and
+            `not_uses`. Supported only for I-Server version 11.4.1200 or later.
+        used_by_object_id(string or list[string]): Constrain the search to only
+            return objects which are used by the given object or objects.
+        used_by_object_type(ObjectTypes or list[ObjectTypes]): Constrain the
+            search to only return objects which are used by the given object or
+            objects. Possible values are available in ENUMs
+            mstrio.types.ObjectTypes
         used_by_recursive(boolean, optional): Control the Intelligence server
             to also find objects that are used by the given objects indirectly.
             Default value is false.
         used_by_one_of(boolean): Control the Intelligence server to also
             find objects that are used by one of or all of given objects
             indirectly. Default value is false.
+        used_by (ObjectTypes, ObjectSubTypes or int, optional): Constrain the
+            search to only return objects which are used by objects of the
+            given type or subtype. Supported only for I-Server version
+            11.4.1200 or later.
+        not_used_by (ObjectTypes, ObjectSubTypes or int, optional): Constrain
+            the search to only return objects which are not used by objects of
+            the given type or subtype. The same value cannot be used for both
+            `used_by` and `not_used_by`. Supported only for I-Server version
+            11.4.1200 or later.
+        match_exact_name(bool): Whether name matching is exact. Default value
+            is false.
+        match_exact_description(bool): Whether description matching is exact.
+            Default value is false.
         begin_modification_time(string, optional): Field to filter request
             to return records newer than a given date in
             format 'yyyy-MM-dd'T'HH:mm:ssZ', for example 2021-04-04T06:33:32Z.
@@ -1286,14 +1765,32 @@ def start_full_search(
     root_id: str | None = None,
     root_name: str | None = None,
     root_path: FolderPathType | None = None,
-    uses_object_id: EntityBase | str | None = None,
-    uses_object_type: ObjectTypes | ObjectSubTypes | int | None = None,
+    uses_object_id: EntityBase | str | list[EntityBase | str] | None = None,
+    uses_object_type: (
+        ObjectTypes
+        | ObjectSubTypes
+        | int
+        | list[ObjectTypes | ObjectSubTypes | int]
+        | None
+    ) = None,
     uses_recursive: bool = False,
     uses_one_of: bool = False,
-    used_by_object_id: EntityBase | str | None = None,
-    used_by_object_type: ObjectTypes | ObjectSubTypes | int | None = None,
+    uses: ObjectTypes | ObjectSubTypes | int | None = None,
+    not_uses: ObjectTypes | ObjectSubTypes | int | None = None,
+    used_by_object_id: EntityBase | str | list[EntityBase | str] | None = None,
+    used_by_object_type: (
+        ObjectTypes
+        | ObjectSubTypes
+        | int
+        | list[ObjectTypes | ObjectSubTypes | int]
+        | None
+    ) = None,
     used_by_recursive: bool = False,
     used_by_one_of: bool = False,
+    used_by: ObjectTypes | ObjectSubTypes | int | None = None,
+    not_used_by: ObjectTypes | ObjectSubTypes | int | None = None,
+    match_exact_name: bool = False,
+    match_exact_description: bool = False,
     begin_modification_time: str | None = None,
     end_modification_time: str | None = None,
     query_modification_time: DateQuery | None = None,
@@ -1344,28 +1841,48 @@ def start_full_search(
                     /MicroStrategy Tutorial/Public Objects/Metrics
                 if it's a root folder, start with `CASTOR_SERVER_CONFIGURATION`:
                     /CASTOR_SERVER_CONFIGURATION/Users
-        uses_object_id(string): Constrain the search to only return
-            objects which use the given object.
-        uses_object_type(int, ObjectTypes): Constrain the search to only return
-            objects which use the given object. Possible values
-            available in ENUMs mstrio.types.ObjectTypes
+        uses_object_id(string or list[string]): Constrain the search to only
+            return objects which use the given object or objects.
+        uses_object_type(int, ObjectTypes, or list): Constrain the search to
+            only return objects which use the given object or objects. Possible
+            values are available in ENUMs mstrio.types.ObjectTypes
         uses_recursive(boolean): Control the Intelligence server to
             also find objects that use the given objects indirectly. Default
             value is false.
         uses_one_of(boolean): Control the Intelligence server to also find
              objects that use one of or all of given objects indirectly.
              Default value is false.
-        used_by_object_id(string): Constrain the search to only return
-            objects which are used by the given object.
-        used_by_object_type(int, ObjectTypes): Constrain the search to only
-            return objects which are used by the given object. Possible values
-            available in ENUM mstrio.types.ObjectTypes
+        uses (ObjectTypes, ObjectSubTypes or int, optional): Constrain the
+            search to only return objects which use objects of the given type
+            or subtype. Supported only for I-Server version 11.4.1200 or later.
+        not_uses (ObjectTypes, ObjectSubTypes or int, optional): Constrain the
+            search to only return objects which do not use objects of the given
+            type or subtype. The same value cannot be used for both `uses` and
+            `not_uses`. Supported only for I-Server version 11.4.1200 or later.
+        used_by_object_id(string or list[string]): Constrain the search to only
+            return objects which are used by the given object or objects.
+        used_by_object_type(int, ObjectTypes, or list): Constrain the search to
+            only return objects which are used by the given object or objects.
+            Possible values are available in ENUMs mstrio.types.ObjectTypes
         used_by_recursive(boolean, optional): Control the Intelligence server
             to also find objects that are used by the given objects indirectly.
             Default value is false.
         used_by_one_of(boolean): Control the Intelligence server to also
             find objects that are used by one or all given objects
             indirectly. Default value is false.
+        used_by (ObjectTypes, ObjectSubTypes or int, optional): Constrain the
+            search to only return objects which are used by objects of the
+            given type or subtype. Supported only for I-Server version
+            11.4.1200 or later.
+        not_used_by (ObjectTypes, ObjectSubTypes or int, optional): Constrain
+            the search to only return objects which are not used by objects of
+            the given type or subtype. The same value cannot be used for both
+            `used_by` and `not_used_by`. Supported only for I-Server version
+            11.4.1200 or later.
+        match_exact_name(bool): Whether name matching is exact. Default value
+            is false.
+        match_exact_description(bool): Whether description matching is exact.
+            Default value is false.
         begin_modification_time(string, optional): Field to filter request
             to return records newer than a given date in
             format 'yyyy-MM-dd'T'HH:mm:ssZ', for example 2021-04-04T06:33:32Z.
@@ -1415,6 +1932,10 @@ def start_full_search(
         "include_subfolders",
         "exclude_folders",
         "scope",
+        "uses",
+        "not_uses",
+        "used_by",
+        "not_used_by",
     }
     supports_v2_search = meets_minimal_version(connection.iserver_version, '11.4.1200')
     if not supports_v2_search:
@@ -1438,40 +1959,40 @@ def start_full_search(
         assert_id_exists=root or root_id or root_name or root_path,
     )
 
-    if uses_object_id and used_by_object_id:
+    if uses_object_id and used_by_object_id and not supports_v2_search:
         exception_handler(
             msg="It is not allowed to use both `uses_object` and `used_by_object` in "
             "one request.",
             exception_type=AttributeError,
         )
 
-    uses_object = (
-        merge_id_and_type(
-            uses_object_id,
-            uses_object_type,
-            "Please provide both `uses_object_id` and `uses_object_type`.",
-        )
-        if uses_object_id
-        else None
+    uses_object = _merge_search_object_ids_and_types(
+        uses_object_id,
+        uses_object_type,
+        "Please provide both `uses_object_id` and `uses_object_type`.",
     )
-    used_by_object = (
-        merge_id_and_type(
-            used_by_object_id,
-            used_by_object_type,
-            "Please provide both `used_by_object_id` and `uses_object_type`.",
-        )
-        if used_by_object_id
-        else None
+    used_by_object = _merge_search_object_ids_and_types(
+        used_by_object_id,
+        used_by_object_type,
+        "Please provide both `used_by_object_id` and `used_by_object_type`.",
     )
-
     project_id = get_objects_id(project, Project)
     if object_types and not isinstance(object_types, list):
         object_types = [
-            get_enum_val(object_types, (ObjectTypes, ObjectSubTypes), False)
+            (
+                object_types
+                if isinstance(object_types, int)
+                else get_enum_val(object_types, (ObjectTypes, ObjectSubTypes), False)
+            )
         ]
     elif object_types:
         object_types = [
-            get_enum_val(t, (ObjectTypes, ObjectSubTypes), False) for t in object_types
+            (
+                t
+                if isinstance(t, int)
+                else get_enum_val(t, (ObjectTypes, ObjectSubTypes), False)
+            )
+            for t in object_types
         ]
     pattern = get_enum_val(pattern, SearchPattern)
     domain = get_enum_val(domain, SearchDomain)
@@ -1499,6 +2020,10 @@ def start_full_search(
             "ownerId": owner,
             "localeId": locale_id,
             "excludedFolders": exclude_folders,
+            "usesObject": uses_object,
+            "usedByObject": used_by_object,
+            "matchExactName": match_exact_name,
+            "matchExactDescription": match_exact_description,
         }
         body = snake_to_camel(body)
         body = delete_none_values(body, recursion=True)
@@ -1513,9 +2038,13 @@ def start_full_search(
             root=root_id,
             object_types=object_types,
             uses_object=uses_object,
+            uses=_relationship_type_to_value(uses),
+            not_uses=_relationship_type_to_value(not_uses),
             uses_recursive=uses_recursive,
             uses_one_of=uses_one_of,
             used_by_object=used_by_object,
+            used_by=_relationship_type_to_value(used_by),
+            not_used_by=_relationship_type_to_value(not_used_by),
             used_by_recursive=used_by_recursive,
             used_by_one_of=used_by_one_of,
             begin_modification_time=begin_modification_time,
@@ -1660,6 +2189,58 @@ def _get_search_result_tree_format(
     return {}
 
 
+def _find_objects_with_id_by_type(
+    connection: Connection,
+    object_id: str,
+    projects: 'list[Project | str | None]',
+    to_dictionary: bool,
+) -> list[dict[str, dict | type[Entity]]]:
+    project_ids = [
+        (
+            get_project_id_from_params_set(conn=connection, project=project)
+            if project is not None
+            else None
+        )
+        for project in projects
+    ]
+
+    with FuturesSessionWithRenewal(connection=connection) as session:
+        futures = []
+
+        object_types = (
+            obj_type
+            for obj_type in ObjectTypes
+            if obj_type is not ObjectTypes.NOT_SUPPORTED
+        )
+        for project_id, obj_type in itertools.product(project_ids, object_types):
+            future = objects.get_object_info_async(
+                future_session=session,
+                id=object_id,
+                object_type=obj_type.value,
+                project_id=project_id,
+            )
+            future.project_id = project_id
+            futures.append(future)
+
+        # Wait before close: requests-futures >= 1.1 cancels queued requests.
+        completed_futures = list(as_completed(futures))
+
+    from mstrio.utils.object_mapping import map_object
+
+    return [
+        {
+            'project_id': future.project_id,
+            'object_data': (
+                result.json()
+                if to_dictionary
+                else map_object(connection, result.json())
+            ),
+        }
+        for future in completed_futures
+        if (result := future.result()) and result.ok
+    ]
+
+
 def find_objects_with_id(
     connection: Connection,
     object_id: str,
@@ -1668,8 +2249,7 @@ def find_objects_with_id(
     to_dictionary: bool = False,
 ) -> list[dict[str, dict | type[Entity]]]:
     """Find objects by their ID, without knowing project ID or object type.
-    The search is performed first on configuration-level, then by iterating over
-    projects and trying to retrieve the objects with different types.
+    The search is performed first on configuration-level, then across projects.
 
     Note:
         Only object types supported by mstrio-py, i.e. present in
@@ -1704,22 +2284,16 @@ def find_objects_with_id(
     )
 
     if not projects:
-        res = full_search(
-            connection,
-            project=None,
-            domain=SearchDomain.CONFIGURATION,
-            id=object_id,
-            to_dictionary=to_dictionary,
-        )
+        with (
+            config.temp_verbose_disable(),
+            connection.temporary_project_change(None),
+        ):
+            res = _find_objects_with_id_by_type(
+                connection, object_id, [None], to_dictionary
+            )
 
         if res:
-            return [
-                {
-                    'project_id': None,
-                    'object_data': item,
-                }
-                for item in res
-            ]
+            return res
 
     if config_level_only:
         return []
@@ -1727,36 +2301,33 @@ def find_objects_with_id(
     env = connection.environment
     projects = projects or env.list_loaded_projects()
 
-    with FuturesSessionWithRenewal(connection=connection) as session:
-        futures = []
+    if not meets_minimal_version(connection.iserver_version, '11.3.1160'):
+        return _find_objects_with_id_by_type(
+            connection, object_id, projects, to_dictionary
+        )
 
-        for project, obj_type in itertools.product(projects, ObjectTypes):
-            project_id = get_project_id_from_params_set(
-                conn=session.connection, project=project
-            )
+    project_ids = [
+        get_project_id_from_params_set(conn=connection, project=project)
+        for project in projects
+    ]
+    results = quick_search_by_id(
+        connection=connection,
+        search_data=[
+            QuickSearchData(project_id=project_id, object_ids=[object_id])
+            for project_id in project_ids
+        ],
+        to_dictionary=True,
+    )
 
-            future = objects.get_object_info_async(
-                future_session=session,
-                id=object_id,
-                object_type=obj_type.value,
-                project_id=project_id,
-            )
-            future.project_id = project_id
-            futures.append(future)
-
-    from mstrio.utils.object_mapping import map_object
+    if not to_dictionary:
+        from mstrio.utils.object_mapping import map_object
 
     return [
         {
-            'project_id': future.project_id,
-            'object_data': (
-                result.json()
-                if to_dictionary
-                else map_object(connection, result.json())
-            ),
+            'project_id': item['project_id'],
+            'object_data': item if to_dictionary else map_object(connection, item),
         }
-        for future in as_completed(futures)
-        if (result := future.result()) and result.ok
+        for item in results
     ]
 
 

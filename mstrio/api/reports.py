@@ -62,6 +62,7 @@ def report_instance(
     offset: int = 0,
     limit: int = 5000,
     execution_stage: str | None = None,
+    prefer: str | None = None,
 ) -> 'Response':
     """Get the results of a newly created report instance. This in-memory
     report instance can be used by other requests.
@@ -80,6 +81,11 @@ def report_instance(
             reduce the total time required to extract the entire dataset.
         execution_stage (str, optional): Execution stage of the report
             Available values: 'resolve_prompts', 'execute_data'
+        prefer (str, optional): Value for the `Prefer` request header. Set to
+            `'respond-async'` to execute the report asynchronously; the server
+            then returns HTTP 202 with the new instance's ID (and no data)
+            instead of blocking until execution completes. Default is None
+            (synchronous).
 
     Returns:
         Complete HTTP response object.
@@ -93,9 +99,11 @@ def report_instance(
     if execution_stage:
         params['executionStage'] = execution_stage
     headers = {'X-MSTR-ProjectID': project_id} if project_id else {}
+    if prefer:
+        headers['Prefer'] = prefer
 
     return connection.post(
-        endpoint=f'/api/v2/reports/{report_id}/instances/',
+        endpoint=f'/api/v2/reports/{report_id}/instances',
         json=body,
         params=params,
         headers=headers,
@@ -139,6 +147,53 @@ def report_instance_id(
 
     return connection.get(
         endpoint=f'/api/v2/reports/{report_id}/instances/{instance_id}', params=params
+    )
+
+
+@ErrorHandler(err_msg="Error manipulating report instance {instance_id}.")
+def update_report_instance(
+    connection: 'Connection',
+    report_id: str,
+    instance_id: str,
+    body: dict | None = None,
+    project_id: str | None = None,
+    offset: int = 0,
+    limit: int = 5000,
+) -> 'Response':
+    """Apply manipulations (requested objects, view filter, metric limits,
+    subtotals, sorting, current page-by) on top of an already-created report
+    instance and return the manipulated result.
+
+    Args:
+        connection: Strategy REST API connection object.
+        report_id (str): Unique ID of the report.
+        instance_id (str): Unique ID of the in-memory report instance to
+            manipulate.
+        body (dict, optional): Manipulation body, in the same shape accepted by
+            `report_instance` (``requestedObjects``, ``viewFilter``,
+            ``subtotals``, ``currentPageBy``, ...). Default None (no-op body).
+        project_id (str, optional): ID of the project.
+        offset (int, optional): Starting point within the collection of returned
+            results. Default is 0.
+        limit (int, optional): Used to control data extract behavior on datasets
+            which have a large number of rows.
+
+    Returns:
+        Complete HTTP response object.
+    """
+    connection._validate_project_selected()
+    if body is None:
+        body = {}
+    params = {'offset': offset, 'limit': limit}
+    if is_server_min_version(connection, '11.2.0200'):
+        params['fields'] = CUBE_FIELDS
+    headers = {'X-MSTR-ProjectID': project_id} if project_id else {}
+
+    return connection.put(
+        endpoint=f'/api/v2/reports/{report_id}/instances/{instance_id}',
+        json=body,
+        params=params,
+        headers=headers,
     )
 
 

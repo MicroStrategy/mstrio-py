@@ -20,11 +20,13 @@ from .search_enums import (
     SearchScope,
 )
 from .search_operations import (
+    DEFAULT_SEARCH_OBJECT_TYPES,
     CertifiedStatus,
     DateQuery,
     QuickSearchData,
     SearchDomain,
     SearchObject,
+    SearchObjectMember,
     SearchPattern,
     SearchResultsFormat,
     find_objects_with_id,

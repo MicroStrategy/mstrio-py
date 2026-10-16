@@ -17,6 +17,7 @@ class FuturesSessionWithRenewal(FuturesSession):
         if self.connection._is_session_expired():
             self.connection._renew_or_reconnect()
 
+        kwargs.setdefault('timeout', self.connection.request_timeout)
         return super().request(*args, **kwargs)
 
     def get(self, *, endpoint, **kwargs):

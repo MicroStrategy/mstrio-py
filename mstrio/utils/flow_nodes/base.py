@@ -64,6 +64,7 @@ class BaseNode:
     type_name: ClassVar[str]
     control_flow: ClassVar[ControlFlowSpec] = ControlFlowSpec()
     runtime_handler_name: ClassVar[str | None] = None
+    runtime_support_source_text: ClassVar[str] = ""
     runtime_source_text: ClassVar[str] = ""
     runtime_required_helpers: ClassVar[tuple[str, ...]] = ()
 

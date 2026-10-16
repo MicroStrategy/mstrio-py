@@ -1,15 +1,11 @@
-import datetime as dt
+import datetime as dt  # noqa: F401
 import json
-import operator  # noqa: F401
 import threading as t
 import time
 from contextlib import ExitStack
-from math import isfinite
-from zoneinfo import ZoneInfo
 
 from mstrio import config
 from mstrio.connection import Connection, get_connection  # noqa: F401
-from mstrio.helpers import try_str_to_num
 from mstrio.python_execution import (  # noqa: F401
     ExecutionStatus,
     Script,
@@ -25,27 +21,32 @@ _script_stop_lock = t.Lock()
 _script_stop_requests = {}
 _MISSING = object()
 _PARALLEL_CANCELLATION_GRACE_SECONDS = 30
+_control_signal_lock = t.Lock()
+_control_signal_sequence = 0
 
 
-class FlowExitStep(RuntimeError):
+def _next_control_signal_sequence():
+    global _control_signal_sequence
+    with _control_signal_lock:
+        sequence = _control_signal_sequence
+        _control_signal_sequence += 1
+    return sequence
+
+
+class FlowControlSignal(RuntimeError):
+    """Base signal for non-local Flow control."""
+
+    def __init__(self, *args):
+        super().__init__(*args)
+        self.sequence = _next_control_signal_sequence()
+
+    def resolve(self):
+        """Resolve the signal at the root Flow boundary."""
+        raise NotImplementedError
+
+
+class FlowExecutionAborted(RuntimeError):
     pass
-
-
-class ParallelTimeoutError(TimeoutError):
-    pass
-
-
-class ParallelExecutionAborted(RuntimeError):
-    pass
-
-
-_CONDITION_FAILURE_PREFIX = "Failed to evaluate the condition"
-
-
-class ConditionEvaluationError(ValueError):
-    def __init__(self, detail):
-        self.reason = f"{_CONDITION_FAILURE_PREFIX}: {detail}."
-        super().__init__(self.reason)
 
 
 class ScopeState:
@@ -59,67 +60,6 @@ def log(key, unique_id, data=None):
             data = json.dumps(data).replace(r"\n", r"\\n")
         txt = f"{key} | {unique_id} | {data or '-'}"
         print(txt)
-
-
-def _evaluate_condition(condition, unique_id):
-    try:
-        result = bool(condition())
-        reason = "" if result else "Condition evaluated to false."
-    except ConditionEvaluationError as error:
-        result, reason = False, error.reason
-    except Exception:
-        result, reason = False, f"{_CONDITION_FAILURE_PREFIX}."
-
-    key = "DECISION_COND_S" if result else "DECISION_COND_F"
-    log(
-        key,
-        unique_id,
-        {
-            "timestamp": str(dt.datetime.now(dt.timezone.utc)),
-            "reason": reason,
-        },
-    )
-    return result
-
-
-def _parse_numeric_comparison_value(value, side):
-    if isinstance(value, str):
-        try:
-            value = try_str_to_num(value)
-        except OverflowError:
-            raise ConditionEvaluationError(f"{side} operand is not numeric")
-    if type(value) not in (int, float) or (
-        type(value) is float and not isfinite(value)
-    ):
-        raise ConditionEvaluationError(f"{side} operand is not numeric")
-    return value
-
-
-def _string_comparison_value(value, side):
-    if value is None or isinstance(value, (list, tuple, set, dict)):
-        raise ConditionEvaluationError(f"{side} operand is not scalar")
-    return str(value)
-
-
-def _is_supported_membership_value(value):
-    return type(value) in (str, int, float)
-
-
-def _contains_comparison_value(container, item):
-    if not _is_supported_membership_value(item):
-        raise ConditionEvaluationError("right operand has unsupported data")
-
-    if isinstance(container, (list, tuple, set)):
-        if not all(_is_supported_membership_value(value) for value in container):
-            raise ConditionEvaluationError(
-                "left operand contains unsupported collection data"
-            )
-        return item in container
-
-    if isinstance(container, dict):
-        raise ConditionEvaluationError("left operand has unsupported data")
-
-    return str(item) in _string_comparison_value(container, "left")
 
 
 _parallel_thread_state = t.local()
@@ -161,9 +101,7 @@ class ParallelExecutionContext:
         if timed_out:
             self.unregister_script(script)
             _request_script_stop(script, self.contexts())
-            raise ParallelTimeoutError(
-                "Parallel execution exceeded its completion timeout."
-            )
+            raise TimeoutError("Parallel execution exceeded its completion timeout.")
 
     def unregister_script(self, script):
         for context in self.contexts():
@@ -217,7 +155,7 @@ class ParallelExecutionContext:
         for context in self.contexts():
             if context.cancelled.is_set() or context.remaining_seconds() <= 0:
                 context.cancel()
-                raise ParallelTimeoutError(
+                raise TimeoutError(
                     "Parallel execution exceeded its completion timeout."
                 )
 
@@ -360,69 +298,6 @@ def _build_variable_answers(variables):
     }
 
 
-def _resolve_condition_operand(operand):
-    if operand[0] == "constant":
-        return operand[1]
-
-    value = _resolve_reference(operand[1])
-    if value is _MISSING:
-        raise KeyError(operand[1][1])
-    return value
-
-
-def _condition_callable(condition):
-    condition_type = condition[0]
-    if condition_type == "weekday":
-        timezone = condition[2]
-        now = (
-            dt.datetime.now(ZoneInfo(timezone))
-            if timezone
-            else dt.datetime.now().astimezone()
-        )
-        return lambda: now.weekday() in condition[1]
-
-    operator_name, left, right = condition[1], condition[2], condition[3]
-
-    def evaluate_comparison():
-        left_value = _resolve_condition_operand(left)
-        right_value = _resolve_condition_operand(right)
-        parse_numeric = operator_name in {
-            "greater_than",
-            "greater_than_or_equal",
-            "less_than",
-            "less_than_or_equal",
-        }
-
-        if operator_name in {"begins_with", "ends_with"}:
-            left_value = _string_comparison_value(left_value, "left")
-            right_value = _string_comparison_value(right_value, "right")
-            method = (
-                left_value.startswith
-                if operator_name == "begins_with"
-                else left_value.endswith
-            )
-            return method(right_value)
-
-        if operator_name == "contains":
-            return _contains_comparison_value(left_value, right_value)
-
-        if parse_numeric:
-            left_value = _parse_numeric_comparison_value(left_value, "left")
-            right_value = _parse_numeric_comparison_value(right_value, "right")
-
-        functions = {
-            "equals": operator.eq,
-            "not_equals": operator.ne,
-            "greater_than": operator.gt,
-            "greater_than_or_equal": operator.ge,
-            "less_than": operator.lt,
-            "less_than_or_equal": operator.le,
-        }
-        return functions[operator_name](left_value, right_value)
-
-    return evaluate_comparison
-
-
 def _run_branch(graph, scope_id, context):
     previous_context = _current_parallel_context()
     _parallel_thread_state.context = context
@@ -444,8 +319,11 @@ def _run_scope(graph, program_counter, state):
 
 
 def _run_flow(graph):
-    return _run_scope(
-        graph,
-        graph["scopes"][graph["root_scope"]]["start"],
-        ScopeState(),
-    )
+    try:
+        return _run_scope(
+            graph,
+            graph["scopes"][graph["root_scope"]]["start"],
+            ScopeState(),
+        )
+    except FlowControlSignal as signal:
+        return signal.resolve()
