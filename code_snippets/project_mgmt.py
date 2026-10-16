@@ -7,6 +7,7 @@ ease its usage.
 """
 from mstrio.connection import get_connection
 from mstrio.datasources import DatasourceInstance
+from mstrio.distribution_services import list_schedules
 from mstrio.server import DuplicationConfig, Environment, Project, compare_project_settings, list_languages
 from mstrio.server.project import LockType
 from mstrio.server.setting_types import FailedEmailDelivery
@@ -225,3 +226,16 @@ datasource = DatasourceInstance(connection=conn, id=DATASOURCE_ID)
 project.add_datasource(datasources=[datasource])
 # Remove datasource from project
 project.remove_datasource(datasources=[datasource])
+
+# Define the ID of a schedule to allow in the project
+SCHEDULE_ID = $schedule_id
+# Restrict the project to selected schedules
+project.set_allowed_schedules(SCHEDULE_ID)
+# List schedules currently allowed in the project
+allowed_schedules = project.list_allowed_schedules()
+# Add and remove selected schedules without replacing the whole allowlist
+schedules = list_schedules(conn, limit=2)
+project.add_allowed_schedules(schedules)
+project.remove_allowed_schedules(schedules[0])
+# Remove schedule restrictions, making all schedules available
+project.remove_schedule_restrictions(force=True)

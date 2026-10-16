@@ -1,5 +1,6 @@
 import logging
 from collections.abc import Callable
+from copy import deepcopy
 from datetime import datetime
 from enum import auto
 from functools import partial
@@ -202,7 +203,8 @@ class Subscription(EntityBase, ChangeJournalMixin, TenantMixin):
         )
         self.project_id = project_id
         self._status = kwargs.get('status')
-        self._prompts = None
+        self._prompts: list[Prompt] | None = None
+        self._prompt_definitions: list[dict] | None = None
 
     def _ensure_owner_tenant_loaded(self) -> None:
         """Ensure owner's tenant attributes are loaded if owner exists."""
@@ -475,6 +477,8 @@ class Subscription(EntityBase, ChangeJournalMixin, TenantMixin):
             response = response.json()
             response = helper.camel_to_snake(response)
             self._set_object_attributes(**response)
+            self._prompts = None
+            self._prompt_definitions = None
             if config.verbose:
                 msg = f"Updated subscription '{self.name}' with ID: {self.id}."
                 msg = custom_msg or msg
@@ -575,21 +579,72 @@ class Subscription(EntityBase, ChangeJournalMixin, TenantMixin):
             for content in contents
         ]
 
+    def _create_prompt_instance_for_execution(
+        self,
+    ) -> tuple[str | None, str | None]:
+        self.fetch('contents')
+
+        contents = self.contents or []
+        if self.multiple_contents or len(contents) != 1:
+            return None, None
+
+        content = contents[0]
+        prompt = getattr(content.personalization, 'prompt', None)
+        if not prompt or not prompt.enabled:
+            return None, None
+
+        instance_id = self.create_instance(content.id).get('instanceId')
+        if not instance_id:
+            raise ValueError(
+                f"Could not create a prompt instance for content '{content.id}'."
+            )
+
+        from mstrio.project_objects import Document, Report
+
+        if content.type == Content.Type.REPORT:
+            prompted_content = Report(self.connection, content.id)
+        elif content.type in [Content.Type.DOCUMENT, Content.Type.DASHBOARD]:
+            prompted_content = Document(self.connection, content.id)
+        else:
+            raise NotSupportedError(
+                f"Answering prompts is not supported for content type "
+                f"'{content.type}'."
+            )
+        prompted_content.answer_prompts(
+            self.list_prompts(), force=True, instance_id=instance_id
+        )
+
+        return content.id, instance_id
+
     def execute(
         self,
         content_id: str | None = None,
         instance_id: str | None = None,
     ) -> None:
-        """Executes a subscription with given name or GUID for given project."""
+        """Execute the subscription.
+
+        A fresh prompt instance with the subscription's saved answers is created
+        automatically for a single-content prompted subscription. When called
+        without explicit content and instance IDs, multi-content subscriptions
+        use the v2 send endpoint.
+
+        Args:
+            content_id (str, optional): ID of prompted content to execute with
+                the v1 send endpoint.
+            instance_id (str, optional): Existing prompt instance ID to execute
+                with the v1 send endpoint.
+
+        Raises:
+            ValueError: If only one of `content_id` and `instance_id` is
+                provided, or a prompt instance could not be created.
+        """
         if (content_id is None) != (instance_id is None):
             raise ValueError('Both content_id and instance_id must be provided.')
 
-        body = (
-            {'contentId': content_id, 'instanceId': instance_id}
-            if content_id is not None
-            else None
-        )
-        if body is None:
+        if content_id is None:
+            content_id, instance_id = self._create_prompt_instance_for_execution()
+
+        if content_id is None:
             subscriptions.send_subscription(
                 self.connection,
                 self.id,
@@ -600,7 +655,7 @@ class Subscription(EntityBase, ChangeJournalMixin, TenantMixin):
                 self.connection,
                 self.id,
                 self.project_id,
-                body=body,
+                body={'contentId': content_id, 'instanceId': instance_id},
             )
         if config.verbose:
             logger.info(f"Executed subscription '{self.name}' with ID: {self.id}.")
@@ -1430,7 +1485,30 @@ class Subscription(EntityBase, ChangeJournalMixin, TenantMixin):
         """
         from mstrio.project_objects import Document, Report
 
-        new_contents = []
+        response = subscriptions.get_subscription(
+            connection=self.connection,
+            subscription_id=self.id,
+            project_id=self.project_id,
+            fields='contents',
+        )
+        response_data = response.json()
+        new_contents = response_data.get('contents')
+        if new_contents is None:
+            new_contents = response_data.get('bodyContents')
+        if new_contents is None:
+            response = subscriptions.get_subscription(
+                connection=self.connection,
+                subscription_id=self.id,
+                project_id=self.project_id,
+            )
+            response_data = response.json()
+            new_contents = response_data.get('contents')
+            if new_contents is None:
+                new_contents = response_data.get('bodyContents')
+        if new_contents is None:
+            raise ValueError(f"No contents were returned for subscription '{self.id}'.")
+        new_contents = deepcopy(new_contents)
+
         for content_obj in self.contents:
             selected_obj = None
             if content_obj.type == Content.Type.REPORT:
@@ -1447,37 +1525,66 @@ class Subscription(EntityBase, ChangeJournalMixin, TenantMixin):
                 )
 
             selected_obj.answer_prompts(prompt_answers, force=force)
-            new_contents.append(
-                Content(
-                    id=selected_obj.id,
-                    type=content_obj.type,
-                    personalization=Content.Properties(
-                        format_type=content_obj.personalization.format_type,
-                        prompt=Content.Properties.Prompt(
-                            enabled=True,
-                            instance_id=selected_obj.instance_id,
-                        ),
-                    ),
+            content = next(
+                (
+                    content
+                    for content in new_contents
+                    if content.get('id') == content_obj.id
+                ),
+                None,
+            )
+            if content is None:
+                raise ValueError(
+                    f"Content with ID '{content_obj.id}' is not part of "
+                    f"subscription '{self.id}'."
                 )
+            personalization = content.setdefault('personalization', {})
+            prompt = personalization.setdefault('prompt', {})
+            prompt.update(
+                {
+                    'enabled': True,
+                    'instanceId': selected_obj.instance_id,
+                }
             )
 
         self.alter(contents=new_contents)
         return True
 
-    @property
     @method_version_handler('11.5.0900')
-    def prompts(self) -> dict:
-        """Prompts of the report."""
-        if self._prompts is None:
+    def list_prompts(
+        self,
+        to_dictionary: bool = False,
+        refresh: bool = False,
+    ) -> list[Prompt] | list[dict]:
+        """Get prompt definitions and saved answers for the subscription.
+
+        Args:
+            to_dictionary (bool, optional): If True, returns the prompt
+                definitions and saved answers as dictionaries. If False,
+                returns Prompt objects. Defaults to False.
+            refresh (bool, optional): If True, retrieves current prompt data
+                from the server instead of using the cached result. Defaults to
+                False.
+
+        Returns:
+            list[Prompt] | list[dict]: Prompt objects or dictionaries containing
+                the complete response data, including saved answers.
+
+        Raises:
+            NotSupportedError: If the subscription content does not support
+                prompts.
+        """
+        if self._prompts is None or self._prompt_definitions is None or refresh:
             try:
-                prompts = (
+                prompt_definitions = (
                     subscriptions.get_subscription_prompts(
                         connection=self.connection,
                         subscription_id=self.id,
                         project_id=self.project_id,
                     )
                     .json()
-                    .get('prompts', [])
+                    .get('prompts')
+                    or []
                 )
             except IServerError as e:
                 # actual error message for unsupported subscription content,
@@ -1490,8 +1597,17 @@ class Subscription(EntityBase, ChangeJournalMixin, TenantMixin):
                 else:
                     raise e
             else:
+                self._prompt_definitions = prompt_definitions
                 self._prompts = [
                     Prompt.from_dict(source=prompt, connection=self.connection)
-                    for prompt in prompts
+                    for prompt in prompt_definitions
                 ]
+
+        if to_dictionary:
+            return deepcopy(self._prompt_definitions)
         return self._prompts
+
+    @property
+    def prompts(self) -> list[Prompt]:
+        """Prompt definitions and saved answers for the subscription."""
+        return self.list_prompts()

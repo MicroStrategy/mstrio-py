@@ -188,5 +188,18 @@ page_by_dataframe = REPORT.to_dataframe(page_element_id=PAGE_BY_ATTRS_ID)
 # Print current page-by elements that were applied to above dataframe
 print(REPORT.current_page_by)
 
+# Asynchronous report execution
+# For heavy, long-running reports, execute asynchronously to avoid request
+# timeouts. The report is triggered on the I-Server, then mstrio polls its
+# status until the result is ready before fetching the data.
+# Opt in per call via the async_execution flag on to_dataframe()
+async_df = Report(connection=conn, id=REPORT_ID).to_dataframe(async_execution=True)
+
+# Control the polling interval (defaults to config.delay_between_polling) and an
+# optional total-wait cap in seconds (default None means wait indefinitely)
+df = Report(connection=conn, id=REPORT_ID).to_dataframe(
+    async_execution=True, poll_interval=10, timeout=1800
+)
+
 # Get sql property of a report
 sql = REPORT.sql

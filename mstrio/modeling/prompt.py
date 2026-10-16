@@ -206,6 +206,7 @@ class Prompt(CopyMixin, DeleteMixin, Entity, MoveMixin):
         instruction (str): Instruction text for the prompt
         default_answer (dict): Default answer configuration
         restriction (PromptRestrictions): Restrictions applied to the prompt
+        content_id (str): ID of the subscription content using the prompt
         answers (Any | list[Any]): Answer(s) to the prompt (answer mode only)
         key (str): Unique key of the prompt (answer mode only)
         use_default (bool): Whether to use default value (answer mode only)
@@ -396,6 +397,7 @@ class Prompt(CopyMixin, DeleteMixin, Entity, MoveMixin):
         )
 
         self.data_type = kwargs.get('data_type')
+        self.content_id = kwargs.get('content_id')
         self.title = kwargs.get('title')
         self._personal_answers = kwargs.get('personal_answers', [])
         self.prompt_type = (

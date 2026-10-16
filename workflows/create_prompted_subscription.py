@@ -1,9 +1,9 @@
 """Create an email subscription with prompts.
 1. Connect to the environment using data from Workstation
 2. Create a list of prompts for the report
-3. Answer the prompts
+3. Answer all sequential prompt rounds, including dependent prompts
 4. Create an email subscription with the answered prompts
-5. Execute the subscription with defined prompt answers
+5. Execute the subscription with saved answers and a fresh prompt instance
 """
 
 from mstrio.connection import get_connection
@@ -94,7 +94,9 @@ prompts = [
 # Report with nested prompts
 report = Report(connection=conn, name='6- Prompted Profit Trend')
 
-report.answer_prompts(prompts)
+# Answers are submitted in sequential rounds. Dependent prompts become available
+# only after the prompts they depend on have been answered.
+report.answer_prompts(prompts, force=True)
 
 # After answering the prompts, the report object will have the instance_id
 # property set, which is required for creating a subscription with prompts
@@ -122,5 +124,7 @@ email_sub = EmailSubscription.create(
     email_subject='<Email subject>',
 )
 
-# Execute the subscription with defined prompt answers
+# Execute the subscription with the stored prompt answers. A fresh prompt
+# instance is created automatically for the current connection, including
+# connections delegated from Workstation.
 email_sub.execute()

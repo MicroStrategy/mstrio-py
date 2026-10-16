@@ -436,6 +436,9 @@ class ModelVldbMixin:
                 key = f'[{setting.property_set}].[{setting.name}]'
                 body['advancedProperties']['vldbProperties'][key] = {'value': None}
 
+        if not body['advancedProperties']['vldbProperties']:
+            return
+
         self._MODEL_VLDB_API['PUT_ADVANCED'](self.connection, self.id, body)
 
         self._fetch()

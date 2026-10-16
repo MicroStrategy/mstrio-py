@@ -390,6 +390,9 @@ class Report(
         limit: int | None = None,
         page_element_id: str | list[str] | dict[str, str] | None = None,
         prompt_answers: list[Prompt] | None = None,
+        async_execution: bool = False,
+        poll_interval: int | float | None = None,
+        timeout: int | float | None = None,
     ) -> pd.DataFrame:
         """Extract contents of a report instance into a Pandas `DataFrame`.
 
@@ -416,6 +419,17 @@ class Report(
             prompt_answers (None or list of Prompts, optional): List of Prompt
                 class objects answering the prompts of the report. Only needed
                 if the report has prompts.
+            async_execution (bool, optional): Whether to execute the report
+                asynchronously, to avoid request timeouts on long-running
+                reports. Defaults to False (synchronous). When True, execution
+                is triggered with the `Prefer: respond-async` header and the
+                instance status is polled until the result is ready.
+            poll_interval (int or float, optional): Only used with async
+                execution. Seconds to wait between status polls. Defaults to
+                `config.delay_between_polling`.
+            timeout (int or float, optional): Only used with async execution.
+                Maximum total time in seconds to wait for the result before
+                raising `TimeoutError`. Default is None (wait indefinitely).
 
         Returns:
             Pandas Data Frame containing the report contents.
@@ -437,7 +451,12 @@ class Report(
 
         if self._instance_id is None or page_element_id != self._current_page_by:
             self._current_page_by = page_element_id
-            res = self.__initialize_report(self._initial_limit)
+            res = self.__initialize_report(
+                self._initial_limit,
+                async_execution=async_execution,
+                poll_interval=poll_interval,
+                timeout=timeout,
+            )
         else:
             # try to get first chunk from already initialized instance of report
             # if not possible, initialize new instance
@@ -446,7 +465,12 @@ class Report(
                     instance_id=self._instance_id, offset=0, limit=self._initial_limit
                 )
             except requests.HTTPError:
-                res = self.__initialize_report(self._initial_limit)
+                res = self.__initialize_report(
+                    self._initial_limit,
+                    async_execution=async_execution,
+                    poll_interval=poll_interval,
+                    timeout=timeout,
+                )
 
         _instance = res.json()
         self._instance_id = _instance['instanceId']
@@ -461,15 +485,38 @@ class Report(
                 body=json,
                 project_id=self.project_id,
             )
-            # Get the instance results again, as they weren't generated
-            # properly until the prompts were answered
-            _instance = reports_api.report_instance_id(
-                connection=self.connection,
-                report_id=self.id,
-                instance_id=self._instance_id,
-                offset=0,
-                limit=self._initial_limit,
-            ).json()
+            if async_execution:
+                # The data execution of a prompted report only starts once its
+                # prompts are answered, so in async mode we poll until the
+                # result is ready.
+                reports_processors_api.wait_for_report_ready(
+                    connection=self._connection,
+                    report_id=self.id,
+                    instance_id=self._instance_id,
+                    project_id=self.project_id,
+                    interval=poll_interval,
+                    timeout=timeout,
+                )
+                # The async instance was created without a manipulation body
+                # (the server cannot handle manipulation + respond-async), so
+                # now that the prompted report has executed, apply the
+                # manipulations via PUT and read the manipulated first chunk.
+                _instance = self.__manipulate_instance(
+                    instance_id=self._instance_id,
+                    body=self.__build_manipulation_body(),
+                    offset=0,
+                    limit=self._initial_limit,
+                ).json()
+            else:
+                # Sync path: manipulations were applied to the instance at
+                # creation time, so a plain GET returns the manipulated result.
+                _instance = reports_api.report_instance_id(
+                    connection=self.connection,
+                    report_id=self.id,
+                    instance_id=self._instance_id,
+                    offset=0,
+                    limit=self._initial_limit,
+                ).json()
 
         if not self._current_page_by and self.valid_page_by_elements:
             self._current_page_by = self.get_selected_page_by_elements(
@@ -636,7 +683,13 @@ class Report(
                 )
                 parser.parse(response=response.json())
 
-    def __initialize_report(self, limit: int) -> requests.Response:
+    def __initialize_report(
+        self,
+        limit: int,
+        async_execution: bool = False,
+        poll_interval: int | float | None = None,
+        timeout: int | float | None = None,
+    ) -> requests.Response:
         inst_pbar = tqdm(
             desc='Initializing an instance of a report. Please wait...',
             bar_format='{desc}',
@@ -645,8 +698,38 @@ class Report(
             disable=not self._progress_bar or not config.verbose,
         )
 
-        # Switch off subtotals if I-Server version is higher than 11.2.1
+        body = self.__build_manipulation_body()
+
+        effective_limit = limit or self._initial_limit
+
+        # Request a new instance, set instance id
+        try:
+            if async_execution:
+                response = self.__initialize_report_async(
+                    body=body,
+                    limit=effective_limit,
+                    poll_interval=poll_interval,
+                    timeout=timeout,
+                )
+            else:
+                response = reports_api.report_instance(
+                    connection=self._connection,
+                    report_id=self._id,
+                    project_id=self.project_id,
+                    body=body,
+                    offset=0,
+                    limit=effective_limit,
+                )
+        finally:
+            inst_pbar.close()
+        return response
+
+    def __build_manipulation_body(self) -> dict:
+        """Build the report-instance manipulation body from the current filter,
+        subtotals and page-by state."""
         body = self._filter._request_body()
+
+        # Switch off subtotals if I-Server version is higher than 11.2.1
         if meets_minimal_version(self._connection.iserver_version, "11.2.0100"):
             self._subtotals["visible"] = False
             body["subtotals"] = {"visible": self._subtotals["visible"]}
@@ -654,17 +737,90 @@ class Report(
         if self._current_page_by:
             body["currentPageBy"] = [{"id": el} for el in self._current_page_by]
 
-        # Request a new instance, set instance id
-        response = reports_api.report_instance(
+        return body
+
+    def __initialize_report_async(
+        self,
+        body: dict,
+        limit: int,
+        poll_interval: int | float | None = None,
+        timeout: int | float | None = None,
+    ) -> requests.Response:
+        """Create a report instance asynchronously and return its first chunk.
+
+        Two-phase, because the server cannot accept a manipulation body together
+        with `Prefer: respond-async`. So:
+
+        1. POST with `Prefer: respond-async` and **no body** — the server
+           returns quickly (HTTP 202 + instance ID), deferring execution. Poll
+           the instance status until the result is ready.
+        2. Once executed, apply the manipulation `body` via
+           `PUT .../instances/{id}` (`__manipulate_instance`), which returns the
+           first chunk in the same shape the synchronous path produces.
+
+        If the instance reports pending prompts instead of data, the response
+        is returned so the caller can run its usual prompt handling. The
+        manipulation is then applied by the caller once prompts are answered
+        and the result is ready.
+        """
+        try:
+            response = reports_api.report_instance(
+                connection=self._connection,
+                report_id=self._id,
+                project_id=self.project_id,
+                offset=0,
+                limit=limit,
+                prefer='respond-async',
+            )
+        except Exception as e:
+            raise RuntimeError("Failed to initialize report asynchronously") from e
+
+        instance_id = response.json()['instanceId']
+
+        if response.status_code == 202:
+            # Async accepted: poll the status until it returns HTTP 200 (result
+            # ready, or prompts pending). A prompted report may instead answer
+            # the initial POST directly with HTTP 200 + in-body status 2, so the
+            # prompts check below covers both paths.
+            response = reports_processors_api.wait_for_report_ready(
+                connection=self._connection,
+                report_id=self._id,
+                instance_id=instance_id,
+                project_id=self.project_id,
+                interval=poll_interval,
+                timeout=timeout,
+            )
+
+        # In-body status 2 means prompts are pending: the instance has no data
+        # to fetch yet. Return the response so the caller can answer prompts, or
+        # raise its usual unanswered-prompts error. The manipulation body is
+        # applied by the caller once prompts are answered.
+        if response.json().get('status') == 2:
+            return response
+
+        # Apply the deferred manipulations on the executed instance and fetch
+        # the first chunk in the shape the synchronous creation path produces.
+        return self.__manipulate_instance(
+            instance_id=instance_id, body=body, offset=0, limit=limit
+        )
+
+    def __manipulate_instance(
+        self, instance_id: str, body: dict, offset: int, limit: int
+    ) -> requests.Response:
+        """Apply the manipulation ``body`` to an already-executed instance
+        and return the first chunk. When the body has nothing to manipulate,
+        fall back to a plain GET of the chunk."""
+        if not body:
+            return self.__get_chunk(instance_id=instance_id, offset=offset, limit=limit)
+        return reports_api.update_report_instance(
             connection=self._connection,
             report_id=self._id,
-            project_id=self.project_id,
+            instance_id=instance_id,
             body=body,
-            offset=0,
-            limit=limit or self._initial_limit,
+            project_id=self.project_id,
+            offset=offset,
+            limit=limit,
         )
-        inst_pbar.close()
-        return response
 
     def __get_chunk(
         self, instance_id: str, offset: int, limit: int

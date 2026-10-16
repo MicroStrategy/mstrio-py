@@ -151,6 +151,147 @@ class DecisionNode(BaseNode):
     type_name = "decision"
     control_flow = ControlFlowSpec(outcomes=("on_success", "on_fail"))
     runtime_handler_name = "_run_decision_node"
+    runtime_support_source_text = r"""
+import datetime as dt
+import operator
+from math import isfinite
+from zoneinfo import ZoneInfo
+
+from mstrio.helpers import try_str_to_num
+
+
+_CONDITION_FAILURE_PREFIX = "Failed to evaluate the condition"
+
+
+class ConditionEvaluationError(ValueError):
+    def __init__(self, detail):
+        self.reason = f"{_CONDITION_FAILURE_PREFIX}: {detail}."
+        super().__init__(self.reason)
+
+
+def _evaluate_condition(condition, unique_id):
+    try:
+        result = bool(condition())
+        reason = "" if result else "Condition evaluated to false."
+    except ConditionEvaluationError as error:
+        result, reason = False, error.reason
+    except Exception:
+        result, reason = False, f"{_CONDITION_FAILURE_PREFIX}."
+
+    key = "DECISION_COND_S" if result else "DECISION_COND_F"
+    log(
+        key,
+        unique_id,
+        {
+            "timestamp": str(dt.datetime.now(dt.timezone.utc)),
+            "reason": reason,
+        },
+    )
+    return result
+
+
+def _parse_numeric_comparison_value(value, side):
+    if isinstance(value, str):
+        try:
+            value = try_str_to_num(value)
+        except OverflowError:
+            raise ConditionEvaluationError(f"{side} operand is not numeric")
+    if type(value) not in (int, float) or (
+        type(value) is float and not isfinite(value)
+    ):
+        raise ConditionEvaluationError(f"{side} operand is not numeric")
+    return value
+
+
+def _string_comparison_value(value, side):
+    if value is None or isinstance(value, (list, tuple, set, dict)):
+        raise ConditionEvaluationError(f"{side} operand is not scalar")
+    return str(value)
+
+
+def _is_supported_membership_value(value):
+    return type(value) in (str, int, float)
+
+
+def _contains_comparison_value(container, item):
+    if not _is_supported_membership_value(item):
+        raise ConditionEvaluationError("right operand has unsupported data")
+
+    if isinstance(container, (list, tuple, set)):
+        if not all(_is_supported_membership_value(value) for value in container):
+            raise ConditionEvaluationError(
+                "left operand contains unsupported collection data"
+            )
+        return item in container
+
+    if isinstance(container, dict):
+        raise ConditionEvaluationError("left operand has unsupported data")
+
+    return str(item) in _string_comparison_value(container, "left")
+
+
+def _resolve_condition_operand(operand):
+    if operand[0] == "constant":
+        return operand[1]
+
+    value = _resolve_reference(operand[1])
+    if value is _MISSING:
+        raise KeyError(operand[1][1])
+    return value
+
+
+def _condition_callable(condition):
+    condition_type = condition[0]
+    if condition_type == "weekday":
+        timezone = condition[2]
+        now = (
+            dt.datetime.now(ZoneInfo(timezone))
+            if timezone
+            else dt.datetime.now().astimezone()
+        )
+        return lambda: now.weekday() in condition[1]
+
+    operator_name, left, right = condition[1], condition[2], condition[3]
+
+    def evaluate_comparison():
+        left_value = _resolve_condition_operand(left)
+        right_value = _resolve_condition_operand(right)
+        parse_numeric = operator_name in {
+            "greater_than",
+            "greater_than_or_equal",
+            "less_than",
+            "less_than_or_equal",
+        }
+
+        if operator_name in {"begins_with", "ends_with"}:
+            left_value = _string_comparison_value(left_value, "left")
+            right_value = _string_comparison_value(right_value, "right")
+            method = (
+                left_value.startswith
+                if operator_name == "begins_with"
+                else left_value.endswith
+            )
+            return method(right_value)
+
+        if operator_name == "contains":
+            return _contains_comparison_value(left_value, right_value)
+
+        if parse_numeric:
+            left_value = _parse_numeric_comparison_value(left_value, "left")
+            right_value = _parse_numeric_comparison_value(right_value, "right")
+
+        functions = {
+            "equals": operator.eq,
+            "not_equals": operator.ne,
+            "greater_than": operator.gt,
+            "greater_than_or_equal": operator.ge,
+            "less_than": operator.lt,
+            "less_than_or_equal": operator.le,
+        }
+        return functions[operator_name](left_value, right_value)
+
+    return evaluate_comparison
+"""
     runtime_required_helpers = ("_condition_callable", "_evaluate_condition")
     runtime_source_text = r"""
 def _run_decision_node(graph, node, state):

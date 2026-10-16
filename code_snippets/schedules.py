@@ -72,9 +72,8 @@ SCHEDULE_TIME = ScheduleTime.from_details(
 # changing event based schedule to time based (using ScheduleTime class):
 schedule.alter(time=SCHEDULE_TIME)
 
-# Define variables which can be later used in a script
+# Define a variable which can be later used in a script
 SCHEDULE_START_DATE = $schedule_start_date  # YYYY-MM-DD format
-SCHEDULE_STOP_DATE = $schedule_stop_date  # YYYY-MM-DD format
 
 # Create time based schedule. Note that some parameters refer to particular time patterns and
 # depend on setting recurrence_pattern or execution_pattern to respective values. In this case,
@@ -125,7 +124,7 @@ new_schedule = Schedule.create(
     schedule_type=Schedule.ScheduleType.EVENT_BASED,
     event_id=event.id,
     start_date=SCHEDULE_START_DATE,
-    stop_date=SCHEDULE_STOP_DATE
+    stop_date=SCHEDULE_EXPIRE_DATE
 )
 # see distribution_services/device/schedule.py for ScheduleType values
 

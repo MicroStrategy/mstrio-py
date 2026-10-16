@@ -89,6 +89,39 @@ FILE_SUB = FileSubscription.create(
     zip_password=ZIP_PASSWORD
 )
 
+# Create and execute a file subscription for a prompted report.
+PROMPTED_REPORT_ID = $prompted_report_id
+PROMPT_KEY = $prompt_key
+PROMPT_ANSWERS = "<PLACEHOLDER_FOR_PROMPT_ANSWERS>"
+
+PROMPTED_REPORT = Report(connection=CONN, id=PROMPTED_REPORT_ID)
+PROMPT_ANSWER = Prompt(key=PROMPT_KEY, answers=PROMPT_ANSWERS)
+PROMPTED_REPORT.answer_prompts([PROMPT_ANSWER], force=True)
+
+PROMPTED_FILE_SUB = FileSubscription.create(
+    connection=CONN,
+    name=FILE_SUBSCRIPTION_NAME,
+    filename=FILE_NAME,
+    project_name=PROJECT_NAME,
+    contents=Content(
+        id=PROMPTED_REPORT.id,
+        type=Content.Type.REPORT,
+        personalization=Content.Properties(
+            format_type=FORMAT_TYPE,
+            prompt=Content.Properties.Prompt(
+                enabled=True,
+                instance_id=PROMPTED_REPORT.instance_id,
+            ),
+        ),
+    ),
+    schedules=[SCHEDULE_ID],
+    recipients=[RECIPIENT_ID_3],
+)
+
+# Prompt answers can also be updated before an on-demand execution.
+PROMPTED_FILE_SUB.answer_prompts([PROMPT_ANSWER], force=True)
+PROMPTED_FILE_SUB.execute()
+
 # Define variables which can be later used in a script
 FTP_SUBSCRIPTION_NAME = $ftp_subscription_name
 FTP_ADDRESS_NAME = $ftp_address_name
@@ -278,8 +311,17 @@ PROMPTED_SUBSCRIPTION_ID = $prompted_subscription_id
 
 prompted_sub = Subscription(connection=CONN, subscription_id=PROMPTED_SUBSCRIPTION_ID)
 
-# Print prompted subscription prompts
-print(prompted_sub.prompts)
+# Get prompt objects with their saved answers
+PROMPTS = prompted_sub.list_prompts()
+print(PROMPTS)
+
+# Get the complete prompt definitions and saved answers as dictionaries for
+# backup or audit purposes. Use refresh=True to retrieve the latest values.
+PROMPT_DEFINITIONS = prompted_sub.list_prompts(
+    to_dictionary=True,
+    refresh=True,
+)
+print(PROMPT_DEFINITIONS)
 
 PROMPT_KEY_1 = $prompt_key_1
 PROMPT_KEY_2 = $prompt_key_2
@@ -302,7 +344,7 @@ prompted_sub.change_owner(owner_id=OWNER_ID)
 INSTANCE = prompted_sub.create_instance(content_id=CONTENT_ID)
 prompted_sub.execute(
     content_id=CONTENT_ID,
-    instance_id=INSTANCE["id"],
+    instance_id=INSTANCE["instanceId"],
 )
 
 # List subscriptions across projects and personal addresses.

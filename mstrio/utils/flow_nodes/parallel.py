@@ -30,10 +30,9 @@ class ParallelNode(BaseNode):
     )
     runtime_handler_name = "_run_parallel_node"
     runtime_required_helpers = (
-        "FlowExitStep",
-        "ParallelExecutionAborted",
+        "FlowControlSignal",
+        "FlowExecutionAborted",
         "ParallelExecutionContext",
-        "ParallelTimeoutError",
         "PropagatingThread",
         "_current_parallel_context",
         "_join_threads_until",
@@ -43,6 +42,9 @@ class ParallelNode(BaseNode):
         "operator",
         "time",
     )
+    runtime_support_source_text = r"""
+import operator
+"""
     runtime_source_text = r"""
 def _run_parallel(graph, node, state):
     log("PARALLEL_PRE", node["unique_id"], str(dt.datetime.now(dt.timezone.utc)))
@@ -72,7 +74,7 @@ def _run_parallel(graph, node, state):
     errors = [error for _, error, _ in thread_states if error is not None]
     timed_out = (
         any(was_alive for was_alive, _, _ in thread_states)
-        or any(isinstance(error, ParallelTimeoutError) for error in errors)
+        or any(isinstance(error, TimeoutError) for error in errors)
         or context.remaining_seconds() <= 0
         or any(
             finished_at is not None and operator.gt(finished_at, context.deadline)
@@ -90,11 +92,13 @@ def _run_parallel(graph, node, state):
         unfinished_branches = [thread for thread in branches if thread.is_alive()]
 
     descendant_aborted = any(
-        isinstance(error, ParallelExecutionAborted) for error in errors
+        isinstance(error, FlowExecutionAborted) for error in errors
     )
-    exit_errors = [error for error in errors if isinstance(error, FlowExitStep)]
-    if exit_errors:
-        raise exit_errors[0]
+    control_signals = [
+        error for error in errors if isinstance(error, FlowControlSignal)
+    ]
+    if control_signals:
+        raise min(control_signals, key=lambda signal: signal.sequence)
 
     if timed_out or errors:
         state.last_script_error = (
@@ -114,12 +118,12 @@ def _run_parallel(graph, node, state):
             )
         if not node["has_on_fail"] or unfinished_branches or descendant_aborted:
             if descendant_aborted:
-                raise ParallelExecutionAborted(
+                raise FlowExecutionAborted(
                     state.last_script_error,
                     errors,
                 )
             if unfinished_branches:
-                raise ParallelExecutionAborted(state.last_script_error, errors)
+                raise FlowExecutionAborted(state.last_script_error, errors)
             raise RuntimeError(state.last_script_error, errors)
         return False
 
