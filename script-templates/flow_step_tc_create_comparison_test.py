@@ -52,15 +52,15 @@ def is_set_exactly_one_of(btid: str, btn: str, brid: str) -> bool:
 if not is_set_exactly_one_of(SOURCE_BT_ID, SOURCE_BT_NAME, SOURCE_BT_RES_ID):
     raise ValueError(
         "Invalid combination of source baseline parameters. "
-        "Provide exactly one of `$source_baseline_result_id`, "
-        "`$source_baseline_test_id` or `$source_baseline_test_name`."
+        "Provide exactly one of $`source_baseline_result_id`, "
+        "$`source_baseline_test_id` or $`source_baseline_test_name`."
     )
 
 if not is_set_exactly_one_of(TARGET_BT_ID, TARGET_BT_NAME, TARGET_BT_RES_ID):
     raise ValueError(
         "Invalid combination of target baseline parameters. "
-        "Provide exactly one of `$target_baseline_result_id`, "
-        "`$target_baseline_test_id` or `$target_baseline_test_name`."
+        "Provide exactly one of $`target_baseline_result_id`, "
+        "$`target_baseline_test_id` or $`target_baseline_test_name`."
     )
 
 CONTENT = $compare_content or []
@@ -70,7 +70,7 @@ is_data = "DATA" in CONTENT
 
 if not is_sql and not is_data:
     raise ValueError(
-        "`$compare_content` variable must contain at least 'SQL' or 'DATA' (or both)."
+        "$`compare_content` variable must contain at least 'SQL' or 'DATA' (or both)."
     )
 
 SOURCE = (

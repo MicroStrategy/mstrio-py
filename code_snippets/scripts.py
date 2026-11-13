@@ -65,6 +65,10 @@ print("Execution initiated.")
 final_status = code.wait_for_execution_finish()
 print(f"Final status: {final_status}")
 
+# Read the raw exit code, including codes above 255, after completion.
+# If the API omits it, use 0 for success or 1 for failure.
+print(f"Exit code: {code.exit_code}")
+
 # Get execution details
 details = code.get_execution_details()
 print(f"Execution details: {details}")
@@ -350,6 +354,7 @@ print(script.execution_stdout)  # When Script is successful, STDOUT of the Scrip
 print(script.execution_stderr)  # When Script is successful, STDERR of the Script
 print(script.execution_pod_executor_message)  # When Script errored out during runtime, error details of why
 print(script.execution_result)  # When Script is successful and with return type, the returned result
+print(script.execution_exit_code)  # Raw exit code, or status-derived 0/1
 
 # --- Script Deletion ---
 # Delete script with confirmation prompt

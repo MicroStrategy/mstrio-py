@@ -393,7 +393,12 @@ class FlowCompiler:
             "comparison",
             condition["operator"],
             self.compile_operand(condition["left"]),
-            self.compile_operand(condition["right"]),
+            (
+                None
+                if condition["operator"] == "empty"
+                else self.compile_operand(condition["right"])
+            ),
+            condition.get("invert", False),
         )
 
     def compile_operand(self, operand: AnyEntry) -> tuple[Any, ...]:

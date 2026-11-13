@@ -1,5 +1,23 @@
 # Changelog
 
+## 11.6.11.101 - 2026/11/13
+
+### New features
+
+- added `LDAPSettings` class, also available as `Environment.ldap_settings`,
+  for viewing and modifying the I-Server LDAP settings, including the search
+  filters and the options of LDAP batch import
+- added support for Python 3.15
+
+### Minor changes
+
+- added support for raw email addresses in `send_email()`
+
+### Bug fixes
+
+- fixed prompted subscriptions with document or dashboard content failing
+  because the content ID was treated as a document name
+
 ## 11.6.10.101 - 2026/10/16
 
 ### New features

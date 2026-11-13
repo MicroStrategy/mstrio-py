@@ -32,6 +32,7 @@ from mstrio.utils.entity import (
     MoveMixin,
 )
 from mstrio.utils.enum_helper import AutoName, get_enum, get_enum_val
+from mstrio.utils.exit_code import validate_exit_code
 from mstrio.utils.helper import Dictable, delete_none_values
 from mstrio.utils.resolvers import (
     FolderPathType,
@@ -282,6 +283,7 @@ class Code:
         """
 
         self._connection = connection
+        self._run_details = {}
 
         if isinstance(code, Code):
             code = code._code.decoded_text
@@ -518,6 +520,7 @@ class Code:
                 "run in the background, independently."
             )
 
+        self._run_details = {}
         if self._source_script:
             self._evaluation_id = scripts_processor.start_run(
                 connection=self._source_script.connection,
@@ -709,16 +712,36 @@ class Code:
         return ExecutionStatus(raw_value) if raw_value is not None else None
 
     @property
+    def exit_code(self) -> int | None:
+        """Exit code from the most recently retrieved execution status.
+
+        If no exit code is available, return 0 for success or 1 for an
+        unsuccessful execution. Return None while the outcome is unknown.
+        """
+        results = self._run_details.get('results') or {}
+        value = results.get('exitCode')
+        if value is not None:
+            try:
+                return validate_exit_code(value)
+            except ValueError:
+                pass
+
+        status = self.status
+        if status is None or not ExecutionStatus.is_done(status):
+            return None
+        return 1 if ExecutionStatus.is_error(status) else 0
+
+    @property
     def stdout(self) -> str:
         """STDOUT from last made current execution status request."""
 
-        return self._run_details.get('results', {}).get('stdout', '').strip()
+        return (self._run_details.get('results') or {}).get('stdout', '').strip()
 
     @property
     def stderr(self) -> str:
         """STDERR from last made current execution status request."""
 
-        return self._run_details.get('results', {}).get('stderr', '').strip()
+        return (self._run_details.get('results') or {}).get('stderr', '').strip()
 
     @property
     def executor_message(self) -> str | None:
@@ -734,7 +757,7 @@ class Code:
     def result(self) -> CodeResult:
         """Returned Value from last made current execution status request."""
 
-        ret = json.loads(self._run_details.get('results', {}).get('output', 'null'))
+        ret = json.loads((self._run_details.get('results') or {}).get('output', 'null'))
 
         if self._source_script and ret is not None:
             if self._source_script.script_result_type == ScriptResultType.DATE:
@@ -1600,6 +1623,15 @@ class Script(
         return self._script_content.status
 
     @property
+    def execution_exit_code(self) -> int | None:
+        """Exit code from the most recently retrieved execution status.
+
+        If no exit code is available, return 0 for success or 1 for an
+        unsuccessful execution. Return None while the outcome is unknown.
+        """
+        return self._script_content.exit_code
+
+    @property
     def execution_stdout(self) -> str:
         """STDOUT from last made current execution status request."""
 
@@ -1996,7 +2028,7 @@ class Variable(Dictable):
         ret = self.to_dict(skip_private_keys=True)
         ret.update(self.get_answer_as_dict())
         ret['prompt'] = False
-        ret['value'] = str(ret['value'])
+        scripts_processor._parse_variables_data_before_submit([ret])
         return ret
 
     @property
@@ -2071,14 +2103,12 @@ class Variable(Dictable):
         if value == '':
             value = []
 
-        if (
-            value
-            and isinstance(value, str)
-            and value.startswith("[")
-            and value.endswith("]")
-        ):
-            with contextlib.suppress(json.JSONDecodeError):
-                value = json.loads(value.replace("'", '"'))
+        if isinstance(value, str) and value.strip().startswith("["):
+            try:
+                return json.loads(value)
+            except json.JSONDecodeError:
+                with contextlib.suppress(json.JSONDecodeError):
+                    return json.loads(value.replace("'", '"'))
 
         return value
 
@@ -2272,11 +2302,14 @@ class VariableAnswer(Variable):
         )
 
     def to_dict(self, camel_case: bool = True):
+        """Serialize the answer, preserving empty lists as explicit values."""
         ret = super().to_dict(
             camel_case=camel_case,
             whitelist_keys=['value', 'secret_value_input'],
             skip_private_keys=True,
         )
+        if isinstance(self.value, list) and not self.value:
+            ret['value'] = []
         if vid := self.source_variable.id:
             ret['id'] = vid
         if (vt := self.source_variable.type) is not None:

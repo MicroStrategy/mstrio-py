@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Optional
 
 from mstrio.modeling.schema.helpers import SchemaObjectReference
@@ -49,16 +49,22 @@ class FactExpression(Dictable):
         This array should be non-empty for a fact or an attribute that is saved
         into metadata, but may be empty during an edit changeset. The order of
         the tables within the array has no significance.
+
+        source_reports (List[SchemaObjectReference], optional): Reports that
+        are the source of this expression. Expressions mapped to reports come
+        without `expression` and `tables`.
     """
 
     _FROM_DICT_MAP = {
         'tables': [SchemaObjectReference],
         'expression': Expression,
+        'source_reports': [SchemaObjectReference],
     }
 
-    expression: Expression
-    tables: list[SchemaObjectReference]
+    expression: Expression | None = None
+    tables: list[SchemaObjectReference] = field(default_factory=list)
     id: str | None = None
+    source_reports: list[SchemaObjectReference] | None = None
 
     def to_dict(self, camel_case: bool = True) -> dict:
         result = super().to_dict(camel_case)

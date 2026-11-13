@@ -13,6 +13,7 @@ There are tests in place enforcing those things happen accordingly.
 """
 
 import json
+from datetime import date
 from typing import TYPE_CHECKING, Any
 
 from mstrio.api import scripts as scripts_api
@@ -34,14 +35,24 @@ def _parse_variables_data_before_return(variables_data: list[dict]) -> None:
 
 
 def _parse_variables_data_before_submit(variables_data: list[dict] | None) -> None:
-    # REST requires variables data, especially `multiple=True`, in a specific
-    # format, as string
+    """Encode present variable values as strings required by REST."""
     if not variables_data:
         return
 
     for var in variables_data:
-        if "value" in var and isinstance(var["value"], list):
-            var["value"] = json.dumps(var["value"])
+        if 'value' not in var or isinstance(var['value'], str):
+            continue
+        value = var['value']
+        if isinstance(value, date):
+            var['value'] = value.isoformat()
+            continue
+        try:
+            var['value'] = json.dumps(value, allow_nan=False)
+        except (TypeError, ValueError) as error:
+            identifier = var.get('name') or var.get('id') or '<unnamed>'
+            raise ValueError(
+                f"Cannot serialize value for script variable '{identifier}' as JSON."
+            ) from error
 
 
 def get_info_data(
@@ -110,6 +121,7 @@ def create_script(
         encoded_code
     ), "Provided `encoded_code` is not b64-encoded."
 
+    _parse_variables_data_before_submit(variables)
     body = {
         "name": name,
         "description": description,
@@ -122,9 +134,6 @@ def create_script(
         "folderId": folder_id,
     }
     body = delete_none_values(body, recursion=True)
-
-    if "variables" in body:
-        _parse_variables_data_before_submit(body["variables"])
 
     return scripts_api.create_script(
         connection,

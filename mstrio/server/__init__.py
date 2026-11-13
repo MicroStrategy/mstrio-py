@@ -34,6 +34,7 @@ from .history_list import (
     update_history_list_messages_status,
 )
 from .language import Language, list_interface_languages, list_languages
+from .ldap_settings import LDAPSettings
 from .license import (
     ActivationInfo,
     ContactInformation,

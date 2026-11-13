@@ -363,9 +363,15 @@ class SearchObjectMember(Dictable):
             object. Required when creating or altering a Search Object.
     """
 
+    @staticmethod
+    def _subtype_or_none(source, _connection=None) -> ObjectSubTypes | None:
+        if source is None or (isinstance(source, str) and source.lower() == 'unknown'):
+            return None
+        return ObjectSubTypes.from_rest_value(source)
+
     _FROM_DICT_MAP = {
         'type': ObjectTypes.from_rest_value,
-        'subtype': ObjectSubTypes.from_rest_value,
+        'subtype': _subtype_or_none,
     }
 
     id: str

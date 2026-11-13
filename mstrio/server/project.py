@@ -3389,6 +3389,8 @@ class ProjectDuplication(EntityBase, ChangeJournalMixin, DeleteMixin):
             ProjectDuplicationStatus.IMPORTING,
             ProjectDuplicationStatus.IMPORT_SYNCING,
         ]
+        if self.source.environment.get('id') == self.target.environment.get('id'):
+            not_stable_statuses.append(ProjectDuplicationStatus.EXPORTED)
         return helper.wait_for_stable_status(
             self, 'status', not_stable_statuses, timeout=timeout, interval=interval
         )

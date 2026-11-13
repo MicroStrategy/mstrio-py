@@ -600,6 +600,8 @@ class DatasourceInstance(Entity, CopyMixin, DeleteMixin, ModelVldbMixin, TenantM
             execution = datasources_processors.get_query_results(
                 connection=connection, id=execution_id
             )
+            if config.verbose and execution.get('status') in (3, 4):
+                logger.info("Query execution finished")
             if execution.get('status') == 3:
                 return execution
             elif execution.get('status') == 4:

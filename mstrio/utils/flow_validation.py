@@ -15,6 +15,73 @@ from .flow_nodes.common import (
 from .flow_nodes.registry import get_node_spec
 
 GENERATOR_VERSION = 1
+EXECUTION_POLICY_VERSION = 1
+
+
+def _normalize_script_objects(parsed_input_yaml: AnyEntry) -> None:
+    """Resolve numeric script objects against the dependency list."""
+    if not isinstance(parsed_input_yaml, dict):
+        return
+
+    dependencies = parsed_input_yaml.get("dependencies")
+    steps = parsed_input_yaml.get("steps")
+    if not isinstance(steps, list):
+        return
+
+    active_collections: set[int] = set()
+
+    def normalize_steps(step_list: Any) -> None:
+        if not isinstance(step_list, list):
+            return
+
+        collection_id = id(step_list)
+        if collection_id in active_collections:
+            raise InvalidInput(
+                "Input YAML contains a recursive alias, which is not supported."
+            )
+        active_collections.add(collection_id)
+        try:
+            for step in step_list:
+                if not isinstance(step, dict):
+                    continue
+
+                if step.get("type") == "script" and "object" in step:
+                    object_entry = step["object"]
+                    if type(object_entry) is int:
+                        if not isinstance(dependencies, list):
+                            raise InvalidInput(
+                                "Numeric Script object references require a "
+                                "`dependencies` list."
+                            )
+                        if not 0 <= object_entry < len(dependencies):
+                            raise InvalidInput(
+                                "Script object dependency index is out of range."
+                            )
+                        dependency = dependencies[object_entry]
+                        if not isinstance(dependency, dict):
+                            raise InvalidInput(
+                                "Script object dependency references must point "
+                                "to mapping entries."
+                            )
+                        step["object"] = dict(dependency)
+                    elif not isinstance(object_entry, dict):
+                        raise InvalidInput(
+                            "Script Entry `object` should be a dependency index "
+                            "or a mapping."
+                        )
+
+                normalize_steps(step.get("on_success"))
+                normalize_steps(step.get("on_fail"))
+
+                branches = step.get("branches")
+                if isinstance(branches, list):
+                    for branch in branches:
+                        if isinstance(branch, dict):
+                            normalize_steps(branch.get("steps"))
+        finally:
+            active_collections.remove(collection_id)
+
+    normalize_steps(steps)
 
 
 def _validate_yaml_collections(value: Any) -> None:
@@ -126,6 +193,14 @@ def validate_input_yaml_structure(parsed_input_yaml: AnyEntry) -> None:
         )
 
     version = parsed_input_yaml["version"]
+    policy_version = parsed_input_yaml.get("execution_policy_version", 0)
+    if (
+        type(policy_version) is not int
+        or not 0 <= policy_version <= EXECUTION_POLICY_VERSION
+    ):
+        raise InvalidInput(
+            "This Flow execution policy is not supported by the generator."
+        )
     if type(version) is not int:
         raise InvalidInput(f"Version should be an integer, is {type(version)}.")
     if version > GENERATOR_VERSION:

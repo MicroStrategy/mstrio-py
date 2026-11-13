@@ -1091,6 +1091,9 @@ class Dictable:
 
     @classmethod
     def _dict_to_obj(cls, connection, val, key):
+        if val is None:
+            return None
+
         def constructor():
             if isinstance(cls._FROM_DICT_MAP[key], DatetimeFormats):
                 return map_str_to_datetime(key, val, cls._FROM_DICT_MAP)

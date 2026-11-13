@@ -382,7 +382,7 @@ class Prompt(CopyMixin, DeleteMixin, Entity, MoveMixin):
         self.answers = kwargs.get('answers')
         self.use_default = kwargs.get('use_default')
         self.name = kwargs.get('name')
-        self.default_answer = kwargs.get('default_answer', {})
+        self.default_answer = kwargs.get('default_answer', default_value)
         self.required = kwargs.get('required')
         self.closed = kwargs.get('closed')
         self.instruction = kwargs.get('instruction')

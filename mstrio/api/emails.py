@@ -15,3 +15,19 @@ def send_email(connection: 'Connection', body: dict, error_msg: str | None = Non
     Returns:
         HTTP response object returned by the Strategy REST server."""
     return connection.post(endpoint='/api/emails', json=body)
+
+
+@ErrorHandler(err_msg='Error sending an email')
+def send_email_v2(connection: 'Connection', body: dict, error_msg: str | None = None):
+    """Send an email to raw email-address recipients.
+
+    Args:
+        connection (Connection): Strategy connection object returned by
+            `connection.Connection()`
+        body (json): JSON-formatted data used to send an email
+        error_msg (string, optional): Custom Error Message for Error Handling
+
+    Returns:
+        HTTP response object returned by the Strategy REST server.
+    """
+    return connection.post(endpoint='/api/v2/emails', json=body)

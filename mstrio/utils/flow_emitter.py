@@ -3,9 +3,12 @@
 import ast
 from functools import partial
 from importlib import resources
+from inspect import getsource
 from textwrap import dedent
 from textwrap import indent as _indent_orig
 from typing import Any, Callable, Literal
+
+from mstrio.utils.exit_code import validate_exit_code
 
 from .flow_graph import FlowVariableExpression
 from .flow_nodes.base import BaseNode
@@ -14,7 +17,25 @@ from .flow_nodes.registry import NODE_SPECS
 
 INDENTATION = " " * 4
 FLOW_ENGINE_RESOURCE = resources.files("mstrio.utils").joinpath("flow_engine.py")
-GLOBALS = FLOW_ENGINE_RESOURCE.read_text(encoding="utf-8").strip()
+
+
+def _exit_code_validator_source() -> str:
+    """Embed the validator without runtime typing dependencies or arrows."""
+    tree = ast.parse(getsource(validate_exit_code))
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef):
+            node.returns = None
+        elif isinstance(node, ast.arg):
+            node.annotation = None
+    return ast.unparse(tree)
+
+
+GLOBALS = "\n\n".join(
+    (
+        FLOW_ENGINE_RESOURCE.read_text(encoding="utf-8").strip(),
+        _exit_code_validator_source(),
+    )
+)
 AnyEntry = dict[str, Any]
 
 indent_once: Callable[[str], str] = partial(
@@ -26,14 +47,7 @@ def _emit_literal(value: Any) -> str:
     if isinstance(value, FlowVariableExpression):
         return f"(lambda: ${value.name})"
     if isinstance(value, dict):
-        return (
-            "{"
-            + ", ".join(
-                f"{_emit_literal(key)}: {_emit_literal(item)}"
-                for key, item in value.items()
-            )
-            + "}"
-        )
+        return _emit_mapping(value)
     if isinstance(value, list):
         return "[" + ", ".join(_emit_literal(item) for item in value) + "]"
     if isinstance(value, tuple):
@@ -42,6 +56,28 @@ def _emit_literal(value: Any) -> str:
             content += ","
         return "(" + content + ")"
     return repr(value)
+
+
+def _emit_mapping(
+    value: dict[Any, Any], overrides: dict[str, str] | None = None
+) -> str:
+    overrides = overrides or {}
+    return (
+        "{"
+        + ", ".join(
+            f"{_emit_literal(key)}: "
+            f"{overrides[key] if key in overrides else _emit_literal(item)}"
+            for key, item in value.items()
+        )
+        + "}"
+    )
+
+
+def _emit_graph_literal(graph: AnyEntry) -> str:
+    nodes = [
+        NODE_SPECS[node["kind"]].emit(node, _emit_mapping) for node in graph["nodes"]
+    ]
+    return _emit_mapping(graph, {"nodes": "[" + ", ".join(nodes) + "]"})
 
 
 def merge_code_sections(sections: list[str]) -> str:
@@ -162,9 +198,12 @@ def build_variable_reference(reference: str) -> str:
     source, output = reference.split(".", 1)
     if source == "flow_var":
         return f"${output}"
+    if output == "exit_code":
+        return f"_get_script_exit_code(glob['_{source}'])"
 
     property_name = {
         "stdout": "execution_stdout",
+        "stderr": "execution_stderr",
         "return": "execution_result",
         "error": "execution_pod_executor_message",
     }[output]
@@ -208,7 +247,7 @@ def emit_flow_code(
             *sections,
             *_runtime_support_sections(graph),
             *_runtime_sections(graph),
-            f"_FLOW_GRAPH = {_emit_literal(graph)}",
+            f"_FLOW_GRAPH = {_emit_graph_literal(graph)}",
             "_run_flow(_FLOW_GRAPH)",
         ]
     )
