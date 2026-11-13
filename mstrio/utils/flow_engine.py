@@ -10,6 +10,7 @@ from mstrio.python_execution import (  # noqa: F401
     ExecutionStatus,
     Script,
     VariableAnswer,
+    VariableType,
 )
 
 config.verbose = False
@@ -248,6 +249,20 @@ class PropagatingThread(t.Thread):
         return None if self.is_alive() else self._propagated_exception
 
 
+def _get_script_exit_code(script):
+    value = getattr(script, "execution_exit_code", None)
+    if value is not None:
+        try:
+            return validate_exit_code(value)  # noqa: F821
+        except ValueError:
+            pass
+
+    status = getattr(script, "execution_status", None)
+    if status is None or not ExecutionStatus.is_done(status):
+        return None
+    return 1 if ExecutionStatus.is_error(status) else 0
+
+
 def _resolve_step_output(step_id, output):
     script = glob.get(f"_{step_id}", _MISSING)
     if script is _MISSING:
@@ -255,9 +270,15 @@ def _resolve_step_output(step_id, output):
 
     if output == "stdout":
         return script.execution_stdout
+    if output == "stderr":
+        return script.execution_stderr
     if output == "return":
         return script.execution_result
-    return script.execution_pod_executor_message
+    if output == "error":
+        return script.execution_pod_executor_message
+    if output == "exit_code":
+        return _get_script_exit_code(script)
+    raise ValueError(f"Unknown step output: {output}.")
 
 
 def _resolve_reference(reference):
@@ -271,31 +292,64 @@ def _resolve_variable_answer(value):
     kind = value[0]
     if kind == "default":
         return VariableAnswer.KEEP_GLOBAL_DEFAULT
+    if kind == "fallback":
+        source = _resolve_reference(value[1])
+        if source is _MISSING or source is None:
+            return _resolve_variable_answer(value[2])
+        return source
+
     result = _resolve_reference(value)
     if result is _MISSING:
         raise KeyError(f"Unknown step output reference: {value[1]}")
     return result
 
 
-def _resolve_variable_with_fallback(value):
-    source = _resolve_reference(value[1])
-    if source is _MISSING or source is None:
-        return _resolve_variable_answer(value[2])
-    return source
+def _serialize_text_value(name, value):
+    if isinstance(value, str):
+        return value
+    if isinstance(value, dt.date):
+        return value.isoformat()
+    try:
+        return json.dumps(value, allow_nan=False)
+    except (TypeError, ValueError) as error:
+        raise ValueError(
+            f"Cannot serialize answer for script variable '{name}' as JSON."
+        ) from error
 
 
-def _build_variable_answers(variables):
+def _serialize_variable_answer(name, value, variable):
+    if VariableAnswer.is_keep_default_flag(value):
+        return value
+    if variable is not None:
+        if VariableAnswer.is_of_valid_type(variable, value):
+            return value
+        if variable.multiple and variable.type == VariableType.TEXT:
+            items = value
+            if isinstance(items, str):
+                try:
+                    items = json.loads(items)
+                except json.JSONDecodeError:
+                    # Leave legacy list strings to Script's validation.
+                    pass
+            if isinstance(items, (list, tuple)):
+                return [
+                    _serialize_text_value(f"{name}[{index}]", item)
+                    for index, item in enumerate(items)
+                ]
+    return _serialize_text_value(name, value)
+
+
+def _build_variable_answers(variables, script=None):
     if not variables:
         return None
 
-    return {
-        name: (
-            _resolve_variable_with_fallback(value)
-            if value[0] == "fallback"
-            else _resolve_variable_answer(value)
-        )
-        for name, value in variables.items()
-    }
+    script_variables = script.get_variables() if script is not None else ()
+    answers = {}
+    for name, reference in variables.items():
+        answer = _resolve_variable_answer(reference)
+        variable = VariableAnswer.get_variable_by_identifier(script_variables, name)
+        answers[name] = _serialize_variable_answer(name, answer, variable)
+    return answers
 
 
 def _run_branch(graph, scope_id, context):

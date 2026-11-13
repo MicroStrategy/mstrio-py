@@ -8,6 +8,7 @@ from typing import Any
 from .base import AnyEntry, InvalidInput, ValidationContext
 
 REGEX_PATTERN = r"^[a-zA-Z0-9_]+$"
+CURRENT_PROJECT_ID_VARIABLE = "MSTR_CURRENT_PROJECT_ID"
 
 
 def all_keys_present(entry: AnyEntry, keys: list[str]) -> bool:
@@ -28,15 +29,18 @@ def validate_variable_reference(reference: Any) -> None:
     is_flow_var = source == "flow_var" and re.fullmatch(REGEX_PATTERN, output)
     is_step_ref = re.fullmatch(REGEX_PATTERN, source) and output in (
         "stdout",
+        "stderr",
         "return",
         "error",
+        "exit_code",
     )
 
     if not is_flow_var and not is_step_ref:
         raise InvalidInput(
             "Variable source should be either reference to Flow variable in "
             "format 'flow_var.var_name' or reference to previous step output "
-            "in format 'step_id.stdout', 'step_id.return' or 'step_id.error', "
+            "in format 'step_id.stdout', 'step_id.stderr', 'step_id.return', "
+            "'step_id.error' or 'step_id.exit_code', "
             f"is: {reference}."
         )
 
@@ -86,6 +90,10 @@ def validate_object_entry(
         valid = isinstance(entry, dict) and bool(
             re.fullmatch(REGEX_PATTERN, entry.get("id", ""))
             and re.fullmatch(REGEX_PATTERN, entry.get("project_id", ""))
+            and (
+                len(entry["project_id"]) == 32
+                or entry["project_id"] == CURRENT_PROJECT_ID_VARIABLE
+            )
         )
     except TypeError:
         return False

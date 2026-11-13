@@ -197,9 +197,7 @@ class BaseSettings(metaclass=ABCMeta):
         df = DataFrame.from_dict(
             self.list_properties(), orient='index', columns=['value']
         )
-        df.reset_index(inplace=True)
-        df.rename({'index': 'setting'}, axis=1, inplace=True)
-        return df
+        return df.reset_index().rename({'index': 'setting'}, axis=1)
 
     @property
     def info(self) -> None:

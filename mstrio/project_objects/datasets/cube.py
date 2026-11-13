@@ -1098,7 +1098,17 @@ class _Cube(Entity, EnableForAiMixin, VldbMixin, DeleteMixin):
 
     @property
     def last_update_time(self) -> datetime | None:
+        """Return the last update time as a UTC-aware datetime.
+
+        Parse the API timestamp using US (MM/DD/YYYY) format first, falling
+        back to German (DD.MM.YYYY), then ISO-like (YYYY-MM-DD) format.
+        """
         self.fetch('last_update_time')
-        return str_to_datetime(
-            date=self._last_update_time, format_str='%m/%d/%Y %H:%M:%S'
-        )
+        date = self._last_update_time
+        try:
+            return str_to_datetime(date=date, format_str='%m/%d/%Y %H:%M:%S')
+        except ValueError:
+            try:
+                return str_to_datetime(date=date, format_str='%d.%m.%Y %H:%M:%S')
+            except ValueError:
+                return str_to_datetime(date=date, format_str='%Y-%m-%d %H:%M:%S')

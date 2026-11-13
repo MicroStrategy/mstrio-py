@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 def send_email(
     connection: 'Connection',
-    users: list[str | User],
+    users: list[str | User] | str | User,
     subject: str,
     content: str,
     is_html: bool | None = None,
@@ -20,8 +20,10 @@ def send_email(
     Args:
         connection (Connection): Strategy connection object returned by
             `connection.Connection()`
-        users(list[str | User]): List of user IDs or User objects to send
-            the email to
+        users(list[str | User] | str | User): User IDs, User objects, or raw
+            email addresses to send the email to. Using raw email addresses
+            requires a configured SmartHost email device in the target Strategy
+            environment.
         subject (str): Subject of the email
         content (str): Content of the email
         is_html (bool, optional): Whether the email content is HTML-formatted
@@ -29,17 +31,38 @@ def send_email(
     if not subject or not content:
         raise ValueError("Both `subject` and `content` must be provided.")
 
-    body = {
-        'notificationType': 'USER_CREATION',
-        'userIds': [
-            user_id.id if isinstance(user_id, User) else user_id for user_id in users
-        ],
-        'subject': subject,
-        'content': content,
-        'isHTML': is_html,
-    }
+    recipients = [users] if isinstance(users, (str, User)) else users
+    user_ids = []
+    email_addresses = []
+    for recipient in recipients:
+        if isinstance(recipient, User):
+            user_ids.append(recipient.id)
+        elif isinstance(recipient, str) and '@' in recipient:
+            email_addresses.append(recipient)
+        else:
+            user_ids.append(recipient)
 
-    emails.send_email(connection=connection, body=body)
+    if user_ids or not email_addresses:
+        emails.send_email(
+            connection=connection,
+            body={
+                'notificationType': 'USER_CREATION',
+                'userIds': user_ids,
+                'subject': subject,
+                'content': content,
+                'isHTML': is_html,
+            },
+        )
+
+    if email_addresses:
+        emails.send_email_v2(
+            connection=connection,
+            body={
+                'recipients': email_addresses,
+                'subject': subject,
+                'content': content,
+            },
+        )
 
     if config.verbose:
         logger.info(f"Email sent with the subject: {subject}")

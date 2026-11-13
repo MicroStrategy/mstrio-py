@@ -191,7 +191,7 @@ class Cluster:
 
             service_type[node_name] = service_type[node_name].fillna('Not Available')
 
-        service_type = service_type.rename(columns={'name': 'id'}, inplace=False)
+        service_type = service_type.rename(columns={'name': 'id'})
 
         if styled:
             return service_type.style.map(Cluster._show_color)

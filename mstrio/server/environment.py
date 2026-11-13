@@ -14,6 +14,7 @@ from mstrio.helpers import IServerError
 from mstrio.server.change_journal import _format_timestamp_for_api_purge
 from mstrio.server.fence import Fence
 from mstrio.server.fence import list_fences as _list_fences
+from mstrio.server.ldap_settings import LDAPSettings
 from mstrio.server.project import Project, compare_project_settings
 from mstrio.server.server import ServerSettings
 from mstrio.server.storage import StorageService, StorageType
@@ -475,11 +476,13 @@ class Environment:
     Attributes:
         connection: A Strategy connection object.
         server_settings: Intelligence Server settings object.
+        ldap_settings: Intelligence Server LDAP settings object.
         nodes: List of I-Server nodes and their properties.
         node_names: List of I-Server node names.
     """
 
     _ldap_batch_import_engine: LDAPBatchImport | None = None
+    _ldap_settings: LDAPSettings | None = None
     _pa_stats_engine: PAStatisticsEnvLevel | None = None
     _object_telemetry_engine: ObjectTelemetryEnvLevel | None = None
 
@@ -1000,6 +1003,20 @@ class Environment:
             self._ldap_batch_import_engine = LDAPBatchImport(self)
 
         return self._ldap_batch_import_engine
+
+    @property
+    def ldap_settings(self) -> LDAPSettings:
+        """`LDAPSettings` object storing I-Server LDAP settings.
+
+        Settings can be listed by using `list_properties()` method.
+        Settings can be modified directly by setting the values in the object
+        and applied by using `update()` method of the object.
+        """
+
+        if not self._ldap_settings:
+            self._ldap_settings = LDAPSettings(self.connection)
+
+        return self._ldap_settings
 
     @property
     def pa_statistics(self) -> PAStatisticsEnvLevel:

@@ -20,6 +20,7 @@ from .flow_emitter import emit_flow_code as _emit_flow_code
 from .flow_graph import compile_flow_graph as _compile_flow_graph
 from .flow_nodes.base import AnyEntry as _AnyEntry
 from .flow_nodes.base import InvalidInput as _InvalidInput
+from .flow_validation import EXECUTION_POLICY_VERSION, _normalize_script_objects
 from .flow_validation import (
     validate_input_yaml_structure as _validate_input_yaml_structure,
 )
@@ -41,8 +42,21 @@ def _parse_input_yaml(input_yaml_string: str) -> _AnyEntry:
 def generate_flow_content(input_yaml_string: str) -> str:
     """Generate Flow Script code from YAML produced by the Flows plugin."""
     parsed_yaml = _parse_input_yaml(input_yaml_string)
+    _normalize_script_objects(parsed_yaml)
     _validate_input_yaml_structure(parsed_yaml)
-    graph = _compile_flow_graph(parsed_yaml["steps"])
+    steps = parsed_yaml["steps"]
+    if (
+        not steps
+        and parsed_yaml.get("execution_policy_version", 0) == EXECUTION_POLICY_VERSION
+    ):
+        steps = [
+            {
+                "type": "script",
+                "unique_id": "draft_configuration_error",
+                "requires_configuration": True,
+            }
+        ]
+    graph = _compile_flow_graph(steps)
 
     code = _emit_flow_code(graph, parsed_yaml["connection"])
     if not _ReadOnlyCode(code).is_valid():

@@ -12,7 +12,7 @@
 
 ### Prerequisites
 
-- Python in version 3.10.x, 3.11.x, 3.12.x, 3.13.x or 3.14.x
+- Python in version 3.10.x, 3.11.x, 3.12.x, 3.13.x, 3.14.x or 3.15.x
 - MicroStrategy 2019 Update 4 (11.1.4)+
 
 ### Install `mstrio-py` Package
@@ -46,11 +46,11 @@ In all other cases, please refer to the [official Python libraries installation 
 If your setup does not allow to get packages online directly from Python Packages Index (PyPI) using `pip`, you can download the package manually and install it locally.
 
 1. download `.whl` file from here: <https://pypi.org/project/mstrio-py/#files>
-1. in the terminal `cd` into a folder where you want to install _mstrio-py_
-1. use the command provided below after filling the path
+2. in the terminal `cd` into a folder where you want to install _mstrio-py_
+3. use the command provided below after filling the path
    - `py -m` tells the terminal to use default install execution of python available locally on the machine
    - `--user` flag says "install only for my user on this machine"
-1. If you have issues with `py` command, try the same with `python` instead
+4. If you have issues with `py` command, try the same with `python` instead
 
 ```bash
 cd path/where/mstrio/will/be/installed
@@ -142,9 +142,9 @@ Since version **11.3.0.1**, **mstrio-py** includes also administration modules:
 
 ## Versioning & Changelog
 
-Current version: **11.6.10.101** (16 October 2026). Check out [CHANGELOG][release_notes] to see what's new.
+Current version: **11.6.11.101** (13 November 2026). Check out [CHANGELOG][release_notes] to see what's new.
 
-`mstrio-py` is constantly developed to support newest Strategy REST APIs. Functionalities may be added to mstrio on monthly basis. It is **recommended** to always install the newest version of mstrio-py, as it will be most stable and still maintain backwards compatibility with various Strategy installations, dating back to 11.1.4.
+`mstrio-py` is constantly developed to support the newest Strategy REST APIs. Functionalities may be added to mstrio on monthly basis. It is **recommended** to always install the newest version of mstrio-py, as it will be most stable and still maintain backwards compatibility with various Strategy installations, dating back to 11.1.4.
 
 Features that will be added to the package but require APIs not supported by your environment (I-Server), will raise `VersionException`.
 

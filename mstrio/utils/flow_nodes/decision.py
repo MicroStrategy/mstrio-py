@@ -1,4 +1,23 @@
-"""Decision Flow node specification."""
+"""Decision Flow node specification.
+
+Comparison conditions accept an optional boolean `invert` (default false)
+to negate a successfully evaluated result. Evaluation errors always fail.
+
+The unary `empty` operator checks `left` for null, an empty string, or an
+empty list, tuple, set, or dictionary. Whitespace, zero, and false are not
+empty. A supplied `right` is ignored; all other operators require it.
+Constants remain strings or finite numbers; null and collections must
+come from variable operands. Missing references are evaluation errors.
+
+For example, a condition checking that a variable is not empty::
+
+    type: comparison
+    operator: empty
+    invert: true
+    left:
+      type: variable
+      name: flow_var.actual
+"""
 
 from math import isfinite
 from typing import Any
@@ -17,6 +36,7 @@ from .base import (
 from .common import validate_variable_reference
 
 COMPARISON_OPERATORS = {
+    "empty",
     "equals",
     "not_equals",
     "contains",
@@ -115,16 +135,27 @@ def validate_weekday_condition_entry(entry: Any) -> None:
 
 
 def validate_comparison_condition_entry(entry: Any) -> None:
-    if not all(key in entry for key in ("operator", "left", "right")):
+    required_keys = (
+        ("operator", "left")
+        if entry.get("operator") == "empty"
+        else ("operator", "left", "right")
+    )
+    if not all(key in entry for key in required_keys):
         raise InvalidInput(
-            "Comparison Condition should contain `operator`, `left` and `right`."
+            "Comparison Condition should contain "
+            f"{', '.join(f'`{key}`' for key in required_keys)}."
         )
 
     operator = entry["operator"]
     if not isinstance(operator, str) or operator not in COMPARISON_OPERATORS:
         raise InvalidInput(f"Unsupported Comparison Condition operator: '{operator}'.")
 
+    if "invert" in entry and type(entry["invert"]) is not bool:
+        raise InvalidInput("Comparison Condition `invert` should be a boolean.")
+
     validate_comparison_operand_entry(entry["left"], "left")
+    if operator == "empty":
+        return
     validate_comparison_operand_entry(entry["right"], "right")
 
     if operator in ORDERING_COMPARISON_OPERATORS:
@@ -251,10 +282,16 @@ def _condition_callable(condition):
         )
         return lambda: now.weekday() in condition[1]
 
-    operator_name, left, right = condition[1], condition[2], condition[3]
+    operator_name, left, right, invert = condition[1:]
 
     def evaluate_comparison():
         left_value = _resolve_condition_operand(left)
+        if operator_name == "empty":
+            return left_value is None or (
+                isinstance(left_value, (str, list, tuple, set, dict))
+                and len(left_value) == 0
+            )
+
         right_value = _resolve_condition_operand(right)
         parse_numeric = operator_name in {
             "greater_than",
@@ -290,7 +327,11 @@ def _condition_callable(condition):
         }
         return functions[operator_name](left_value, right_value)
 
-    return evaluate_comparison
+    def evaluate():
+        result = evaluate_comparison()
+        return not result if invert else result
+
+    return evaluate
 """
     runtime_required_helpers = ("_condition_callable", "_evaluate_condition")
     runtime_source_text = r"""

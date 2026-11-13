@@ -604,7 +604,7 @@ class Subscription(EntityBase, ChangeJournalMixin, TenantMixin):
         if content.type == Content.Type.REPORT:
             prompted_content = Report(self.connection, content.id)
         elif content.type in [Content.Type.DOCUMENT, Content.Type.DASHBOARD]:
-            prompted_content = Document(self.connection, content.id)
+            prompted_content = Document(self.connection, id=content.id)
         else:
             raise NotSupportedError(
                 f"Answering prompts is not supported for content type "
@@ -1404,31 +1404,29 @@ class Subscription(EntityBase, ChangeJournalMixin, TenantMixin):
             list[dict]: list of content dicts to be included in REST payload
         """
 
-        from mstrio.modeling.prompt import Prompt
         from mstrio.project_objects.document import Document
         from mstrio.project_objects.report import Report
 
         contents: list[dict] = [cont.to_dict() for cont in self.contents]
         if not any(ct.personalization.prompt for ct in self.contents):
             return contents
-        prompts_data = subscriptions.get_subscription_prompts(
-            self.connection,
-            self.id,
-            self.project_id,
-        ).json()['prompts']
+        # not `list_prompts()`: it needs a newer I-Server version than `alter()`
+        prompts = Prompt.bulk_from_dict(
+            subscriptions.get_subscription_prompts(
+                self.connection,
+                self.id,
+                self.project_id,
+            ).json()['prompts']
+        )
+        prompted_classes = {'report': Report, 'document': Document, 'dossier': Document}
         for content in contents:
-            content_type = content.get('type')
             dict_update = {
                 'enabled': True,
             }
-            if content_type == 'report':
-                rep = Report(self.connection, content['id'])
-                rep.answer_prompts(Prompt.bulk_from_dict(prompts_data), True)
-                dict_update['instanceId'] = rep.instance_id
-            elif content_type in ['document', 'dossier']:
-                doc = Document(self.connection, content['id'])
-                doc.answer_prompts(prompts_data, True)
-                dict_update['instanceId'] = doc.instance_id
+            if prompted_class := prompted_classes.get(content.get('type')):
+                prompted_obj = prompted_class(self.connection, id=content['id'])
+                prompted_obj.answer_prompts(prompts, force=True)
+                dict_update['instanceId'] = prompted_obj.instance_id
             content['personalization'].update({'prompt': dict_update})
         return contents
 
@@ -1517,7 +1515,7 @@ class Subscription(EntityBase, ChangeJournalMixin, TenantMixin):
                 Content.Type.DOCUMENT,
                 Content.Type.DASHBOARD,
             ]:
-                selected_obj = Document(self.connection, content_obj.id)
+                selected_obj = Document(self.connection, id=content_obj.id)
             else:
                 raise NotSupportedError(
                     f"Answering prompts is not supported for content type "

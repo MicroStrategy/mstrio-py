@@ -1,12 +1,13 @@
 """Common contracts for Flow node specifications."""
 
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from typing import Any, ClassVar, Protocol
 
 AnyEntry = dict[str, Any]
 EntrySteps = list[AnyEntry]
 CompiledValue = tuple[Any, ...]
+MappingEmitter = Callable[[AnyEntry, dict[str, str]], str]
 
 
 class InvalidInput(ValueError):
@@ -98,6 +99,11 @@ class BaseNode:
     ) -> AnyEntry:
         """Compile this node into a normalized graph record."""
         raise NotImplementedError
+
+    @classmethod
+    def emit(cls, node: AnyEntry, emit_mapping: MappingEmitter) -> str:
+        """Emit this node's graph record as Python source."""
+        return emit_mapping(node, {})
 
     @classmethod
     def runtime_source(cls) -> str:

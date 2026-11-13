@@ -23,6 +23,7 @@ This template supports the following actions, all configured via dedicated Varia
     requires following Variables:
         `$source_file` + `$target_file` OR
         `$source_folder` + `$target_folder`
+    for file inputs, `$source_file` and `$target_file` must be in the same folder
     optional Variables: `$list_of_find_text`, `$list_of_replace_with`
 
 Optional Variables Use Clarifications:
@@ -60,6 +61,7 @@ The workflow currently assumes:
 - AWS S3 Bucket has been created and configured
 - Runtime on which the script created from this template will be run has access
     to proper AWS domain with provided bucket data
+- Unless explicitly set otherwise, default encoding in data transfer is "utf-8"
 """
 
 import datetime
@@ -75,6 +77,7 @@ ACCESS_KEY_ID = $aws_access_key_id
 SECRET_ACCESS_KEY = $aws_secret_access_key
 REGION = $aws_region
 BUCKET_NAME = $aws_bucket_name
+ENCODING = $encoding or "utf-8"
 
 
 def parsed(txt: str, non_param: bool = False) -> str:
@@ -82,12 +85,13 @@ def parsed(txt: str, non_param: bool = False) -> str:
 
 
 def send_request(
-    method: str, path: str, payload: str = "", params: dict[str, str] = None
+    method: str, path: str, payload: str | bytes = "", params: dict[str, str] = None
 ):
     if not params:
         params = {}
     service = "s3"
-    payload = payload.encode("utf-8")
+    if isinstance(payload, str):
+        payload = payload.encode("utf-8")
     host = f"{BUCKET_NAME}.s3.{REGION}.amazonaws.com"
     endpoint_path = "/" + parsed(path, True)
     query_str = ""
@@ -168,25 +172,26 @@ def send_request(
 
     ret = requests.request(method, url, headers=headers, data=payload)
 
+    # raw bytes: `ret.text` guesses a charset and would alter files on copy
     return (
         ret.status_code,
-        ret.text,
+        ret.content,
         (
             None
-            if not ret.text.startswith("<?xml")
-            else XMLElementTree.fromstring(ret.text)
+            if not ret.content.startswith(b"<?xml")
+            else XMLElementTree.fromstring(ret.content)
         ),
     )
 
 
-def get_file_content(path: str) -> str | None:
+def get_file_content(path: str) -> bytes:
     code, content, _ = send_request("GET", path)
     if code >= 300:
         raise RuntimeError(f"File '{path}' does not exist or could not be found.")
     return content
 
 
-def save_content_to_file(path: str, content: str) -> None:
+def save_content_to_file(path: str, content: str | bytes) -> None:
     code, _, _ = send_request("PUT", path, content)
     if code >= 300:
         raise RuntimeError(f"Could not store content into '{path}' file.")
@@ -259,6 +264,10 @@ def apply_find_and_replace(txt: str) -> str:
     return txt
 
 
+def get_parent_folder(path: str) -> str:
+    return path.rpartition("/")[0]
+
+
 # Validation
 match ACTION:
     case Action.COPY | Action.MOVE | Action.RENAME:
@@ -268,6 +277,10 @@ match ACTION:
         assert not NEW_CONTENT, (
             f"NEW_CONTENT should not be provided for {ACTION.value} action."
         )
+        if ACTION is Action.RENAME and SOURCE_FILE:
+            assert get_parent_folder(SOURCE_FILE) == get_parent_folder(TARGET_FILE), (
+                "target_file must be in the same folder as source_file for rename"
+            )
 
     case Action.CREATE:
         assert TARGET_FILE, "TARGET_FILE must be provided for create action."
@@ -313,8 +326,13 @@ match ACTION:
     case Action.COPY | Action.MOVE | Action.RENAME:
         for s, t in zip_sources_and_targets():
             if content_to_be_manipulated:
-                cont = apply_find_and_replace(get_file_content(s))
-                save_content_to_file(t, cont)
+                try:
+                    txt = get_file_content(s).decode(ENCODING)
+                except UnicodeDecodeError:
+                    raise RuntimeError(
+                        f"File '{s}' is not valid '{ENCODING}' text. Set the `encoding` variable to the file's encoding."
+                    )
+                save_content_to_file(t, apply_find_and_replace(txt).encode(ENCODING))
             else:
                 copy_file(s, t)
 
@@ -326,7 +344,7 @@ match ACTION:
             get_file_content(TARGET_FILE)
         except RuntimeError:  # does not exist - expected
             cont = apply_find_and_replace(NEW_CONTENT) if content_to_be_manipulated else NEW_CONTENT
-            save_content_to_file(TARGET_FILE, cont)
+            save_content_to_file(TARGET_FILE, cont.encode(ENCODING))
         else:  # raised, so exists - unexpected
             raise RuntimeError(f"File '{TARGET_FILE}' already exists.")
 
